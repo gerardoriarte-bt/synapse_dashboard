@@ -1,0 +1,172 @@
+# Synapse Dashboard — Reglas del proyecto
+
+## Idioma y convenciones generales
+
+- Variables, funciones, tipos, archivos y carpetas: **siempre en ingles**.
+- Textos visibles al usuario (UI): en el idioma del producto (espanol por defecto).
+- Responder en espanol cuando se trate de documentacion o comunicacion con el equipo.
+- Preferir cambios pequenos, seguros y con scope minimo.
+- No sobre-ingenierizar: resolver el problema actual sin abstracciones prematuras.
+
+## Stack
+
+- React 19 + TypeScript + Vite
+- React Router para navegacion
+- Tailwind CSS v4 para estilos (tokens en `src/styles/globals.css`)
+- Oxlint + Prettier para calidad de codigo
+
+## Arquitectura de carpetas
+
+Respetar la estructura definida en `docs/FOLDER_STRUCTURE.md`. Regla general:
+
+| Capa | Ubicacion | Proposito |
+|------|-----------|-----------|
+| App shell | `src/app/` | Providers, router, composicion raiz |
+| UI primitivos | `src/components/ui/` | Componentes reutilizables sin logica de negocio |
+| Layout | `src/components/layout/` | Estructuras de pagina (Header, Sidebar, etc.) |
+| Features | `src/features/<feature>/` | Logica de dominio agrupada por funcionalidad |
+| Pages | `src/pages/` | Vistas conectadas a rutas |
+| Hooks globales | `src/hooks/` | Hooks compartidos entre features |
+| Servicios | `src/services/` | Clientes HTTP, integraciones externas |
+| Utilidades | `src/lib/` | Helpers puros, constantes |
+| Tipos globales | `src/types/` | Tipos compartidos entre modulos |
+| Estilos | `src/styles/` | CSS global y design tokens |
+| Assets | `src/assets/` | Imagenes, fuentes, iconos estaticos |
+
+## Reglas de componentes
+
+### Componentes UI (`components/ui/`)
+
+- Deben ser **presentacionales**: reciben props, renderizan UI, sin fetch ni estado de negocio.
+- Cada componente vive en su carpeta: `ComponentName/ComponentName.tsx`, `ComponentName.types.ts`, `index.ts`.
+- Exportar siempre desde `index.ts` (barrel export).
+- Usar `cn()` de `@/lib/cn` para combinar clases de Tailwind.
+- Props tipadas con interfaces dedicadas (`*.types.ts`).
+- Soportar `className` para extension desde el exterior.
+- Variantes via props (`variant`, `size`) en lugar de clases hardcodeadas en el consumidor.
+
+```tsx
+// ✅ Correcto
+<Button variant="secondary" size="sm">Guardar</Button>
+
+// ❌ Incorrecto — clases sueltas en cada uso
+<button className="bg-gray-200 px-2 py-1 rounded">Guardar</button>
+```
+
+### Componentes de layout (`components/layout/`)
+
+- Orquestan estructura visual (header, sidebar, main content).
+- No contienen logica de negocio ni llamadas a API.
+- Reciben `children` para composicion.
+
+### Features (`features/<name>/`)
+
+- Agrupar todo lo especifico de una funcionalidad:
+  - `components/` — componentes del dominio
+  - `hooks/` — logica reutilizable del feature
+  - `api/` — llamadas al backend del feature
+  - `types/` — tipos del dominio
+  - `utils/` — helpers del feature (opcional)
+- Exportar API publica del feature desde `features/<name>/index.ts`.
+- **Nunca** importar un feature desde otro feature directamente; usar servicios compartidos o elevar a `src/`.
+
+### Pages (`pages/`)
+
+- Una carpeta por ruta/vista: `PageName/PageName.tsx` + `index.ts`.
+- Componen features y componentes UI; minima logica propia.
+- No definir componentes reutilizables aqui — extraer a `components/` o `features/`.
+
+## Imports
+
+- Usar alias `@/` para imports absolutos desde `src/`.
+- Orden de imports:
+  1. Librerias externas (react, react-router-dom, etc.)
+  2. `@/components`, `@/features`, `@/hooks`, `@/lib`, `@/services`, `@/types`
+  3. Imports relativos del mismo modulo (./)
+- Evitar imports circulares; si ocurren, refactorizar extrayendo a `lib/` o `types/`.
+
+```tsx
+// ✅ Correcto
+import { useState } from 'react'
+import { Button } from '@/components/ui'
+import { useDashboardMetrics } from '@/features/dashboard'
+import { cn } from '@/lib/cn'
+```
+
+## TypeScript
+
+- Modo `strict` activado.
+- Preferir `interface` para props de componentes y `type` para unions/intersections.
+- Evitar `any`; usar `unknown` + type guards cuando sea necesario.
+- Tipar respuestas de API en `types/` o en el feature correspondiente.
+- Usar `as const` para objetos de constantes (rutas, endpoints, enums).
+
+## Estado y datos
+
+- Estado local: `useState` / `useReducer` dentro del componente o hook.
+- Logica compartida: custom hooks en `hooks/` (global) o `features/<name>/hooks/` (local).
+- Fetch de datos: hooks del feature o servicios en `services/api/`.
+- No mezclar fetch directo dentro de componentes UI.
+
+## Estilos
+
+- Tailwind como sistema principal de estilos.
+- Design tokens en `@theme` dentro de `src/styles/globals.css`.
+- No usar CSS modules ni styled-components salvo excepcion justificada.
+- No hardcodear colores en componentes; usar tokens (`text-text`, `bg-primary`, etc.).
+- Responsive: mobile-first (`sm:`, `md:`, `lg:`).
+
+## Routing
+
+- Rutas definidas en `src/app/router/routes.tsx`.
+- Constantes de rutas en `src/lib/constants.ts` (`ROUTES`).
+- Paginas en `src/pages/`; no crear paginas dentro de `features/`.
+
+## API y servicios
+
+- Cliente HTTP centralizado en `src/services/api/client.ts`.
+- Endpoints como constantes en `src/services/api/endpoints.ts`.
+- Variables de entorno con prefijo `VITE_` (ej: `VITE_API_URL`).
+- Manejar errores con tipos (`ApiError`) y propagar desde hooks.
+
+## Naming
+
+| Elemento | Convencion | Ejemplo |
+|----------|------------|---------|
+| Componentes | PascalCase | `MetricCard.tsx` |
+| Hooks | camelCase con `use` | `useDashboardMetrics.ts` |
+| Utilidades | camelCase | `cn.ts`, `formatDate.ts` |
+| Constantes | UPPER_SNAKE o objeto `as const` | `ROUTES`, `APP_NAME` |
+| Tipos/Interfaces | PascalCase | `ButtonProps`, `ApiError` |
+| Carpetas | kebab-case o camelCase consistente | `dashboard/`, `MainLayout/` |
+
+## Testing (cuando aplique)
+
+- Tests junto al codigo o en `__tests__/` dentro del modulo.
+- Nombrar: `ComponentName.test.tsx`, `useHookName.test.ts`.
+- Probar comportamiento, no implementacion.
+
+## Git y calidad
+
+- Ejecutar `npm run lint` y `npm run build` antes de commit.
+- Un commit = un cambio logico.
+- No commitear `.env`, credenciales ni `node_modules`.
+
+## Anti-patrones a evitar
+
+- ❌ Componentes de 300+ lineas — dividir en subcomponentes.
+- ❌ Logica de negocio en `components/ui/`.
+- ❌ Imports cruzados entre features.
+- ❌ Props drilling excesivo — usar composicion o hooks.
+- ❌ Duplicar componentes similares — abstraer variantes.
+- ❌ Estilos inline (`style={{}}`) salvo valores dinamicos inevitables.
+- ❌ `index.ts` que re-exporta todo el proyecto — solo exportar API publica del modulo.
+
+## Checklist para nuevo componente
+
+1. ¿Es reutilizable sin logica de negocio? → `components/ui/`
+2. ¿Es especifico de un feature? → `features/<name>/components/`
+3. ¿Tiene tipos propios? → archivo `*.types.ts` o carpeta `types/`
+4. ¿Se exporta desde `index.ts`?
+5. ¿Usa tokens de diseno y `cn()`?
+6. ¿Props tipadas y `className` soportado?
