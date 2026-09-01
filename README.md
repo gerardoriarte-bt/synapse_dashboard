@@ -10,7 +10,7 @@ los dibuja.
 |---|---|
 | `synaspse_dashboard/nuevo-desarrollo.md` | **Normativo.** Arquitectura del front |
 | `synaspse_dashboard/tareas-front-back.md` | El desglose en tareas B*/F* |
-| `../contracts/synapse-api.yaml` | El contrato. `src/api/generated.ts` sale de acá |
+| `contracts/synapse-api.yaml` | **El contrato, y su casa.** `src/api/generated.ts` sale de acá con `npm run gen:api` |
 | `../design/design.md` | Reglas duras de producto |
 | `../handoff/parametros-front.md` | Tokens, grilla, anatomía de panel |
 

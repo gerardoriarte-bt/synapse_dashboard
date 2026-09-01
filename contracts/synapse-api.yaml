@@ -1,0 +1,2028 @@
+openapi: 3.1.0
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Synapse · contrato de la consola del cliente
+#
+# PROPUESTA DEL FRONT, no decisión. La escribió el equipo de front derivándola
+# de §4 de handoff/backend-handoff.md y de lo que C1 ya consume: el mock
+# implementa exactamente esta forma y la pantalla corre contra él, así que no es
+# una forma imaginada — es la que se sabe suficiente para renderizar.
+#
+# Al aprobarse deja de ser «el yaml del front»: pasa a ser la fuente de los dos
+# lados. El front genera TypeScript, el backend genera Go, y `contract-drift`
+# falla si alguno se separa.
+#
+# Las decisiones que el front NO puede tomar van marcadas «# PREGUNTA:».
+# Contestarlas acá mismo es suficiente.
+#
+# ALCANCE: los cinco endpoints de la consola. Administración y builder se
+# agregan cuando esas superficies prueben qué necesitan, no antes.
+# ─────────────────────────────────────────────────────────────────────────────
+
+info:
+  title: Synapse · consola del cliente
+  version: 0.1.0-propuesta
+  description: |
+    Cinco endpoints renderizan la consola completa.
+
+    **Ninguno consulta Snowflake en vivo.** Los cuatro de configuración salen de
+    Postgres, y `panels:batch` lee `panel_data`, que también es Postgres: la
+    adaptación de Gold a las formas de este contrato ocurre al materializar
+    (bloque D5 de backend-handoff.md), no por request.
+
+    Consecuencia sobre la frescura: la que declara el payload es la de la
+    materialización, no la del momento de la consulta. Es justo lo que el badge
+    de procedencia dice, y de ahí sale también el estado DEGRADADO —
+    `frescura > cadencia × tolerancia`—, que el backend deriva y el front no
+    calcula.
+
+servers:
+  - url: /api/v1
+
+security:
+  - bearer: []
+
+tags:
+  - name: config
+    description: Namespace `/config/*` · middleware RequireUser · usuario de cliente.
+
+paths:
+  /config/me:
+    get:
+      tags: [config]
+      operationId: obtenerContexto
+      summary: Quién sos, qué tenant, qué rol y qué pestañas te tocan
+      description: |
+        Una vez al montar la aplicación. Devuelve la composición ya resuelta
+        para el rol del token: las pestañas que le tocan, en su orden.
+
+        **El filtrado por rol se aplica acá** (invariante 2.3). El front no
+        recibe pestañas que no le corresponden y no las filtra.
+      responses:
+        '200':
+          description: Contexto del usuario
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Contexto' }
+        '401': { $ref: '#/components/responses/NoAutorizado' }
+
+  /config/catalog:
+    get:
+      tags: [config]
+      operationId: obtenerCatalogo
+      summary: Las métricas del tenant, filtradas por rol
+      description: |
+        El catálogo gobierna: un panel se ancla a un `metricId` y nunca a un SQL
+        ni a un nombre de tabla. Devuelve **solo** las métricas del tenant y del
+        rol del token.
+      responses:
+        '200':
+          description: Catálogo de métricas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [metrics]
+                        properties:
+                          metrics:
+                            type: array
+                            items: { $ref: '#/components/schemas/Metrica' }
+        '401': { $ref: '#/components/responses/NoAutorizado' }
+
+  /config/blocks:
+    get:
+      tags: [config]
+      operationId: obtenerBloques
+      summary: La tabla forma ↔ tipo de panel
+      description: |
+        Declarada en §4.4 de backend-handoff.md. **Vive en el backend** y es la
+        misma tabla que usa `layout:validate`, para que el builder y el front no
+        la dupliquen.
+      responses:
+        '200':
+          description: Tipos de panel con sus formas y rangos
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [blocks]
+                        properties:
+                          blocks:
+                            type: array
+                            items: { $ref: '#/components/schemas/Bloque' }
+
+  /config/tabs/{tabId}:
+    get:
+      tags: [config]
+      operationId: obtenerPestana
+      summary: La composición de una pestaña
+      parameters:
+        - name: tabId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      description: |
+        **Verificación de pertenencia obligatoria:** el `tabId` debe pertenecer
+        al tenant y rol del usuario del token. Si no, `404` y no `403` — no se
+        revela la existencia.
+      responses:
+        '200':
+          description: Pestaña con sus paneles
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PestanaConPaneles' }
+        '404': { $ref: '#/components/responses/NoExiste' }
+
+  /config/chat:
+    post:
+      tags: [config]
+      operationId: preguntarASynapse
+      summary: Preguntar al agente · responde por SSE
+      description: |
+        **Decisión del 2026-08-19 (humano): la respuesta llega por SSE**, no de
+        una vez. El agente consulta Gold y razona; esperar en silencio a que
+        termine se siente como que la pantalla se colgó, y C3 muestra una
+        conversación, así que la respuesta progresiva es coherente con lo que la
+        pantalla promete.
+
+        **El agente es por cliente y su nombre no viaja.** `SYNAPSE_UA` es el de
+        Under Armour y cada cliente tiene el suyo; la resolución vive en
+        `agents.tenant_id`. Exponerlo sería hacer circular un identificador de
+        cliente por el navegador, además de violar §7.3.
+
+        **REGLA DURA SOBRE EL ORDEN DE LOS EVENTOS.** §1.3 exige que toda cifra
+        declare su BASE y su procedencia. Si la cifra llegara en un evento y la
+        procedencia en otro, habría un instante —medio segundo— con un número en
+        pantalla sin su badge. Por eso el evento `dato` lleva las dos cosas y el
+        esquema las hace obligatorias: es estructuralmente imposible mandar una
+        cifra sin su procedencia, igual que en el payload de un panel.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pregunta]
+              properties:
+                pregunta: { type: string }
+                tabId:
+                  type: string
+                  format: uuid
+                  description: |
+                    Desde qué pestaña se pregunta. Da contexto al agente y es de
+                    donde salen las `chatSugerencias`.
+                hiloId:
+                  type: string
+                  format: uuid
+                  description: Para continuar una conversación.
+      responses:
+        '200':
+          description: |
+            Flujo de eventos. Cada uno es una línea `data:` con un objeto
+            `EventoDeChat` serializado.
+          content:
+            text/event-stream:
+              schema: { $ref: '#/components/schemas/EventoDeChat' }
+        '401': { $ref: '#/components/responses/NoAutorizado' }
+  /config/chat/hilos:
+    get:
+      tags: [config]
+      operationId: listarHilos
+      summary: El historial del riel de C3
+      description: |
+        **Solo los hilos del usuario del token** (decisión del 2026-08-19). El
+        rol define qué pudo preguntar, no qué puede leer: dos personas con el
+        mismo rol no ven las consultas de la otra.
+
+        Esto precisa lo que el `.pen` dice —«las consultas quedan en el tenant,
+        visibles solo para tu rol»—, que admitía las dos lecturas. Se resolvió
+        por la estricta, que además es la que sugiere el nombre `user_threads`.
+
+        **Retención: 12 meses.** Cubre el ciclo anual del negocio y permite
+        reabrir la consulta del mismo mes del año previo, que es una comparación
+        que el producto ya hace en sus paneles.
+
+        Devuelve los hilos ordenados por actividad, del más reciente al más
+        viejo. **El agrupado por tiempo —HOY, ESTA SEMANA, JULIO— lo hace el
+        front**: es presentación y depende del huso del usuario.
+      responses:
+        '200':
+          description: Hilos del usuario
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [hilos]
+                        properties:
+                          hilos:
+                            type: array
+                            items: { $ref: '#/components/schemas/HiloResumen' }
+
+  /config/chat/hilos/{hiloId}:
+    get:
+      tags: [config]
+      operationId: obtenerHilo
+      summary: Una conversación completa, con sus cifras como llegaron
+      parameters:
+        - name: hiloId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      description: |
+        **Las cifras vienen congeladas** (decisión del 2026-08-19): se guarda el
+        payload tal como llegó, no se recalcula al abrir.
+
+        La razón es que el texto y las cifras tienen que seguir diciendo lo
+        mismo. Un hilo de julio que dice «el ROAS subió a 4.1x» recalculado hoy
+        mostraría 3.8x al lado de esa frase, y §1.3 existe para que eso no pase.
+
+        **Y no hace falta ningún aviso nuevo:** la procedencia que ya viaja con
+        cada cifra declara su frescura, así que el panel muestra «HACE 45 D» y el
+        usuario ve solo que está mirando julio. El badge que ya existe resuelve
+        el problema.
+      responses:
+        '200':
+          description: La conversación
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Hilo' }
+        '404': { $ref: '#/components/responses/NoExiste' }
+
+    delete:
+      tags: [config]
+      operationId: borrarHilo
+      summary: Borrar un hilo propio
+      parameters:
+        - name: hiloId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      description: |
+        **Salvo los marcados como decisión** (decisión del 2026-08-19). Un hilo
+        asociado a una decisión de C4 es la traza de por qué se decidió algo, y
+        esa traza no se borra: C4 declara la hipótesis, quién aprobó y contra qué
+        se midió, y el hilo es de dónde salió.
+
+        Cuando el hilo es decisión responde **409** con la razón, no 403: no es
+        un problema de permiso sino de regla, y la gramática de §8 pide decir
+        qué lo bloquea.
+      responses:
+        '204': { description: Borrado }
+        '409':
+          description: Es la traza de una decisión y no se puede borrar
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaError' }
+        '404': { $ref: '#/components/responses/NoExiste' }
+
+  /config/decisiones:
+    get:
+      tags: [config]
+      operationId: listarDecisiones
+      summary: Las decisiones del período · alimenta C4
+      parameters:
+        - name: periodo
+          in: query
+          schema: { $ref: '#/components/schemas/PeriodoId' }
+      responses:
+        '200':
+          description: Decisiones del tenant en ese período
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [decisiones]
+                        properties:
+                          decisiones:
+                            type: array
+                            items: { $ref: '#/components/schemas/Decision' }
+
+    post:
+      tags: [config]
+      operationId: decidirRecomendacion
+      summary: Aprobar o rechazar una recomendación
+      description: |
+        **Solo si el rol del token tiene `puedeAprobar`.** Si no, `403` — pero el
+        front no debería llegar acá: `/config/me` ya le dijo que no pinte el CTA.
+
+        Una decisión declara su **ventana de medición** al crearse, y no es
+        opcional: sin ventana no hay contra qué medirla después, y C4 existe
+        justamente para mostrar el observado contra el estimado.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recomendacionId, veredicto, ventanaMedicion]
+              properties:
+                recomendacionId: { type: string, format: uuid }
+                veredicto:
+                  type: string
+                  enum: [aprobada, rechazada]
+                ventanaMedicion: { $ref: '#/components/schemas/VentanaDeMedicion' }
+                hiloId:
+                  type: string
+                  format: uuid
+                  description: |
+                    De qué conversación salió, si salió de una. Es lo que hace
+                    que ese hilo no se pueda borrar después.
+                nota: { type: string }
+      responses:
+        '201':
+          description: Decisión registrada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Decision' }
+        '403':
+          description: El rol no puede aprobar
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaError' }
+
+  /config/decisiones/{decisionId}:
+    get:
+      tags: [config]
+      operationId: obtenerDecision
+      summary: El detalle de C4
+      parameters:
+        - name: decisionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: La decisión con su traza y su resultado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Decision' }
+        '404': { $ref: '#/components/responses/NoExiste' }
+
+  /config/accionables:
+    post:
+      tags: [config]
+      operationId: promoverAccionable
+      summary: Promover un hallazgo a accionable · desde el chat de C3
+      description: |
+        **Es interno.** Requiere la capacidad `registrar_accionable`, que el
+        super-admin asigna **por usuario** y no por rol (`PS-16`, humano
+        2026-08-21). §1.4.20 ya separa permiso de composición, así que esto vive
+        en el eje del permiso y no toca §3.3.
+
+        **Ocurre en el hallazgo, no en una pantalla aparte.** La regla de
+        cobertura del framework dice que toda observación se resuelve y ninguna
+        queda en el limbo; si para registrar hay que ir a otro lado, las
+        observaciones se pierden. `A6` administra la cola; no es donde se la
+        llena.
+
+        **El snapshot es obligatorio y ya existe.** El evento `auditoria` del
+        chat emite `sql` y `fuentesConsultadas` porque §1.3 obliga a que toda
+        cifra declare de dónde salió — y eso es exactamente el `sql_congelado`
+        que pide `SNAPSHOT_CONSULTA`. Medir después es re-correr esa misma
+        consulta sobre Gold. Sin ella, el «observado contra estimado» compara dos
+        cosas distintas.
+
+        # PREGUNTA: falta `versionModeloSemantico`, que hoy el evento `auditoria`
+        # no emite. Sin ese campo el veredicto `inconcluso` —que cubre «cambio en
+        # la definición semántica durante el período»— no se puede calcular.
+        # ¿Lo agrega el backend al evento del chat, o lo resuelve el
+        # `DECISION_LOG` al re-medir?
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accion, efectoEsperado, metricaObjetivo, ventanaDias, nivelEvidencia, snapshot]
+              properties:
+                accion:
+                  type: string
+                  description: Específica, no genérica.
+                efectoEsperado:
+                  type: string
+                  description: |
+                    La hipótesis. **Obligatoria por la regla de oro del
+                    framework**: «sin owner y sin efecto esperado, no es un
+                    accionable: es un comentario».
+                metricaObjetivo:
+                  type: string
+                  description: Un `metricId` del catálogo. Jamás un SQL (L13).
+                ventanaDias:
+                  type: integer
+                  minimum: 1
+                  description: Cuánto dura el experimento antes de medir.
+                nivelEvidencia:
+                  type: string
+                  enum: [A, B, C]
+                ruta:
+                  type: string
+                  enum: [equipo_interno, recomendacion]
+                  default: recomendacion
+                  description: |
+                    Quién ejecuta. **La etiqueta que ve el usuario no dice
+                    «Synapse ejecuta»**: la plataforma no ejecuta —§1.3.16—, lo
+                    hace el equipo interno o de marketing (humano, 2026-08-21).
+                    El valor del contrato se queda en el dato; la pantalla nombra
+                    al equipo.
+                snapshot:
+                  type: object
+                  required: [sql, fuentesConsultadas]
+                  description: La consulta congelada, tal como la emitió el chat.
+                  properties:
+                    sql: { type: string }
+                    fuentesConsultadas:
+                      type: array
+                      items: { type: string }
+                    versionModeloSemantico:
+                      type: string
+                      nullable: true
+      responses:
+        '201':
+          description: Promovido, en estado `propuesto`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Accionable' }
+        '403':
+          description: El usuario no tiene la capacidad `registrar_accionable`.
+        '422':
+          description: |
+            Falta la hipótesis, la métrica objetivo no está en el catálogo, o el
+            snapshot viene sin consulta.
+
+  /config/accionables/{id}/respuesta:
+    post:
+      tags: [config]
+      operationId: responderAccionable
+      summary: El cliente acepta o rechaza una recomendación · ruta B del framework
+      description: |
+        Cierra el **hueco 3** de `handoff/propuesta-escritura.md`: hasta el
+        2026-08-21 `APROBAR` y `RECHAZAR` no escribían en ningún lado.
+
+        Lo destrabó `PS-15`. §7.1 declara ahora **dos ejes** de interacción del
+        usuario de cliente, y el segundo es **registrar una decisión** sobre lo
+        que la consola le propone. Decisión del humano: «que el cliente acepte
+        es parte de la aprobación que se debe hacer para ejecutar».
+
+        Escribe en `DB_BT_UA.BT_UA_DECISION_LOG` — `accionable.respuesta_cliente`
+        más una fila en `historial_estado`. Ver `handoff/accionables.md`.
+
+        **Quién puede.** El rol del cliente y el super-admin (humano,
+        2026-08-21), **con dos límites que no son negociables**:
+
+        - **Un rol solo puede responder lo que ve.** Es §1.4.20 aplicada: si el
+          backend no le envía el payload de la métrica objetivo, tampoco le
+          acepta la respuesta. En `ua_mx` eso deja al `planner` fuera de todo
+          accionable que dependa de inversión de medios.
+        - **Una respuesta de super-admin no es una respuesta del cliente.**
+          `actor` las distingue y `respuesta_cliente` sigue en `sin_respuesta`.
+          Si no, se rompe el «seguro de atribución»: una fila aprobada dejaría de
+          probar que el cliente decidió.
+
+        # PREGUNTA: ¿el backend expone `actor` o lo deriva del token? El front
+        # necesita saber si tiene que mandarlo o si se infiere.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+          description: El `id_accionable` del `DECISION_LOG`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [respuesta]
+              properties:
+                respuesta:
+                  type: string
+                  enum: [aceptado, rechazado]
+                razon:
+                  type: string
+                  description: |
+                    **Obligatoria al rechazar.** Un rechazo sin razón no sirve
+                    para medir después por qué no se ejecutó, que es la mitad del
+                    valor probatorio de la bitácora (§4.3 de `accionables.md`).
+      responses:
+        '200':
+          description: La respuesta quedó registrada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Accionable' }
+        '409':
+          description: |
+            Ya tiene respuesta, o su estado no la admite. **No se sobreescribe**:
+            una decisión registrada no se renegocia (§7.1, segundo eje).
+        '422':
+          description: Rechazo sin razón.
+
+  /config/solicitudes:
+    get:
+      tags: [config]
+      operationId: listarSolicitudes
+      summary: Mis solicitudes de acceso · alimenta C5
+      description: |
+        Las del usuario del token. **C5 las consulta para no dejar pedir dos
+        veces**: si ya hay una pendiente para esa métrica, el CTA se reemplaza
+        por su estado.
+      responses:
+        '200':
+          description: Solicitudes del usuario
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [solicitudes]
+                        properties:
+                          solicitudes:
+                            type: array
+                            items: { $ref: '#/components/schemas/SolicitudDeAcceso' }
+
+    post:
+      tags: [config]
+      operationId: solicitarAcceso
+      summary: Pedir acceso a una métrica que el rol no ve
+      description: |
+        Decisión del 2026-08-19 (humano): **si ya hay una pendiente para esa
+        métrica, no se crea otra**. Responde `409` con el estado de la que
+        existe.
+
+        Pedir dos veces sin saberlo es el fallo obvio de esta pantalla: llena la
+        bandeja de quien resuelve y deja al que pide sin señal de que su primer
+        pedido llegó.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [metricId]
+              properties:
+                metricId: { type: string, format: uuid }
+                motivo: { type: string }
+      responses:
+        '201':
+          description: Solicitud creada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/SolicitudDeAcceso' }
+        '409':
+          description: Ya hay una solicitud pendiente para esa métrica
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaError' }
+
+  /config/me/preferencias:
+    put:
+      tags: [config]
+      operationId: guardarPreferencias
+      summary: El tema del usuario
+      description: |
+        §2.4 de design.md: **el tema es preferencia de usuario, no de tenant, y
+        se persiste por usuario**. Por eso va contra el perfil y no en el
+        navegador: la misma cuenta se vería distinta en dos máquinas.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tema:
+                  type: string
+                  enum: [dark, light]
+      responses:
+        '204': { description: Guardado }
+
+  /config/panels:batch:
+    post:
+      tags: [config]
+      operationId: obtenerPayloads
+      summary: Los payloads de una pestaña, en una sola llamada
+      description: |
+        **Un request por pestaña, no uno por panel.** Ocho paneles en una
+        llamada.
+
+        **Fallo parcial:** si un panel no resuelve, su entrada lleva
+        `estado: ERROR` y el resto vuelve normal. No se falla el batch completo.
+
+        Es `POST` por el cuerpo, no porque modifique: el front lo cachea,
+        invalida y reintenta como una lectura.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [panelIds, periodo]
+              properties:
+                panelIds:
+                  type: array
+                  minItems: 1
+                  items: { type: string, format: uuid }
+                periodo:
+                  $ref: '#/components/schemas/PeriodoId'
+      responses:
+        '200':
+          description: Un payload por panel pedido
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [payloads]
+                        properties:
+                          payloads:
+                            type: object
+                            description: Clave = `panelId`.
+                            additionalProperties:
+                              $ref: '#/components/schemas/Payload'
+
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        El claim `aud` distingue `user` de `platform`. Un token de usuario no
+        valida contra el middleware de plataforma: **las firmas no coinciden**.
+
+  responses:
+    NoAutorizado:
+      description: Token ausente, vencido o de otra audiencia
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/RespuestaError' }
+    NoExiste:
+      description: No existe, o existe y no es tuyo — no se distinguen
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/RespuestaError' }
+
+  schemas:
+
+    # ── Envelope ─────────────────────────────────────────────────────────────
+
+    Envelope:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean, enum: [true] }
+
+    RespuestaError:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, enum: [false] }
+        error:
+          type: object
+          required: [codigo, mensaje]
+          properties:
+            codigo:
+              type: string
+              description: Código estable, para decidir en código.
+              # PREGUNTA: ¿qué taxonomía? El front solo necesita distinguir
+              # «error de campo» de «regla de negocio» de «fallo técnico».
+              example: REGLA_VIOLADA
+            mensaje:
+              type: string
+              description: |
+                Escrito desde el lado del usuario. §8: los errores no se
+                disculpan y nunca son vagos — «El feed de inventario tiene 31
+                horas» y no «Error al obtener snapshot».
+            campo:
+              type: [string, 'null']
+              description: Qué input señalar, cuando el error es de un campo.
+            desbloqueaCon:
+              type: [string, 'null']
+              description: |
+                Mismo vocabulario que los estados degradados de §8, así que el
+                front ya sabe renderizarlo.
+
+    # ── Enumerados cerrados ──────────────────────────────────────────────────
+    # Los mismos valores que el CHECK de Postgres. Un valor que exista de un
+    # lado y no del otro es un INSERT rechazado en producción.
+
+    Forma:
+      type: string
+      description: La forma del dato. Decide qué tipos de panel puede usar.
+      enum:
+        - escalar
+        - escalarConIntervalo
+        - serieTemporal
+        - serieConBanda
+        - seriesMultiples
+        - categorica
+        - categoricaComparada
+        - perfilMultiatributo
+        - composicion
+        - distribucion
+        - matriz
+        - flujo
+        - grafo
+        - ranking
+        - tabular
+        - prosa
+      # CERRADO 2026-08-19 (humano): `perfilMultiatributo` se confirma como
+      # forma. Ya estaba en SYNAPSE_BLOCKS y `comparison` la usa; ahora también
+      # está en §2.1. Falta agregarla al CHECK del backend.
+
+    TipoPanel:
+      type: string
+      enum:
+        [kpi, prose, series, bars, table, gauge, forecast, list, reco,
+         composition, comparison, distribution, blocked, matrix, graph]
+
+    Capa:
+      type: string
+      description: Capa Medallion. Una métrica compuesta hereda la peor.
+      # CERRADO 2026-08-19 (humano): BENCHMARK se borra. Estaba solo en §2.1 y
+      # en ninguna otra parte del repositorio. Son tres capas.
+      enum: [BRONZE, SILVER, GOLD]
+
+    Familia:
+      type: string
+      description: |
+        De acá sale el color de la serie. El componente no lo elige: la
+        asignación vive en el catálogo, que es lo que sostiene la persistencia
+        cromática de §2.2.
+      enum: [demanda, medios, inventario, cliente, externo]
+
+    DireccionSemantica:
+      type: string
+      description: |
+        Cómo se lee la métrica. **Texto que se pinta tal cual**, no un código.
+      # CERRADO 2026-08-19 (humano): es TEXTO QUE SE PINTA, no un código.
+      # Un enumerado de dos valores habría deformado dos de los cinco casos que
+      # el catálogo ya declara para que entren en un eje alto/bajo.
+      # Consecuencia para el backend: el texto viaja tal cual y no hay tabla de
+      # traducción que mantener.
+      examples:
+        - MÁS ALTO = MEJOR
+        - MÁS BAJO = MEJOR
+        - CERCA DEL 100% = MEJOR
+        - MENOS DÍAS = MÁS URGENTE
+        - MENOS SKU AFECTADOS = MEJOR
+
+    EstadoMetrica:
+      type: string
+      description: Gobierno de la métrica. No confundir con el estado del panel.
+      enum: [DISPONIBLE, DEGRADADO, BLOQUEADO]
+
+    PeriodoId:
+      type: string
+      description: |
+        Clave absoluta, nunca relativa: `2026-07` y no `actual`. Con clave
+        relativa el selector de período obliga a reconstruir el índice.
+      pattern: '^\d{4}-(0[1-9]|1[0-2]|W\d{2})$'
+      examples: ['2026-07', '2026-W32']
+
+    # ── Contexto ─────────────────────────────────────────────────────────────
+
+    Contexto:
+      type: object
+      required: [alcance, user, tenant, role, tabs, periodos, catalogVersion]
+      properties:
+        alcance:
+          type: string
+          description: |
+            Con qué clase de token se está mirando esta consola.
+
+            `usuario` · pertenece al tenant. El navbar muestra su nombre.
+            `plataforma` · equipo interno mirando la consola de un cliente. El
+            navbar muestra el selector y el acceso queda auditado.
+
+            **El alcance se declara en el chrome** (§8 de parametros-front.md),
+            así que el front necesita saberlo para decidir qué pinta.
+          enum: [usuario, plataforma]
+        tenantsDisponibles:
+          type: array
+          description: |
+            Solo con `alcance: plataforma`. Los tenants que este operador puede
+            abrir. Con `alcance: usuario` viene vacío o ausente: un usuario de
+            cliente pertenece a uno y no elige.
+          items:
+            type: object
+            required: [id, etiqueta]
+            properties:
+              id: { type: string, format: uuid }
+              etiqueta: { type: string }
+        user:
+          type: object
+          required: [id, nombre, email]
+          properties:
+            id: { type: string, format: uuid }
+            nombre: { type: string }
+            email: { type: string, format: email }
+            capacidades:
+              type: array
+              items: { type: string }
+              description: |
+                Qué puede hacer **este usuario**, no su rol · `PS-16`, 2026-08-21.
+
+                §1.4.20 ya separa los dos ejes: «el permiso se aplica en el
+                backend; la composición solo decide qué se muestra de lo que ya
+                está permitido». La composición es por rol (§3.3); una capacidad
+                es por usuario y vive en el otro eje, así que no lo contradice.
+
+                Hoy hay una: **`registrar_accionable`**, que el super-admin
+                asigna en A3. Habilita promover un hallazgo desde el chat y
+                registrar un reparto desde el controlador del MMM.
+
+                **Sin ella el front no monta el CTA, y el servidor la verifica
+                igual**: ocultar no es permitir.
+            preferencias:
+              type: object
+              description: |
+                §3.5 de design.md las declara en el usuario: `Usuario { …,
+                preferencias: { tema } }`. Van acá y no en un endpoint aparte
+                porque el front las necesita **antes del primer pixel**: leerlas
+                en una segunda llamada haría que la consola pinte oscura y
+                cambie a clara a la vista del usuario.
+
+                Se escriben con `PUT /config/me/preferencias`.
+              properties:
+                tema:
+                  type: string
+                  description: |
+                    §2.4: el tema es preferencia de USUARIO, no de tenant. Por eso
+                    va contra el perfil y no en el navegador — un `localStorage`
+                    haría que la misma cuenta se viera distinta en dos máquinas.
+
+                    Ausente significa que el usuario nunca eligió. El front aplica
+                    `dark`, que es el defecto que emite `tokens.css`.
+                  enum: [dark, light]
+        tenant:
+          type: object
+          required: [id, nombre, etiqueta, vertical]
+          properties:
+            id: { type: string, format: uuid }
+            nombre: { type: string, examples: ['Under Armour México'] }
+            etiqueta:
+              type: string
+              description: La forma corta, para el navbar.
+              examples: ['UA MX']
+            vertical: { type: string, examples: ['retail_apparel'] }
+        role:
+          type: object
+          required: [id, nombre, puedeAprobar]
+          properties:
+            id: { type: string }
+            nombre: { type: string, examples: ['Planner'] }
+            descripcion: { type: string }
+            puedeAprobar:
+              type: boolean
+              description: |
+                Si este rol puede aprobar o rechazar una recomendación.
+
+                Decisión del 2026-08-19 (humano): **es configurable por rol**, no
+                fijo al CEO. Cada tenant declara qué roles deciden.
+
+                **El front necesita saberlo para no pintar un CTA que va a
+                fallar.** Un botón que se aprieta y devuelve 403 es peor que un
+                botón ausente: promete una acción que no existe para vos. Con
+                esto, el panel de recomendaciones muestra APROBAR y RECHAZAR
+                solo a quien puede, y a los demás la recomendación se lee sin
+                acción — que es la misma gramática con la que A1 marca la fila
+                propia como «sin acción sobre tu cuenta».
+        tabs:
+          type: array
+          description: Las pestañas del rol, en su orden. Ya filtradas.
+          items: { $ref: '#/components/schemas/Pestana' }
+        periodos:
+          type: array
+          items: { $ref: '#/components/schemas/Periodo' }
+        catalogVersion:
+          type: integer
+          description: Con qué versión del catálogo se resolvió esta respuesta.
+      # CERRADO 2026-08-19 (humano): un usuario de cliente pertenece a UN tenant.
+      # El invariante 2.1 se mantiene y `users.tenant_id NOT NULL` con él.
+      #
+      # El caso real que lo motivaba —el analista interno que gestiona varios
+      # clientes— se resuelve como usuario de PLATAFORMA que entra a la consola
+      # de un tenant, no como usuario de cliente con varias membresías. Así el
+      # aislamiento sigue garantizado por el esquema y no por la aplicación, y
+      # el acceso queda auditado, que es lo que A1 ya declara.
+      #
+      # Consecuencia para el chrome: el selector de tenant del navbar (§7.1)
+      # existe SOLO para tokens de plataforma. Para un usuario de cliente el
+      # navbar muestra el nombre del tenant, no un selector con una opción.
+      #
+      # PREGUNTA: ¿cómo le pasa el tenant un token de plataforma a `/config/*`?
+      # §4.3 dice que en `/platform/*` el tenant siempre va en el path. Las dos
+      # opciones que vemos son `/platform/t/{tenantId}/console/*` —consistente
+      # con §4.3— o `/config/*` con una cabecera `X-Tenant-Id` que solo se
+      # acepta con `aud: platform`. Es decisión de ustedes: la que sea más
+      # difícil de desincronizar.
+
+    Periodo:
+      type: object
+      required: [id, etiqueta]
+      properties:
+        id: { $ref: '#/components/schemas/PeriodoId' }
+        etiqueta: { type: string, examples: ['JUL 2026'] }
+        rango: { type: string, examples: ['1 – 31 JUL 2026'] }
+        estado: { type: string, examples: ['MTD CERRADO', 'CERRADO'] }
+        grano:
+          type: string
+          description: |
+            Qué tan fino es este período. Es la otra mitad de `granoMinimo`: sin
+            él, el front sabe que una métrica de marca es mensual pero no sabe si
+            `2026-W32` es una semana, así que no puede decidir nada.
+
+            El front lo deduce de la forma del id cuando no llega —`2026-07` mes,
+            `2026-W32` semana, `2026-07-15` día—, pero deducir del id es frágil
+            en cuanto aparezca un período con nombre propio (un trimestre, una
+            temporada). Mejor que lo declare quien lo construye.
+          enum: [dia, semana, mes]
+          default: mes
+
+    Pestana:
+      type: object
+      required: [id, key, nombre, pregunta, orden]
+      properties:
+        id: { type: string, format: uuid }
+        key: { type: string, examples: ['inventory'] }
+        nombre: { type: string, examples: ['Inventory & Shopping'] }
+        icono: { type: string, examples: ['box'] }
+        pregunta:
+          type: string
+          description: |
+            La pregunta operativa de la pestaña. Es el título de la pantalla:
+            una pestaña que no contesta una pregunta no se compone.
+          examples: ['¿Tenemos stock y lo estamos mostrando?']
+        orden: { type: integer }
+        chatSugerencias:
+          type: array
+          items: { type: string }
+
+    PestanaConPaneles:
+      type: object
+      required: [tab, panels]
+      properties:
+        tab: { $ref: '#/components/schemas/Pestana' }
+        panels:
+          type: array
+          items: { $ref: '#/components/schemas/PanelConfigurado' }
+
+    PanelConfigurado:
+      type: object
+      description: |
+        La colocación del panel en la grilla. **No lleva datos**: los datos
+        vienen de `panels:batch`, y por eso cambiar de período no obliga a pedir
+        el layout de nuevo.
+      required: [id, tipo, metricId, colStart, colSpan, rowSpan]
+      properties:
+        id: { type: string, format: uuid }
+        tipo: { $ref: '#/components/schemas/TipoPanel' }
+        metricId: { type: string, format: uuid }
+        colStart: { type: integer, minimum: 1, maximum: 12 }
+        colSpan: { type: integer, minimum: 1, maximum: 12 }
+        rowSpan:
+          type: integer
+          minimum: 1
+          description: |
+            En unidades de grilla, nunca en píxeles: `px = 96·N − 16`.
+        opciones:
+          type: object
+          description: |
+            Interruptores de composición, no datos: «mostrar medidor», «ordenar
+            por». Lo que el medidor MARCA viaja en el payload, porque depende
+            del período.
+          additionalProperties: true
+
+    Bloque:
+      type: object
+      description: Una fila de la tabla de §4.4.
+      required: [tipo, formasAceptadas, colSpanMin, colSpanMax, rowSpanMin, rowSpanMax]
+      properties:
+        tipo: { $ref: '#/components/schemas/TipoPanel' }
+        formasAceptadas:
+          type: array
+          items: { $ref: '#/components/schemas/Forma' }
+        colSpanMin: { type: integer }
+        colSpanMax: { type: integer }
+        rowSpanMin: { type: integer }
+        rowSpanMax: { type: integer }
+        paramsDisponibles:
+          type: array
+          items: { type: string }
+
+    # ── Métrica ──────────────────────────────────────────────────────────────
+
+    Metrica:
+      type: object
+      required:
+        [id, key, nombre, forma, familia, capa, fuente, ventana, base, estado, catalogVersion]
+      properties:
+        id: { type: string, format: uuid }
+        key: { type: string, examples: ['inv_riesgo'] }
+        nombre: { type: string, examples: ['Venta diaria en riesgo'] }
+        forma: { $ref: '#/components/schemas/Forma' }
+        familia: { $ref: '#/components/schemas/Familia' }
+        capa: { $ref: '#/components/schemas/Capa' }
+        fuente: { type: string, examples: ['ERP + Analítica de sitio'] }
+        ventana:
+          type: string
+          description: La mitad de la BASE — el período que mide.
+          examples: ['Venta media de los últimos treinta días']
+        base:
+          type: string
+          description: |
+            El denominador. **Obligatorio en el catálogo y no solo en el
+            payload**: §4.1 exige que la BASE siga visible mientras el panel
+            carga, falla o está bloqueado, y un payload bloqueado no lleva
+            gobierno. Sin este campo, un panel bloqueado no puede declarar su
+            BASE aunque la anatomía lo exija.
+          examples: ['312 SKU críticos sobre 18.240 activos']
+        unidad:
+          type: [string, 'null']
+          description: |
+            `USD` (moneda, va delante), `%` o `x` (símbolo, va pegado), o un
+            NOMBRE como «órdenes» (no se pega: pertenece al label).
+        dimensiones:
+          type: array
+          description: Por dónde se puede desagregar en el drill-down.
+          items: { type: string }
+        direccionSemantica:
+          oneOf:
+            - $ref: '#/components/schemas/DireccionSemantica'
+            - type: 'null'
+          description: Null cuando la métrica no es compuesta.
+        notaLectura:
+          type: [string, 'null']
+          description: Lo que hay que saber para no malinterpretarla.
+        granoMinimo:
+          type: string
+          description: |
+            El período más fino que esta métrica puede responder.
+
+            No es un detalle: verificado contra Snowflake, las métricas de marca
+            son **mensuales** —`BR_MONTH_TD`, `REPORT_MONTH`— y las de ecommerce
+            diarias. Con el selector en una semana, una pestaña de marca no
+            tiene nada que devolver.
+
+            Decisión del 2026-08-19 (humano): la métrica lo declara y **el
+            selector de período deshabilita lo que no aplica, con la razón
+            visible**. Ofrecer un período que la métrica no puede contestar es
+            el mismo problema que un panel sin BASE: promete algo que no puede
+            sostener.
+          enum: [dia, semana, mes]
+          default: dia
+        estado: { $ref: '#/components/schemas/EstadoMetrica' }
+        estadoRazon: { type: [string, 'null'] }
+        catalogVersion: { type: integer }
+
+    # ── El payload · unión discriminada por `estado` ─────────────────────────
+    #
+    # ESTA ES LA PIEZA QUE SOSTIENE LAS GARANTÍAS. Cada variante lista SOLO sus
+    # propios campos, así que el tipo generado no tiene `valor` cuando el estado
+    # es BLOQUEADO y leerlo no compila.
+    #
+    # Si esto se aplanara en un objeto con todo opcional, «nunca un número
+    # aproximado en lugar de uno vencido» volvería a depender de que alguien se
+    # acuerde. Es la diferencia entre una regla verificada y una documentada.
+
+    Payload:
+      oneOf:
+        - $ref: '#/components/schemas/PayloadDisponible'
+        - $ref: '#/components/schemas/PayloadDegradado'
+        - $ref: '#/components/schemas/PayloadBloqueado'
+        - $ref: '#/components/schemas/PayloadSinPermiso'
+        - $ref: '#/components/schemas/PayloadError'
+      discriminator:
+        propertyName: estado
+        mapping:
+          DISPONIBLE: '#/components/schemas/PayloadDisponible'
+          DEGRADADO: '#/components/schemas/PayloadDegradado'
+          BLOQUEADO: '#/components/schemas/PayloadBloqueado'
+          SIN_PERMISO: '#/components/schemas/PayloadSinPermiso'
+          ERROR: '#/components/schemas/PayloadError'
+      # PREGUNTA: ¿el batch emite DEGRADADO y SIN_PERMISO? §4.2 solo muestra
+      # DISPONIBLE, BLOQUEADO y ERROR. Y si el catálogo ya viene filtrado por
+      # rol, un panel sin permiso no llegaría nunca — pero C5 existe como
+      # pantalla, así que alguien tiene que decir a quién pedirle acceso.
+
+    Acciones:
+      type: object
+      description: |
+        **Qué se puede hacer con cada ítem del panel** · `PS-17`, 2026-08-24.
+
+        Va acá y no dentro de `valor` porque la responsabilidad ya estaba
+        partida así: `Gobierno` dice de dónde salió el dato, `Presentacion` cómo
+        se muestra, `Valor` qué es. **Qué se puede hacer con él es una cuarta
+        cosa**, y hasta que un panel escribió algo no había tenido lugar.
+
+        La consecuencia buena es que **§5 no cambia**: `valor` sigue siendo
+        geometría pura, y cualquier cuerpo puede volverse respondible sin
+        cambiar de forma. El controlador del MMM va a usar esto mismo.
+
+        **Está keyeado por `ref` y no por índice.** `ParamsReco.tope` recorta los
+        pilares antes de pintarlos, así que el ítem 2 del cuerpo no es el ítem 2
+        del payload en cuanto alguien configure un tope. Un `acciones[i]`
+        posicional pondría el botón de aprobar sobre la recomendación
+        equivocada, en silencio y solo con cierta configuración.
+      required: [porRef]
+      properties:
+        porRef:
+          type: object
+          description: Llave = el `ref` opaco del ítem en `valor`.
+          additionalProperties:
+            type: object
+            required: [accionableId, estado, puedeResponder]
+            properties:
+              accionableId: { type: string }
+              estado: { $ref: '#/components/schemas/EstadoDeAccionable' }
+              puedeResponder:
+                type: boolean
+                description: |
+                  **Lo decide el backend, no la UI.** §1.4.20 —ocultar no es
+                  permitir— más las dos reglas del 2026-08-21: un rol solo
+                  responde lo que ve, y una decisión registrada no se renegocia.
+                  El front lo obedece; el servidor lo vuelve a verificar.
+              razonSiNo:
+                type: [string, 'null']
+                description: |
+                  Por qué no se puede responder. **Un CTA deshabilitado que no
+                  dice por qué es una pared**, y §8 pide estado, razón y qué lo
+                  desbloquea. Nulo cuando `puedeResponder` es verdadero.
+
+    Gobierno:
+      type: object
+      description: |
+        Lo que §1.3 hace obligatorio en toda cifra. Va intersectado en los dos
+        estados que muestran número, así que **un valor sin procedencia es
+        imposible de construir**.
+      required: [base, capa, fuente, frescura, catalogVersion]
+      properties:
+        base: { type: string }
+        capa: { $ref: '#/components/schemas/Capa' }
+        fuente: { type: string }
+        frescura: { type: string, format: date-time }
+        catalogVersion: { type: integer }
+
+    PayloadDisponible:
+      allOf:
+        - $ref: '#/components/schemas/Gobierno'
+        - type: object
+          required: [estado, valor]
+          properties:
+            estado: { type: string, enum: [DISPONIBLE] }
+            valor: { $ref: '#/components/schemas/Valor' }
+            presentacion: { $ref: '#/components/schemas/Presentacion' }
+            vacioRazon:
+              type: [string, 'null']
+              description: |
+                Cuando el valor no tiene filas, qué falta y qué hacer. §8 pide
+                que el estado vacío sea invitación a actuar y no un error, y un
+                array vacío no alcanza para escribir «el período cierra el 1 de
+                septiembre».
+            vacioDesbloqueaCon: { type: [string, 'null'] }
+            acciones: { $ref: '#/components/schemas/Acciones' }
+
+    PayloadDegradado:
+      allOf:
+        - $ref: '#/components/schemas/Gobierno'
+        - type: object
+          required: [estado, valor, razon, desbloqueaCon]
+          properties:
+            estado: { type: string, enum: [DEGRADADO] }
+            valor: { $ref: '#/components/schemas/Valor' }
+            presentacion: { $ref: '#/components/schemas/Presentacion' }
+            razon:
+              type: string
+              description: Qué limitación tiene el dato y cuál es su alcance.
+            desbloqueaCon: { type: string }
+
+    PayloadBloqueado:
+      type: object
+      description: |
+        **Sin valor, y sin posibilidad de tenerlo.** No lleva `Gobierno` porque
+        sin cifra no hay procedencia de cifra: la BASE y la capa las declara el
+        catálogo.
+      required: [estado, razon, desbloqueaCon]
+      properties:
+        estado: { type: string, enum: [BLOQUEADO] }
+        razon:
+          type: string
+          examples: ['Falta identificador de persona en la orden']
+        desbloqueaCon:
+          type: string
+          examples: ['Feed transaccional con identidad estable']
+
+    PayloadSinPermiso:
+      type: object
+      required: [estado, solicitarA]
+      properties:
+        estado: { type: string, enum: [SIN_PERMISO] }
+        solicitarA:
+          type: string
+          description: Qué rol decide sobre esta métrica.
+          examples: ['CMO']
+
+    PayloadError:
+      type: object
+      required: [estado, mensaje]
+      properties:
+        estado: { type: string, enum: [ERROR] }
+        mensaje: { type: string }
+
+    # ── El chat · unión discriminada por `tipo` ──────────────────────────────
+    #
+    # La tercera unión, y por la misma razón que las otras dos: cada clase de
+    # evento lleva solo sus campos, así que leer una cifra de un evento de texto
+    # no compila.
+
+    EventoDeChat:
+      oneOf:
+        - $ref: '#/components/schemas/EventoTexto'
+        - $ref: '#/components/schemas/EventoDato'
+        - $ref: '#/components/schemas/EventoAuditoria'
+        - $ref: '#/components/schemas/EventoSugerencias'
+        - $ref: '#/components/schemas/EventoFin'
+        - $ref: '#/components/schemas/EventoErrorChat'
+      discriminator:
+        propertyName: tipo
+        mapping:
+          texto: '#/components/schemas/EventoTexto'
+          dato: '#/components/schemas/EventoDato'
+          auditoria: '#/components/schemas/EventoAuditoria'
+          sugerencias: '#/components/schemas/EventoSugerencias'
+          fin: '#/components/schemas/EventoFin'
+          error: '#/components/schemas/EventoErrorChat'
+
+    EventoTexto:
+      type: object
+      description: Un fragmento de la respuesta en prosa. Se concatenan en orden.
+      required: [tipo, delta]
+      properties:
+        tipo: { type: string, enum: [texto] }
+        delta: { type: string }
+
+    DatoDeRespuesta:
+      allOf:
+        - $ref: '#/components/schemas/Gobierno'
+        - type: object
+          description: |
+            Una cifra o un gráfico dentro de una respuesta del agente.
+
+            **`Gobierno` está intersectado a propósito**: la procedencia viaja
+            junto a la cifra, nunca aparte. Es la misma garantía que tiene el
+            payload de un panel, y acá importa más porque el stream tienta a
+            mandar el número primero y el contexto después.
+
+            **Una sola forma para el stream y para el historial.** Lo que se
+            guarda es exactamente lo que se emitió, y por eso reabrir un hilo de
+            julio muestra las cifras de julio con su frescura de julio: no hay
+            una versión «guardada» distinta de la que se vio.
+
+            El `chart_spec` en Vega-Lite que hoy emite el agente NO llega acá:
+            se normaliza en el backend a esta forma. Trae encoding visual y en
+            este sistema el color no lo elige el gráfico, lo dicta la familia de
+            la métrica.
+          required: [valor, familia]
+          properties:
+            valor: { $ref: '#/components/schemas/Valor' }
+            familia:
+              $ref: '#/components/schemas/Familia'
+              description: |
+                Con qué familia se pinta. **Obligatoria, y entró al contrato el
+                2026-08-19 por un defecto real**: el front la tenía cableada a
+                `demanda` porque el evento no la traía, o sea que el color de
+                una cifra del chat era inventado. §2.2 hace del color una
+                propiedad de la métrica, no una decisión del componente — y eso
+                vale igual cuando la cifra la compuso el agente para responder.
+            presentacion: { $ref: '#/components/schemas/Presentacion' }
+            metricId:
+              type: [string, 'null']
+              description: |
+                Cuando la respuesta se apoya en una métrica del catálogo. Null
+                si el agente la compuso para responder — y en ese caso el front
+                la muestra sin CTA de drill-down, porque no hay a dónde ir.
+            titulo: { type: [string, 'null'] }
+
+    EventoDato:
+      allOf:
+        - $ref: '#/components/schemas/DatoDeRespuesta'
+        - type: object
+          required: [tipo]
+          properties:
+            tipo: { type: string, enum: [dato] }
+
+    EventoAuditoria:
+      type: object
+      description: |
+        **El SQL que el agente generó para responder.** §7.1 lo hace obligatorio:
+        «toda respuesta muestra el SQL generado en un desplegable — es la
+        auditabilidad que sostiene el producto».
+
+        Entró al contrato el 2026-08-19 al construir C3: la pantalla lo exige y
+        no había campo donde viajara.
+
+        **No contradice la regla de que el front no lleva SQL.** La regla
+        prohíbe escribirlo en el código —un panel se ancla a un `metricId`,
+        jamás a una consulta—; esto es SQL que el backend devuelve como dato
+        para que el usuario pueda auditar de dónde salió la cifra. Es lo
+        contrario de improvisar una consulta: es mostrar la que se corrió.
+      required: [tipo, sql]
+      properties:
+        tipo: { type: string, enum: [auditoria] }
+        sql: { type: string }
+        fuentesConsultadas:
+          type: array
+          items: { type: string }
+        limiteDeclarado:
+          type: [string, 'null']
+          description: |
+            Qué NO puede afirmar esta respuesta. §7.1 lo pide junto al SQL: una
+            respuesta sin límite declarado se lee como si abarcara todo.
+
+    EventoSugerencias:
+      type: object
+      description: Qué más se puede preguntar desde acá.
+      required: [tipo, sugerencias]
+      properties:
+        tipo: { type: string, enum: [sugerencias] }
+        sugerencias:
+          type: array
+          items: { type: string }
+
+    EventoFin:
+      type: object
+      required: [tipo, hiloId]
+      properties:
+        tipo: { type: string, enum: [fin] }
+        hiloId:
+          type: string
+          format: uuid
+          description: Con qué id continuar la conversación.
+
+    EventoErrorChat:
+      type: object
+      description: |
+        El stream se corta. Lleva `mensaje` escrito desde el lado del usuario y
+        `parcial` para que el front sepa si lo que ya llegó se conserva o se
+        descarta — con SSE, reintentar no es simplemente volver a llamar.
+      required: [tipo, mensaje, parcial]
+      properties:
+        tipo: { type: string, enum: [error] }
+        mensaje: { type: string }
+        parcial:
+          type: boolean
+          description: Si lo recibido hasta acá sigue siendo válido.
+
+    # ── Decisiones · C4 ──────────────────────────────────────────────────────
+
+    VentanaDeMedicion:
+      type: object
+      description: |
+        Contra qué se va a medir la decisión. **No es opcional**: sin ventana no
+        hay cómo saber después si funcionó, y C4 existe para mostrar exactamente
+        eso.
+      required: [metricId, desde, hasta]
+      properties:
+        metricId:
+          type: string
+          format: uuid
+          description: Qué métrica se espera mover.
+        desde: { type: string, format: date }
+        hasta: { type: string, format: date }
+        estimado:
+          type: number
+          description: Qué se espera que pase. Va con su banda, nunca solo.
+        banda:
+          type: object
+          required: [lo, hi, nivel]
+          properties:
+            lo: { type: number }
+            hi: { type: number }
+            nivel: { type: number }
+
+    Decision:
+      type: object
+      description: |
+        Una recomendación que alguien decidió, con su traza y —cuando la ventana
+        cierra— su resultado.
+      required: [id, titulo, estado, hipotesis, traza, ventanaMedicion]
+      properties:
+        id: { type: string, format: uuid }
+        titulo:
+          type: string
+          description: |
+            El nombre corto de la decisión, para encabezar C4 y listarla.
+
+            Va en el contrato porque el front NO lo puede derivar: `hipotesis` es
+            una frase entera y recortarla produciría títulos que cambian de
+            sentido a mitad. Lo escribe quien propone la recomendación.
+          examples: ['Criteo canibalizaba búsqueda de marca']
+        estado:
+          type: string
+          description: |
+            `cerrada` es cuando la ventana venció y el resultado ya se calculó.
+          enum: [aprobada, rechazada, cerrada]
+        hipotesis:
+          type: string
+          description: Qué se creía que estaba pasando.
+        accionAprobada: { type: [string, 'null'] }
+        traza:
+          type: object
+          description: |
+            Quién propuso, quién aprobó y sobre qué base. Es lo que convierte una
+            decisión en algo auditable en vez de un recuerdo.
+          required: [propuestaPor, decididaPor, decididaEn, baseEmpirica]
+          properties:
+            propuestaPor: { type: string, examples: ['Equipo growth'] }
+            decididaPor: { type: string, examples: ['Ana Ruiz · CEO'] }
+            decididaEn: { type: string, format: date-time }
+            baseEmpirica:
+              type: string
+              description: Con qué método se estimó.
+              examples: ['Geo-lift 6 semanas · 4 celdas, 2 de control']
+            hiloId:
+              type: [string, 'null']
+              format: uuid
+              description: De qué conversación salió.
+        ventanaMedicion: { $ref: '#/components/schemas/VentanaDeMedicion' }
+        resultado:
+          oneOf:
+            - $ref: '#/components/schemas/ResultadoDeDecision'
+            - type: 'null'
+          description: |
+            Null hasta que la ventana cierre. Decisión del 2026-08-19: **se
+            calcula automáticamente** cuando vence, no lo carga nadie. Una
+            decisión que nadie se acordó de medir queda sin cerrar y no se
+            entera nadie.
+
+    ResultadoDeDecision:
+      type: object
+      description: |
+        Observado contra estimado. **La banda es obligatoria**, igual que en
+        cualquier pronóstico: la regla dura 6 no hace excepción porque el número
+        ya pasó. Sin banda no se puede decir si el resultado confirma o desmiente.
+      required: [observado, estimado, banda, veredicto, medidoEn]
+      properties:
+        observado: { type: number }
+        estimado: { type: number }
+        diferenciaPct: { type: number }
+        banda:
+          type: object
+          required: [lo, hi, nivel]
+          properties:
+            lo: { type: number }
+            hi: { type: number }
+            nivel: { type: number }
+        veredicto:
+          type: string
+          description: |
+            Si el observado cayó dentro de la banda declarada. `fuera_de_banda`
+            no significa que la decisión estuvo mal: significa que la estimación
+            lo estuvo, y esa distinción es la que C4 muestra.
+          enum: [dentro_de_banda, fuera_de_banda]
+        medidoEn: { type: string, format: date-time }
+        queCambia:
+          type: object
+          description: Qué se aprende para la próxima.
+          properties:
+            enLaEstimacion: { type: string }
+            enLaDecision: { type: string }
+
+    # ── Solicitudes de acceso · C5 ───────────────────────────────────────────
+
+    EstadoDeAccionable:
+      type: string
+      description: |
+        Los once estados de la máquina del framework. Las tres ramas terminales
+        —`descartado`, `rechazado`, `sin_respuesta`— **no son fallas del
+        proceso**: son valor probatorio, y por eso se muestran.
+      enum: [propuesto, priorizado, descartado, en_ejecucion, compartido,
+             aceptado, rechazado, sin_respuesta, ejecutado, medido, cerrado]
+
+    Accionable:
+      type: object
+      description: |
+        Un accionable del framework · `DB_BT_UA.BT_UA_DECISION_LOG.ACCIONABLE`.
+        Espejo parcial: solo lo que la consola del cliente necesita leer.
+
+        **No incluye `sql_congelado` ni `id_insight_origen`**: son vocabulario de
+        infraestructura y §7.3 los prohíbe en pantalla. La trazabilidad existe y
+        no se muestra.
+      required: [id, accion, estado, ventanaDias, nivelEvidencia]
+      properties:
+        id: { type: string }
+        accion:
+          type: string
+          description: La acción concreta. Específica, no genérica.
+        efectoEsperado:
+          type: string
+          description: |
+            La hipótesis, fijada **antes** de ejecutar. Se muestra junto al
+            resultado, nunca el resultado solo — es el pre-registro.
+        metricaObjetivo:
+          type: string
+          description: El `metricId` con que se medirá. Nunca un SQL (L13).
+        ventanaDias: { type: integer }
+        nivelEvidencia:
+          type: string
+          enum: [A, B, C]
+          description: |
+            **Es la procedencia de un accionable.** No tiene capa Medallion que
+            declarar, así que §1.3 se cumple con esto: A controlado, B
+            cuasi-experimental, C observacional. Un nivel C sugiere; no prueba.
+        estado: { $ref: '#/components/schemas/EstadoDeAccionable' }
+        resultadoMedido: { type: number, nullable: true }
+        veredicto:
+          type: string
+          nullable: true
+          enum: [validado, refutado, inconcluso]
+          description: |
+            `inconcluso` cubre datos insuficientes, ventana contaminada **o
+            cambio en la definición semántica durante el período**.
+        respuestaCliente:
+          type: string
+          nullable: true
+          enum: [aceptado, rechazado, sin_respuesta]
+          description: |
+            Solo ruta B. **`sin_respuesta` es el seguro de atribución**: si el
+            cliente no ejecuta y los números caen, queda documentado que se le
+            marcó. No lo pisa una aprobación de super-admin.
+        razonRespuesta: { type: string, nullable: true }
+        fechaCreacion: { type: string, format: date-time }
+        fechaCierre: { type: string, format: date-time, nullable: true }
+
+    SolicitudDeAcceso:
+      type: object
+      required: [id, metricId, estado, creadaEn]
+      properties:
+        id: { type: string, format: uuid }
+        metricId: { type: string, format: uuid }
+        estado:
+          type: string
+          enum: [pendiente, aprobada, rechazada]
+        creadaEn: { type: string, format: date-time }
+        resueltaEn: { type: [string, 'null'], format: date-time }
+        resueltaPor: { type: [string, 'null'] }
+        motivo: { type: [string, 'null'] }
+        razonDeRechazo:
+          type: [string, 'null']
+          description: |
+            Si se rechazó, por qué. Un rechazo sin razón deja al que pidió sin
+            saber si insistir o no — la misma gramática de §8.
+
+    # ── El historial ─────────────────────────────────────────────────────────
+
+    HiloResumen:
+      type: object
+      description: Una fila del riel de C3.
+      required: [id, titulo, creadoEn, actualizadoEn, esDecision]
+      properties:
+        id: { type: string, format: uuid }
+        titulo:
+          type: string
+          description: |
+            La primera pregunta del hilo. El riel la muestra tal cual —«Por qué
+            subió el ROAS si la inversión está plana»—, así que no se resume ni
+            se recorta acá: el front decide cuánto entra en 220px.
+        creadoEn: { type: string, format: date-time }
+        actualizadoEn:
+          type: string
+          format: date-time
+          description: Por acá se ordena el riel.
+        esDecision:
+          type: boolean
+          description: |
+            El hilo quedó asociado a una decisión de C4. El riel lo marca con un
+            badge y **no se puede borrar**: es la traza de por qué se decidió.
+        decisionId: { type: [string, 'null'], format: uuid }
+
+    Hilo:
+      allOf:
+        - $ref: '#/components/schemas/HiloResumen'
+        - type: object
+          required: [mensajes]
+          properties:
+            mensajes:
+              type: array
+              items: { $ref: '#/components/schemas/MensajeDeChat' }
+
+    MensajeDeChat:
+      type: object
+      required: [id, autor, creadoEn, texto]
+      properties:
+        id: { type: string, format: uuid }
+        autor:
+          type: string
+          enum: [usuario, synapse]
+        creadoEn: { type: string, format: date-time }
+        texto:
+          type: string
+          description: |
+            La respuesta completa en prosa. En el stream llega por fragmentos;
+            acá ya está armada.
+        datos:
+          type: array
+          description: |
+            Las cifras que acompañaron la respuesta, **como llegaron**. Cada una
+            trae su procedencia, así que un hilo viejo se lee sin ambigüedad: el
+            badge dice «HACE 45 D».
+          items: { $ref: '#/components/schemas/DatoDeRespuesta' }
+        sugerencias:
+          type: array
+          items: { type: string }
+        sql:
+          type: [string, 'null']
+          description: |
+            La consulta que produjo esta respuesta, guardada con ella. Un hilo
+            viejo sin su SQL pierde justamente lo que lo hacía auditable.
+        limiteDeclarado: { type: [string, 'null'] }
+
+    # ── Presentación · la decisión del 2026-08-19 ────────────────────────────
+
+    Presentacion:
+      type: object
+      description: |
+        Los rótulos y las cifras de apoyo que el panel pinta alrededor del
+        valor. **Viajan con el dato y no con el layout**, porque dependen del
+        período: el medidor marca 61% este mes y otra cosa el siguiente.
+
+        Decisión del 2026-08-19 (humano): el backend devuelve los rótulos ya
+        redactados. Razón: §1.3 ya obliga a que la BASE, la procedencia y la
+        dirección semántica vengan del backend, y estos rótulos son de la misma
+        familia — describen el dato, no la interfaz. Partirlos en dos orígenes
+        es lo que hace que una pantalla diga una cosa y el dato otra.
+
+        Si un rótulo no existe todavía, se genera para que coincida.
+      properties:
+        label:
+          type: string
+          description: |
+            Qué dice el rótulo sobre la cifra grande. Lleva la unidad, y por eso
+            la cifra no la lleva pegada: a 44px «USD 4.28M» no entra en un panel
+            de colSpan 3 y «4.28M» con «USD · TOTAL» arriba sí.
+          examples: ['USD · TOTAL']
+        medidor:
+          type: object
+          description: Avance contra un objetivo o peso sobre un total.
+          required: [label, porcentaje]
+          properties:
+            label: { type: string, examples: ['PESO DE PERFORMANCE'] }
+            porcentaje: { type: number, examples: [61] }
+            nota:
+              type: string
+              description: Qué es el 100%.
+              examples: ['USD 2.61M DE USD 4.28M']
+        comparativo:
+          type: array
+          description: |
+            Comparaciones contra otro período. **El signo comunica la
+            dirección; el color no** — regla dura 3, así que no viene ninguna
+            indicación cromática.
+          items:
+            type: object
+            required: [label, delta]
+            properties:
+              label: { type: string, examples: ['VS MES ANTERIOR'] }
+              delta: { type: number, examples: [6.4] }
+              unidad: { type: string, examples: ['%'] }
+        nota:
+          type: string
+          description: Lectura al pie del panel, cuando la métrica la necesita.
+
+    # ── El valor · unión discriminada por `forma` ────────────────────────────
+    #
+    # La segunda unión. Es lo que impide que un gráfico de barras reciba una
+    # serie temporal: cada cuerpo recibe solo el caso que sabe dibujar.
+    #
+    # ESTA MISMA UNIÓN SIRVE AL CHAT. El bloque D3 de backend-handoff.md propone
+    # un modo `format=structured` del agente que devuelve `{forma, datos,
+    # procedencia}`: es exactamente `Valor` + `Gobierno`. No hay dos modelos de
+    # datos, y por eso el chat no necesita un contrato propio para el dato — solo
+    # para el transporte y el historial.
+    #
+    # Dos consecuencias que el front necesita que se respeten:
+    #
+    #   · El `chart_spec` en Vega-Lite que hoy emite el stream NO puede llegar
+    #     acá. Trae encoding visual, y en este sistema el color no lo elige el
+    #     gráfico: lo dicta la familia de la métrica. Normalizarlo en el backend
+    #     es lo que impide que el agente pinte por su cuenta.
+    #   · El modo estructurado tiene que limitarse a las formas que este archivo
+    #     declara. Si llega una que no está, el front no la sabe dibujar.
+
+    Valor:
+      oneOf:
+        - $ref: '#/components/schemas/ValorEscalar'
+        - $ref: '#/components/schemas/ValorEscalarConIntervalo'
+        - $ref: '#/components/schemas/ValorSerieTemporal'
+        - $ref: '#/components/schemas/ValorSerieConBanda'
+        - $ref: '#/components/schemas/ValorSeriesMultiples'
+        - $ref: '#/components/schemas/ValorCategorica'
+        - $ref: '#/components/schemas/ValorRanking'
+        - $ref: '#/components/schemas/ValorComposicion'
+        - $ref: '#/components/schemas/ValorDistribucion'
+        - $ref: '#/components/schemas/ValorTabular'
+        - $ref: '#/components/schemas/ValorProsa'
+      discriminator:
+        propertyName: forma
+        mapping:
+          escalar: '#/components/schemas/ValorEscalar'
+          escalarConIntervalo: '#/components/schemas/ValorEscalarConIntervalo'
+          serieTemporal: '#/components/schemas/ValorSerieTemporal'
+          serieConBanda: '#/components/schemas/ValorSerieConBanda'
+          seriesMultiples: '#/components/schemas/ValorSeriesMultiples'
+          categorica: '#/components/schemas/ValorCategorica'
+          ranking: '#/components/schemas/ValorRanking'
+          composicion: '#/components/schemas/ValorComposicion'
+          distribucion: '#/components/schemas/ValorDistribucion'
+          tabular: '#/components/schemas/ValorTabular'
+          prosa: '#/components/schemas/ValorProsa'
+      # Faltan cinco formas del enumerado: categoricaComparada,
+      # perfilMultiatributo, matriz, flujo y grafo.
+      #
+      # No es un olvido. Verificado el 2026-08-19 recorriendo las pestañas de los
+      # dos tenants: **ninguna métrica las declara y ningún panel las usa**. Los
+      # tres tipos que las consumirían —comparison, matrix, graph— están en
+      # SYNAPSE_BLOCKS para que el builder pueda ofrecerlos, y el builder es
+      # v1.1.
+      #
+      # Agregarlas ahora sería declarar una forma que ningún endpoint devuelve:
+      # el mismo problema que un chequeo que pasa porque no encontró nada.
+      # Entran cuando exista una métrica que las declare.
+
+    Punto:
+      type: object
+      required: [t, v]
+      properties:
+        t:
+          type: string
+          description: La etiqueta del eje, ya lista para pintar.
+          examples: ['jul', '2026-07-15']
+        v: { type: number }
+
+    ValorEscalar:
+      type: object
+      required: [forma, v]
+      properties:
+        forma: { type: string, enum: [escalar] }
+        v: { type: number }
+
+    ValorEscalarConIntervalo:
+      type: object
+      description: |
+        **Prohibida la estimación puntual sin intervalo** (regla dura 6). Por
+        eso `lo`, `hi` y `nivel` son obligatorios y no opcionales: un pronóstico
+        sin banda no se puede construir.
+      required: [forma, v, lo, hi, nivel]
+      properties:
+        forma: { type: string, enum: [escalarConIntervalo] }
+        v: { type: number }
+        lo: { type: number }
+        hi: { type: number }
+        nivel:
+          type: number
+          description: Nivel de confianza, entre 0 y 1.
+          examples: [0.8]
+
+    ValorSerieTemporal:
+      type: object
+      required: [forma, puntos]
+      properties:
+        forma: { type: string, enum: [serieTemporal] }
+        puntos:
+          type: array
+          items: { $ref: '#/components/schemas/Punto' }
+
+    ValorSerieConBanda:
+      type: object
+      description: |
+        Cada punto lleva su banda. **Un `serieConBanda` sin banda no se puede
+        construir**, que es la regla dura 6 verificada por el tipo en vez de por
+        el lint.
+      required: [forma, puntos, nivel]
+      properties:
+        forma: { type: string, enum: [serieConBanda] }
+        nivel: { type: number }
+        puntos:
+          type: array
+          items:
+            type: object
+            required: [t, v, lo, hi]
+            properties:
+              t: { type: string }
+              v: { type: number }
+              lo: { type: number }
+              hi: { type: number }
+
+    ValorSeriesMultiples:
+      type: object
+      required: [forma, series]
+      properties:
+        forma: { type: string, enum: [seriesMultiples] }
+        series:
+          type: array
+          items:
+            type: object
+            required: [etiqueta, puntos]
+            properties:
+              etiqueta: { type: string }
+              puntos:
+                type: array
+                items: { $ref: '#/components/schemas/Punto' }
+
+    ValorCategorica:
+      type: object
+      required: [forma, items]
+      properties:
+        forma: { type: string, enum: [categorica] }
+        items:
+          type: array
+          items:
+            type: object
+            required: [etiqueta, v]
+            properties:
+              etiqueta: { type: string }
+              v: { type: number }
+
+    ValorRanking:
+      type: object
+      required: [forma, items]
+      properties:
+        forma: { type: string, enum: [ranking] }
+        items:
+          type: array
+          items:
+            type: object
+            required: [etiqueta, v, posicion]
+            properties:
+              etiqueta: { type: string }
+              v: { type: number }
+              posicion: { type: integer, minimum: 1 }
+
+    ValorComposicion:
+      type: object
+      required: [forma, partes]
+      properties:
+        forma: { type: string, enum: [composicion] }
+        partes:
+          type: array
+          items:
+            type: object
+            required: [etiqueta, v, porcentaje]
+            properties:
+              etiqueta: { type: string }
+              v: { type: number }
+              porcentaje:
+                type: number
+                description: |
+                  Lo calcula el backend y no el front: la suma tiene que dar 100
+                  y redondear en el cliente produce columnas que suman 99.9.
+
+    ValorDistribucion:
+      type: object
+      description: |
+        Cortes de una distribución. Entró al contrato el 2026-08-19 porque
+        `depth_by_dimension` la usa y el compilador no dejó construir su cuerpo
+        sin ella — que es el orden correcto: primero la pantalla prueba que hace
+        falta, después el contrato la declara.
+      required: [forma, cortes]
+      properties:
+        forma: { type: string, enum: [distribucion] }
+        cortes:
+          type: array
+          items:
+            type: object
+            required: [etiqueta, v]
+            properties:
+              etiqueta: { type: string }
+              v: { type: number }
+
+    ValorTabular:
+      type: object
+      required: [forma, columnas, filas]
+      properties:
+        forma: { type: string, enum: [tabular] }
+        columnas:
+          type: array
+          items:
+            type: object
+            required: [clave, titulo, numerica]
+            properties:
+              clave: { type: string }
+              titulo: { type: string }
+              numerica: { type: boolean }
+              decimales:
+                type: [integer, 'null']
+                description: |
+                  Cuántos decimales muestra la COLUMNA ENTERA. Sin esto, una
+                  columna de ROAS sale «4.2 · 4.5 · 3.5 · 3»: la última pierde
+                  su decimal y la coma deja de alinearse. Cada celda está bien y
+                  la columna se lee mal.
+              unidad: { type: [string, 'null'] }
+        filas:
+          type: array
+          items:
+            type: object
+            additionalProperties:
+              type: [string, number, 'null']
+
+    ValorProsa:
+      type: object
+      required: [forma, titular, pilares]
+      properties:
+        forma: { type: string, enum: [prosa] }
+        titular: { type: string }
+        pilares:
+          type: array
+          description: |
+            Tres campos por pilar y no una cadena. §2.3 los declara como
+            `string[]`, y con eso el cuerpo tendría que **parsear texto** para
+            encontrar la cifra — justo lo que el contrato existe para evitar.
+          items:
+            type: object
+            required: [label, valor]
+            properties:
+              ref:
+                type: string
+                description: |
+                  Llave opaca del ítem, **sin semántica de negocio** · `PS-17`.
+                  Existe para que `acciones.porRef` pueda apuntarle sin depender
+                  del índice, que el `tope` del panel invalida. Identificar filas
+                  es genérico —una tabla tiene claves—, así que esto sigue siendo
+                  geometría y no ensucia la forma.
+              label: { type: string, examples: ['VENTAS'] }
+              valor:
+                type: string
+                description: |
+                  Ya formateado. Es el único lugar donde eso es correcto: el
+                  pilar cita una cifra que ya aparece en el titular, y
+                  reformatearla podría hacer que digan distinto.
+                examples: ['USD 4.28M']
+              nota: { type: string, examples: ['+6.4% VS JUN'] }

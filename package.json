@@ -10,7 +10,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
-    "gen:api": "openapi-typescript ../contracts/synapse-api.yaml -o src/api/generated.ts",
+    "gen:api": "openapi-typescript contracts/synapse-api.yaml -o src/api/generated.ts",
     "plan": "python3 tools/plan-a-csv.py && python3 tools/plan-a-html.py",
     "plan:diff": "python3 tools/plan-diff.py"
   },
