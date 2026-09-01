@@ -1,9 +1,12 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from '@/app/App'
-import '@/styles/globals.css'
+import '@/tokens/tokens.css'
 
-createRoot(document.getElementById('root')!).render(
+const root = document.getElementById('root')
+if (root === null) throw new Error('Falta #root en index.html')
+
+createRoot(root).render(
   <StrictMode>
     <App />
   </StrictMode>,

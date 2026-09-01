@@ -1,0 +1,59 @@
+/* ESCRITO A MANO. Lo mínimo bajo los tokens que el preflight de Tailwind no
+   cubre: el fondo y el color de la aplicación, las cifras tabulares y el anillo
+   de foco.
+   Portado de `synapse v2/src/base.css`. El reset de caja ya no está: lo hace
+   preflight. */
+
+@layer base {
+  html,
+  body {
+    /* El fondo va en los dos: html pinta lo que queda fuera del body cuando la
+       página no llena el viewport, y también el rebote del scroll. */
+    background: var(--color-bg);
+  }
+
+  body {
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+    /* El eje óptico de Inter se aplica solo con el tamaño. Es lo que sostiene
+       la legibilidad de los tres tamaños chicos del sistema: label 10,
+       celda 12, cuerpo 13. */
+    font-optical-sizing: auto;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  /* El foco de teclado · §1.4 de design.md.
+   *
+   * Va acá y no en cada componente para que valga también para lo que todavía
+   * no existe. `:focus-visible` y no `:focus`: el anillo tiene que aparecer al
+   * tabular y no al hacer click, porque un botón anillado después de apretarlo
+   * es lo que lleva a poner `outline: none` y romper el teclado para todos.
+   *
+   * El naranja está permitido acá: la regla dura dice que no es color de DATOS
+   * —nunca en una serie, una barra o una celda— y lista «estado activo» entre
+   * sus usos legítimos. El foco es exactamente eso. */
+  :where(a, button, select, input, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-acc);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* El contenedor de una capa modal recibe el foco al abrirse para orientar al
+     lector de pantalla, pero anillar la pantalla entera no informa de nada. */
+  [role='dialog']:focus-visible,
+  [role='dialog']:focus {
+    outline: none;
+  }
+}
+
+@utility cifra {
+  /* §2.3 pide tabular-nums en los KPIs y en las celdas numéricas. Es utilidad y
+     no regla de `body` porque en prosa las cifras proporcionales leen mejor, y
+     §6 tiene dos tipos de panel que son prosa: `prose` y `reco`. */
+  font-variant-numeric: tabular-nums;
+}

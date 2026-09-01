@@ -4,7 +4,14 @@
 
 - Variables, funciones, tipos, archivos y carpetas: **siempre en ingles**.
 - Textos visibles al usuario (UI): en el idioma del producto (espanol por defecto).
-- Responder en espanol cuando se trate de documentacion o comunicacion con el equipo.
+- Responder en espanol cuando se trate de documentacion o comunicacion con el
+  equipo. Los comentarios de codigo cuentan como documentacion: van en espanol.
+- **Las claves del contrato no se traducen.** `payload.valor`, `metric.familia`,
+  `panel.tipo`, `estado: 'DISPONIBLE'` llegan como los declara
+  `contracts/synapse-api.yaml` y se leen tal cual. Traducirlas obligaria a una
+  capa de mapeo en cada frontera, y el contrato es compartido con el backend.
+  Consecuencia esperada: `metric.familia` y `panel.colSpan` conviven en la misma
+  linea — el lado izquierdo es nuestro, el derecho es del contrato.
 - Preferir cambios pequenos, seguros y con scope minimo.
 - No sobre-ingenierizar: resolver el problema actual sin abstracciones prematuras.
 
@@ -12,30 +19,40 @@
 
 - React 19 + TypeScript + Vite
 - React Router para navegacion
-- Tailwind CSS v4 para estilos (tokens en `src/styles/globals.css`)
+- Tailwind CSS v4 para estilos (tokens en `src/tokens/tokens.css`, en `@theme static`)
 - Oxlint + Prettier para calidad de codigo
 
 ## Arquitectura de carpetas
 
-Respetar la estructura definida en `docs/FOLDER_STRUCTURE.md`. Regla general:
+Respetar la estructura definida en `docs/FOLDER_STRUCTURE.md`, que deriva de
+**§4 de `nuevo-desarrollo.md`** y es normativa. La tabla de abajo la refleja.
 
 | Capa | Ubicacion | Proposito |
 |------|-----------|-----------|
-| App shell | `src/app/` | Providers, router, composicion raiz |
-| UI primitivos | `src/components/ui/` | Componentes reutilizables sin logica de negocio |
-| Layout | `src/components/layout/` | Estructuras de pagina (Header, Sidebar, etc.) |
-| Features | `src/features/<feature>/` | Logica de dominio agrupada por funcionalidad |
-| Pages | `src/pages/` | Vistas conectadas a rutas |
-| Hooks globales | `src/hooks/` | Hooks compartidos entre features |
-| Servicios | `src/services/` | Clientes HTTP, integraciones externas |
-| Utilidades | `src/lib/` | Helpers puros, constantes |
-| Tipos globales | `src/types/` | Tipos compartidos entre modulos |
-| Estilos | `src/styles/` | CSS global y design tokens |
+| App shell | `src/app/` | Providers, router, auth guard, composicion raiz |
+| API | `src/api/` | Cliente HTTP, hooks de TanStack Query, tipos generados |
+| Tokens | `src/tokens/` | Los 57 tokens del `.pen`, tema, fuentes |
+| Catalogo | `src/catalog/` | Tipos y validadores tipo/forma/span. Sin tablas de datos |
+| Render | `src/render/` | Panel, cuerpos, plots, estados, primitivos, grilla. **Puro** |
+| Superficies | `src/surfaces/` | `console/`, `admin/`, `builder/`. Orquestan fetch y routing |
+| Utilidades | `src/lib/` | Helpers puros (`cn.ts`) |
 | Assets | `src/assets/` | Imagenes, fuentes, iconos estaticos |
+
+No existen `components/ui/`, `components/layout/`, `features/`, `pages/`,
+`hooks/`, `services/`, `types/` ni `styles/`: eran del andamio y §4 los
+reemplaza. Un componente reutilizable sin logica de negocio va a
+`render/primitives/`; una vista conectada a ruta va a `surfaces/`.
+
+Las dos fronteras que no se cruzan:
+
+1. **`render/` no importa de `api/`.** Recibe datos por props. Es lo que permite
+   que el mismo panel sirva en la consola, en el builder y en la vista previa.
+2. **`src/api/generated.ts` se genera** con `npm run gen:api` desde
+   `../contracts/synapse-api.yaml`. Editarlo a mano produce deriva silenciosa.
 
 ## Reglas de componentes
 
-### Componentes UI (`components/ui/`)
+### Primitivos y componentes de render (`render/primitives/`, `render/`)
 
 - Deben ser **presentacionales**: reciben props, renderizan UI, sin fetch ni estado de negocio.
 - Cada componente vive en su carpeta: `ComponentName/ComponentName.tsx`, `ComponentName.types.ts`, `index.ts`.
@@ -53,43 +70,28 @@ Respetar la estructura definida en `docs/FOLDER_STRUCTURE.md`. Regla general:
 <button className="bg-gray-200 px-2 py-1 rounded">Guardar</button>
 ```
 
-### Componentes de layout (`components/layout/`)
+### Superficies (`surfaces/<nombre>/`)
 
-- Orquestan estructura visual (header, sidebar, main content).
-- No contienen logica de negocio ni llamadas a API.
-- Reciben `children` para composicion.
-
-### Features (`features/<name>/`)
-
-- Agrupar todo lo especifico de una funcionalidad:
-  - `components/` — componentes del dominio
-  - `hooks/` — logica reutilizable del feature
-  - `api/` — llamadas al backend del feature
-  - `types/` — tipos del dominio
-  - `utils/` — helpers del feature (opcional)
-- Exportar API publica del feature desde `features/<name>/index.ts`.
-- **Nunca** importar un feature desde otro feature directamente; usar servicios compartidos o elevar a `src/`.
-
-### Pages (`pages/`)
-
-- Una carpeta por ruta/vista: `PageName/PageName.tsx` + `index.ts`.
-- Componen features y componentes UI; minima logica propia.
-- No definir componentes reutilizables aqui — extraer a `components/` o `features/`.
+- Una superficie por ruta: `console/`, `admin/`, `builder/`.
+- Es la unica capa con hooks de datos, fetch y estado de UI.
+- Orquesta; no dibuja SVG ni implementa un cuerpo de panel.
+- Los hooks propios de la superficie viven junto a ella, no en un `hooks/`
+  global: hoy ninguna logica se comparte entre consola, admin y builder.
 
 ## Imports
 
 - Usar alias `@/` para imports absolutos desde `src/`.
 - Orden de imports:
   1. Librerias externas (react, react-router-dom, etc.)
-  2. `@/components`, `@/features`, `@/hooks`, `@/lib`, `@/services`, `@/types`
+  2. `@/api`, `@/catalog`, `@/tokens`, `@/render`, `@/surfaces`, `@/lib`
   3. Imports relativos del mismo modulo (./)
 - Evitar imports circulares; si ocurren, refactorizar extrayendo a `lib/` o `types/`.
 
 ```tsx
 // ✅ Correcto
 import { useState } from 'react'
-import { Button } from '@/components/ui'
-import { useDashboardMetrics } from '@/features/dashboard'
+import { usePanelesBatch } from '@/api/hooks'
+import { estiloDePanel } from '@/render/grid'
 import { cn } from '@/lib/cn'
 ```
 
@@ -98,34 +100,43 @@ import { cn } from '@/lib/cn'
 - Modo `strict` activado.
 - Preferir `interface` para props de componentes y `type` para unions/intersections.
 - Evitar `any`; usar `unknown` + type guards cuando sea necesario.
-- Tipar respuestas de API en `types/` o en el feature correspondiente.
+- Las respuestas de API **no se tipan a mano**: salen de `src/api/generated.ts`
+  y se les pone nombre en `src/api/types.ts`.
 - Usar `as const` para objetos de constantes (rutas, endpoints, enums).
 
 ## Estado y datos
 
 - Estado local: `useState` / `useReducer` dentro del componente o hook.
-- Logica compartida: custom hooks en `hooks/` (global) o `features/<name>/hooks/` (local).
-- Fetch de datos: hooks del feature o servicios en `services/api/`.
-- No mezclar fetch directo dentro de componentes UI.
+- Logica compartida: custom hooks junto a la superficie que los usa.
+- Datos de servidor: **TanStack Query** en `src/api/hooks.ts`, nunca `useState`.
+  Un `useState` con algo que vino del servidor es una segunda fuente de verdad.
+- Fetch solo en `surfaces/`. Nunca dentro de un componente de `render/`.
 
 ## Estilos
 
 - Tailwind como sistema principal de estilos.
-- Design tokens en `@theme` dentro de `src/styles/globals.css`.
+- Design tokens en `@theme static` dentro de `src/tokens/tokens.css`. El
+  `static` no es opcional: sin el, Tailwind poda las variables que ninguna
+  utilidad menciona por escrito, y las rampas de familia se arman en runtime.
 - No usar CSS modules ni styled-components salvo excepcion justificada.
-- No hardcodear colores en componentes; usar tokens (`text-text`, `bg-primary`, etc.).
+- **Un hex literal es un bug.** Todo color sale de un token: `bg-panel`,
+  `text-ink`, `text-dim`, `border-w2`, `var(--color-fam-<familia>-1)`.
+- Prohibidos ambar y amarillo. El naranja `--color-acc` no es color de datos:
+  solo CTA, estado activo y enlaces.
 - Responsive: mobile-first (`sm:`, `md:`, `lg:`).
 
 ## Routing
 
 - Rutas definidas en `src/app/router/routes.tsx`.
-- Constantes de rutas en `src/lib/constants.ts` (`ROUTES`).
-- Paginas en `src/pages/`; no crear paginas dentro de `features/`.
+- Tres superficies: `/` (consola), `/admin/*`, `/builder/*`.
+- Quien puede abrir `/admin` y `/builder` lo decide el backend por el token, no
+  una condicion en el front.
 
 ## API y servicios
 
-- Cliente HTTP centralizado en `src/services/api/client.ts`.
-- Endpoints como constantes en `src/services/api/endpoints.ts`.
+- Cliente HTTP centralizado en `src/api/client.ts`. **Sin imports de mock.**
+- Las rutas del contrato viven en ese archivo; los tipos salen de
+  `src/api/generated.ts`, generado desde el yaml.
 - Variables de entorno con prefijo `VITE_` (ej: `VITE_API_URL`).
 - Manejar errores con tipos (`ApiError`) y propagar desde hooks.
 
@@ -134,10 +145,10 @@ import { cn } from '@/lib/cn'
 | Elemento | Convencion | Ejemplo |
 |----------|------------|---------|
 | Componentes | PascalCase | `MetricCard.tsx` |
-| Hooks | camelCase con `use` | `useDashboardMetrics.ts` |
+| Hooks | camelCase con `use` | `usePanelsBatch.ts` |
 | Utilidades | camelCase | `cn.ts`, `formatDate.ts` |
 | Constantes | UPPER_SNAKE o objeto `as const` | `ROUTES`, `APP_NAME` |
-| Tipos/Interfaces | PascalCase | `ButtonProps`, `ApiError` |
+| Tipos/Interfaces | PascalCase | `BodyProps`, `ApiError` |
 | Carpetas | kebab-case o camelCase consistente | `dashboard/`, `MainLayout/` |
 
 ## Testing (cuando aplique)
@@ -155,18 +166,21 @@ import { cn } from '@/lib/cn'
 ## Anti-patrones a evitar
 
 - ❌ Componentes de 300+ lineas — dividir en subcomponentes.
-- ❌ Logica de negocio en `components/ui/`.
-- ❌ Imports cruzados entre features.
+- ❌ Logica de negocio en `render/`: filtrar por rol, calcular degradacion,
+  parsear numeros. Eso es backend.
+- ❌ `render/` importando de `api/`.
 - ❌ Props drilling excesivo — usar composicion o hooks.
 - ❌ Duplicar componentes similares — abstraer variantes.
-- ❌ Estilos inline (`style={{}}`) salvo valores dinamicos inevitables.
+- ❌ Estilos inline (`style={{}}`) salvo valores dinamicos inevitables. La
+  colocacion en la grilla ES uno: `colStart`/`colSpan` llegan del backend en
+  runtime y Tailwind no puede generar clases arbitrarias. Sale de
+  `render/grid.ts` y de ningun otro lado.
 - ❌ `index.ts` que re-exporta todo el proyecto — solo exportar API publica del modulo.
 
 ## Checklist para nuevo componente
 
-1. ¿Es reutilizable sin logica de negocio? → `components/ui/`
-2. ¿Es especifico de un feature? → `features/<name>/components/`
-3. ¿Tiene tipos propios? → archivo `*.types.ts` o carpeta `types/`
-4. ¿Se exporta desde `index.ts`?
-5. ¿Usa tokens de diseno y `cn()`?
-6. ¿Props tipadas y `className` soportado?
+1. ¿Pinta un dato? → `render/` — funcion pura, sin fetch, sin estado de negocio
+2. ¿Orquesta fetch o routing? → `surfaces/`
+3. ¿Props tipadas sin `any` y sin numeros ni textos de negocio hardcodeados?
+4. ¿Usa solo tokens de diseno? ¿Funciona en tema oscuro **y** claro?
+5. ¿Tiene al menos una prueba de render minimo con props validas del contrato?

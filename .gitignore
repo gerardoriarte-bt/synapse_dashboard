@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Derivados del plan · se regeneran con `npm run plan` desde plan-de-trabajo.md,
+# que es la fuente. Commitearlos garantiza que alguien edite el derivado.
+# `plan-tareas.csv` SÍ va: es el artefacto que se importa a la plataforma.
+tools/plan-tareas.json
+tools/plan-synapse.html

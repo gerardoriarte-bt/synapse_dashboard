@@ -1,0 +1,145 @@
+/* PORTADO A MANO desde `synapse v2/src/tokens/tokens.css` · 2026-08-31
+ *
+ * Los 57 tokens del `.pen`, traducidos al espacio de nombres de Tailwind v4.
+ * `--color-*` genera las utilidades de color (`bg-panel`, `text-ink`,
+ * `border-w2`, `stroke-c-grid`), `--font-*` las de tipografía y `--radius-*`
+ * las de radio. El nombre del token no cambió: solo se le antepuso el
+ * espacio que Tailwind exige para generar la utilidad.
+ *
+ * PENDIENTE · esto todavía NO se genera. En v2 lo emite `tools/gen-tokens.py`
+ * leyendo el `.pen`, y `token-drift` verifica que no se separen. Hasta que ese
+ * generador se reapunte a este archivo, un cambio de token en el diseño no
+ * llega solo: hay que traerlo a mano y eso es deriva esperando pasar.
+ */
+
+@import 'tailwindcss';
+@import './fonts.css';
+@import './base.css';
+
+/* `static` NO es opcional acá. Sin él Tailwind v4 poda del `:root` toda
+   variable que ninguna utilidad mencione por escrito, y las rampas de familia
+   se arman en RUNTIME —`var(--color-fam-${familia}-1)` desde el plot, con la
+   familia que vino del catálogo—, así que el escáner no las ve nunca.
+   Verificado el 2026-08-31: sin `static` sobrevivían 6 de 43 tokens, y el tema
+   oscuro se quedaba sin una sola familia cromática. El bloque de tema claro sí
+   sobrevivía, porque es CSS plano fuera de `@theme`: el resultado era que los
+   colores de datos existían en claro y no en oscuro. */
+@theme static {
+  /* Tipografía. */
+  --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Radio · 10px en paneles (`rounded-xl`), 2px en barras y bullets
+     (`rounded-xs`) · §2 de design.md. */
+  --radius-xs: 2px;
+  --radius-sm: 6px;
+  --radius-md: 7px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+
+  /* Espaciado. La escala del `.pen` es 4·N, que es exactamente la de
+     Tailwind con base 4px: `p-6` son los 24px de padding interno de panel. */
+  --spacing: 4px;
+
+  /* Marca · §1.5 los excluye del producto. Existen para la hoja de
+     identidad; ninguna pantalla los referencia. */
+  --color-brand-naranja: #e75710;
+  --color-brand-violeta: #846dc5;
+  --color-brand-azul: #4842fa;
+  --color-brand-azul-profundo: #031576;
+
+  /* Superficies, texto y washes · valores de TEMA OSCURO, que es el defecto:
+     sin atributo la consola se ve como el `.pen`, cuyas pantallas están
+     fijadas a Mode:Dark. */
+  --color-bg: #0f0f10;
+  --color-panel: #17171a;
+  --color-elev: #1f1f23;
+  --color-dock: #141416;
+  --color-ink: #edeae3;
+  --color-dim: #8a8880;
+  --color-on-acc: #0f0f10;
+  --color-acc: #e75710;
+  --color-acc-hover: #f38c58;
+  --color-w1: #ffffff0a;
+  --color-w2: #ffffff0f;
+  --color-w3: #ffffff12;
+  --color-w4: #ffffff1f;
+  --color-w5: #ffffff2e;
+  --color-w6: #ffffff4d;
+  --color-shad: #0000008c;
+  --color-c-grid: #ffffff12;
+
+  /* Familias cromáticas. Solo para datos: la familia se lee del catálogo y
+     NUNCA se elige en el componente · regla dura 1 de design.md. */
+  --color-fam-demanda-0: #bae6fd;
+  --color-fam-demanda-1: #38bdf8;
+  --color-fam-demanda-2: #0369a1;
+  --color-fam-demanda-3: #7dd3fc;
+  --color-fam-demanda-4: #0c4a6e;
+  --color-fam-medios-0: #a7f3d0;
+  --color-fam-medios-1: #34d399;
+  --color-fam-medios-2: #047857;
+  --color-fam-medios-3: #6ee7b7;
+  --color-fam-medios-4: #064e3b;
+  --color-fam-inventario-0: #e9d5ff;
+  --color-fam-inventario-1: #c084fc;
+  --color-fam-inventario-2: #7e22ce;
+  --color-fam-inventario-3: #d8b4fe;
+  --color-fam-inventario-4: #581c87;
+  --color-fam-cliente-0: #fbcfe8;
+  --color-fam-cliente-1: #f472b6;
+  --color-fam-cliente-2: #be185d;
+  --color-fam-cliente-3: #f9a8d4;
+  --color-fam-cliente-4: #831843;
+  --color-fam-externo-0: #a3e635;
+  --color-fam-externo-1: #67e8f9;
+}
+
+/* Los mismos nombres, otros valores. El switcher entero es
+   `document.documentElement.dataset.theme = tema` — ni un byte más de JS.
+
+   Va SIN `@layer`, así que gana sobre el `@layer theme` que emite `@theme`
+   sin necesidad de `!important`. No hay bloque para `dark` porque el defecto
+   ya es oscuro: al quitar `data-theme="light"` vuelven los valores de :root. */
+:root[data-theme='light'] {
+  --color-bg: #f2f0ea;
+  --color-panel: #ffffff;
+  --color-elev: #edeae3;
+  --color-dock: #f0ede7;
+  --color-ink: #1a1a1c;
+  --color-dim: #6b6963;
+  --color-on-acc: #ffffff;
+  --color-acc: #b7450d;
+  --color-acc-hover: #8f360a;
+  --color-w1: #00000008;
+  --color-w2: #0000000f;
+  --color-w3: #00000014;
+  --color-w4: #00000026;
+  --color-w5: #00000038;
+  --color-w6: #00000057;
+  --color-shad: #0000002e;
+  --color-c-grid: #0000001a;
+  --color-fam-demanda-0: #38bdf8;
+  --color-fam-demanda-1: #0284c7;
+  --color-fam-demanda-2: #075985;
+  --color-fam-demanda-3: #0ea5e9;
+  --color-fam-demanda-4: #0c4a6e;
+  --color-fam-medios-0: #34d399;
+  --color-fam-medios-1: #059669;
+  --color-fam-medios-2: #065f46;
+  --color-fam-medios-3: #10b981;
+  --color-fam-medios-4: #064e3b;
+  --color-fam-inventario-0: #c084fc;
+  --color-fam-inventario-1: #9333ea;
+  --color-fam-inventario-2: #6b21a8;
+  --color-fam-inventario-3: #a855f7;
+  --color-fam-inventario-4: #581c87;
+  --color-fam-cliente-0: #f472b6;
+  --color-fam-cliente-1: #db2777;
+  --color-fam-cliente-2: #9d174d;
+  --color-fam-cliente-3: #ec4899;
+  --color-fam-cliente-4: #831843;
+  --color-fam-externo-0: #65a30d;
+  --color-fam-externo-1: #0891b2;
+}
