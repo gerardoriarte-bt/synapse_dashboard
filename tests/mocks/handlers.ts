@@ -68,6 +68,32 @@ export const context: AppContext = {
 export const metrics: Metric[] = []
 export const blocks: Block[] = []
 
+/** Una métrica y un panel, lo mínimo para que la consola dibuje una celda. */
+export const kpiMetric = {
+  id: 'm-kpi',
+  key: 'ventas_dia',
+  nombre: 'Venta diaria',
+  forma: 'escalar',
+  familia: 'demanda',
+  capa: 'GOLD',
+  fuente: 'Snowflake',
+  ventana: 'Últimos 30 días',
+  base: '48 tiendas sobre 52',
+  unidad: 'USD',
+  granoMinimo: 'mes',
+  estado: 'DISPONIBLE',
+  catalogVersion: 1,
+} as unknown as Metric
+
+export const kpiPanel = {
+  id: 'p-1',
+  tipo: 'kpi',
+  metricId: 'm-kpi',
+  colStart: 1,
+  colSpan: 4,
+  rowSpan: 4,
+}
+
 export const handlers = [
   http.get(`${API}/config/me`, () => ok(context)),
   http.get(`${API}/config/catalog`, () => ok({ metrics })),

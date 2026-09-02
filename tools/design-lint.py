@@ -241,11 +241,26 @@ def l5_shell(ruta, texto):
 @regla("L5", "regla dura 5: un cuerpo sin shell pierde título, BASE y procedencia",
        ambito=("surfaces/",))
 def l5_surfaces(ruta, texto):
+    """Marca a quien RENDERIZA un cuerpo sin shell, no a quien importa de la
+    carpeta.
+
+    El detector de v2 buscaba cualquier `from '.../render/bodies/'` y eso
+    produce un falso positivo en cuanto una superficie importa `preloadBodies`,
+    que solo dispara la descarga del chunk y no puede renderizar nada. Pasó con
+    `ConsoleContainer`, que precarga y delega el montaje en `PanelInGrid`.
+
+    Lo que sí monta un cuerpo es `bodyFor()` o un `*Body` importado directo.
+    """
     for n, linea in lineas(texto):
-        if re.search(r"from\s+['\"][^'\"]*render/bodies/", linea):
-            if "PanelShell" not in texto and "<Panel" not in texto:
-                yield n, "renderiza un cuerpo sin envolverlo en el shell"
-            return
+        importa = re.search(r"from\s+['\"][^'\"]*render/bodies", linea)
+        if importa is None:
+            continue
+        monta = re.search(r"\bbodyFor\b|\b[A-Z]\w*Body\b", linea)
+        if monta is None:
+            continue
+        if "PanelShell" not in texto and "<Panel" not in texto:
+            yield n, "monta un cuerpo sin envolverlo en el shell"
+        return
 
 
 # ── L6 ────────────────────────────────────────────────────────────────────────

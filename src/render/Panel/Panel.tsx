@@ -26,6 +26,7 @@ type Props = {
   format: Formatter
   now: Date
   onDrill?: () => void
+  onChat?: () => void
   onCollapse?: () => void
   onRetry?: () => void
   onUnblock?: () => void
@@ -43,6 +44,7 @@ export function Panel({
   format,
   now,
   onDrill,
+  onChat,
   onCollapse,
   onRetry,
   onUnblock,
@@ -58,6 +60,7 @@ export function Panel({
       format={format}
       now={now}
       {...(onDrill === undefined ? {} : { onDrill })}
+      {...(onChat === undefined ? {} : { onChat })}
       {...(onCollapse === undefined ? {} : { onCollapse })}
     >
       {body()}

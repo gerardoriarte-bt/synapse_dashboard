@@ -32,6 +32,10 @@ type Props = {
   format: Formatter
   now: Date
   onDrill?: () => void
+  /** «Preguntar» · §4.1 pone las acciones en el shell, no en el cuerpo. El
+   *  overlay del chat es F3.1; acá vive solo el disparador, que es lo que
+   *  F1.9 pide emitir hacia arriba. */
+  onChat?: () => void
   onCollapse?: () => void
   children: ReactNode
 }
@@ -44,6 +48,7 @@ export function PanelShell({
   format,
   now,
   onDrill,
+  onChat,
   onCollapse,
   children,
 }: Props) {
@@ -129,6 +134,15 @@ export function PanelShell({
               >
                 <path d="M9 6l6 6-6 6" />
               </svg>
+            </button>
+          )}
+          {onChat !== undefined && (
+            <button
+              type="button"
+              onClick={onChat}
+              className="font-mono text-[10px] tracking-[0.12em] uppercase text-dim hover:text-ink cursor-pointer bg-transparent border-0 p-0"
+            >
+              Preguntar
             </button>
           )}
           {onCollapse !== undefined && (

@@ -1151,7 +1151,7 @@ Es lo que convierte «la consola va lenta» en un número.
 
 ### Superficie de consola
 
-#### F1.5 ⚠️ `surfaces/console/Console.tsx` — orquestación
+#### F1.5 ✅ `surfaces/console/Console.tsx` — orquestación
 **Descripción.** Cadena `/config/me` → `/config/tabs/{id}` → `panels:batch`,
 cableada. Falta reemplazar el andamio por paneles reales.
 **Criterio de aceptación.**
@@ -1162,9 +1162,9 @@ cableada. Falta reemplazar el andamio por paneles reales.
   metieron ramas `if (metricId === 'mmm_canales')`, que es el anti-patrón
   que §4 nombra.
 
-#### F1.6 ⬜ `ConsoleContainer` — separar hooks de render
-#### F1.7 ⬜ `Topbar` — tenant, selector de período, tema
-#### F1.8 ⚠️ `Tabs` — pestañas desde `ctx.tabs`
+#### F1.6 ✅ `ConsoleContainer` — separar hooks de render
+#### F1.7 ✅ `Topbar` — tenant, selector de período, tema
+#### F1.8 ✅ `Tabs` — pestañas desde `ctx.tabs`
 **Criterio de aceptación.**
 - El selector de período agrupa por `grano` y respeta el `granoMinimo` de las
   métricas de la pestaña: ofrecer un día a una métrica mensual es ofrecer un
@@ -1172,7 +1172,7 @@ cableada. Falta reemplazar el andamio por paneles reales.
 - Con `alcance: plataforma` el topbar muestra el selector de tenant y declara que
   el acceso queda auditado; con `usuario`, el nombre del tenant.
 
-#### F1.9 ⬜ `PanelInGrid` — el puente
+#### F1.9 ✅ `PanelInGrid` — el puente
 **Descripción.** Recibe `panel` + `metric` + `payload` y decide: shell siempre,
 y adentro el estado o el cuerpo. Reemplaza el andamio marcado
 `data-pendiente="F1.9"`.
@@ -1184,11 +1184,42 @@ y adentro el estado o el cuerpo. Reemplaza el andamio marcado
 - Emite `onDrill`, `onChat`, `onRetry` hacia arriba. **El cuerpo no navega ni
   abre modales por su cuenta.**
 
+**La superficie de consola, cerrada el 2026-09-02 · F1.5–F1.9, F1.12, F1.26.**
+
+`ConsoleContainer` tiene los hooks; `Console` no tiene ninguno y recibe todo por
+props, así que se puede montar con datos fijos en el builder y en la vista previa
+por rol sin tocar la red. Ese era el punto de separarlos.
+
+**El `Suspense` del chunk usa el MISMO esqueleto que el estado de carga.** Lo
+había puesto en `null` con el argumento de que la precarga lo hace innecesario;
+el criterio de F1.9 dice lo contrario y tiene razón: para quien mira, un chunk en
+vuelo y un dato en vuelo son indistinguibles, y un panel vacío durante la
+descarga se ve roto por una diferencia que es interna.
+
+**El selector de período deshabilita lo que la pestaña no puede contestar.** Se
+toma el grano más grueso que exige alguna de sus métricas —el panel más
+restrictivo manda—, y el control deshabilitado **declara la razón**: uno sin
+explicación es peor que uno ausente, porque no se sabe si es permiso, error o
+límite del dato. La lógica vive en `periodGrain.ts`, fuera del componente, y se
+prueba sin montar nada.
+
+**Un fallo del batch NO tira la pantalla.** Contexto y catálogo son la pantalla;
+el batch son los datos de cada panel. Si falla el batch, los shells siguen en pie
+con su título, su BASE y su procedencia, y cada uno muestra su estado de error
+con reintento por panel. Verificado contra MSW.
+
+**Falso positivo corregido en `design-lint`.** L5 marcaba `ConsoleContainer` por
+importar de `render/bodies/`, cuando lo único que importa es `preloadBodies`, que
+dispara la descarga del chunk y no puede renderizar nada. El detector de v2
+buscaba cualquier import de esa carpeta; ahora busca a quien MONTA un cuerpo
+—`bodyFor()` o un `*Body`—, que es lo que la regla quiere decir. Verificado por
+mutación: una sonda que monta `KpiBody` sin shell sigue cayendo.
+
 #### F1.11 ✅ Cambiar de período no re-pide el layout
 **Criterio de aceptación.** ✅ Cumplido: la clave de `useTab` no lleva el
 período, así que es estructural y no una disciplina.
 
-#### F1.12 ⚠️ Persistir el tema
+#### F1.12 ✅ Persistir el tema
 **Criterio de aceptación.**
 - ✅ `api.savePreferences` y `useSaveTheme` escritos.
 - ⬜ Control de tema en el topbar; el valor inicial llega en `/config/me` y lo
@@ -1196,10 +1227,10 @@ período, así que es estructural y no una disciplina.
 - El switcher visual **no pasa por la API**: es un atributo en la raíz, y las
   custom properties hacen el resto. Cero recálculo, cero re-render.
 
-#### F1.19 ⬜ Estados en la superficie · cubierto por F1.13d
-#### F1.20 ⬜ Primitivos · cubierto por F1.13c
-#### F1.23 ⬜ `memo` en cuerpos y plots · cubierto por F1.13h
-#### F1.24 ⬜ Cero hex literal
+#### F1.19 ✅ Estados en la superficie · cubierto por F1.13d
+#### F1.20 ✅ Primitivos · cubierto por F1.13c
+#### F1.23 ✅ `memo` en cuerpos y plots · cubierto por F1.13h
+#### F1.24 ✅ Cero hex literal
 **Criterio de aceptación.** Verificado por `design-lint` (F0.11), no por
 revisión manual.
 
@@ -1212,7 +1243,7 @@ del camino, aunque el backend devuelva una sola pestaña.
 - Un `401` limpia la sesión; un `500` muestra el estado de error de la superficie
   sin dejar pantalla en blanco.
 
-#### F1.26 ⬜ Carga y error a nivel de superficie, no en los cuerpos
+#### F1.26 ✅ Carga y error a nivel de superficie, no en los cuerpos
 **Descripción.** La superficie decide qué se muestra mientras el contexto o el
 catálogo vuelan, y qué se muestra si fallan. Un cuerpo nunca maneja eso.
 **Criterio de aceptación.**

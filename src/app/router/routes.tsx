@@ -1,6 +1,6 @@
 import type { RouteObject } from 'react-router-dom'
 import { AuthGuard } from '../auth/AuthGuard'
-import { Console } from '../../surfaces/console/Console'
+import { ConsoleContainer } from '../../surfaces/console/ConsoleContainer'
 import { Admin } from '../../surfaces/admin/Admin'
 import { Builder } from '../../surfaces/builder/Builder'
 
@@ -14,7 +14,7 @@ export const routes: RouteObject[] = [
     path: '/',
     element: (
       <AuthGuard>
-        <Console />
+        <ConsoleContainer />
       </AuthGuard>
     ),
   },
