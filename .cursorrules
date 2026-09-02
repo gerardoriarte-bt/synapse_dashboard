@@ -151,15 +151,28 @@ import { cn } from '@/lib/cn'
 | Tipos/Interfaces | PascalCase | `BodyProps`, `ApiError` |
 | Carpetas | kebab-case o camelCase consistente | `dashboard/`, `MainLayout/` |
 
-## Testing (cuando aplique)
+## Testing
 
-- Tests junto al codigo o en `__tests__/` dentro del modulo.
+- **Todas las pruebas viven en `tests/`, fuera de `src/`, espejando su
+  estructura**: `tests/render/grid.test.ts` prueba `src/render/grid.ts`. Nada de
+  `.test.ts` suelto dentro de `src/`.
+  Deroga el «junto al codigo o en `__tests__/`» que decia esta regla hasta
+  2026-09-02, y la razon esta escrita en F0.9 del plan: los handlers de MSW son
+  datos falsos, y con ellos afuera de `src/` **no existe ruta de import desde una
+  superficie hasta un mock**. Es F0.8 sostenida por la estructura.
 - Nombrar: `ComponentName.test.tsx`, `useHookName.test.ts`.
-- Probar comportamiento, no implementacion.
+- **Probar comportamiento, no implementacion.** La asercion se escribe desde la
+  regla citada de `design.md` o `nuevo-desarrollo.md`, no leyendo el codigo. Una
+  prueba derivada de la implementacion no puede fallar nunca.
+- **Verificar una prueba nueva rompiendo el codigo a proposito.** Si no la viste
+  fallar, no demostro nada.
+- Entorno `node` por defecto. El archivo que renderiza pide jsdom con
+  `// @vitest-environment jsdom` en la primera linea.
+- HTTP mockeado con MSW, nunca un fixture importado desde una superficie.
 
 ## Git y calidad
 
-- Ejecutar `npm run lint` y `npm run build` antes de commit.
+- Ejecutar `npm run verify` antes de commit — typecheck, lint, test y build.
 - Un commit = un cambio logico.
 - No commitear `.env`, credenciales ni `node_modules`.
 

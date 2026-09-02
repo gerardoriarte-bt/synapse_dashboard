@@ -762,17 +762,37 @@ pantalla de login y el POST, que **no existen en el contrato**.
 **Criterio de aceptación.** ✅ Cumplido por construcción: `synapse-tenants.js`,
 `synapse-data.js`, `api/mock/*` y los defaults `ua_mx`/`ceo` nunca entraron.
 
-### ➕ F0.9 ⬜ Runner de pruebas
+### ➕ F0.9 ✅ Runner de pruebas
 **Descripción.** `tareas-front-back.md` exige en F5.5–F5.9 y en el checklist por
 componente «al menos una prueba de render mínimo», y **no tiene una tarea que
 configure el runner**. Sin esto la Definition of Done es inejecutable desde la
 Fase 1.
-**Criterio de aceptación.**
-- `vitest` + `@testing-library/react` + `jsdom` instalados y `npm test` corre.
-- `msw` instalado: los contenedores se prueban con **HTTP mockeado**, no con
+**Criterio de aceptación.** ✅ Cumplido el 2026-09-02.
+- ✅ `vitest` + `@testing-library/react` + `jsdom` instalados y `npm test` corre.
+- ✅ `msw` instalado: los contenedores se prueban con **HTTP mockeado**, no con
   fixtures JS importados — importar un fixture desde una superficie es el
   anti-patrón que §4 declara.
-- `npm test` está en la puerta junto a `lint` y `build`.
+- ✅ `npm test` está en la puerta junto a `lint` y `build`.
+
+**Cómo quedó.** Las pruebas se agrupan en `tests/` —fuera de `src/`— espejando la
+estructura del código: `tests/render/grid.test.ts` prueba `src/render/grid.ts`.
+Se aparta de `.cursorrules`, que admite «junto al código o en `__tests__/`», y lo
+hace por una razón que vale más que la convención: **los handlers de MSW son
+datos falsos y no puede existir una ruta de import desde una superficie hasta
+ellos.** Es F0.8 sostenida por la estructura en vez de por la revisión.
+
+El entorno por defecto es `node`; el archivo que renderiza pide jsdom con
+`// @vitest-environment jsdom` en su primera línea. El servidor de MSW corre con
+`onUnhandledRequest: 'error'`: una petición sin handler falla nombrando la URL,
+en vez de colgarse hasta el timeout —que se lee igual que un bug de la
+implementación.
+
+`npm run verify` encadena la puerta: `typecheck && lint && test && build`.
+
+**Verificado por mutación, no por el verde.** Con `GAP` a 20 en `grid.ts` caen
+tres pruebas de la fórmula `96·N − 16`; mandando el bearer sin sesión cae la del
+`Authorization`. Es el chequeo que faltó el 2026-08-20: una suite que nunca vio
+fallar no demostró nada.
 
 ### ➕ F0.10 ✅ Bajar a TypeScript 5.9 para que la generación funcione
 **Descripción.** El andamio pinaba `typescript@~6.0.2` y `openapi-typescript@7`

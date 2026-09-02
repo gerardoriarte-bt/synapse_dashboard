@@ -47,6 +47,8 @@ src/
 ├── catalog/     SOLO tipos y validadores. La tabla llega por API
 ├── render/      PURO · Panel, bodies, plots, states, primitives, grid
 └── surfaces/    console · admin · builder
+
+tests/           TODAS las pruebas, espejando src/. Los mocks de MSW viven acá
 ```
 
 **Dos fronteras que no se cruzan:**
@@ -129,6 +131,8 @@ fuera de `@theme`.
 | `npm run typecheck` | `tsc` strict, sin excepciones |
 | `npm run build` | typecheck + build de producción |
 | `npm run lint` | oxlint |
+| `npm test` | vitest · las pruebas viven en `tests/`, agrupadas |
+| `npm run verify` | la puerta completa: typecheck + lint + test + build |
 | `npm run gen:api` | regenera `src/api/generated.ts` desde `contracts/synapse-api.yaml` |
 | `npm run plan` | regenera `plan-tareas.csv` y la página desde `plan-de-trabajo.md` |
 | `npm run plan:diff <export.csv>` | compara un export de la plataforma de seguimiento contra el plan |
@@ -166,15 +170,27 @@ hayan derivado.
 ## Antes de dar algo por terminado
 
 ```
-npm run typecheck && npm run build && npm run lint
+npm run verify
 ```
+
+Encadena `typecheck && lint && test && build`. Los cuatro sueltos siguen
+existiendo para iterar.
+
+**Las pruebas se agrupan en `tests/`, fuera de `src/`.** Espeja la estructura del
+código, y la carpeta separada no es preferencia: los handlers de MSW son datos
+falsos, y con ellos afuera **no existe ruta de import desde una superficie hasta
+un mock** —F0.8 sostenida por la estructura y no por la revisión. El entorno por
+defecto es `node`; el archivo que renderiza pide jsdom con
+`// @vitest-environment jsdom` en la primera línea. Ver `tests/README.md`.
+
+**Una prueba nueva se verifica rompiendo el código a propósito.** Si no la viste
+fallar, no demostró nada.
 
 **La puerta de calidad completa todavía no está portada** (F0.11): `design-lint`
 reapuntado a Tailwind, `spec-anclas`, `token-drift` y `contract-drift` viven en
-`synapse_v2/tools/`. Y **no hay runner de pruebas** (F0.9) — sin vitest, el
-criterio «una prueba de render mínimo por componente» es inejecutable.
+`synapse_v2/tools/`.
 
-Portar las dos **antes** del traslado de `render/`. El antecedente es concreto:
+Portarla **antes** del traslado de `render/`. El antecedente es concreto:
 el 2026-08-20, en el repositorio archivado, el colapso responsive violaba §3.1 de
 tres formas distintas **con 184 pruebas en verde**, porque estaban escritas
 mirando el código. Una prueba escrita desde la implementación no puede fallar
@@ -191,6 +207,9 @@ Abierto ahora mismo:
    Faltan tres respuestas de integración: con qué clave se guarda el token, si el
    login vive en otro origen (`localStorage` no cruza orígenes), y adónde
    redirige un `401`.
-2. **La rebanada vertical** — MSW + shell + `Label`/`Value` + dos cuerpos, para
-   ver la consola dibujar de punta a punta antes de que exista el backend.
-3. **B0.9** — las cinco `# PREGUNTA:` abiertas del contrato.
+2. **F0.11 · la puerta de calidad**, lo siguiente del camino crítico ahora que
+   F0.9 cerró (2026-09-02). Se porta desde `synapse_v2/tools/`.
+3. **La rebanada vertical** — shell + `Label`/`Value` + dos cuerpos sobre los
+   handlers de MSW que ya existen en `tests/mocks/`, para ver la consola dibujar
+   de punta a punta antes de que exista el backend.
+4. **B0.9** — las cinco `# PREGUNTA:` abiertas del contrato.
