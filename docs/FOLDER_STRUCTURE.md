@@ -43,6 +43,13 @@ src/
     ├── fonts/              VACÍA · las tres tipografías vienen de @fontsource
     └── images/             VACÍA
 
+tools/                      la puerta de calidad                  · F0.11
+├── gate.py                 el corredor · 0 conforme, 1 rojo, 2 BLOQUEADO
+├── design-lint.py          las 15 reglas duras sobre utilidades de Tailwind
+├── spec-anclas.py          cada regla de design.md ↔ su código ↔ su aserción
+├── contract-drift.py       generated.ts == synapse-api.yaml
+└── token-drift.py          tokens.css == las 57 variables del .pen
+
 tests/                      TODAS las pruebas, espejando src/     · F0.9
 ├── setup.ts                MSW + los dobles de jsdom
 ├── mocks/                  handlers.ts · server.ts
@@ -113,7 +120,11 @@ el escáner no las ve. Medido: sin `static` sobrevivían 6 de 43.
 | `npm run build` | typecheck + build de producción |
 | `npm run lint` | oxlint |
 | `npm test` | vitest · corre lo de `tests/` |
-| `npm run verify` | la puerta: typecheck + lint + test + build |
+| `npm run verify` | la puerta · `tools/gate.py` |
+| `npm run design-lint` | las 15 reglas duras, en utilidades de Tailwind |
+| `npm run spec-anclas` | `design.md` atado a su código y su aserción |
+| `npm run contract-drift` | `generated.ts` == el yaml |
+| `npm run token-drift` | `tokens.css` == las 57 variables del `.pen` |
 | `npm run gen:api` | regenera `src/api/generated.ts` desde `../contracts/synapse-api.yaml` |
 
 ## Idioma

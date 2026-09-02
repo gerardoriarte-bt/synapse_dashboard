@@ -805,23 +805,62 @@ cadena de generación manda sobre la versión del compilador (D4).
   en TS 6. `tsc -b`, `build` y `lint` siguen en verde con las cuatro flags
   estrictas puestas.
 
-### ➕ F0.11 ⬜ Portar la puerta de calidad
+### ➕ F0.11 ✅ Portar la puerta de calidad
 **Descripción.** `make verify` de v2 con sus chequeos, adaptados al stack nuevo.
 `nuevo-desarrollo.md` no la menciona porque **es de nuestro lado, no del
 desarrollador del backend** (D5). No es opcional si se quiere evitar el fallo del
 2026-08-20: 184 pruebas verdes sobre una implementación que violaba §3.1 de tres
 formas distintas.
-**Criterio de aceptación.**
-- `design-lint` reapuntado a Tailwind: las 15 reglas verifican utilidades de
+**Criterio de aceptación.** ✅ Cumplido el 2026-09-02.
+- ✅ `design-lint` reapuntado a Tailwind: las 15 reglas verifican utilidades de
   token en vez de `.module.css`. Un hex literal en JSX o en CSS falla.
-- `spec-anclas` porta sus anclas: cada regla numérica de `design.md` con su cita
-  **textual**, el marcador `§ANCLA:<id>` en el archivo que la implementa, y su
-  aserción. **La aserción se escribe desde la cita, no mirando el código.**
-- `contract-drift`: `src/api/generated.ts` == `contracts/synapse-api.yaml`.
-- `token-drift`: `src/tokens/tokens.css` == variables del `.pen`.
-- Cada chequeo sale con 0 conforme, 1 violación, 2 bloqueado — y un bloqueado se
-  cuenta aparte, porque un chequeo que pasa por falta de fuente miente sobre su
-  cobertura.
+- ✅ `spec-anclas` porta sus anclas: cada regla numérica de `design.md` con su
+  cita **textual**, el marcador `§ANCLA:<id>` en el archivo que la implementa, y
+  su aserción. **La aserción se escribe desde la cita, no mirando el código.**
+- ✅ `contract-drift`: `src/api/generated.ts` == `contracts/synapse-api.yaml`.
+- ✅ `token-drift`: `src/tokens/tokens.css` == variables del `.pen`.
+- ✅ Cada chequeo sale con 0 conforme, 1 violación, 2 bloqueado — y un bloqueado
+  se cuenta aparte, en `tools/gate.py`, que es `npm run verify`.
+
+**Lo que cambió al reapuntar `design-lint` a Tailwind.** En v2 el color y la
+tipografía se verificaban sobre `.module.css`. Acá el estilo vive en el atributo
+`class`, así que cada detector mira utilidades — y aparece **una fuga que en v2
+no podía existir**: la paleta de fábrica de Tailwind. `bg-slate-800` no es un hex
+y se salta el sistema de tokens igual de bien; no invierte con el tema y
+`token-drift` no la ve. L1 la persigue con el mismo rigor que a un hex, y por lo
+mismo `bg-amber-400` le dio dientes a L3. Los altos arbitrarios se buscan en sus
+dos escrituras: `height: 348` y `h-[348px]`.
+
+**Dos chequeos salen BLOQUEADOS, y es el resultado correcto.**
+
+- `design-lint` corre **13 de 15** reglas: L2 y L6 tienen el ámbito vacío
+  —`render/bodies/` y `render/plots/` no existen hasta F1.13— y una regla que no
+  miró un solo archivo no informa nada. Declararlas conformes sería exactamente
+  la mentira que la convención del 2 existe para impedir.
+- `spec-anclas` ancla **6 de 9** reglas. Las otras tres están citadas y sin
+  implementar: RESP-2 y RESP-3 las cierra F1.30, TIPO-1 la cierra F1.13c. Se
+  declaran igual, porque una regla que no está escrita en ningún lado no la
+  reclama nadie.
+
+**`contract-drift` deja de estar bloqueado, y esto es lo que lo desbloquea.** En
+v2 su mitad de API sale con 2 desde el 2026-09-01 porque el yaml se mudó a este
+repositorio. Acá la fuente y el generado viven juntos, así que la comparación por
+fin corre: 2.034 líneas idénticas.
+
+**`token-drift` compara por variable y no byte a byte.** El de v2 regenera en
+memoria con `gen-tokens.py` y compara el archivo entero; ese generador todavía no
+está reapuntado —es F0.12—, así que este verifica que cada una de las 57
+variables del `.pen` esté en `tokens.css` con su valor en los dos temas, con la
+traducción de espacio de nombres de Tailwind declarada y verificada. Cobertura
+menor que el byte a byte, mayor que nada. Hallazgo: **el port a mano de F0.7 no
+tiene deriva** — las 57 coinciden.
+
+**Verificado por mutación, los cuatro.** Un dígito en `--color-panel` y un
+`--radius-xl` a 12px los detecta `token-drift`; una línea editada en
+`generated.ts`, `contract-drift`; un marcador `§ANCLA` borrado y una cita
+alterada, `spec-anclas`; y una sonda con hex, `bg-slate-800`, `amber`,
+`h-[348px]`, SQL, import de valor desde `api/` y label inline produjo 9 hallazgos
+en 7 reglas —sin marcar el `import type`, que es la regla y no la excepción.
 
 ### ➕ F0.12 ⬜ Reapuntar el generador de tokens
 **Descripción.** `tokens.css` y `tokens.ts` están **portados a mano**. En v2 los

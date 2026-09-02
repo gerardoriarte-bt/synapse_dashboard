@@ -132,7 +132,11 @@ fuera de `@theme`.
 | `npm run build` | typecheck + build de producción |
 | `npm run lint` | oxlint |
 | `npm test` | vitest · las pruebas viven en `tests/`, agrupadas |
-| `npm run verify` | la puerta completa: typecheck + lint + test + build |
+| `npm run verify` | **la puerta** · `tools/gate.py` · typecheck, lint, los cuatro chequeos de diseño, test y build |
+| `npm run design-lint` | las 15 reglas duras sobre `src/`, en utilidades de Tailwind |
+| `npm run spec-anclas` | cada regla de `design.md` atada a su código y su aserción |
+| `npm run contract-drift` | `src/api/generated.ts` == el yaml |
+| `npm run token-drift` | `src/tokens/tokens.css` == las 57 variables del `.pen` |
 | `npm run gen:api` | regenera `src/api/generated.ts` desde `contracts/synapse-api.yaml` |
 | `npm run plan` | regenera `plan-tareas.csv` y la página desde `plan-de-trabajo.md` |
 | `npm run plan:diff <export.csv>` | compara un export de la plataforma de seguimiento contra el plan |
@@ -173,8 +177,20 @@ hayan derivado.
 npm run verify
 ```
 
-Encadena `typecheck && lint && test && build`. Los cuatro sueltos siguen
-existiendo para iterar.
+Corre `tools/gate.py`: typecheck, lint, los cuatro chequeos de diseño, test y
+build. Cada uno sigue existiendo suelto para iterar.
+
+**Dos convenciones de salida, y mezclarlas ya dejó pasar errores.** Las
+herramientas NUESTRAS salen con 0 conforme, 1 violación y **2 BLOQUEADO** —«no
+hay contra qué comparar todavía»—, y un bloqueado **se cuenta aparte**: un
+chequeo que pasa por falta de fuente miente sobre su cobertura. Las AJENAS no
+siguen esa convención: `tsc` sale con 2 cuando hay errores de tipo, y leerlo como
+BLOQUEADO dejó pasar dos errores con la puerta en verde. Para ellas, cualquier
+código distinto de cero es rojo.
+
+**Hoy la puerta sale verde con dos bloqueados, y es correcto:** `design-lint`
+corre 13 de 15 reglas —L2 y L6 tienen el ámbito vacío hasta F1.13— y
+`spec-anclas` ancla 6 de 9 —RESP-2 y RESP-3 esperan a F1.30, TIPO-1 a F1.13c.
 
 **Las pruebas se agrupan en `tests/`, fuera de `src/`.** Espeja la estructura del
 código, y la carpeta separada no es preferencia: los handlers de MSW son datos
@@ -186,11 +202,13 @@ defecto es `node`; el archivo que renderiza pide jsdom con
 **Una prueba nueva se verifica rompiendo el código a propósito.** Si no la viste
 fallar, no demostró nada.
 
-**La puerta de calidad completa todavía no está portada** (F0.11): `design-lint`
-reapuntado a Tailwind, `spec-anclas`, `token-drift` y `contract-drift` viven en
-`synapse_v2/tools/`.
+**Las dos fuentes normativas del hermano son requisito de la puerta.**
+`spec-anclas` necesita `design.md` y `token-drift` necesita el `.pen`, los dos en
+`~/Documents/GitHub/synapse_v2/design/`. Sin ellos los chequeos salen BLOQUEADOS
+en vez de mentir; se reapuntan con `SYNAPSE_DESIGN` y `SYNAPSE_PEN`.
 
-Portarla **antes** del traslado de `render/`. El antecedente es concreto:
+**Una regla nueva se verifica rompiendo el código a propósito**, igual que una
+prueba. El antecedente es concreto:
 el 2026-08-20, en el repositorio archivado, el colapso responsive violaba §3.1 de
 tres formas distintas **con 184 pruebas en verde**, porque estaban escritas
 mirando el código. Una prueba escrita desde la implementación no puede fallar
@@ -207,8 +225,10 @@ Abierto ahora mismo:
    Faltan tres respuestas de integración: con qué clave se guarda el token, si el
    login vive en otro origen (`localStorage` no cruza orígenes), y adónde
    redirige un `401`.
-2. **F0.11 · la puerta de calidad**, lo siguiente del camino crítico ahora que
-   F0.9 cerró (2026-09-02). Se porta desde `synapse_v2/tools/`.
+2. **F1.13a → F1.13j · el traslado de `render/`**, ya con puerta y runner
+   detrás: F0.9 y F0.11 cerraron el 2026-09-02. Van en ese orden —las primitivas
+   no dependen de nada, los cuerpos dependen de todo lo anterior—, y cada tarea
+   que llene `render/bodies/` o `render/plots/` le devuelve cobertura a L2 y L6.
 3. **La rebanada vertical** — shell + `Label`/`Value` + dos cuerpos sobre los
    handlers de MSW que ya existen en `tests/mocks/`, para ver la consola dibujar
    de punta a punta antes de que exista el backend.
