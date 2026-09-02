@@ -103,7 +103,33 @@ aspiracional. Con ella se borró `src/lib/cn.ts` y sus dos dependencias, `clsx` 
 `tailwind-merge`: sin clases externas que fusionar, `cn()` no tenía qué hacer. El
 front queda en **siete dependencias de runtime**.
 
-Queda una salvedad escrita: la restricción es de `render/`. `admin/` y `builder/`
+**La regla 3 también se volvió verificable.** «Un componente, un archivo, una
+exportación nombrada» estaba en §4 desde el principio y no la miraba nadie:
+`states/States.tsx` tenía cinco, contra la ruta explícita de §14.11
+(`states/EstadoCargando.tsx`). Se partió en seis archivos —los cinco estados más
+`StateBody` e `Icon`— y se agregó el chequeo, también fuera de las 15.
+
+`render/plots/core/` queda excluido con la razón escrita: §6.2 nombra a las
+primitivas de dibujo como un JUEGO —«las seis primitivas»— y `Bars`, `Line`,
+`Area` y `Dots` comparten helpers privados; separarlas obligaría a exportarlos.
+
+**Partir el archivo destapó dos defectos que la co-ubicación escondía.**
+
+1. `ErrorState` pasaba `onRetry` donde `Exit` espera `onClick`, y el spread de
+   JSX lo dejó pasar sin que el compilador lo viera: **el botón de reintentar se
+   pintaba y no llamaba a nada**. Es el mismo agujero que ya había aparecido con
+   `onChat`. Ahora hay una prueba por cada estado que verifica que el CTA
+   DISPARE, no que exista.
+2. `DegradedBadge` armaba un label a mano con las utilidades de §2.3, y L15 no lo
+   veía porque compartía archivo con `Provenance`, que sí importa `Label` — el
+   detector mira el archivo entero. Solo, quedó a la vista. Ahora compone
+   `<Label>` y se queda solo con el fondo, que es lo único propio del badge.
+
+Es una propiedad del chequeo que vale anotar: **un componente por archivo hace
+más preciso a L15**, porque su guarda «si el archivo importa `Label`, no marques»
+deja de cubrir a los vecinos.
+
+Queda una salvedad escrita: la restricción de `className` es de `render/`. `admin/` y `builder/`
 son otras superficies y pueden necesitar componentes genéricos con `className`;
 eso es Fase 4 y se decide ahí.
 

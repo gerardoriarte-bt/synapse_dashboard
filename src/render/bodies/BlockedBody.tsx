@@ -9,7 +9,7 @@
  *  panel bloqueado por catálogo y uno bloqueado por frescura se vieran distinto
  *  sería exactamente el problema que §8 evita.
  */
-import { BlockedState } from '../states/States'
+import { BlockedState } from '../states/BlockedState'
 import type { BodyProps } from '../types'
 
 export type BlockedParams = { razon?: string; desbloqueaCon?: string }

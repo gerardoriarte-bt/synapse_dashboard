@@ -454,6 +454,42 @@ def l15(ruta, texto):
 # sale de §9 no lleva número, y se cuenta aparte para no inflar la cobertura.
 
 
+@regla("un-componente", "§4 regla 3: un componente, un archivo, una exportación nombrada",
+       excluir=("render/plots/core/",))
+def un_componente_por_archivo(ruta, texto):
+    """Un archivo `.tsx` exporta UN componente.
+
+    §4 regla 3: «Un componente, un archivo, una exportación nombrada.
+    Convención: `CuerpoKpi.tsx` exporta `CuerpoKpi`». Los 19 ejemplos de §14 dan
+    una ruta por componente —`states/EstadoCargando.tsx`, no `states/States.tsx`.
+
+    **`render/plots/core/` queda fuera, y la razón está escrita.** Son las
+    primitivas de dibujo, y §6.2 las nombra como un JUEGO —«las seis
+    primitivas»—, no como componentes sueltos: `Bars`, `Line`, `Area` y `Dots`
+    son las cuatro marcas cartesianas y comparten helpers privados. Separarlas
+    obligaría a exportar esos helpers, que es peor que tenerlas juntas.
+
+    Se agregó el 2026-09-02, cuando la auditoría contra §14 encontró
+    `states/States.tsx` con cinco. La regla existía en §4 desde el principio y no
+    la verificaba nadie.
+    """
+    if ruta.suffix != ".tsx":
+        return
+    # `export function Nombre` y `export const Nombre = (` con mayúscula: las dos
+    # formas de declarar un componente. Un `export const` en minúscula es una
+    # constante o un helper, no un componente.
+    exportados = [
+        (n, m.group(1))
+        for n, linea in lineas(texto)
+        for m in [re.match(r"export\s+(?:function|const)\s+([A-Z]\w*)", linea)]
+        if m
+    ]
+    if len(exportados) > 1:
+        nombres = ", ".join(nombre for _, nombre in exportados)
+        primera = exportados[1][0]
+        yield primera, f"{len(exportados)} componentes en un archivo: {nombres}"
+
+
 @regla("className", "render/ es dueño de su apariencia · §4 regla 9",
        ambito=("render/",))
 def sin_class_name_externo(ruta, texto):

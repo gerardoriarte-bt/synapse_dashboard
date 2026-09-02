@@ -37,16 +37,3 @@ export function Provenance({ capa, fuente, frescura, format, now }: Props) {
     </span>
   )
 }
-
-/** El degradado muestra el dato con un badge que declara la limitación · §8.
- *  La razón y el CTA los pone el shell debajo; el badge solo marca.
- *
- *  En `--color-w3` y no en un color semántico: la regla dura 3 prohíbe que el
- *  color cargue el juicio, y un badge ámbar además está prohibido de plano. */
-export function DegradedBadge({ children }: { children: string }) {
-  return (
-    <span className="font-mono text-[10px] tracking-[0.12em] uppercase text-dim bg-w3 rounded-xs px-1 py-0.5">
-      {children}
-    </span>
-  )
-}

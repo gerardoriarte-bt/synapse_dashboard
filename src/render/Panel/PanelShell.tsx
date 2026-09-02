@@ -11,7 +11,8 @@
  */
 import type { ReactNode } from 'react'
 import { Label } from '../primitives/Label'
-import { DegradedBadge, Provenance } from './Provenance'
+import { DegradedBadge } from './DegradedBadge'
+import { Provenance } from './Provenance'
 import { resolveGovernance, visualState } from '../state'
 import { panelStyle, COLUMNS } from '../grid'
 import { familyVar } from '../../tokens/tokens'

@@ -12,7 +12,11 @@
  */
 import type { ReactNode } from 'react'
 import { PanelShell } from './PanelShell'
-import { BlockedState, EmptyState, ErrorState, ForbiddenState, LoadingState } from '../states/States'
+import { BlockedState } from '../states/BlockedState'
+import { EmptyState } from '../states/EmptyState'
+import { ErrorState } from '../states/ErrorState'
+import { ForbiddenState } from '../states/ForbiddenState'
+import { LoadingState } from '../states/LoadingState'
 import { visualState } from '../state'
 import type { Formatter } from '../format'
 import type { Placement } from '../../catalog/types'

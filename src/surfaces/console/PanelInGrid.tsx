@@ -9,7 +9,7 @@
  */
 import { Suspense } from 'react'
 import { Panel } from '../../render/Panel/Panel'
-import { LoadingState } from '../../render/states/States'
+import { LoadingState } from '../../render/states/LoadingState'
 import { Label } from '../../render/primitives/Label'
 import { bodyFor } from '../../render/bodies/registry'
 import { hasValue } from '../../render/state'
