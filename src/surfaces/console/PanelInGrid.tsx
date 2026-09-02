@@ -20,6 +20,10 @@ type Props = {
   panel: PanelConfig
   metric: Metric
   payload: Payload
+  /** Ya validados por `adaptPanelParams` · F1.29. **No se leen de
+   *  `panel.opciones`**: eso sería saltearse la validación, que es justo el
+   *  defecto que la tarea arregla. */
+  params: Record<string, unknown>
   columns?: number
   format: Formatter
   now: Date
@@ -35,6 +39,7 @@ export function PanelInGrid({
   panel,
   metric,
   payload,
+  params,
   columns,
   format,
   now,
@@ -80,11 +85,7 @@ export function PanelInGrid({
       <Suspense fallback={<LoadingState />}>
         <Body
           value={payload.valor}
-          /* `opciones` llega como `Record<string, unknown>` y **no se valida
-             acá** · F1.29: eso va en el adaptador de `api/`, no en la superficie
-             ni en `render/`. Hasta entonces cada cuerpo aplica sus defaults. Un
-             param mal escrito hoy se ignora en silencio, y está anotado. */
-          params={panel.opciones ?? {}}
+          params={params}
           span={panel}
           family={metric.familia}
           metric={metric.nombre}

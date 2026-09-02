@@ -140,3 +140,74 @@ describe('el selector de período respeta el granoMinimo · F1.7', () => {
     expect(screen.getByText(/No aplica · alguna métrica se mide por mes/)).toBeInTheDocument()
   })
 })
+
+describe('F1.29 · un param inválido degrada el panel con la razón visible', () => {
+  it('no se ignora, no se reemplaza por el default, y el shell queda en pie', async () => {
+    // Antes: el cuerpo aplicaba `desc` y el panel se veía correcto mostrando
+    // exactamente lo contrario de lo que el tenant configuró.
+    server.use(
+      http.get(`${API}/config/catalog`, () => ok({ metrics: [kpiMetric] })),
+      http.get(`${API}/config/blocks`, () =>
+        ok({ blocks: [{ tipo: 'bars', paramsDisponibles: ['orden', 'tope'] }] }),
+      ),
+      http.get(`${API}/config/tabs/:tabId`, () =>
+        ok({
+          ...context.tabs[0],
+          panels: [{ ...kpiPanel, tipo: 'bars', opciones: { orden: 'ascending' } }],
+        }),
+      ),
+      http.post(`${API}/config/panels:batch`, () =>
+        ok({
+          [kpiPanel.id]: {
+            estado: 'DISPONIBLE',
+            valor: { forma: 'categorica', items: [{ etiqueta: 'A', v: 1 }] },
+            base: 'x',
+            capa: 'GOLD',
+            fuente: 'Snowflake',
+            frescura: '2026-09-02T08:00:00Z',
+            catalogVersion: 1,
+          },
+        }),
+      ),
+    )
+    montar()
+
+    // La razón nombra el param, el valor que llegó y los admitidos.
+    const razon = await screen.findByText(/La composición de este panel no es válida/)
+    expect(razon).toHaveTextContent('"ascending"')
+    expect(razon).toHaveTextContent('«asc»')
+
+    // Y §5.2 se sostiene: el estado reemplaza el cuerpo, nunca el shell.
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Venta diaria')
+    expect(screen.getByText(/^Base ·/)).toBeInTheDocument()
+    expect(screen.getByText(/Corregir las opciones del panel/)).toBeInTheDocument()
+  })
+
+  it('un param desconocido se descarta y el panel dibuja igual', async () => {
+    // Un param de más es ruido de configuración, no un panel que no se puede
+    // componer: se descarta y se avisa en desarrollo.
+    server.use(
+      http.get(`${API}/config/catalog`, () => ok({ metrics: [kpiMetric] })),
+      http.get(`${API}/config/tabs/:tabId`, () =>
+        ok({ ...context.tabs[0], panels: [{ ...kpiPanel, opciones: { colorcito: 'azul' } }] }),
+      ),
+      http.post(`${API}/config/panels:batch`, () =>
+        ok({
+          [kpiPanel.id]: {
+            estado: 'DISPONIBLE',
+            valor: { forma: 'escalar', v: 4280000 },
+            base: 'x',
+            capa: 'GOLD',
+            fuente: 'Snowflake',
+            frescura: '2026-09-02T08:00:00Z',
+            catalogVersion: 1,
+          },
+        }),
+      ),
+    )
+    montar()
+
+    expect(await screen.findByText('USD 4.28M')).toBeInTheDocument()
+    expect(screen.queryByText(/no es válida/)).toBeNull()
+  })
+})

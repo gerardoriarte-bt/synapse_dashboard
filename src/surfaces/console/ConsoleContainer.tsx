@@ -7,7 +7,8 @@
  *  `render/` lee `isLoading` ni `isError`**.
  */
 import { useEffect, useState } from 'react'
-import { useCatalog, useMe, usePanelsBatch, useSaveTheme, useTab } from '../../api/hooks'
+import { useBlocks, useCatalog, useMe, usePanelsBatch, useSaveTheme, useTab } from '../../api/hooks'
+import { adaptPanelParams } from '../../api/params'
 import { applyTheme } from '../../tokens/theme'
 import { preloadBodies } from '../../render/bodies/registry'
 import { createFormat } from '../../render/format'
@@ -34,6 +35,9 @@ export function ConsoleContainer() {
 
   const context = useMe()
   const catalog = useCatalog()
+  // La tabla de bloques trae `paramsDisponibles`: es la mitad del esquema de
+  // params que sí declara el contrato · F1.29.
+  const blocks = useBlocks()
   const saveTheme = useSaveTheme()
 
   // La pestaña y el período por defecto salen del backend, no de una constante.
@@ -119,6 +123,33 @@ export function ConsoleContainer() {
       ? { estado: 'ERROR', mensaje: batch.error?.message ?? 'No se pudieron traer los datos' }
       : { estado: 'CARGANDO' })
 
+  /* ── F1.29 · los params se validan ACÁ, en el adaptador de api/ ─────────── */
+
+  const paramsOf = (panelId: string) => {
+    const panel = panels.find((p) => p.id === panelId)
+    if (panel === undefined) return { params: {}, unknown: [], invalid: [] }
+    return adaptPanelParams(panel, blocks.data?.blocks)
+  }
+
+  /** Un param inválido DEGRADA el panel, no se ignora ni se reemplaza por el
+   *  default. Ignorarlo es el defecto que F1.29 arregla; reemplazarlo en
+   *  silencio es peor, porque el panel se ve bien mostrando otra cosa.
+   *
+   *  Sale como `BLOQUEADO` y no como `ERROR` porque no es un fallo del sistema:
+   *  es una composición que no se puede dibujar, tiene razón y tiene quien la
+   *  arregle. El shell conserva título, BASE y procedencia · §5.2. */
+  const payloadWithParams = (panelId: string): Payload => {
+    const { invalid } = paramsOf(panelId)
+    if (invalid.length > 0) {
+      return {
+        estado: 'BLOQUEADO',
+        razon: `La composición de este panel no es válida · ${invalid.map((i) => i.reason).join(' · ')}`,
+        desbloqueaCon: 'Corregir las opciones del panel en el builder',
+      } as Payload
+    }
+    return payloadOf(panelId)
+  }
+
   return (
     <Console
       context={context.data}
@@ -126,7 +157,8 @@ export function ConsoleContainer() {
       activePeriodId={activePeriod?.id}
       panels={panels}
       metricsById={byId}
-      payloadOf={payloadOf}
+      payloadOf={payloadWithParams}
+      paramsOf={(id) => paramsOf(id).params}
       format={format}
       onSelectTab={setTabId}
       onSelectPeriod={setPeriodId}

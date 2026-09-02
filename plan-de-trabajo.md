@@ -1268,17 +1268,50 @@ arbitrarios sino tokens.
 - Las medidas del sistema —label 10, celda 12, cuerpo 13— entran como tokens de
   tipografía en `@theme`, no como arbitrarios repetidos.
 
-#### ➕ F1.29 ⬜ Validar los params de layout
+#### ➕ F1.29 ✅ Validar los params de layout
 **Descripción.** `PanelConfig.opciones` llega como `Record<string, unknown>`. Hoy
 un cliente que configure `orden: "ascending"` en vez de `"asc"` **no falla: se
 ignora**. Con configuración por tenant eso deja de ser hipotético.
-**Criterio de aceptación.**
-- Cada tipo declara su esquema de params —valores válidos y defaults— derivado de
-  `paramsDisponibles` de `/config/blocks`.
-- La validación ocurre en el **adaptador de `api/`, no en `render/`**: la
-  frontera se mantiene.
-- Un param desconocido se descarta con aviso en desarrollo; uno inválido degrada
-  el panel con razón visible. Nunca se ignora en silencio.
+**Criterio de aceptación.** ✅ Cumplido el 2026-09-02.
+- ⚠️ Cada tipo declara su esquema de params —valores válidos y defaults—
+  derivado de `paramsDisponibles` de `/config/blocks`. **Derivado a medias, y el
+  contrato es el límite.** Ver abajo.
+- ✅ La validación ocurre en el **adaptador de `api/`**: `api/params.ts`. Ni la
+  superficie ni `render/` la tocan; el cuerpo recibe params ya limpios.
+- ✅ Un param desconocido se descarta con aviso en desarrollo; uno inválido
+  **degrada el panel con razón visible**. Nunca se ignora en silencio.
+
+**El esquema está partido en dos, con distinta autoridad, y no por gusto.**
+`/config/blocks` declara `paramsDisponibles` como `string[]`: los NOMBRES válidos
+por tipo, y nada más. No trae valores admitidos ni defaults. Así que:
+
+- **Qué params existen** lo dice el backend, y un nombre fuera de esa lista se
+  descarta.
+- **Qué valores son válidos** lo dice `PARAM_SCHEMAS` en el front, porque el
+  contrato no lo declara. Es duplicación con lo que cada cuerpo acepta en
+  TypeScript, y es inevitable: los tipos se borran al compilar y `opciones` llega
+  en runtime.
+
+**Propuesta de spec:** que `paramsDisponibles` deje de ser `string[]` y declare
+tipo, valores y default por param. Ahí `PARAM_SCHEMAS` desaparece y la deriva
+entre front y backend se vuelve imposible en vez de verificable. **Va con B0.9.**
+
+**Desconocido y descartado ≠ conocido e inválido**, y la diferencia es de
+consecuencia. Un param de más es ruido de configuración: se descarta y el panel
+dibuja igual. Un param conocido con un valor que el cuerpo no puede usar
+**degrada el panel**, porque aplicar el default sería mostrar algo distinto de lo
+que se pidió sin decirlo — que es exactamente el defecto que esta tarea arregla,
+solo que peor.
+
+Sale como `BLOQUEADO` y no como `ERROR`: no es un fallo del sistema, es una
+composición que no se puede dibujar, con razón y con quien la arregle. El shell
+conserva título, BASE y procedencia · §5.2.
+
+**`PARAM_SCHEMAS` declara lo que los cuerpos REALMENTE leen, no la lista de §7.**
+§7 de `nuevo-desarrollo.md` enumera params de diseño que varios tipos no
+implementan —`marca` en bars, `estadisticos` en distribution, `componentes` en
+gauge—. Declararlos haría pasar como válido algo que ningún componente mira. Lo
+que no se lee se descarta como desconocido, que es información y no un silencio.
 
 #### ➕ F1.30 ✅ Colapso responsive
 **Descripción.** Cablear `columnsFor()`, que ya está escrita en `render/grid.ts`,

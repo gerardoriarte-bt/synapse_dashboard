@@ -198,10 +198,22 @@ def l2(ruta, texto):
 @regla("L3", "regla dura 2: ámbar y amarillo colisionan con el naranja de marca")
 def l3(ruta, texto):
     """§ANCLA:COLOR-1 · §2.2 de design.md: «Ámbar y amarillo: prohibidos.
-    Colisionan con el naranja de marca.»"""
+    Colisionan con el naranja de marca.»
+
+    `design-lint.md` define el ámbito como «referencia a TOKEN cuyo nombre
+    contenga amber, yellow, warn, amarillo». El `warn` de esa lista es un token
+    de color de aviso —el que el sistema no tiene— y no el método de consola:
+    `console.warn(` es provablemente un log, no un color, y marcarlo empuja a
+    escribir avisos con otro nombre para contentar al lint. Se excluye la
+    llamada a método, nada más: `--color-warn`, `bg-warn` y `warnColor` siguen
+    cayendo.
+    """
     for n, linea in lineas(texto):
-        m = re.search(r"\b\w*(amber|yellow|warn|amarillo)\w*\b", linea, re.I)
-        if m:
+        for m in re.finditer(r"\b\w*(amber|yellow|warn|amarillo)\w*\b", linea, re.I):
+            antes = linea[: m.start()].rstrip()
+            despues = linea[m.end():].lstrip()
+            if antes.endswith(".") and despues.startswith("("):
+                continue
             yield n, f"referencia a '{m.group(0)}' · ámbar y amarillo están prohibidos"
 
 

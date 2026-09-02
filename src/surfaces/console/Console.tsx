@@ -26,6 +26,9 @@ type Props = {
   panels: readonly PanelConfig[]
   metricsById: ReadonlyMap<string, Metric>
   payloadOf: (panelId: string) => Payload
+  /** Los params YA validados · F1.29. La superficie no los lee: solo los pasa.
+   *  Quien valida es el adaptador de `api/`. */
+  paramsOf: (panelId: string) => Record<string, unknown>
   format: Formatter
   onSelectTab: (id: string) => void
   onSelectPeriod: (id: string) => void
@@ -40,6 +43,7 @@ export function Console({
   panels,
   metricsById,
   payloadOf,
+  paramsOf,
   format,
   onSelectTab,
   onSelectPeriod,
@@ -105,6 +109,7 @@ export function Console({
               panel={panel}
               metric={metric}
               payload={payloadOf(panel.id)}
+              params={paramsOf(panel.id)}
               columns={columns}
               format={format}
               now={now}
