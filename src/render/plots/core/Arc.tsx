@@ -8,7 +8,8 @@
  *  Cubre `gauge`, `donut`, `rings` y `radial`. Treemap, funnel, sankey y network
  *  son de partición y de grafo, y siguen sin primitiva.
  */
-import { arcPath, placeSegments } from './arcPath'
+import { arcPath } from './arcPath'
+import { stack } from './stack'
 import { hue } from './seriesColor'
 
 export type ArcSegment = {
@@ -39,7 +40,7 @@ export function Arc({
   totalSweep?: number
   from?: number
 }) {
-  const placed = placeSegments(
+  const placed = stack(
     segments.map((s) => s.fraction),
     from,
     totalSweep,

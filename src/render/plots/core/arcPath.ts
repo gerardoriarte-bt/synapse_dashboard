@@ -48,27 +48,3 @@ export function arcPath(
     'Z',
   ].join(' ')
 }
-
-export type PlacedSegment = { start: number; end: number }
-
-/** Reparte los tramos sobre la vuelta: cada uno arranca donde termina la suma
- *  de los anteriores.
- *
- *  Vive acá y no dentro de `<Arc>` porque es aritmética, no render. Con el
- *  acumulador adentro del componente el lint marcaba —con razón— una
- *  reasignación durante el render, y sacarla además la hace verificable sin
- *  montar un SVG. */
-export function placeSegments(
-  fractions: readonly number[],
-  from: number,
-  totalSweep: number,
-): PlacedSegment[] {
-  const out: PlacedSegment[] = []
-  let cursor = from
-  for (const fraction of fractions) {
-    const start = cursor
-    cursor += fraction * totalSweep
-    out.push({ start, end: cursor })
-  }
-  return out
-}

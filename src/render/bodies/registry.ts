@@ -85,6 +85,17 @@ type Loader = () => Promise<{ default: PanelBody }>
 export const LOADERS: Partial<Record<PanelType, Loader>> = {
   kpi: () => import('./KpiBody').then((m) => ({ default: memo(adapt(m.KpiBody)) })),
   prose: () => import('./ProseBody').then((m) => ({ default: memo(adapt(m.ProseBody)) })),
+  series: () => import('./SeriesBody').then((m) => ({ default: memo(adapt(m.SeriesBody)) })),
+  bars: () => import('./BarsBody').then((m) => ({ default: memo(adapt(m.BarsBody)) })),
+  table: () => import('./TableBody').then((m) => ({ default: memo(adapt(m.TableBody)) })),
+  gauge: () => import('./GaugeBody').then((m) => ({ default: memo(adapt(m.GaugeBody)) })),
+  forecast: () => import('./ForecastBody').then((m) => ({ default: memo(adapt(m.ForecastBody)) })),
+  list: () => import('./ListBody').then((m) => ({ default: memo(adapt(m.ListBody)) })),
+  reco: () => import('./RecoBody').then((m) => ({ default: memo(adapt(m.RecoBody)) })),
+  composition: () =>
+    import('./CompositionBody').then((m) => ({ default: memo(adapt(m.CompositionBody)) })),
+  distribution: () =>
+    import('./DistributionBody').then((m) => ({ default: memo(adapt(m.DistributionBody)) })),
   blocked: () => import('./BlockedBody').then((m) => ({ default: memo(adapt(m.BlockedBody)) })),
 }
 
@@ -94,27 +105,19 @@ export const BODIES: Partial<Record<PanelType, PanelBody>> = Object.fromEntries(
 
 export const BUILT_TYPES = Object.keys(BODIES) as PanelType[]
 
-/** Los tipos del contrato que todavía no tienen cuerpo.
+/** Los tres del contrato que todavía no tienen cuerpo.
  *
- *  Se declara para que una prueba pueda afirmar que los que faltan son
+ *  **DOCE DE QUINCE, y los doce son todos los que alguna pestaña usa.** Los tres
+ *  que faltan —`comparison`, `matrix`, `graph`— son las formas v1.1 de §8.12:
+ *  ningún endpoint las devuelve todavía, así que construirlos hoy sería escribir
+ *  contra formas inventadas. Los cierran F4.17, F4.18 y F4.19.
+ *
+ *  Se declaran para que una prueba pueda afirmar que los que faltan son
  *  exactamente estos, y no que se perdió uno sin que nadie lo note. Cuando estén
  *  los quince, `BODIES` pasa a `Record<PanelType, PanelBody>` completo y agregar
- *  un tipo al enumerado sin su cuerpo deja de compilar — que es lo que pide
- *  §2.4 y lo que cierra F4.20. */
-export const MISSING_TYPES: PanelType[] = [
-  'series',
-  'bars',
-  'table',
-  'gauge',
-  'forecast',
-  'list',
-  'reco',
-  'composition',
-  'distribution',
-  'comparison',
-  'matrix',
-  'graph',
-]
+ *  un tipo al enumerado sin su cuerpo deja de compilar — que es lo que pide §2.4
+ *  y lo que cierra F4.20. */
+export const MISSING_TYPES: PanelType[] = ['comparison', 'matrix', 'graph']
 
 /** Un tipo sin cuerpo registrado da `undefined` y **quien llama decide**.
  *

@@ -7,12 +7,13 @@
  *  Esta es la capa que SÍ tiene hooks y fetch. Lo que baja a `render/` ya son
  *  datos resueltos.
  */
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useLayoutEffect, useState } from 'react'
 import { useCatalog, useMe, usePanelsBatch, useTab } from '../../api/hooks'
 import { gridStyle } from '../../render/grid'
 import { Panel } from '../../render/Panel/Panel'
 import { bodyFor, preloadBodies } from '../../render/bodies/registry'
 import { hasValue } from '../../render/state'
+import { markTabConfig, measureLayoutCommit, measureLayoutPainted } from '../../render/budget'
 import { createFormat } from '../../render/format'
 import { Label } from '../../render/primitives/Label'
 import type { Metric, PanelType, Payload } from '../../api/types'
@@ -63,6 +64,21 @@ export function Console() {
   const types = panels.map((p) => p.tipo).join(',')
   useEffect(() => {
     preloadBodies(types === '' ? [] : (types.split(',') as PanelType[]))
+  }, [types])
+
+  // El presupuesto de §8 · F1.13j. El reloj arranca cuando se sabe QUÉ paneles
+  // hay —no cuando arranca la app, no cuando llega el primer dato— y para
+  // cuando la grilla está en pantalla. Los datos llegan después.
+  useEffect(() => {
+    if (types !== '') markTabConfig()
+  }, [types])
+
+  // `useLayoutEffect` corre después de que React escribió el DOM y antes de que
+  // el navegador pinte: es exactamente el commit. El pintado se mide un frame
+  // más tarde, desde adentro.
+  useLayoutEffect(() => {
+    measureLayoutCommit()
+    measureLayoutPainted()
   }, [types])
 
   const batch = usePanelsBatch(

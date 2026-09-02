@@ -58,5 +58,10 @@ export type BodyProps<F extends Value['forma'], P = Record<string, never>> = {
 export type PlotProps<F extends Value['forma']> = {
   value: Extract<Value, { forma: F }>
   family: Family
-  format?: (v: number) => string
+  /** **Obligatorio, y ahí está el punto.** En v2 esta prop era opcional y cada
+   *  plot caía a `formatearCifra`, que traía consigo el `es-MX` de módulo: la
+   *  prop existía y estaba muerta. Exigirla es lo que hace que «ningún plot
+   *  importa el formateador» sea verificable por el compilador y no por un
+   *  grep. */
+  format: (v: number) => string
 }

@@ -1004,7 +1004,7 @@ devolvieron ámbito a L5 y L15 del lint, y `Label` cerró el ancla TIPO-1:
 `spec-anclas` pasó de 6 a 7 de 9. Los dos chequeos siguen BLOQUEADOS por L2, L6
 —que esperan a `render/plots/` y `render/bodies/`— y por RESP-2 y RESP-3.
 
-#### F1.13f ⬜ Portar los seis plots
+#### F1.13f ✅ Portar los seis plots
 **Descripción.** `PlotBars`, `PlotSeries`, `PlotGauge`, `PlotForecast`,
 `PlotComposition`, `PlotDistribution`. Cubre F1.21.
 **Criterio de aceptación.**
@@ -1015,7 +1015,7 @@ devolvieron ámbito a L5 y L15 del lint, y `Label` cerró el ancla TIPO-1:
 - Responsivos dentro de su panel; no asumen un ancho.
 - Un plot vacío no rompe: cero series o cero puntos rinden sin excepción.
 
-#### F1.13g ⚠️ Portar los doce cuerpos que existen en v2
+#### F1.13g ✅ Portar los doce cuerpos que existen en v2
 **Descripción.** `KpiBody`, `SeriesBody`, `BarsBody`, `TableBody`, `ProseBody`,
 `RecoBody`, `GaugeBody`, `ForecastBody`, `ListBody`, `CompositionBody`,
 `DistributionBody`, `BlockedBody`. Cubre F1.18.
@@ -1097,6 +1097,37 @@ comparación anterior no se habría abreviado nada nunca.
 ámbito a L6, que era la última sin cobertura. La puerta queda con un solo
 bloqueado: `spec-anclas`, por RESP-2 y RESP-3, que espera a F1.30.
 
+**F1.13 CERRADA · 2026-09-02.** Las diez partes, a–j. `render/` es el motor
+completo: primitivas de gráfico, formateo con locale inyectado, los primitivos,
+los siete estados, el shell, los seis plots, los doce cuerpos, el registro y la
+medición del presupuesto.
+
+**Ningún plot importa el formateador, y ahora lo verifica el compilador.**
+`PlotProps.format` pasó de opcional a **obligatorio**: en v2 era opcional y cada
+plot caía a `formatearCifra`, que traía consigo el `es-MX` de módulo — la prop
+existía y estaba muerta. Exigirla convierte «ningún plot importa el formateador»
+de grep en error de compilación.
+
+**El code splitting funciona, verificado en el build**: doce chunks de cuerpo
+—de 0,26 kB a 2,4 kB— más los compartidos. Una pestaña que usa cinco tipos no
+descarga los otros siete.
+
+**Una duplicación que v2 tenía y acá no.** `<Arc>` y `<PlotComposition>` repartían
+tramos con la misma suma prefija escrita dos veces, las dos con un acumulador que
+se reasignaba durante el render. Salió a `plots/core/stack.ts`: es aritmética, no
+render, se prueba sin montar un SVG, y las dos formas de apilar ya no pueden
+separarse.
+
+**`budget.ts` agrega el flag que v2 no tenía.** El criterio pide que no se active
+en producción salvo bajo bandera: `import.meta.env.DEV || VITE_BUDGET === '1'`.
+Medir cuesta poco pero no cuesta nada, y las entradas de User Timing se acumulan
+en una consola que vive abierta todo el día.
+
+**Lo que queda de F1.13 es lo que el backend todavía no manda**: `comparison`,
+`matrix` y `graph`, que son las formas v1.1 de §8.12 y las cierran F4.17–F4.19.
+`MISSING_TYPES` los declara y una prueba verifica que construidos + faltantes
+sean exactamente los quince del contrato.
+
 #### F1.13i ✅ Portar `state.ts` — la derivación del estado visual
 **Descripción.** `estadoVisual`, `resolverGobierno`, `tieneValor`. Vive en
 `render/` y no en `api/` porque el predicado lo necesita quien **lee** el
@@ -1108,7 +1139,7 @@ payload, no quien lo declara — y `render/` no puede importar valores de `api/`
   diferencia la pinta el shell como badge.
 - **Nada más se deriva.** Degradación, permisos y filtrado son del backend.
 
-#### F1.13j ⬜ Portar `presupuesto.ts` — el presupuesto de render
+#### F1.13j ✅ Portar `budget.ts` — el presupuesto de render
 **Descripción.** La medición de cuánto tarda una pestaña en componer y pintar.
 Es lo que convierte «la consola va lenta» en un número.
 **Criterio de aceptación.**
