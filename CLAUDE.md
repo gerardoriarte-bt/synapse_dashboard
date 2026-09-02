@@ -97,6 +97,13 @@ sobrevivían **6 de 43**, y el tema oscuro se quedaba sin colores de datos
 mientras el claro los conservaba, porque el bloque de tema claro es CSS plano
 fuera de `@theme`.
 
+**`render/` no acepta `className` desde afuera.** §4 regla 9 pide que todo color,
+radio y espaciado salga de tokens, y una clase inyectada por el llamador es el
+agujero por donde entra un valor que no lo es — **y uno que el lint no puede
+tapar de otra forma**, porque mira el archivo donde la clase se escribe y no
+donde se aplica. El componente es dueño de su apariencia. Decidido el 2026-09-02;
+con eso se borró `lib/cn.ts` y sus dos dependencias, que no tenían qué fusionar.
+
 **Reglas duras de color** (de `design.md`, y no son negociables):
 
 - **Un hex literal es un bug.** Todo color sale de un token.

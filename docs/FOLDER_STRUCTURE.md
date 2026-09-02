@@ -37,8 +37,6 @@ src/
 │   ├── console/            C1 · el dashboard del usuario final
 │   ├── admin/              superadmin: tenants, usuarios, catálogo · F4.1
 │   └── builder/            composición visual de dashboards        · F4.6
-├── lib/                    fuera de §4 · lo que pide el stack
-│   └── cn.ts               clsx + tailwind-merge
 └── assets/                 fuera de §4 · estáticos importados por el bundler
     ├── fonts/              VACÍA · las tres tipografías vienen de @fontsource
     └── images/             VACÍA
@@ -57,11 +55,15 @@ tests/                      TODAS las pruebas, espejando src/     · F0.9
 └── render/                 grid.test.ts
 ```
 
-**`lib/` y `assets/` quedan fuera de §4.** `cn.ts` es la fusión de clases de
-Tailwind (`clsx` + `tailwind-merge`) y existe solo porque el stack lo pide.
-`assets/` son los estáticos que el bundler resuelve por import; hoy está vacía
+**`assets/` queda fuera de §4.** Son los estáticos que el bundler resuelve por import; hoy está vacía
 —las tres tipografías se sirven desde `@fontsource`, no desde el repo— y se
 conserva con `.gitkeep` para que el primer SVG de producto tenga adónde ir.
+
+**No hay `lib/`, y es una decisión.** Tuvo un `cn.ts` —`clsx` + `tailwind-merge`—
+hasta el 2026-09-02. Se borró junto con las dos dependencias cuando se resolvió
+que `render/` **no acepta `className` desde afuera**: sin clases externas que
+fusionar, `cn()` no tenía qué hacer. La razón está en `.cursorrules` y la
+verifica `design-lint` con un chequeo fuera de las 15.
 
 **`tests/` vive fuera de `src/` a propósito · F0.9.** Espeja la estructura del
 código: `tests/render/grid.test.ts` prueba `src/render/grid.ts`. La carpeta

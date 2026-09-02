@@ -72,8 +72,40 @@ tarea sin criterio verificable no entra al plan.
 
 ## 0 · Decisiones tomadas · 2026-09-01
 
-Las seis quedaron resueltas. Se conservan acá con su resolución porque explican
-por qué el plan tiene las tareas que tiene.
+Las seis del 2026-09-01 quedaron resueltas, y D7 se agregó el 2026-09-02. Se
+conservan acá con su resolución porque explican por qué el plan tiene las tareas
+que tiene.
+
+### D7 · `.cursorrules` se reconcilia con §4 · **2026-09-02**
+
+Auditando la estructura contra los ejemplos del §14 aparecieron **tres reglas de
+`.cursorrules` que contradicen a `nuevo-desarrollo.md`**, y el código seguía a
+`nuevo-desarrollo.md` en dos de ellas sin que estuviera escrito por qué.
+
+| `.cursorrules` decía | §4 dice | Resuelto |
+|---|---|---|
+| Carpeta por componente + `.types.ts` + `index.ts` | Regla 3: «un componente, **un archivo**, una exportación nombrada», y los 19 ejemplos de §14 dan rutas planas | Archivos planos |
+| «Variantes vía props (`variant`, `size`)» | Regla 4 nombra `variant="compact"` **como el anti-patrón**: «rama explícita documentada, no un flag suelto» | Composición |
+| «Soportar `className` para extensión desde el exterior» | Regla 9: «todo color, radio y espaciado sale de custom properties en `tokens/`» | **`render/` no acepta `className`** |
+
+**Gana `nuevo-desarrollo.md`**, que es la fuente específica de este front;
+`.cursorrules` traía la convención genérica de un scaffold de Tailwind.
+
+**La tercera es la que tenía consecuencia real.** Una clase inyectada por el
+llamador es el agujero por donde entra un valor que no es token, y es un agujero
+que el lint **no puede tapar de otra forma**: `design-lint` mira el archivo donde
+la clase se escribe, no dónde se aplica, así que un `bg-slate-800` pasado como
+prop desde una superficie esquiva L1 y `token-drift` sin dejar rastro.
+
+Se agregó como chequeo **fuera de las 15** —el precedente lo sienta
+`design-lint.md` con `repertorio`—, así que la decisión es verificable y no
+aspiracional. Con ella se borró `src/lib/cn.ts` y sus dos dependencias, `clsx` y
+`tailwind-merge`: sin clases externas que fusionar, `cn()` no tenía qué hacer. El
+front queda en **siete dependencias de runtime**.
+
+Queda una salvedad escrita: la restricción es de `render/`. `admin/` y `builder/`
+son otras superficies y pueden necesitar componentes genéricos con `className`;
+eso es Fase 4 y se decide ahí.
 
 ### D1 · El colapso responsive **entra**
 

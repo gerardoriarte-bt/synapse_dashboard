@@ -448,6 +448,39 @@ def l15(ruta, texto):
             yield n, "arma un label inline con utilidades en vez de importar <Label>"
 
 
+# ── Fuera de las 15 ──────────────────────────────────────────────────────────
+#
+# `design-lint.md` ya establece el precedente con `repertorio`: un chequeo que no
+# sale de §9 no lleva número, y se cuenta aparte para no inflar la cobertura.
+
+
+@regla("className", "render/ es dueño de su apariencia · §4 regla 9",
+       ambito=("render/",))
+def sin_class_name_externo(ruta, texto):
+    """Un componente de `render/` no acepta `className` desde afuera.
+
+    §4 regla 9: «todo color, radio y espaciado sale de custom properties en
+    `tokens/`». Una clase inyectada por el llamador es exactamente el agujero por
+    donde entra un valor que no es token — y es un agujero que este lint NO puede
+    tapar de otra forma, porque mira el archivo donde la clase se ESCRIBE, no
+    donde se aplica. Un `bg-slate-800` pasado como prop desde una superficie
+    esquiva L1 y `token-drift` sin dejar rastro.
+
+    Decisión del 2026-09-02, escrita en `.cursorrules`. `.cursorrules` pedía lo
+    contrario —«soportar `className` para extensión desde el exterior»—, que es
+    la convención genérica de un scaffold de Tailwind y no una regla derivada de
+    este producto.
+    """
+    if ruta.suffix != ".tsx":
+        return
+    for n, linea in lineas(texto):
+        # `className: string` es la DECLARACIÓN de la prop. No confundir con
+        # `className={...}`, que es el uso interno y es correcto: la diferencia
+        # es el `:` contra el `=`.
+        if re.search(r"\bclassName\s*\??\s*:\s*string\b", linea):
+            yield n, "acepta `className` como prop · el llamador podría inyectar un color sin token"
+
+
 def exenta(renglones, limpios, n, id_):
     """La marca vale en la línea del hallazgo o en el comentario que la precede.
 
@@ -506,9 +539,16 @@ def main():
 
     sin_cobertura = sorted(id_ for id_, cuenta in vistos.items() if cuenta == 0)
 
+    # Las de §9 llevan número; las que no, se cuentan aparte para no inflar la
+    # cobertura declarada. Mismo criterio que `repertorio` en design-lint.md.
+    numeradas = {i for i in vistos if i.startswith("L")}
+    extra = sorted(set(vistos) - numeradas)
+    cubiertas = len(numeradas) - len([i for i in sin_cobertura if i in numeradas])
+
     print(
         f"design-lint · {len(archivos) - generados} archivos · "
-        f"{len(vistos) - len(sin_cobertura)} de {len(vistos)} reglas con cobertura"
+        f"{cubiertas} de {len(numeradas)} reglas con cobertura"
+        + (f" · {len(extra)} chequeo(s) fuera de las 15" if extra else "")
         + (f" · {generados} generados sin auditar" if generados else "")
     )
     print()
@@ -535,7 +575,10 @@ def main():
             "regla(s) no verificaron nada"
         )
         return 2
-    print(f"design-lint ✓ {len(vistos)} reglas conformes")
+    print(
+        f"design-lint ✓ {len(numeradas)} reglas conformes"
+        + (f" · {len(extra)} chequeo(s) fuera de las 15" if extra else "")
+    )
     return 0
 
 

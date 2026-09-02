@@ -55,19 +55,43 @@ Las dos fronteras que no se cruzan:
 ### Primitivos y componentes de render (`render/primitives/`, `render/`)
 
 - Deben ser **presentacionales**: reciben props, renderizan UI, sin fetch ni estado de negocio.
-- Cada componente vive en su carpeta: `ComponentName/ComponentName.tsx`, `ComponentName.types.ts`, `index.ts`.
-- Exportar siempre desde `index.ts` (barrel export).
-- Usar `cn()` de `@/lib/cn` para combinar clases de Tailwind.
-- Props tipadas con interfaces dedicadas (`*.types.ts`).
-- Soportar `className` para extension desde el exterior.
-- Variantes via props (`variant`, `size`) en lugar de clases hardcodeadas en el consumidor.
+- **Un componente, un archivo, una exportacion nombrada** — §4 regla 3 de
+  `nuevo-desarrollo.md`: «`CuerpoKpi.tsx` exporta `CuerpoKpi`». Archivos planos:
+  `render/primitives/Label.tsx`, no `primitives/Label/Label.tsx`.
+  Reconciliado el 2026-09-02. Hasta esa fecha esta regla pedia carpeta por
+  componente con `.types.ts` e `index.ts`, y contradecia a §4 y a los 19
+  ejemplos de §14, que dan rutas planas. Gana `nuevo-desarrollo.md`, que es la
+  fuente especifica de este front.
+- **Sin barrel exports.** Un `index.ts` que reexporta un modulo entero rompe el
+  code splitting: importar un cuerpo arrastra los doce. Es la misma razon por la
+  que el registro usa `import()` por tipo.
+- Props tipadas en el archivo del componente. Un `*.types.ts` aparte separa la
+  prop de su uso sin comprar nada.
+- **`render/` NO acepta `className` desde afuera, y no es un olvido.** §4 regla
+  9: «todo color, radio y espaciado sale de custom properties en `tokens/`».
+  Una clase inyectada por el llamador es exactamente el agujero por donde entra
+  un valor que no es token: un `bg-slate-800` desde afuera esquiva L1 y
+  `token-drift`, porque el lint mira el archivo donde la clase se escribe y no
+  donde se aplica. El componente es dueño de su apariencia.
+- **Composicion sobre configuracion** — §4 regla 4, que nombra `variant="compact"`
+  como el anti-patron: «si hay variante real (shell compacto en `colSpan <= 3`),
+  es un subcomponente o rama explicita documentada, no un flag suelto». Asi lo
+  hace `PanelShell`, que deriva `compact` del `colSpan` y no recibe bandera.
+  El `size` de `Value` no es una variante visual: son los tres ROLES tipograficos
+  que declara §2.3 —kpi, celda, cuerpo—, que son del dato y no del componente.
 
 ```tsx
-// ✅ Correcto
-<Button variant="secondary" size="sm">Guardar</Button>
+// ✅ Correcto — el componente es dueño de sus clases, y salen de tokens
+<Label>Base</Label>
 
-// ❌ Incorrecto — clases sueltas en cada uso
-<button className="bg-gray-200 px-2 py-1 rounded">Guardar</button>
+// ❌ Incorrecto — clases sueltas en cada uso, y de la paleta de Tailwind:
+// `bg-gray-200` no es un token del .pen, no invierte con el tema y
+// `token-drift` no la ve. L1 del lint la marca.
+<span className="bg-gray-200 px-2 py-1 rounded">Base</span>
+
+// ❌ Incorrecto — `className` desde afuera es el mismo agujero, y ademas
+// invisible para el lint: la clase se escribe en el llamador.
+<Label className="bg-gray-200">Base</Label>
 ```
 
 ### Superficies (`surfaces/<nombre>/`)
@@ -83,16 +107,16 @@ Las dos fronteras que no se cruzan:
 - Usar alias `@/` para imports absolutos desde `src/`.
 - Orden de imports:
   1. Librerias externas (react, react-router-dom, etc.)
-  2. `@/api`, `@/catalog`, `@/tokens`, `@/render`, `@/surfaces`, `@/lib`
+  2. `@/api`, `@/catalog`, `@/tokens`, `@/render`, `@/surfaces`
   3. Imports relativos del mismo modulo (./)
-- Evitar imports circulares; si ocurren, refactorizar extrayendo a `lib/` o `types/`.
+- Evitar imports circulares; si ocurren, refactorizar extrayendo el tipo o la
+  funcion pura a su propio archivo dentro del mismo modulo.
 
 ```tsx
 // ✅ Correcto
 import { useState } from 'react'
 import { usePanelesBatch } from '@/api/hooks'
 import { estiloDePanel } from '@/render/grid'
-import { cn } from '@/lib/cn'
 ```
 
 ## TypeScript
