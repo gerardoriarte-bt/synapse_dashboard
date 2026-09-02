@@ -260,7 +260,8 @@ Fase 1 está cerrada salvo lo que depende del backend.
 Abierto ahora mismo:
 
 1. **B0.9** — lo más barato y lo que más desbloquea. A las cinco `# PREGUNTA:`
-   originales del contrato se le sumaron tres del front:
+   originales del contrato se le sumaron tres del front. Las ocho, con quién
+   decide cada una, en `docs/B0.9-preguntas-abiertas.md`:
    - `Contexto` no declara `locale`, moneda ni zona horaria. Es lo único que deja
      F1.13b en ⚠️: la inyección funciona, el valor se decide en una línea de
      `ConsoleContainer` marcada como supuesto.
