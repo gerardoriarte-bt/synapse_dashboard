@@ -954,10 +954,22 @@ chevron. Cubre F1.15 y F1.16.
 - Responsivos dentro de su panel; no asumen un ancho.
 - Un plot vacío no rompe: cero series o cero puntos rinden sin excepción.
 
-#### F1.13g ⬜ Portar los doce cuerpos
+#### F1.13g ⬜ Portar los doce cuerpos que existen en v2
 **Descripción.** `KpiBody`, `SeriesBody`, `BarsBody`, `TableBody`, `ProseBody`,
 `RecoBody`, `GaugeBody`, `ForecastBody`, `ListBody`, `CompositionBody`,
 `DistributionBody`, `BlockedBody`. Cubre F1.18.
+
+**Doce de quince, y la diferencia no es un recorte.** El enum `TipoPanel` del
+contrato tiene **quince** valores y §7 de `nuevo-desarrollo.md` exige
+implementarlos todos. Doce existen en `synapse_v2/src/render/bodies/` y se
+portan acá; los tres que faltan —**`comparison`, `matrix` y `graph`**— nunca se
+escribieron en v2 porque son las formas v1.1 de §8.12, que ningún backend emite
+todavía. Se construyen de cero en **F4.17, F4.18 y F4.19**, y F4.20 los registra.
+
+La consecuencia para F1.13h: hasta que estén los quince, el registro es un
+`Partial<Record<PanelType, …>>` y un tipo sin cuerpo **tiene que dar error
+explícito**, no un fallback silencioso. Recién con los tres de Fase 4 pasa a
+`Record` completo y agregar un tipo al enumerado sin su cuerpo deja de compilar.
 **Criterio de aceptación.**
 - Cada uno acepta `BodyProps<F, P>` con **sus params concretos**, nunca
   `Record<string, unknown>`.
