@@ -3,6 +3,8 @@
 Deriva de **§4 de `nuevo-desarrollo.md`**, que es normativo. Si esta guía y ese
 documento difieren, manda el documento.
 
+La jornada que llenó este árbol está contada en `BITACORA-2026-09-02.md`.
+
 ```
 src/
 ├── main.tsx                punto de entrada · monta App con los providers

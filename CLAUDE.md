@@ -249,20 +249,35 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-Leer `plan-de-trabajo.md`: las seis decisiones cerradas explican por qué el plan
+Leer `plan-de-trabajo.md`: las siete decisiones cerradas explican por qué el plan
 tiene las tareas que tiene, y el camino crítico dice qué desbloquea a más gente.
+`docs/BITACORA-2026-09-02.md` cuenta qué pasó en la jornada que cerró la Fase 1.
+
+**Estado al 2026-09-02.** El motor de panel está portado entero y la consola
+dibuja de punta a punta contra MSW. La puerta sale verde **sin bloqueados**.
+Fase 1 está cerrada salvo lo que depende del backend.
 
 Abierto ahora mismo:
 
-1. **F0.5 y B0.10** — el login lo coloca el backend, reciclado de otro front.
-   Faltan tres respuestas de integración: con qué clave se guarda el token, si el
-   login vive en otro origen (`localStorage` no cruza orígenes), y adónde
-   redirige un `401`.
-2. **F1.13a → F1.13j · el traslado de `render/`**, ya con puerta y runner
-   detrás: F0.9 y F0.11 cerraron el 2026-09-02. Van en ese orden —las primitivas
-   no dependen de nada, los cuerpos dependen de todo lo anterior—, y cada tarea
-   que llene `render/bodies/` o `render/plots/` le devuelve cobertura a L2 y L6.
-3. **La rebanada vertical** — shell + `Label`/`Value` + dos cuerpos sobre los
-   handlers de MSW que ya existen en `tests/mocks/`, para ver la consola dibujar
-   de punta a punta antes de que exista el backend.
-4. **B0.9** — las cinco `# PREGUNTA:` abiertas del contrato.
+1. **B0.9** — lo más barato y lo que más desbloquea. A las cinco `# PREGUNTA:`
+   originales del contrato se le sumaron tres del front:
+   - `Contexto` no declara `locale`, moneda ni zona horaria. Es lo único que deja
+     F1.13b en ⚠️: la inyección funciona, el valor se decide en una línea de
+     `ConsoleContainer` marcada como supuesto.
+   - `PanelConfigurado` no declara `orden`, que §4 nombra para el orden de
+     lectura al colapsar.
+   - `paramsDisponibles` es `string[]` —solo nombres—, así que los valores
+     válidos viven duplicados en `PARAM_SCHEMAS` del front.
+2. **F0.5 y B0.10** — el login lo coloca el backend. Faltan tres respuestas de
+   integración: con qué clave se guarda el token, si el login vive en otro origen
+   (`localStorage` no cruza orígenes), y adónde redirige un `401`.
+3. **F1.28** — lo único desbloqueado que queda de Fase 1: los `text-[10px]` y
+   `tracking-[0.12em]` arbitrarios son tokens de tipografía que faltan, no
+   utilidades.
+4. **F0.12** — reapuntar `gen-tokens.py`. Hoy `token-drift` cubre el hueco
+   comparando variable por variable, y confirmó que el port a mano de los 57 no
+   tiene deriva; lo que falta es que un cambio en el `.pen` llegue solo.
+
+Bloqueadas por el backend: **F1.25** (API real, espera el seed B1.16/B1.20) y
+**F1.31** (mínimos por gráfico, espera B1.21). Lo genuinamente nuevo es **Fase
+4** —admin y builder—, de lo que v2 no tiene una sola línea.
