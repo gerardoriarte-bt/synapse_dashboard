@@ -31,7 +31,9 @@
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
   /* Radio · 10px en paneles (`rounded-xl`), 2px en barras y bullets
-     (`rounded-xs`) · §2 de design.md. */
+     (`rounded-xs`).
+     §ANCLA:RADIO-1 · §2.1 de design.md: «Radio. 10px en paneles, 2px en barras
+     y bullets de datos. Sin excepciones.» */
   --radius-xs: 2px;
   --radius-sm: 6px;
   --radius-md: 7px;

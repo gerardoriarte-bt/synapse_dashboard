@@ -12,12 +12,43 @@ import { describe, expect, it } from 'vitest'
 import {
   CANVAS_WIDTH,
   COLUMNS,
+  columnsFor,
   fitsInGrid,
+  GAP,
   gridStyle,
   isGridMeasure,
   panelStyle,
+  ROW,
   span,
 } from '@/render/grid'
+
+describe('§ANCLA:GRILLA-1 · «12 columnas. Gap 16px. Fila base 80px.»', () => {
+  it('declara los tres números de la cita', () => {
+    // Los tres salen de §4 de design.md, no de leer grid.ts.
+    expect(COLUMNS).toBe(12)
+    expect(GAP).toBe(16)
+    expect(ROW).toBe(80)
+  })
+})
+
+describe('§ANCLA:GRILLA-2 · «alto = rowSpan × 80 + (rowSpan − 1) × 16»', () => {
+  it('span(n) es exactamente lo que dice la fórmula de la cita', () => {
+    // La aserción se escribe DESDE la cita: se transcribe la fórmula tal como
+    // design.md la enuncia, y se compara contra lo que el código devuelve. Si
+    // se escribiera llamando a span() a ambos lados, no podría fallar nunca.
+    for (let rowSpan = 1; rowSpan <= 12; rowSpan++) {
+      const segunLaSpec = rowSpan * 80 + (rowSpan - 1) * 16
+      expect(span(rowSpan)).toBe(segunLaSpec)
+    }
+  })
+})
+
+describe('§ANCLA:RESP-1 · «por debajo de 1280px el grid colapsa a 6 columnas»', () => {
+  it('colapsa a 6 justo por debajo de 1280 y no a 1280', () => {
+    expect(columnsFor(1279)).toBe(6)
+    expect(columnsFor(1280)).toBe(COLUMNS)
+  })
+})
 
 describe('span · px = 96·N − 16', () => {
   it('cumple la fórmula para N de 1 a 12', () => {
@@ -38,7 +69,6 @@ describe('span · px = 96·N − 16', () => {
 
 describe('el canvas', () => {
   it('mide 12 columnas con sus gaps = 1136', () => {
-    expect(COLUMNS).toBe(12)
     expect(CANVAS_WIDTH).toBe(1136)
   })
 })

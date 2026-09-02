@@ -1,5 +1,8 @@
 /** La grilla, en un solo lugar · F1.14.
  *
+ *  §ANCLA:GRILLA-1 · §4 de design.md: «12 columnas. Gap 16px. Fila base 80px.»
+ *  §ANCLA:GRILLA-2 · §4: «alto = rowSpan × 80 + (rowSpan − 1) × 16»
+ *
  *  Doce columnas de 80px con gap de 16. La columna mide lo mismo que la fila
  *  base, así que `colSpan` y `rowSpan` comparten fórmula y un panel de 4×4 es
  *  cuadrado. De ahí que exista una sola función y no dos.
@@ -13,7 +16,8 @@ export const ROW = 80
 export const GAP = 16
 export const STEP = ROW + GAP // 96
 
-/** px = 96·N − 16. N celdas más los gaps que quedan entre ellas. */
+/** px = 96·N − 16. N celdas más los gaps que quedan entre ellas.
+ *  §ANCLA:GRILLA-2 */
 export function span(n: number): number {
   if (!Number.isInteger(n) || n < 1) {
     throw new RangeError(`span espera un entero >= 1, recibió ${n}`)
@@ -87,6 +91,7 @@ export function panelStyle(c: Placement, columns: number = COLUMNS): React.CSSPr
  * colapso. La función queda declarada para no perder la regla, pero no está
  * cableada a ninguna superficie hasta que se decida si se incorpora.
  */
+/** §ANCLA:RESP-1 · §4: «por debajo de 1280px el grid colapsa a 6 columnas». */
 export const COLUMNS_BY_WIDTH = [
   { upTo: 767, columns: 1 },
   { upTo: 1279, columns: 6 },
