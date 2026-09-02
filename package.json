@@ -16,7 +16,11 @@
     "gen:api": "openapi-typescript contracts/synapse-api.yaml -o src/api/generated.ts",
     "plan": "python3 tools/plan-a-csv.py && python3 tools/plan-a-html.py",
     "plan:diff": "python3 tools/plan-diff.py",
-    "verify": "npm run typecheck && npm run lint && npm test && npm run build"
+    "verify": "python3 tools/gate.py",
+    "design-lint": "python3 tools/design-lint.py",
+    "spec-anclas": "python3 tools/spec-anclas.py",
+    "contract-drift": "python3 tools/contract-drift.py",
+    "token-drift": "python3 tools/token-drift.py"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",
