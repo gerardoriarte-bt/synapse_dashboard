@@ -59,21 +59,66 @@ export function gridStyle(columns: number = COLUMNS): React.CSSProperties {
   }
 }
 
+/** Cuánto ocupa un panel en una grilla recortada · §ANCLA:RESP-2
+ *
+ *  §4 de design.md: «por debajo de 1280px el grid colapsa a 6 columnas (**los
+ *  spans se dividen a la mitad, redondeando hacia arriba**)».
+ *
+ *  **Dividir NO es lo mismo que recortar**, y hasta el 2026-09-02 esto recortaba
+ *  con `Math.min`. Coinciden solo cuando el span excede las columnas: a seis
+ *  columnas, un `colSpan` 4 debe quedar en 2 y con `Math.min` quedaba en 4, o
+ *  sea ocupando dos tercios del ancho donde la spec pide un tercio. Un layout de
+ *  tres paneles de 4 se veía como uno de tres paneles de 12.
+ *
+ *  La fórmula generaliza el enunciado: a la mitad de las columnas, la mitad del
+ *  span. A una columna, todo ocupa 1, que es lo que §4 pide para el escalón de
+ *  768. El redondeo hacia arriba es lo que evita que un `colSpan` 1 desaparezca.
+ */
+export function spanFor(colSpan: number, columns: number): number {
+  return Math.min(columns, Math.max(1, Math.ceil((colSpan * columns) / COLUMNS)))
+}
+
+/** El orden de lectura con la grilla colapsada · §ANCLA:RESP-3
+ *
+ *  §4: «por debajo de 768px a 1 columna, **orden de lectura según `colStart` +
+ *  `orden`**».
+ *
+ *  Con una sola columna el orden visual ES el orden del DOM, así que hay que
+ *  ordenar de verdad: a doce columnas dos paneles de la misma fila se leen de
+ *  izquierda a derecha, y apilados sin ordenar se leerían en el orden en que el
+ *  backend los mandó, que no tiene por qué ser el mismo.
+ *
+ *  **PROPUESTA DE SPEC ABIERTA · `PanelConfigurado` no declara `orden`.** §4 lo
+ *  nombra pero el contrato de este repositorio no lo tiene: `orden` existe en
+ *  `Pestana`, no en el panel. Así que el desempate es la posición en el arreglo,
+ *  que es el orden que el backend declaró. Funciona, y no es lo que la regla
+ *  dice: mientras el campo no exista, dos paneles con el mismo `colStart`
+ *  dependen de un orden que el contrato no promete estable.
+ */
+export function readingOrder<T extends { colStart: number }>(panels: readonly T[]): T[] {
+  return panels
+    .map((panel, index) => ({ panel, index }))
+    .sort((a, b) => a.panel.colStart - b.panel.colStart || a.index - b.index)
+    .map(({ panel }) => panel)
+}
+
 /** Lo que consume el panel. La altura sale de `rowSpan`, nunca del contenido: un
  *  panel que crece con sus datos rompe la fila.
  *
- *  El `colSpan` se recorta acá y no en CSS. **El colapso no lo puede hacer solo
+ *  El `colSpan` se resuelve acá y no en CSS. **El colapso no lo puede hacer solo
  *  el CSS**: cambiar `grid-template-columns` a menos columnas no achica nada
  *  —un panel con `grid-column: 1 / span 12` crea columnas implícitas y la grilla
  *  se ENSANCHA en vez de recomponerse. Verificado en v2: a «seis columnas» un
- *  panel de colSpan 12 seguía midiendo 1.852px. */
+ *  panel de colSpan 12 seguía midiendo 1.852px.
+ */
 export function panelStyle(c: Placement, columns: number = COLUMNS): React.CSSProperties {
-  const colSpan = Math.min(c.colSpan, columns)
   const full = columns === COLUMNS
+  const colSpan = full ? c.colSpan : spanFor(c.colSpan, columns)
 
   return {
     // Con la grilla recortada se suelta el `colStart`: con la posición fija los
-    // paneles se pisarían entre sí. El orden lo preserva el orden del DOM.
+    // paneles se pisarían entre sí. El orden lo preserva el orden del DOM, que
+    // es lo que `readingOrder` ordena.
     gridColumn: full ? `${c.colStart} / span ${colSpan}` : `span ${colSpan}`,
     gridRow: `span ${c.rowSpan}`,
     minHeight: 0,
@@ -81,16 +126,20 @@ export function panelStyle(c: Placement, columns: number = COLUMNS): React.CSSPr
   }
 }
 
-/* ── PENDIENTE DE DECISIÓN ────────────────────────────────────────────────────
+/* ── El colapso, cableado · F1.30 ────────────────────────────────────────────
  *
- * §3.1 de `design.md` declara tres pisos de ancho —768 la consola colapsando el
- * grid, 1280 administración, 1600 el builder— y por debajo de 768 no se degrada:
- * no se soporta. En v2 está implementado y tiene ancla de spec y prueba.
+ * D1 lo resolvió a favor: §3.1 es normativa vigente. `nuevo-desarrollo.md` §14.13
+ * fija `repeat(12, 1fr)` sin colapso y no lo menciona; gana design.md, que es
+ * más específico para esta regla.
  *
- * `nuevo-desarrollo.md` NO lo menciona: su §14.13 fija `repeat(12, 1fr)` sin
- * colapso. La función queda declarada para no perder la regla, pero no está
- * cableada a ninguna superficie hasta que se decida si se incorpora.
+ * **El mínimo de la consola son 360px, no 768** — PS-12, 2026-08-21. Antes decía
+ * 768 y §3.1 describía con precisión el escalón de una columna POR DEBAJO de ese
+ * mínimo: la spec definía un ancho que ella misma declaraba fuera de soporte. Lo
+ * que sobraba era el mínimo, no el escalón. Por debajo de 360 no se degrada: no
+ * se soporta, y se declara.
  */
+export const MIN_WIDTH = 360
+
 /** §ANCLA:RESP-1 · §4: «por debajo de 1280px el grid colapsa a 6 columnas». */
 export const COLUMNS_BY_WIDTH = [
   { upTo: 767, columns: 1 },

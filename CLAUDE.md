@@ -165,7 +165,15 @@ hayan derivado.
   `grid-template-columns` a menos columnas no achica nada: un panel con
   `grid-column: 1 / span 12` crea columnas implícitas y la grilla se **ensancha**.
   Medido: a «seis columnas» un panel de colSpan 12 seguía midiendo 1.852px. El
-  span se recorta en JS. Ver `render/grid.ts`.
+  span se resuelve en JS. Ver `render/grid.ts`.
+- **Y el span se DIVIDE, no se recorta.** §4 pide «los spans se dividen a la
+  mitad, redondeando hacia arriba», y `Math.min(colSpan, columns)` coincide solo
+  cuando el span excede las columnas: a seis columnas un `colSpan` 4 quedaba en 4
+  donde va 2. Estuvo mal desde el port hasta el 2026-09-02 y lo detectó
+  `spec-anclas`, no una prueba. Sale de `spanFor`.
+- **El mínimo de la consola son 360px, no 768** (PS-12, 2026-08-21). El escalón
+  de una columna a 767 **sí se soporta**: lo que sobraba era el mínimo, no el
+  escalón.
 - **Sin `gridAutoRows` la fórmula `96·N − 16` queda escrita y no aplicada.**
 - **`params` de layout llega como `Record<string, unknown>`.** Un param mal
   escrito hoy se ignora en silencio; F1.29 lo resuelve validando en el adaptador
@@ -188,9 +196,10 @@ siguen esa convención: `tsc` sale con 2 cuando hay errores de tipo, y leerlo co
 BLOQUEADO dejó pasar dos errores con la puerta en verde. Para ellas, cualquier
 código distinto de cero es rojo.
 
-**Hoy la puerta sale verde con dos bloqueados, y es correcto:** `design-lint`
-corre 13 de 15 reglas —L2 y L6 tienen el ámbito vacío hasta F1.13— y
-`spec-anclas` ancla 6 de 9 —RESP-2 y RESP-3 esperan a F1.30, TIPO-1 a F1.13c.
+**Desde el 2026-09-02 la puerta sale verde sin bloqueados**: `design-lint` corre
+las 15 reglas y `spec-anclas` ancla las 9. Si vuelve a aparecer un ⊘, es que una
+regla se quedó sin ámbito o una cita de `design.md` dejó de tener quien la
+verifique — no es ruido.
 
 **Las pruebas se agrupan en `tests/`, fuera de `src/`.** Espeja la estructura del
 código, y la carpeta separada no es preferencia: los handlers de MSW son datos

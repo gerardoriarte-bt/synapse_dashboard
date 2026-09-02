@@ -73,17 +73,18 @@ ANCLAS = [
         id="RESP-2",
         seccion="§4",
         cita="los spans se dividen a la mitad, redondeando hacia arriba",
-        # `panelStyle` RECORTA con `Math.min(colSpan, columns)`, que no es lo
-        # mismo: a seis columnas, un colSpan 4 debería quedar en 2 y queda en 4.
-        # Coinciden solo cuando el span excede las columnas. F1.30 lo resuelve.
-        pendiente="F1.30 · colapso responsive",
+        # Hasta el 2026-09-02 `panelStyle` RECORTABA con `Math.min`, que no es lo
+        # mismo: a seis columnas un colSpan 4 quedaba en 4 y no en 2. F1.30 lo
+        # cerró con `spanFor`.
+        implementa=["src/render/grid.ts"],
     ),
     dict(
         id="RESP-3",
         seccion="§4",
         cita="por debajo de 768px a 1 columna, orden de lectura según `colStart` + `orden`",
-        # `columnsFor(767)` ya devuelve 1; el orden de lectura no lo ordena nadie.
-        pendiente="F1.30 · colapso responsive",
+        # `columnsFor(767)` devuelve 1 y `readingOrder` ordena el DOM, que con
+        # una sola columna ES el orden visual.
+        implementa=["src/render/grid.ts"],
     ),
     dict(
         id="COLOR-1",

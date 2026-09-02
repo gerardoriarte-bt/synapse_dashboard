@@ -1280,18 +1280,51 @@ ignora**. Con configuración por tenant eso deja de ser hipotético.
 - Un param desconocido se descarta con aviso en desarrollo; uno inválido degrada
   el panel con razón visible. Nunca se ignora en silencio.
 
-#### ➕ F1.30 ⬜ Colapso responsive
+#### ➕ F1.30 ✅ Colapso responsive
 **Descripción.** Cablear `columnsFor()`, que ya está escrita en `render/grid.ts`,
 y el reordenamiento por `colStart` al colapsar. **D1 lo resolvió a favor:** es una
 regla normativa vigente con ancla de spec y prueba en v2.
-**Criterio de aceptación.**
-- **El colapso no lo puede hacer solo el CSS.** Cambiar `grid-template-columns` a
-  menos columnas no achica nada: un panel con `grid-column: 1 / span 12` crea
-  columnas implícitas y la grilla se **ensancha**. Medido en v2: a «seis
-  columnas» un panel de colSpan 12 seguía midiendo 1.852px. El span se recorta en
-  JS y se suelta el `colStart`.
-- Por debajo de 768 **no se degrada: no se soporta**, y se declara.
-- La prueba se escribe desde la cita de §3.1, no mirando la implementación.
+**Criterio de aceptación.** ✅ Cumplido el 2026-09-02.
+- ✅ **El colapso no lo puede hacer solo el CSS.** El span se resuelve en JS
+  —`spanFor`— y se suelta el `colStart`. `useColumns` escucha el viewport.
+- ⚠️ **El mínimo NO es 768: son 360.** Ver abajo.
+- ✅ La prueba se escribe desde la cita de §3.1, y las cuatro que verifican la
+  división caen si se vuelve a `Math.min`. Verificado por mutación.
+
+**El defecto que esto arregla, y que estaba en el código desde el port.**
+`panelStyle` recortaba con `Math.min(colSpan, columns)` donde §4 pide **dividir a
+la mitad, redondeando hacia arriba**. Coinciden solo cuando el span excede las
+columnas, que era el único caso probado: a seis columnas, un `colSpan` 4 quedaba
+en 4 —dos tercios del ancho— donde la spec pide 2, un tercio. Un layout de tres
+paneles de 4 se veía como uno de tres paneles de 12. Lo detectó `spec-anclas` al
+declarar RESP-2, no una prueba.
+
+**DIVERGENCIA 1 · el criterio de esta tarea decía 768 y design.md dice 360.**
+Este plan pedía «por debajo de 768 no se degrada: no se soporta». `design.md`
+—normativo, y más reciente: PS-12, 2026-08-21— dice lo contrario con todas las
+letras: «El mínimo de la consola es 360 desde el 2026-08-21. Antes decía 768, y
+§3.1 definía con precisión el escalón de una columna **por debajo de ese
+mínimo**: la spec describía un ancho que ella misma declaraba fuera de soporte.
+El escalón está implementado, probado y dibujado, así que **lo que sobraba era el
+mínimo, no el escalón**.»
+
+Se implementó según `design.md`, que es la fuente más específica para esta regla.
+`MIN_WIDTH = 360` y el escalón de una columna a 767 **sí se soporta**. Queda
+anotado acá y no se tocó `design.md`.
+
+Con el mínimo en 360 hay una consecuencia declarada que `design.md` ya nombra y
+**no está resuelta**: las hojas laterales. C2 abre al 60% del viewport y C3 a
+940px fijos; a 360 la primera son 216px —menos que un panel— y la segunda no
+entra. Es trabajo de v1.1 y va con F3.1.
+
+**DIVERGENCIA 2 · §4 nombra `orden` y el contrato no lo tiene.** La regla dice
+«orden de lectura según `colStart` + `orden`», y `PanelConfigurado` declara
+`id, tipo, metricId, colStart, colSpan, rowSpan, opciones` — sin `orden`, que
+existe en `Pestana` y no en el panel. `readingOrder` desempata por la posición en
+el arreglo, que es el orden que el backend declaró. Funciona, y no es lo que la
+regla dice: mientras el campo no exista, dos paneles con el mismo `colStart`
+dependen de un orden que el contrato no promete estable. **Propuesta de spec para
+B0.9.**
 
 #### ➕ F1.31 ⬜ Registro de gráficos y verificación de mínimos
 **Descripción.** D2 lo resolvió a favor. Dos piezas: `catalog/plots.ts` con los

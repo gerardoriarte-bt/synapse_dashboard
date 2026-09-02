@@ -10,7 +10,8 @@
  */
 import { useLayoutEffect } from 'react'
 import { Label } from '../../render/primitives/Label'
-import { gridStyle } from '../../render/grid'
+import { gridStyle, readingOrder } from '../../render/grid'
+import { useColumns } from '../../render/useColumns'
 import { measureLayoutCommit, measureLayoutPainted } from '../../render/budget'
 import { PanelInGrid } from './PanelInGrid'
 import { Topbar } from './Topbar'
@@ -45,6 +46,10 @@ export function Console({
   onChangeTheme,
   onRetryPanels,
 }: Props) {
+  // El colapso · F1.30. No lo puede hacer solo el CSS: el `colSpan` viaja en un
+  // estilo en línea y una media query no lo alcanza.
+  const columns = useColumns()
+
   // Un solo `now` para toda la pantalla. Si cada panel llamara a `new Date()`,
   // dos paneles del mismo lote podrían escribir frescuras distintas para la
   // misma corrida del feed.
@@ -75,8 +80,11 @@ export function Console({
         {...(onChangeTheme === undefined ? {} : { onChangeTheme })}
       />
 
-      <div style={gridStyle()}>
-        {panels.map((panel) => {
+      <div style={gridStyle(columns)}>
+        {/* Con la grilla colapsada el orden visual ES el orden del DOM, así que
+            se ordena de verdad · §ANCLA:RESP-3. A doce columnas el orden lo fija
+            `colStart` en el estilo y esto no cambia nada. */}
+        {readingOrder(panels).map((panel) => {
           const metric = metricsById.get(panel.metricId)
 
           // Un `metricId` que el catálogo no resuelve NO se pinta con un
@@ -97,6 +105,7 @@ export function Console({
               panel={panel}
               metric={metric}
               payload={payloadOf(panel.id)}
+              columns={columns}
               format={format}
               now={now}
               {...(onRetryPanels === undefined ? {} : { onRetry: onRetryPanels })}

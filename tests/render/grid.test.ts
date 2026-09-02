@@ -17,9 +17,12 @@ import {
   GAP,
   gridStyle,
   isGridMeasure,
+  MIN_WIDTH,
   panelStyle,
+  readingOrder,
   ROW,
   span,
+  spanFor,
 } from '@/render/grid'
 
 describe('§ANCLA:GRILLA-1 · «12 columnas. Gap 16px. Fila base 80px.»', () => {
@@ -121,5 +124,103 @@ describe('fitsInGrid · el borde del canvas', () => {
     expect(fitsInGrid({ colStart: 7, colSpan: 6, rowSpan: 1 })).toBe(true)
     expect(fitsInGrid({ colStart: 8, colSpan: 6, rowSpan: 1 })).toBe(false)
     expect(fitsInGrid({ colStart: 0, colSpan: 1, rowSpan: 1 })).toBe(false)
+  })
+})
+
+describe('§ANCLA:RESP-2 · «los spans se dividen a la mitad, redondeando hacia arriba»', () => {
+  it('a seis columnas, cada span es la mitad del original', () => {
+    // La aserción se escribe DESDE la cita: se divide a mano y se redondea
+    // hacia arriba, y se compara contra lo que devuelve el código. Escrita
+    // llamando a `spanFor` de los dos lados no podría fallar nunca.
+    for (const colSpan of [2, 4, 6, 8, 10, 12]) {
+      expect(spanFor(colSpan, 6)).toBe(colSpan / 2)
+    }
+  })
+
+  it('redondea HACIA ARRIBA los impares', () => {
+    expect(spanFor(3, 6)).toBe(2) // 1.5 → 2
+    expect(spanFor(5, 6)).toBe(3) // 2.5 → 3
+    expect(spanFor(7, 6)).toBe(4) // 3.5 → 4
+  })
+
+  it('un colSpan 1 no desaparece · el redondeo hacia arriba es lo que lo salva', () => {
+    expect(spanFor(1, 6)).toBe(1)
+    expect(spanFor(1, 1)).toBe(1)
+  })
+
+  it('DIVIDIR no es RECORTAR · es la diferencia que el código tenía mal', () => {
+    // Hasta el 2026-09-02 esto usaba `Math.min(colSpan, columns)`. Coinciden
+    // solo cuando el span excede las columnas: un colSpan 4 a seis columnas
+    // quedaba en 4 —dos tercios del ancho— donde la spec pide 2, un tercio.
+    expect(spanFor(4, 6)).toBe(2)
+    expect(spanFor(4, 6)).not.toBe(Math.min(4, 6))
+  })
+
+  it('a doce columnas no se toca nada', () => {
+    for (const colSpan of [1, 3, 4, 7, 12]) {
+      expect(spanFor(colSpan, COLUMNS)).toBe(colSpan)
+    }
+  })
+
+  it('panelStyle aplica la división y suelta el colStart', () => {
+    expect(panelStyle({ colStart: 5, colSpan: 4, rowSpan: 2 }, 6).gridColumn).toBe('span 2')
+    // Con la posición fija los paneles se pisarían entre sí.
+    expect(panelStyle({ colStart: 5, colSpan: 4, rowSpan: 2 }, 6).gridColumn).not.toContain('5 /')
+  })
+})
+
+describe('§ANCLA:RESP-3 · «por debajo de 768px a 1 columna, orden de lectura según colStart»', () => {
+  it('a 767 la grilla es de una columna y todo ocupa 1', () => {
+    expect(columnsFor(767)).toBe(1)
+    expect(spanFor(12, 1)).toBe(1)
+    expect(spanFor(3, 1)).toBe(1)
+  })
+
+  it('ordena por colStart · apilados, el orden del DOM ES el orden visual', () => {
+    // A doce columnas dos paneles de la misma fila se leen de izquierda a
+    // derecha; apilados sin ordenar se leerían como los mandó el backend.
+    const panels = [
+      { id: 'derecha', colStart: 9 },
+      { id: 'izquierda', colStart: 1 },
+      { id: 'medio', colStart: 5 },
+    ]
+    expect(readingOrder(panels).map((p) => p.id)).toEqual(['izquierda', 'medio', 'derecha'])
+  })
+
+  it('con el mismo colStart conserva el orden del backend', () => {
+    // `PanelConfigurado` no declara `orden` —§4 lo nombra y el contrato no lo
+    // tiene—, así que el desempate es la posición en el arreglo.
+    const panels = [
+      { id: 'a', colStart: 1 },
+      { id: 'b', colStart: 1 },
+      { id: 'c', colStart: 1 },
+    ]
+    expect(readingOrder(panels).map((p) => p.id)).toEqual(['a', 'b', 'c'])
+  })
+
+  it('no muta el arreglo que recibe', () => {
+    const panels = [{ id: 'b', colStart: 9 }, { id: 'a', colStart: 1 }]
+    const antes = [...panels]
+    readingOrder(panels)
+    expect(panels).toEqual(antes)
+  })
+})
+
+describe('los tres escalones de §3.1', () => {
+  it('12 · 6 · 1, en sus bordes', () => {
+    expect(columnsFor(1280)).toBe(12)
+    expect(columnsFor(1279)).toBe(6)
+    expect(columnsFor(768)).toBe(6)
+    expect(columnsFor(767)).toBe(1)
+  })
+
+  it('el mínimo de la consola son 360, no 768 · PS-12', () => {
+    // design.md, 2026-08-21: «Antes decía 768, y §3.1 definía con precisión el
+    // escalón de una columna POR DEBAJO de ese mínimo: la spec describía un
+    // ancho que ella misma declaraba fuera de soporte. Lo que sobraba era el
+    // mínimo, no el escalón.»
+    expect(MIN_WIDTH).toBe(360)
+    // Y a 360 la consola responde: una columna, no una pantalla en blanco.
+    expect(columnsFor(MIN_WIDTH)).toBe(1)
   })
 })
