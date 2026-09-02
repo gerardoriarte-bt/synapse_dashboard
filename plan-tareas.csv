@@ -250,26 +250,26 @@ F1.27,Front · Fase 1 — Consola y el traslado de render/,Front,1,Consola y el 
 F1.13a,Front · Fase 1 — Consola y el traslado de render/,Front,1,Consola y el traslado de render/,Portar las primitivas de gráfico (plots/core/),"Siete archivos, ~635 líneas: scale.ts (escalas y techo), useSize.ts (ResizeObserver), Axis.tsx, Grid.tsx, Series.tsx, Band.tsx, Arco.tsx. Es la base de los seis plots y no depende de nada más.","• Ningún archivo de core/ importa de api/ ni conoce una métrica.
 • useSize mide con ResizeObserver — es el único estado local permitido en render/, porque es de layout y no de negocio.
 • Las pruebas de scale y useSize viajan con ellos y pasan.
-• La reserva del eje sale del rótulo más largo, no del rótulo del máximo: con techo 1M el máximo es «1M» de dos caracteres y el tick «500K» son cuatro, y calculado sobre el máximo se salía por la izquierda y se leía «00K».",pendiente,no,,equipo:front fase:1 estado:pendiente
-F1.13b,Front · Fase 1 — Consola y el traslado de render/,Front,1,Consola y el traslado de render/,Portar formato.ts e inyectar el locale,"El formateo de cifras, en un solo lugar. En v2 LOCALE es la constante 'es-MX' y cinco de los seis plots importan el formateador directo en vez de recibirlo, así que la prop existe y está muerta.","• PlotProps.format se usa: ningún plot importa el formateador. Verificable con un grep, y candidato a regla de design-lint.
+• La reserva del eje sale del rótulo más largo, no del rótulo del máximo: con techo 1M el máximo es «1M» de dos caracteres y el tick «500K» son cuatro, y calculado sobre el máximo se salía por la izquierda y se leía «00K».",hecho,no,,equipo:front fase:1 estado:hecho
+F1.13b,Front · Fase 1 — Consola y el traslado de render/,Front,1,Consola y el traslado de render/,Portar format.ts e inyectar el locale,"El formateo de cifras, en un solo lugar. En v2 LOCALE es la constante 'es-MX' y cinco de los seis plots importan el formateador directo en vez de recibirlo, así que la prop existe y está muerta.","• PlotProps.format se usa: ningún plot importa el formateador. Verificable con un grep, y candidato a regla de design-lint.
 • El locale, la moneda y la zona horaria salen del tenant vía /config/me y bajan por props.
 • La abreviatura no tiene escalón para mil millones: «B» es billion en inglés y un billón en español son 10¹², así que 2.5e9 sale «2,500M» — largo pero sin ambigüedad.
-• Se conservan sus pruebas.",pendiente,no,,equipo:front fase:1 estado:pendiente
+• Se conservan sus pruebas.",parcial,no,,equipo:front fase:1 estado:parcial
 F1.13c,Front · Fase 1 — Consola y el traslado de render/,Front,1,Consola y el traslado de render/,Portar los primitivos Label y Value,"Label es por donde pasa todo texto de meta: mono 10px, 0.12em, mayúsculas, text-dim. Existe porque §1.3 no admite un número desnudo.","• Traducidos a utilidades de Tailwind sobre tokens; cero hex, cero valor arbitrario que no salga de un token.
 • Value aplica cifra (tabular-nums) y recibe el texto ya formateado: no formatea, porque el locale es del tenant.
-• El andamio de Console.tsx que hoy usa text-[10px] tracking-[0.12em] a mano pasa a usar Label.",pendiente,no,,equipo:front fase:1 estado:pendiente
+• El andamio de Console.tsx que hoy usa text-[10px] tracking-[0.12em] a mano pasa a usar Label.",hecho,no,,equipo:front fase:1 estado:hecho
 F1.13d,Front · Fase 1 — Consola y el traslado de render/,Front,1,Consola y el traslado de render/,Portar los seis estados,"EstadoCargando, EstadoVacio, EstadoDegradado, EstadoBloqueado, EstadoSinPermiso, EstadoError → LoadingState, EmptyState, DegradedState, BlockedState, NoAccessState, ErrorState.","• Reemplazan el cuerpo, nunca el shell. Título, BASE y procedencia siguen visibles mientras el panel carga, falla o está bloqueado.
 • LoadingState es un esqueleto con la forma del tipo, no un spinner genérico.
 • EmptyState es invitación a actuar con vacioRazon, no un error.
 • DegradedState muestra la cifra: lo que cambia es el badge del shell.
 • BlockedState no muestra número ni aproximación.
-• Cada uno tiene una prueba que verifica que la anatomía del shell sigue ahí.",pendiente,no,,equipo:front fase:1 estado:pendiente
-F1.13e,Front · Fase 1 — Consola y el traslado de render/,Front,1,Consola y el traslado de render/,Portar el shell del panel (Panel + PanelShell + Procedencia),"~275 líneas. La anatomía obligatoria de §9: bullet de familia, título, BASE, procedencia con frescura relativa, dirección semántica, CTA y chevron. Cubre F1.15 y F1.16.","• El shell recibe el cuerpo por children y no lo conoce: un estado no puede borrar la cabecera porque no la tiene.
+• Cada uno tiene una prueba que verifica que la anatomía del shell sigue ahí.",hecho,no,,equipo:front fase:1 estado:hecho
+F1.13e,Front · Fase 1 — Consola y el traslado de render/,Front,1,Consola y el traslado de render/,Portar el shell del panel (Panel + PanelShell + Provenance),"~275 líneas. La anatomía obligatoria de §9: bullet de familia, título, BASE, procedencia con frescura relativa, dirección semántica, CTA y chevron. Cubre F1.15 y F1.16.","• El shell recibe el cuerpo por children y no lo conoce: un estado no puede borrar la cabecera porque no la tiene.
 • BASE = denominador + ventana. Con BLOQUEADO sale de Metric.base (D6).
 • La frescura relativa recibe el ahora por props, para que no dependa del reloj de quien renderiza y las pruebas sean deterministas.
 • La dirección semántica se pinta solo si la métrica la declara: ponerla donde no aplica la vacía de sentido.
 • El título es h2: el único nivel por encima es el h1 de la pregunta de la pestaña, y saltarse un nivel rompe la navegación por encabezados, que es como se recorre una pantalla de doce paneles con un lector.
-• Shell compacto en colSpan ≤ 3 (F1.16): misma información, otro reparto — la meta baja a dos líneas. Es una rama documentada, no un flag suelto.",pendiente,no,,equipo:front fase:1 estado:pendiente
+• Shell compacto en colSpan ≤ 3 (F1.16): misma información, otro reparto — la meta baja a dos líneas. Es una rama documentada, no un flag suelto.",hecho,no,,equipo:front fase:1 estado:hecho
 F1.13f,Front · Fase 1 — Consola y el traslado de render/,Front,1,Consola y el traslado de render/,Portar los seis plots,"PlotBars, PlotSeries, PlotGauge, PlotForecast, PlotComposition, PlotDistribution. Cubre F1.21.","• Todos aceptan PlotProps<F>. En v2 solo uno lo hacía y los otros cinco tenían firma propia, lo que hacía imposible indexarlos en un registro.
 • El color llega como family y el plot no sabe cuál le tocó: usa var(--color-fam-${family}-N).
 • Responsivos dentro de su panel; no asumen un ancho.
@@ -278,15 +278,15 @@ F1.13g,Front · Fase 1 — Consola y el traslado de render/,Front,1,Consola y el
 • Función pura: sin useState de negocio, sin useEffect de fetch, sin contexto global.
 • GaugeBody sin maximo en opciones no dibuja el arco y lo dice; no inventa una escala.
 • ProseBody y RecoBody reciben pilares como objetos y no parsean texto.
-• Cada cuerpo tiene una prueba de render con props mínimas válidas del contrato.",pendiente,no,,equipo:front fase:1 estado:pendiente
+• Cada cuerpo tiene una prueba de render con props mínimas válidas del contrato.",parcial,no,,equipo:front fase:1 estado:parcial
 F1.13h,Front · Fase 1 — Consola y el traslado de render/,Front,1,Consola y el traslado de render/,"Escribir el registro sin any (F1.17, F1.22)","registry.ts mapea PanelType → componente con React.lazy, para que una pestaña no descargue los cuerpos que no usa, y aplica memo en un solo lugar. §14.4 del documento lo ejemplifica con ComponentType<any> y §4 regla 2 lo prohíbe: «el v2 lo toleró en el registro de cuerpos; el front nuevo no». Las dos cosas no pueden ser ciertas a la vez.","• La estrechez vive en un adaptador tipado y documentado, no repartida en doce archivos ni tapada con any.
 • Agregar una prop obligatoria a BodyProps no compila hasta actualizar los sitios que montan un cuerpo.
 • Un tipo sin cuerpo registrado produce error explícito, no un fallback silencioso (F1.22, y §1 principio 6).
 • preloadBodies(tipos) trae los chunks en paralelo con panels:batch, en cuanto /config/tabs dice qué tipos tiene la pestaña. Sin eso el lazy recién pide el chunk cuando ya llegó el dato, y el panel parpadea por una descarga que se podía haber hecho mientras tanto.
-• Una prueba resuelve cada cargador y verifica que lo que sale es un memo.",pendiente,no,,equipo:front fase:1 estado:pendiente
-F1.13i,Front · Fase 1 — Consola y el traslado de render/,Front,1,Consola y el traslado de render/,Portar estado.ts — la derivación del estado visual,"estadoVisual, resolverGobierno, tieneValor. Vive en render/ y no en api/ porque el predicado lo necesita quien lee el payload, no quien lo declara — y render/ no puede importar valores de api/.","• VACIO se deriva del valor y cae en el mismo switch que los estados que sí vienen del backend.
+• Una prueba resuelve cada cargador y verifica que lo que sale es un memo.",hecho,no,,equipo:front fase:1 estado:hecho
+F1.13i,Front · Fase 1 — Consola y el traslado de render/,Front,1,Consola y el traslado de render/,Portar state.ts — la derivación del estado visual,"estadoVisual, resolverGobierno, tieneValor. Vive en render/ y no en api/ porque el predicado lo necesita quien lee el payload, no quien lo declara — y render/ no puede importar valores de api/.","• VACIO se deriva del valor y cae en el mismo switch que los estados que sí vienen del backend.
 • DEGRADADO cae con DISPONIBLE al elegir cuerpo: sí muestra cifra, y la diferencia la pinta el shell como badge.
-• Nada más se deriva. Degradación, permisos y filtrado son del backend.",pendiente,no,,equipo:front fase:1 estado:pendiente
+• Nada más se deriva. Degradación, permisos y filtrado son del backend.",hecho,no,,equipo:front fase:1 estado:hecho
 F1.13j,Front · Fase 1 — Consola y el traslado de render/,Front,1,Consola y el traslado de render/,Portar presupuesto.ts — el presupuesto de render,La medición de cuánto tarda una pestaña en componer y pintar. Es lo que convierte «la consola va lenta» en un número.,"• Mide desde que llega la config de la pestaña hasta el commit y hasta el pintado.
 • No se activa en producción salvo bajo un flag.",pendiente,no,,equipo:front fase:1 estado:pendiente
 F1.5,Front · Fase 1 — Consola y el traslado de render/,Front,1,Consola y el traslado de render/,surfaces/console/Console.tsx — orquestación,"Cadena /config/me → /config/tabs/{id} → panels:batch, cableada. Falta reemplazar el andamio por paneles reales.","• ✅ Ningún panel, métrica ni posición aparece literal en el archivo.

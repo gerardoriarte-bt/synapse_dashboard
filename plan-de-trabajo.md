@@ -912,7 +912,7 @@ desglosado en diez tareas.
 
 ### El traslado
 
-#### F1.13a ⬜ Portar las primitivas de gráfico (`plots/core/`)
+#### F1.13a ✅ Portar las primitivas de gráfico (`plots/core/`)
 **Descripción.** Siete archivos, ~635 líneas: `scale.ts` (escalas y `techo`),
 `useSize.ts` (`ResizeObserver`), `Axis.tsx`, `Grid.tsx`, `Series.tsx`,
 `Band.tsx`, `Arco.tsx`. Es la base de los seis plots y no depende de nada más.
@@ -925,7 +925,7 @@ desglosado en diez tareas.
   techo 1M el máximo es «1M» de dos caracteres y el tick «500K» son cuatro, y
   calculado sobre el máximo se salía por la izquierda y se leía «00K».
 
-#### F1.13b ⬜ Portar `formato.ts` e **inyectar el locale**
+#### F1.13b ⚠️ Portar `format.ts` e **inyectar el locale**
 **Descripción.** El formateo de cifras, en un solo lugar. En v2 `LOCALE` es la
 constante `'es-MX'` y **cinco de los seis plots importan el formateador directo**
 en vez de recibirlo, así que la prop existe y está muerta.
@@ -939,7 +939,7 @@ en vez de recibirlo, así que la prop existe y está muerta.
   ambigüedad.
 - Se conservan sus pruebas.
 
-#### F1.13c ⬜ Portar los primitivos `Label` y `Value`
+#### F1.13c ✅ Portar los primitivos `Label` y `Value`
 **Descripción.** `Label` es por donde pasa **todo** texto de meta: mono 10px,
 `0.12em`, mayúsculas, `text-dim`. Existe porque §1.3 no admite un número desnudo.
 **Criterio de aceptación.**
@@ -950,7 +950,7 @@ en vez de recibirlo, así que la prop existe y está muerta.
 - El andamio de `Console.tsx` que hoy usa `text-[10px] tracking-[0.12em]` a mano
   pasa a usar `Label`.
 
-#### F1.13d ⬜ Portar los seis estados
+#### F1.13d ✅ Portar los seis estados
 **Descripción.** `EstadoCargando`, `EstadoVacio`, `EstadoDegradado`,
 `EstadoBloqueado`, `EstadoSinPermiso`, `EstadoError` → `LoadingState`,
 `EmptyState`, `DegradedState`, `BlockedState`, `NoAccessState`, `ErrorState`.
@@ -964,7 +964,7 @@ en vez de recibirlo, así que la prop existe y está muerta.
 - `BlockedState` no muestra número ni aproximación.
 - Cada uno tiene una prueba que verifica que la anatomía del shell sigue ahí.
 
-#### F1.13e ⬜ Portar el shell del panel (`Panel` + `PanelShell` + `Procedencia`)
+#### F1.13e ✅ Portar el shell del panel (`Panel` + `PanelShell` + `Provenance`)
 **Descripción.** ~275 líneas. La anatomía obligatoria de §9: bullet de familia,
 título, BASE, procedencia con frescura relativa, dirección semántica, CTA y
 chevron. Cubre F1.15 y F1.16.
@@ -982,6 +982,28 @@ chevron. Cubre F1.15 y F1.16.
 - Shell compacto en `colSpan ≤ 3` (F1.16): misma información, otro reparto — la
   meta baja a dos líneas. Es una rama documentada, no un flag suelto.
 
+**Cerradas el 2026-09-02 · F1.13b, c, d, e, i.** El panel ya es real de punta a
+punta: `Console.tsx` monta `<Panel>` con el payload que devuelve el backend y los
+siete estados salen de ahí. Lo que falta para que pinte una cifra es el registro
+(F1.13h) y los cuerpos (F1.13g), que se montan en el slot que el shell ya expone.
+
+**F1.13b queda en ⚠️ y no en ✅, por el contrato.** La inyección está hecha
+—`createFormat(locale)` y `PlotProps.format`, ningún componente importa el
+formateador— pero el criterio pide que «el locale, la moneda y la zona horaria
+salgan del tenant vía `/config/me`», y **`Contexto` no declara esos tres campos**.
+Hoy se deciden en una sola línea de `Console.tsx`, marcada como supuesto. Cuando
+el yaml los tenga se cambia esa línea y nada más. Va con las preguntas de B0.9.
+
+**Dos huecos de v2 que el contrato de acá cierra.** `Metrica.base` es requerido,
+así que `resolveGovernance` cae al catálogo y **un panel bloqueado declara su
+denominador** —en v2 mostraba la ventana sin la base—. Y `Value` ya no formatea:
+recibe el texto hecho, que es lo que sacó `es-MX` de adentro de `render/`.
+
+**Cobertura ganada en la puerta.** `render/Panel/` y `render/states/` le
+devolvieron ámbito a L5 y L15 del lint, y `Label` cerró el ancla TIPO-1:
+`spec-anclas` pasó de 6 a 7 de 9. Los dos chequeos siguen BLOQUEADOS por L2, L6
+—que esperan a `render/plots/` y `render/bodies/`— y por RESP-2 y RESP-3.
+
 #### F1.13f ⬜ Portar los seis plots
 **Descripción.** `PlotBars`, `PlotSeries`, `PlotGauge`, `PlotForecast`,
 `PlotComposition`, `PlotDistribution`. Cubre F1.21.
@@ -993,7 +1015,7 @@ chevron. Cubre F1.15 y F1.16.
 - Responsivos dentro de su panel; no asumen un ancho.
 - Un plot vacío no rompe: cero series o cero puntos rinden sin excepción.
 
-#### F1.13g ⬜ Portar los doce cuerpos que existen en v2
+#### F1.13g ⚠️ Portar los doce cuerpos que existen en v2
 **Descripción.** `KpiBody`, `SeriesBody`, `BarsBody`, `TableBody`, `ProseBody`,
 `RecoBody`, `GaugeBody`, `ForecastBody`, `ListBody`, `CompositionBody`,
 `DistributionBody`, `BlockedBody`. Cubre F1.18.
@@ -1019,7 +1041,7 @@ explícito**, no un fallback silencioso. Recién con los tres de Fase 4 pasa a
 - `ProseBody` y `RecoBody` reciben pilares como objetos y **no parsean texto**.
 - Cada cuerpo tiene una prueba de render con props mínimas válidas del contrato.
 
-#### F1.13h ⬜ Escribir el registro **sin `any`** (F1.17, F1.22)
+#### F1.13h ✅ Escribir el registro **sin `any`** (F1.17, F1.22)
 **Descripción.** `registry.ts` mapea `PanelType` → componente con `React.lazy`,
 para que una pestaña no descargue los cuerpos que no usa, y aplica `memo` en un
 solo lugar. §14.4 del documento lo ejemplifica con `ComponentType<any>` y §4
@@ -1043,7 +1065,39 @@ métrica, que es un invariante del catálogo y no del tipo. Pero un
   se podía haber hecho mientras tanto.
 - Una prueba resuelve cada cargador y verifica que lo que sale es un `memo`.
 
-#### F1.13i ⬜ Portar `estado.ts` — la derivación del estado visual
+**Avance del 2026-09-02 · F1.13a y F1.13h cerradas, F1.13g en ⚠️.**
+
+`plots/core/` completo: `scale.ts`, `useSize.ts`, `axisGeometry.ts`, `Axis.tsx`,
+`Grid.tsx`, `Series.tsx`, `seriesColor.ts`, `Band.tsx`, `Arc.tsx`, `arcPath.ts`.
+Se partió en más archivos que en v2 porque un módulo que exporta componentes y
+funciones rompe el fast refresh de Vite, y `.cursorrules` ya pedía un componente
+por archivo.
+
+**El registro no tiene un solo `any`.** §14.4 lo ejemplifica con
+`ComponentType<any>` y §4 regla 2 lo prohíbe; gana la regla. La estrechez vive en
+`adapt()`: una línea con su razón escrita. `value` se ancha a la unión `Value`
+—no a `any`— y `params` a `unknown`, **y el resto de las props conserva su
+tipo**, que es lo que hace que agregar una prop obligatoria a `BodyProps` rompa
+la compilación en el sitio que monta el cuerpo. En v2 un `ComponentType<any>`
+entero dejó pasar tres sitios reales al agregar `metrica`.
+
+**Tres cuerpos de doce**: `KpiBody`, `ProseBody`, `BlockedBody` — los que no
+dependen de un plot. Faltan nueve, y con ellos F1.13f.
+
+**Bug encontrado al probar la inyección del locale.** `formatearCifra` de v2
+escribía la abreviatura con `String(Number(...))`, así que **la cifra abreviada
+siempre salía con punto decimal** mientras la entera pasaba por `Intl`. Con el
+locale fijo en `es-MX` las dos coincidían y el defecto era invisible; con
+`createFormat('de-DE')` aparece en el primer render. Corregido, y la
+comprobación de exactitud ahora se hace sobre el número y no sobre el texto
+—`Number('4,28')` es `NaN` en cuanto el locale usa coma, así que con la
+comparación anterior no se habría abreviado nada nunca.
+
+**`design-lint` pasó a verde con las 15 reglas.** `render/bodies/` le devolvió
+ámbito a L6, que era la última sin cobertura. La puerta queda con un solo
+bloqueado: `spec-anclas`, por RESP-2 y RESP-3, que espera a F1.30.
+
+#### F1.13i ✅ Portar `state.ts` — la derivación del estado visual
 **Descripción.** `estadoVisual`, `resolverGobierno`, `tieneValor`. Vive en
 `render/` y no en `api/` porque el predicado lo necesita quien **lee** el
 payload, no quien lo declara — y `render/` no puede importar valores de `api/`.
