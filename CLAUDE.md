@@ -182,6 +182,23 @@ hayan derivado.
   de una columna a 767 **sí se soporta**: lo que sobraba era el mínimo, no el
   escalón.
 - **Sin `gridAutoRows` la fórmula `96·N − 16` queda escrita y no aplicada.**
+- **El spread condicional de JSX apaga el chequeo de props en exceso.** El idioma
+  `{...(x === undefined ? {} : { x })}` es obligatorio con
+  `exactOptionalPropertyTypes` —no se puede pasar `undefined` a una prop
+  opcional—, y tiene un costo: **una prop mal nombrada compila.** Pasó tres veces
+  el 2026-09-02: `onChat` a un cuerpo que no lo declara, `onRetry` donde `Exit`
+  espera `onClick`, y un CTA que se pintaba sin llamar a nada.
+
+  El síntoma es siempre el mismo —un callback que no se dispara— y no lo ve el
+  compilador ni el lint. **La regla de prueba es: verificar que el callback
+  DISPARE, no que el botón exista.** Un botón muerto se ve igual que uno que
+  funciona. Vale para toda cadena de callbacks, y cuanto más larga, más:
+  `Console → PanelInGrid → Panel → ErrorState` son cuatro saltos y cada uno usa
+  el spread.
+- **Un CTA sin manejador no se pinta.** Misma razón que `puedeResponder` en
+  `RecoBody`: «un botón que se aprieta y devuelve 403 es peor que un botón
+  ausente». El estado no queda sin salida —el detalle sigue diciendo qué
+  hacer—, pero no promete una acción que no existe.
 - **`params` de layout llega como `Record<string, unknown>`.** Un param mal
   escrito hoy se ignora en silencio; F1.29 lo resuelve validando en el adaptador
   de `api/`, no en `render/`.

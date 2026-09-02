@@ -42,12 +42,26 @@ describe('la salida de cada estado dispara de verdad', () => {
     expect(onRequest).toHaveBeenCalledTimes(1)
   })
 
-  it('sin callback el botón sigue ahí y no revienta al hacer clic', async () => {
-    // La superficie decide si engancha algo. Un CTA muerto es un problema; un
-    // CTA que revienta es peor.
+  it('SIN manejador no se pinta el botón · un CTA muerto promete lo que no hay', () => {
+    // Misma regla que `RecoBody` con `puedeResponder`: «un botón que se aprieta
+    // y devuelve 403 es peor que un botón ausente». El estado NO se queda sin
+    // salida: el `detail` sigue diciendo qué hacer.
     render(<ErrorState message="Falló" />)
-    await userEvent.click(screen.getByRole('button', { name: /reintentar/i }))
-    expect(screen.getByText('Falló')).toBeInTheDocument()
+    expect(screen.queryByRole('button')).toBeNull()
+    expect(screen.getByText(/El resto de los paneles cargó normalmente/)).toBeInTheDocument()
+  })
+
+  it('lo mismo en bloqueado y sin permiso · los dos estaban muertos hasta hoy', () => {
+    // `PanelInGrid` no reenviaba `onUnblock` ni `onRequestAccess`, así que en
+    // producción «Resolver» y «Solicitar acceso» se pintaban y no hacían nada.
+    const { unmount } = render(<BlockedState reason="Feed vencido" unblockedBy="ETL" />)
+    expect(screen.queryByRole('button')).toBeNull()
+    expect(screen.getByText(/Qué lo desbloquea · ETL/)).toBeInTheDocument()
+    unmount()
+
+    render(<ForbiddenState requestTo="Dirección comercial" />)
+    expect(screen.queryByRole('button')).toBeNull()
+    expect(screen.getByText(/Quién lo decide · Dirección comercial/)).toBeInTheDocument()
   })
 })
 

@@ -142,7 +142,18 @@ describe('cada estado dice qué pasa, por qué y qué se puede hacer · §8', ()
 
   it('el error ofrece reintentar ESTE panel, no recargar la página', () => {
     const [, error] = ESTADOS.find(([n]) => n === 'ERROR')!
-    montar(error)
+    render(
+      <Panel
+        metric={metric}
+        payload={error}
+        placement={placement}
+        format={format}
+        now={now}
+        onRetry={() => {}}
+      >
+        <p>EL CUERPO</p>
+      </Panel>,
+    )
     // El resto de los paneles cargó bien: recargar los tiraría también.
     expect(screen.getByRole('button', { name: /reintentar este panel/i })).toBeInTheDocument()
   })
@@ -153,11 +164,15 @@ describe('cada estado dice qué pasa, por qué y qué se puede hacer · §8', ()
     expect(screen.getByText('EL CUERPO')).toBeInTheDocument()
   })
 
-  it('ningún estado se queda sin salida · un estado sin salida es una queja', () => {
+  it('ningún estado se queda sin salida · pero la salida es el DETALLE, no el botón', () => {
+    // §8 pide que un estado diga qué se puede hacer, y eso lo dice el detalle:
+    // «qué lo desbloquea», «quién lo decide». El CTA es el atajo, y solo se
+    // pinta si hay quien lo atienda — un botón que promete una acción que no
+    // existe es peor que ninguno.
     for (const nombre of ['BLOQUEADO', 'SIN_PERMISO', 'ERROR']) {
       const [, payload] = ESTADOS.find(([n]) => n === nombre)!
-      const { unmount } = montar(payload)
-      expect(screen.getAllByRole('button').length).toBeGreaterThan(0)
+      const { container, unmount } = montar(payload)
+      expect(container.textContent).toMatch(/desbloquea|decide|cargó normalmente/)
       unmount()
     }
   })

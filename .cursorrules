@@ -190,6 +190,11 @@ import { estiloDePanel } from '@/render/grid'
   prueba derivada de la implementacion no puede fallar nunca.
 - **Verificar una prueba nueva rompiendo el codigo a proposito.** Si no la viste
   fallar, no demostro nada.
+- **Un callback se prueba DISPARANDO, no comprobando que el boton exista.** El
+  spread condicional `{...(x === undefined ? {} : { x })}` —obligatorio con
+  `exactOptionalPropertyTypes`— apaga el chequeo de props en exceso, asi que una
+  prop mal nombrada compila y deja el callback muerto. Un boton muerto se ve
+  igual que uno que funciona.
 - Entorno `node` por defecto. El archivo que renderiza pide jsdom con
   `// @vitest-environment jsdom` en la primera linea.
 - HTTP mockeado con MSW, nunca un fixture importado desde una superficie.

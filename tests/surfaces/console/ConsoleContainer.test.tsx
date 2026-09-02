@@ -9,6 +9,7 @@
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { ConsoleContainer } from '@/surfaces/console/ConsoleContainer'
@@ -209,5 +210,30 @@ describe('F1.29 · un param inválido degrada el panel con la razón visible', (
 
     expect(await screen.findByText('USD 4.28M')).toBeInTheDocument()
     expect(screen.queryByText(/no es válida/)).toBeNull()
+  })
+})
+
+describe('la cadena de callbacks llega hasta el botón', () => {
+  it('el reintento del panel vuelve a pedir el batch', async () => {
+    // Cuatro saltos: Console → PanelInGrid → Panel → ErrorState. Cada uno pasa
+    // el callback con `{...(x === undefined ? {} : { x })}`, que apaga el
+    // chequeo de propiedades en exceso: una prop mal nombrada en cualquiera de
+    // los cuatro compila y deja el botón muerto. Ya pasó tres veces.
+    let intentos = 0
+    server.use(
+      http.get(`${API}/config/catalog`, () => ok({ metrics: [kpiMetric] })),
+      http.get(`${API}/config/tabs/:tabId`, () => ok({ ...context.tabs[0], panels: [kpiPanel] })),
+      http.post(`${API}/config/panels:batch`, () => {
+        intentos++
+        return fail('ETL_CAIDO', 'No se pudieron traer los datos.', { status: 500 })
+      }),
+    )
+    montar()
+
+    const boton = await screen.findByRole('button', { name: /reintentar este panel/i })
+    expect(intentos).toBe(1)
+
+    await userEvent.click(boton)
+    await waitFor(() => expect(intentos).toBe(2))
   })
 })
