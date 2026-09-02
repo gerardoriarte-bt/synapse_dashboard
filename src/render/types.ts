@@ -7,6 +7,7 @@
  */
 import type { Actions, Family, Presentation, Value } from '../api/types'
 import type { Placement } from '../catalog/types'
+import type { Formatter } from './format'
 
 /** Lo que recibe todo CUERPO (`Body`).
  *
@@ -28,8 +29,13 @@ export type BodyProps<F extends Value['forma'], P = Record<string, never>> = {
   /** Rótulos y cifras de apoyo, redactados por el backend. Viajan con el dato y
    *  no con el layout porque dependen del período. */
   presentation?: Presentation
-  /** La unidad de la métrica, para las cifras. */
+  /** La unidad de la métrica, para las cifras. Viene de la MÉTRICA y no del
+   *  valor: es una propiedad de lo que se mide, no de la medición de este mes.
+   *  Escribirla en las dos partes habilitaba que dijeran distinto. */
   unit?: string
+  /** El formateador del tenant · F1.13b. Se inyecta y no se importa: el locale
+   *  no lo decide `render/`, que no sabe de qué tenant se trata. */
+  format: Formatter
   /** Qué se puede hacer con cada ítem. Entra por props y sale por callback: el
    *  cuerpo no sabe quién persiste la respuesta. Ausente en la mayoría, que son
    *  de solo lectura. */

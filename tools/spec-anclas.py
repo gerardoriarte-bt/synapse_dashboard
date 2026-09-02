@@ -115,8 +115,8 @@ ANCLAS = [
         seccion="§2.3",
         cita="**siempre mayúsculas**, 10px, letter-spacing 0.12em",
         # El primitivo `Label` es lo que hace verificable «ningún número
-        # desnudo»: sin él la regla es aspiracional.
-        pendiente="F1.13c · portar los primitivos Label y Value",
+        # desnudo»: sin él la regla es aspiracional. Cerrada por F1.13c.
+        implementa=["src/render/primitives/Label.tsx"],
     ),
 ]
 
