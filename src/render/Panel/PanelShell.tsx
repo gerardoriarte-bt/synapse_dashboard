@@ -87,7 +87,7 @@ export function PanelShell({
           {/* h2 y no h3: el único nivel por encima es el h1 de la pregunta de la
               pestaña, y saltarse un nivel rompe la navegación por encabezados,
               que es como se recorre una pantalla de doce paneles con un lector. */}
-          <h2 className="font-display text-[15px] leading-tight text-ink m-0 truncate">
+          <h2 className="font-display text-titulo tracking-titulo leading-titulo text-ink m-0 truncate">
             {metric.nombre}
           </h2>
         </div>
@@ -121,7 +121,7 @@ export function PanelShell({
             <button
               type="button"
               onClick={onDrill}
-              className="flex items-center gap-1 font-mono text-[10px] tracking-[0.12em] uppercase text-acc hover:text-acc-hover cursor-pointer bg-transparent border-0 p-0"
+              className="flex items-center gap-1 font-mono text-label tracking-rotulo uppercase text-acc hover:text-acc-hover cursor-pointer bg-transparent border-0 p-0"
             >
               Ver detalle
               <svg
@@ -141,7 +141,7 @@ export function PanelShell({
             <button
               type="button"
               onClick={onChat}
-              className="font-mono text-[10px] tracking-[0.12em] uppercase text-dim hover:text-ink cursor-pointer bg-transparent border-0 p-0"
+              className="font-mono text-label tracking-rotulo uppercase text-dim hover:text-ink cursor-pointer bg-transparent border-0 p-0"
             >
               Preguntar
             </button>

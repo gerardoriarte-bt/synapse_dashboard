@@ -21,14 +21,14 @@ export function ProseBody({ value, params }: BodyProps<'prosa', ProseParams>) {
 
   return (
     <div className="flex flex-col gap-4 h-full min-h-0">
-      <p className="font-body text-[15px] leading-relaxed text-ink m-0">{value.titular}</p>
+      <p className="font-body text-lead leading-cuerpo text-ink m-0">{value.titular}</p>
 
       {pillars.length > 0 && (
         <div className="flex flex-wrap gap-6 mt-auto">
           {pillars.map((p) => (
             <div key={p.label} className="flex flex-col gap-1 min-w-0">
               <Label>{p.label}</Label>
-              <span className="font-body text-[13px] tabular-nums text-ink">{p.valor}</span>
+              <span className="font-body text-cuerpo tabular-nums text-ink">{p.valor}</span>
               {p.nota !== undefined && <Label>{p.nota}</Label>}
             </div>
           ))}

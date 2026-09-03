@@ -33,18 +33,44 @@ import sys
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
 CSS = RAIZ / "src" / "tokens" / "tokens.css"
 
-# El `.pen` vive en el repositorio archivado, que sigue siendo la fuente de las
-# reglas de producto. Se puede reapuntar sin editar el script.
-PEN = pathlib.Path(
-    os.environ.get("SYNAPSE_PEN", RAIZ.parent / "synapse_v2" / "design" / "Synapse_v2.pen")
-).expanduser()
+# El `.pen` y `design.md` viven en `design/`, dentro del repositorio, desde el
+# 2026-09-03. Es el mismo camino que ya había hecho el contrato —«El contrato se
+# muda a synapse_dashboard · acá queda el puntero», en el hermano archivado—, y
+# lo que arregla es concreto: hasta ese día un clone limpio o un runner de CI no
+# tenían contra qué comparar y los dos chequeos salían ⊘ BLOQUEADO, que es
+# honesto pero no verifica nada.
+#
+# Se sigue mirando al hermano si acá no está, para que un checkout viejo no se
+# rompa, y la variable de entorno sigue ganando sobre las dos.
+def fuente(variable, nombre):
+    if os.environ.get(variable):
+        return pathlib.Path(os.environ[variable]).expanduser()
+    local = RAIZ / "design" / nombre
+    return local if local.exists() else RAIZ.parent / "synapse_v2" / "design" / nombre
 
-# (prefijo del .pen, prefijo en el CSS). El orden importa: `brand-` antes que el
-# genérico de color, porque los dos son colores.
+
+PEN = fuente("SYNAPSE_PEN", "Synapse_v2.pen")
+
+# (prefijo del .pen, prefijo en el CSS, unidad). El orden importa: `brand-` antes
+# que el genérico de color, porque los dos son colores.
+#
+# **La unidad es parte de la traducción, no un detalle de formato.** El `.pen`
+# guarda tamaños y trackings como números pelados —`ts-label: 10`,
+# `tk-rotulo: 0.12`— y el CSS necesita la unidad. No es la misma para todos: un
+# tamaño va en `px`, un tracking en `em` —para que escale con el tamaño, que es
+# lo que hace que 0.12em signifique lo mismo a 9 y a 10— y una altura de línea
+# va sin unidad, que es como se multiplica por el tamaño en vez de fijarlo.
+#
+# El `.pen` guarda el tracking en px sobre el nodo: 1.2 sobre 10px y 1.08 sobre
+# 9px son el MISMO 0.12em. Por eso la variable se declara en em una sola vez y
+# no una por tamaño.
 ESPACIOS = [
-    ("font-", "--font-"),
-    ("r-", "--radius-"),
-    ("brand-", "--color-brand-"),
+    ("font-", "--font-", None),
+    ("r-", "--radius-", "px"),
+    ("ts-", "--text-", "px"),
+    ("tk-", "--tracking-", "em"),
+    ("lh-", "--leading-", ""),
+    ("brand-", "--color-brand-", None),
 ]
 
 BASE_ESPACIADO = 4
@@ -105,7 +131,7 @@ def main():
     oscuro, claro = variables_del_css()
     fallas = []
 
-    # ── los 39 de tema ───────────────────────────────────────────────────────
+    # ── los de tema ──────────────────────────────────────────────────────────
     for nombre, valores in por_tema.items():
         clave = f"--color-{nombre}"
         for modo, bloque, etiqueta in (
@@ -119,17 +145,17 @@ def main():
             elif normalizar_color(actual) != esperado:
                 fallas.append(f"{clave} en {etiqueta}: {actual.strip()} ≠ {esperado} del `.pen`")
 
-    # ── los 18 planos ────────────────────────────────────────────────────────
+    # ── los planos ───────────────────────────────────────────────────────────
     espaciado = {}
     for nombre, (tipo, valor) in planos.items():
         if nombre.startswith("sp-"):
             espaciado[nombre] = valor
             continue
 
-        clave = None
-        for prefijo, destino in ESPACIOS:
+        clave = unidad = None
+        for prefijo, destino, sufijo in ESPACIOS:
             if nombre.startswith(prefijo):
-                clave = destino + nombre[len(prefijo):]
+                clave, unidad = destino + nombre[len(prefijo):], sufijo
                 break
         if clave is None:
             fallas.append(f"'{nombre}' del `.pen` no encaja en ningún espacio de nombres conocido")
@@ -145,8 +171,9 @@ def main():
                     f"y el `.pen` dice '{valor}'"
                 )
         elif tipo == "number":
-            if actual.strip() != f"{valor}px":
-                fallas.append(f"{clave}: {actual.strip()} ≠ {valor}px del `.pen`")
+            esperado = f"{valor}{unidad}"
+            if actual.strip() != esperado:
+                fallas.append(f"{clave}: {actual.strip()} ≠ {esperado} del `.pen`")
         elif normalizar_color(actual) != normalizar_color(valor):
             fallas.append(f"{clave}: {actual.strip()} ≠ {normalizar_color(valor)} del `.pen`")
 
@@ -168,7 +195,7 @@ def main():
     for nombre in planos:
         if nombre.startswith("sp-"):
             continue
-        for prefijo, destino in ESPACIOS:
+        for prefijo, destino, _ in ESPACIOS:
             if nombre.startswith(prefijo):
                 conocidos.add(destino + nombre[len(prefijo):])
                 break

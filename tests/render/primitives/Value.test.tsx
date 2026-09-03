@@ -6,9 +6,17 @@
  *  nunca salga sin label y que este componente NO formatee — el locale es del
  *  tenant y un primitivo no sabe de qué tenant se trata.
  */
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { Value } from '@/render/primitives/Value'
+
+// F1.28 movió los números de las clases a los tokens, así que cada aserción
+// de §2.3 pasa por dos saltos: que el componente use el token y que el token
+// valga el número de la cita. Solo el primero dejaría pasar un `text-kpi` de
+// 20px. Ruta desde la raíz porque en jsdom `import.meta.url` es http.
+const TOKENS = readFileSync(resolve(process.cwd(), 'src/tokens/tokens.css'), 'utf-8')
 
 describe('regla dura 4 · ningún número desnudo', () => {
   it('pinta el label junto a la cifra', () => {
@@ -81,7 +89,8 @@ describe('§2.3 · los tres roles de cifra', () => {
         4.28M
       </Value>,
     )
-    expect(screen.getByText('4.28M').className).toContain('text-[44px]')
+    expect(screen.getByText('4.28M').className).toContain('text-kpi')
+    expect(TOKENS).toMatch(/--text-kpi:\s*44px;/)
   })
 
   it('la celda numérica es mono 12 a la derecha', () => {
@@ -92,7 +101,8 @@ describe('§2.3 · los tres roles de cifra', () => {
     )
     const clases = screen.getByText('4.28M').className
     expect(clases).toContain('font-mono')
-    expect(clases).toContain('text-[12px]')
+    expect(clases).toContain('text-celda')
+    expect(TOKENS).toMatch(/--text-celda:\s*12px;/)
     expect(clases).toContain('text-right')
   })
 })

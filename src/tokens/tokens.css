@@ -30,6 +30,54 @@
   --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
+  /* Escala tipográfica · §2.3 de design.md.
+
+     §ANCLA:TIPO-2 · «Ningún otro tamaño mono.» La escala mono tiene CUATRO
+     roles y son estos cuatro: nota 9, label 10, cifra 11, celda 12. Lo que los
+     separa no es el tamaño sino si el texto es un rótulo o una cifra —«un
+     rótulo se abre para leerse a tamaño chico, una cifra no, porque el tracking
+     separa los dígitos y rompe la comparación de columna a columna»—, y por eso
+     el tracking va con los dos primeros y con ninguno de los otros dos.
+
+     Los tres tamaños que no son mono no salen de una tabla de §2.3 —design.md
+     no los declara— sino del censo de nodos del `.pen`: cuerpo 13 (98 nodos),
+     título de panel 15 en display (26 nodos), título de superficie 20. Están
+     anotados en docs/F1.28-escala-tipografica.md con esa procedencia, que no es
+     la misma que la de los mono. */
+  --text-nota: 9px;
+  --text-label: 10px;
+  --text-cifra: 11px;
+  --text-celda: 12px;
+  --text-cuerpo: 13px;
+  --text-lead: 15px;
+  --text-titulo: 15px;
+  --text-titulo-lg: 20px;
+  --text-kpi: 44px;
+
+  /* Tracking en `em` y no en px, que es lo que lo hace un token y no una
+     medida: el `.pen` guarda 1.2 sobre el label de 10px y 1.08 sobre la nota
+     de 9px, y los dos son el mismo 0.12em. Declarado una vez, sirve a los dos.
+
+     `rotulo` cubre los dos roles de rótulo —label y nota—; `titulo` es el
+     -0.02em que §2.3 le da a Space Grotesk. */
+  --tracking-rotulo: 0.12em;
+  --tracking-titulo: -0.02em;
+
+  /* El KPI lleva el suyo, y no es el de título. En el `.pen` los nodos de KPI
+     están en -1.1px sobre 40px —siete de trece, que es el valor modal— o sea
+     -0.0275em, más apretado que el -0.02em de Space Grotesk. El port lo trajo
+     como -0.01em, que no sale de ninguna fuente. La propuesta de normalizarlo
+     a una cifra redonda está en docs/F1.28-escala-tipografica.md; hasta que
+     alguien la decida, el token dice lo que dice el `.pen`. */
+  --tracking-kpi: -0.0275em;
+
+  /* Altura de línea sin unidad, que es como se multiplica por el tamaño en vez
+     de fijarlo. */
+  --leading-rotulo: 1.2;
+  --leading-titulo: 1.2;
+  --leading-cuerpo: 1.5;
+  --leading-kpi: 1.05;
+
   /* Radio · 10px en paneles (`rounded-xl`), 2px en barras y bullets
      (`rounded-xs`).
      §ANCLA:RADIO-1 · §2.1 de design.md: «Radio. 10px en paneles, 2px en barras

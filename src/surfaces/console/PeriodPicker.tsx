@@ -56,7 +56,7 @@ export function PeriodPicker({ periods, activeId, metrics, onSelect }: Props) {
                       : `Esta pestaña no se puede leer por ${GRAIN_LABEL[grain].toLowerCase()}: alguna de sus métricas se mide por ${required}`
                   }
                   className={[
-                    'font-mono text-[10px] tracking-[0.12em] uppercase rounded-md px-2 py-1',
+                    'font-mono text-label tracking-rotulo uppercase rounded-md px-2 py-1',
                     'bg-transparent border-0',
                     usable ? 'cursor-pointer' : 'cursor-not-allowed opacity-40',
                     active ? 'text-acc' : 'text-dim hover:text-ink',

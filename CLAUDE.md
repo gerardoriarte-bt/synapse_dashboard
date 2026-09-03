@@ -22,13 +22,22 @@ Fase 1 es portar el motor de panel desde el repositorio archivado.
 | `.cursorrules` | Idioma, estructura, convenciones de componente | Normativo |
 | `tareas-front-back.md` | El desglose original del backend | Histórico · lo extiende `plan-de-trabajo.md` |
 
-**Tres normativos viven en el repositorio hermano** `~/Documents/GitHub/synapse_v2`
-(`gerardoriarte-bt/Synapse-v2`), que está archivado pero **sigue siendo la fuente
-de las reglas de producto**:
+**`design/` vive acá desde el 2026-09-03**, que es el mismo camino que ya había
+hecho `contracts/`. Son las dos fuentes que la puerta necesita, y tenerlas dentro
+es lo que hace que un clone limpio o un runner de CI puedan correr `verify`:
+antes `token-drift` y `spec-anclas` salían ⊘ BLOQUEADO, que es honesto pero no
+verifica nada.
 
 | Archivo | Qué manda |
 |---|---|
-| `design/design.md` | Reglas duras de producto. Normativa |
+| `design/design.md` | Reglas duras de producto. **Normativa** |
+| `design/Synapse_v2.pen` | Los tokens. La fuente de `tokens/tokens.css` |
+
+Los otros dos normativos siguen en el repositorio hermano
+`~/Documents/GitHub/synapse_v2` (`gerardoriarte-bt/Synapse-v2`), archivado:
+
+| Archivo | Qué manda |
+|---|---|
 | `handoff/parametros-front.md` | Tokens, grilla, anatomía de panel |
 | `handoff/design-lint.md` | Las 15 reglas verificables L1–L15 |
 | `src/render/` | El motor de panel del que se porta (F1.13a–j) |
@@ -96,6 +105,25 @@ que vino del catálogo, que el escáner no ve nunca. Medido el 2026-08-31:
 sobrevivían **6 de 43**, y el tema oscuro se quedaba sin colores de datos
 mientras el claro los conservaba, porque el bloque de tema claro es CSS plano
 fuera de `@theme`.
+
+**La escala tipográfica también es token, desde F1.28.** Ni `text-[13px]` ni
+`text-sm`: las dos se saltan el sistema, y la segunda es más fácil de escribir.
+Nueve tamaños, tres trackings y cuatro alturas de línea, con dos procedencias
+distintas que conviene no mezclar: **los cuatro mono —nota 9, label 10, cifra 11,
+celda 12— los declara §2.3 y los cierra** («Ningún otro tamaño mono»), mientras
+que los cinco que no son mono salen del censo de nodos del `.pen`, porque
+`design.md` no declara ni un tamaño de `font-body` ni de `font-display`. La regla
+`tipografia` de `design-lint` persigue las dos formas y `TIPO-2` ancla la cita.
+
+**El tracking va en `em`.** El `.pen` guarda 1.2px sobre el label de 10 y 1.08px
+sobre la nota de 9: son el mismo 0.12em. En px harían falta dos variables y una
+de las dos se olvidaría el día que alguien cambie un tamaño.
+
+**Y una utilidad que nombra un token inexistente no es un error, es silencio.**
+`text-labell` compila, pasa el lint, se pinta sin tamaño y se ve casi igual —el
+mismo modo de falla que el spread condicional con una prop mal escrita. Lo cubre
+`tests/tokens/escala.test.ts`, que cruza cada utilidad de `src/` contra las
+variables declaradas.
 
 **`render/` no acepta `className` desde afuera.** §4 regla 9 pide que todo color,
 radio y espaciado salga de tokens, y una clase inyectada por el llamador es el
@@ -235,10 +263,13 @@ defecto es `node`; el archivo que renderiza pide jsdom con
 **Una prueba nueva se verifica rompiendo el código a propósito.** Si no la viste
 fallar, no demostró nada.
 
-**Las dos fuentes normativas del hermano son requisito de la puerta.**
-`spec-anclas` necesita `design.md` y `token-drift` necesita el `.pen`, los dos en
-`~/Documents/GitHub/synapse_v2/design/`. Sin ellos los chequeos salen BLOQUEADOS
-en vez de mentir; se reapuntan con `SYNAPSE_DESIGN` y `SYNAPSE_PEN`.
+**Las dos fuentes normativas son requisito de la puerta**, y desde el
+2026-09-03 están en `design/`, adentro. `spec-anclas` necesita `design.md` y
+`token-drift` necesita el `.pen`. Los dos resuelven en el mismo orden: la
+variable de entorno —`SYNAPSE_DESIGN`, `SYNAPSE_PEN`— gana sobre todo; después
+`design/`; y si acá no está, se mira el hermano archivado, para que un checkout
+viejo no se rompa. Sin ninguna de las tres el chequeo sale BLOQUEADO en vez de
+mentir.
 
 **Una regla nueva se verifica rompiendo el código a propósito**, igual que una
 prueba. El antecedente es concreto:
@@ -253,9 +284,10 @@ Leer `plan-de-trabajo.md`: las siete decisiones cerradas explican por qué el pl
 tiene las tareas que tiene, y el camino crítico dice qué desbloquea a más gente.
 `docs/BITACORA-2026-09-02.md` cuenta qué pasó en la jornada que cerró la Fase 1.
 
-**Estado al 2026-09-02.** El motor de panel está portado entero y la consola
-dibuja de punta a punta contra MSW. La puerta sale verde **sin bloqueados**.
-Fase 1 está cerrada salvo lo que depende del backend.
+**Estado al 2026-09-03.** El motor de panel está portado entero y la consola
+dibuja de punta a punta contra MSW. La puerta sale verde **sin bloqueados**, y
+desde el 2026-09-03 sale verde también en un clone limpio: `design/` está
+adentro. Fase 1 está cerrada salvo lo que depende del backend.
 
 Abierto ahora mismo:
 
@@ -272,12 +304,18 @@ Abierto ahora mismo:
 2. **F0.5 y B0.10** — el login lo coloca el backend. Faltan tres respuestas de
    integración: con qué clave se guarda el token, si el login vive en otro origen
    (`localStorage` no cruza orígenes), y adónde redirige un `401`.
-3. **F1.28** — lo único desbloqueado que queda de Fase 1: los `text-[10px]` y
-   `tracking-[0.12em]` arbitrarios son tokens de tipografía que faltan, no
-   utilidades.
-4. **F0.12** — reapuntar `gen-tokens.py`. Hoy `token-drift` cubre el hueco
-   comparando variable por variable, y confirmó que el port a mano de los 57 no
-   tiene deriva; lo que falta es que un cambio en el `.pen` llegue solo.
+3. **F0.12** — reapuntar `gen-tokens.py`. Ya no le falta la portabilidad, que
+   la resolvió el traslado de `design/`: hoy `token-drift` cubre el hueco
+   comparando variable por variable y confirmó que el port a mano de los 73 no
+   tiene deriva. Lo que falta es que un cambio en el `.pen` llegue solo, sin que
+   nadie escriba el CSS.
+4. **La tabla de tipografía de §2.3 que no existe**, abierta por F1.28. §2.3
+   declara la escala mono entera —«Ningún otro tamaño mono»— y no declara ni un
+   tamaño de `font-body` ni de `font-display`: los cinco tokens que no son mono
+   salen del censo de nodos del `.pen`, que dice lo que el diseño hace y no lo
+   que la spec fija. Los dos más flojos tienen dos nodos cada uno. Decide
+   diseño; el detalle está en `docs/F1.28-escala-tipografica.md`, junto con el
+   tracking del KPI, que tampoco sale de ninguna tabla.
 
 Bloqueadas por el backend: **F1.25** (API real, espera el seed B1.16/B1.20) y
 **F1.31** (mínimos por gráfico, espera B1.21). Lo genuinamente nuevo es **Fase

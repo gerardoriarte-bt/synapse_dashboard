@@ -16,14 +16,14 @@ const SCREEN_READER_ONLY =
   'absolute w-px h-px p-0 -m-px overflow-hidden [clip-path:inset(50%)] whitespace-nowrap border-0'
 
 const BUTTON =
-  'font-mono text-[10px] tracking-[0.12em] uppercase rounded-md px-4 py-2 ' +
+  'font-mono text-label tracking-rotulo uppercase rounded-md px-4 py-2 ' +
   'cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2'
 
 /** El bloqueado es el único con CTA en acento: es LA acción que desbloquea el
  *  panel, no una acción más. El acento es de acción, nunca de dato — regla dura
  *  1, y por eso este es el único lugar de `states/` donde aparece. */
 const BUTTON_PRIMARY =
-  'font-mono text-[10px] tracking-[0.12em] uppercase rounded-md px-4 py-2 ' +
+  'font-mono text-label tracking-rotulo uppercase rounded-md px-4 py-2 ' +
   'cursor-pointer border border-acc bg-acc text-on-acc hover:bg-acc-hover hover:border-acc-hover'
 
 export type Exit = { text: string; onClick?: () => void; primary?: boolean }
@@ -52,7 +52,7 @@ export function StateBody({ name, mark, phrase, detail, exit }: BaseProps) {
     <div className="flex flex-col gap-3 h-full min-h-0">
       {name !== undefined && <span className={SCREEN_READER_ONLY}>{name}</span>}
       <div className="flex items-center gap-2 text-dim">{mark}</div>
-      <p className="font-body text-[13px] leading-normal text-ink m-0">{phrase}</p>
+      <p className="font-body text-cuerpo leading-cuerpo text-ink m-0">{phrase}</p>
       {detail !== undefined && (
         <div className="flex flex-col gap-1">
           <Label>{detail}</Label>

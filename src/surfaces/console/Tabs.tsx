@@ -30,7 +30,7 @@ export function Tabs({ tabs, activeId, onSelect }: Props) {
                   onClick={() => onSelect(tab.id)}
                   aria-current={active ? 'page' : undefined}
                   className={[
-                    'font-mono text-[10px] tracking-[0.12em] uppercase rounded-md px-3 py-2',
+                    'font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-2',
                     'cursor-pointer bg-transparent border-0',
                     // El acento marca el estado activo: es uso de ACCIÓN, que es
                     // donde la regla dura 1 sí lo permite.

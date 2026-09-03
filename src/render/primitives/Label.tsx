@@ -27,7 +27,7 @@ type Props = {
  *  `text-dim` de `--color-dim`. El 10px y el 0.12em son valores arbitrarios
  *  porque §2.3 los fija como números y no como tokens — son la definición del
  *  rol tipográfico, no una decisión de este componente. */
-const LABEL = 'font-mono text-[10px] leading-[1.2] tracking-[0.12em] uppercase text-dim m-0'
+const LABEL = 'font-mono text-label leading-rotulo tracking-rotulo uppercase text-dim m-0'
 
 export function Label({ children, as: As = 'span', id }: Props) {
   return (

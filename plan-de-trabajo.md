@@ -1314,7 +1314,7 @@ catálogo vuelan, y qué se muestra si fallan. Un cuerpo nunca maneja eso.
 
 ### Tareas nuevas de Fase 1
 
-#### ➕ F1.28 ⬜ Traducir los CSS Modules de v2 a Tailwind
+#### ➕ F1.28 ✅ Traducir los CSS Modules de v2 a Tailwind
 **Descripción.** v2 tiene ~10 `.module.css`. El stack nuevo es Tailwind y
 `.cursorrules` prohíbe CSS Modules salvo excepción justificada. La traducción es
 mecánica pero no trivial: hay medidas que **no** deben volverse valores
@@ -1325,6 +1325,37 @@ arbitrarios sino tokens.
   existente. `text-[10px]` de un `Label` es un token que falta, no una utilidad.
 - Las medidas del sistema —label 10, celda 12, cuerpo 13— entran como tokens de
   tipografía en `@theme`, no como arbitrarios repetidos.
+
+**Cerrada el 2026-09-03.** No había un solo `.module.css`: el traslado de la
+Fase 1 los tradujo sobre la marcha, así que la mitad mecánica ya estaba hecha.
+Lo que quedaba eran **29 medidas sin declarar** —23 arbitrarios y 6 utilidades de
+la escala de fábrica de Tailwind, que el criterio no nombraba y son la misma
+fuga: `leading-relaxed` son 1.625 y el `.pen` usa 1.5—, hoy **16 tokens** en
+`@theme static`.
+
+**Hacer esto obligaba a decidir dónde vive la escala tipográfica**, porque
+`token-drift` compara en las dos direcciones y de tipografía el `.pen` declaraba
+solo las tres familias: el primer token nuevo ponía la puerta en rojo. Se
+resolvió por donde manda la cadena de autoridad —el `.pen` es la fuente,
+`tokens.css` la refleja—, y las 16 variables se agregaron ahí.
+
+Cuatro divergencias, ninguna resuelta en silencio, todas en
+`docs/F1.28-escala-tipografica.md`: el tracking del KPI no salía de ninguna
+fuente y ahora sale del `.pen`; los tres títulos de display no llevaban el
+-0.02em que §2.3 les declara; las alturas de línea eran las de Tailwind y no las
+del `.pen`; y **`design.md` no declara ningún tamaño de `font-body` ni de
+`font-display`** —los cuatro mono son normativos, los otros cinco salen del censo
+de nodos, que es más débil. Ese último es propuesta de spec.
+
+Se agregaron una regla de lint (`tipografia`), un ancla (`TIPO-2`) y
+`tests/tokens/escala.test.ts`, verificados los tres rompiendo el código a
+propósito. La prueba que más importa es la de huérfanas: **una utilidad que
+nombra un token inexistente no es un error, es silencio** — `text-labell`
+compila, pasa el lint y se pinta sin tamaño.
+
+**`design/` se mudó al repositorio**, con lo que `token-drift` y `spec-anclas`
+dejan de depender de un repositorio hermano que un clone limpio no tiene. Es lo
+que cierra el hueco que quedaba de F0.12; ver el bloque de comandos.
 
 #### ➕ F1.29 ✅ Validar los params de layout
 **Descripción.** `PanelConfig.opciones` llega como `Record<string, unknown>`. Hoy

@@ -18,13 +18,13 @@ export function SurfaceMessage({ title, detail, onRetry }: Props) {
   return (
     <main className="min-h-screen bg-bg p-6 flex items-center justify-center">
       <div className="flex flex-col gap-3 max-w-md">
-        <h1 className="font-display text-[20px] text-ink m-0">{title}</h1>
+        <h1 className="font-display text-titulo-lg tracking-titulo text-ink m-0">{title}</h1>
         <Label>{detail}</Label>
         {onRetry !== undefined && (
           <button
             type="button"
             onClick={onRetry}
-            className="self-start font-mono text-[10px] tracking-[0.12em] uppercase rounded-md px-4 py-2 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2"
+            className="self-start font-mono text-label tracking-rotulo uppercase rounded-md px-4 py-2 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2"
           >
             Reintentar
           </button>

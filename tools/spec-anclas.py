@@ -41,11 +41,23 @@ import sys
 
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
 
-# `design.md` es normativo y vive en el repositorio archivado, que sigue siendo
-# la fuente de las reglas de producto. Se reapunta sin editar el script.
-SPEC = pathlib.Path(
-    os.environ.get("SYNAPSE_DESIGN", RAIZ.parent / "synapse_v2" / "design" / "design.md")
-).expanduser()
+# El `.pen` y `design.md` viven en `design/`, dentro del repositorio, desde el
+# 2026-09-03. Es el mismo camino que ya había hecho el contrato —«El contrato se
+# muda a synapse_dashboard · acá queda el puntero», en el hermano archivado—, y
+# lo que arregla es concreto: hasta ese día un clone limpio o un runner de CI no
+# tenían contra qué comparar y los dos chequeos salían ⊘ BLOQUEADO, que es
+# honesto pero no verifica nada.
+#
+# Se sigue mirando al hermano si acá no está, para que un checkout viejo no se
+# rompa, y la variable de entorno sigue ganando sobre las dos.
+def fuente(variable, nombre):
+    if os.environ.get(variable):
+        return pathlib.Path(os.environ[variable]).expanduser()
+    local = RAIZ / "design" / nombre
+    return local if local.exists() else RAIZ.parent / "synapse_v2" / "design" / nombre
+
+
+SPEC = fuente("SYNAPSE_DESIGN", "design.md")
 
 # ── Las anclas ───────────────────────────────────────────────────────────────
 # `cita` se compara con los espacios normalizados, porque `design.md` envuelve a
@@ -118,6 +130,22 @@ ANCLAS = [
         # El primitivo `Label` es lo que hace verificable «ningún número
         # desnudo»: sin él la regla es aspiracional. Cerrada por F1.13c.
         implementa=["src/render/primitives/Label.tsx"],
+    ),
+    dict(
+        id="TIPO-2",
+        seccion="§2.3",
+        cita="**Ningún otro tamaño mono.**",
+        # La regla tiene dos mitades y ninguna alcanza sola: `tokens.css`
+        # DECLARA los cuatro tamaños que §2.3 permite, y la regla `tipografia`
+        # de design-lint PROHÍBE los demás. Declarar los cuatro sin prohibir el
+        # quinto deja la escala abierta; prohibir sin declarar deja el código
+        # sin qué usar.
+        implementa=["src/tokens/tokens.css", "tools/design-lint.py"],
+        estatica=(
+            "src/tokens/tokens.css",
+            r"--text-nota:\s*9px;[\s\S]*--text-label:\s*10px;"
+            r"[\s\S]*--text-cifra:\s*11px;[\s\S]*--text-celda:\s*12px;",
+        ),
     ),
 ]
 

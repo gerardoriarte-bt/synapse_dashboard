@@ -17,9 +17,9 @@ import { Label } from './Label'
  *  cifra larga: se abrevia la cifra, que para eso `Formatter.number` tiene
  *  `abbreviate`. */
 const SIZE = {
-  kpi: 'font-body font-bold text-[44px] leading-[1.05] tracking-[-0.01em] text-ink',
-  cell: 'font-mono text-[12px] text-right text-ink',
-  body: 'font-body text-[13px] text-ink',
+  kpi: 'font-body font-bold text-kpi leading-kpi tracking-kpi text-ink',
+  cell: 'font-mono text-celda text-right text-ink',
+  body: 'font-body text-cuerpo text-ink',
 } as const
 
 /** Sigue en el árbol de accesibilidad aunque no se pinte. `w-px`/`h-px` y no

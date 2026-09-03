@@ -51,7 +51,7 @@ export function ListBody({ value, params, family, metric, format }: BodyProps<'r
             <span className="relative w-4 shrink-0">
               <Label>{String(item.posicion || i + 1)}</Label>
             </span>
-            <span className="relative flex-1 min-w-0 truncate font-body text-[13px] text-ink">
+            <span className="relative flex-1 min-w-0 truncate font-body text-cuerpo text-ink">
               {item.etiqueta}
             </span>
             <span className="relative shrink-0">

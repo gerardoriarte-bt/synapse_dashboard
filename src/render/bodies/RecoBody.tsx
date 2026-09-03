@@ -28,7 +28,7 @@ export type RecoParams = {
 const DEFAULT_TOP = 3
 
 const CTA =
-  'font-mono text-[10px] tracking-[0.12em] uppercase rounded-md px-3 py-1 ' +
+  'font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 ' +
   'cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2'
 
 export function RecoBody({ value, params, actions, onRespond }: BodyProps<'prosa', RecoParams>) {
@@ -36,7 +36,7 @@ export function RecoBody({ value, params, actions, onRespond }: BodyProps<'prosa
 
   return (
     <div className="h-full min-h-0 flex flex-col gap-3 overflow-y-auto">
-      <p className="font-body text-[13px] leading-relaxed text-ink m-0">{value.titular}</p>
+      <p className="font-body text-cuerpo leading-cuerpo text-ink m-0">{value.titular}</p>
 
       <div className="flex flex-col gap-3">
         {items.map((r) => {
@@ -45,7 +45,7 @@ export function RecoBody({ value, params, actions, onRespond }: BodyProps<'prosa
           return (
             <div key={r.label} className="flex flex-col gap-1">
               <Label>{r.label}</Label>
-              <span className="font-body text-[13px] leading-relaxed text-ink">{r.valor}</span>
+              <span className="font-body text-cuerpo leading-cuerpo text-ink">{r.valor}</span>
               {r.nota !== undefined && <Label>{r.nota}</Label>}
 
               {action !== undefined && (

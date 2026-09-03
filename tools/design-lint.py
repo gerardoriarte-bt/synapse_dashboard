@@ -435,8 +435,13 @@ def l15(ruta, texto):
     botones —«VER DETALLE», «RECONECTAR SNAPSHOT»—, que no son labels y viven
     legítimamente con sus utilidades. Lo que se marca es el componente que se
     arma un label inline en vez de importar el que existe: bajo Tailwind eso es
-    la tripleta `font-mono` + `uppercase` + `tracking-[0.12em]` suelta en el
-    JSX."""
+    la tripleta `font-mono` + `uppercase` + `tracking-rotulo` suelta en el
+    JSX.
+
+    Hasta F1.28 el tracking se escribía `tracking-[0.12em]` y esta regla
+    buscaba ese literal. Ahora es un token, y buscar el arbitrario no
+    encontraría nada: la regla habría pasado a verde por quedarse sin nada
+    que buscar, que es el modo más silencioso en que un lint deja de servir."""
     if ruta.suffix != ".tsx":
         return
     for n, linea in lineas(texto):
@@ -444,7 +449,7 @@ def l15(ruta, texto):
             yield n, "<label> nativo · el label del producto es <Label>"
         if "Label" in texto:
             continue
-        if "font-mono" in linea and ("uppercase" in linea or "tracking-[0.12em]" in linea):
+        if "font-mono" in linea and ("uppercase" in linea or "tracking-rotulo" in linea):
             yield n, "arma un label inline con utilidades en vez de importar <Label>"
 
 
@@ -515,6 +520,46 @@ def sin_class_name_externo(ruta, texto):
         # es el `:` contra el `=`.
         if re.search(r"\bclassName\s*\??\s*:\s*string\b", linea):
             yield n, "acepta `className` como prop · el llamador podría inyectar un color sin token"
+
+
+@regla("tipografia", "§2.3: la escala tipográfica sale del `.pen` · ni arbitraria ni la de fábrica")
+def escala_tipografica(ruta, texto):
+    """Ni `text-[13px]` ni `text-sm`. Las dos formas de salirse de la escala.
+
+    §ANCLA:TIPO-2 · §2.3 de design.md: «Ningún otro tamaño mono.»
+
+    §2.3 declara la escala mono ENTERA —«Ningún otro tamaño mono»— y cierra con
+    los cuatro roles: nota 9, label 10, cifra 11, celda 12. Un tamaño escrito
+    entre corchetes no está en esa tabla por definición: es una medida que
+    alguien eligió mirando la pantalla.
+
+    **La escala de fábrica de Tailwind es la misma fuga con otra cara**, y es el
+    mismo argumento que L1 hace con `bg-slate-800`: `text-sm` no es un
+    arbitrario y aun así no sale del `.pen`, no lo verifica `token-drift` y
+    nadie lo decidió. `leading-relaxed` son 1.625 y el `.pen` usa 1.5 en el
+    cuerpo: esa diferencia no la puso el diseño, la puso el default.
+
+    Agregada con F1.28, cuando los 23 arbitrarios que trajo el port se volvieron
+    los 16 tokens de tipografía. Antes no habría tenido sentido: no existía la
+    escala contra la cual medir.
+    """
+    if ruta.suffix not in (".tsx", ".jsx"):
+        return
+    for n, linea in lineas(texto):
+        for m in re.finditer(r"\b(?:text|tracking|leading)-\[[^\]]*\]", linea):
+            valor = m.group(0)
+            # `text-[#...]` es un color, y lo persigue L1, que no admite
+            # excepción. Reportarlo dos veces esconde cuál es la regla dura.
+            if valor.startswith("text-[#") or valor.startswith("text-[rgb"):
+                continue
+            yield n, f"`{valor}` es una medida escrita a mano · la escala son tokens de `@theme`"
+        for m in re.finditer(
+            r"\btext-(?:xs|sm|base|lg|[2-9]?xl)\b"
+            r"|\bleading-(?:none|tight|snug|normal|relaxed|loose)\b"
+            r"|\btracking-(?:tighter|tight|normal|wide|wider|widest)\b",
+            linea,
+        ):
+            yield n, f"`{m.group(0)}` es la escala de fábrica de Tailwind · no sale del `.pen`"
 
 
 def exenta(renglones, limpios, n, id_):

@@ -95,7 +95,7 @@ export function TableBody({ value, params, family, format }: BodyProps<'tabular'
                   )
                 }
                 return (
-                  <td key={c.clave} className="py-1 font-body text-[13px] text-ink">
+                  <td key={c.clave} className="py-1 font-body text-cuerpo text-ink">
                     {j === 0 ? (
                       <span className="flex items-center gap-2 min-w-0">
                         <span

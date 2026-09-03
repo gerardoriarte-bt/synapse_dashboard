@@ -54,7 +54,7 @@ export function Topbar({
                     onClick={() => onSelectTenant?.(t.id)}
                     aria-current={t.id === context.tenant.id ? 'true' : undefined}
                     className={[
-                      'font-mono text-[10px] tracking-[0.12em] uppercase rounded-md px-2 py-1',
+                      'font-mono text-label tracking-rotulo uppercase rounded-md px-2 py-1',
                       'cursor-pointer bg-transparent border-0',
                       t.id === context.tenant.id ? 'text-acc' : 'text-dim hover:text-ink',
                     ].join(' ')}
@@ -70,7 +70,7 @@ export function Topbar({
 
           {/* La pregunta operativa ES el título de la pantalla · §7.1. Una
               pestaña que no contesta una pregunta no se compone. */}
-          <h1 className="font-display text-[20px] leading-tight text-ink m-0 truncate">
+          <h1 className="font-display text-titulo-lg tracking-titulo leading-titulo text-ink m-0 truncate">
             {activeTab?.pregunta ?? ''}
           </h1>
         </div>
