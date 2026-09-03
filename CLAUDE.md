@@ -292,8 +292,9 @@ adentro. Fase 1 está cerrada salvo lo que depende del backend.
 Abierto ahora mismo:
 
 1. **B0.9** — lo más barato y lo que más desbloquea. A las cinco `# PREGUNTA:`
-   originales del contrato se le sumaron tres del front. Las ocho, con quién
-   decide cada una, en `docs/B0.9-preguntas-abiertas.md`:
+   originales del contrato se le sumaron tres del front y dos de diseño. Las
+   diez, con quién decide cada una, en `docs/B0.9-preguntas-abiertas.md`. Solo
+   tres bloquean trabajo:
    - `Contexto` no declara `locale`, moneda ni zona horaria. Es lo único que deja
      F1.13b en ⚠️: la inyección funciona, el valor se decide en una línea de
      `ConsoleContainer` marcada como supuesto.
@@ -309,13 +310,11 @@ Abierto ahora mismo:
    comparando variable por variable y confirmó que el port a mano de los 73 no
    tiene deriva. Lo que falta es que un cambio en el `.pen` llegue solo, sin que
    nadie escriba el CSS.
-4. **La tabla de tipografía de §2.3 que no existe**, abierta por F1.28. §2.3
-   declara la escala mono entera —«Ningún otro tamaño mono»— y no declara ni un
-   tamaño de `font-body` ni de `font-display`: los cinco tokens que no son mono
-   salen del censo de nodos del `.pen`, que dice lo que el diseño hace y no lo
-   que la spec fija. Los dos más flojos tienen dos nodos cada uno. Decide
-   diseño; el detalle está en `docs/F1.28-escala-tipografica.md`, junto con el
-   tracking del KPI, que tampoco sale de ninguna tabla.
+4. **Las dos de diseño que abrió F1.28** — §2.3 declara la escala mono entera
+   y no declara ni un tamaño de `font-body` ni de `font-display`, y el tracking
+   del KPI no sale de ninguna tabla. Son las preguntas 9 y 10 de B0.9; el censo
+   de nodos que las sostiene mientras tanto está en
+   `docs/F1.28-escala-tipografica.md`.
 
 Bloqueadas por el backend: **F1.25** (API real, espera el seed B1.16/B1.20) y
 **F1.31** (mínimos por gráfico, espera B1.21). Lo genuinamente nuevo es **Fase

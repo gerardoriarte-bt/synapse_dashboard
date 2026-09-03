@@ -367,6 +367,11 @@ tomar. Contestarlas **en el propio archivo** es suficiente.
   decisión escrita.
 - La 1171 en particular determina qué estados tiene que renderizar F2.1–F2.3.
 
+**Estas cinco son las del yaml; el documento junta diez.** El front sumó tres en
+la Fase 1 y F1.28 dejó dos de diseño, que no están marcadas `# PREGUNTA:` en
+ningún lado porque su fuente es `design.md`. Las diez, con quién decide cada una
+y qué frena, en `docs/B0.9-preguntas-abiertas.md`. Solo tres bloquean trabajo.
+
 ### ➕ B0.10 ⬜ Endpoint de login
 **Descripción.** `tareas-front-back.md` pide en F0.5 «login → guardar JWT →
 redirigir», y **ninguna tarea de backend lo expone**. B0.3 define el JWT pero no
