@@ -14,6 +14,7 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "gen:api": "openapi-typescript contracts/synapse-api.yaml -o src/api/generated.ts",
+    "gen:tokens": "python3 tools/gen-tokens.py",
     "plan": "python3 tools/plan-a-csv.py && python3 tools/plan-a-html.py",
     "plan:diff": "python3 tools/plan-diff.py",
     "verify": "python3 tools/gate.py",

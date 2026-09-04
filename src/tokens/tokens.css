@@ -1,15 +1,14 @@
-/* PORTADO A MANO desde `synapse v2/src/tokens/tokens.css` · 2026-08-31
+/* GENERADO por tools/gen-tokens.py desde design/Synapse_v2.pen · NO EDITAR A MANO
  *
- * Los 57 tokens del `.pen`, traducidos al espacio de nombres de Tailwind v4.
+ * Los tokens del `.pen`, traducidos al espacio de nombres de Tailwind v4.
  * `--color-*` genera las utilidades de color (`bg-panel`, `text-ink`,
- * `border-w2`, `stroke-c-grid`), `--font-*` las de tipografía y `--radius-*`
- * las de radio. El nombre del token no cambió: solo se le antepuso el
- * espacio que Tailwind exige para generar la utilidad.
+ * `border-w2`, `stroke-c-grid`), `--font-*` y `--text-*` las de tipografía y
+ * `--radius-*` las de radio. El nombre del token no cambia: solo se le antepone
+ * el espacio que Tailwind exige para generar la utilidad.
  *
- * PENDIENTE · esto todavía NO se genera. En v2 lo emite `tools/gen-tokens.py`
- * leyendo el `.pen`, y `token-drift` verifica que no se separen. Hasta que ese
- * generador se reapunte a este archivo, un cambio de token en el diseño no
- * llega solo: hay que traerlo a mano y eso es deriva esperando pasar.
+ * El porqué de cada traducción está en la cabecera del generador, no acá: es
+ * una decisión de ese script y tenerla lejos del código que la toma fue lo que
+ * F0.12 vino a arreglar.
  */
 
 @import 'tailwindcss';
@@ -59,16 +58,12 @@
      de 9px, y los dos son el mismo 0.12em. Declarado una vez, sirve a los dos.
 
      `rotulo` cubre los dos roles de rótulo —label y nota—; `titulo` es el
-     -0.02em que §2.3 le da a Space Grotesk. */
+     -0.02em que §2.3 le da a Space Grotesk. El KPI lleva el suyo, más apretado:
+     en el `.pen` sus nodos están en -1.1px sobre 40px, que es el valor modal de
+     siete de trece. El port lo trajo como -0.01em, que no salía de ninguna
+     fuente. La propuesta de normalizarlo está en B0.9, pregunta 10. */
   --tracking-rotulo: 0.12em;
   --tracking-titulo: -0.02em;
-
-  /* El KPI lleva el suyo, y no es el de título. En el `.pen` los nodos de KPI
-     están en -1.1px sobre 40px —siete de trece, que es el valor modal— o sea
-     -0.0275em, más apretado que el -0.02em de Space Grotesk. El port lo trajo
-     como -0.01em, que no sale de ninguna fuente. La propuesta de normalizarlo
-     a una cifra redonda está en docs/F1.28-escala-tipografica.md; hasta que
-     alguien la decida, el token dice lo que dice el `.pen`. */
   --tracking-kpi: -0.0275em;
 
   /* Altura de línea sin unidad, que es como se multiplica por el tamaño en vez

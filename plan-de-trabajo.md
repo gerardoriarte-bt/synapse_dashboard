@@ -940,7 +940,7 @@ alterada, `spec-anclas`; y una sonda con hex, `bg-slate-800`, `amber`,
 `h-[348px]`, SQL, import de valor desde `api/` y label inline produjo 9 hallazgos
 en 7 reglas —sin marcar el `import type`, que es la regla y no la excepción.
 
-### ➕ F0.12 ⬜ Reapuntar el generador de tokens
+### ➕ F0.12 ✅ Reapuntar el generador de tokens
 **Descripción.** `tokens.css` y `tokens.ts` están **portados a mano**. En v2 los
 emite `tools/gen-tokens.py` leyendo el `.pen`, y `token-drift` verifica que no se
 separen. Hasta reapuntarlo, un cambio de token en el diseño no llega solo.
@@ -949,6 +949,41 @@ separen. Hasta reapuntarlo, un cambio de token en el diseño no llega solo.
   Tailwind, incluidos los cuatro tokens de marca y las 22 rampas de familia.
 - Correrlo dos veces produce el mismo archivo byte a byte.
 - Las cabeceras «PORTADO A MANO · PENDIENTE» desaparecen.
+
+**Cerrada el 2026-09-03.** Lo que la desbloqueó no fue escribir el script sino
+el traslado de `design/`: el generador de v2 ya leía `RAIZ / "design" /
+"Synapse_v2.pen"`, o sea exactamente la ruta que ahora existe.
+
+**La decisión que había que tomar era dónde queda la prosa.** `tokens.css` son
+195 líneas y casi la mitad es texto: por qué `@theme static` no es opcional, de
+dónde sale cada tamaño de la escala, y **los marcadores `§ANCLA:RADIO-1` y
+`§ANCLA:TIPO-2`, que `spec-anclas` lee del archivo**. Un generador que escribe
+el archivo entero se los lleva puestos y la puerta se pone roja en dos anclas.
+
+Las salidas eran tres —mover la prosa al generador, partir el archivo en uno
+generado y uno a mano, o respetar bloques marcados— y se eligió la primera,
+porque **el generador ya es el lugar donde vive el porqué de cada traducción**.
+El comentario que explica que el tracking va en `em` describe una decisión de
+ese script. Las otras dos dejan dos archivos que hay que mantener
+sincronizados, que es el problema que el generador viene a resolver.
+
+**Hallazgo: el port a mano no tenía deriva, y ahora está probado de verdad.**
+El generador reproduce el `tokens.css` escrito a mano **byte a byte**, salvo la
+cabecera —que cambió a propósito— y el comentario del tracking del KPI, que se
+movió a su sección al agrupar por prefijo.
+
+**`token-drift` cambió de método, y era lo que su propia nota anunciaba.** Pasó
+de comparar variable por variable a regenerar en memoria y comparar el texto
+entero. La diferencia no es teórica: el chequeo viejo **no veía un comentario
+cambiado** —y ahí viven las dos anclas—, no veía el orden, y repetía la
+traducción de espacios de nombres en dos lugares, así que un error en la
+traducción entraba igual porque los dos se equivocaban igual. Verificado por
+mutación: borrar `§ANCLA:TIPO-2` del CSS ahora se detecta y antes no.
+
+El generador además se planta en dos casos en vez de emitir algo silencioso: si
+la escala de espaciado deja de ser 4·N no la colapsa a `--spacing`, y si el
+`.pen` trae un token que no encaja en ninguna sección no lo tira, avisa. Los dos
+verificados contra un `.pen` roto a propósito.
 
 ---
 

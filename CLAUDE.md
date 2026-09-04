@@ -76,8 +76,11 @@ tests/           TODAS las pruebas, espejando src/. Los mocks de MSW viven acá
 
    Un grep que busque `from '../api'` a secas marca falsos positivos. El que
    vale excluye `import type`.
-2. **`src/api/generated.ts` se genera** con `npm run gen:api`. Editarlo a mano se
-   pierde en la próxima corrida y produce deriva silenciosa.
+2. **`src/api/generated.ts` y `src/tokens/` se generan** —con `npm run gen:api` y
+   `npm run gen:tokens`. Editarlos a mano se pierde en la próxima corrida y
+   produce deriva silenciosa. Desde F0.12 `token-drift` lo verifica regenerando
+   y comparando byte a byte, así que un comentario cambiado también se ve: es
+   donde viven `§ANCLA:RADIO-1` y `§ANCLA:TIPO-2`.
 
 ## Idioma
 
@@ -171,7 +174,8 @@ con eso se borró `lib/cn.ts` y sus dos dependencias, que no tenían qué fusion
 | `npm run design-lint` | las 15 reglas duras sobre `src/`, en utilidades de Tailwind |
 | `npm run spec-anclas` | cada regla de `design.md` atada a su código y su aserción |
 | `npm run contract-drift` | `src/api/generated.ts` == el yaml |
-| `npm run token-drift` | `src/tokens/tokens.css` == las 57 variables del `.pen` |
+| `npm run token-drift` | `src/tokens/` == lo que el `.pen` emite, **byte a byte** |
+| `npm run gen:tokens` | regenera `src/tokens/tokens.css` y `tokens.ts` desde el `.pen` |
 | `npm run gen:api` | regenera `src/api/generated.ts` desde `contracts/synapse-api.yaml` |
 | `npm run plan` | regenera `plan-tareas.csv` y la página desde `plan-de-trabajo.md` |
 | `npm run plan:diff <export.csv>` | compara un export de la plataforma de seguimiento contra el plan |
@@ -329,11 +333,8 @@ Abierto ahora mismo:
 3. **F0.5 y B0.10** — el login lo coloca el backend. Faltan tres respuestas de
    integración: con qué clave se guarda el token, si el login vive en otro origen
    (`localStorage` no cruza orígenes), y adónde redirige un `401`.
-4. **F0.12** — reapuntar `gen-tokens.py`. Ya no le falta la portabilidad, que
-   la resolvió el traslado de `design/`: hoy `token-drift` cubre el hueco
-   comparando variable por variable y confirmó que el port a mano de los 73 no
-   tiene deriva. Lo que falta es que un cambio en el `.pen` llegue solo, sin que
-   nadie escriba el CSS.
+4. **La Fase 3, el chat.** F3.1–F3.8 están pendientes y no diferidas; F3.9–F3.11
+   sí lo están por D3. Es el bloque grande que sigue.
 5. **Las dos de diseño que abrió F1.28** — §2.3 declara la escala mono entera
    y no declara ni un tamaño de `font-body` ni de `font-display`, y el tracking
    del KPI no sale de ninguna tabla. Son las preguntas 9 y 10 de B0.9; el censo

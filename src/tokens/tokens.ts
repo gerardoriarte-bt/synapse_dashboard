@@ -1,12 +1,9 @@
-// PORTADO A MANO desde v2 · espejo en TypeScript de `tokens.css`.
+// GENERADO por tools/gen-tokens.py desde design/Synapse_v2.pen · NO EDITAR A MANO
 //
-// Existe para que un token se pueda nombrar desde TS sin escribir la cadena
-// suelta: la familia llega del catálogo y el plot construye
-// `var(--color-fam-${familia}-1)`, así que el nombre del token es parte del
-// contrato y no un detalle de CSS.
-//
-// PENDIENTE · igual que `tokens.css`, todavía no se genera. Ver la cabecera de
-// ese archivo.
+// Espejo en TypeScript de `tokens.css`. Existe para que un token se pueda
+// nombrar desde TS sin escribir la cadena suelta: la familia llega del catálogo
+// y el plot construye `var(--color-fam-${familia}-1)`, así que el nombre del
+// token es parte del contrato y no un detalle de CSS.
 
 /** Color de superficie, texto o borde. Invierte con el tema. */
 export type TokenColor =
