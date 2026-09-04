@@ -333,16 +333,20 @@ Abierto ahora mismo:
 3. **F0.5 y B0.10** — el login lo coloca el backend. Faltan tres respuestas de
    integración: con qué clave se guarda el token, si el login vive en otro origen
    (`localStorage` no cruza orígenes), y adónde redirige un `401`.
-4. **La Fase 3, el chat.** El motor está hecho —F3.4 el cliente SSE y F3.8 la
-   acumulación—; falta la UI: F3.1 la hoja lateral, F3.5 los mensajes, F3.6
-   reutilizar cuerpos de panel para las cifras del agente, F3.7 el historial.
-   F3.9–F3.11 siguen diferidas por D3.
+4. **La Fase 3, el chat.** Hechas F3.4 (cliente SSE), F3.8 (acumulación), F3.1
+   (la hoja) y F3.5 (los mensajes). Queda **F3.7**, el historial de hilos, que
+   está desbloqueado. F3.9–F3.11 siguen diferidas por D3.
 
-   **F3.2 está bloqueada por T4**, y se descubrió al abrir la fase:
-   `ContextoDePanel` **no existe en el contrato**. `POST /config/chat` acepta
-   `pregunta`, `tabId` y `hiloId`, y nada más — no hay campo por donde mandar
-   desde qué panel se pregunta. Construirlo en el front sin que el yaml lo
-   declare sería inventar una forma que el backend no va a leer.
+   **Dos están bloqueadas por el contrato, y las dos se descubrieron al abrir la
+   fase.** Es el mismo patrón: el front tendría que inventar una forma que el
+   backend no declara.
+   - **F3.2 · T4** — `ContextoDePanel` **no existe**. `POST /config/chat` acepta
+     `pregunta`, `tabId` y `hiloId`, y nada más: no hay campo por donde mandar
+     desde qué panel se pregunta.
+   - **F3.6 · pregunta 11 de B0.9** — `DatoDeRespuesta` no declara con qué tipo
+     de panel se dibuja, y `formasAceptadas` va de muchos a muchos, así que no se
+     deriva. Ojo con el nombre: `EventoDato.tipo` es `'dato'`, el discriminador
+     de la unión, no un `TipoPanel`.
 5. **Las dos de diseño que abrió F1.28** — §2.3 declara la escala mono entera
    y no declara ni un tamaño de `font-body` ni de `font-display`, y el tracking
    del KPI no sale de ninguna tabla. Son las preguntas 9 y 10 de B0.9; el censo

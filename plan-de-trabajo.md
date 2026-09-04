@@ -1622,10 +1622,20 @@ verificada y no declarada. La prueba además **afirma que el fixture no trae
 
 ## Fase 3 — Chat contextual
 
-### F3.1 ⬜ `ChatOverlay` — la hoja lateral
+### F3.1 ✅ `ChatOverlay` — la hoja lateral
 **Criterio de aceptación.** Escape cierra. El foco entra al abrir y vuelve al
 disparador al cerrar. Una sola hoja abierta a la vez: apilarlas deja al usuario
 sin saber qué cierra el Escape.
+
+**Cerrada el 2026-09-03, sin `<dialog>` nativo y con la razón escrita.**
+`showModal()` daría Escape, trampa de foco y devolución del foco gratis, pero
+**jsdom no lo implementa** —verificado— así que las pruebas tendrían que
+polirrellenarlo y estarían verificando el polyfill en vez de la hoja. Hecho a
+mano, el retorno del foco queda explícito en vez de confiado al navegador.
+
+Lo de «una sola hoja» es estructural: la consola sostiene un único estado. El
+contador del componente es la red por si alguien monta una segunda desde otro
+lado, y **avisa en vez de fallar en silencio**.
 
 ### F3.2 ⬜ Construir `ContextoDePanel` al abrir · 🔒 **bloqueada por T4**
 **Criterio de aceptación.** Manda `panelId`, `metricId`, `metricKey`, `nombre`,
@@ -1683,11 +1693,46 @@ el servidor local manda cada evento entero— y falla detrás de un proxy. Las
 pruebas arman las tramas partidas en lugares incómodos a propósito, y las dos
 mutaciones lo confirman.
 
-### F3.5 ⬜ UI de mensajes con estado de streaming
-### F3.6 ⬜ Reutilizar cuerpos de panel para respuestas estructuradas
+### F3.5 ✅ UI de mensajes con estado de streaming
+**Criterio de aceptación.**
+- Recibe una lista de turnos y un estado. **No sabe qué es SSE**, no abre nada y
+  no acumula: se puede montar con turnos fijos, sin conexión.
+- El estado de streaming se anuncia por `aria-live`, y la región viva es la
+  RESPUESTA y no el turno entero: envolviendo todo, un lector de pantalla
+  relee la pregunta con cada fragmento.
+- **Ningún spinner** · la casa usa esqueleto o nada.
+- §7.1: toda respuesta muestra su SQL en un desplegable, cerrado por defecto, y
+  con el límite declarado al lado.
+- Un corte dice si lo recibido sigue valiendo, leyendo `parcial` del backend.
+
+**Cerrada el 2026-09-03.** El indicador de streaming resultó ser menos de lo que
+parecía: **la prosa que aparece ES el indicador**, así que lo único que hace
+falta cubrir es el hueco ANTES del primer fragmento, cuando el agente está
+consultando Gold y no hay nada que mostrar.
+
+### F3.6 ⬜ Reutilizar cuerpos de panel para respuestas estructuradas · 🔒 **bloqueada**
 **Criterio de aceptación.** Si llega `{ forma, datos, procedencia }`, se renderiza
 con el **mismo** cuerpo que un panel — un solo modelo de datos. Y con la misma
 anatomía: una cifra en el chat también declara BASE y procedencia.
+
+**Bloqueada por el contrato, descubierto el 2026-09-03.** `DatoDeRespuesta` trae
+`valor`, `familia`, `presentacion`, `metricId` y `titulo`, más `Gobierno`
+intersectado — o sea que la procedencia sí viaja pegada a la cifra, que es la
+mitad difícil. Lo que **no declara es con qué tipo de panel se dibuja**.
+
+Y no se puede derivar: `Bloque.formasAceptadas` es de muchos a muchos —varios
+tipos aceptan `escalar`— así que el front tendría que ELEGIR uno. Eso es
+inventar una decisión que el contrato no tomó, y el color de una cifra del chat
+ya se inventó una vez: el front tenía `familia` cableada a `demanda` porque el
+evento no la traía. Se arregló agregando el campo al contrato, que es lo que
+corresponde acá también.
+
+Cuidado con el nombre: `EventoDato.tipo` es `'dato'` —el discriminador de la
+unión de eventos— y no un `TipoPanel`. Es fácil leerlo como si el campo ya
+existiera.
+
+Mientras tanto la UI **declara cuántas cifras trajo la respuesta** en vez de
+pintar una con un cuerpo elegido a dedo. Es la pregunta 11 de B0.9.
 
 ### F3.7 ⬜ Historial de hilos
 **Descripción.** Listado de conversaciones previas del usuario, desde
