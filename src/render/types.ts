@@ -40,7 +40,16 @@ export type BodyProps<F extends Value['forma'], P = Record<string, never>> = {
    *  cuerpo no sabe quién persiste la respuesta. Ausente en la mayoría, que son
    *  de solo lectura. */
   actions?: Actions
-  onRespond?: (ref: string, response: 'aceptado' | 'rechazado') => void
+  /** **Lleva el `accionableId`, no el `ref`.** El nombre decía `ref` y el cuerpo
+   *  pasaba el id desde siempre: el que lo recibe tiene que llamar a
+   *  `POST /config/accionables/{id}/respuesta`, así que el id del accionable es
+   *  lo único que sirve. Corregido el 2026-09-04, al escribir la prueba que
+   *  faltaba — un tipo que promete una cosa y entrega otra es cómo alguien pasa
+   *  el `ref` un día y el 404 aparece en producción.
+   *
+   *  Que `Acciones` esté keyeado por `ref` es otra cosa y sigue igual: es lo que
+   *  ata cada acción a su ítem cuando `tope` ya recortó la lista. */
+  onRespond?: (accionableId: string, response: 'aceptado' | 'rechazado') => void
   /** El nombre de la métrica. **No se pinta**: el shell ya lo muestra como
    *  título y repetirlo sería ruido. Es para el árbol de accesibilidad — una
    *  cifra dentro de una fila se entiende a la vista por su columna, pero un

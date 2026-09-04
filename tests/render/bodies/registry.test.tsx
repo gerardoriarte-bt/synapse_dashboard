@@ -16,27 +16,20 @@ import {
   preloadBodies,
 } from '@/render/bodies/registry'
 import type { PanelType } from '@/api/types'
+import { enumOf } from '../../contract'
 
-/** Los quince del enumerado `TipoPanel` del contrato. Escritos a mano desde el
- *  yaml, no leídos del registro: si se leyeran del registro la prueba no podría
- *  detectar que falta uno. */
-const CONTRACT_TYPES: PanelType[] = [
-  'kpi',
-  'prose',
-  'series',
-  'bars',
-  'table',
-  'gauge',
-  'forecast',
-  'list',
-  'reco',
-  'composition',
-  'comparison',
-  'distribution',
-  'blocked',
-  'matrix',
-  'graph',
-]
+/** El enumerado `TipoPanel`, LEÍDO DEL YAML · F5.6.
+ *
+ *  Hasta el 2026-09-04 esto era un arreglo de quince escrito a mano acá, con un
+ *  comentario que decía «no leídos del registro: si se leyeran, la prueba no
+ *  podría detectar que falta uno». La intención era correcta y se quedó a mitad
+ *  de camino: **una copia a mano del yaml se desactualiza igual que el
+ *  registro**, y entonces el contrato gana un tipo, nadie toca esta lista y la
+ *  prueba sigue en verde.
+ *
+ *  No se puede resolver con tipos: `PanelType` es una unión de TypeScript y se
+ *  borra al compilar. La paridad sale del yaml o no sale. */
+const CONTRACT_TYPES = enumOf('TipoPanel') as PanelType[]
 
 describe('cada cargador resuelve a un memo', () => {
   it.each(Object.keys(LOADERS))('%s', async (type) => {
@@ -68,9 +61,17 @@ describe('un tipo sin cuerpo NO cae en un fallback silencioso', () => {
 })
 
 describe('la cuenta cierra contra el contrato', () => {
-  it('construidos + faltantes son exactamente los quince tipos', () => {
+  it('el yaml declara tipos · si no, la paridad no verifica nada', () => {
+    // Sin esto, un `enumOf` que devolviera vacío volvería verde a la paridad de
+    // abajo. Es el modo de falla que la lista a mano tenía y que este archivo
+    // viene a cerrar: hay que comprobar que la fuente dice algo.
+    expect(CONTRACT_TYPES.length).toBeGreaterThan(10)
+  })
+
+  it('construidos + faltantes son exactamente los tipos del contrato', () => {
     // Es lo que impide que un tipo se pierda: si el contrato gana uno y nadie
-    // lo agrega ni a BODIES ni a MISSING_TYPES, esto falla.
+    // lo agrega ni a BODIES ni a MISSING_TYPES, esto falla — y ahora falla de
+    // verdad, porque la lista de la izquierda sale del yaml.
     expect([...BUILT_TYPES, ...MISSING_TYPES].sort()).toEqual([...CONTRACT_TYPES].sort())
   })
 

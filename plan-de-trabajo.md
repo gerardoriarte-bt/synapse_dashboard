@@ -1927,11 +1927,11 @@ detalle» del shell.
 - Se abre con el `panelId` y las `dimensiones` que declara la métrica en el
   catálogo, nunca con una lista escrita en el front.
 
-### F5.5 ⬜ Prueba por cuerpo, con props mínimas válidas
-### F5.6 ⬜ Prueba: cada `PanelType` del contrato tiene componente registrado
+### F5.5 ✅ Prueba por cuerpo, con props mínimas válidas
+### F5.6 ✅ Prueba: cada `PanelType` del contrato tiene componente registrado
 ### F5.7 ✅ Prueba: cada `Payload.estado` muestra el estado correcto
 ### F5.8 ✅ Pruebas de contenedor con MSW
-### F5.9 ⬜ E2E de una pestaña completa con fixtures HTTP
+### F5.9 ✅ E2E de una pestaña completa con fixtures HTTP
 **Criterio de aceptación (los cinco).**
 - **Las pruebas se escriben desde el contrato y desde la cita de la spec, no
   mirando la implementación.** Una prueba escrita desde el código fija lo que el
@@ -1957,26 +1957,53 @@ y lo dejan hacer los mismos `fetch` que en producción; lo único distinto es qu
 responde. Cero fixtures JS importados por la superficie: los datos entran como
 respuesta HTTP.
 
-**F5.5 ⬜ · seis de doce.** Tienen prueba `CompositionBody`, `ForecastBody`,
-`GaugeBody`, `KpiBody`, `ListBody` y `TableBody`. **Faltan `BarsBody`,
-`BlockedBody`, `DistributionBody`, `ProseBody`, `RecoBody` y `SeriesBody`.**
+**F5.5 ✅ · cerrada el 2026-09-04.** Faltaban seis de doce —`BarsBody`,
+`BlockedBody`, `DistributionBody`, `ProseBody`, `RecoBody` y `SeriesBody`— y
+ahora los doce tienen prueba. Los tres que dibujan un plot se verifican por lo
+que le PASAN al plot —ordenar, recortar, normalizar— porque el SVG en jsdom no
+tiene tamaño y no dibuja nada.
 
-**F5.6 ⬜ · y la prueba que existe tiene el defecto que el criterio nombra.**
-`registry.test.tsx` verifica que construidos + faltantes den los quince tipos,
-pero los compara contra `CONTRACT_TYPES`, que es **un arreglo escrito a mano en
-el propio archivo de prueba**. Si el contrato gana un tipo y nadie toca esa
-lista, la prueba sigue en verde: es exactamente «una lista escrita a mano» en vez
-de «recorre el enumerado del contrato».
+**Y encontró un tipo que prometía una cosa y entregaba otra.** `BodyProps`
+declaraba `onRespond?: (ref: string, ...)` y `RecoBody` pasaba el
+`accionableId` desde siempre — que es lo correcto, porque quien lo recibe llama
+a `POST /config/accionables/{id}/respuesta`. Se corrigió el nombre del
+parámetro: un tipo que miente es cómo alguien pasa el `ref` un día y el 404
+aparece en producción.
 
-El arreglo tiene una vuelta: `PanelType` es una unión de TypeScript y se borra al
-compilar, así que no se puede enumerar en runtime desde `generated.ts`. **La
-paridad hay que sacarla del yaml**, leyendo el enum de `TipoPanel` desde la
-prueba — como ya hacen `spec-anclas` y `token-drift` con sus fuentes.
+**F5.6 ✅ · la prueba que existía tenía el defecto que el criterio nombra.**
+`registry.test.tsx` comparaba contra `CONTRACT_TYPES`, **un arreglo de quince
+escrito a mano en el propio archivo**, con un comentario que decía «no leídos
+del registro: si se leyeran, la prueba no podría detectar que falta uno». La
+intención era correcta y se quedó a mitad de camino: una copia a mano del yaml
+se desactualiza igual que el registro.
 
-**F5.9 ⬜ · una pestaña no es un panel.** Las pruebas de contenedor montan **un
-solo panel**. El criterio pide una pestaña completa: varios paneles, de tipos
-distintos, con la grilla resuelta y los chunks de cuerpo que eso implica. Es lo
-que atraparía un fallo de composición que con un panel no aparece.
+No se puede resolver con tipos —`PanelType` es una unión de TypeScript y se
+borra al compilar—, así que la paridad sale del yaml: `tests/contract.ts` lee el
+enum de `TipoPanel`, como ya hacen `spec-anclas` con `design.md` y `token-drift`
+con el `.pen`. Verificado por mutación agregando `sankey` al contrato: **la
+prueba nueva falla y la vieja habría pasado.**
+
+Leer el yaml destapó dos trampas, las dos cerradas: el contrato tiene un
+`components/responses/NoExiste` —el 404— así que buscar por nombre en el archivo
+entero encontraba una respuesta creyendo que era un esquema; y el `enum:` hay
+que acotarlo al nivel del esquema, porque si no agarra el de una propiedad
+anidada.
+
+**F5.9 ✅ · cinco paneles, cinco tipos, cinco formas.** Lo que un panel solo no
+puede verificar: que cada panel resuelva SU métrica y no la del vecino, que la
+grilla los coloque donde dice el layout, que cinco tipos carguen cinco cuerpos
+distintos, y que un panel en `ERROR` no arrastre a los otros cuatro.
+
+**Los fixtures se escribieron de memoria y el contrato pilló dos.**
+`columnas` pide `titulo` y `numerica` —se había escrito `etiqueta`— y los
+pilares de `prosa` piden `label`, no `etiqueta`. El segundo es el que más
+enseña: el rótulo salía vacío y **la prueba de `ProseBody` pasaba igual**,
+porque solo miraba el `valor`. Ahora verifica los dos.
+
+Dos cosas del entorno que parecían fallos y no lo eran: jsdom abre en 1024px, o
+sea seis columnas, así que la grilla colapsaba —F1.30 funcionando— y el alto no
+es un `height` sino `gridRow: span N` sobre `gridAutoRows`. Y la celda se busca
+por su panel y no por índice, porque `readingOrder` ordena el DOM.
 
 ### ➕ F5.13 ⬜ Períodos libres en el selector · 🔒 espera el patrón de `PeriodoId`
 **Descripción.** Decisión del 2026-09-04 (humano): **se va con manejo de períodos
@@ -2013,7 +2040,7 @@ rango arbitrario hay que calcularlo a demanda.
 
 ### F5.10 ⚠️ Checklist de conformidad §17 por tipo de bloque integrado
 ### F5.11 ✅ Verificar tema oscuro y claro en todo componente
-### F5.12 ⬜ Verificar la carga diferida
+### F5.12 ✅ Verificar la carga diferida
 **Criterio de aceptación.**
 - F5.11: automatizable — el chequeo de contraste de v2 (`tools/contraste.py`)
   verifica los pares de tokens en los dos temas y corre en cada build.
@@ -2070,11 +2097,20 @@ B0.9. El chequeo sale verde imprimiéndola como pendiente, y **falla si el
 número se mueve**: verificado por mutación, junto con una desviación nueva y con
 el caso arreglado.
 
-**F5.12 ⬜ · lo que hay no es lo que pide.** `registry.test.tsx` verifica que
-`preloadBodies` deduplique y no reviente, que es sobre la FUNCIÓN. El criterio
-pide verificarlo **sobre el output del build**: que una pestaña con cinco tipos
-descargue cinco chunks y no quince. Eso se mide contando los `assets/*Body-*.js`
-que el build emite y comprobando que ninguno entre al chunk principal.
+**F5.12 ✅ · `tools/carga-diferida.py`, sobre `dist/`.** Lo que había verificaba
+`preloadBodies`, que es la FUNCIÓN. Lo que decide si el usuario descarga cinco
+cuerpos o quince es si el bundler los separó, y eso solo se ve en el build.
+
+**Lo que se cuenta es la existencia de un chunk por cuerpo**, y es la métrica
+correcta por cómo falla esto de verdad: nadie escribe «cargá los quince», lo que
+pasa es que alguien importa un cuerpo de forma normal —para una prueba de tipos,
+para reusar una constante— y Vite, que ve un import estático, lo mete en el
+chunk principal. **El `lazy()` sigue ahí y ya no sirve: el código viaja igual, y
+el síntoma es que el chunk desaparece.**
+
+Verificado por mutación con un `import { KpiBody }` desde `Console.tsx`: el
+chequeo lo detecta y nombra el cuerpo. Sin `dist/` sale BLOQUEADO en vez de
+pasar. Corre **después** del build en la puerta, que ahora son diez chequeos.
 
 ---
 

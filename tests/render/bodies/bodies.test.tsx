@@ -7,8 +7,15 @@
  *  que son los que ninguna prueba veía.
  */
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
+import { BarsBody } from '@/render/bodies/BarsBody'
+import { BlockedBody } from '@/render/bodies/BlockedBody'
+import { DistributionBody } from '@/render/bodies/DistributionBody'
 import { ForecastBody } from '@/render/bodies/ForecastBody'
+import { ProseBody } from '@/render/bodies/ProseBody'
+import { RecoBody } from '@/render/bodies/RecoBody'
+import { SeriesBody } from '@/render/bodies/SeriesBody'
 import { GaugeBody } from '@/render/bodies/GaugeBody'
 import { ListBody } from '@/render/bodies/ListBody'
 import { CompositionBody } from '@/render/bodies/CompositionBody'
@@ -171,5 +178,248 @@ describe('TableBody · la columna se formatea entera, no celda por celda', () =>
       />,
     )
     expect(value.filas).toEqual(original)
+  })
+})
+
+/* ── Los seis que faltaban · F5.5, 2026-09-04 ──────────────────────────────
+ *
+ *  La auditoría de Fase 5 encontró que seis de los doce cuerpos no tenían una
+ *  sola prueba. Van desde la regla que cada uno sostiene: los tres que dibujan
+ *  un plot se verifican por lo que le PASAN al plot —ordenar, recortar,
+ *  normalizar— porque el SVG en jsdom no tiene tamaño y no dibuja nada.
+ */
+
+describe('BarsBody · el orden y el tope son del panel, no del dato', () => {
+  const value = {
+    forma: 'categorica',
+    items: [
+      { etiqueta: 'Media', v: 50 },
+      { etiqueta: 'Alta', v: 90 },
+      { etiqueta: 'Baja', v: 10 },
+    ],
+  } as unknown as Extract<Value, { forma: 'categorica' }>
+
+  it('NO muta el arreglo del payload al ordenar', () => {
+    // El payload vive en la cache de TanStack Query: ordenarlo en el lugar
+    // cambia lo que ve el próximo lector de esa entrada. Es el mismo defecto
+    // que TableBody ya tenía cubierto.
+    const original = [...value.items]
+    render(<BarsBody {...base} value={value} params={{ orden: 'asc' }} metric="Cobertura" />)
+    expect(value.items).toEqual(original)
+  })
+
+  it('con `orden: natural` respeta el orden del backend', () => {
+    // Un backend que ya ordenó por criterio de negocio no se puede reordenar
+    // por magnitud: es el defecto que ListBody encontró en v2.
+    //
+    // Se compara el ORDEN de las etiquetas, no su presencia: las tres están en
+    // los tres casos. Y en mayúsculas, que es como el plot las escribe.
+    const orden = (params: { orden: 'natural' | 'desc' }) => {
+      const { container, unmount } = render(
+        <BarsBody {...base} value={value} params={params} metric="Cobertura" />,
+      )
+      const texto = container.textContent ?? ''
+      const posiciones = ['MEDIA', 'ALTA', 'BAJA'].map((e) => [e, texto.indexOf(e)] as const)
+      unmount()
+      return posiciones.sort((a, b) => a[1] - b[1]).map(([e]) => e)
+    }
+
+    expect(orden({ orden: 'natural' })).toEqual(['MEDIA', 'ALTA', 'BAJA'])
+    // Y con el defecto sí reordena, que es lo que prueba que `natural` hace algo.
+    expect(orden({ orden: 'desc' })).toEqual(['ALTA', 'MEDIA', 'BAJA'])
+  })
+
+  it('el `tope` recorta DESPUÉS de ordenar, no antes', () => {
+    // Recortar antes daría «las tres primeras del arreglo» en vez de «las tres
+    // más grandes», que es lo que un tope significa.
+    const cuatro = {
+      forma: 'categorica',
+      items: [
+        { etiqueta: 'D', v: 1 },
+        { etiqueta: 'A', v: 100 },
+        { etiqueta: 'B', v: 80 },
+        { etiqueta: 'C', v: 60 },
+      ],
+    } as unknown as Extract<Value, { forma: 'categorica' }>
+    const { container } = render(
+      <BarsBody {...base} value={cuatro} params={{ tope: 2 }} metric="Ventas" />,
+    )
+    expect(container.textContent).toContain('A')
+    expect(container.textContent).not.toContain('D')
+  })
+})
+
+describe('SeriesBody · base 100 y el primer punto en cero', () => {
+  const serie = (puntos: number[]) =>
+    ({
+      forma: 'serieTemporal',
+      puntos: puntos.map((v, i) => ({ t: `2026-0${i + 1}`, v })),
+    }) as unknown as Extract<Value, { forma: 'serieTemporal' }>
+
+  it('un primer punto en CERO no se normaliza · dividir por él borra la serie', () => {
+    // Sin la guarda, `v / 0` da Infinity y la serie desaparece del área de
+    // dibujo sin avisar: la pantalla queda vacía y nada dice por qué.
+    const { container } = render(
+      <SeriesBody
+        {...base}
+        value={serie([0, 50, 100])}
+        params={{ normalizacion: 'base100' }}
+        metric="Ventas"
+      />,
+    )
+    expect(container.innerHTML).not.toContain('Infinity')
+    expect(container.innerHTML).not.toContain('NaN')
+  })
+
+  it('sin normalización tampoco toca los valores', () => {
+    const value = serie([10, 20])
+    const antes = JSON.stringify(value.puntos)
+    render(<SeriesBody {...base} value={value} params={{}} metric="Ventas" />)
+    expect(JSON.stringify(value.puntos)).toBe(antes)
+  })
+})
+
+describe('DistributionBody · dibuja los cortes que le llegan', () => {
+  it('no inventa bins cuando el payload no los trae', () => {
+    // Los cortes los calcula el backend. Un bin inventado en el front sería una
+    // agregación que nadie declaró.
+    const value = {
+      forma: 'distribucion',
+      cortes: [
+        { desde: 0, hasta: 10, n: 4 },
+        { desde: 10, hasta: 20, n: 9 },
+      ],
+    } as unknown as Extract<Value, { forma: 'distribucion' }>
+    const { container } = render(
+      <DistributionBody {...base} value={value} params={{}} metric="Tickets" />,
+    )
+    expect(container.querySelector('svg')).not.toBeNull()
+  })
+})
+
+describe('ProseBody · el titular y sus pilares', () => {
+  const value = {
+    forma: 'prosa',
+    titular: 'El inventario cubre 31 días.',
+    // `label` y `valor` son los dos `required` del contrato. El primer intento
+    // escribió `etiqueta` de memoria: el rótulo salía vacío y la prueba pasaba
+    // igual, porque solo miraba el `valor`. Por eso ahora se verifican los dos.
+    pilares: [
+      { label: 'Cobertura', valor: '31 d' },
+      { label: 'Quiebre', valor: '4 SKU' },
+      { label: 'Exceso', valor: '12 SKU' },
+      { label: 'Cuarto', valor: 'no debería verse' },
+    ],
+  } as unknown as Extract<Value, { forma: 'prosa' }>
+
+  it('muestra tres pilares por defecto · por encima compiten con el titular', () => {
+    render(<ProseBody {...base} value={value} params={{}} metric="Inventario" />)
+    expect(screen.getByText('El inventario cubre 31 días.')).toBeInTheDocument()
+    // El rótulo Y la cifra. Verificar solo la cifra dejaba pasar un pilar con
+    // el rótulo vacío, que es lo que pasó al escribir el fixture de memoria.
+    expect(screen.getByText('Cobertura')).toBeInTheDocument()
+    expect(screen.getByText('31 d')).toBeInTheDocument()
+    expect(screen.queryByText('Cuarto')).toBeNull()
+    expect(screen.queryByText('no debería verse')).toBeNull()
+  })
+
+  it('las cifras del pilar se pintan TAL CUAL · ya vienen formateadas', () => {
+    // Es el único cuerpo donde no reformatear es lo correcto: el pilar cita una
+    // cifra que ya aparece en el titular, y reformatearla podría hacer que las
+    // dos digan distinto.
+    render(<ProseBody {...base} value={value} params={{}} metric="Inventario" />)
+    expect(screen.getByText('4 SKU')).toBeInTheDocument()
+  })
+
+  it('sin pilares dibuja el titular igual · no se rompe', () => {
+    const solo = { forma: 'prosa', titular: 'Sin desglose.' } as unknown as Extract<
+      Value,
+      { forma: 'prosa' }
+    >
+    render(<ProseBody {...base} value={solo} params={{}} metric="Inventario" />)
+    expect(screen.getByText('Sin desglose.')).toBeInTheDocument()
+  })
+})
+
+describe('BlockedBody · el único tipo que no dibuja su valor', () => {
+  const value = { forma: 'escalar', v: 42 } as unknown as Extract<Value, { forma: 'escalar' }>
+
+  it('NO pinta la cifra, aunque el payload la traiga', () => {
+    // La diferencia con el estado BLOQUEADO es de duración —el estado es de
+    // hoy, el tipo es del panel— pero la regla de no mostrar aproximaciones es
+    // la misma.
+    const { container } = render(
+      <BlockedBody {...base} value={value} params={{ razon: 'Falta identidad en la orden' }} metric="Recompra" />,
+    )
+    expect(container.textContent).not.toContain('42')
+    expect(container.textContent).toContain('Falta identidad en la orden')
+  })
+
+  it('sin razón declarada dice algo, no queda mudo', () => {
+    const { container } = render(
+      <BlockedBody {...base} value={value} params={{}} metric="Recompra" />,
+    )
+    expect(container.textContent).toMatch(/no está disponible/i)
+  })
+})
+
+describe('RecoBody · una acción sin quien la apruebe no ofrece botón', () => {
+  const value = {
+    forma: 'prosa',
+    titular: 'Tres acciones para esta semana.',
+    pilares: [{ label: 'Reponer talla M', valor: 'Alta', ref: 'r-1' }],
+  } as unknown as Extract<Value, { forma: 'prosa' }>
+
+  it('sin `actions` no se pinta APROBAR · un botón que devuelve 403 es peor que ninguno', () => {
+    render(<RecoBody {...base} value={value} params={{}} metric="Recomendaciones" />)
+    expect(screen.queryByRole('button', { name: /aprobar/i })).toBeNull()
+  })
+
+  it('con permiso y manejador, APROBAR dispara con el `ref` y no con el índice', async () => {
+    // `Acciones` está keyeado por `ref` y no por índice, y el contrato explica
+    // por qué: `tope` recorta los pilares antes de pintarlos, así que el ítem 2
+    // del cuerpo no es el ítem 2 del payload. Un `acciones[i]` posicional
+    // pondría el botón sobre la recomendación equivocada, en silencio y solo
+    // con cierta configuración.
+    const respondio = vi.fn()
+    render(
+      <RecoBody
+        {...base}
+        value={value}
+        params={{}}
+        metric="Recomendaciones"
+        actions={{
+          porRef: { 'r-1': { accionableId: 'a-1', estado: 'propuesto', puedeResponder: true } },
+        } as never}
+        onRespond={respondio}
+      />,
+    )
+    await userEvent.click(screen.getByRole('button', { name: /aprobar/i }))
+
+    // Sale el `accionableId` y NO el `ref`, y es lo correcto: quien lo recibe
+    // llama a `POST /config/accionables/{id}/respuesta`. El `ref` solo sirve
+    // para atar la acción a su ítem, que es lo que hace `porRef`.
+    //
+    // El tipo decía `(ref: string, ...)` y entregaba el id desde siempre. Se
+    // corrigió el nombre al escribir esta prueba: un tipo que promete una cosa
+    // y entrega otra es cómo alguien pasa el `ref` un día y el 404 aparece en
+    // producción.
+    expect(respondio).toHaveBeenCalledWith('a-1', 'aceptado')
+  })
+
+  it('con `puedeResponder: false` el botón NO se pinta · lo decide el servidor', () => {
+    render(
+      <RecoBody
+        {...base}
+        value={value}
+        params={{}}
+        metric="Recomendaciones"
+        actions={{
+          porRef: { 'r-1': { accionableId: 'a-1', estado: 'propuesto', puedeResponder: false } },
+        } as never}
+        onRespond={vi.fn()}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: /aprobar/i })).toBeNull()
   })
 })

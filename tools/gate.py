@@ -36,6 +36,10 @@ CHEQUEOS = [
     ("contraste", [sys.executable, "tools/contraste.py"], True),
     ("test", ["npm", "run", "--silent", "test"], False),
     ("build", ["npm", "run", "--silent", "build"], False),
+    # DESPUÉS del build, y no es un detalle de orden: mira `dist/`. Antes
+    # del build miraría el output de la corrida anterior, que es peor que
+    # no mirar nada.
+    ("carga-diferida", [sys.executable, "tools/carga-diferida.py"], True),
 ]
 
 

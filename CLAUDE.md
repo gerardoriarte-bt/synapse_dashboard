@@ -187,6 +187,7 @@ equivocado.
 | `npm run contract-drift` | `src/api/generated.ts` == el yaml |
 | `npm run token-drift` | `src/tokens/` == lo que el `.pen` emite, **byte a byte** |
 | `npm run contraste` | contraste WCAG de los pares que el producto pinta, en los dos temas |
+| `npm run carga-diferida` | un chunk por cuerpo en `dist/` · **corre después del build** |
 | `npm run gen:tokens` | regenera `src/tokens/tokens.css` y `tokens.ts` desde el `.pen` |
 | `npm run gen:api` | regenera `src/api/generated.ts` desde `contracts/synapse-api.yaml` |
 | `npm run plan` | regenera `plan-tareas.csv` y la página desde `plan-de-trabajo.md` |
@@ -286,6 +287,13 @@ defecto es `node`; el archivo que renderiza pide jsdom con
 
 **Una prueba nueva se verifica rompiendo el código a propósito.** Si no la viste
 fallar, no demostró nada.
+
+**Y el fixture se escribe desde el contrato, no de memoria.** El 2026-09-04, al
+escribir las pruebas que faltaban, se escribieron de memoria tres fixtures y el
+yaml corrigió los tres: `columnas` pide `titulo` y `numerica` —no `etiqueta`—, y
+los pilares de `prosa` piden `label`. El tercero es el que enseña: el rótulo
+salía vacío y **la prueba pasaba igual**, porque solo miraba el `valor`. Una
+prueba escrita desde un fixture inventado verifica el fixture.
 
 **Las dos fuentes normativas son requisito de la puerta**, y desde el
 2026-09-03 están en `design/`, adentro. `spec-anclas` necesita `design.md` y
