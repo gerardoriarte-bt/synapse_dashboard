@@ -350,7 +350,7 @@ el contrato de modo que una divergencia rompa el build de alguno de los dos.
 - La configuración de agente que el superadmin edita **no incluye** la
   credencial: la referencia por identificador.
 
-### ➕ B0.9 ⬜ Contestar las cinco `# PREGUNTA:` del contrato
+### ➕ B0.9 ⚠️ Contestar las cinco `# PREGUNTA:` del contrato
 **Descripción.** El yaml lleva cinco decisiones marcadas que el front no puede
 tomar. Contestarlas **en el propio archivo** es suficiente.
 
@@ -366,6 +366,21 @@ tomar. Contestarlas **en el propio archivo** es suficiente.
 - Las cinco marcas `# PREGUNTA:` desaparecen del yaml, reemplazadas por la
   decisión escrita.
 - La 1171 en particular determina qué estados tiene que renderizar F2.1–F2.3.
+
+**Cuatro de cinco contestadas el 2026-09-03.** Quedan escritas en el yaml, en
+el lugar de la marca, con la fecha y el porqué:
+
+| Línea | Decisión |
+|---|---|
+| 430 | **Lo emite Snowflake**, y el evento lo estampa al responder. `inconcluso` compara dos momentos y el primero no se reconstruye después |
+| 531 | **Lo deriva del token.** El front no manda `actor`, y es lo que sostiene el seguro de atribución |
+| 981 | **En el path**, `/platform/t/{tenantId}/console/*`. Gana por el criterio que la pregunta fijaba: sin tenant no hay ruta |
+| 1171 | **Sí, los dos.** El catálogo no es el único filtro, C5 es alcanzable, y **esto destraba F2.1, F2.3 y B2.7** |
+
+**Queda abierta la 754**, la taxonomía de `error.codigo`: hay que revisarla. El
+front dejó una propuesta escrita en el yaml para que la revisión tenga contra qué
+reaccionar —`FAMILIA_DETALLE` con la familia en el prefijo, que es lo que permite
+que el backend agregue códigos sin que el front cambie.
 
 **Estas cinco son las del yaml; el documento junta diez.** El front sumó tres en
 la Fase 1 y F1.28 dejó dos de diseño, que no están marcadas `# PREGUNTA:` en

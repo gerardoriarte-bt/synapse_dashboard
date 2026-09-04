@@ -277,11 +277,21 @@ export interface paths {
          *     consulta sobre Gold. Sin ella, el «observado contra estimado» compara dos
          *     cosas distintas.
          *
-         *     # PREGUNTA: falta `versionModeloSemantico`, que hoy el evento `auditoria`
-         *     # no emite. Sin ese campo el veredicto `inconcluso` —que cubre «cambio en
-         *     # la definición semántica durante el período»— no se puede calcular.
-         *     # ¿Lo agrega el backend al evento del chat, o lo resuelve el
-         *     # `DECISION_LOG` al re-medir?
+         *     # DECIDIDO 2026-09-03 (humano): **lo emite Snowflake.** La versión del
+         *     # modelo semántico no la inventa el backend ni la reconstruye el
+         *     # `DECISION_LOG`: sale de Snowflake, que es donde la consulta se
+         *     # resuelve.
+         *     #
+         *     # Consecuencia: **el evento la estampa al responder**, junto al `sql`
+         *     # congelado. Resolverla recién al re-medir no sirve, porque `inconcluso`
+         *     # compara DOS momentos —la versión con la que se respondió contra la de
+         *     # cuando se mide— y la primera no se puede reconstruir después: si la
+         *     # definición cambió, Snowflake ya devuelve la nueva.
+         *     #
+         *     # El campo ya existe en `snapshot` más abajo. Lo que queda abierto es su
+         *     # `nullable: true`: si Snowflake la emite siempre, pasa a requerido
+         *     # dentro de `snapshot` y `inconcluso` deja de tener un tercer caso
+         *     # —«no sé con qué versión se respondió»— que hoy el tipo permite.
          */
         post: operations["promoverAccionable"];
         delete?: never;
@@ -324,8 +334,15 @@ export interface paths {
          *       Si no, se rompe el «seguro de atribución»: una fila aprobada dejaría de
          *       probar que el cliente decidió.
          *
-         *     # PREGUNTA: ¿el backend expone `actor` o lo deriva del token? El front
-         *     # necesita saber si tiene que mandarlo o si se infiere.
+         *     # DECIDIDO 2026-09-03 (humano): **lo deriva del token.** El front no
+         *     # manda `actor`, y el request no lo declara.
+         *     #
+         *     # Es lo que sostiene el «seguro de atribución» que este mismo bloque
+         *     # describe: `actor` es lo que distingue una respuesta del cliente de una
+         *     # de super-admin. Si el cliente pudiera escribir ese campo, una fila
+         *     # aprobada dejaría de PROBAR que el cliente decidió — probaría que
+         *     # alguien dijo que el cliente decidió, que no es lo mismo y es
+         *     # exactamente lo que el framework necesita que no pase.
          */
         post: operations["responderAccionable"];
         delete?: never;

@@ -289,12 +289,27 @@ dibuja de punta a punta contra MSW. La puerta sale verde **sin bloqueados**, y
 desde el 2026-09-03 sale verde también en un clone limpio: `design/` está
 adentro. Fase 1 está cerrada salvo lo que depende del backend.
 
+**La Fase 2 dejó de estar bloqueada el 2026-09-03.** Se contestaron cuatro de
+las cinco `# PREGUNTA:` del contrato, y la de la línea 1171 era la que la
+frenaba entera: **el batch emite `DEGRADADO` y `SIN_PERMISO`**. Que
+`SIN_PERMISO` exista quiere decir que el catálogo no es el único filtro y que
+**C5 es una pantalla alcanzable**, no escrita al vacío. Destraba F2.1, F2.3 y
+B2.7. Las otras tres: `actor` se deriva del token, `versionModeloSemantico` lo
+emite Snowflake y el evento lo estampa al responder, y el tenant de plataforma
+va **en el path** (`/platform/t/{tenantId}/console/*`).
+
 Abierto ahora mismo:
 
-1. **B0.9** — lo más barato y lo que más desbloquea. A las cinco `# PREGUNTA:`
-   originales del contrato se le sumaron tres del front y dos de diseño. Las
-   diez, con quién decide cada una, en `docs/B0.9-preguntas-abiertas.md`. Solo
-   tres bloquean trabajo:
+1. **La Fase 2** — es lo más grande que quedó desbloqueado, y hasta ayer no lo
+   estaba.
+2. **B0.9, lo que queda** — de las diez del documento quedan seis, y solo una
+   frena trabajo. Están en `docs/B0.9-preguntas-abiertas.md` con quién decide
+   cada una:
+   - **La taxonomía de `error.codigo`** es la única de las que frenaban que
+     sigue abierta, y no espera una decisión sino una **revisión**: hay una
+     propuesta escrita en el yaml —`FAMILIA_DETALLE`, con la familia en el
+     prefijo, que es lo que permite que el backend agregue códigos sin que el
+     front cambie.
    - `Contexto` no declara `locale`, moneda ni zona horaria. Es lo único que deja
      F1.13b en ⚠️: la inyección funciona, el valor se decide en una línea de
      `ConsoleContainer` marcada como supuesto.
@@ -302,15 +317,15 @@ Abierto ahora mismo:
      lectura al colapsar.
    - `paramsDisponibles` es `string[]` —solo nombres—, así que los valores
      válidos viven duplicados en `PARAM_SCHEMAS` del front.
-2. **F0.5 y B0.10** — el login lo coloca el backend. Faltan tres respuestas de
+3. **F0.5 y B0.10** — el login lo coloca el backend. Faltan tres respuestas de
    integración: con qué clave se guarda el token, si el login vive en otro origen
    (`localStorage` no cruza orígenes), y adónde redirige un `401`.
-3. **F0.12** — reapuntar `gen-tokens.py`. Ya no le falta la portabilidad, que
+4. **F0.12** — reapuntar `gen-tokens.py`. Ya no le falta la portabilidad, que
    la resolvió el traslado de `design/`: hoy `token-drift` cubre el hueco
    comparando variable por variable y confirmó que el port a mano de los 73 no
    tiene deriva. Lo que falta es que un cambio en el `.pen` llegue solo, sin que
    nadie escriba el CSS.
-4. **Las dos de diseño que abrió F1.28** — §2.3 declara la escala mono entera
+5. **Las dos de diseño que abrió F1.28** — §2.3 declara la escala mono entera
    y no declara ni un tamaño de `font-body` ni de `font-display`, y el tracking
    del KPI no sale de ninguna tabla. Son las preguntas 9 y 10 de B0.9; el censo
    de nodos que las sostiene mientras tanto está en

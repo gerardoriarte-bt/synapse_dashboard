@@ -427,11 +427,21 @@ paths:
         consulta sobre Gold. Sin ella, el «observado contra estimado» compara dos
         cosas distintas.
 
-        # PREGUNTA: falta `versionModeloSemantico`, que hoy el evento `auditoria`
-        # no emite. Sin ese campo el veredicto `inconcluso` —que cubre «cambio en
-        # la definición semántica durante el período»— no se puede calcular.
-        # ¿Lo agrega el backend al evento del chat, o lo resuelve el
-        # `DECISION_LOG` al re-medir?
+        # DECIDIDO 2026-09-03 (humano): **lo emite Snowflake.** La versión del
+        # modelo semántico no la inventa el backend ni la reconstruye el
+        # `DECISION_LOG`: sale de Snowflake, que es donde la consulta se
+        # resuelve.
+        #
+        # Consecuencia: **el evento la estampa al responder**, junto al `sql`
+        # congelado. Resolverla recién al re-medir no sirve, porque `inconcluso`
+        # compara DOS momentos —la versión con la que se respondió contra la de
+        # cuando se mide— y la primera no se puede reconstruir después: si la
+        # definición cambió, Snowflake ya devuelve la nueva.
+        #
+        # El campo ya existe en `snapshot` más abajo. Lo que queda abierto es su
+        # `nullable: true`: si Snowflake la emite siempre, pasa a requerido
+        # dentro de `snapshot` y `inconcluso` deja de tener un tercer caso
+        # —«no sé con qué versión se respondió»— que hoy el tipo permite.
       requestBody:
         required: true
         content:
@@ -528,8 +538,15 @@ paths:
           Si no, se rompe el «seguro de atribución»: una fila aprobada dejaría de
           probar que el cliente decidió.
 
-        # PREGUNTA: ¿el backend expone `actor` o lo deriva del token? El front
-        # necesita saber si tiene que mandarlo o si se infiere.
+        # DECIDIDO 2026-09-03 (humano): **lo deriva del token.** El front no
+        # manda `actor`, y el request no lo declara.
+        #
+        # Es lo que sostiene el «seguro de atribución» que este mismo bloque
+        # describe: `actor` es lo que distingue una respuesta del cliente de una
+        # de super-admin. Si el cliente pudiera escribir ese campo, una fila
+        # aprobada dejaría de PROBAR que el cliente decidió — probaría que
+        # alguien dijo que el cliente decidió, que no es lo mismo y es
+        # exactamente lo que el framework necesita que no pase.
       parameters:
         - name: id
           in: path
@@ -753,6 +770,32 @@ components:
               description: Código estable, para decidir en código.
               # PREGUNTA: ¿qué taxonomía? El front solo necesita distinguir
               # «error de campo» de «regla de negocio» de «fallo técnico».
+              #
+              # 2026-09-03: queda abierta a propósito —hay que revisarla— pero
+              # con una propuesta del front para que la revisión tenga contra
+              # qué reaccionar.
+              #
+              # PROPUESTA: `FAMILIA_DETALLE`, y **la familia es el prefijo hasta
+              # el primer `_`**. Eso es lo único que importa del formato: el
+              # front decide sobre el prefijo y NUNCA necesita la lista
+              # completa, así que el backend agrega códigos sin que el front
+              # cambie ni se desincronice. Es la misma propiedad que hace
+              # verificable a `estado` en el batch.
+              #
+              #   CAMPO_*   error de campo · SIEMPRE lleva `campo`
+              #             CAMPO_REQUERIDO, CAMPO_FORMATO, CAMPO_FUERA_DE_RANGO
+              #   REGLA_*   regla de negocio · puede llevar `desbloqueaCon`
+              #             REGLA_VIOLADA, REGLA_PERIODO_CERRADO
+              #   FALLO_*   fallo técnico · NUNCA lleva `campo`
+              #             FALLO_UPSTREAM, FALLO_TIMEOUT, FALLO_INTERNO
+              #
+              # Las tres invariantes de arriba son lo que el front puede
+              # verificar; los códigos concretos son ejemplos y los elige el
+              # backend. `REGLA_VIOLADA` es el que ya estaba de ejemplo y encaja
+              # sin cambiarlo.
+              #
+              # §8 sigue mandando sobre `mensaje`: también un FALLO_* se escribe
+              # desde el lado del usuario y no se disculpa.
               example: REGLA_VIOLADA
             mensaje:
               type: string
@@ -978,12 +1021,19 @@ components:
       # existe SOLO para tokens de plataforma. Para un usuario de cliente el
       # navbar muestra el nombre del tenant, no un selector con una opción.
       #
-      # PREGUNTA: ¿cómo le pasa el tenant un token de plataforma a `/config/*`?
-      # §4.3 dice que en `/platform/*` el tenant siempre va en el path. Las dos
-      # opciones que vemos son `/platform/t/{tenantId}/console/*` —consistente
-      # con §4.3— o `/config/*` con una cabecera `X-Tenant-Id` que solo se
-      # acepta con `aud: platform`. Es decisión de ustedes: la que sea más
-      # difícil de desincronizar.
+      # DECIDIDO 2026-09-03 (humano): **en el path**,
+      # `/platform/t/{tenantId}/console/*`. Consistente con §4.3, que ya dice
+      # que en `/platform/*` el tenant va en el path.
+      #
+      # Gana por el criterio que la pregunta misma fijaba —la más difícil de
+      # desincronizar—: sin el tenant no hay ruta, así que no se puede omitir, y
+      # queda en el log, en la caché y en el trace. Con una cabecera, dos
+      # peticiones a distinto tenant se ven IDÉNTICAS en la URL: una mal
+      # apuntada no se distingue de una correcta hasta mirar el cuerpo.
+      #
+      # Lo que cuesta: el front arma dos bases de URL según el `aud` del token.
+      # Es una decisión en un solo lugar del cliente y no una cabecera que hay
+      # que acordarse de poner en cada llamada.
 
     Periodo:
       type: object
@@ -1168,10 +1218,20 @@ components:
           BLOQUEADO: '#/components/schemas/PayloadBloqueado'
           SIN_PERMISO: '#/components/schemas/PayloadSinPermiso'
           ERROR: '#/components/schemas/PayloadError'
-      # PREGUNTA: ¿el batch emite DEGRADADO y SIN_PERMISO? §4.2 solo muestra
-      # DISPONIBLE, BLOQUEADO y ERROR. Y si el catálogo ya viene filtrado por
-      # rol, un panel sin permiso no llegaría nunca — pero C5 existe como
-      # pantalla, así que alguien tiene que decir a quién pedirle acceso.
+      # DECIDIDO 2026-09-03 (humano): **sí, los emite a los dos.** El batch
+      # puede devolver los cinco estados, y el `discriminator` de arriba ya es
+      # la lista completa.
+      #
+      # Que `SIN_PERMISO` exista quiere decir que **el catálogo no es el único
+      # filtro**: un panel al que el usuario no tiene acceso puede llegar igual
+      # al batch y volver con ese estado. Es lo que hace a C5 una pantalla
+      # alcanzable y no escrita al vacío — hay a quién pedirle acceso porque hay
+      # forma de llegar ahí.
+      #
+      # §4.2 muestra tres porque es un ejemplo, no la enumeración.
+      #
+      # **Esto destraba F2.1 y F2.3**, que esperaban saber qué estados hay que
+      # renderizar de verdad, y B2.7, que implementa `SIN_PERMISO` en el batch.
 
     Acciones:
       type: object
