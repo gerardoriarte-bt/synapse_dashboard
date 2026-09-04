@@ -251,3 +251,51 @@ describe('F2.4 · ERROR · el mensaje es del backend y el reintento es de ESE pa
     )
   })
 })
+
+describe('§7 · cambiar de período NO vuelve a pedir el layout', () => {
+  it('el layout se pide una vez y el batch dos', async () => {
+    // La garantía está implementada —`keys.tab` no lleva el período— y estaba
+    // escrita en un comentario de `hooks.ts`. La auditoría de F5.10 del
+    // 2026-09-04 encontró que **ninguna prueba la sostenía**: se cumplía por
+    // accidente de quien la escribió, que es como se pierde una garantía en la
+    // siguiente refactorización.
+    //
+    // Es una de las trece casillas de §17: «cambiar período no re-fetch
+    // layout».
+    const layouts: string[] = []
+    const batches: string[] = []
+
+    server.use(
+      http.get(`${API}/config/me`, () =>
+        ok({
+          ...context,
+          periodos: [
+            { id: '2026-07', etiqueta: 'JUL 2026', grano: 'mes' },
+            { id: '2026-06', etiqueta: 'JUN 2026', grano: 'mes' },
+          ],
+        }),
+      ),
+      http.get(`${API}/config/catalog`, () => ok({ metrics: [kpiMetric] })),
+      http.get(`${API}/config/tabs/:tabId`, ({ params }) => {
+        layouts.push(String(params['tabId']))
+        return ok({ ...context.tabs[0], panels: [kpiPanel] })
+      }),
+      http.post(`${API}/config/panels:batch`, async ({ request }) => {
+        const body = (await request.json()) as { periodo: string }
+        batches.push(body.periodo)
+        return ok({ [kpiPanel.id]: DISPONIBLE })
+      }),
+    )
+
+    montar()
+    await screen.findByText('USD 4.28M')
+    expect(layouts).toHaveLength(1)
+
+    await userEvent.click(screen.getByRole('button', { name: 'JUN 2026' }))
+
+    // El batch SÍ se vuelve a pedir —los datos dependen del período— y el
+    // layout NO: la composición de la pestaña es la misma en junio y en julio.
+    await waitFor(() => expect(batches).toEqual(['2026-07', '2026-06']))
+    expect(layouts).toHaveLength(1)
+  })
+})

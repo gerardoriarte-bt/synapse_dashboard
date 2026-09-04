@@ -457,10 +457,10 @@ F5.6,"Front · Fase 5 — Multi-dashboard, pruebas y pulido",Front,5,"Multi-dash
 • F5.8 y F5.9 usan HTTP mockeado, nunca fixtures JS importados.",pendiente,no,,equipo:front fase:5 estado:pendiente
 F5.7,"Front · Fase 5 — Multi-dashboard, pruebas y pulido",Front,5,"Multi-dashboard, pruebas y pulido",Prueba: cada Payload.estado muestra el estado correcto,,"• Las pruebas se escriben desde el contrato y desde la cita de la spec, no mirando la implementación. Una prueba escrita desde el código fija lo que el código hace y no puede fallar nunca, ni cuando el código está mal. Es lo que pasó el 2026-08-20 con 184 pruebas en verde.
 • F5.6 es un chequeo de paridad, no una lista escrita a mano: recorre el enumerado del contrato.
-• F5.8 y F5.9 usan HTTP mockeado, nunca fixtures JS importados.",pendiente,no,,equipo:front fase:5 estado:pendiente
+• F5.8 y F5.9 usan HTTP mockeado, nunca fixtures JS importados.",hecho,no,,equipo:front fase:5 estado:hecho
 F5.8,"Front · Fase 5 — Multi-dashboard, pruebas y pulido",Front,5,"Multi-dashboard, pruebas y pulido",Pruebas de contenedor con MSW,,"• Las pruebas se escriben desde el contrato y desde la cita de la spec, no mirando la implementación. Una prueba escrita desde el código fija lo que el código hace y no puede fallar nunca, ni cuando el código está mal. Es lo que pasó el 2026-08-20 con 184 pruebas en verde.
 • F5.6 es un chequeo de paridad, no una lista escrita a mano: recorre el enumerado del contrato.
-• F5.8 y F5.9 usan HTTP mockeado, nunca fixtures JS importados.",pendiente,no,,equipo:front fase:5 estado:pendiente
+• F5.8 y F5.9 usan HTTP mockeado, nunca fixtures JS importados.",hecho,no,,equipo:front fase:5 estado:hecho
 F5.9,"Front · Fase 5 — Multi-dashboard, pruebas y pulido",Front,5,"Multi-dashboard, pruebas y pulido",E2E de una pestaña completa con fixtures HTTP,,"• Las pruebas se escriben desde el contrato y desde la cita de la spec, no mirando la implementación. Una prueba escrita desde el código fija lo que el código hace y no puede fallar nunca, ni cuando el código está mal. Es lo que pasó el 2026-08-20 con 184 pruebas en verde.
 • F5.6 es un chequeo de paridad, no una lista escrita a mano: recorre el enumerado del contrato.
 • F5.8 y F5.9 usan HTTP mockeado, nunca fixtures JS importados.",pendiente,no,,equipo:front fase:5 estado:pendiente
@@ -469,8 +469,20 @@ F5.13,"Front · Fase 5 — Multi-dashboard, pruebas y pulido",Front,5,"Multi-das
 • Se valida MIENTRAS se elige, no después. Con la lista cerrada el selector deshabilita antes de que el usuario toque nada; con rango libre elige y recién ahí se entera de que media pestaña quedó vacía. Se valida contra coarsestRequired, que ya existe.
 • El rango entra en la clave de caché como cualquier otro período.",pendiente,si,,equipo:front fase:5 estado:pendiente nueva bloqueada
 F5.10,"Front · Fase 5 — Multi-dashboard, pruebas y pulido",Front,5,"Multi-dashboard, pruebas y pulido",Checklist de conformidad §17 por tipo de bloque integrado,,"• F5.11: automatizable — el chequeo de contraste de v2 (tools/contraste.py) verifica los pares de tokens en los dos temas y corre en cada build.
-• F5.12: una pestaña que usa cinco tipos descarga cinco chunks de cuerpo, no quince. Verificable sobre el output del build.",pendiente,no,,equipo:front fase:5 estado:pendiente
+• F5.12: una pestaña que usa cinco tipos descarga cinco chunks de cuerpo, no quince. Verificable sobre el output del build.
+• «Clic abre chat con metricId + contexto» · 🔒 F3.2, que espera a T4.
+• «Cambiar tenant/rol recomponen sin deploy» · 🔒 necesita el contrato de admin y builder, que no existe.
+• «Cambiar período no re-fetch layout» · no lo verifica nada. La garantía de §7 está implementada —keys.tab no lleva el período— y escrita en un comentario de hooks.ts, pero no hay una sola prueba que la sostenga. Es una regla que hoy se cumple por accidente de quien la escribió.
+• «Prueba de render mínimo con props válidas» · es F5.5, seis de doce.",parcial,no,,equipo:front fase:5 estado:parcial
 F5.11,"Front · Fase 5 — Multi-dashboard, pruebas y pulido",Front,5,"Multi-dashboard, pruebas y pulido",Verificar tema oscuro y claro en todo componente,,"• F5.11: automatizable — el chequeo de contraste de v2 (tools/contraste.py) verifica los pares de tokens en los dos temas y corre en cada build.
-• F5.12: una pestaña que usa cinco tipos descarga cinco chunks de cuerpo, no quince. Verificable sobre el output del build.",hecho,no,,equipo:front fase:5 estado:hecho
+• F5.12: una pestaña que usa cinco tipos descarga cinco chunks de cuerpo, no quince. Verificable sobre el output del build.
+• «Clic abre chat con metricId + contexto» · 🔒 F3.2, que espera a T4.
+• «Cambiar tenant/rol recomponen sin deploy» · 🔒 necesita el contrato de admin y builder, que no existe.
+• «Cambiar período no re-fetch layout» · no lo verifica nada. La garantía de §7 está implementada —keys.tab no lleva el período— y escrita en un comentario de hooks.ts, pero no hay una sola prueba que la sostenga. Es una regla que hoy se cumple por accidente de quien la escribió.
+• «Prueba de render mínimo con props válidas» · es F5.5, seis de doce.",hecho,no,,equipo:front fase:5 estado:hecho
 F5.12,"Front · Fase 5 — Multi-dashboard, pruebas y pulido",Front,5,"Multi-dashboard, pruebas y pulido",Verificar la carga diferida,,"• F5.11: automatizable — el chequeo de contraste de v2 (tools/contraste.py) verifica los pares de tokens en los dos temas y corre en cada build.
-• F5.12: una pestaña que usa cinco tipos descarga cinco chunks de cuerpo, no quince. Verificable sobre el output del build.",pendiente,no,,equipo:front fase:5 estado:pendiente
+• F5.12: una pestaña que usa cinco tipos descarga cinco chunks de cuerpo, no quince. Verificable sobre el output del build.
+• «Clic abre chat con metricId + contexto» · 🔒 F3.2, que espera a T4.
+• «Cambiar tenant/rol recomponen sin deploy» · 🔒 necesita el contrato de admin y builder, que no existe.
+• «Cambiar período no re-fetch layout» · no lo verifica nada. La garantía de §7 está implementada —keys.tab no lleva el período— y escrita en un comentario de hooks.ts, pero no hay una sola prueba que la sostenga. Es una regla que hoy se cumple por accidente de quien la escribió.
+• «Prueba de render mínimo con props válidas» · es F5.5, seis de doce.",pendiente,no,,equipo:front fase:5 estado:pendiente

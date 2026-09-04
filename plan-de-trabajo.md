@@ -1929,8 +1929,8 @@ detalle» del shell.
 
 ### F5.5 ⬜ Prueba por cuerpo, con props mínimas válidas
 ### F5.6 ⬜ Prueba: cada `PanelType` del contrato tiene componente registrado
-### F5.7 ⬜ Prueba: cada `Payload.estado` muestra el estado correcto
-### F5.8 ⬜ Pruebas de contenedor con MSW
+### F5.7 ✅ Prueba: cada `Payload.estado` muestra el estado correcto
+### F5.8 ✅ Pruebas de contenedor con MSW
 ### F5.9 ⬜ E2E de una pestaña completa con fixtures HTTP
 **Criterio de aceptación (los cinco).**
 - **Las pruebas se escriben desde el contrato y desde la cita de la spec, no
@@ -1940,6 +1940,43 @@ detalle» del shell.
 - F5.6 es un chequeo de paridad, no una lista escrita a mano: recorre el
   enumerado del contrato.
 - F5.8 y F5.9 usan **HTTP mockeado**, nunca fixtures JS importados.
+
+**Auditadas contra las 297 pruebas el 2026-09-04.** Dos estaban cumplidas y se
+cierran; tres no, y en un caso la prueba que parecía cubrirlo tiene el defecto
+exacto que el criterio nombra.
+
+**F5.7 ✅.** `Panel.test.tsx` recorre los siete estados con `it.each` y
+`states.test.tsx` los seis que llegan del batch, de punta a punta. Pero lo que
+la cierra de verdad no es la cobertura: **el `switch` de `Panel.tsx` es
+exhaustivo**, así que un estado nuevo en el contrato deja de compilar hasta que
+alguien decida qué se pinta. La paridad la sostiene el compilador, que es más
+fuerte que una prueba.
+
+**F5.8 ✅.** `ConsoleContainer.test.tsx` y `states.test.tsx` montan el contenedor
+y lo dejan hacer los mismos `fetch` que en producción; lo único distinto es quién
+responde. Cero fixtures JS importados por la superficie: los datos entran como
+respuesta HTTP.
+
+**F5.5 ⬜ · seis de doce.** Tienen prueba `CompositionBody`, `ForecastBody`,
+`GaugeBody`, `KpiBody`, `ListBody` y `TableBody`. **Faltan `BarsBody`,
+`BlockedBody`, `DistributionBody`, `ProseBody`, `RecoBody` y `SeriesBody`.**
+
+**F5.6 ⬜ · y la prueba que existe tiene el defecto que el criterio nombra.**
+`registry.test.tsx` verifica que construidos + faltantes den los quince tipos,
+pero los compara contra `CONTRACT_TYPES`, que es **un arreglo escrito a mano en
+el propio archivo de prueba**. Si el contrato gana un tipo y nadie toca esa
+lista, la prueba sigue en verde: es exactamente «una lista escrita a mano» en vez
+de «recorre el enumerado del contrato».
+
+El arreglo tiene una vuelta: `PanelType` es una unión de TypeScript y se borra al
+compilar, así que no se puede enumerar en runtime desde `generated.ts`. **La
+paridad hay que sacarla del yaml**, leyendo el enum de `TipoPanel` desde la
+prueba — como ya hacen `spec-anclas` y `token-drift` con sus fuentes.
+
+**F5.9 ⬜ · una pestaña no es un panel.** Las pruebas de contenedor montan **un
+solo panel**. El criterio pide una pestaña completa: varios paneles, de tipos
+distintos, con la grilla resuelta y los chunks de cuerpo que eso implica. Es lo
+que atraparía un fallo de composición que con un panel no aparece.
 
 ### ➕ F5.13 ⬜ Períodos libres en el selector · 🔒 espera el patrón de `PeriodoId`
 **Descripción.** Decisión del 2026-09-04 (humano): **se va con manejo de períodos
@@ -1974,12 +2011,44 @@ contradice con la descripción de `grano`, que dice que el front deduce
 hoy son snapshots materializados —`estado: 'MTD CERRADO'`, `'CERRADO'`— y un
 rango arbitrario hay que calcularlo a demanda.
 
-### F5.10 ⬜ Checklist de conformidad §17 por tipo de bloque integrado
+### F5.10 ⚠️ Checklist de conformidad §17 por tipo de bloque integrado
 ### F5.11 ✅ Verificar tema oscuro y claro en todo componente
 ### F5.12 ⬜ Verificar la carga diferida
 **Criterio de aceptación.**
 - F5.11: automatizable — el chequeo de contraste de v2 (`tools/contraste.py`)
   verifica los pares de tokens en los dos temas y corre en cada build.
+- F5.12: una pestaña que usa cinco tipos descarga cinco chunks de cuerpo, no
+  quince. Verificable sobre el output del build.
+
+**F5.10 auditada el 2026-09-04 · diez de trece**, después de cerrar una que la
+propia auditoría encontró sin verificar. §17 tiene trece casillas.
+Verificadas hoy, y por quién:
+
+| Casilla | Quién la sostiene |
+|---|---|
+| Layout de `GET /config/tabs`, no de código | `states.test.tsx` contra MSW |
+| Payload de `panels:batch`, no de fixture | ídem |
+| Catálogo de `GET /config/catalog` | ídem |
+| Gobierno visible en los 6 estados | F2.6 · la prueba del payload sin `Gobierno` |
+| Ningún hex literal | `design-lint` L1 |
+| `render/` no importa `api/` | `design-lint` L14 |
+| Sin `any`, props según `BodyProps` | `typecheck` + `registry.test.tsx` |
+| Cuerpos y plots puros | L14 + las pruebas de cuerpo |
+| Eventos suben por callbacks | `states.test.tsx`, `Panel.test.tsx` |
+
+Faltan tres, y **dos no dependen de nosotros**:
+
+- **«Clic abre chat con `metricId` + contexto»** · 🔒 F3.2, que espera a T4.
+- **«Cambiar tenant/rol recomponen sin deploy»** · 🔒 necesita el contrato de
+  admin y builder, que no existe.
+- ~~«Cambiar período no re-fetch layout»~~ · **cerrada el mismo día que la
+  auditoría la encontró.** Estaba implementada —`keys.tab` no lleva el período—
+  y escrita en un comentario de `hooks.ts`, pero **ninguna prueba la sostenía**:
+  se cumplía por accidente de quien la escribió, que es como se pierde una
+  garantía en la siguiente refactorización. Ahora hay una prueba que cambia de
+  período y comprueba que el layout se pidió UNA vez y el batch dos. Verificada
+  por mutación metiendo el período en la clave del layout.
+- **«Prueba de render mínimo con props válidas»** · es F5.5, seis de doce.
 
 **F5.11 cerrada el 2026-09-04, y encontró una violación real en su primera
 corrida.** El port agrega una cosa al de v2: **el fondo puede ser una PILA.** Un
@@ -2000,8 +2069,12 @@ decisiones de diseño que tocan más cosas que este badge. Es la pregunta 13 de
 B0.9. El chequeo sale verde imprimiéndola como pendiente, y **falla si el
 número se mueve**: verificado por mutación, junto con una desviación nueva y con
 el caso arreglado.
-- F5.12: una pestaña que usa cinco tipos descarga cinco chunks de cuerpo, no
-  quince. Verificable sobre el output del build.
+
+**F5.12 ⬜ · lo que hay no es lo que pide.** `registry.test.tsx` verifica que
+`preloadBodies` deduplique y no reviente, que es sobre la FUNCIÓN. El criterio
+pide verificarlo **sobre el output del build**: que una pestaña con cinco tipos
+descargue cinco chunks y no quince. Eso se mide contando los `assets/*Body-*.js`
+que el build emite y comprobando que ninguno entre al chunk principal.
 
 ---
 
