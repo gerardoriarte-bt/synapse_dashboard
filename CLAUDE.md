@@ -312,102 +312,59 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-Leer `plan-de-trabajo.md`: las siete decisiones cerradas explican por qué el plan
-tiene las tareas que tiene, y el camino crítico dice qué desbloquea a más gente.
-`docs/BITACORA-2026-09-02.md` cuenta qué pasó en la jornada que cerró la Fase 1.
+**No hay una sola tarea de front desbloqueada. Estado al 2026-09-04.**
 
-**Estado al 2026-09-03.** El motor de panel está portado entero y la consola
-dibuja de punta a punta contra MSW, **los seis estados incluidos** — hasta hoy
-MSW solo emitía `DISPONIBLE` y los otros cinco jamás habían atravesado el
-contenedor. La puerta sale verde **sin bloqueados**, y
-desde el 2026-09-03 sale verde también en un clone limpio: `design/` está
-adentro. Fase 1 está cerrada salvo lo que depende del backend.
+Eso es una conclusión, no una queja, y se verificó tarea por tarea: **57 de las
+96 de front están hechas**, 6 quedaron parciales con la mitad que falta del lado
+del backend, y las 30 pendientes esperan todas algo del contrato. La puerta sale
+verde con **diez chequeos y 318 pruebas**, sin bloqueados.
 
-**La Fase 2 dejó de estar bloqueada el 2026-09-03.** Se contestaron cuatro de
-las cinco `# PREGUNTA:` del contrato, y la de la línea 1171 era la que la
-frenaba entera: **el batch emite `DEGRADADO` y `SIN_PERMISO`**. Que
-`SIN_PERMISO` exista quiere decir que el catálogo no es el único filtro y que
-**C5 es una pantalla alcanzable**, no escrita al vacío. Destraba F2.1, F2.3 y
-B2.7. Las otras tres: `actor` se deriva del token, `versionModeloSemantico` lo
-emite Snowflake y el evento lo estampa al responder, y el tenant de plataforma
-va **en el path** (`/platform/t/{tenantId}/console/*`).
+**La única acción siguiente es conseguir contrato.** Todo lo que el backend
+necesita está en `docs/PARA-BACKEND.md`, ordenado por esfuerzo de ellos: primero
+transcripciones de decisiones ya tomadas, después decisiones de una línea, y al
+final lo que necesita conversación.
 
-**Todo lo que el front necesita del backend está en un solo lugar:
-`docs/PARA-BACKEND.md`** — once puntos, ordenados por esfuerzo de ellos y no por
-importancia, con el bloque de yaml listo para pegar. Los tres primeros son
-transcripciones de decisiones ya tomadas.
+**Y si solo se lee una cosa, que sea el punto 0: la Fase 4 no tiene contrato.**
+El yaml declara catorce endpoints y los catorce son `/config/*` — ninguno de
+`/admin/*`, y `layouts` no aparece. Las tareas de backend existen (B4.1–B4.16) y
+ninguna llegó al yaml, así que **las 21 tareas de admin y builder no se pueden ni
+empezar**, y con ellas F5.1 y F5.2. Es de otro orden que los campos sueltos:
+aquello son campos, esto es una superficie entera. No hace falta el servicio,
+hace falta el contrato: con los endpoints declarados, las dos superficies se
+construyen contra MSW como se construyó la consola entera.
 
-Abierto ahora mismo:
+Qué espera cada cosa, para no volver a averiguarlo:
 
-1. **La Fase 2, lo que queda: F2.3.** Cinco de las seis se cerraron el
-   2026-09-03; la que falta es el CTA de «solicitar acceso» contra
-   `/config/solicitudes`, que ya existe en el contrato. La solicitud ya hecha
-   tiene que salir del servidor y **no de estado local**: con estado local,
-   recargar borra el pedido y la consola vuelve a ofrecer el CTA como si nada.
+| Espera | Tareas |
+|---|---|
+| El contrato de admin/builder | Las 21 de Fase 4, F5.1, F5.2 |
+| `ContextoDePanel` · T4 | F3.2, F3.3, la mitad de F3.7 |
+| `DatoDeRespuesta.tipo` · pregunta 11 | F3.6 |
+| El patrón de `PeriodoId` · pregunta 12 | F5.13 |
+| `Contexto.locale` y moneda | La mitad de F1.13b |
+| El endpoint de login · B0.10 | F0.5 |
+| El servicio de `/config/solicitudes` | F2.3 |
+| El seed · B1.16 y B1.20 | F1.25 |
+| `/config/plots` y B1.21 | F1.31 |
 
-   Lo mismo vale para el CTA de `BLOQUEADO`: hoy no se pinta, y es correcto —la
-   consola no pasa `onUnblock` y un botón sin manejador no se dibuja—, pero
-   sigue faltando a dónde mandarlo.
-2. **B0.9, lo que queda** — de las diez del documento quedan seis, y solo una
-   frena trabajo. Están en `docs/B0.9-preguntas-abiertas.md` con quién decide
-   cada una:
-   - **La taxonomía de `error.codigo`** es la única de las que frenaban que
-     sigue abierta, y no espera una decisión sino una **revisión**: hay una
-     propuesta escrita en el yaml —`FAMILIA_DETALLE`, con la familia en el
-     prefijo, que es lo que permite que el backend agregue códigos sin que el
-     front cambie.
-   - `Contexto` no declara `locale` ni moneda. Es lo único que deja F1.13b en
-     ⚠️: la inyección funciona, el valor se decide en una línea de
-     `ConsoleContainer` marcada como supuesto. **La moneda de un tenant
-     multi-país no es el mismo problema que la zona horaria**: sumar ventas en
-     dos monedas necesita una moneda de reporte, un tipo de cambio y una fecha
-     de corte.
-   - **`PeriodoId` no admite días, trimestres ni rangos**, y se contradice con
-     la descripción de `grano`, que dice que el front deduce `2026-07-15` como
-     día. Bloquea F5.13 · pregunta 12 de B0.9, con el patrón propuesto listo.
-   - `PanelConfigurado` no declara `orden`, que §4 nombra para el orden de
-     lectura al colapsar.
-   - `paramsDisponibles` es `string[]` —solo nombres—, así que los valores
-     válidos viven duplicados en `PARAM_SCHEMAS` del front.
-3. **F0.5 y B0.10** — el login lo coloca el backend. Faltan tres respuestas de
-   integración: con qué clave se guarda el token, si el login vive en otro origen
-   (`localStorage` no cruza orígenes), y adónde redirige un `401`.
-4. **La Fase 3, el chat.** Hechas F3.4 (cliente SSE), F3.8 (acumulación), F3.1
-   (la hoja), F3.5 (los mensajes) y F3.7 (el riel de hilos, parcial).
-   F3.9–F3.11 siguen diferidas por D3. **Todo lo que queda de la fase espera
-   al yaml.**
+**Tres cosas que se podrían hacer y no se hacen, con la razón escrita**, para que
+nadie las retome creyendo que se olvidaron:
 
-   **Dos están bloqueadas por el contrato, y las dos se descubrieron al abrir la
-   fase.** Es el mismo patrón: el front tendría que inventar una forma que el
-   backend no declara.
-   - **F3.2 · T4** — `ContextoDePanel` **no existe**. `POST /config/chat` acepta
-     `pregunta`, `tabId` y `hiloId`, y nada más: no hay campo por donde mandar
-     desde qué panel se pregunta.
-   - **F3.6 · pregunta 11 de B0.9** — `DatoDeRespuesta` no declara con qué tipo
-     de panel se dibuja, y `formasAceptadas` va de muchos a muchos, así que no se
-     deriva. Ojo con el nombre: `EventoDato.tipo` es `'dato'`, el discriminador
-     de la unión, no un `TipoPanel`.
-   - **F3.7 · la mitad de arriba** — `HiloResumen` no trae panel ni período, así
-     que el riel no puede decir de qué panel salió cada conversación. Es T4 por
-     el otro lado.
+1. **F4.17–F4.20** —`ComparisonBody`, `MatrixBody`, `GraphBody` y su registro—
+   **sí se podrían construir**: las cinco formas que necesitan están en el enum
+   `Forma` del contrato. Su criterio dice «no antes», y el razonamiento sigue en
+   pie: su único consumidor es el builder, que no se puede empezar. Escribirlos
+   ahora es verificarlos contra fixtures inventados, que es el modo de falla que
+   este repositorio persigue.
+2. **El CTA de `F2.3`** no se cablea aunque `/config/solicitudes` esté en el
+   contrato: no se sabe si el servicio existe, y un botón que devuelve 403 es
+   peor que uno ausente.
+3. **Las cifras del chat** no se pintan con un cuerpo elegido a dedo. Se declara
+   cuántas trajo la respuesta, porque pintarlas mal se vería bien y sería
+   mentira.
 
-   **`ContextoDePanel` ya está decidido**, y eso hace a T4 una transcripción y no
-   una discusión: `nuevo-desarrollo.md:684` —normativo— declara los doce campos.
-   Falta que entre al yaml, que es su casa, junto con `periodo` en el cuerpo del
-   POST, que `nuevo-desarrollo.md:146` declara y el contrato tampoco tiene.
-5. **Las dos de diseño que abrió F1.28** — §2.3 declara la escala mono entera
-   y no declara ni un tamaño de `font-body` ni de `font-display`, y el tracking
-   del KPI no sale de ninguna tabla. Son las preguntas 9 y 10 de B0.9; el censo
-   de nodos que las sostiene mientras tanto está en
-   `docs/F1.28-escala-tipografica.md`.
-
-**La Fase 4 no tiene contrato.** El yaml declara catorce endpoints y los catorce
-son `/config/*`: ninguno de `/admin/*`, y `layouts` no aparece. Las tareas de
-backend existen —B4.1 a B4.16— pero ninguna llegó al contrato, así que **las 21
-tareas de admin y builder no se pueden ni empezar**, y con ellas F5.1 y F5.2. Es
-el punto 0 de `docs/PARA-BACKEND.md`, y es de otro orden que los once campos
-sueltos: aquello son campos, esto es una superficie entera.
-
-Bloqueadas por el backend: **F1.25** (API real, espera el seed B1.16/B1.20) y
-**F1.31** (mínimos por gráfico, espera B1.21). Lo genuinamente nuevo es **Fase
-4** —admin y builder—, de lo que v2 no tiene una sola línea.
+Para el contexto de por qué el plan tiene las tareas que tiene, leer
+`plan-de-trabajo.md`: las siete decisiones cerradas y el camino crítico.
+`docs/BITACORA-2026-09-02.md` cuenta la jornada que cerró la Fase 1 y
+`docs/BITACORA-2026-09-04.md` los dos días que dejaron el front esperando al
+contrato.
