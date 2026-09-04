@@ -315,6 +315,11 @@ B2.7. Las otras tres: `actor` se deriva del token, `versionModeloSemantico` lo
 emite Snowflake y el evento lo estampa al responder, y el tenant de plataforma
 va **en el path** (`/platform/t/{tenantId}/console/*`).
 
+**Todo lo que el front necesita del backend está en un solo lugar:
+`docs/PARA-BACKEND.md`** — once puntos, ordenados por esfuerzo de ellos y no por
+importancia, con el bloque de yaml listo para pegar. Los tres primeros son
+transcripciones de decisiones ya tomadas.
+
 Abierto ahora mismo:
 
 1. **La Fase 2, lo que queda: F2.3.** Cinco de las seis se cerraron el
