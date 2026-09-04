@@ -285,7 +285,9 @@ tiene las tareas que tiene, y el camino crítico dice qué desbloquea a más gen
 `docs/BITACORA-2026-09-02.md` cuenta qué pasó en la jornada que cerró la Fase 1.
 
 **Estado al 2026-09-03.** El motor de panel está portado entero y la consola
-dibuja de punta a punta contra MSW. La puerta sale verde **sin bloqueados**, y
+dibuja de punta a punta contra MSW, **los seis estados incluidos** — hasta hoy
+MSW solo emitía `DISPONIBLE` y los otros cinco jamás habían atravesado el
+contenedor. La puerta sale verde **sin bloqueados**, y
 desde el 2026-09-03 sale verde también en un clone limpio: `design/` está
 adentro. Fase 1 está cerrada salvo lo que depende del backend.
 
@@ -300,8 +302,15 @@ va **en el path** (`/platform/t/{tenantId}/console/*`).
 
 Abierto ahora mismo:
 
-1. **La Fase 2** — es lo más grande que quedó desbloqueado, y hasta ayer no lo
-   estaba.
+1. **La Fase 2, lo que queda: F2.3.** Cinco de las seis se cerraron el
+   2026-09-03; la que falta es el CTA de «solicitar acceso» contra
+   `/config/solicitudes`, que ya existe en el contrato. La solicitud ya hecha
+   tiene que salir del servidor y **no de estado local**: con estado local,
+   recargar borra el pedido y la consola vuelve a ofrecer el CTA como si nada.
+
+   Lo mismo vale para el CTA de `BLOQUEADO`: hoy no se pinta, y es correcto —la
+   consola no pasa `onUnblock` y un botón sin manejador no se dibuja—, pero
+   sigue faltando a dónde mandarlo.
 2. **B0.9, lo que queda** — de las diez del documento quedan seis, y solo una
    frena trabajo. Están en `docs/B0.9-preguntas-abiertas.md` con quién decide
    cada una:

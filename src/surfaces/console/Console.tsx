@@ -33,7 +33,9 @@ type Props = {
   onSelectTab: (id: string) => void
   onSelectPeriod: (id: string) => void
   onChangeTheme?: (theme: Theme) => void
-  onRetryPanels?: () => void
+  /** Reintento de UN panel · F2.4. Lleva el `panelId` porque el reintento es
+   *  de ese panel y no del batch: los otros ya cargaron bien. */
+  onRetryPanel?: (panelId: string) => void
 }
 
 export function Console({
@@ -48,7 +50,7 @@ export function Console({
   onSelectTab,
   onSelectPeriod,
   onChangeTheme,
-  onRetryPanels,
+  onRetryPanel,
 }: Props) {
   // El colapso · F1.30. No lo puede hacer solo el CSS: el `colSpan` viaja en un
   // estilo en línea y una media query no lo alcanza.
@@ -113,7 +115,7 @@ export function Console({
               columns={columns}
               format={format}
               now={now}
-              {...(onRetryPanels === undefined ? {} : { onRetry: onRetryPanels })}
+              {...(onRetryPanel === undefined ? {} : { onRetry: () => onRetryPanel(panel.id) })}
             />
           )
         })}

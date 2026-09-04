@@ -7,7 +7,15 @@
  *  `render/` lee `isLoading` ni `isError`**.
  */
 import { useEffect, useState } from 'react'
-import { useBlocks, useCatalog, useMe, usePanelsBatch, useSaveTheme, useTab } from '../../api/hooks'
+import {
+  useBlocks,
+  useCatalog,
+  useMe,
+  usePanelsBatch,
+  useRetryPanel,
+  useSaveTheme,
+  useTab,
+} from '../../api/hooks'
 import { adaptPanelParams } from '../../api/params'
 import { applyTheme } from '../../tokens/theme'
 import { preloadBodies } from '../../render/bodies/registry'
@@ -55,6 +63,7 @@ export function ConsoleContainer() {
     panels.map((p) => p.id),
     activePeriod?.id ?? '',
   )
+  const retryPanel = useRetryPanel(activeTab?.id ?? null, activePeriod?.id ?? '')
 
   // El catálogo resuelve `metricId` → métrica. Llega YA filtrado por rol: el
   // front no filtra nada · F1.27.
@@ -163,7 +172,7 @@ export function ConsoleContainer() {
       onSelectTab={setTabId}
       onSelectPeriod={setPeriodId}
       onChangeTheme={(theme) => saveTheme.mutate(theme)}
-      onRetryPanels={() => void batch.refetch()}
+      onRetryPanel={(panelId) => retryPanel.mutate(panelId)}
     />
   )
 }

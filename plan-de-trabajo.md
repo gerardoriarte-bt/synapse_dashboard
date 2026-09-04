@@ -1496,35 +1496,92 @@ engañar. Sirve desde hoy, aun con un gráfico por tipo — hoy nada impide que
 
 ## Fase 2 — Los estados de materialización en pantalla
 
-Depende de B2.5–B2.7: hasta que el backend emita `DEGRADADO` y `BLOQUEADO`
-reales, estos estados solo se pueden probar contra el seed (B1.20).
+Depende de B2.5–B2.7 para los estados REALES: hasta que el backend los emita,
+solo se pueden probar contra el seed (B1.20) o contra MSW.
 
-### F2.1 ⬜ `DEGRADADO`
+**Arrancada el 2026-09-03**, en cuanto B0.9 contestó la 1171. Lo primero que
+apareció al abrirla: **MSW emitía únicamente `DISPONIBLE`**, así que los otros
+cinco estados nunca habían atravesado el contenedor, el adaptador de params ni
+el registro de cuerpos. Estaban probados a nivel de componente —con payloads
+montados a mano— y ni una vez de punta a punta. Eso es
+`tests/surfaces/console/states.test.tsx`, 29 pruebas.
+
+### F2.1 ✅ `DEGRADADO`
 **Criterio de aceptación.** Muestra **la cifra**, más `razon` y `desbloqueaCon`.
 El badge lo pinta el shell. El front **no decide** si algo está degradado.
 
-### F2.2 ⬜ `BLOQUEADO`
+**Cerrada el 2026-09-03.** Ya estaba implementado desde F1.13d; lo que faltaba
+era la prueba de punta a punta. La aserción que la hace valer es la negativa:
+el mismo `valor` con estado `DISPONIBLE` **no** pinta el badge, que es lo que
+demuestra que sale del `estado` del backend y no de una heurística del front.
+
+### F2.2 ✅ `BLOQUEADO`
 **Criterio de aceptación.** Sin cifra y sin aproximación. Razón, qué lo
 desbloquea y CTA. El shell conserva título y BASE.
 
-### F2.3 ⬜ `SIN_PERMISO` · 🔒 depende de B0.9 (línea 1171)
+**Cerrada el 2026-09-03**, con una salvedad escrita: **el CTA no se pinta**, y
+es correcto. La consola no pasa `onUnblock`, y la regla del CTA muerto dice que
+un botón sin manejador no se dibuja —«un botón que se aprieta y no hace nada es
+peor que uno ausente»—. El estado no queda sin salida: el detalle sigue
+diciendo qué lo desbloquea. Cuando exista a dónde mandar el desbloqueo, se
+cablea.
+
+La prueba de «sin aproximación» no busca un texto: busca que no haya **ninguna
+forma de cifra** en el panel —ni `USD `, ni `4.28M`, ni miles con separador—,
+porque un número aproximado que se cuele no va a llamarse como el fixture.
+
+### F2.3 ⚠️ `SIN_PERMISO` · B0.9 (línea 1171) contestada
 **Criterio de aceptación.** Muestra `solicitarA` y ofrece pedir acceso. Si D3
 resuelve conservar el viaje de solicitud, se cablea contra
 `/config/solicitudes`: la solicitud ya hecha sale del servidor y **no de estado
 local** —con estado local, recargar borraba el pedido y la consola volvía a
 ofrecer el CTA como si nada.
 
-### F2.4 ⬜ `ERROR` con reintento por panel
+**Parcial el 2026-09-03.** La mitad que se puede hacer sin backend está hecha y
+probada: el estado llega del batch y nombra el rol que decide. **Falta el CTA**,
+y falta entero: `/config/solicitudes` ya existe en el contrato —línea 591,
+`operationId: solicitarAcceso`—, así que lo que queda es cablearlo y leer del
+servidor las solicitudes ya hechas. Hay una prueba que fija el estado actual:
+verifica que el botón **no** esté, para que aparezca el día que se cablee y no
+antes.
+
+### F2.4 ✅ `ERROR` con reintento por panel
 **Criterio de aceptación.** El reintento re-pide **ese** panel, no el batch
 entero. El mensaje es el del backend, no uno inventado por el front.
 
-### F2.5 ⬜ Frescura relativa en la procedencia
+**Cerrada el 2026-09-03, y era un defecto real.** `ConsoleContainer` pasaba
+`onRetryPanels={() => void batch.refetch()}`: apretar «Reintentar» en el panel
+que falló volvía a pedir **los N paneles**, y los N−1 que habían cargado bien
+parpadeaban. Se reemplazó por `useRetryPanel`, que pide ese panel —el mismo
+endpoint con una lista de uno, que el contrato ya soporta porque declara fallo
+parcial— y funde el resultado con `setQueryData`. **No `invalidateQueries`**:
+invalidar dispara de nuevo la consulta original, o sea los N, que es el mismo
+defecto por otro camino.
+
+La prueba necesita **dos** paneles: con uno solo, «re-pedir el batch» y
+«re-pedir ese panel» son la misma llamada y no distinguen nada. Verificada por
+mutación: con el `refetch()` viejo llegaban `['p-1','p-2']` donde va `['p-1']`.
+
+### F2.5 ✅ Frescura relativa en la procedencia
 **Criterio de aceptación.** «hace 3 h» calculado contra el `ahora` que baja por
 props. Refleja cuándo se materializó (B2.10), no cuándo se abrió la página.
 
-### F2.6 ⬜ Gobierno visible en los seis estados
+**Cerrada el 2026-09-03.** Ya venía de F1.13e: `format.freshness` lee
+`payload.frescura` —que es cuándo se materializó— contra un `now` único por
+pantalla. Faltaba la prueba de punta a punta, y se escribió con la distancia
+calculada en el momento y no con una fecha quemada: una fecha fija diría «HACE
+8000 H» el año que viene y habría que tocarla.
+
+### F2.6 ✅ Gobierno visible en los seis estados
 **Criterio de aceptación.** Incluso cargando: la BASE sale de `Metric.base` del
 catálogo (D6). Es la garantía de §5.2 verificada estado por estado.
+
+**Cerrada el 2026-09-03.** La prueba que la hace valer de verdad es una sola:
+`BLOQUEADO`, `SIN_PERMISO` y `ERROR` **no llevan `Gobierno`** —el contrato lo
+intersecta solo en los dos estados con cifra—, así que si la BASE sigue en
+pantalla con un payload que no la trae, es porque salió del catálogo. Eso es D6
+verificada y no declarada. La prueba además **afirma que el fixture no trae
+`base` ni `capa`**, para que agregárselos no la deje verde sin verificar nada.
 
 ---
 

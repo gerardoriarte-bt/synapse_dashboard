@@ -10,6 +10,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
 import type { Theme } from '../tokens/theme'
+import type { Payload } from './types'
 
 export const keys = {
   me: ['config', 'me'] as const,
@@ -50,6 +51,35 @@ export function usePanelsBatch(tabId: string | null, panelIds: string[], period:
     queryKey: keys.panels(tabId ?? '', period),
     queryFn: () => api.panelsBatch(panelIds, period),
     enabled: tabId !== null && panelIds.length > 0 && period !== '',
+  })
+}
+
+/** Reintento de UN panel · F2.4.
+ *
+ *  **Re-pide ese panel y funde el resultado en la caché del batch.** No es una
+ *  optimización: `refetch()` del batch vuelve a pedir los N paneles, y N−1
+ *  habían cargado bien. El usuario que aprieta «Reintentar» en el panel que
+ *  falló termina pagando con el parpadeo de todos los demás — que es
+ *  exactamente lo que F2.4 prohíbe: «el reintento re-pide ESE panel, no el
+ *  batch entero».
+ *
+ *  El endpoint es el mismo `panels:batch` con una lista de uno. No hace falta
+ *  una ruta nueva: el contrato ya declara fallo parcial, así que pedir un panel
+ *  es pedir un batch chico.
+ *
+ *  `setQueryData` y no `invalidateQueries`, y la diferencia importa: invalidar
+ *  dispararía de nuevo la consulta original —los N paneles— y sería el mismo
+ *  defecto por otro camino. */
+export function useRetryPanel(tabId: string | null, period: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (panelId: string) => api.panelsBatch([panelId], period),
+    onSuccess: (fresco) => {
+      client.setQueryData(
+        keys.panels(tabId ?? '', period),
+        (previo: Record<string, Payload> | undefined) => ({ ...previo, ...fresco }),
+      )
+    },
   })
 }
 
