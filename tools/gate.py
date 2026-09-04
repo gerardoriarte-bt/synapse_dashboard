@@ -33,6 +33,7 @@ CHEQUEOS = [
     ("spec-anclas", [sys.executable, "tools/spec-anclas.py"], True),
     ("contract-drift", [sys.executable, "tools/contract-drift.py"], True),
     ("token-drift", [sys.executable, "tools/token-drift.py"], True),
+    ("contraste", [sys.executable, "tools/contraste.py"], True),
     ("test", ["npm", "run", "--silent", "test"], False),
     ("build", ["npm", "run", "--silent", "build"], False),
 ]

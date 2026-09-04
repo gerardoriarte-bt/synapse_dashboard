@@ -186,6 +186,7 @@ equivocado.
 | `npm run spec-anclas` | cada regla de `design.md` atada a su código y su aserción |
 | `npm run contract-drift` | `src/api/generated.ts` == el yaml |
 | `npm run token-drift` | `src/tokens/` == lo que el `.pen` emite, **byte a byte** |
+| `npm run contraste` | contraste WCAG de los pares que el producto pinta, en los dos temas |
 | `npm run gen:tokens` | regenera `src/tokens/tokens.css` y `tokens.ts` desde el `.pen` |
 | `npm run gen:api` | regenera `src/api/generated.ts` desde `contracts/synapse-api.yaml` |
 | `npm run plan` | regenera `plan-tareas.csv` y la página desde `plan-de-trabajo.md` |
@@ -262,6 +263,14 @@ chequeo que pasa por falta de fuente miente sobre su cobertura. Las AJENAS no
 siguen esa convención: `tsc` sale con 2 cuando hay errores de tipo, y leerlo como
 BLOQUEADO dejó pasar dos errores con la puerta en verde. Para ellas, cualquier
 código distinto de cero es rojo.
+
+**Un wash no es un fondo: es una capa sobre uno.** `contraste.py` compone la
+pila —`ink` sobre `w2` sobre `dock`— porque medir contra la superficie a secas
+mide un fondo que nadie ve. No es teórico: en su primera corrida encontró que
+`DegradedBadge` queda en **4.17 contra el umbral de 4.5** en tema oscuro, y
+sobre `panel` sin el wash da 5.04 y pasa. El chequeo de v2 medía sin la capa y
+habría dicho «conforme». Está registrada como pendiente de diseño —pregunta 13
+de B0.9— y el chequeo **falla si el número se mueve**.
 
 **Desde el 2026-09-02 la puerta sale verde sin bloqueados**: `design-lint` corre
 las 15 reglas y `spec-anclas` ancla las 9. Si vuelve a aparecer un ⊘, es que una
@@ -383,6 +392,13 @@ Abierto ahora mismo:
    del KPI no sale de ninguna tabla. Son las preguntas 9 y 10 de B0.9; el censo
    de nodos que las sostiene mientras tanto está en
    `docs/F1.28-escala-tipografica.md`.
+
+**La Fase 4 no tiene contrato.** El yaml declara catorce endpoints y los catorce
+son `/config/*`: ninguno de `/admin/*`, y `layouts` no aparece. Las tareas de
+backend existen —B4.1 a B4.16— pero ninguna llegó al contrato, así que **las 21
+tareas de admin y builder no se pueden ni empezar**, y con ellas F5.1 y F5.2. Es
+el punto 0 de `docs/PARA-BACKEND.md`, y es de otro orden que los once campos
+sueltos: aquello son campos, esto es una superficie entera.
 
 Bloqueadas por el backend: **F1.25** (API real, espera el seed B1.16/B1.20) y
 **F1.31** (mínimos por gráfico, espera B1.21). Lo genuinamente nuevo es **Fase

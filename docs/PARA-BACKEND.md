@@ -3,6 +3,10 @@
 **2026-09-04.** Todo lo que hoy bloquea trabajo del front, en un solo lugar, con
 el bloque de yaml listo para pegar donde corresponde.
 
+**Si solo van a leer una cosa, que sea el punto 0**: el contrato no tiene admin
+ni builder, y eso bloquea la fase más grande que queda. Los once puntos que le
+siguen son campos sueltos; ese es una superficie entera.
+
 **Cómo leerlo.** Está ordenado por esfuerzo de ustedes, no por importancia: lo
 primero son transcripciones de decisiones ya tomadas, después decisiones de una
 línea, y al final lo que necesita conversación. Cada punto dice **qué falta, por
@@ -20,6 +24,7 @@ se descubre en integración y no en compilación.
 
 | # | Qué falta | Esfuerzo | Desbloquea |
 |---|---|---|---|
+| **0** | **El contrato entero de admin y builder** | Grande · es una superficie, no un campo | **Las 21 tareas de Fase 4**, F5.1, F5.2 |
 | **1** | `ContextoDePanel` y `periodo` en `POST /config/chat` | Transcribir · ya está decidido | F3.2, F3.3 |
 | **2** | `tenant.zonaHoraria` | Transcribir · decidido el 2026-09-04 | F1.13b |
 | **3** | El patrón de `PeriodoId` | Transcribir · decidido el 2026-09-04 | F5.13 |
@@ -34,6 +39,56 @@ se descubre en integración y no en compilación.
 
 Y **dos que decide producto**, no ustedes, pero que les van a llegar como campos:
 `locale` y moneda en `Contexto`, y `orden` en `PanelConfigurado`.
+
+---
+
+# 0 · Lo más grande, y hoy no está dicho en ninguna parte
+
+## El contrato no tiene ni una línea de admin ni de builder
+
+`contracts/synapse-api.yaml` declara **catorce endpoints y los catorce son
+`/config/*`**: consola, chat y decisiones.
+
+```
+/config/me              /config/chat                /config/solicitudes
+/config/catalog         /config/chat/hilos          /config/me/preferencias
+/config/blocks          /config/chat/hilos/{id}     /config/panels:batch
+/config/tabs/{tabId}    /config/decisiones          /config/decisiones/{id}
+                        /config/accionables         /config/accionables/{id}/respuesta
+```
+
+**Ninguno de `/admin/*`.** Y la palabra `layouts` no aparece en el yaml.
+
+El plan sí tiene las tareas —**B4.1 a B4.16**, con `GET /admin/tenants`,
+`GET /admin/tenants/{id}/layouts`, `POST .../layouts` para el borrador,
+`PUT /admin/layouts/{id}`, `POST /admin/layouts/{id}/publish`,
+`POST /admin/layouts/{id}/validate`, el CRUD de roles y el preview por rol—.
+Están escritas y ninguna llegó al contrato.
+
+**Qué bloquea, y por qué esto es de otro orden que los once puntos de abajo:**
+
+- **Las 21 tareas de la Fase 4.** Admin y builder son *lo genuinamente nuevo* —v2
+  no tiene una sola línea de las dos superficies— y el documento de arquitectura
+  las estima en **3–4 semanas de front**. Es el bloque de trabajo más grande que
+  queda en todo el proyecto.
+- **F5.1 y F5.2**, el selector de layout. `Contexto` no declara `layouts`, así
+  que el front no puede saber si un tenant tiene más de uno.
+
+**El front ya está preparado y eso hace el hueco más visible.** `useTab(tabId,
+layoutId)` y el `?layoutId=` del cliente están escritos desde F1.2, esperando un
+parámetro que el contrato nunca declaró. `catalog/blocks.ts` tiene los
+validadores de composición —`acceptsShape`, `spanInRange`, `invalidReason`, que
+devuelve la razón en la lengua del producto— listos para el builder.
+
+**No pedimos que se implemente el servicio: pedimos el contrato.** Con los
+endpoints declarados en el yaml, el front construye las dos superficies contra
+MSW, que es exactamente como se construyeron la consola entera y el chat. El
+servicio puede llegar después; hoy no podemos ni empezar.
+
+**Sugerencia de orden**, si sirve: primero `GET /admin/tenants` y
+`GET /admin/tenants/{id}/layouts` —con eso arranca F4.1 y F4.2—, después el
+borrador y el `PUT`, y `validate` y `publish` al final. El builder se puede
+construir de a poco; el admin no arranca sin los dos primeros.
 
 ---
 

@@ -1975,11 +1975,31 @@ hoy son snapshots materializados —`estado: 'MTD CERRADO'`, `'CERRADO'`— y un
 rango arbitrario hay que calcularlo a demanda.
 
 ### F5.10 ⬜ Checklist de conformidad §17 por tipo de bloque integrado
-### F5.11 ⬜ Verificar tema oscuro y claro en todo componente
+### F5.11 ✅ Verificar tema oscuro y claro en todo componente
 ### F5.12 ⬜ Verificar la carga diferida
 **Criterio de aceptación.**
 - F5.11: automatizable — el chequeo de contraste de v2 (`tools/contraste.py`)
   verifica los pares de tokens en los dos temas y corre en cada build.
+
+**F5.11 cerrada el 2026-09-04, y encontró una violación real en su primera
+corrida.** El port agrega una cosa al de v2: **el fondo puede ser una PILA.** Un
+wash no es un fondo, es una capa sobre uno — la pestaña activa, el hilo activo
+del riel y el badge de degradado se pintan sobre `w2`/`w3` encima de la
+superficie, así que medir contra la superficie a secas mide un fondo que nadie
+ve.
+
+Y eso es exactamente lo que encontró: **`DegradedBadge` queda en 4.17 contra el
+umbral de 4.5 en tema oscuro.** Es un `<Label>` —mono 10px, `dim`— sobre
+`bg-w3`. Sobre `panel` a secas da 5.04 y pasa; **es el wash lo que lo hunde**, y
+el chequeo de v2 medía sin la capa, así que habría dicho «conforme». En tema
+claro da 4.60, que pasa raspando.
+
+Queda REGISTRADA, no arreglada: los tokens salen del `.pen` y las tres salidas
+—subir `dim`, bajar el alfa de `w3`, o que el badge deje de usar `dim`— son
+decisiones de diseño que tocan más cosas que este badge. Es la pregunta 13 de
+B0.9. El chequeo sale verde imprimiéndola como pendiente, y **falla si el
+número se mueve**: verificado por mutación, junto con una desviación nueva y con
+el caso arreglado.
 - F5.12: una pestaña que usa cinco tipos descarga cinco chunks de cuerpo, no
   quince. Verificable sobre el output del build.
 
