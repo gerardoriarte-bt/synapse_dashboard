@@ -135,6 +135,17 @@ tapar de otra forma**, porque mira el archivo donde la clase se escribe y no
 donde se aplica. El componente es dueño de su apariencia. Decidido el 2026-09-02;
 con eso se borró `lib/cn.ts` y sus dos dependencias, que no tenían qué fusionar.
 
+**Dos zonas horarias, y confundirlas es el bug.** Decidido el 2026-09-04: el
+corte del día del negocio es **del tenant, uno solo, aunque el tenant tenga
+tiendas en varios países** — todo se alinea con el tenant de la consulta. Si la
+zona del dato saliera del navegador, «ventas de hoy» sería un número en Ciudad
+de México y otro en Baltimore, y una cifra que cambia según quién la mira no es
+auditable. La **presentación** —«HACE 3 H», el agrupado HOY/ESTA SEMANA del riel
+de hilos— sí sale del huso del navegador, y el contrato lo sanciona
+explícitamente para el riel. Que se llamen distinto en el contrato: un solo campo
+«timezone» es cómo alguien, en seis meses, calcula un período con el huso
+equivocado.
+
 **Reglas duras de color** (de `design.md`, y no son negociables):
 
 - **Un hex literal es un bug.** Todo color sale de un token.
@@ -323,9 +334,15 @@ Abierto ahora mismo:
      propuesta escrita en el yaml —`FAMILIA_DETALLE`, con la familia en el
      prefijo, que es lo que permite que el backend agregue códigos sin que el
      front cambie.
-   - `Contexto` no declara `locale`, moneda ni zona horaria. Es lo único que deja
-     F1.13b en ⚠️: la inyección funciona, el valor se decide en una línea de
-     `ConsoleContainer` marcada como supuesto.
+   - `Contexto` no declara `locale` ni moneda. Es lo único que deja F1.13b en
+     ⚠️: la inyección funciona, el valor se decide en una línea de
+     `ConsoleContainer` marcada como supuesto. **La moneda de un tenant
+     multi-país no es el mismo problema que la zona horaria**: sumar ventas en
+     dos monedas necesita una moneda de reporte, un tipo de cambio y una fecha
+     de corte.
+   - **`PeriodoId` no admite días, trimestres ni rangos**, y se contradice con
+     la descripción de `grano`, que dice que el front deduce `2026-07-15` como
+     día. Bloquea F5.13 · pregunta 12 de B0.9, con el patrón propuesto listo.
    - `PanelConfigurado` no declara `orden`, que §4 nombra para el orden de
      lectura al colapsar.
    - `paramsDisponibles` es `string[]` —solo nombres—, así que los valores

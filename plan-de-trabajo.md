@@ -1941,6 +1941,39 @@ detalle» del shell.
   enumerado del contrato.
 - F5.8 y F5.9 usan **HTTP mockeado**, nunca fixtures JS importados.
 
+### ➕ F5.13 ⬜ Períodos libres en el selector · 🔒 espera el patrón de `PeriodoId`
+**Descripción.** Decisión del 2026-09-04 (humano): **se va con manejo de períodos
+libres.** El usuario elige un rango y la consola lo contesta, en vez de elegir de
+una lista cerrada que manda el backend.
+
+**Lo que YA está resuelto y no hay que rehacer.** El selector no tiene ni un
+período escrito: agrupa por `grano`, deshabilita lo que la pestaña no puede
+contestar y declara la razón. Un rango libre declara `grano: dia` —se corta en
+días— así que `coarsestRequired` **ya** sabe que una métrica mensual no lo puede
+contestar. La lógica difícil está escrita desde F1.7.
+
+**Criterio de aceptación.**
+- Un rango libre viaja como `PeriodoId` —`2026-07-01_2026-07-17`— y **no** como
+  un campo paralelo. `periodo` ya es una clave única que atraviesa el batch, la
+  caché, los payloads y el hilo del chat: dos formas de decir «cuándo» obligan a
+  cada consumidor a entender las dos.
+- **La superficie sostiene el período elegido como objeto, no como id.** Hoy
+  `ConsoleContainer` lo busca en `Contexto.periodos` y cae al primero si no está;
+  un rango libre nunca va a estar en esa lista.
+- **Se valida MIENTRAS se elige, no después.** Con la lista cerrada el selector
+  deshabilita antes de que el usuario toque nada; con rango libre elige y recién
+  ahí se entera de que media pestaña quedó vacía. Se valida contra
+  `coarsestRequired`, que ya existe.
+- El rango entra en la clave de caché como cualquier otro período.
+
+**Bloqueada.** El patrón de `PeriodoId` rechaza días, trimestres y rangos —y se
+contradice con la descripción de `grano`, que dice que el front deduce
+`2026-07-15` como día. Es la pregunta 12 de B0.9, con el patrón propuesto listo.
+
+**El costo real de esta decisión es de backend, no de front:** los períodos de
+hoy son snapshots materializados —`estado: 'MTD CERRADO'`, `'CERRADO'`— y un
+rango arbitrario hay que calcularlo a demanda.
+
 ### F5.10 ⬜ Checklist de conformidad §17 por tipo de bloque integrado
 ### F5.11 ⬜ Verificar tema oscuro y claro en todo componente
 ### F5.12 ⬜ Verificar la carga diferida
