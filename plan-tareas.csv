@@ -473,16 +473,16 @@ F5.10,"Front · Fase 5 — Multi-dashboard, pruebas y pulido",Front,5,"Multi-das
 • «Clic abre chat con metricId + contexto» · 🔒 F3.2, que espera a T4.
 • «Cambiar tenant/rol recomponen sin deploy» · 🔒 necesita el contrato de admin y builder, que no existe.
 • ~~«Cambiar período no re-fetch layout»~~ · cerrada el mismo día que la auditoría la encontró. Estaba implementada —keys.tab no lleva el período— y escrita en un comentario de hooks.ts, pero ninguna prueba la sostenía: se cumplía por accidente de quien la escribió, que es como se pierde una garantía en la siguiente refactorización. Ahora hay una prueba que cambia de período y comprueba que el layout se pidió UNA vez y el batch dos. Verificada por mutación metiendo el período en la clave del layout.
-• «Prueba de render mínimo con props válidas» · es F5.5, seis de doce.",parcial,no,,equipo:front fase:5 estado:parcial
+• ~~«Prueba de render mínimo con props válidas»~~ · cerrada con F5.5 el mismo día: los doce cuerpos tienen prueba.",parcial,no,,equipo:front fase:5 estado:parcial
 F5.11,"Front · Fase 5 — Multi-dashboard, pruebas y pulido",Front,5,"Multi-dashboard, pruebas y pulido",Verificar tema oscuro y claro en todo componente,,"• F5.11: automatizable — el chequeo de contraste de v2 (tools/contraste.py) verifica los pares de tokens en los dos temas y corre en cada build.
 • F5.12: una pestaña que usa cinco tipos descarga cinco chunks de cuerpo, no quince. Verificable sobre el output del build.
 • «Clic abre chat con metricId + contexto» · 🔒 F3.2, que espera a T4.
 • «Cambiar tenant/rol recomponen sin deploy» · 🔒 necesita el contrato de admin y builder, que no existe.
 • ~~«Cambiar período no re-fetch layout»~~ · cerrada el mismo día que la auditoría la encontró. Estaba implementada —keys.tab no lleva el período— y escrita en un comentario de hooks.ts, pero ninguna prueba la sostenía: se cumplía por accidente de quien la escribió, que es como se pierde una garantía en la siguiente refactorización. Ahora hay una prueba que cambia de período y comprueba que el layout se pidió UNA vez y el batch dos. Verificada por mutación metiendo el período en la clave del layout.
-• «Prueba de render mínimo con props válidas» · es F5.5, seis de doce.",hecho,no,,equipo:front fase:5 estado:hecho
+• ~~«Prueba de render mínimo con props válidas»~~ · cerrada con F5.5 el mismo día: los doce cuerpos tienen prueba.",hecho,no,,equipo:front fase:5 estado:hecho
 F5.12,"Front · Fase 5 — Multi-dashboard, pruebas y pulido",Front,5,"Multi-dashboard, pruebas y pulido",Verificar la carga diferida,,"• F5.11: automatizable — el chequeo de contraste de v2 (tools/contraste.py) verifica los pares de tokens en los dos temas y corre en cada build.
 • F5.12: una pestaña que usa cinco tipos descarga cinco chunks de cuerpo, no quince. Verificable sobre el output del build.
 • «Clic abre chat con metricId + contexto» · 🔒 F3.2, que espera a T4.
 • «Cambiar tenant/rol recomponen sin deploy» · 🔒 necesita el contrato de admin y builder, que no existe.
 • ~~«Cambiar período no re-fetch layout»~~ · cerrada el mismo día que la auditoría la encontró. Estaba implementada —keys.tab no lleva el período— y escrita en un comentario de hooks.ts, pero ninguna prueba la sostenía: se cumplía por accidente de quien la escribió, que es como se pierde una garantía en la siguiente refactorización. Ahora hay una prueba que cambia de período y comprueba que el layout se pidió UNA vez y el batch dos. Verificada por mutación metiendo el período en la clave del layout.
-• «Prueba de render mínimo con props válidas» · es F5.5, seis de doce.",hecho,no,,equipo:front fase:5 estado:hecho
+• ~~«Prueba de render mínimo con props válidas»~~ · cerrada con F5.5 el mismo día: los doce cuerpos tienen prueba.",hecho,no,,equipo:front fase:5 estado:hecho

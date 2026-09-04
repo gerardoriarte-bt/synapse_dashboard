@@ -2047,8 +2047,9 @@ rango arbitrario hay que calcularlo a demanda.
 - F5.12: una pestaña que usa cinco tipos descarga cinco chunks de cuerpo, no
   quince. Verificable sobre el output del build.
 
-**F5.10 auditada el 2026-09-04 · diez de trece**, después de cerrar una que la
-propia auditoría encontró sin verificar. §17 tiene trece casillas.
+**F5.10 auditada el 2026-09-04 · once de trece**, después de cerrar dos que la
+propia auditoría destapó: la garantía del período, que no verificaba nadie, y la
+prueba de render mínimo, que era F5.5. §17 tiene trece casillas.
 Verificadas hoy, y por quién:
 
 | Casilla | Quién la sostiene |
@@ -2063,7 +2064,7 @@ Verificadas hoy, y por quién:
 | Cuerpos y plots puros | L14 + las pruebas de cuerpo |
 | Eventos suben por callbacks | `states.test.tsx`, `Panel.test.tsx` |
 
-Faltan tres, y **dos no dependen de nosotros**:
+**Faltan dos, y ninguna depende de nosotros**:
 
 - **«Clic abre chat con `metricId` + contexto»** · 🔒 F3.2, que espera a T4.
 - **«Cambiar tenant/rol recomponen sin deploy»** · 🔒 necesita el contrato de
@@ -2075,7 +2076,8 @@ Faltan tres, y **dos no dependen de nosotros**:
   garantía en la siguiente refactorización. Ahora hay una prueba que cambia de
   período y comprueba que el layout se pidió UNA vez y el batch dos. Verificada
   por mutación metiendo el período en la clave del layout.
-- **«Prueba de render mínimo con props válidas»** · es F5.5, seis de doce.
+- ~~«Prueba de render mínimo con props válidas»~~ · **cerrada con F5.5** el
+  mismo día: los doce cuerpos tienen prueba.
 
 **F5.11 cerrada el 2026-09-04, y encontró una violación real en su primera
 corrida.** El port agrega una cosa al de v2: **el fondo puede ser una PILA.** Un
