@@ -324,9 +324,11 @@ necesita está en `docs/PARA-BACKEND.md`, ordenado por esfuerzo de ellos: primer
 transcripciones de decisiones ya tomadas, después decisiones de una línea, y al
 final lo que necesita conversación.
 
-**Y si solo se lee una cosa, que sea el punto 0: la Fase 4 no tiene contrato.**
-El yaml declara catorce endpoints y los catorce son `/config/*` — ninguno de
-`/admin/*`, y `layouts` no aparece. Las tareas de backend existen (B4.1–B4.16) y
+**Y si solo se lee una cosa, que sea el punto 0: faltan ocho rutas.** Cruzando
+el plan con el yaml el 2026-09-04: **el plan cita 22 rutas y el contrato declara
+14.** Seis son `/admin/*` —la Fase 4 entera—, y las otras dos son
+`/config/plots`, que B1.21 dice dónde va y bloquea F1.31, y `/auth/login`, que
+bloquea F0.5. Ninguno de `/admin/*` está, y `layouts` no aparece. Las tareas de backend existen (B4.1–B4.16) y
 ninguna llegó al yaml, así que **las 21 tareas de admin y builder no se pueden ni
 empezar**, y con ellas F5.1 y F5.2. Es de otro orden que los campos sueltos:
 aquello son campos, esto es una superficie entera. No hace falta el servicio,
@@ -345,7 +347,7 @@ Qué espera cada cosa, para no volver a averiguarlo:
 | El endpoint de login · B0.10 | F0.5 |
 | El servicio de `/config/solicitudes` | F2.3 |
 | El seed · B1.16 y B1.20 | F1.25 |
-| `/config/plots` y B1.21 | F1.31 |
+| La ruta `/config/plots` y B1.21 | F1.31, F4.21 |
 
 **Tres cosas que se podrían hacer y no se hacen, con la razón escrita**, para que
 nadie las retome creyendo que se olvidaron:

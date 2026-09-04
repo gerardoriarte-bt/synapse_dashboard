@@ -3,9 +3,10 @@
 **2026-09-04.** Todo lo que hoy bloquea trabajo del front, en un solo lugar, con
 el bloque de yaml listo para pegar donde corresponde.
 
-**Si solo van a leer una cosa, que sea el punto 0**: el contrato no tiene admin
-ni builder, y eso bloquea la fase más grande que queda. Los once puntos que le
-siguen son campos sueltos; ese es una superficie entera.
+**Si solo van a leer una cosa, que sea el punto 0**: hay ocho rutas que el plan
+necesita y el contrato no declara, y seis de ellas son la fase más grande que
+queda. Los once puntos que le siguen son campos sueltos; ese son rutas enteras
+que no existen.
 
 **Cómo leerlo.** Está ordenado por esfuerzo de ustedes, no por importancia: lo
 primero son transcripciones de decisiones ya tomadas, después decisiones de una
@@ -24,7 +25,7 @@ se descubre en integración y no en compilación.
 
 | # | Qué falta | Esfuerzo | Desbloquea |
 |---|---|---|---|
-| **0** | **El contrato entero de admin y builder** | Grande · es una superficie, no un campo | **Las 21 tareas de Fase 4**, F5.1, F5.2 |
+| **0** | **Ocho rutas que el plan cita y el contrato no declara** | Grande · seis son una superficie entera | **Las 21 de Fase 4**, F5.1, F5.2, F1.31, F4.21, F0.5 |
 | **1** | `ContextoDePanel` y `periodo` en `POST /config/chat` | Transcribir · ya está decidido | F3.2, F3.3 |
 | **2** | `tenant.zonaHoraria` | Transcribir · decidido el 2026-09-04 | F1.13b |
 | **3** | El patrón de `PeriodoId` | Transcribir · decidido el 2026-09-04 | F5.13 |
@@ -44,7 +45,28 @@ Y **dos que decide producto**, no ustedes, pero que les van a llegar como campos
 
 # 0 · Lo más grande, y hoy no está dicho en ninguna parte
 
-## El contrato no tiene ni una línea de admin ni de builder
+## Ocho rutas que el plan necesita y el contrato no declara
+
+Salió de cruzar las dos fuentes el 2026-09-04: **el plan cita 22 rutas y el
+contrato declara 14.** Las ocho que faltan no son un olvido de redacción — cada
+una bloquea trabajo del front, y juntas son la razón por la que hoy no queda una
+sola tarea de front desbloqueada.
+
+```
+/admin/tenants                     ·  F4.1, F4.2
+/admin/tenants/{id}/layouts        ·  F4.2, F4.6
+/admin/tenants/{id}/catalog        ·  F4.5
+/admin/layouts/{id}                ·  F4.8, F4.10, F4.13
+/admin/layouts/{id}/validate       ·  F4.11, F4.14
+/admin/layouts/{id}/publish        ·  F4.15
+/config/plots                      ·  F1.31, F4.21
+/auth/login                        ·  F0.5
+```
+
+Las seis primeras son la misma cosa y van juntas; las dos últimas son
+independientes y están abajo.
+
+## Las seis de admin y builder
 
 `contracts/synapse-api.yaml` declara **catorce endpoints y los catorce son
 `/config/*`**: consola, chat y decisiones.
@@ -89,6 +111,47 @@ servicio puede llegar después; hoy no podemos ni empezar.
 `GET /admin/tenants/{id}/layouts` —con eso arranca F4.1 y F4.2—, después el
 borrador y el `PUT`, y `validate` y `publish` al final. El builder se puede
 construir de a poco; el admin no arranca sin los dos primeros.
+
+## `/config/plots` · el repertorio de gráficos
+
+**B1.21 ya dice dónde va** —«se expone en `GET /config/plots`, con la misma forma
+con la que `/config/blocks` expone la tabla de bloques»— y la ruta no está en el
+yaml.
+
+Lo que bloquea es más de lo que parece. **F1.31 no es el selector de gráficos:
+es la verificación de mínimos**, y su propia descripción dice que sirve desde
+hoy, con un gráfico por tipo — «hoy nada impide que `bars` reciba un ítem y
+dibuje una barra sola». Un gráfico con menos datos de los que necesita **dibuja
+algo que engaña**, y eso pasa hoy.
+
+Los mínimos no se pueden escribir en el front: serían una tabla inventada que
+además tendría que coincidir con la del backend. Es exactamente el problema que
+`paramsDisponibles` ya tiene (punto 7), y por eso B1.21 pide que la tabla viva
+en un solo lugar.
+
+- **Desbloquea** · F1.31 y F4.21
+- **Del lado del front ya está la figura** · `catalog/blocks.ts` opera sobre la
+  tabla que llega por `/config/blocks` sin tenerla adentro; `catalog/plots.ts`
+  es lo mismo con el repertorio
+
+## `POST /auth/login` · B0.10
+
+`tareas-front-back.md` pide en F0.5 «login → guardar JWT → redirigir», y
+**ninguna tarea de backend lo expone**: B0.3 define el JWT pero no la ruta que lo
+emite. B0.10 existe en el plan para eso y no llegó al contrato.
+
+Van con él **tres respuestas de integración** que el front necesita y que no son
+del yaml:
+
+1. **Con qué clave se guarda el token**, para que las dos partes lean la misma.
+2. **Si el login vive en otro origen.** Si sí, `localStorage` no cruza orígenes
+   y la estrategia entera cambia.
+3. **Adónde redirige un `401`** — a la pantalla de login, o a una de sesión
+   vencida que la distinga de un permiso faltante.
+
+- **Desbloquea** · F0.5, que es lo único que queda de Fase 0
+- **Apaño de hoy** · ninguno. El guard existe a medias y no hay contra qué
+  autenticarse
 
 ---
 
@@ -412,7 +475,8 @@ esperan.
 
 - **B1.16 + B1.20** · seed determinista → desbloquea **F1.25**, conectar a la API
   real. Hoy la consola dibuja de punta a punta contra MSW
-- **B1.21** · los mínimos de datos por gráfico → desbloquea **F1.31**
+- **B1.21** · los mínimos de datos por gráfico → desbloquea **F1.31**. Va con
+  `/config/plots` del punto 0: la tabla y la ruta por donde viaja
 
 ---
 
