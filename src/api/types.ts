@@ -38,6 +38,8 @@ export type TabWithPanels = Schemas['PestanaConPaneles']
 export type AppContext = Schemas['Contexto']
 export type Period = Schemas['Periodo']
 export type ChatEvent = Schemas['EventoDeChat']
+export type ThreadSummary = Schemas['HiloResumen']
+export type Thread = Schemas['Hilo']
 
 export type Point = Schemas['Punto']
 export type Pillar = NonNullable<Schemas['ValorProsa']['pilares']>[number]

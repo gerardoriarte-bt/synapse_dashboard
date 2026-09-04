@@ -18,6 +18,7 @@ export const keys = {
   blocks: ['config', 'blocks'] as const,
   tab: (tabId: string, layoutId?: string) => ['config', 'tab', tabId, layoutId ?? null] as const,
   panels: (tabId: string, period: string) => ['panels', tabId, period] as const,
+  threads: ['chat', 'hilos'] as const,
 }
 
 /** Contexto al montar la app. Una sola vez: no cambia con el período. */
@@ -52,6 +53,13 @@ export function usePanelsBatch(tabId: string | null, panelIds: string[], period:
     queryFn: () => api.panelsBatch(panelIds, period),
     enabled: tabId !== null && panelIds.length > 0 && period !== '',
   })
+}
+
+/** El riel de hilos · F3.7. Solo los del usuario del token, y el orden lo
+ *  decide el backend: llegan por `actualizadoEn`, del más reciente al más
+ *  viejo. El front los agrupa por tiempo pero no los reordena. */
+export function useThreads() {
+  return useQuery({ queryKey: keys.threads, queryFn: api.threads })
 }
 
 /** Reintento de UN panel · F2.4.

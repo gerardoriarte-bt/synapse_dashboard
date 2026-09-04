@@ -12,6 +12,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ChatOverlay } from '@/surfaces/console/ChatOverlay'
 import { ChatThread } from '@/surfaces/console/ChatThread'
+import { ThreadRail } from '@/surfaces/console/ThreadRail'
 import type { ChatTurn } from '@/api/useChat'
 
 const VACIA = { texto: '', datos: [], auditoria: null, sugerencias: [] }
@@ -197,5 +198,67 @@ describe('F3.6 está bloqueada, y la UI lo declara en vez de inventar', () => {
       />,
     )
     expect(screen.getByText(/una cifra que todavía no se dibuja/)).toBeInTheDocument()
+  })
+})
+
+describe('F3.7 · el riel de hilos', () => {
+  const grupos = [
+    {
+      label: 'Hoy',
+      threads: [
+        {
+          id: 'h-1',
+          titulo: 'Por qué subió el ROAS si la inversión está plana',
+          creadoEn: '2026-09-04T09:00:00Z',
+          actualizadoEn: '2026-09-04T09:00:00Z',
+          esDecision: false,
+        },
+        {
+          id: 'h-2',
+          titulo: 'Quiebre de stock en talla M',
+          creadoEn: '2026-09-04T08:00:00Z',
+          actualizadoEn: '2026-09-04T08:00:00Z',
+          esDecision: true,
+        },
+      ],
+    },
+  ]
+
+  it('sin hilos lo dice · no deja un hueco', () => {
+    render(<ThreadRail groups={[]} onSelect={() => {}} />)
+    expect(screen.getByText(/Todavía no preguntaste nada/)).toBeInTheDocument()
+  })
+
+  it('el título va ENTERO · el recorte es de CSS, no de la cadena', () => {
+    // El contrato: «el riel la muestra tal cual, así que no se resume ni se
+    // recorta acá». Cortar la cadena la rompe también para un lector de
+    // pantalla, que no tiene ancho.
+    render(<ThreadRail groups={grupos} onSelect={() => {}} />)
+    const boton = screen.getByRole('button', { name: /Por qué subió el ROAS/ })
+    expect(boton.textContent).toContain('Por qué subió el ROAS si la inversión está plana')
+  })
+
+  it('elegir un hilo DISPARA con su id', async () => {
+    const elegir = vi.fn()
+    render(<ThreadRail groups={grupos} onSelect={elegir} />)
+    await userEvent.click(screen.getByRole('button', { name: /Quiebre de stock/ }))
+    expect(elegir).toHaveBeenCalledWith('h-2')
+  })
+
+  it('el hilo de una decisión lleva su badge · es la traza de por qué se decidió', () => {
+    render(<ThreadRail groups={grupos} onSelect={() => {}} />)
+    expect(screen.getByRole('button', { name: /Quiebre de stock/ })).toHaveTextContent('Decisión')
+    expect(screen.getByRole('button', { name: /ROAS/ })).not.toHaveTextContent('Decisión')
+  })
+
+  it('el hilo activo se marca para el lector de pantalla, no solo con color', () => {
+    render(<ThreadRail groups={grupos} activeId="h-1" onSelect={() => {}} />)
+    expect(screen.getByRole('button', { name: /ROAS/ })).toHaveAttribute('aria-current', 'true')
+    expect(screen.getByRole('button', { name: /Quiebre/ })).not.toHaveAttribute('aria-current')
+  })
+
+  it('el grupo es un encabezado · un lector de pantalla lo puede saltar', () => {
+    render(<ThreadRail groups={grupos} onSelect={() => {}} />)
+    expect(screen.getByRole('heading', { name: 'Hoy' })).toBeInTheDocument()
   })
 })

@@ -5,7 +5,15 @@
  *  backend, se hace con MSW a nivel HTTP, no con un fixture importado.
  */
 import { ApiError } from './types'
-import type { AppContext, Block, Envelope, Metric, Payload, TabWithPanels } from './types'
+import type {
+  AppContext,
+  Block,
+  Envelope,
+  Metric,
+  Payload,
+  TabWithPanels,
+  ThreadSummary,
+} from './types'
 import { currentToken } from '../app/auth/session'
 
 const BASE = import.meta.env.VITE_API_URL ?? '/api/v1'
@@ -60,6 +68,9 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ panelIds, periodo: period }),
     }),
+
+  /** Los hilos del usuario del token. El backend ya los ordena. */
+  threads: () => request<{ hilos: ThreadSummary[] }>('/config/chat/hilos'),
 
   /** El tema es preferencia de USUARIO, no de tenant · §2.4. */
   savePreferences: (preferences: { tema: 'dark' | 'light' }) =>

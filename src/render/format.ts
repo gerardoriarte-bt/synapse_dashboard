@@ -60,6 +60,13 @@ export type Formatter = {
   delta: (value: number, options?: NumberOptions) => string
   withUnit: (figure: string, unit?: string) => string
   freshness: (iso: string, now: Date) => string
+  /** El mes de una fecha, para agrupar el riel de hilos · F3.7.
+   *
+   *  **Lleva el año cuando no es el corriente, y no es un detalle:** la
+   *  retención de hilos es de 12 meses y el contrato nombra explícitamente
+   *  «reabrir la consulta del mismo mes del año previo». Sin el año, dos grupos
+   *  distintos se llamarían «JULIO» y el usuario no sabría cuál es cuál. */
+  monthLabel: (iso: string, now: Date) => string
 }
 
 export function createFormat(locale: string): Formatter {
@@ -148,6 +155,12 @@ export function createFormat(locale: string): Formatter {
      *
      *  En horas hasta 48 y en días después, porque la tolerancia de los feeds
      *  se declara en horas y un «hace 2 días» esconde si son 31 o 47. */
+    monthLabel(iso, now) {
+      const fecha = new Date(iso)
+      const mes = new Intl.DateTimeFormat(locale, { month: 'long' }).format(fecha)
+      return fecha.getFullYear() === now.getFullYear() ? mes : `${mes} ${fecha.getFullYear()}`
+    },
+
     freshness(iso, now) {
       const hours = Math.floor((now.getTime() - new Date(iso).getTime()) / 3_600_000)
       if (hours < 1) return 'RECIÉN'

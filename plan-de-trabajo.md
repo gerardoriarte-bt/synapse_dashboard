@@ -1734,12 +1734,40 @@ existiera.
 Mientras tanto la UI **declara cuántas cifras trajo la respuesta** en vez de
 pintar una con un cuerpo elegido a dedo. Es la pregunta 11 de B0.9.
 
-### F3.7 ⬜ Historial de hilos
+### F3.7 ⚠️ Historial de hilos
 **Descripción.** Listado de conversaciones previas del usuario, desde
 `GET /config/chat/hilos`.
 **Criterio de aceptación.**
 - Cada hilo muestra con qué panel y período se abrió.
 - Retomar un hilo reenvía su contexto; no arranca uno nuevo en silencio.
+
+**Parcial el 2026-09-04.** El riel está hecho: agrupado por tiempo, título
+entero, badge de decisión, hilo activo marcado y selección que dispara con su
+`id`. Retomar funciona —`useChat` ya manda `hiloId`, así que continúa la
+conversación en vez de arrancar una nueva.
+
+**La primera mitad del criterio está bloqueada por el contrato.**
+`HiloResumen` trae `id`, `titulo`, `creadoEn`, `actualizadoEn`, `esDecision` y
+`decisionId`. **Ni panel ni período.** Y `Hilo` es `HiloResumen` + `mensajes`,
+así que tampoco. Es el mismo hueco que T4 por el otro lado: si el contexto del
+panel no viaja al abrir, tampoco vuelve al listar.
+
+**El agrupado por tiempo es la excepción a que el front no calcule**, y el
+contrato la concede explícitamente: «el agrupado por tiempo —HOY, ESTA SEMANA,
+JULIO— lo hace el front: es presentación y depende del huso del usuario».
+
+Dos decisiones que el criterio no anticipaba:
+
+- **«Hoy» se mide contra medianoche LOCAL, no contra «hace 24 horas».** A las
+  15:00, un hilo de las 02:00 de hoy es de hoy y uno de las 23:00 de ayer no lo
+  es. Con una ventana de 24 horas los dos caerían mal.
+- **El mes lleva el año cuando no es el corriente.** La retención es de 12 meses
+  y el contrato nombra «reabrir la consulta del mismo mes del año previo»: sin
+  el año, dos grupos se llamarían «julio» y no habría cómo distinguirlos.
+
+El riel **no reordena**: el backend manda por `actualizadoEn` y esa decisión es
+suya. Una lista que llegue desordenada deja dos bloques del mismo mes **a la
+vista**, en vez de fundirlos y esconder que el backend mandó algo raro.
 
 ### F3.8 ✅ `useChat(contextoPanel)` — envío y stream fuera de la UI
 **Descripción.** La lógica de envío, acumulación de fragmentos y cierre del

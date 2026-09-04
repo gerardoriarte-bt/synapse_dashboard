@@ -334,8 +334,9 @@ Abierto ahora mismo:
    integración: con qué clave se guarda el token, si el login vive en otro origen
    (`localStorage` no cruza orígenes), y adónde redirige un `401`.
 4. **La Fase 3, el chat.** Hechas F3.4 (cliente SSE), F3.8 (acumulación), F3.1
-   (la hoja) y F3.5 (los mensajes). Queda **F3.7**, el historial de hilos, que
-   está desbloqueado. F3.9–F3.11 siguen diferidas por D3.
+   (la hoja), F3.5 (los mensajes) y F3.7 (el riel de hilos, parcial).
+   F3.9–F3.11 siguen diferidas por D3. **Todo lo que queda de la fase espera
+   al yaml.**
 
    **Dos están bloqueadas por el contrato, y las dos se descubrieron al abrir la
    fase.** Es el mismo patrón: el front tendría que inventar una forma que el
@@ -347,6 +348,14 @@ Abierto ahora mismo:
      de panel se dibuja, y `formasAceptadas` va de muchos a muchos, así que no se
      deriva. Ojo con el nombre: `EventoDato.tipo` es `'dato'`, el discriminador
      de la unión, no un `TipoPanel`.
+   - **F3.7 · la mitad de arriba** — `HiloResumen` no trae panel ni período, así
+     que el riel no puede decir de qué panel salió cada conversación. Es T4 por
+     el otro lado.
+
+   **`ContextoDePanel` ya está decidido**, y eso hace a T4 una transcripción y no
+   una discusión: `nuevo-desarrollo.md:684` —normativo— declara los doce campos.
+   Falta que entre al yaml, que es su casa, junto con `periodo` en el cuerpo del
+   POST, que `nuevo-desarrollo.md:146` declara y el contrato tampoco tiene.
 5. **Las dos de diseño que abrió F1.28** — §2.3 declara la escala mono entera
    y no declara ni un tamaño de `font-body` ni de `font-display`, y el tracking
    del KPI no sale de ninguna tabla. Son las preguntas 9 y 10 de B0.9; el censo
