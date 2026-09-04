@@ -1627,16 +1627,61 @@ verificada y no declarada. La prueba además **afirma que el fixture no trae
 disparador al cerrar. Una sola hoja abierta a la vez: apilarlas deja al usuario
 sin saber qué cierra el Escape.
 
-### F3.2 ⬜ Construir `ContextoDePanel` al abrir
+### F3.2 ⬜ Construir `ContextoDePanel` al abrir · 🔒 **bloqueada por T4**
 **Criterio de aceptación.** Manda `panelId`, `metricId`, `metricKey`, `nombre`,
 `base`, `fuente`, `capa`, `familia`, `periodo`, `tipo`, y opcionalmente
 `valorActual` y `dimensionesDisponibles`. **Nunca SQL.**
 
+**Bloqueada, y se descubrió el 2026-09-03 al abrir la Fase 3.** `ContextoDePanel`
+**no existe en el contrato**: `POST /config/chat` acepta `pregunta`, `tabId` y
+`hiloId`, y nada más. No hay campo por donde mandar el panel desde el que se
+pregunta.
+
+Es exactamente T4 —«Acordar `ContextoDePanel` · declarado en el yaml, no en un
+documento aparte»— que sigue abierta. Construir el objeto en el front sin que el
+contrato lo declare sería inventar una forma que el backend no va a leer.
+
 ### F3.3 ⬜ «Ver detalle» y «Preguntar» en el shell del panel
-### F3.4 ⬜ Cliente SSE
-**Criterio de aceptación.** Lee `pensando`, `fragmento`, `dato`, `sql`, `error`,
-`fin`. Cerrar la hoja aborta el stream. Un `error` a mitad deja lo ya recibido
-visible y dice qué pasó.
+**Criterio de aceptación.**
+- Los dos son CALLBACKS del shell, no navegación escrita adentro: `render/` no
+  sabe a dónde llevan y la superficie es dueña del viaje.
+- **Sin manejador no se pinta el botón.** Es la regla del CTA muerto, que el
+  shell ya aplica: «Ver detalle» está diferido por D3, así que hoy no se pinta
+  ninguno de los dos y eso es correcto.
+- «Preguntar» abre la hoja con el panel desde el que se preguntó.
+
+**La última mitad espera a T4**, igual que F3.2: abrir la hoja con el `tabId` se
+puede hacer hoy, mandar el contexto del panel no, porque el contrato no declara
+por dónde viaja.
+
+### F3.4 ✅ Cliente SSE
+**Criterio de aceptación.** Lee los seis eventos que declara el contrato.
+Cerrar la hoja aborta el stream. Un `error` a mitad deja lo ya recibido visible
+y dice qué pasó.
+
+**El criterio decía otros nombres y estaba equivocado.** Pedía «`pensando`,
+`fragmento`, `dato`, `sql`, `error`, `fin`», que salía de `tareas-front-back.md`.
+El contrato declara `texto`, `dato`, `auditoria`, `sugerencias`, `fin` y `error`:
+`pensando` no existe, `fragmento` es `texto`, `sql` es `auditoria`, y
+**`sugerencias` faltaba en el plan**. Gana el contrato, que es su casa. Corregido
+acá el 2026-09-03.
+
+**Cerrada el 2026-09-03.** Dos decisiones de implementación que el criterio no
+anticipaba:
+
+**No se usa `EventSource`.** `POST /config/chat` lleva la pregunta en el cuerpo
+y `EventSource` solo hace GET sin cuerpo: la pregunta tendría que viajar en la
+URL, donde queda en logs de proxy y en el historial del navegador. Se usa `fetch`
+con `ReadableStream`, que además da `AbortController` de verdad. (El criterio de
+F3.8 menciona «no deja el `EventSource` abierto»; lo que hay que no dejar
+abierto es el cuerpo de la respuesta.)
+
+**El parseo trocea por `\n\n`, no por chunk.** Un chunk de la red no es un
+evento: puede partir un JSON al medio, traer tres juntos, o terminar sin cerrar
+el último. Un parser escrito «un chunk, un evento» funciona en desarrollo —donde
+el servidor local manda cada evento entero— y falla detrás de un proxy. Las
+pruebas arman las tramas partidas en lugares incómodos a propósito, y las dos
+mutaciones lo confirman.
 
 ### F3.5 ⬜ UI de mensajes con estado de streaming
 ### F3.6 ⬜ Reutilizar cuerpos de panel para respuestas estructuradas
@@ -1651,12 +1696,34 @@ anatomía: una cifra en el chat también declara BASE y procedencia.
 - Cada hilo muestra con qué panel y período se abrió.
 - Retomar un hilo reenvía su contexto; no arranca uno nuevo en silencio.
 
-### F3.8 ⬜ `useChat(contextoPanel)` — envío y stream fuera de la UI
+### F3.8 ✅ `useChat(contextoPanel)` — envío y stream fuera de la UI
 **Descripción.** La lógica de envío, acumulación de fragmentos y cierre del
 stream, separada del componente que la pinta.
 **Criterio de aceptación.**
 - El componente de mensajes recibe una lista y un estado; no conoce SSE.
 - Desmontar la hoja aborta el stream y no deja el `EventSource` abierto.
+
+**Cerrada el 2026-09-03**, sin el `contextoPanel` del nombre: ese parámetro es
+F3.2 y espera a T4. El hook toma `tabId`, que es lo que el contrato acepta hoy.
+
+`apply` —toda la acumulación— quedó **pura y exportada**, y por eso sus nueve
+pruebas no montan nada ni abren una conexión. Si probarla necesitara React, la
+separación que pide el criterio no existiría de verdad.
+
+Tres decisiones que la acumulación tuvo que tomar:
+
+- **Las cifras van aparte de la prosa**, no intercaladas, porque cada una se
+  pinta con el cuerpo de panel que le toca · F3.6. Y se guarda el evento
+  entero, no solo `valor`: es lo que conserva la procedencia pegada a la cifra.
+- **Las sugerencias reemplazan, no se acumulan.** El evento manda la lista
+  completa; acumularlas dejaría en pantalla sugerencias de una vuelta anterior.
+- **`fin` y `error` no tocan la respuesta**, solo el estado del turno. Mezclarlos
+  haría que `apply` decidiera dos cosas distintas.
+
+Y una del hook: **abortar no es un error del agente.** Si la señal está abortada
+se sale en silencio — pintarle «algo salió mal» a quien acaba de cerrar la hoja
+sería mentir. Qué se conserva de lo recibido lo decide `parcial`, que viene del
+backend: con SSE reintentar no es volver a llamar, así que el front no adivina.
 
 ### ➕ F3.9 🕓 Drill-down C2
 **Estado: diferida** (D3). No se descarta ni se planifica todavía; entra cuando el backend llegue a ese tramo. El contrato ya la cubre, así que lo que falta es el servicio, no el diseño.
@@ -1819,7 +1886,7 @@ detalle» del shell.
 | **T1** | `contracts/synapse-api.yaml` es la fuente de verdad | Backend escribe · front consume | Un cambio en el yaml que el backend no implemente rompe CI de alguno de los dos |
 | **T2** | Documentar las reglas de los 15 bloques | Backend valida · front muestra | La tabla vive en un solo lugar y se sirve por `/config/blocks` |
 | **T3** | Acordar el formato de eventos SSE | Backend | Los seis eventos con su forma, en el yaml |
-| **T4** | Acordar `ContextoDePanel` | Ambos | Declarado en el yaml, no en un documento aparte |
+| **T4** | Acordar `ContextoDePanel` · **bloquea F3.2 y la mitad de F3.3** | Ambos | Declarado en el yaml, no en un documento aparte. Hoy `POST /config/chat` acepta `pregunta`, `tabId` y `hiloId`: no hay campo por donde mandar el panel |
 | **T5** | Seed de demo | Backend | Ver B1.16 y B1.20 |
 | **T6** | Ambiente de desarrollo: backend + front + Postgres | Ambos | Un comando levanta los tres. El front apunta a `VITE_API_URL` |
 | **T7** | Revisión de conformidad con `design.md` y `parametros-front.md` | Front | Automatizada en F0.11, no manual |
