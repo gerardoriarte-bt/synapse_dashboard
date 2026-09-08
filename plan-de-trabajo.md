@@ -851,14 +851,50 @@ alguien intenta usarlas.
 
 **Y quedaron dos cosas anotadas y NO hechas**, las dos a propósito:
 
-- **`password_updated: false` no bloquea nada.** El servicio devuelve un token
-  válido aunque el usuario siga con la contraseña asignada, así que hoy entra a
-  la consola. `POST /auth/change-password` existe; falta decidir si el servicio
-  debe rechazar el login o si el front intercepta. Es decisión de producto.
+- **`password_updated: false` no bloquea nada, y debería.** Es **F0.13**. Se
+  anotó como decisión de producto pendiente y no lo es: el OpenAPI del servicio
+  lo declara —«si `user.password_updated` es `false` el front debe mostrar un
+  modal bloqueante»—. El servicio entrega el token a propósito; el bloqueo es
+  nuestro.
 - **El usuario que devuelve el login NO se guarda.** Trae nombre, rol y tenant, y
   es tentador usarlo para pintar el navbar sin esperar a `/config/me`. Sería una
   segunda fuente de verdad que se desincroniza en cuanto alguien cambie de rol.
   Hay una prueba que lo fija.
+
+### ➕ F0.13 ⬜ Modal bloqueante de cambio de contraseña
+**Descripción.** El OpenAPI de `synapse-api-go` lo declara en `/auth/login`: «si
+`user.password_updated` es `false` el front debe mostrar un modal bloqueante
+solicitando cambio de contraseña antes de acceder a la app». El servicio entrega
+un token válido igual —a propósito—, así que el bloqueo es del front.
+
+**No está bloqueada por nadie.** `POST /auth/change-password` existe, está en el
+spec, y el campo llega en la respuesta del login.
+**Criterio de aceptación.**
+- Con `password_updated: false` no se llega a la consola, ni escribiendo la URL:
+  el bloqueo va donde ya está la decisión de sesión, no en la pantalla de login.
+- El cambio consume `POST /auth/change-password`, que devuelve el usuario con
+  `password_updated: true`.
+- El mensaje sale del servicio · §8. La política de contraseña la valida él
+  —`password_policy` está en su repositorio—, así que el front no la reimplementa.
+
+### ➕ F0.14 ⬜ Generar los tipos del servicio de acceso desde SU OpenAPI
+**Descripción.** `api/auth.ts` tiene los tipos **escritos a mano**, leídos de las
+estructuras de Go. El servicio publica un OpenAPI de 1.796 líneas —embebido en
+el binario, servido en `/docs/openapi.yaml`— así que hay un contrato y no lo
+estamos usando.
+
+Es la misma regla que ya sostiene `gen:api` para la consola: «todo lo que viaja
+por la red sale de `generated.ts`». Un tipo escrito a mano desde una
+implementación es exactamente el fixture escrito de memoria que la Fase 5 nos
+enseñó a no hacer — y ya costó una: el spec declaraba lo del modal bloqueante y
+nosotros lo anotamos como decisión pendiente.
+**Criterio de aceptación.**
+- Los tipos de `api/auth.ts` salen de un generador, no de la lectura de structs.
+- Hay un chequeo de deriva, como `contract-drift`: si el servicio cambia su spec
+  y nadie regenera, la puerta lo dice.
+- Queda decidido **de dónde se lee el spec**: una copia versionada acá, como
+  `design/`, o un fetch contra el servicio. Lo segundo es más fresco y hace la
+  puerta dependiente de la red.
 
 ### F0.6 ✅ Generar `src/api/types.ts` desde OpenAPI
 **Criterio de aceptación.** ✅ Cumplido con salvedad (D4).

@@ -50,6 +50,13 @@ Y **dos que decide producto**, no ustedes, pero que les van a llegar como campos
 conectó el login el 2026-09-08 —F0.5 cerrada— y al leerlo aparecieron tres cosas
 que cambian lo que dice el resto de este documento.
 
+**Y tiene su propio OpenAPI**: 1.796 líneas en
+`internal/adapters/handler/docs/openapi.yaml`, embebido en el binario y servido
+en `/docs/openapi.yaml`. **Eso es un contrato, no una implementación**, y hay que
+tratarlo como tal: la primera versión de nuestro cliente se escribió leyendo las
+estructuras de Go, y ese spec ya contestaba una pregunta que habíamos anotado
+como abierta. Ver F0.14.
+
 **Publica dieciséis rutas, y varias son las que este documento venía pidiendo,
 con otro nombre:**
 
@@ -113,16 +120,20 @@ El usuario ve una pantalla de error sin una palabra. Por eso el front tiene un
 servicios se leen igual. Va con el punto 8, la taxonomía: es la misma
 conversación.
 
-## `password_updated` no bloquea el login
+## `password_updated` ya está decidido, y es nuestro
 
-`POST /auth/login` devuelve `user.password_updated: false` mientras el usuario
-siga con la contraseña que le asignaron, **y entrega un token válido igual**.
-Forzar el cambio queda del lado del front y hoy **no está hecho**: un usuario con
-contraseña temporal entra a la consola.
+**Corrección del 2026-09-08.** Acá decía que faltaba decidir si el servicio
+rechaza el login o si el front intercepta. **Ya está decidido, y está escrito en
+el OpenAPI del servicio de Go**, que se leyó después:
 
-Existe `POST /auth/change-password`, así que la pieza está. Falta decidir si el
-servicio debe rechazar el login —lo más seguro— o si el front intercepta. **Es
-una decisión de producto, no de código.**
+> Si `user.password_updated` es `false` el front debe mostrar un modal bloqueante
+> solicitando cambio de contraseña antes de acceder a la app.
+
+O sea: el servicio entrega el token a propósito y **el bloqueo es del front**.
+`POST /auth/change-password` existe y el spec lo declara. **No falta una
+decisión: falta el modal**, y es tarea nuestra · F0.13.
+
+Hasta que esté, un usuario con contraseña temporal entra a la consola.
 
 ---
 
