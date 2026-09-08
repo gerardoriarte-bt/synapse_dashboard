@@ -314,6 +314,13 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
+**El flujo de acceso está consumido entero** desde el 2026-09-08: login,
+`token-info`, cambio obligatorio de contraseña, recuperación y solicitud de
+acceso. La única ruta de ese flujo que NO se llama es
+`GET /access-requests/tenants`, y la descartó el propio servicio —«ya no es
+necesario en el modal de registro; el tenant se asigna al aprobar»—, así que no
+es un olvido.
+
 **Son DOS servicios, no uno.** El login lo sirve
 `AntPack-dev/synapse-api-go` —un despliegue aparte, conectado el 2026-09-08— y
 la consola la sirve la API del contrato, que todavía no existe. Los dos publican

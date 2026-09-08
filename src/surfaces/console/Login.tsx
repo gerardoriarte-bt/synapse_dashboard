@@ -16,6 +16,7 @@ import { login } from '../../api/auth'
 import { saveToken } from '../../app/auth/session'
 import { ApiError } from '../../api/types'
 import { PasswordReset } from './PasswordReset'
+import { RequestAccess } from './RequestAccess'
 
 /** El rótulo de un campo es un `<label>` de verdad, no un `<Label>`.
  *
@@ -40,6 +41,7 @@ export function Login() {
   const [error, setError] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
   const [recuperando, setRecuperando] = useState(false)
+  const [solicitando, setSolicitando] = useState(false)
 
   // A dónde volver: el guardia guarda de dónde te sacó.
   const destino = (location.state as { from?: string } | null)?.from ?? '/'
@@ -120,6 +122,14 @@ export function Login() {
 
         <button
           type="button"
+          onClick={() => setSolicitando(true)}
+          className="self-start font-mono text-label tracking-rotulo uppercase text-dim hover:text-ink cursor-pointer bg-transparent border-0 p-0"
+        >
+          Solicitar acceso
+        </button>
+
+        <button
+          type="button"
           onClick={() => setRecuperando(true)}
           className="self-start font-mono text-label tracking-rotulo uppercase text-dim hover:text-ink cursor-pointer bg-transparent border-0 p-0"
         >
@@ -140,6 +150,7 @@ export function Login() {
       </form>
 
       {recuperando ? <PasswordReset onClose={() => setRecuperando(false)} /> : null}
+      {solicitando ? <RequestAccess onClose={() => setSolicitando(false)} /> : null}
     </main>
   )
 }

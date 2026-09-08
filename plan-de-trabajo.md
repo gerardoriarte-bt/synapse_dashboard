@@ -861,6 +861,32 @@ alguien intenta usarlas.
   segunda fuente de verdad que se desincroniza en cuanto alguien cambie de rol.
   Hay una prueba que lo fija.
 
+### ➕ F0.16 ✅ Solicitar acceso
+**Descripción.** Sale de
+`docs/access-request-registration-frontend-integration.md` del servicio. Con
+esto **el flujo de acceso queda consumido entero**: login, token-info, cambio de
+contraseña, recuperación y solicitud.
+
+**No crea una cuenta: abre una solicitud que un admin aprueba.** La pantalla lo
+dice; prometer «ya podés entrar» dejaría a alguien probando credenciales que no
+existen.
+**Criterio de aceptación.**
+- Los ocho campos del contrato, con el correo normalizado.
+- **No manda `tenant_id`** — el documento del servicio lo quitó: «el tenant se
+  asigna más adelante, en el panel admin, al aprobar».
+- Los dos consentimientos son `required`: el servicio rechaza con 400 si llegan
+  en `false`, así que declararlo evita un viaje que ya se sabe cómo termina.
+- La solicitud creada que devuelve el 201 **no se pinta**.
+
+**Cerrada el 2026-09-08.** Igual que en F0.15, lo que no sube no se puede
+filtrar: `requestAccess` devuelve `void` y descarta la respuesta, que trae id,
+tenant y estado.
+
+**`GET /access-requests/tenants` NO se consume, y es correcto.** El documento del
+servicio lo dice: «ya no es necesario llamarlo en el modal de registro». Quien
+solicita escribe el nombre de su empresa en texto libre. Queda anotado para que
+nadie lo vea en la lista de rutas sin usar y lo tome por un olvido.
+
 ### ➕ F0.15 ✅ Recuperar contraseña
 **Descripción.** Sale de `docs/password-reset-frontend-integration.md` del
 servicio de acceso —607 líneas—, que la auditoría del 2026-09-08 encontró sin

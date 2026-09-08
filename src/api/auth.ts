@@ -198,3 +198,44 @@ export async function requestPasswordReset(email: string): Promise<string> {
 
   return body.data?.message ?? 'Si el correo está registrado, tu solicitud fue enviada.'
 }
+
+/** Los ocho campos que el servicio pide para solicitar acceso. Generado, no
+ *  escrito: los nombres van en snake_case porque así viajan. */
+export type AccessRequest = AuthSchemas['SubmitAccessRequestBody']
+
+/** Solicitar acceso · F0.16.
+ *
+ *  **Público: no lleva token.** Quien la usa todavía no tiene cuenta.
+ *
+ *  **No manda `tenant_id`, y ya no hace falta pedir la lista de tenants.** El
+ *  documento de integración del servicio lo dice: «ya no es necesario llamar a
+ *  `GET /access-requests/tenants` en el modal de registro. El tenant se asigna
+ *  más adelante, en el panel admin, al aprobar». Quien solicita escribe el
+ *  nombre de su empresa en texto libre y alguien lo resuelve después.
+ *
+ *  **A diferencia de la recuperación de contraseña, acá el 409 SÍ distingue.**
+ *  El servicio responde 409 cuando ya hay una solicitud pendiente **o cuando el
+ *  correo ya es de un usuario registrado**, y usa el mismo código para los dos
+ *  — así que el mensaje no revela cuál de las dos cosas pasó. Es la misma
+ *  protección que en la recuperación, resuelta del lado del servicio.
+ */
+export async function requestAccess(solicitud: AccessRequest): Promise<void> {
+  const res = await fetch(`${BASE}/access-requests`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...solicitud, email: solicitud.email.trim().toLowerCase() }),
+  })
+
+  if (!res.ok) {
+    const body = (await res.json()) as AuthError
+    throw new ApiError(
+      res.status === 409 ? 'AUTH_SOLICITUD_PENDIENTE' : 'AUTH_SOLICITUD_INVALIDA',
+      body.error ?? '',
+      res.status,
+    )
+  }
+
+  // La respuesta trae la solicitud creada —id, tenant, estado— y **no se
+  // devuelve**: la pantalla no tiene nada que hacer con eso, y lo que no sube
+  // no se puede pintar por accidente. Mismo criterio que en la recuperación.
+}

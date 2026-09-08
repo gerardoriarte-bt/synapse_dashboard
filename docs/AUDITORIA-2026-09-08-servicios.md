@@ -94,5 +94,30 @@ trabajo diferente:
 
 ---
 
+---
+
+## Cierre del 2026-09-08 · el flujo de acceso queda completo
+
+El objetivo se acotó a **dejar consumidos los servicios de acceso**. Estado
+final de ese flujo:
+
+| Ruta | |
+|---|---|
+| `POST /auth/login` | ✅ F0.5 |
+| `GET /auth/token-info` | ✅ F0.13 |
+| `POST /auth/change-password` | ✅ F0.13 |
+| `POST /password-reset-requests` | ✅ F0.15 |
+| `POST /access-requests` | ✅ F0.16 |
+| `GET /access-requests/tenants` | **No se consume, a propósito** |
+
+La última la descartó el propio servicio: «ya no es necesario llamarlo en el
+modal de registro; el tenant se asigna más adelante, en el panel admin, al
+aprobar». Queda anotada para que no se lea como un olvido.
+
+**Y una nota sobre cómo se verifica esto.** El primer chequeo dio los seis en
+verde, y era falso: buscaba la ruta como texto en `auth.ts` y la encontró **en
+un comentario** que explicaba por qué no se llama. Un comentario que nombra una
+ruta no la consume. El chequeo correcto borra los comentarios antes de buscar.
+
 *Ver también · `PARA-BACKEND.md` (la pregunta 1 y el punto 0),
 `ENTREGA-2026-09-08-login.md`*
