@@ -124,6 +124,65 @@ El usuario ve una pantalla de error sin una palabra. Por eso el front tiene un
 servicios se leen igual. Va con el punto 8, la taxonomía: es la misma
 conversación.
 
+## El `role` que devuelve la API no cumple su propio enum
+
+**Verificado contra la base el 2026-09-08**, con el servicio corriendo en local.
+
+El spec declara, en `LoginUserInfo`:
+
+```yaml
+role:
+  type: string
+  enum: [admin, planner, user]
+```
+
+Y la tabla `roles` tiene `Planner` con mayúscula. El resultado:
+
+| Valor que devuelve la API | Usuarios | ¿Está en el enum? |
+|---|---|---|
+| `Planner` | **26** | **no** |
+| `admin` | 3 | sí |
+| `user` | 3 | sí |
+
+**26 de 32 usuarios —el 81%— reciben un `role` que el contrato no admite.**
+
+**Qué rompe, hoy y mañana.** Hoy nada visible: el
+`RoleAllowedMiddleware` normaliza con `ToLower` de los dos lados, así que la
+autorización funciona igual —eso lo verificamos y lo decimos para que nadie
+arregle lo que no está roto—. Lo que sí está roto es el contrato: nuestro tipo
+generado dice
+
+```ts
+role?: "admin" | "planner" | "user"
+```
+
+o sea que **TypeScript cree un valor que no llega nunca para 26 usuarios**. El
+front no ramifica por rol —los permisos los aplica el backend, es una regla
+nuestra— así que no explota. Pero el día que algo compare contra `"planner"`, va
+a fallar para el 81% de la gente y solo en producción.
+
+**La corrección es del dato, no del enum.** Ensanchar el enum a
+`[admin, Admin, planner, Planner, user]` bendice la inconsistencia y la duplica
+en cada consumidor. Normalizar en la salida de la API la esconde. Lo que
+corresponde:
+
+```sql
+UPDATE roles SET name = lower(name);
+```
+
+Y una restricción para que no vuelva —`CHECK (name = lower(name))`, o el enum de
+Postgres directamente.
+
+**Ojo con lo que NO es el problema.** Los roles están duplicados **por tenant**
+—cada tenant tiene su fila de `admin`, `Planner`, `user`— y eso es el diseño,
+no un error: `roles.tenant_id` existe a propósito. Lo único que hay que
+unificar es la CAPITALIZACIÓN, no las filas.
+
+- **Bloquea** · nada hoy
+- **Cuesta** · una sentencia
+- **Si no se hace** · un `if (role === 'planner')` en cualquier lado, algún día,
+  falla para 26 de 32 usuarios y en el único ambiente donde duele
+
 ## `password_updated` ya está decidido, y es nuestro
 
 **Corrección del 2026-09-08.** Acá decía que faltaba decidir si el servicio

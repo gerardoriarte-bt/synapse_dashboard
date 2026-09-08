@@ -38,7 +38,7 @@ que no hay que configurar nada.
 
 ---
 
-## Necesito tres cosas
+## Necesito cuatro cosas
 
 El detalle largo está en `PARA-BACKEND.md`.
 
@@ -98,10 +98,41 @@ mismo en `SuccessResponse` (línea 88) con `enum: [true]`. Mientras tanto miro e
 status HTTP, que funciona igual — pero con esto los tipos generados lo resuelven
 solos.
 
+### 4 · Normalizá el `name` de la tabla `roles`
+
+```sql
+UPDATE roles SET name = lower(name);
+```
+
+Tu spec declara `role: enum [admin, planner, user]` y la tabla tiene `Planner`
+con mayúscula. Verificado contra la base con el servicio corriendo:
+
+| Valor que devuelve tu API | Usuarios | ¿En el enum? |
+|---|---|---|
+| `Planner` | **26** | **no** |
+| `admin` | 3 | sí |
+| `user` | 3 | sí |
+
+**26 de 32 usuarios reciben un `role` que tu propio contrato no admite.**
+
+Hoy no rompe nada —tu `RoleAllowedMiddleware` normaliza con `ToLower` de los dos
+lados, así que la autorización funciona bien; lo verifiqué para no hacerte
+arreglar algo que no está roto—. Lo que está mal es el contrato: mi tipo generado
+dice `"admin" | "planner" | "user"` y ese valor no llega nunca para 26 usuarios.
+El día que algo compare contra `"planner"`, falla para el 81% y solo en
+producción.
+
+Ensanchar el enum no sirve: bendice la inconsistencia y la duplica en cada
+consumidor. Y agregale un `CHECK (name = lower(name))` para que no vuelva.
+
+**Lo que NO hay que tocar**: que cada tenant tenga su propia fila de rol es el
+diseño —`roles.tenant_id` existe a propósito—. Lo único a unificar es la
+capitalización.
+
 ---
 
-**La 2 y la 3 son cambios chicos y concretos. La 1 es la que bloquea de verdad**:
-hasta que no esté, no se toca el chat.
+**La 2, la 3 y la 4 son cambios chicos y concretos. La 1 es la que bloquea de
+verdad**: hasta que no esté, no se toca el chat.
 
 ---
 
