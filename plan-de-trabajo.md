@@ -861,6 +861,41 @@ alguien intenta usarlas.
   segunda fuente de verdad que se desincroniza en cuanto alguien cambie de rol.
   Hay una prueba que lo fija.
 
+### ➕ F0.15 ✅ Recuperar contraseña
+**Descripción.** Sale de `docs/password-reset-frontend-integration.md` del
+servicio de acceso —607 líneas—, que la auditoría del 2026-09-08 encontró sin
+tarea. Decidido que va: el servicio ya la soporta y no depende de nadie.
+
+**No es un enlace de reseteo.** `POST /password-reset-requests` crea una
+solicitud en la misma cola que los registros, y **un admin tiene que
+aprobarla**. La pantalla no puede prometer «revisá tu correo», porque no llega
+ningún correo con un enlace.
+**Criterio de aceptación.**
+- **Registrado y no registrado dan exactamente la misma pantalla.** El servicio
+  responde 201 con el mismo `message` en los dos casos y solo agrega `request`
+  cuando el correo existe; si la pantalla mostrara esa diferencia, el formulario
+  se volvería un verificador de correos.
+- El mensaje sale del servicio · §8.
+- El `409` —ya hay una solicitud pendiente— se muestra y se puede reintentar.
+- El correo se normaliza antes de mandarlo.
+
+**Cerrada el 2026-09-08.** La protección se resuelve **en el cliente y no en la
+pantalla**: `requestPasswordReset` devuelve solo el `message` y descarta
+`request`. Lo que no llega arriba no se puede filtrar por accidente, ni hoy ni
+cuando alguien toque el componente. Verificado por mutación: exponer el
+`request` rompe dos pruebas.
+
+**Una prueba estuvo mal escrita y vale anotarlo.** Verificaba que la pantalla no
+contuviera la palabra «enlace», y falló con el texto correcto: la pantalla dice
+«no se envía un enlace automático», que es justo lo que hay que decir. Se
+reescribió para verificar la PROMESA —que no diga «revisá tu correo», «te
+enviamos», «recibirás»— y no el vocabulario.
+
+**Y apareció un hueco del proxy.** `password-reset-requests` está fuera del
+prefijo `/auth`, así que el proxy de desarrollo devolvía 404 y parecía que el
+endpoint no existía. Ahora lista las tres rutas públicas del servicio, una por
+una.
+
 ### ➕ F0.13 ✅ Modal bloqueante de cambio de contraseña
 **Descripción.** El OpenAPI de `synapse-api-go` lo declara en `/auth/login`: «si
 `user.password_updated` es `false` el front debe mostrar un modal bloqueante

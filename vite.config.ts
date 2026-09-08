@@ -26,12 +26,20 @@ export default defineConfig({
      * El destino se puede mover sin tocar esto —`AUTH_ORIGIN=http://otro:4010
      * npm run dev`—, que es lo que hace falta cuando el servicio corre en un
      * contenedor con otro nombre de red. */
-    proxy: {
-      '/api/v1/auth': {
-        target: process.env['AUTH_ORIGIN'] ?? 'http://localhost:4010',
-        changeOrigin: true,
-      },
-    },
+    proxy: Object.fromEntries(
+      // Las rutas del servicio de acceso, UNA POR UNA y no `/api/v1` entero.
+      // Mandar todo al mismo destino funcionaría hoy —la API de la consola no
+      // existe— y rompería el día que exista, además de esconder cuál contestó.
+      //
+      // `password-reset-requests` está fuera del prefijo `/auth` y se descubrió
+      // tarde: el proxy devolvía 404 y parecía que el endpoint no existía.
+      ['/api/v1/auth', '/api/v1/password-reset-requests', '/api/v1/access-requests'].map(
+        (ruta) => [
+          ruta,
+          { target: process.env['AUTH_ORIGIN'] ?? 'http://localhost:4010', changeOrigin: true },
+        ],
+      ),
+    ),
   },
   test: {
     /* Las pruebas se agrupan en `tests/`, fuera de `src/`. Los handlers de MSW

@@ -157,3 +157,44 @@ export async function changePassword(current: string, next: string): Promise<Log
   }
   return user
 }
+
+/** Pedir recuperación de contraseña · F0.15.
+ *
+ *  **Público: no lleva token.** Es el único del servicio de acceso que se puede
+ *  llamar sin sesión, y tiene sentido — quien no puede entrar tampoco tiene con
+ *  qué firmar.
+ *
+ *  **No devuelve si el correo existe, y el front no puede deshacer eso.** El
+ *  servicio responde 201 con el mismo `message` esté el correo registrado o no;
+ *  lo único que cambia es que trae `request` cuando existe. Si la pantalla
+ *  mostrara algo distinto en cada caso —un texto, un tiempo de espera, un
+ *  ícono— convertiría el endpoint en un verificador de correos: se prueba una
+ *  lista y se ve cuáles son clientes. Por eso esta función devuelve **solo el
+ *  mensaje** y descarta `request`: lo que no llega arriba no se puede filtrar
+ *  por accidente.
+ *
+ *  **No es un enlace de reseteo.** El flujo termina en una solicitud que un
+ *  admin tiene que aprobar; la pantalla no puede prometer un correo con un
+ *  enlace porque no lo hay.
+ */
+export async function requestPasswordReset(email: string): Promise<string> {
+  const res = await fetch(`${BASE}/password-reset-requests`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    // Normalizado como lo hace el ejemplo del servicio: un correo con mayúsculas
+    // o espacios es el mismo correo, y que la solicitud dependa de eso sería una
+    // sorpresa.
+    body: JSON.stringify({ email: email.trim().toLowerCase() }),
+  })
+  const body = (await res.json()) as AuthOk<{ message?: string }> & AuthError
+
+  if (!res.ok) {
+    throw new ApiError(
+      res.status === 409 ? 'AUTH_SOLICITUD_PENDIENTE' : 'AUTH_FALLO',
+      body.error ?? '',
+      res.status,
+    )
+  }
+
+  return body.data?.message ?? 'Si el correo está registrado, tu solicitud fue enviada.'
+}
