@@ -11,6 +11,28 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
+
+  server: {
+    /* El acceso lo sirve OTRO despliegue · `AntPack-dev/synapse-api-go`, que en
+     * local levanta en 4010 con su `docker-compose`. Sin este proxy el front
+     * pide `/api/v1/auth/login` contra el propio Vite y le vuelve un 404 sin
+     * cuerpo: la pantalla dice «no se pudo conectar» y parece un problema del
+     * login cuando es que nadie está escuchando.
+     *
+     * **Se proxea solo el prefijo de acceso, no `/api/v1` entero.** La API de
+     * la consola es otro servicio y va a tener otro destino; mandar las dos al
+     * mismo esconde cuál contestó.
+     *
+     * El destino se puede mover sin tocar esto —`AUTH_ORIGIN=http://otro:4010
+     * npm run dev`—, que es lo que hace falta cuando el servicio corre en un
+     * contenedor con otro nombre de red. */
+    proxy: {
+      '/api/v1/auth': {
+        target: process.env['AUTH_ORIGIN'] ?? 'http://localhost:4010',
+        changeOrigin: true,
+      },
+    },
+  },
   test: {
     /* Las pruebas se agrupan en `tests/`, fuera de `src/`. Los handlers de MSW
      * son datos falsos y no puede existir ruta desde una superficie hasta ellos
