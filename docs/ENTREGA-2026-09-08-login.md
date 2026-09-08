@@ -38,6 +38,15 @@ que no hay que configurar nada.
 
 ---
 
+## Enviado como PR · 2026-09-08
+
+**`AntPack-dev/synapse-api-go#1`** — https://github.com/AntPack-dev/synapse-api-go/pull/1
+
+Las dos peticiones chicas van **implementadas** en ese PR (el `enum` de `success`
+y la migración de roles, con `go build` y `go vet` en limpio). Las otras dos van
+en el cuerpo, sin implementar: el envelope porque rompe todos los `SendError` y
+es decisión suya, y la de solicitudes porque es una pregunta.
+
 ## Necesito cuatro cosas
 
 El detalle largo está en `PARA-BACKEND.md`.
