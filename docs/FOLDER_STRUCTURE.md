@@ -1,315 +1,152 @@
-# Estructura de carpetas — Synapse Dashboard
+# Estructura del proyecto
 
-Este documento describe la organizacion del frontend y que debe ir en cada carpeta.
-Consultalo antes de crear archivos nuevos para mantener el proyecto limpio y escalable.
+Deriva de **§4 de `nuevo-desarrollo.md`**, que es normativo. Si esta guía y ese
+documento difieren, manda el documento.
 
-## Arbol general
-
-```
-synapse-dashboard/
-├── public/                  # Assets estaticos servidos tal cual (favicon, robots.txt)
-├── src/
-│   ├── app/                 # Configuracion y shell de la aplicacion
-│   ├── assets/              # Recursos estaticos importados desde codigo
-│   ├── components/          # Componentes compartidos (UI + layout)
-│   ├── features/            # Modulos por funcionalidad de negocio
-│   ├── hooks/               # Custom hooks globales
-│   ├── lib/                 # Utilidades y constantes
-│   ├── pages/               # Vistas asociadas a rutas
-│   ├── services/            # Integraciones externas (API, auth, analytics)
-│   ├── styles/              # Estilos globales y design tokens
-│   ├── types/               # Tipos TypeScript compartidos
-│   └── main.tsx             # Punto de entrada
-├── docs/                    # Documentacion del proyecto
-├── .cursorrules             # Reglas para Cursor AI
-├── .env.example             # Variables de entorno de ejemplo
-└── package.json
-```
-
----
-
-## `public/`
-
-**Que va aqui:** archivos que no pasan por el bundler y se sirven con la misma URL.
-
-| Archivo | Descripcion |
-|---------|-------------|
-| `favicon.svg` | Icono del sitio |
-| `robots.txt` | Reglas para crawlers |
-| `manifest.json` | PWA (si aplica) |
-
-**Que NO va aqui:** imagenes que necesitan optimizacion o import desde componentes (usar `src/assets/`).
-
----
-
-## `src/app/`
-
-**Que va aqui:** todo lo relacionado con el arranque y la estructura global de la app.
+La jornada que llenó este árbol está contada en `BITACORA-2026-09-02.md`.
 
 ```
-app/
-├── App.tsx              # Componente raiz que compone providers + layout + router
-├── providers/
-│   └── AppProviders.tsx # Context providers (Router, Theme, QueryClient, etc.)
-└── router/
-    ├── routes.tsx       # Definicion de rutas (RouteObject[])
-    └── AppRouter.tsx    # Componente que renderiza rutas con useRoutes()
+src/
+├── main.tsx                punto de entrada · monta App con los providers
+├── app/                    Router, providers, auth guard
+│   ├── App.tsx
+│   ├── auth/               session.ts (token) · AuthGuard.tsx (F0.5)
+│   ├── providers/          QueryClientProvider + BrowserRouter (F0.3)
+│   └── router/             routes.tsx: / · /admin/* · /builder/* (F0.4)
+├── api/                    HTTP, cache y tipos. NO conoce JSX
+│   ├── client.ts           fetch + bearer + envelope — SIN imports de mock
+│   ├── hooks.ts            TanStack Query
+│   ├── types.ts            los nombres del contrato + lo que no viaja
+│   └── generated.ts        GENERADO desde el yaml — NO EDITAR A MANO
+├── tokens/                 el sistema de diseño
+│   ├── tokens.css          los 57 tokens en @theme static + tema claro
+│   ├── base.css            fondo, cifras tabulares, anillo de foco
+│   ├── fonts.css           Inter · Space Grotesk · JetBrains Mono
+│   ├── tokens.ts           espejo en TS + familyVar()
+│   └── theme.ts            el switcher: un atributo, cero JS de estilo
+├── catalog/                SOLO tipos y validadores. La tabla llega por API
+│   ├── blocks.ts           tipo ↔ forma ↔ span, sobre /config/blocks
+│   └── types.ts
+├── render/                 PURO — sin valores de api/ (sí `import type`)
+│   ├── grid.ts             colSpan/rowSpan → px = 96·N − 16
+│   ├── types.ts            BodyProps<F,P> y PlotProps<F>
+│   ├── Panel/              shell con la anatomía obligatoria     · F1.15
+│   ├── primitives/         Label · Valor · BadgeProcedencia      · F1.20
+│   ├── bodies/             los 15 cuerpos, uno por TipoPanel     · F1.17-18
+│   ├── plots/              SVG responsivo, y core/ de primitivas · F1.21
+│   └── states/             los 6 estados                          · F1.19
+├── surfaces/
+│   ├── console/            C1 · el dashboard del usuario final
+│   ├── admin/              superadmin: tenants, usuarios, catálogo · F4.1
+│   └── builder/            composición visual de dashboards        · F4.6
+└── assets/                 fuera de §4 · estáticos importados por el bundler
+    ├── fonts/              VACÍA · las tres tipografías vienen de @fontsource
+    └── images/             VACÍA
+
+tools/                      la puerta de calidad                  · F0.11
+├── gate.py                 el corredor · 0 conforme, 1 rojo, 2 BLOQUEADO
+├── design-lint.py          las 15 reglas duras sobre utilidades de Tailwind
+├── spec-anclas.py          cada regla de design.md ↔ su código ↔ su aserción
+├── contract-drift.py       generated.ts == synapse-api.yaml
+└── token-drift.py          tokens.css == las 57 variables del .pen
+
+tests/                      TODAS las pruebas, espejando src/     · F0.9
+├── setup.ts                MSW + los dobles de jsdom
+├── mocks/                  handlers.ts · server.ts
+├── api/                    client.test.ts
+└── render/                 grid.test.ts
 ```
 
-**Reglas:**
-- No poner logica de negocio aqui.
-- Los providers se apilan en `AppProviders`.
-- Las rutas apuntan a componentes de `src/pages/`.
-
----
-
-## `src/assets/`
-
-**Que va aqui:** recursos importados en el codigo (Vite los procesa y optimiza).
-
-```
-assets/
-├── images/     # PNG, JPG, WebP, SVG usados en componentes
-├── fonts/      # Fuentes locales (.woff2, .ttf)
-└── icons/      # SVGs como componentes o archivos importables
-```
-
-**Ejemplo de uso:**
-```tsx
-import logo from '@/assets/images/logo.svg'
-```
-
----
-
-## `src/components/`
-
-Componentes **compartidos** entre multiples features. Divididos en dos subcarpetas:
-
-### `components/ui/` — Primitivos de UI
-
-**Que va aqui:** botones, inputs, modales, badges, cards, spinners, etc.
-
-**Estructura por componente:**
-```
-ui/
-└── Button/
-    ├── Button.tsx        # Implementacion
-    ├── Button.types.ts   # Props e interfaces (opcional si son pocas)
-    └── index.ts          # Re-export publico
-```
-
-**Caracteristicas:**
-- Sin estado de negocio ni llamadas a API.
-- Altamente reutilizables y configurables via props.
-- Variantes (`primary`, `secondary`) y tamanos (`sm`, `md`, `lg`).
-- Siempre exportar desde `components/ui/index.ts`.
-
-**Componentes incluidos de ejemplo:** `Button`, `Card`, `Input`.
-
-### `components/layout/` — Estructura de pagina
-
-**Que va aqui:** Header, Footer, Sidebar, MainLayout, PageContainer.
-
-**Caracteristicas:**
-- Definen la estructura visual, no el contenido de negocio.
-- Reciben `children` para composicion.
-- Pueden usar componentes de `ui/`.
-
-**Componentes incluidos de ejemplo:** `Header`, `MainLayout`.
-
----
-
-## `src/features/`
-
-**Que va aqui:** modulos completos agrupados por funcionalidad de negocio.
-Cada feature es autocontenido.
-
-```
-features/
-└── dashboard/
-    ├── components/     # Componentes especificos del feature (MetricCard)
-    ├── hooks/          # Hooks del feature (useDashboardMetrics)
-    ├── api/            # Funciones que llaman al backend del feature
-    ├── types/          # Tipos del dominio (DashboardMetric)
-    ├── utils/          # Helpers solo usados en este feature (opcional)
-    └── index.ts        # API publica del feature (lo unico que se importa desde fuera)
-```
-
-**Reglas:**
-- Importar desde fuera solo via `@/features/dashboard` (barrel export).
-- No importar directamente archivos internos de otro feature.
-- Si algo se usa en 2+ features, moverlo a `components/`, `hooks/` o `lib/`.
-
-**Cuando crear un feature nuevo:**
-- Cuando hay logica de negocio, estado y componentes propios de un dominio (auth, users, settings, etc.).
-
----
-
-## `src/pages/`
-
-**Que va aqui:** componentes que representan una **ruta/vista completa**.
-
-```
-pages/
-└── HomePage/
-    ├── HomePage.tsx    # Vista de la pagina
-    └── index.ts        # Re-export
-```
-
-**Reglas:**
-- Una carpeta por pagina.
-- Componen features + componentes UI; poca logica propia.
-- No crear componentes reutilizables aqui — extraerlos.
-- Conectar con el router en `src/app/router/routes.tsx`.
-
-**Paginas incluidas de ejemplo:** `HomePage`, `NotFoundPage`.
-
----
-
-## `src/hooks/`
-
-**Que va aqui:** custom hooks **globales** usados en multiples partes de la app.
-
-| Hook | Proposito |
-|------|-----------|
-| `useDebounce` | Retrasar actualizaciones (busqueda, filtros) |
-| `useMediaQuery` | Detectar breakpoints responsive |
-
-**Reglas:**
-- Hooks especificos de un feature van en `features/<name>/hooks/`.
-- Nombrar siempre con prefijo `use`.
-- Exportar desde `hooks/index.ts`.
-
----
-
-## `src/lib/`
-
-**Que va aqui:** utilidades puras, helpers y constantes globales.
-
-| Archivo | Proposito |
-|---------|-----------|
-| `cn.ts` | Combinar clases Tailwind (`clsx` + `tailwind-merge`) |
-| `constants.ts` | Constantes globales (`APP_NAME`, `ROUTES`) |
-| `formatDate.ts` | Formateo de fechas (cuando se necesite) |
-
-**Reglas:**
-- Funciones puras sin efectos secundarios.
-- Sin dependencias de React (excepto helpers muy genericos).
-
----
-
-## `src/services/`
-
-**Que va aqui:** capa de comunicacion con el mundo exterior.
-
-```
-services/
-└── api/
-    ├── client.ts      # Cliente HTTP base (fetch wrapper)
-    ├── endpoints.ts   # Constantes de URLs/endpoints
-    └── index.ts       # Re-export
-```
-
-**Tambien puede incluir (segun crezca el proyecto):**
-- `services/auth/` — login, logout, refresh token
-- `services/analytics/` — tracking de eventos
-- `services/storage/` — localStorage/sessionStorage wrappers
-
-**Reglas:**
-- Toda llamada HTTP pasa por `apiClient`.
-- No hacer `fetch` directo en componentes o hooks de UI.
-
----
-
-## `src/styles/`
-
-**Que va aqui:** estilos globales y design system.
-
-| Archivo | Proposito |
-|---------|-----------|
-| `globals.css` | Reset, Tailwind import, design tokens (`@theme`) |
-
-**Reglas:**
-- Tokens de diseno (colores, radios, fuentes) en `@theme`.
-- No agregar estilos por componente aqui — usar Tailwind en el JSX.
-
----
-
-## `src/types/`
-
-**Que va aqui:** tipos TypeScript compartidos entre modulos.
-
-| Tipo | Proposito |
-|------|-----------|
-| `ApiError` | Formato estandar de error de API |
-| `PaginatedResponse<T>` | Respuestas paginadas |
-| `Nullable<T>` | Utilidad generica |
-
-**Reglas:**
-- Tipos especificos de un feature van en `features/<name>/types/`.
-- Solo tipos realmente compartidos van aqui.
-
----
-
-## `src/main.tsx`
-
-Punto de entrada: monta React en el DOM e importa estilos globales.
-No agregar logica de negocio aqui.
-
----
-
-## Flujo de decision: donde poner un archivo nuevo
-
-```
-¿Es un primitivo visual reutilizable sin logica de negocio?
-  → src/components/ui/
-
-¿Es estructura de pagina (header, sidebar, layout)?
-  → src/components/layout/
-
-¿Pertenece a una funcionalidad especifica (auth, dashboard, users)?
-  → src/features/<feature>/
-
-¿Es una vista completa conectada a una ruta?
-  → src/pages/
-
-¿Es un hook usado en toda la app?
-  → src/hooks/
-
-¿Es una llamada HTTP o integracion externa?
-  → src/services/
-
-¿Es una funcion pura o constante?
-  → src/lib/
-
-¿Es un tipo compartido entre modulos?
-  → src/types/
-```
-
----
-
-## Ejemplo de importaciones correctas
-
-```tsx
-// En una pagina
-import { Button, Card } from '@/components/ui'
-import { MetricCard, useDashboardMetrics } from '@/features/dashboard'
-import { ROUTES } from '@/lib/constants'
-
-// En un componente UI
-import { cn } from '@/lib/cn'
-import type { ButtonProps } from './Button.types'
-
-// En un hook de feature
-import { apiClient } from '@/services/api'
-import type { DashboardMetric } from '../types'
-```
-
----
-
-## Mantenimiento
-
-- Revisar periodicamente si componentes en `features/` deberian subir a `components/ui/`.
-- Eliminar codigo muerto y exports no usados.
-- Mantener barrel exports (`index.ts`) actualizados.
-- Documentar features complejos con un README local si es necesario.
+**`assets/` queda fuera de §4.** Son los estáticos que el bundler resuelve por import; hoy está vacía
+—las tres tipografías se sirven desde `@fontsource`, no desde el repo— y se
+conserva con `.gitkeep` para que el primer SVG de producto tenga adónde ir.
+
+**No hay `lib/`, y es una decisión.** Tuvo un `cn.ts` —`clsx` + `tailwind-merge`—
+hasta el 2026-09-02. Se borró junto con las dos dependencias cuando se resolvió
+que `render/` **no acepta `className` desde afuera**: sin clases externas que
+fusionar, `cn()` no tenía qué hacer. La razón está en `.cursorrules` y la
+verifica `design-lint` con un chequeo fuera de las 15.
+
+**`tests/` vive fuera de `src/` a propósito · F0.9.** Espeja la estructura del
+código: `tests/render/grid.test.ts` prueba `src/render/grid.ts`. La carpeta
+separada no es preferencia: los handlers de MSW son datos falsos, y con ellos
+afuera **no existe ruta de import desde una superficie hasta un mock**. Es la
+regla de `api/client.ts` —«sin imports de mock»— sostenida por la estructura en
+vez de por la revisión. Detalle en `tests/README.md`.
+
+## Reglas de capa
+
+| Capa | Puede | No puede |
+|---|---|---|
+| `render/` | recibir props, formatear, pintar | fetch, contexto global, conocer el tenant |
+| `surfaces/` | fetch, estado de UI, routing | lógica de negocio, SQL, filtrar permisos |
+| `api/` | HTTP, cache, tipos | conocer JSX |
+
+Las dos fronteras que no se cruzan:
+
+1. **`render/` no importa VALORES de `api/`.** Los componentes reciben datos por
+   props. Es lo que permite que el mismo panel funcione con la API real, con MSW
+   y dentro del builder.
+
+   **`import type` sí está permitido, y no es una excepción tolerada: es la
+   regla.** El panel recibe el payload por props y la forma de esas props es
+   `Payload`, que vive en `api/types.ts`; sin importar ese tipo no hay manera de
+   tiparlo. Lo que la frontera impide es la dependencia **en tiempo de
+   ejecución** —el cliente, el fetch, el cache—, y un `import type` se borra al
+   compilar: con `verbatimModuleSyntax` ni siquiera llega al bundle.
+
+   Un grep que busque `from '../api'` a secas marca falsos positivos —hoy
+   marcaría `render/types.ts`, que está bien. El que vale excluye `import type`,
+   y así lo implementa `L14` del lint en el repositorio archivado.
+2. **`api/generated.ts` se genera.** Una edición a mano se pierde en la próxima
+   corrida de `npm run gen:api` y produce deriva silenciosa.
+
+## Tokens bajo Tailwind
+
+Los 57 tokens del `.pen` viven en `@theme static` con el espacio de nombres que
+Tailwind exige: `--color-panel` genera `bg-panel`, `--radius-xl` genera
+`rounded-xl`, `--spacing: 4px` hace que `p-6` sean los 24px de padding de panel.
+
+**El `static` no es opcional.** Sin él Tailwind poda toda variable que ninguna
+utilidad mencione por escrito, y las rampas de familia se construyen en runtime
+—`var(--color-fam-${familia}-1)`, con la familia que vino del catálogo—, así que
+el escáner no las ve. Medido: sin `static` sobrevivían 6 de 43.
+
+**Un hex literal es un bug.** Todo color sale de una utilidad de token o de
+`var(--color-*)`. No hay excepción para «un gris rápido».
+
+## Comandos
+
+| Comando | Qué hace |
+|---|---|
+| `npm run dev` | Vite en :5173 |
+| `npm run typecheck` | `tsc` en modo strict sin excepciones |
+| `npm run build` | typecheck + build de producción |
+| `npm run lint` | oxlint |
+| `npm test` | vitest · corre lo de `tests/` |
+| `npm run verify` | la puerta · `tools/gate.py` |
+| `npm run design-lint` | las 15 reglas duras, en utilidades de Tailwind |
+| `npm run spec-anclas` | `design.md` atado a su código y su aserción |
+| `npm run contract-drift` | `generated.ts` == el yaml |
+| `npm run token-drift` | `tokens.css` == las 57 variables del `.pen` |
+| `npm run gen:api` | regenera `src/api/generated.ts` desde `../contracts/synapse-api.yaml` |
+
+## Idioma
+
+Decisión del 2026-08-31, y viene de `.cursorrules`:
+
+- **Identificadores en inglés** — archivos, carpetas, componentes, funciones,
+  tipos: `Console.tsx`, `panelStyle()`, `usePanelsBatch`, `BodyProps`.
+- **Comentarios y documentación en español**, que es la lengua del equipo.
+- **Textos de UI en español**, que es la lengua del producto.
+- **Las claves del contrato NO se traducen.** `payload.valor`, `metric.familia`,
+  `panel.tipo`, `estado: 'DISPONIBLE'` llegan como los declara el yaml.
+  Renombrarlas crearía una capa de traducción en cada frontera, y el contrato es
+  compartido con el backend.
+
+Consecuencia visible: se lee `metric.familia` y `panel.colSpan` en la misma
+línea. Es lo esperado — el lado izquierdo es nuestro, el derecho es del contrato.
+
+**`tareas-front-back.md` nombra los cuerpos en español** (F1.18: `CuerpoKpi`,
+`CuerpoGauge`, `CuerpoTable`). Bajo esta decisión son `KpiBody`, `GaugeBody`,
+`TableBody`. Los IDs de tarea no cambian.

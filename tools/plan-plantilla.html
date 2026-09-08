@@ -1,0 +1,358 @@
+<title>Plan de trabajo Synapse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+/* ── Tokens ───────────────────────────────────────────────────────────────
+   Son los 57 del .pen de Synapse. La página usa el sistema del producto que
+   describe, no uno propio. Oscuro por defecto, porque el producto lo es. */
+:root {
+  --bg:#0F0F10; --panel:#17171A; --elev:#1F1F23; --dock:#141416;
+  --ink:#EDEAE3; --dim:#8A8880; --acc:#E75710; --on-acc:#0F0F10;
+  --w1:#FFFFFF0A; --w2:#FFFFFF0F; --w3:#FFFFFF12; --w4:#FFFFFF1F; --w6:#FFFFFF4D;
+  --hecho:#34D399; --parcial:#38BDF8; --nueva:#C084FC; --bloq:#F472B6; --dif:#67E8F9;
+  --sombra:0 1px 2px #00000059;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:#F2F0EA; --panel:#FFFFFF; --elev:#EDEAE3; --dock:#F0EDE7;
+    --ink:#1A1A1C; --dim:#6B6963; --acc:#B7450D; --on-acc:#FFFFFF;
+    --w1:#00000008; --w2:#0000000F; --w3:#00000014; --w4:#00000026; --w6:#00000057;
+    --hecho:#059669; --parcial:#0284C7; --nueva:#9333EA; --bloq:#DB2777; --dif:#0891B2;
+    --sombra:0 1px 2px #00000014;
+  }
+}
+:root[data-theme="light"] {
+  --bg:#F2F0EA; --panel:#FFFFFF; --elev:#EDEAE3; --dock:#F0EDE7;
+  --ink:#1A1A1C; --dim:#6B6963; --acc:#B7450D; --on-acc:#FFFFFF;
+  --w1:#00000008; --w2:#0000000F; --w3:#00000014; --w4:#00000026; --w6:#00000057;
+  --hecho:#059669; --parcial:#0284C7; --nueva:#9333EA; --bloq:#DB2777; --dif:#0891B2;
+  --sombra:0 1px 2px #00000014;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+.envoltorio { max-width: 1040px; margin: 0 auto; padding: 0 24px 96px; }
+
+/* El rótulo del sistema: mono 10, 0.12em, mayúsculas. Es la especificación
+   literal del primitivo Label de Synapse. */
+.rot, .marca, .pill, .fase-n, .tid, .fase-c, .cifra-rot, .fase-chip {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+}
+
+h1, h2, h3, h4 { font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif; text-wrap: balance; margin: 0; }
+
+/* ── Cabecera ─────────────────────────────────────────────────────── */
+header.top { border-bottom: 1px solid var(--w2); background: var(--dock); }
+.top-in { max-width: 1040px; margin: 0 auto; padding: 40px 24px 32px; }
+.eyebrow { color: var(--dim); display: block; margin-bottom: 14px; }
+h1 { font-size: clamp(28px, 4.5vw, 42px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+.bajada { color: var(--dim); max-width: 62ch; margin: 14px 0 0; font-size: 15px; }
+.bajada strong { color: var(--ink); font-weight: 500; }
+
+.cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 1px; margin-top: 32px; background: var(--w2); border: 1px solid var(--w2); border-radius: 10px; overflow: hidden; }
+.cifra { background: var(--panel); padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; }
+.cifra-n { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.cifra-rot { color: var(--dim); }
+.cifra.c-back .cifra-n { color: var(--ink); }
+.cifra.c-hecho .cifra-n { color: var(--hecho); }
+.cifra.c-nueva .cifra-n { color: var(--nueva); }
+.cifra.c-dif   .cifra-n { color: var(--dif); }
+
+/* ── Secciones ────────────────────────────────────────────────────── */
+section { margin-top: 64px; }
+.sec-cab { display: flex; align-items: baseline; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--w3); margin-bottom: 28px; flex-wrap: wrap; }
+.sec-cab h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+.sec-cab p { margin: 0; color: var(--dim); font-size: 13px; flex: 1 1 32ch; }
+
+/* ── Decisiones ───────────────────────────────────────────────────── */
+.decs { display: grid; gap: 14px; }
+.dec {
+  background: var(--panel); border: 1px solid var(--w2); border-radius: 10px;
+  padding: 22px 24px; border-left: 2px solid var(--hecho); box-shadow: var(--sombra);
+}
+.marca.resuelta { color: var(--hecho); background: color-mix(in srgb, var(--hecho) 12%, transparent); }
+.dec .res { margin: 12px 0 0; padding: 12px 14px; background: var(--elev); border-radius: 6px; font-size: 13px; }
+.dec .res .rot { display: block; color: var(--hecho); margin-bottom: 5px; }
+.dec .tit { font-size: 16px; font-weight: 500; margin: 10px 0 8px; }
+.reco { margin: 14px 0 0; padding: 12px 14px; background: var(--elev); border-radius: 6px; font-size: 13px; }
+.reco .rot { display: block; color: var(--acc); margin-bottom: 5px; }
+
+/* ── Filtros ──────────────────────────────────────────────────────── */
+.filtros {
+  position: sticky; top: 0; z-index: 5; background: var(--bg);
+  padding: 14px 0; margin-bottom: 8px;
+  border-bottom: 1px solid var(--w3);
+  display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+}
+.grupo { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.grupo > .rot { color: var(--dim); margin-right: 2px; }
+.chip {
+  font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+  color: var(--dim); background: var(--panel);
+  border: 1px solid var(--w3); border-radius: 6px;
+  padding: 5px 11px; cursor: pointer; transition: color .12s, border-color .12s, background .12s;
+}
+.chip:hover { color: var(--ink); border-color: var(--w4); }
+.chip[aria-pressed="true"] { background: var(--acc); border-color: var(--acc); color: var(--on-acc); }
+.chip:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+.conteo { margin-left: auto; color: var(--dim); font-variant-numeric: tabular-nums; }
+
+/* ── Tareas ───────────────────────────────────────────────────────── */
+.lista { display: flex; flex-direction: column; gap: 10px; }
+
+.fase {
+  display: flex; align-items: baseline; gap: 12px;
+  margin: 34px 0 6px; padding-bottom: 10px; border-bottom: 1px solid var(--w2);
+  font-size: 14px; font-weight: 500;
+}
+.fase:first-child { margin-top: 12px; }
+.fase-n { color: var(--acc); }
+.fase-c { margin-left: auto; color: var(--dim); font-variant-numeric: tabular-nums; }
+
+.tarea {
+  background: var(--panel); border: 1px solid var(--w2); border-radius: 10px;
+  padding: 20px 24px; border-left: 2px solid var(--w4); box-shadow: var(--sombra);
+}
+.tarea[data-estado="hecho"]    { border-left-color: var(--hecho); }
+.tarea[data-estado="parcial"]  { border-left-color: var(--parcial); }
+.tarea[data-estado="diferida"] { border-left-color: var(--dif); }
+.tarea[data-estado="diferida"] .tit,
+.tarea[data-estado="diferida"] .desc { opacity: .82; }
+.tarea[data-bloq="1"]          { border-left-color: var(--bloq); }
+
+.cab { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tid { color: var(--dim); font-weight: 500; }
+/* La fase va en la tarjeta y no solo en el encabezado de sección: cada tarea
+   viaja sola a la plataforma de seguimiento y tiene que llegar con su lugar. */
+.fase-chip { color: var(--dim); background: var(--w1); border: 1px solid var(--w3); padding: 3px 8px; border-radius: 4px; }
+.fase-chip b { color: var(--ink); font-weight: 500; }
+.tarea .tit, .dec .tit { font-family: 'Inter', sans-serif; }
+.tarea .tit { font-size: 15px; font-weight: 500; margin: 9px 0 0; letter-spacing: -0.005em; }
+.desc { margin: 8px 0 0; color: var(--dim); max-width: 72ch; }
+
+.pill { padding: 3px 8px; border-radius: 4px; background: var(--w2); color: var(--dim); }
+.pill.hecho   { color: var(--hecho);   background: color-mix(in srgb, var(--hecho) 12%, transparent); }
+.pill.parcial { color: var(--parcial); background: color-mix(in srgb, var(--parcial) 12%, transparent); }
+.pill.diferida { color: var(--dif); background: color-mix(in srgb, var(--dif) 12%, transparent); }
+.marca { padding: 3px 8px; border-radius: 4px; }
+.marca.nueva { color: var(--nueva); background: color-mix(in srgb, var(--nueva) 12%, transparent); }
+.marca.bloq  { color: var(--bloq);  background: color-mix(in srgb, var(--bloq) 12%, transparent); }
+
+.crit { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--w2); }
+.crit .rot { color: var(--dim); display: block; margin-bottom: 8px; }
+.crit ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.crit li { max-width: 76ch; }
+.crit li::marker { color: var(--w6); }
+
+code {
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.86em; background: var(--elev); color: var(--ink);
+  padding: 1px 5px; border-radius: 4px; border: 1px solid var(--w2);
+}
+strong { font-weight: 600; color: var(--ink); }
+
+.vacio { color: var(--dim); padding: 40px 0; text-align: center; display: none; }
+
+/* ── Camino crítico ───────────────────────────────────────────────── */
+/* La numeración acá SÍ significa algo: es un orden de ejecución. */
+ol.camino { list-style: none; margin: 0; padding: 0; counter-reset: paso; display: flex; flex-direction: column; gap: 1px; background: var(--w2); border: 1px solid var(--w2); border-radius: 10px; overflow: hidden; }
+ol.camino li { counter-increment: paso; background: var(--panel); padding: 18px 24px; display: grid; grid-template-columns: 26px minmax(0, 130px) 1fr; gap: 16px; align-items: baseline; }
+ol.camino li::before { content: counter(paso); font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 15px; color: var(--acc); font-variant-numeric: tabular-nums; }
+ol.camino p { margin: 4px 0 0; color: var(--dim); }
+ol.camino strong { font-weight: 500; }
+
+/* ── Transversales ────────────────────────────────────────────────── */
+.tabla-caja { overflow-x: auto; border: 1px solid var(--w2); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; min-width: 640px; background: var(--panel); }
+th, td { text-align: left; padding: 13px 18px; border-bottom: 1px solid var(--w2); vertical-align: top; }
+thead th { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); font-weight: 400; background: var(--dock); }
+tbody tr:last-child td { border-bottom: 0; }
+td.dim { color: var(--dim); white-space: nowrap; }
+
+footer { margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--w2); color: var(--dim); font-size: 13px; }
+
+@media (max-width: 640px) {
+  .top-in, .envoltorio { padding-left: 18px; padding-right: 18px; }
+  .tarea, .dec { padding: 18px; }
+  ol.camino li { grid-template-columns: 22px 1fr; }
+  ol.camino li > span.tid { grid-column: 2; }
+  .conteo { margin-left: 0; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <span class="eyebrow rot">Synapse · 2026-09-01</span>
+    <h1>Plan de trabajo</h1>
+    <p class="bajada">Las tareas de backend y front para llevar la consola a la arquitectura
+      server-driven que define <code>nuevo-desarrollo.md</code>. Extiende
+      <code>tareas-front-back.md</code> y conserva sus identificadores.
+      <strong>Toda tarea lleva criterio de aceptación</strong> — una tarea sin criterio
+      verificable no entra al plan. Las seis decisiones abiertas se cerraron el 1 de
+      septiembre; abajo quedan con su resolución.</p>
+    <p class="bajada" style="margin-top:10px">Para la plataforma de seguimiento:
+      <code>plan-tareas.csv</code> exporta las {{N_TOTAL}} con <strong>epic, equipo, fase,
+      estado, criterio y etiquetas</strong> como columnas propias. La fase también va en el
+      identificador — <code>B1.6</code> es backend fase 1, <code>F1.13a</code> es front fase 1.</p>
+
+    <div class="cifras">
+      <div class="cifra c-back"><span class="cifra-n">{{N_TOTAL}}</span><span class="cifra-rot">tareas</span></div>
+      <div class="cifra"><span class="cifra-n">{{N_BACK}}</span><span class="cifra-rot">backend</span></div>
+      <div class="cifra"><span class="cifra-n">{{N_FRONT}}</span><span class="cifra-rot">front</span></div>
+      <div class="cifra c-hecho"><span class="cifra-n">{{N_HECHO}}</span><span class="cifra-rot">hechas</span></div>
+      <div class="cifra c-nueva"><span class="cifra-n">{{N_NEW}}</span><span class="cifra-rot">nuevas</span></div>
+      <div class="cifra c-dif"><span class="cifra-n">{{N_DIF}}</span><span class="cifra-rot">diferidas</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="envoltorio">
+
+  <section>
+    <div class="sec-cab">
+      <h2>Decisiones tomadas</h2>
+      <p>Las seis se resolvieron el 2026-09-01. Quedan acá porque explican por qué el plan
+         tiene las tareas que tiene.</p>
+    </div>
+    <div class="decs">{{DECISIONES}}</div>
+  </section>
+
+  <section>
+    <div class="sec-cab">
+      <h2>Las tareas</h2>
+      <p>Backend y front, por fase. Los identificadores <code>B*</code> y <code>F*</code>
+         son los de <code>tareas-front-back.md</code>.</p>
+    </div>
+
+    <div class="filtros">
+      <div class="grupo" role="group" aria-label="Equipo">
+        <span class="rot">Equipo</span>
+        <button class="chip" data-f="equipo" data-v="todos" aria-pressed="true">Todos</button>
+        <button class="chip" data-f="equipo" data-v="back" aria-pressed="false">Backend</button>
+        <button class="chip" data-f="equipo" data-v="front" aria-pressed="false">Front</button>
+      </div>
+      <div class="grupo" role="group" aria-label="Fase">
+        <span class="rot">Fase</span>
+        <button class="chip" data-f="fase" data-v="todas" aria-pressed="true">Todas</button>
+        <button class="chip" data-f="fase" data-v="0" aria-pressed="false">0</button>
+        <button class="chip" data-f="fase" data-v="1" aria-pressed="false">1</button>
+        <button class="chip" data-f="fase" data-v="2" aria-pressed="false">2</button>
+        <button class="chip" data-f="fase" data-v="3" aria-pressed="false">3</button>
+        <button class="chip" data-f="fase" data-v="4" aria-pressed="false">4</button>
+        <button class="chip" data-f="fase" data-v="5" aria-pressed="false">5</button>
+      </div>
+      <div class="grupo" role="group" aria-label="Estado">
+        <span class="rot">Estado</span>
+        <button class="chip" data-f="estado" data-v="todos" aria-pressed="true">Todos</button>
+        <button class="chip" data-f="estado" data-v="pendiente" aria-pressed="false">Pendiente</button>
+        <button class="chip" data-f="estado" data-v="parcial" aria-pressed="false">Parcial</button>
+        <button class="chip" data-f="estado" data-v="hecho" aria-pressed="false">Hecho</button>
+        <button class="chip" data-f="estado" data-v="diferida" aria-pressed="false">Diferida</button>
+        <button class="chip" data-f="estado" data-v="bloq" aria-pressed="false">Bloqueada</button>
+        <button class="chip" data-f="estado" data-v="nueva" aria-pressed="false">Nueva</button>
+      </div>
+      <span class="conteo rot" id="conteo"></span>
+    </div>
+
+    <div class="lista" id="lista">{{TAREAS}}</div>
+    <p class="vacio" id="vacio">Ninguna tarea con esos filtros.</p>
+  </section>
+
+  <section>
+    <div class="sec-cab">
+      <h2>Camino crítico</h2>
+      <p>Lo que bloquea a más gente, primero. La numeración es un orden de ejecución, no una lista.</p>
+    </div>
+    <ol class="camino">{{CAMINO}}</ol>
+  </section>
+
+  <section>
+    <div class="sec-cab">
+      <h2>Transversales</h2>
+      <p>Lo que no es de un equipo solo.</p>
+    </div>
+    <div class="tabla-caja">
+      <table>
+        <thead><tr><th>ID</th><th>Tarea</th><th>Responsable</th><th>Criterio de aceptación</th></tr></thead>
+        <tbody>{{TRANSVERSALES}}</tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <p>Fuente: <code>synaspse_dashboard/plan-de-trabajo.md</code>, generado desde ese archivo.
+       Cadena de autoridad: <code>nuevo-desarrollo.md</code> es normativo,
+       <code>contracts/synapse-api.yaml</code> es el contrato,
+       <code>design/design.md</code> son las reglas duras de producto.</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var estado = { equipo: 'todos', fase: 'todas', estado: 'todos' };
+  var lista = document.getElementById('lista');
+  var tareas = Array.prototype.slice.call(lista.querySelectorAll('.tarea'));
+  var fases = Array.prototype.slice.call(lista.querySelectorAll('.fase'));
+  var conteo = document.getElementById('conteo');
+  var vacio = document.getElementById('vacio');
+
+  function pasa(t) {
+    if (estado.equipo !== 'todos' && t.dataset.equipo !== estado.equipo) return false;
+    if (estado.fase !== 'todas' && t.dataset.fase !== estado.fase) return false;
+    var e = estado.estado;
+    if (e === 'todos') return true;
+    if (e === 'bloq') return t.dataset.bloq === '1';
+    if (e === 'nueva') return t.dataset.nueva === '1';
+    return t.dataset.estado === e;
+  }
+
+  function aplicar() {
+    var n = 0;
+    tareas.forEach(function (t) {
+      var ok = pasa(t);
+      t.style.display = ok ? '' : 'none';
+      if (ok) n++;
+    });
+    // Un encabezado de fase sin tareas visibles debajo no dice nada: se oculta.
+    fases.forEach(function (h) {
+      var visibles = tareas.filter(function (t) {
+        return t.dataset.equipo === h.dataset.equipo &&
+               t.dataset.fase === h.dataset.fase && t.style.display !== 'none';
+      }).length;
+      h.style.display = visibles ? '' : 'none';
+      var c = h.querySelector('.fase-c');
+      if (c) c.textContent = visibles;
+    });
+    conteo.textContent = n + (n === 1 ? ' tarea' : ' tareas');
+    vacio.style.display = n ? 'none' : 'block';
+  }
+
+  document.querySelectorAll('.chip').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var f = b.dataset.f;
+      estado[f] = b.dataset.v;
+      document.querySelectorAll('.chip[data-f="' + f + '"]').forEach(function (o) {
+        o.setAttribute('aria-pressed', String(o === b));
+      });
+      aplicar();
+    });
+  });
+
+  aplicar();
+})();
+</script>

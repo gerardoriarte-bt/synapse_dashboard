@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Secretos. `*.local` cubría `.env.local` y NO `.env`, que es el nombre que usa
+# el servicio de acceso — verificado el 2026-09-08 con `git check-ignore`, que
+# lo daba por NO ignorado. Un `.env` con la contraseña de RDS y el JWT_SECRET
+# a un `git add -A` de distancia.
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +30,20 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Derivados del plan · se regeneran con `npm run plan` desde plan-de-trabajo.md,
+# que es la fuente. Commitearlos garantiza que alguien edite el derivado.
+# `plan-tareas.csv` SÍ va: es el artefacto que se importa a la plataforma.
+tools/plan-tareas.json
+tools/plan-synapse.html
+
+# `design/` entró al repositorio el 2026-09-03 · CLAUDE.md, cadena de autoridad.
+# Solo las DOS que la puerta lee: `spec-anclas` necesita `design.md` y
+# `token-drift` necesita el `.pen`. El resto es historia del proceso de diseño y
+# su casa es el repositorio hermano archivado: duplicarla acá crearía dos copias
+# que van a derivar, y ninguna herramienta la abre.
+design/design-review.md
+design/sesiones.md
+design/plan-diseno.md
+design/design_loop.md
+design/prototipo/

@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
@@ -9,5 +10,54 @@ export default defineConfig({
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
     },
+  },
+
+  server: {
+    /* El acceso lo sirve OTRO despliegue · `AntPack-dev/synapse-api-go`, que en
+     * local levanta en 4010 con su `docker-compose`. Sin este proxy el front
+     * pide `/api/v1/auth/login` contra el propio Vite y le vuelve un 404 sin
+     * cuerpo: la pantalla dice «no se pudo conectar» y parece un problema del
+     * login cuando es que nadie está escuchando.
+     *
+     * **Se proxea solo el prefijo de acceso, no `/api/v1` entero.** La API de
+     * la consola es otro servicio y va a tener otro destino; mandar las dos al
+     * mismo esconde cuál contestó.
+     *
+     * El destino se puede mover sin tocar esto —`AUTH_ORIGIN=http://otro:4010
+     * npm run dev`—, que es lo que hace falta cuando el servicio corre en un
+     * contenedor con otro nombre de red. */
+    proxy: Object.fromEntries(
+      // Las rutas del servicio de acceso, UNA POR UNA y no `/api/v1` entero.
+      // Mandar todo al mismo destino funcionaría hoy —la API de la consola no
+      // existe— y rompería el día que exista, además de esconder cuál contestó.
+      //
+      // `password-reset-requests` está fuera del prefijo `/auth` y se descubrió
+      // tarde: el proxy devolvía 404 y parecía que el endpoint no existía.
+      ['/api/v1/auth', '/api/v1/password-reset-requests', '/api/v1/access-requests'].map(
+        (ruta) => [
+          ruta,
+          { target: process.env['AUTH_ORIGIN'] ?? 'http://localhost:4010', changeOrigin: true },
+        ],
+      ),
+    ),
+  },
+  test: {
+    /* Las pruebas se agrupan en `tests/`, fuera de `src/`. Los handlers de MSW
+     * son datos falsos y no puede existir ruta desde una superficie hasta ellos
+     * — es F0.8 sostenida por la estructura y no por la revisión. */
+    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
+
+    /* Node por defecto: levantar un DOM para probar una función pura es tiempo
+     * de arranque regalado. El archivo que renderiza —o que necesita
+     * `localStorage`, o `fetch` de una URL relativa— lo pide con un
+     * `// @vitest-environment jsdom` en la primera línea. */
+    environment: 'node',
+
+    /* Sin globales: `describe`, `it` y `expect` se importan. Un símbolo que
+     * aparece sin import es un símbolo que el typecheck del proyecto de app no
+     * sabría de dónde sacar. */
+    globals: false,
+
+    setupFiles: ['tests/setup.ts'],
   },
 })
