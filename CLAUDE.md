@@ -362,10 +362,15 @@ reapunta. Está en `docs/PARA-BACKEND.md`.
 
 **No hay una sola tarea de front desbloqueada. Estado al 2026-09-08.**
 
-Eso es una conclusión, no una queja, y se verificó tarea por tarea: **57 de las
-96 de front están hechas**, 6 quedaron parciales con la mitad que falta del lado
-del backend, y las 30 pendientes esperan todas algo del contrato. La puerta sale
-verde con **diez chequeos y 318 pruebas**, sin bloqueados.
+Eso es una conclusión, no una queja, y se verificó tarea por tarea: **62 de
+las 100 de front están hechas**, 4 quedaron parciales con la mitad que falta
+del lado del backend, y las 30 pendientes esperan todas algo del contrato. La
+puerta sale verde con **once chequeos y 350 pruebas**, sin bloqueados.
+
+**Fase 0 está cerrada entera** —16 de 16— desde que apareció el servicio de
+acceso. Lo que falla después de entrar es la consola, y es lo esperado: pide
+`/config/me`, `/config/catalog`, `/config/tabs` y `/config/panels:batch`, que
+ningún servicio expone todavía.
 
 **La única acción siguiente es conseguir contrato.** Todo lo que el backend
 necesita está en `docs/PARA-BACKEND.md`, ordenado por esfuerzo de ellos: primero
