@@ -85,20 +85,42 @@ contraseña», listado de solicitudes y chat con selector de agente. Más
 `/tickets`, que no tiene documento. El cruce completo está en
 `docs/AUDITORIA-2026-09-08-servicios.md`.
 
-## La pregunta que hay que contestar, y no es nuestra
+## La mitad del chat ya está contestada · 2026-09-08
 
-**¿Cuál de los dos servicios sirve el chat, los hilos y las solicitudes?** Hoy
-están definidos dos veces, con rutas y formas distintas, y el front está escrito
-contra el contrato —`/config/chat`, `/config/chat/hilos`, `/config/solicitudes`.
+**El chat del servicio de Go es de otro producto, no del dashboard** (decisión
+del humano). Eso saca de la mesa siete rutas y dos documentos:
 
-No es una pregunta de implementación: es de arquitectura, y de ella depende si
-lo que ya construimos del chat se reapunta o se queda. **Mientras no se
-conteste, no reapuntamos nada**: mover el front a las rutas de Go sería adivinar,
-y volver atrás cuesta más que esperar.
+| Fuera de alcance | |
+|---|---|
+| `POST /chat/stream` · `GET /chat/agents` | Chat del otro producto |
+| `/cortex/threads` · `/cortex/threads/{id}` | Sus hilos |
+| `/history/threads` · `/history/threads/{id}` | Su historial |
+| `admin-chat-agent-selector-frontend-integration.md` + `...ultimos-ajustes.md` | 494 líneas que no nos tocan |
 
-Lo que sí se puede decir desde acá: **las solicitudes de acceso del servicio de
-Go son más completas que las del contrato** —tienen aprobar, rechazar, listar
-por tenant y correo—, así que si hay que elegir una, esa gana sola.
+**Y confirma que lo que construimos está bien apuntado.** El chat de la Fase 3
+es el **contextual del panel** —C3, `design.md` §7.1: se abre desde un panel y
+lleva su métrica—, y vive en nuestro contrato como `/config/chat`. Son dos
+chats de dos productos, no dos definiciones del mismo.
+
+## Lo que sigue abierto: las solicitudes de acceso
+
+`/config/solicitudes` del contrato de la consola y `/access-requests` del
+servicio de Go **sí son lo mismo**, definido dos veces:
+
+| Contrato de la consola | Servicio de acceso |
+|---|---|
+| `GET`/`POST /config/solicitudes` | `POST /access-requests` · `GET /access-requests/tenants` |
+| — | `GET /admin/access-requests` |
+| — | `POST /admin/access-requests/{id}/approve` · `/reject` |
+
+**El de Go gana solo**: tiene aprobar, rechazar, listar por tenant y correo, y
+además el flujo de recuperación de contraseña ya cuelga de ahí —F0.15 lo
+consume—. El del contrato tiene dos rutas y ninguna implementación conocida.
+
+**Lo que hace falta decidir es si F2.3 se reapunta.** Hoy el CTA de
+`SIN_PERMISO` no se pinta porque no sabíamos si había servicio. Ahora sabemos
+que hay uno; falta saber si es el que el dashboard debe usar. Si sí, es medio
+día: cambiar dos rutas y leer las solicitudes ya hechas desde el servidor.
 
 ## El envelope de error NO es el mismo, y falla en silencio
 

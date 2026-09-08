@@ -42,20 +42,26 @@ que no hay que configurar nada.
 
 El detalle largo está en `PARA-BACKEND.md`.
 
-### 1 · Decime qué servicio sirve chat, hilos y solicitudes
+### 1 · Decime si las solicitudes de acceso las sirve tu API
 
-Están definidos dos veces y el front está escrito contra la columna izquierda:
+**El chat ya se resolvió** y no hace falta que contestes: el de tu servicio es de
+otro producto. El nuestro es el contextual del panel —se abre desde un panel y
+lleva su métrica— y vive en `/config/chat`. Son dos chats distintos, no dos
+definiciones del mismo.
+
+Lo que sigue definido dos veces son las solicitudes:
 
 | Contrato de la consola | Tu API |
 |---|---|
-| `POST /config/chat` | `POST /chat/stream` |
-| `GET /config/chat/hilos` | `GET /history/threads` |
-| `GET /config/chat/hilos/{id}` | `GET /cortex/threads/{id}` |
-| `GET`/`POST /config/solicitudes` | `/access-requests` + aprobar y rechazar |
+| `GET`/`POST /config/solicitudes` | `POST /access-requests` · `GET /access-requests/tenants` |
+| — | `GET /admin/access-requests` |
+| — | `POST /admin/access-requests/{id}/approve` · `/reject` |
 
-No reapunté nada. Con que me digas cuál gana, alcanza — si gana la tuya, es medio
-día de trabajo del front. **Tus solicitudes de acceso son más completas que las
-del contrato**, así que esa la daría por ganada ya.
+**La tuya gana sola**: tiene aprobar, rechazar, listar por tenant, y de ahí ya
+cuelga la recuperación de contraseña que acabo de construir. La del contrato
+tiene dos rutas y ninguna implementación conocida.
+
+Con que me confirmes que es la tuya, reapunto F2.3 — es medio día.
 
 ### 2 · Cambiá `Error` a objeto en `internal/adapters/handler/response.go`
 

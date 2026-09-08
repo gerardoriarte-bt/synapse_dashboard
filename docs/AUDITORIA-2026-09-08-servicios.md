@@ -31,7 +31,8 @@ reparten así:
 
 | Cuántos | Cuáles | Estado |
 |---|---|---|
-| **10** | `/chat/stream`, `/cortex/threads*`, `/history/threads*`, `/access-requests*`, `/admin/access-requests*` | **Esperan la pregunta 1**: están definidos dos veces, acá y en el contrato de la consola |
+| **6** | `/chat/stream`, `/cortex/threads*`, `/history/threads*` | ✅ **Fuera de alcance**: el chat del servicio es de otro producto (2026-09-08) |
+| **5** | `/access-requests*`, `/admin/access-requests*` | Lo mismo que `/config/solicitudes`, definido dos veces. **Sigue abierto** |
 | **3** | `/admin/tenants`, `/admin/users`, `/admin/agents` | Fase 4. Existen acá y **no** en el contrato de la consola — ver el punto 0 de `PARA-BACKEND.md` |
 | **1** | `/agents/ping` | Salud del servicio. No es del front |
 | **3** | `/password-reset-requests`, `/tickets`, `/tickets/{ticket_id}/seen` | **No están en nuestro plan.** Ver abajo |
@@ -49,7 +50,7 @@ no menciona en ninguna de sus 173 tareas**:
 | `access-request-registration-frontend-integration.md` | 403 | Modal de registro, panel admin/planner de pendientes e historial, y asignación de tenant y agente al aprobar |
 | `password-reset-frontend-integration.md` | 607 | Flujo de «olvidé mi contraseña», y el campo `type` que distingue registro de recuperación |
 | `access-requests-list-frontend-integration.md` | 186 | El listado unificado de solicitudes, con filtro por estado |
-| `admin-chat-agent-selector-frontend-integration.md` + `...ultimos-ajustes.md` | 494 | Chat multi-agente con selector, **solo para rol `admin`** |
+| ~~`admin-chat-agent-selector...` + `...ultimos-ajustes.md`~~ | ~~494~~ | ✅ **Fuera de alcance**: el chat de ese servicio es de otro producto |
 
 Y `/tickets` no tiene documento: es una funcionalidad entera —crear, listar,
 marcar visto— de la que no hay una palabra en ningún lado nuestro.
@@ -73,16 +74,23 @@ trabajo diferente:
 - **Solicitudes de acceso** ya está en nuestro contrato como `/config/solicitudes`
   y es F2.3. La versión de ellos es más completa. **Es la pregunta 1**, no una
   nueva.
-- **Chat con selector de agente** se cruza con toda la Fase 3, que ya está
-  construida contra `/config/chat`. También es la pregunta 1.
+- **Chat con selector de agente** · ✅ **cerrado el 2026-09-08: no es nuestro.**
+  El chat de ese servicio es de otro producto. Y confirma que la Fase 3 está
+  bien apuntada: el chat que construimos es el **contextual del panel** —C3,
+  `design.md` §7.1— y vive en `/config/chat`. Son dos chats de dos productos, no
+  dos definiciones del mismo.
 - **Olvidé mi contraseña** no se cruza con nada: es una pantalla que el
   dashboard no tiene y el servicio ya soporta. Si la queremos, es una tarea
   nueva y **no está bloqueada por nadie**.
 - **Tickets** no se cruza con nada y no está documentado en ningún lado nuestro.
   Es una decisión de producto antes que de código.
 
-Las dos primeras se contestan solas cuando se conteste la pregunta 1. Las dos
-últimas necesitan que alguien diga si van.
+**Estado al cierre del 2026-09-08.** El chat quedó fuera de alcance y
+«olvidé mi contraseña» se construyó —F0.15—. Quedan dos:
+
+- **Solicitudes de acceso** · sigue abierto si F2.3 se reapunta al servicio de
+  Go, que es mucho más completo que las dos rutas del contrato.
+- **Tickets** · nadie dijo si va.
 
 ---
 

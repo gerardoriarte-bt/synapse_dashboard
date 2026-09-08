@@ -341,11 +341,17 @@ agente, más `/tickets`, que no tiene documento. **No están faltando**: son un
 alcance que nadie definió como nuestro, y hay señales de que se escribieron para
 otro front. El cruce está en `docs/AUDITORIA-2026-09-08-servicios.md`.
 
-**Y ese servicio ya implementa cosas que el contrato define distinto** —chat,
-hilos, solicitudes de acceso, crear tenants y usuarios— con otras rutas y otras
-formas. **Cuál de los dos gana es una decisión de arquitectura que no está
-tomada**, y hasta que se tome no se reapunta nada: mover el front a las rutas de
-Go sería adivinar. Está en `docs/PARA-BACKEND.md`, arriba de todo.
+**El chat de ese servicio NO es del dashboard** (decidido el 2026-09-08). Son
+dos productos: el nuestro es el chat **contextual del panel** —C3, §7.1 de
+`design.md`, se abre desde un panel y lleva su métrica— y vive en
+`/config/chat`. El de ellos es otro. Eso saca de la mesa `/chat/stream`,
+`/cortex/threads*`, `/history/threads*` y dos documentos de integración.
+
+**Lo que sigue abierto son las solicitudes de acceso**: `/config/solicitudes`
+del contrato y `/access-requests` del servicio de Go son lo mismo definido dos
+veces, y el de Go gana solo —tiene aprobar, rechazar, listar, y de ahí cuelga la
+recuperación de contraseña que F0.15 ya consume—. Falta decidir si F2.3 se
+reapunta. Está en `docs/PARA-BACKEND.md`.
 
 **No hay una sola tarea de front desbloqueada. Estado al 2026-09-08.**
 
