@@ -50,6 +50,10 @@ Y **dos que decide producto**, no ustedes, pero que les van a llegar como campos
 conectó el login el 2026-09-08 —F0.5 cerrada— y al leerlo aparecieron tres cosas
 que cambian lo que dice el resto de este documento.
 
+**El mensaje que se le pasó a quien lo mantiene está en
+`docs/ENTREGA-2026-09-08-login.md`**, con lo que se entregó, dónde revisarlo y
+las tres cosas concretas que necesitamos de ese lado.
+
 **Y tiene su propio OpenAPI**: 1.796 líneas en
 `internal/adapters/handler/docs/openapi.yaml`, embebido en el binario y servido
 en `/docs/openapi.yaml`. **Eso es un contrato, no una implementación**, y hay que
