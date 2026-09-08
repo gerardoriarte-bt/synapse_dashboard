@@ -312,7 +312,26 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-**No hay una sola tarea de front desbloqueada. Estado al 2026-09-04.**
+**Son DOS servicios, no uno.** El login lo sirve
+`AntPack-dev/synapse-api-go` —un despliegue aparte, conectado el 2026-09-08— y
+la consola la sirve la API del contrato, que todavía no existe. Los dos publican
+bajo `/api/v1`, así que el front lleva dos bases: `VITE_AUTH_URL` para el acceso
+y `VITE_API_URL` para la consola. La primera cae a la segunda si algún día
+quedan detrás del mismo origen.
+
+**Su envelope de error no es el de §4.1** —ahí `error` es una cadena, acá un
+objeto— y pasarlo por `api/client.ts` da `code: undefined` y `message: ""`: una
+pantalla de error sin una palabra. Por eso `api/auth.ts` desenvuelve por su
+cuenta en vez de reusar el cliente. Si el servicio adopta §4.1, ese archivo se
+borra.
+
+**Y ese servicio ya implementa cosas que el contrato define distinto** —chat,
+hilos, solicitudes de acceso, crear tenants y usuarios— con otras rutas y otras
+formas. **Cuál de los dos gana es una decisión de arquitectura que no está
+tomada**, y hasta que se tome no se reapunta nada: mover el front a las rutas de
+Go sería adivinar. Está en `docs/PARA-BACKEND.md`, arriba de todo.
+
+**No hay una sola tarea de front desbloqueada. Estado al 2026-09-08.**
 
 Eso es una conclusión, no una queja, y se verificó tarea por tarea: **57 de las
 96 de front están hechas**, 6 quedaron parciales con la mitad que falta del lado
@@ -344,7 +363,6 @@ Qué espera cada cosa, para no volver a averiguarlo:
 | `DatoDeRespuesta.tipo` · pregunta 11 | F3.6 |
 | El patrón de `PeriodoId` · pregunta 12 | F5.13 |
 | `Contexto.locale` y moneda | La mitad de F1.13b |
-| El endpoint de login · B0.10 | F0.5 |
 | El servicio de `/config/solicitudes` | F2.3 |
 | El seed · B1.16 y B1.20 | F1.25 |
 | La ruta `/config/plots` y B1.21 | F1.31, F4.21 |

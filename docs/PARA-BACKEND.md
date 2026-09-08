@@ -25,7 +25,8 @@ se descubre en integración y no en compilación.
 
 | # | Qué falta | Esfuerzo | Desbloquea |
 |---|---|---|---|
-| **0** | **Ocho rutas que el plan cita y el contrato no declara** | Grande · seis son una superficie entera | **Las 21 de Fase 4**, F5.1, F5.2, F1.31, F4.21, F0.5 |
+| **0** | **Ocho rutas que el plan cita y el contrato no declara** | Grande · seis son una superficie entera | **Las 21 de Fase 4**, F5.1, F5.2, F1.31, F4.21 |
+| **∅** | **Cuál servicio sirve chat, hilos y solicitudes** | Arquitectura · decisión, no código | Que no reapuntemos el chat dos veces |
 | **1** | `ContextoDePanel` y `periodo` en `POST /config/chat` | Transcribir · ya está decidido | F3.2, F3.3 |
 | **2** | `tenant.zonaHoraria` | Transcribir · decidido el 2026-09-04 | F1.13b |
 | **3** | El patrón de `PeriodoId` | Transcribir · decidido el 2026-09-04 | F5.13 |
@@ -40,6 +41,88 @@ se descubre en integración y no en compilación.
 
 Y **dos que decide producto**, no ustedes, pero que les van a llegar como campos:
 `locale` y moneda en `Contexto`, y `orden` en `PanelConfigurado`.
+
+---
+
+# Antes de todo: apareció un segundo servicio
+
+**`AntPack-dev/synapse-api-go` existe, corre y publica bajo `/api/v1`.** Se
+conectó el login el 2026-09-08 —F0.5 cerrada— y al leerlo aparecieron tres cosas
+que cambian lo que dice el resto de este documento.
+
+**Publica dieciséis rutas, y varias son las que este documento venía pidiendo,
+con otro nombre:**
+
+| Lo que pedimos acá | Lo que el servicio de Go ya tiene | ¿Es lo mismo? |
+|---|---|---|
+| `POST /auth/login` · punto 0 | `POST /api/v1/auth/login` | **Sí.** Ya está conectado |
+| `GET /admin/tenants` · punto 0 | `POST /api/v1/admin/tenants` | Solo crear. Falta listar |
+| Roles y usuarios · F4.3 | `POST /api/v1/admin/users` | Solo crear |
+| `/config/solicitudes` · punto 9 | `POST /access-requests`, `GET /admin/access-requests`, aprobar y rechazar | **Más completo que el nuestro** |
+| `POST /config/chat` SSE | `POST /api/v1/chat/stream` | Los dos son SSE. Los eventos no están comparados |
+| `GET /config/chat/hilos` | `GET /api/v1/history/threads` | Adyacente |
+| `GET /config/chat/hilos/{id}` | `GET /api/v1/cortex/threads/{id}` | Adyacente |
+| `GET /config/me` | `GET /api/v1/auth/token-info` | **Parcial** · devuelve el usuario del token, sin pestañas ni períodos |
+
+**Ninguna de `/config/*` de la consola está**: ni `catalog`, ni `blocks`, ni
+`tabs`, ni `panels:batch`. O sea que el servicio de Go **no es** la API de la
+consola, y la consola sigue sin backend.
+
+## La pregunta que hay que contestar, y no es nuestra
+
+**¿Cuál de los dos servicios sirve el chat, los hilos y las solicitudes?** Hoy
+están definidos dos veces, con rutas y formas distintas, y el front está escrito
+contra el contrato —`/config/chat`, `/config/chat/hilos`, `/config/solicitudes`.
+
+No es una pregunta de implementación: es de arquitectura, y de ella depende si
+lo que ya construimos del chat se reapunta o se queda. **Mientras no se
+conteste, no reapuntamos nada**: mover el front a las rutas de Go sería adivinar,
+y volver atrás cuesta más que esperar.
+
+Lo que sí se puede decir desde acá: **las solicitudes de acceso del servicio de
+Go son más completas que las del contrato** —tienen aprobar, rechazar, listar
+por tenant y correo—, así que si hay que elegir una, esa gana sola.
+
+## El envelope de error NO es el mismo, y falla en silencio
+
+§4.1 del contrato declara el error como un **objeto**; el servicio de Go lo
+declara como una **cadena**:
+
+```go
+type Response struct {
+    Success bool        `json:"success"`
+    Data    interface{} `json:"data,omitempty"`
+    Error   string      `json:"error,omitempty"`   // ← cadena
+}
+```
+
+**No rompe: se calla.** Pasada la respuesta de Go por nuestro `api/client.ts`,
+`body.error.codigo` sobre una cadena da `undefined`. Medido el 2026-09-08 con un
+401 real del servicio:
+
+```
+code   : undefined
+message: ""
+```
+
+El usuario ve una pantalla de error sin una palabra. Por eso el front tiene un
+`api/auth.ts` que desenvuelve por su cuenta y le pone el código —
+`AUTH_CREDENCIALES`, `AUTH_FALLO`— en vez de reusar el cliente.
+
+**Si el servicio de Go adopta el error de §4.1, ese archivo se borra** y los dos
+servicios se leen igual. Va con el punto 8, la taxonomía: es la misma
+conversación.
+
+## `password_updated` no bloquea el login
+
+`POST /auth/login` devuelve `user.password_updated: false` mientras el usuario
+siga con la contraseña que le asignaron, **y entrega un token válido igual**.
+Forzar el cambio queda del lado del front y hoy **no está hecho**: un usuario con
+contraseña temporal entra a la consola.
+
+Existe `POST /auth/change-password`, así que la pieza está. Falta decidir si el
+servicio debe rechazar el login —lo más seguro— o si el front intercepta. **Es
+una decisión de producto, no de código.**
 
 ---
 
@@ -60,8 +143,13 @@ sola tarea de front desbloqueada.
 /admin/layouts/{id}/validate       ·  F4.11, F4.14
 /admin/layouts/{id}/publish        ·  F4.15
 /config/plots                      ·  F1.31, F4.21
-/auth/login                        ·  F0.5
+/auth/login                        ·  F0.5  ✅ RESUELTO: lo sirve synapse-api-go
 ```
+
+**`/auth/login` ya no falta**: lo sirve `synapse-api-go` y el front está
+conectado desde el 2026-09-08. Queda la pregunta de si el contrato de la consola
+debe REFERENCIARLO —para que un lector del yaml sepa dónde se autentica— o si es
+correcto que un servicio aparte no aparezca ahí.
 
 Las seis primeras son la misma cosa y van juntas; las dos últimas son
 independientes y están abajo.

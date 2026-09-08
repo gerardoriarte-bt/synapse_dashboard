@@ -809,15 +809,56 @@ sostienen.
   al foco pedía el batch entero cada vez que alguien cambiaba de ventana.
 
 ### F0.4 ✅ React Router: `/`, `/admin/*`, `/builder/*`
-### F0.5 ⚠️ Auth guard · 🔒 depende de B0.10
-**Descripción.** Guard de sesión y almacenamiento del token, hechos. Falta la
-pantalla de login y el POST, que **no existen en el contrato**.
+### F0.5 ✅ Auth guard
+**Descripción.** Guard de sesión y almacenamiento del token, hechos. Faltaba la
+pantalla de login y el POST, que no existían en el contrato.
 **Criterio de aceptación.**
 - ✅ `AuthGuard` verifica que **haya** token, no qué permite: los permisos los
   aplica el backend.
 - ✅ El front **no decodifica el JWT**: recibe todo resuelto en `/config/me`.
-- ⬜ Pantalla de login que consume B0.10 y redirige al `from` guardado.
-- ⬜ Un `401` de cualquier endpoint limpia la sesión y vuelve al login.
+- ✅ Pantalla de login que consume el servicio de acceso y redirige al `from`.
+- ✅ Un `401` de cualquier endpoint limpia la sesión y vuelve al login.
+
+**Cerrada el 2026-09-08, contra un servicio que no estaba en el plan.** El login
+no lo sirve la API de la consola: lo sirve **`AntPack-dev/synapse-api-go`**, un
+despliegue aparte. B0.10 pedía que la API de la consola lo expusiera y la
+respuesta resultó ser otra — existe, en otro lado.
+
+**Las tres preguntas de integración que F0.5 tenía abiertas las contestó el
+código, no una reunión:**
+
+| Pregunta | Respuesta, verificada leyendo el servicio |
+|---|---|
+| ¿Con qué clave se guarda el token? | La decide el front. Sigue en `synapse.token` |
+| ¿El login vive en otro origen? | **Sí**, es otro despliegue — pero su CORS es `Access-Control-Allow-Origin: *`, y con `*` no viajan credenciales, así que el token va por cabecera y `localStorage` alcanza |
+| ¿Adónde redirige un `401`? | Se decidió acá: borra la sesión y va a `/login` |
+
+**Dos bases de URL, no una.** Los dos servicios publican bajo `/api/v1`, así que
+sin separarlas el front no le puede hablar a los dos. `VITE_AUTH_URL` cae a
+`VITE_API_URL` a propósito: si mañana quedan detrás del mismo origen, no hay que
+tocar nada.
+
+**El envelope de error del servicio de Go no es el de §4.1, y falla en
+silencio.** Ahí `error` es una cadena; en el contrato es un objeto. Pasado por
+`api/client.ts` da `code: undefined` y `message: ""` —medido— o sea una pantalla
+de error sin una palabra. Por eso hay un `api/auth.ts` que desenvuelve por su
+cuenta, y por eso está anotado en `docs/PARA-BACKEND.md`: si adoptan §4.1, ese
+archivo se borra.
+
+**El guardia redirigía a una ruta que no existía.** `/login` no estaba en el
+router: mandaba a una pantalla en blanco. Es de las cosas que solo se ven cuando
+alguien intenta usarlas.
+
+**Y quedaron dos cosas anotadas y NO hechas**, las dos a propósito:
+
+- **`password_updated: false` no bloquea nada.** El servicio devuelve un token
+  válido aunque el usuario siga con la contraseña asignada, así que hoy entra a
+  la consola. `POST /auth/change-password` existe; falta decidir si el servicio
+  debe rechazar el login o si el front intercepta. Es decisión de producto.
+- **El usuario que devuelve el login NO se guarda.** Trae nombre, rol y tenant, y
+  es tentador usarlo para pintar el navbar sin esperar a `/config/me`. Sería una
+  segunda fuente de verdad que se desincroniza en cuanto alguien cambie de rol.
+  Hay una prueba que lo fija.
 
 ### F0.6 ✅ Generar `src/api/types.ts` desde OpenAPI
 **Criterio de aceptación.** ✅ Cumplido con salvedad (D4).
