@@ -79,6 +79,12 @@ con otro nombre:**
 `tabs`, ni `panels:batch`. O sea que el servicio de Go **no es** la API de la
 consola, y la consola sigue sin backend.
 
+**Y tiene cinco documentos escritos para el front** —1.690 líneas— que describen
+funcionalidades que nuestro plan no menciona: registro de acceso, «olvidé mi
+contraseña», listado de solicitudes y chat con selector de agente. Más
+`/tickets`, que no tiene documento. El cruce completo está en
+`docs/AUDITORIA-2026-09-08-servicios.md`.
+
 ## La pregunta que hay que contestar, y no es nuestra
 
 **¿Cuál de los dos servicios sirve el chat, los hilos y las solicitudes?** Hoy

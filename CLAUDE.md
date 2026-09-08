@@ -334,6 +334,13 @@ pantalla de error sin una palabra. Por eso `api/auth.ts` desenvuelve por su
 cuenta en vez de reusar el cliente. Si el servicio adopta §4.1, ese archivo se
 borra.
 
+**Y tiene cinco documentos escritos para el front** —1.690 líneas— con
+funcionalidades que el plan no menciona en ninguna de sus 173 tareas: registro
+de acceso, «olvidé mi contraseña», listado de solicitudes y chat con selector de
+agente, más `/tickets`, que no tiene documento. **No están faltando**: son un
+alcance que nadie definió como nuestro, y hay señales de que se escribieron para
+otro front. El cruce está en `docs/AUDITORIA-2026-09-08-servicios.md`.
+
 **Y ese servicio ya implementa cosas que el contrato define distinto** —chat,
 hilos, solicitudes de acceso, crear tenants y usuarios— con otras rutas y otras
 formas. **Cuál de los dos gana es una decisión de arquitectura que no está
