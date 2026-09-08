@@ -50,6 +50,12 @@ Y **dos que decide producto**, no ustedes, pero que les van a llegar como campos
 conectó el login el 2026-09-08 —F0.5 cerrada— y al leerlo aparecieron tres cosas
 que cambian lo que dice el resto de este documento.
 
+**No tocamos su repositorio.** Todo lo que este documento propone se describe
+acá —con el snippet, la línea exacta y la evidencia— y lo aplican ellos. El
+2026-09-08 se abrió un PR con dos cambios implementados y se revirtió el mismo
+día: aunque compilaran, tocar el código de otro equipo desde afuera les saca la
+decisión de las manos y parte en dos el lugar donde se revisa.
+
 **El mensaje que se le pasó a quien lo mantiene está en
 `docs/ENTREGA-2026-09-08-login.md`**, con lo que se entregó, dónde revisarlo y
 las tres cosas concretas que necesitamos de ese lado.

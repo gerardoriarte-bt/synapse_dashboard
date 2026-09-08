@@ -38,14 +38,19 @@ que no hay que configurar nada.
 
 ---
 
-## Enviado como PR · 2026-09-08
+## Cómo se entrega · **no tocamos su repositorio**
 
-**`AntPack-dev/synapse-api-go#1`** — https://github.com/AntPack-dev/synapse-api-go/pull/1
+Se abrió un PR en `AntPack-dev/synapse-api-go` con dos de estos cambios
+implementados y **se revirtió el mismo día**: el PR quedó cerrado sin mergear y
+la rama borrada. Su `main` no tiene una línea nuestra.
 
-Las dos peticiones chicas van **implementadas** en ese PR (el `enum` de `success`
-y la migración de roles, con `go build` y `go vet` en limpio). Las otras dos van
-en el cuerpo, sin implementar: el envelope porque rompe todos los `SendError` y
-es decisión suya, y la de solicitudes porque es una pregunta.
+**La regla que salió de ahí: el trabajo del front vive en el repositorio del
+front.** Aunque un cambio en el servicio sea chico y compile, tocar el código de
+otro equipo desde afuera les saca la decisión de las manos y parte en dos el
+lugar donde se revisa. Lo que proponemos se describe —con el snippet, la línea y
+la evidencia— y lo aplican ellos.
+
+Así que este documento **es la entrega**. Lo que sigue se pasa como mensaje.
 
 ## Necesito cuatro cosas
 
