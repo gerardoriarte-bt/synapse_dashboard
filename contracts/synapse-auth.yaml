@@ -1,0 +1,1812 @@
+# COPIA VERSIONADA del contrato de `AntPack-dev/synapse-api-go` · F0.14
+#
+# **No lo escribimos nosotros y no se edita acá.** El original vive embebido en
+# el binario de ese servicio —`internal/adapters/handler/docs/openapi.yaml`— y se
+# sirve en `/docs/openapi.yaml`. Esta es una copia, y existe por la misma razón
+# por la que `design/` se mudó al repositorio el 2026-09-03: un chequeo que
+# necesita alcanzar otro repositorio o la red no corre en un clone limpio ni en
+# CI, y sale BLOQUEADO en vez de verificar.
+#
+# El costo es que puede quedar vieja. Lo cubre `npm run auth-drift`, que compara
+# los tipos generados contra ESTA copia; que la copia siga siendo la del
+# servicio se resincroniza a mano, y el día que el servicio publique su spec en
+# una URL estable esto se reemplaza por un fetch.
+#
+# Copiado el 2026-09-08 · sha256:f05f37cf872b
+#
+openapi: 3.0.3
+
+info:
+  title: Synapse API
+  version: 1.0.0
+  description: |
+    API REST de la plataforma **Synapse**, asistente de datos impulsado por Snowflake Cortex.
+
+    ## Autenticación
+    La mayoría de los endpoints requieren un JWT en el header:
+    ```
+    Authorization: Bearer <token>
+    ```
+    Obtén el token con `POST /auth/login`.
+
+    ## Roles
+    | Rol | Acceso |
+    |-----|--------|
+    | `admin` | Acceso completo: tenants, usuarios, agentes, solicitudes de acceso, chat, historial y tickets |
+    | `planner` | Gestión de solicitudes de acceso (aprobar / rechazar) + chat, historial y tickets |
+    | `user` | Chat con el agente, historial de conversaciones y tickets de soporte |
+
+    ## Envelope estándar
+    Todas las respuestas siguen el formato:
+    ```json
+    { "success": true,  "data": { ... } }
+    { "success": false, "error": "mensaje de error" }
+    ```
+
+    ## Rate limiting
+    El endpoint `POST /chat/stream` aplica rate limiting por usuario.
+
+servers:
+  - url: /api/v1
+    description: Relativo (misma instancia donde corre la API)
+
+tags:
+  - name: auth
+    description: Autenticación y gestión de sesión
+  - name: access-requests
+    description: Solicitudes de acceso (registro y recuperación de contraseña) — públicos
+  - name: chat
+    description: Chat en tiempo real con Snowflake Cortex
+  - name: cortex
+    description: Consulta directa de threads en Snowflake Cortex
+  - name: history
+    description: Historial de conversaciones del usuario
+  - name: tickets
+    description: Soporte — tickets de problemas con respuestas del agente
+  - name: admin-tenants
+    description: "Administración: compañías (tenants) — solo admin"
+  - name: admin-users
+    description: "Administración: usuarios — solo admin"
+  - name: admin-agents
+    description: "Administración: agentes Snowflake Cortex — admin / planner"
+  - name: admin-access-requests
+    description: "Administración: gestión de solicitudes de acceso — admin / planner"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT obtenido de `POST /auth/login`. Expira en 24 h.
+
+  schemas:
+    # ── Wrappers de respuesta ────────────────────────────────────────────────
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          description: Payload específico del endpoint
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: credenciales inválidas
+
+    # ── Auth ────────────────────────────────────────────────────────────────
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: admin@empresa.com
+        password:
+          type: string
+          minLength: 6
+          example: MiClave#2026
+
+    LoginUserInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [admin, planner, user]
+        password_updated:
+          type: boolean
+          description: |
+            `false` si el usuario debe cambiar su contraseña temporal.
+            Mostrar modal bloqueante hasta que sea `true`.
+
+    JWTTokenClaims:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+        issuer:
+          type: string
+        subject:
+          type: string
+        issued_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+
+    ChangePasswordRequest:
+      type: object
+      required: [current_password, new_password]
+      properties:
+        current_password:
+          type: string
+          example: PasswordTemporal1!
+        new_password:
+          type: string
+          minLength: 8
+          description: |
+            Debe cumplir todos los criterios:
+            - Mínimo 8 caracteres
+            - Al menos 1 letra
+            - Al menos 1 número
+            - Al menos 1 carácter especial (ej: ! @ # $ %)
+          example: NuevaClave#2026
+
+    # ── Access Requests ──────────────────────────────────────────────────────
+    TenantPublicOption:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Acme Corp
+
+    SubmitAccessRequestBody:
+      type: object
+      required:
+        - company_name
+        - full_name
+        - email
+        - phone
+        - job_title
+        - info_use
+        - accepted_terms
+        - accepted_privacy_policy
+      properties:
+        company_name:
+          type: string
+          description: Nombre de la empresa escrito libremente. Texto libre, sin restricciones de formato.
+          example: Mi Empresa S.A.
+        full_name:
+          type: string
+          example: Juan Pérez
+        email:
+          type: string
+          format: email
+          example: juan@empresa.com
+        phone:
+          type: string
+          example: "+573001234567"
+        job_title:
+          type: string
+          example: Analista de Datos
+        info_use:
+          type: string
+          example: Generación de reportes de ventas mensuales
+        accepted_terms:
+          type: boolean
+          description: Debe ser `true`. Si es `false` se rechaza la solicitud.
+          example: true
+        accepted_privacy_policy:
+          type: boolean
+          description: Debe ser `true`. Si es `false` se rechaza la solicitud.
+          example: true
+
+    SubmitPasswordResetBody:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          example: usuario@empresa.com
+
+    ReviewedByResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+          example: Ana García
+        email:
+          type: string
+          format: email
+          example: ana@admin.com
+
+    AccessRequestResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [registration, password_reset]
+          description: "`registration` = solicitud de ingreso. `password_reset` = recuperación de contraseña."
+        tenant_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: "Nulo hasta que sea aprobada."
+        tenant_name:
+          type: string
+          description: "Nombre del tenant asignado al aprobar."
+        agent_id:
+          type: string
+          format: uuid
+          nullable: true
+        agent_name:
+          type: string
+        company_name:
+          type: string
+          description: "Texto libre escrito por el solicitante."
+        full_name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        job_title:
+          type: string
+        info_use:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        created_user_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: "UUID del usuario creado al aprobar (solo registration)."
+        reviewed_by_user_id:
+          type: string
+          format: uuid
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+        reviewed_by:
+          $ref: '#/components/schemas/ReviewedByResponse'
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    AccessRequestListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessRequestResponse'
+        total:
+          type: integer
+          example: 42
+        page:
+          type: integer
+          example: 1
+        page_size:
+          type: integer
+          example: 20
+        total_pages:
+          type: integer
+          example: 3
+
+    ApproveAccessRequestBody:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+          description: "Requerido para `registration`. Omitir o enviar vacío para `password_reset`."
+        agent_id:
+          type: string
+          format: uuid
+          description: "Requerido para `registration`. Omitir o enviar vacío para `password_reset`."
+      example:
+        tenant_id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        agent_id: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+
+    # ── Chat ─────────────────────────────────────────────────────────────────
+    ContentItem:
+      type: object
+      required: [type, text]
+      properties:
+        type:
+          type: string
+          example: text
+        text:
+          type: string
+          example: ¿Cuáles fueron las ventas del mes de marzo?
+
+    Message:
+      type: object
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentItem'
+
+    ChatRequest:
+      type: object
+      required: [messages]
+      properties:
+        messages:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Message'
+          description: "Historial de mensajes del turno actual. Incluye el mensaje del usuario como último ítem."
+        thread_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: "ID del thread existente en Snowflake Cortex. Si se omite o es null se crea uno nuevo."
+        parent_message_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: "ID del mensaje padre para continuidad en el thread."
+
+    # ── Cortex Threads ───────────────────────────────────────────────────────
+    Thread:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        app:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ThreadMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        parent_id:
+          type: integer
+          format: int64
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          description: "Contenido del mensaje en formato JSON (array de ContentItem)."
+        request_id:
+          type: string
+          nullable: true
+
+    ThreadDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        app:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ThreadMessage'
+        has_more:
+          type: boolean
+          description: "true si hay más mensajes anteriores. Usar `last_message_id` para paginar."
+
+    # ── History ──────────────────────────────────────────────────────────────
+    UserThreadResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "UUID interno del registro en BD."
+        thread_id:
+          type: integer
+          format: int64
+          description: "ID del thread en Snowflake Cortex."
+        thread_name:
+          type: string
+        agent_name:
+          type: string
+        role:
+          type: string
+        first_message_preview:
+          type: string
+          description: "Primeros ~200 caracteres del mensaje inicial. Se usa también como nombre visible."
+        last_message_id:
+          type: integer
+          format: int64
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ── Tickets ──────────────────────────────────────────────────────────────
+    TicketSummary:
+      type: object
+      properties:
+        ticket_id:
+          type: integer
+          format: int64
+        thread_id:
+          type: string
+        agent_id:
+          type: string
+        rol:
+          type: string
+        asunto:
+          type: string
+        mensaje:
+          type: string
+        imagen_adjunto:
+          type: string
+          format: uri
+          nullable: true
+        status:
+          type: string
+          example: open
+        observacion:
+          type: string
+          nullable: true
+        visto_por_usuario:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ── Admin — Tenant ───────────────────────────────────────────────────────
+    CreateTenantRequest:
+      type: object
+      required:
+        - name
+        - snowflake_url
+        - snowflake_account
+        - snowflake_user
+        - snowflake_role
+        - private_key_pem
+        - kms_key_arn
+      properties:
+        name:
+          type: string
+          example: Acme Corp
+        snowflake_url:
+          type: string
+          format: uri
+          example: https://acme.snowflakecomputing.com
+        snowflake_account:
+          type: string
+          example: ACME-ACCOUNT
+        snowflake_user:
+          type: string
+          example: ACME_SVC_USER
+        snowflake_role:
+          type: string
+          example: SYSADMIN
+        private_key_pem:
+          type: string
+          description: |
+            Clave privada RSA en formato PEM. Incluir saltos de línea como `\n`.
+            ```
+            -----BEGIN PRIVATE KEY-----
+            MIIEvgIBADAN...
+            -----END PRIVATE KEY-----
+            ```
+        private_key_passphrase:
+          type: string
+          description: "Passphrase de la clave privada. Dejar vacío si no está cifrada."
+          example: ""
+        kms_key_arn:
+          type: string
+          description: "ARN de la clave AWS KMS usada para cifrar la clave privada en BD."
+          example: arn:aws:kms:us-east-1:123456789012:key/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+
+    TenantResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        snowflake_url:
+          type: string
+        snowflake_account:
+          type: string
+        snowflake_user:
+          type: string
+        snowflake_role:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ── Admin — User ─────────────────────────────────────────────────────────
+    CreateUserRequest:
+      type: object
+      required: [tenant_id, email, password]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+          example: usuario@empresa.com
+        password:
+          type: string
+          minLength: 8
+          description: "Contraseña inicial (puede ser temporal). El usuario deberá cambiarla si `password_updated` queda en `false`."
+        role:
+          type: string
+          default: user
+          example: user
+        first_name:
+          type: string
+          example: Juan
+        last_name:
+          type: string
+          example: Pérez
+        phone:
+          type: string
+          example: "+573001234567"
+
+    # ── Admin — Agent ────────────────────────────────────────────────────────
+    CreateAgentRequest:
+      type: object
+      required:
+        - tenant_id
+        - name
+        - target_role
+        - snowflake_db
+        - snowflake_schema
+        - snowflake_cortex_agent_name
+        - warehouse
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+          description: "UUID del tenant al que pertenece este agente."
+        name:
+          type: string
+          example: Agente ventas
+          description: "Nombre visible del agente en la UI."
+        target_role:
+          type: string
+          example: user
+          description: |
+            Rol lógico que recibirán los usuarios asignados a este agente al aprobar
+            una solicitud de registro. Generalmente `user`.
+        snowflake_db:
+          type: string
+          example: SALES_DB
+        snowflake_schema:
+          type: string
+          example: PUBLIC
+        snowflake_cortex_agent_name:
+          type: string
+          example: SALES_CORTEX_AGENT
+        warehouse:
+          type: string
+          example: COMPUTE_WH
+
+    AgentOption:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Agente ventas
+        target_role:
+          type: string
+          example: user
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Paths
+# ─────────────────────────────────────────────────────────────────────────────
+paths:
+
+  # ── AUTH ──────────────────────────────────────────────────────────────────
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Iniciar sesión
+      description: |
+        Autentica al usuario y devuelve un JWT válido por 24 horas.
+
+        Si `user.password_updated` es `false` el front debe mostrar un modal bloqueante
+        solicitando cambio de contraseña antes de acceder a la app.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          token:
+                            type: string
+                            description: "JWT HS256. Enviar en: Authorization: Bearer <token>"
+                          user:
+                            $ref: '#/components/schemas/LoginUserInfo'
+        '401':
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/token-info:
+    get:
+      tags: [auth]
+      summary: Información del token actual
+      description: Devuelve los datos del usuario en BD y los claims del JWT activo.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sesión activa
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/LoginUserInfo'
+                          token_info:
+                            $ref: '#/components/schemas/JWTTokenClaims'
+        '401':
+          description: Token inválido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/change-password:
+    post:
+      tags: [auth]
+      summary: Cambiar contraseña
+      description: |
+        Cambia la contraseña del usuario autenticado.
+
+        **Política de contraseña (validada en servidor):**
+        - Mínimo 8 caracteres
+        - Al menos 1 letra
+        - Al menos 1 número
+        - Al menos 1 carácter especial (ej: ! @ # $ %)
+        - Debe ser distinta a la contraseña actual
+
+        Tras un cambio exitoso, `password_updated` pasa a `true` en el JWT y en BD.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Contraseña actualizada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            example: contraseña actualizada correctamente
+                          user:
+                            $ref: '#/components/schemas/LoginUserInfo'
+        '400':
+          description: |
+            Contraseña no cumple la política. El campo `error` indica el criterio fallido:
+            - `la contraseña debe tener al menos 8 caracteres`
+            - `la contraseña debe incluir al menos una letra`
+            - `la contraseña debe incluir al menos un número`
+            - `la contraseña debe incluir al menos un carácter especial (por ejemplo: ! @ # $ %)`
+            - `la nueva contraseña debe ser distinta a la actual`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Contraseña actual incorrecta o token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ── ACCESS REQUESTS (PÚBLICO) ────────────────────────────────────────────
+
+  /access-requests/tenants:
+    get:
+      tags: [access-requests]
+      summary: Listar compañías (dropdown público)
+      description: |
+        Devuelve `id` y `name` de todas las compañías registradas.
+
+        **Endpoint público** (sin JWT). Se usa como fuente del dropdown de Tenant
+        en el panel admin al aprobar solicitudes.
+      responses:
+        '200':
+          description: Lista de compañías
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TenantPublicOption'
+
+  /access-requests:
+    post:
+      tags: [access-requests]
+      summary: Enviar solicitud de acceso (registro)
+      description: |
+        **Endpoint público** (sin JWT).
+
+        El solicitante escribe el nombre de su empresa en `company_name` (texto libre).
+        El administrador asignará el tenant y agente reales al aprobar la solicitud.
+
+        Reglas de negocio:
+        - `accepted_terms` y `accepted_privacy_policy` deben ser `true`.
+        - No puede existir ya un usuario registrado con ese correo.
+        - No puede existir ya una solicitud `pending` con ese correo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitAccessRequestBody'
+      responses:
+        '201':
+          description: Solicitud creada. Se envía email de confirmación al solicitante.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AccessRequestResponse'
+        '400':
+          description: Datos inválidos o no aceptó términos/política
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Ya existe solicitud pendiente o usuario con ese correo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /password-reset-requests:
+    post:
+      tags: [access-requests]
+      summary: Enviar solicitud de recuperación de contraseña
+      description: |
+        **Endpoint público** (sin JWT).
+
+        Crea una solicitud `password_reset` para el correo indicado.
+
+        **Por seguridad**: si el correo no está registrado, la respuesta es igualmente exitosa
+        (sin revelar si el correo existe o no). La solicitud solo se crea internamente si existe.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitPasswordResetBody'
+      responses:
+        '201':
+          description: Respuesta genérica (éxito independientemente de si el correo existe)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            example: "Si el correo está registrado, tu solicitud fue enviada y será revisada por el equipo."
+                          request:
+                            $ref: '#/components/schemas/AccessRequestResponse'
+                            nullable: true
+                            description: "Solo presente si el correo está registrado."
+        '409':
+          description: Ya existe una solicitud pendiente con ese correo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ── CHAT ──────────────────────────────────────────────────────────────────
+
+  /chat/stream:
+    post:
+      tags: [chat]
+      summary: Chat con el agente (Server-Sent Events)
+      description: |
+        Envía mensajes al agente Snowflake Cortex del tenant y recibe la respuesta
+        en tiempo real usando **Server-Sent Events (SSE)**.
+
+        **Respuesta:** `Content-Type: text/event-stream`. Cada línea tiene el formato:
+        ```
+        data: {"delta":{"type":"text","text_delta":"hola"},"metadata":{...}}
+        ```
+
+        **Creación de thread:**
+        - Si `thread_id` es `null` o se omite, se crea automáticamente un nuevo thread en Snowflake.
+        - El `thread_id` retornado en los eventos de metadata debe guardarse para continuar la conversación.
+
+        **Rate limiting:** límite por usuario. Si se excede devuelve HTTP 429.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Stream SSE con la respuesta del agente
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  Flujo de eventos SSE. Cada evento tiene formato:
+                  ```
+                  data: { "delta": { "type": "text", "text_delta": "..." }, "metadata": { "message_id": 123, "role": "assistant" } }
+                  ```
+        '400':
+          description: Body inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit excedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno o problema con Snowflake Cortex
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ── CORTEX THREADS ────────────────────────────────────────────────────────
+
+  /cortex/threads:
+    get:
+      tags: [cortex]
+      summary: Listar threads del tenant en Snowflake Cortex
+      description: |
+        Devuelve los threads almacenados en Snowflake Cortex para el tenant del usuario autenticado.
+        Filtrable por aplicación de origen.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: origin_application
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filtrar por aplicación de origen del thread.
+      responses:
+        '200':
+          description: Lista de threads
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Thread'
+        '502':
+          description: Error al consultar Snowflake Cortex
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /cortex/threads/{thread_id}:
+    get:
+      tags: [cortex]
+      summary: Obtener un thread con sus mensajes (paginado)
+      description: |
+        Devuelve el detalle de un thread y sus mensajes, paginados.
+
+        **Paginación hacia atrás:** usar `last_message_id` con el ID del mensaje más antiguo
+        que ya se tiene para cargar los anteriores.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: thread_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID numérico del thread en Snowflake Cortex.
+        - name: page_size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Número de mensajes por página (máx. 100).
+        - name: last_message_id
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+          description: ID del mensaje desde el que paginar hacia atrás.
+      responses:
+        '200':
+          description: Thread con mensajes
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ThreadDetailResponse'
+        '400':
+          description: Parámetros inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Thread no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ── HISTORY ───────────────────────────────────────────────────────────────
+
+  /history/threads:
+    get:
+      tags: [history]
+      summary: Historial de conversaciones del usuario
+      description: |
+        Devuelve los threads que el usuario ha iniciado, ordenados por actividad reciente.
+        Esta lista se almacena en la BD de Synapse (no consulta Snowflake directamente).
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de threads del historial
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserThreadResponse'
+
+  /history/threads/{id}:
+    delete:
+      tags: [history]
+      summary: Eliminar un thread del historial
+      description: Elimina el registro del thread del historial del usuario (no elimina el thread en Snowflake).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID interno del registro en el historial.
+      responses:
+        '200':
+          description: Thread eliminado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            example: thread eliminado del historial
+        '404':
+          description: Thread no encontrado en el historial del usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags: [history]
+      summary: Renombrar un thread del historial
+      description: Actualiza el nombre visible (preview del primer mensaje) del thread.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID interno del registro en el historial.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [first_message_preview]
+              properties:
+                first_message_preview:
+                  type: string
+                  description: Nuevo nombre visible para el thread.
+                  example: Reporte de ventas Q1 2026
+      responses:
+        '200':
+          description: Thread renombrado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          first_message_preview:
+                            type: string
+                          thread_name:
+                            type: string
+        '404':
+          description: Thread no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ── TICKETS ───────────────────────────────────────────────────────────────
+
+  /tickets:
+    get:
+      tags: [tickets]
+      summary: Listar tickets del usuario
+      description: |
+        Devuelve los tickets del usuario agrupados en `all` y `unread` (no vistos).
+        Ordenados por `updated_at` DESC dentro de cada grupo.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Tickets del usuario
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          all:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/TicketSummary'
+                          unread:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/TicketSummary'
+    post:
+      tags: [tickets]
+      summary: Crear ticket de soporte
+      description: |
+        Crea un ticket de soporte asociado a una respuesta del agente.
+        Enviar como `multipart/form-data`. La imagen es opcional (máx. 10 MB).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [asunto, mensaje, respuesta]
+              properties:
+                thread_id:
+                  type: string
+                  description: ID del thread de Snowflake Cortex relacionado.
+                asunto:
+                  type: string
+                  description: Asunto breve del problema.
+                  example: La respuesta del agente está incompleta
+                mensaje:
+                  type: string
+                  description: Descripción detallada del problema.
+                  example: El agente respondió con datos del mes pasado en lugar del actual.
+                respuesta:
+                  type: string
+                  description: JSON completo de la respuesta del agente (campo `data` del SSE).
+                imagen:
+                  type: string
+                  format: binary
+                  description: Screenshot adjunto (PNG/JPEG recomendado, opcional).
+      responses:
+        '201':
+          description: Ticket registrado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            example: ticket registrado correctamente
+        '400':
+          description: Campos requeridos faltantes o JSON de `respuesta` inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tickets/{ticket_id}/seen:
+    put:
+      tags: [tickets]
+      summary: Marcar ticket como visto
+      description: Marca el ticket como leído por el usuario.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ticket_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID numérico del ticket.
+      responses:
+        '200':
+          description: Ticket marcado como visto
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            example: ticket marcado como visto
+        '400':
+          description: ticket_id inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ── AGENTS (USUARIO) ─────────────────────────────────────────────────────
+
+  /agents/ping:
+    get:
+      tags: [admin-agents]
+      summary: Verificar configuración Snowflake del tenant
+      description: |
+        Verifica que el tenant del usuario autenticado tiene configuración Snowflake
+        registrada y accesible. Útil para health-check previo al chat.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Configuración válida
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            example: ok
+                          tenant_id:
+                            type: string
+                            format: uuid
+        '404':
+          description: Tenant no encontrado para este usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ── ADMIN — TENANTS ───────────────────────────────────────────────────────
+
+  /admin/tenants:
+    post:
+      tags: [admin-tenants]
+      summary: Crear compañía (tenant)
+      description: |
+        Registra una nueva compañía con su configuración de Snowflake.
+        La clave privada PEM se cifra en BD usando AWS KMS.
+
+        **Rol requerido:** `admin`
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTenantRequest'
+      responses:
+        '201':
+          description: Tenant creado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TenantResponse'
+        '400':
+          description: Body inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Rol insuficiente (se requiere admin)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ── ADMIN — USERS ─────────────────────────────────────────────────────────
+
+  /admin/users:
+    post:
+      tags: [admin-users]
+      summary: Crear usuario manualmente
+      description: |
+        Crea un usuario directamente en el sistema (sin pasar por el flujo de solicitud de acceso).
+
+        El usuario tendrá `password_updated: false`, por lo que deberá cambiar su contraseña
+        en el primer login.
+
+        **Rol requerido:** `admin`
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          tenant_id:
+                            type: string
+                            format: uuid
+                          email:
+                            type: string
+                          first_name:
+                            type: string
+                          last_name:
+                            type: string
+                          phone:
+                            type: string
+                          role:
+                            type: string
+                          created_at:
+                            type: string
+                            format: date-time
+        '400':
+          description: Body inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Rol insuficiente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Ya existe un usuario con ese correo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ── ADMIN — AGENTS ────────────────────────────────────────────────────────
+
+  /admin/agents:
+    post:
+      tags: [admin-agents]
+      summary: Crear agente Snowflake Cortex
+      description: |
+        Registra un nuevo agente Snowflake Cortex asociado a un tenant.
+
+        Cada tenant puede tener múltiples agentes, uno por rol lógico (`target_role`).
+        Al aprobar una solicitud de registro, se asigna el agente cuyo `target_role` coincide
+        con el rol que recibirá el nuevo usuario.
+
+        **Rol requerido:** `admin`
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAgentRequest'
+      responses:
+        '201':
+          description: Agente creado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          tenant_id:
+                            type: string
+                            format: uuid
+                          name:
+                            type: string
+                          target_role:
+                            type: string
+                          snowflake_db:
+                            type: string
+                          snowflake_schema:
+                            type: string
+                          snowflake_cortex_agent_name:
+                            type: string
+                          warehouse:
+                            type: string
+                          created_at:
+                            type: string
+                            format: date-time
+                          updated_at:
+                            type: string
+                            format: date-time
+        '400':
+          description: Body inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Rol insuficiente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags: [admin-agents]
+      summary: Listar agentes de un tenant
+      description: |
+        Devuelve los agentes del tenant indicado (id, name, target_role).
+        Usado para poblar el dropdown de "Agente" en el flujo de aprobación de solicitudes.
+
+        **Rol requerido:** `admin` o `planner`
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID del tenant cuyos agentes se quieren listar.
+      responses:
+        '200':
+          description: Lista de agentes
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AgentOption'
+        '400':
+          description: tenant_id faltante o inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Tenant no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ── ADMIN — ACCESS REQUESTS ───────────────────────────────────────────────
+
+  /admin/access-requests:
+    get:
+      tags: [admin-access-requests]
+      summary: Listar solicitudes de acceso
+      description: |
+        Devuelve solicitudes de registro y recuperación de contraseña.
+
+        **Sin `status`:** devuelve **todas** (primero `pending` por `created_at` DESC,
+        luego las gestionadas por `reviewed_at` DESC).
+
+        | `status` | Resultado |
+        |----------|-----------|
+        | *(omitir)* | Todas (pendientes + gestionadas) |
+        | `pending` | Solo pendientes |
+        | `history` | Solo gestionadas (aprobadas + rechazadas) |
+        | `approved` | Solo aprobadas |
+        | `rejected` | Solo rechazadas |
+
+        **Rol requerido:** `admin` o `planner`
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, rejected, history]
+          description: Filtro opcional de estado.
+      responses:
+        '200':
+          description: Lista paginada de solicitudes
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AccessRequestListResponse'
+        '400':
+          description: Valor de `status` inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /admin/access-requests/{id}/approve:
+    post:
+      tags: [admin-access-requests]
+      summary: Aprobar solicitud de acceso
+      description: |
+        Aprueba una solicitud pendiente.
+
+        **Para `type: registration`:**
+        - `tenant_id` y `agent_id` son **obligatorios**.
+        - Se crea el usuario, se le asigna el tenant y agente indicados.
+        - Se envía un email con la contraseña temporal al nuevo usuario.
+
+        **Para `type: password_reset`:**
+        - `tenant_id` y `agent_id` **no se envían** (body vacío `{}`).
+        - Se resetea la contraseña del usuario existente.
+        - Se envía un email con la nueva contraseña temporal.
+
+        La respuesta incluye `temp_password` (mostrar al admin, no se almacena en BD).
+
+        **Rol requerido:** `admin` o `planner`
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID de la solicitud a aprobar.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApproveAccessRequestBody'
+            examples:
+              registration:
+                summary: Aprobar solicitud de registro
+                value:
+                  tenant_id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                  agent_id: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+              password_reset:
+                summary: Aprobar reset de contraseña
+                value: {}
+      responses:
+        '200':
+          description: Solicitud aprobada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            example: solicitud aprobada
+                          request:
+                            $ref: '#/components/schemas/AccessRequestResponse'
+                          temp_password:
+                            type: string
+                            description: "Contraseña temporal generada. Mostrar al admin y NO almacenar."
+        '400':
+          description: Faltan `tenant_id` / `agent_id` o son inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Solicitud no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: La solicitud ya fue revisada, o el usuario ya existe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /admin/access-requests/{id}/reject:
+    post:
+      tags: [admin-access-requests]
+      summary: Rechazar solicitud de acceso
+      description: |
+        Rechaza una solicitud pendiente.
+        Se envía un email de notificación al solicitante.
+
+        **Rol requerido:** `admin` o `planner`
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID de la solicitud a rechazar.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Body vacío (no se requiere ningún campo).
+      responses:
+        '200':
+          description: Solicitud rechazada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            example: solicitud rechazada
+                          request:
+                            $ref: '#/components/schemas/AccessRequestResponse'
+        '404':
+          description: Solicitud no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: La solicitud ya fue revisada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

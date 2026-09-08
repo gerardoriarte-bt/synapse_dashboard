@@ -861,7 +861,7 @@ alguien intenta usarlas.
   segunda fuente de verdad que se desincroniza en cuanto alguien cambie de rol.
   Hay una prueba que lo fija.
 
-### ➕ F0.13 ⬜ Modal bloqueante de cambio de contraseña
+### ➕ F0.13 ✅ Modal bloqueante de cambio de contraseña
 **Descripción.** El OpenAPI de `synapse-api-go` lo declara en `/auth/login`: «si
 `user.password_updated` es `false` el front debe mostrar un modal bloqueante
 solicitando cambio de contraseña antes de acceder a la app». El servicio entrega
@@ -877,7 +877,32 @@ spec, y el campo llega en la respuesta del login.
 - El mensaje sale del servicio · §8. La política de contraseña la valida él
   —`password_policy` está en su repositorio—, así que el front no la reimplementa.
 
-### ➕ F0.14 ⬜ Generar los tipos del servicio de acceso desde SU OpenAPI
+**Cerrada el 2026-09-08.** La decisión que la define es **dónde va el bloqueo**:
+en el `AuthGuard` y no en la pantalla de login. En el login sería decorativo —
+quien ya tiene token en `localStorage` no vuelve a pasar por ahí, así que
+escribir la URL lo esquiva. Por el guardia pasan las tres superficies.
+
+**Y de dónde sale `password_updated`, que era el problema interesante.** El front
+**no guarda el usuario** a propósito, así que no lo tenía. Sale de
+`GET /auth/token-info`: el servicio lee «los datos del usuario en BD y los claims
+del JWT activo», así que después de un cambio dice `true` aunque el token sea el
+viejo. Guardarlo en `localStorage` al entrar habría sido más barato y habría
+dejado a alguien afuera para siempre si cambiaba la contraseña desde otro lado.
+
+**Mientras se verifica, la superficie no se pinta.** Dejarla pasar «mientras
+tanto» convierte el bloqueo en un parpadeo que se puede aprovechar. Verificado
+por mutación.
+
+**Un fallo que no es 401 ni cierra la sesión ni deja pasar**: lo dice y ofrece
+reintentar. Las dos alternativas serían mentira. El 401 lo sigue manejando el
+`queryCache`.
+
+La política de contraseña **no se copió**: el servidor la declara —ocho
+caracteres, letra, número, especial, distinta de la actual— y devuelve en `error`
+el criterio que falló, en prosa. Dos validaciones se separan el día que cambien
+una, y la del front sería la que miente.
+
+### ➕ F0.14 ✅ Generar los tipos del servicio de acceso desde SU OpenAPI
 **Descripción.** `api/auth.ts` tiene los tipos **escritos a mano**, leídos de las
 estructuras de Go. El servicio publica un OpenAPI de 1.796 líneas —embebido en
 el binario, servido en `/docs/openapi.yaml`— así que hay un contrato y no lo
@@ -895,6 +920,26 @@ nosotros lo anotamos como decisión pendiente.
 - Queda decidido **de dónde se lee el spec**: una copia versionada acá, como
   `design/`, o un fetch contra el servicio. Lo segundo es más fresco y hace la
   puerta dependiente de la red.
+
+**Cerrada el 2026-09-08 · copia versionada**, en `contracts/synapse-auth.yaml`,
+por la misma razón por la que `design/` se mudó al repositorio: un chequeo que
+necesita la red no corre en un clone limpio ni en CI, y sale BLOQUEADO en vez de
+verificar. La cabecera del archivo dice que no es nuestro, de dónde salió y con
+qué sha256.
+
+**`contract-drift` se parametrizó en vez de duplicarse.** Dos comparadores del
+mismo tipo derivan; ahora es uno con `--auth` y la salida dice cuál contrato
+verificó. La puerta pasa a once chequeos.
+
+**El generador encontró algo del spec ajeno.** `ErrorResponse.success` está
+declarado como `boolean` OPCIONAL en vez de un literal `false`, así que la unión
+**no discrimina** y `body.success !== true` no estrecha nada. El código de Go sí
+lo pone siempre; es el spec el que quedó flojo. Se resolvió mirando el status
+HTTP, que además es más confiable: un 401 es un 401 aunque el cuerpo venga vacío
+o no sea JSON.
+
+Verificado por mutación en los dos sentidos: editar el `.ts` generado a mano, y
+cambiar el yaml sin regenerar.
 
 ### F0.6 ✅ Generar `src/api/types.ts` desde OpenAPI
 **Criterio de aceptación.** ✅ Cumplido con salvedad (D4).

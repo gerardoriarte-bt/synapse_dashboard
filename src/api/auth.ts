@@ -29,49 +29,131 @@
  *  error de §4.1, esto se borra y los dos servicios hablan igual.
  */
 import { ApiError } from './types'
+import { currentToken } from '../app/auth/session'
+import type { components } from './auth-generated'
+
+type AuthSchemas = components['schemas']
 
 const BASE = import.meta.env['VITE_AUTH_URL'] ?? import.meta.env.VITE_API_URL ?? '/api/v1'
 
-/** Lo que el servicio devuelve al entrar. Escrito desde `ports.LoginUserInfo`
- *  del repositorio de Go, con sus nombres en snake_case tal como viajan. */
-export type LoginUser = {
-  id: string
-  tenant_id: string
-  email: string
-  first_name: string
-  last_name: string
-  phone: string
-  role: string
-  /** `false` mientras el usuario siga con la contraseña que le asignaron.
-   *  **El servicio NO bloquea el login por esto**: devuelve un token válido
-   *  igual, así que forzar el cambio es del front. Ver F0.13. */
-  password_updated: boolean
-}
+/** Lo que el servicio devuelve al entrar.
+ *
+ *  **Generado, no escrito** · F0.14. La primera versión de este tipo se escribió
+ *  leyendo las estructuras de Go, y eso es escribir desde la implementación en
+ *  vez del contrato — el mismo error que la Fase 5 encontró en los fixtures. Ya
+ *  costó una: el spec declara que con `password_updated: false` el front debe
+ *  mostrar un modal bloqueante, y nosotros lo habíamos anotado como una decisión
+ *  de producto pendiente.
+ *
+ *  Las claves van en snake_case porque así viajan. No se traducen, por lo mismo
+ *  que no se traducen las del contrato de la consola. */
+export type LoginUser = AuthSchemas['LoginUserInfo']
 
-type GoEnvelope<T> = { success: true; data: T } | { success: false; error: string }
+/** El envelope del servicio. `ErrorResponse` sale del spec y confirma lo que ya
+ *  se veía en el código: `error` es una CADENA, no el objeto de §4.1. */
+type AuthError = AuthSchemas['ErrorResponse']
+type AuthOk<T> = { success?: boolean; data?: T }
 
-export async function login(email: string, password: string): Promise<{
-  token: string
-  user: LoginUser
-}> {
+/** Lo que un login exitoso devuelve. El spec declara `token` y `user` como
+ *  OPCIONALES dentro de `data` —`SuccessResponse & { data?: {...} }`— así que el
+ *  tipo generado los trae con `?`. Acá se estrecha una vez, con la comprobación
+ *  hecha, para que quien llama no arrastre dos opcionales por toda la app. */
+export type LoginResult = { token: string; user: LoginUser }
+
+export async function login(email: string, password: string): Promise<LoginResult> {
   const res = await fetch(`${BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   })
 
-  const body = (await res.json()) as GoEnvelope<{ token: string; user: LoginUser }>
+  const body = (await res.json()) as AuthOk<Partial<LoginResult>> & AuthError
 
-  if (!body.success) {
+  if (!res.ok) {
     // 401 son credenciales; el resto es un fallo del servicio. La diferencia
     // importa para el mensaje: «revisá tu correo y contraseña» contra «volvé a
     // intentar», que son dos acciones distintas · §8.
     throw new ApiError(
       res.status === 401 ? 'AUTH_CREDENCIALES' : 'AUTH_FALLO',
-      body.error,
+      body.error ?? '',
       res.status,
     )
   }
 
-  return body.data
+  // El spec los declara opcionales; un 200 sin token es un servicio roto y hay
+  // que decirlo, no seguir con `undefined` hasta que reviente en otro lado
+  // · §1 principio 6.
+  const { token, user } = body.data ?? {}
+  if (token === undefined || user === undefined) {
+    throw new ApiError('AUTH_FALLO', 'El servicio de acceso respondió sin sesión.', res.status)
+  }
+
+  return { token, user }
+}
+
+/** La sesión, según el servidor · F0.13.
+ *
+ *  **De acá sale `password_updated`, y no de guardarlo al entrar.** El login lo
+ *  devuelve y sería más barato meterlo en `localStorage`, pero eso es una
+ *  segunda fuente de verdad: quedaría en `false` para siempre si alguien cambia
+ *  la contraseña desde otro lado, y el usuario no podría entrar nunca más.
+ *
+ *  El servicio lee «los datos del usuario en BD y los claims del JWT activo»,
+ *  así que después de un cambio dice `true` aunque el token sea el viejo. */
+export async function tokenInfo(token: string): Promise<{ user: LoginUser }> {
+  const res = await fetch(`${BASE}/auth/token-info`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  const body = (await res.json()) as AuthOk<{ user?: LoginUser }> & AuthError
+
+  if (!res.ok) {
+    throw new ApiError(
+      res.status === 401 ? 'AUTH_CREDENCIALES' : 'AUTH_FALLO',
+      body.error ?? '',
+      res.status,
+    )
+  }
+
+  const user = body.data?.user
+  if (user === undefined) {
+    throw new ApiError('AUTH_FALLO', 'El servicio de acceso respondió sin usuario.', res.status)
+  }
+  return { user }
+}
+
+/** Cambiar la contraseña · F0.13.
+ *
+ *  **La política la valida el servidor y el front no la reimplementa.** El spec
+ *  la declara —ocho caracteres, letra, número, especial, distinta de la
+ *  actual— y devuelve en `error` el criterio que falló, en prosa. Copiarla acá
+ *  daría dos validaciones que se separan, y la del front sería la que miente.
+ *
+ *  Lo único que se declara en el input es `minLength={8}`, que evita un viaje
+ *  que ya se sabe que vuelve con 400. */
+export async function changePassword(current: string, next: string): Promise<LoginUser> {
+  const res = await fetch(`${BASE}/auth/change-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(currentToken() === null ? {} : { Authorization: `Bearer ${currentToken() as string}` }),
+    },
+    body: JSON.stringify({ current_password: current, new_password: next }),
+  })
+  const body = (await res.json()) as AuthOk<{ user?: LoginUser }> & AuthError
+
+  if (!res.ok) {
+    // Un 400 es la política; un 401 es la contraseña actual. Los dos traen el
+    // texto del servicio, que ya dice cuál criterio falló.
+    throw new ApiError(
+      res.status === 401 ? 'AUTH_CREDENCIALES' : 'AUTH_POLITICA',
+      body.error ?? '',
+      res.status,
+    )
+  }
+
+  const user = body.data?.user
+  if (user === undefined) {
+    throw new ApiError('AUTH_FALLO', 'El servicio no devolvió el usuario.', res.status)
+  }
+  return user
 }

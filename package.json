@@ -14,6 +14,7 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "gen:api": "openapi-typescript contracts/synapse-api.yaml -o src/api/generated.ts",
+    "gen:auth": "openapi-typescript contracts/synapse-auth.yaml -o src/api/auth-generated.ts",
     "gen:tokens": "python3 tools/gen-tokens.py",
     "plan": "python3 tools/plan-a-csv.py && python3 tools/plan-a-html.py",
     "plan:diff": "python3 tools/plan-diff.py",
@@ -21,6 +22,7 @@
     "design-lint": "python3 tools/design-lint.py",
     "spec-anclas": "python3 tools/spec-anclas.py",
     "contract-drift": "python3 tools/contract-drift.py",
+    "auth-drift": "python3 tools/contract-drift.py --auth",
     "token-drift": "python3 tools/token-drift.py",
     "contraste": "python3 tools/contraste.py",
     "carga-diferida": "python3 tools/carga-diferida.py"

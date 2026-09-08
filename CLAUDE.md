@@ -184,7 +184,9 @@ equivocado.
 | `npm run verify` | **la puerta** · `tools/gate.py` · typecheck, lint, los cuatro chequeos de diseño, test y build |
 | `npm run design-lint` | las 15 reglas duras sobre `src/`, en utilidades de Tailwind |
 | `npm run spec-anclas` | cada regla de `design.md` atada a su código y su aserción |
-| `npm run contract-drift` | `src/api/generated.ts` == el yaml |
+| `npm run contract-drift` | `src/api/generated.ts` == `contracts/synapse-api.yaml` |
+| `npm run auth-drift` | `src/api/auth-generated.ts` == `contracts/synapse-auth.yaml` |
+| `npm run gen:auth` | regenera los tipos del servicio de acceso |
 | `npm run token-drift` | `src/tokens/` == lo que el `.pen` emite, **byte a byte** |
 | `npm run contraste` | contraste WCAG de los pares que el producto pinta, en los dos temas |
 | `npm run carga-diferida` | un chunk por cuerpo en `dist/` · **corre después del build** |
@@ -318,6 +320,13 @@ la consola la sirve la API del contrato, que todavía no existe. Los dos publica
 bajo `/api/v1`, así que el front lleva dos bases: `VITE_AUTH_URL` para el acceso
 y `VITE_API_URL` para la consola. La primera cae a la segunda si algún día
 quedan detrás del mismo origen.
+
+**Su contrato se versiona acá.** `contracts/synapse-auth.yaml` es una copia del
+OpenAPI que ese servicio embebe en su binario, y `src/api/auth-generated.ts` sale
+de ella con `npm run gen:auth`. **No se escriben tipos a mano contra ese
+servicio**: la primera versión del cliente se escribió leyendo las estructuras de
+Go y ya costó una — el spec declaraba que con `password_updated: false` el front
+debe bloquear, y lo habíamos anotado como decisión pendiente.
 
 **Su envelope de error no es el de §4.1** —ahí `error` es una cadena, acá un
 objeto— y pasarlo por `api/client.ts` da `code: undefined` y `message: ""`: una
