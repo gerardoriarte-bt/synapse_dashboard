@@ -42,15 +42,31 @@ dependencia, y contarlo como prosa rompería el agrupado de las tareas que
 comparten bloque. Lo que sí hace es marcar la tarea como bloqueada, que es lo que
 el ticket necesita saber.
 
-**Los otros documentos tienen un rol y no se superponen:**
+### Registro de documentos · lo que `docs/` puede contener
 
-| | |
+**Esta tabla es la lista blanca, y una máquina la hace cumplir.**
+`npm run docs-registro` recorre `docs/` y **falla con cualquier archivo que no
+caiga en un patrón de acá**. Es el freno a lo que pasó el 2026-09-14: cuatro
+documentos diciendo lo mismo y el más viejo mintiendo.
+
+Agregar un documento es legítimo — lo que no es legítimo es agregarlo **sin
+decir qué rol cumple**, porque ahí empieza la superposición.
+
+| Patrón | Rol |
 |---|---|
-| `docs/snowflake/` | Entregable a **ingeniería de datos**, no al backend. Instrucción y SQL |
+| `docs/ESTADO.md` | **GENERADO** · el estado del proyecto. **Lo que se consulta y se reenvía** |
+| `docs/PARA-BACKEND.md` | **GENERADO** · lo que el front espera del backend |
+| `docs/snowflake/*` | Entregable a **ingeniería de datos**, no al backend. Instrucción y SQL |
 | `docs/PLAN-INTEGRACION-*.md` | El **análisis** que fundamenta los pedidos, campo por campo |
-| `docs/ESTADO-*.md` | Un **corte** verificado contra el servicio, con fecha. No se actualiza: se reemplaza |
+| `docs/ESTADO-*-*.md` | Un **corte** verificado contra el servicio, con fecha. No se actualiza: se reemplaza |
 | `docs/BITACORA-*.md` | **Histórico.** Lo que costó descubrir. No se tocan |
-| `docs/historico/` | Documentos vencidos que se conservan por su razonamiento, con el aviso adentro |
+| `docs/AUDITORIA-*.md` | **Histórico.** Un cruce puntual, con fecha |
+| `docs/ENTREGA-*.md` | **Histórico.** Qué se entregó y cuándo |
+| `docs/B0.9-preguntas-abiertas.md` | Las preguntas del contrato, con su resolución |
+| `docs/F1.28-escala-tipografica.md` | La bitácora de una tarea que cambió el sistema |
+| `docs/FOLDER_STRUCTURE.md` | La estructura de `src/`, para quien llega |
+| `docs/historico/*` | Documentos **vencidos**, con el aviso adentro. No se consultan para planificar |
+| `docs/backdocs/*` | Material del equipo de backend · **ignorado por git** |
 
 Los dos derivados **se pisan enteros** en cada corrida: editarlos a mano es
 trabajo que se pierde. Un solo parser produce los dos —`tools/plan-a-csv.py`
