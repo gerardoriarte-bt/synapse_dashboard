@@ -7,24 +7,43 @@ de una respuesta real, y abajo dice cuál.
 
 ---
 
-## ⚠️ Primero: la numeración no coincide
+## ⚠️ Primero: la numeración se separó, y hay un ancestro que lo resuelve
 
-**`B1.13` no quiere decir lo mismo en los dos planes.** Los identificadores de
-este documento son los de `plan-de-trabajo.md` (front); los de
-`docs/dynamic-dashboard-backend.md` (backend) son otros. Sin esta tabla, «B1.13»
-se lee como «sincronizar catálogo» de un lado y «presentación opcional» del otro.
+Los identificadores de este documento son los de **`tareas-front-back.md`**, que
+es el **ancestro común de los dos planes**: está en la raíz de `synapse-api-go` y
+en la raíz del repo de front, y son **el mismo archivo byte a byte** — mismo md5,
+verificado hoy.
 
-| Acá | En el plan del backend | De qué se habla |
+`plan-de-trabajo.md` del front lo declara desde su primera línea —«se conservan
+sus identificadores `B*` / `F*` para no perder el hilo»— y lo cumple: **los 151
+identificadores del ancestro siguen ahí**, 144 con tarea propia y 7 absorbidos
+por otra que dice cuál. Desde hoy lo verifica una herramienta en cada corrida de
+la puerta, porque una promesa que no se verifica no se sostiene.
+
+**`docs/dynamic-dashboard-backend.md` renumeró desde `B1.4` en adelante**, y
+comprimió las 19 tareas de Fase 1 del ancestro en 14. No es un reproche: pasa
+solo cuando dos equipos escriben su propio plan. Pero **los códigos ya están
+cargados en la plataforma de seguimiento con la numeración del ancestro**, así
+que hoy «B1.13» significa dos cosas según quién lo lea.
+
+| ID del ancestro | Qué es | En su documento aparece como |
 |---|---|---|
-| **B1.13** | B1.11 | `Presentation` opcional en el batch |
-| **B1.14** | B1.12 | Transformación `rows → shape → value` |
-| **B1.15** | B1.8 (parcial) | Validar reglas mínimas por forma |
-| **B1.16** | B0.6 | Seed de demo |
-| **B1.17** | B0.1 + catálogo | Modelo `Metrica` completo |
-| **B1.18** | B1.13 | Sincronizar catálogo con Snowflake |
-| **B1.19** | B1.2 | Filtrar catálogo por rol |
+| **B1.13** | `Presentation` opcional: label, medidor, comparativo, nota | B1.11 |
+| **B1.14** | Transformación a las 12+ formas de `Valor` | B1.12 |
+| **B1.15** | Validar reglas mínimas **por forma** | B1.8 (pero valida por tipo) |
+| **B1.16** | Seed de demo | B0.6 |
+| **B1.17** | Modelo `Metrica` completo | — (dentro de B0.1 y el catálogo) |
+| **B1.18** | Sincronizar catálogo con Snowflake | B1.13 |
+| **B1.19** | Filtrar catálogo por rol | B1.2 |
 
----
+Y donde más confunde: **su `B1.13` es el `B1.18` del ancestro.** Un ticket que
+diga «B1.13 hecho» se entiende como «presentación lista» o como «catálogo
+sincronizado» según el lado.
+
+**Lo que pedimos, y es lo más barato de todo este documento:** volver a los
+identificadores del ancestro en su plan, o agregarle una columna que mapee los
+suyos a los de él. No hace falta tocar sus commits ni su historia — alcanza con
+que el documento diga la equivalencia, como la dice esta tabla.
 
 ## Resumen
 
@@ -53,12 +72,17 @@ métricas, sobre un layout publicado `Overview` con su pregunta operativa.
 > *Cómo se verificó:* `GET /config/tabs/{tabId}` devuelve 12 paneles;
 > `GET /config/catalog`, 12 métricas.
 
-**Una observación, no un pedido:** la descripción de esta tarea menciona «Brand
-Momentum» y esa métrica no está en el seed. Las doce son `daily_trend`,
+**Falta una métrica que el ancestro pide por nombre.** `B1.16` dice
+textualmente «seed de 1 tenant + 1 layout publicado + 1 pestaña con 4–6 paneles
+de ejemplo **(Brand Momentum)**», y esa métrica no está. Las doce son
+`daily_trend`,
 `decisions`, `executive_summary`, `goals_vs_actual`, `investment`,
 `investment_by_platform`, `orders`, `roas`, `sales`, `twelve_month_efficiency`,
-`units`, `visits`. Si Brand Momentum tenía que estar, falta; si no, conviene
-sacarla de la descripción.
+`units`, `visits`.
+
+No sabemos si sigue siendo un requisito o si quedó viejo. Si quedó viejo, lo
+mejor es **sacarlo del ancestro**, que es de los dos: mientras esté escrito, el
+próximo que lea la tarea la va a dar por incompleta.
 
 ---
 
@@ -229,6 +253,9 @@ catálogo venga recortado y que un panel oculto llegue en `FORBIDDEN`.
 5. **`presentation` para las formas que no son escalares** — es la que choca con
    «ningún número desnudo».
 6. **La vista `SYNAPSE_METRIC_CATALOG`** — con el SQL que dejamos, si les sirve.
+7. **Los identificadores del ancestro en su plan**, o una columna de
+   equivalencia. Es edición de un documento y evita que dos equipos entiendan
+   cosas distintas del mismo ticket.
 
 ---
 

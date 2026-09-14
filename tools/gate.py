@@ -34,6 +34,7 @@ CHEQUEOS = [
     ("contract-drift", [sys.executable, "tools/contract-drift.py"], True),
     ("auth-drift", [sys.executable, "tools/contract-drift.py", "--auth"], True),
     ("console-drift", [sys.executable, "tools/contract-drift.py", "--console-wire"], True),
+    ("plan-ancestro", [sys.executable, "tools/plan-ancestro.py"], True),
     ("token-drift", [sys.executable, "tools/token-drift.py"], True),
     ("contraste", [sys.executable, "tools/contraste.py"], True),
     ("test", ["npm", "run", "--silent", "test"], False),

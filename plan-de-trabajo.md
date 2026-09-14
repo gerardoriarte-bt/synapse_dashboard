@@ -54,6 +54,42 @@ El import es **idempotente**: la columna `ID` es la clave externa, así que volv
 a importar el CSV actualiza los tickets existentes en vez de duplicarlos.
 Configurar ese campo en la plataforma es parte de T6.
 
+### Los identificadores salen del ancestro, y eso ahora se verifica
+
+**`tareas-front-back.md` es el ancestro común de los dos planes.** Está en la
+raíz de este repositorio y en la de `synapse-api-go`, **byte a byte iguales**
+—mismo md5, comprobado el 2026-09-14—. Este archivo declara desde su primera
+línea que conserva sus `B*` / `F*` «para no perder el hilo», y lo cumple: los 151
+identificadores siguen acá, 144 con tarea propia y 7 absorbidos por otra que dice
+cuál.
+
+**Esa promesa no la verificaba nadie hasta hoy**, y el día que se miró apareció
+por qué importa: `docs/dynamic-dashboard-backend.md` del backend **renumeró desde
+`B1.4`** y comprimió las 19 tareas de Fase 1 en 14. Su `B1.13` es el `B1.18` de
+acá. Con los códigos ya cargados en la plataforma, un ticket que diga «B1.13
+hecho» se entiende como «presentación lista» o como «catálogo sincronizado» según
+quién lo lea.
+
+**Un identificador que significa dos cosas es peor que dos identificadores**: se
+lee, se entiende al revés, y nadie se entera hasta que alguien entrega otra cosa.
+
+```
+npm run plan:ancestro     los IDs del plan == los del ancestro
+```
+
+Corre en la puerta. Falla si un ID del ancestro **desaparece sin dejar dicho
+dónde fue** — o tiene encabezado propio, o alguien escribió qué tarea lo
+absorbió. Lo que agregamos nosotros —los `➕`— se informa y no se marca: sumar
+tareas es normal, reasignar identificadores no.
+
+Verificado por mutación renumerando `B1.13`, que es exactamente lo que pasó del
+otro lado.
+
+**Lo que se le pidió al backend** está en
+`docs/ESTADO-B1.13-B1.19-2026-09-14.md`: volver a los IDs del ancestro, o
+agregar una columna de equivalencia. Es edición de un documento; no hace falta
+que toquen su historia.
+
 ## Cómo leer el estado
 
 | | |
