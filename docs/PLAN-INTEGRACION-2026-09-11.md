@@ -359,11 +359,12 @@ transcripción se borra.
 
 ### Decisiones de una línea
 
-7. **`semantic_direction`: ¿código o texto?** El contrato lo declara como «texto
-   que se pinta tal cual» —«MÁS ALTO = MEJOR»—; el cable trae
-   `"HIGHER_IS_BETTER"`. Si es código, el front necesita la lista cerrada y
-   alguien tiene que redactar las etiquetas; si es texto, que venga redactado.
-   **El front no escribe copy de producto.**
+7. ~~**`semantic_direction`: ¿código o texto?**~~ **CERRADA el 2026-09-14
+   contra el servicio real.** Es **texto ya redactado**: las doce métricas del
+   tenant mandan `HIGHER = BETTER`, no `HIGHER_IS_BETTER`. El comentario de
+   `dd_catalog_metric.go` sugería lo contrario y era de lo que salió la
+   pregunta. El front lo pinta y no lo traduce, que es lo que el adaptador ya
+   hacía. Nada que pedir.
 8. **¿`shape`, `family` y `layer` son enumerados cerrados?** Hoy son `string`
    libre y `sync-catalog` hace upsert de lo que diga una vista de Snowflake. Del
    `family` sale el color de datos. Ver §2.

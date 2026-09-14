@@ -2259,7 +2259,7 @@ el adaptador es coherente con lo que nosotros creemos del cable, no con el cable
 - Queda registrado qué se verificó y con qué commit del backend.
 
 
-#### ➕ F1.40 ⬜ `Presentacion` llega al cuerpo · hoy está declarada y nadie la pasa
+#### ➕ F1.40 ✅ `Presentacion` llega al cuerpo · hoy está declarada y nadie la pasa
 **Descripción.** `BodyProps.presentation` existe en `render/types.ts`, está
 documentada correctamente —«rótulos y cifras de apoyo, redactados por el backend;
 viajan con el dato y no con el layout porque dependen del período»— y **ningún
@@ -2285,6 +2285,47 @@ los datos en `presentation`.
   romper una prueba.
 - Los otros once cuerpos declaran si usan `presentation` o no. El que no la usa
   no la recibe: una prop opcional que nadie lee es cómo esta se perdió.
+
+**Cerrada el 2026-09-14, y dejó de ser teórica ese mismo día.** Al correr la
+consola contra el servicio real apareció la evidencia: el payload traía
+
+    "presentation": { "label": "USD · TOTAL",
+                      "meter": { "label": "PERFORMANCE WEIGHT", "percentage": 61,
+                                 "note": "USD 2.61M OF USD 4.28M" },
+                      "comparative": [ { "label": "VS PREVIOUS MONTH", "delta": 6.4 },
+                                       { "label": "VS PRIOR YEAR",     "delta": 11.2 } ] }
+
+y la pantalla mostraba **`TOTAL` y `4.28M`**, nada más. `TOTAL` ni siquiera era
+ese label: era el default de `KpiBody`. El dato llegaba, el adaptador lo
+traducía, y se perdía en el último salto.
+
+**El arreglo son dos líneas y un cambio de tipo.** `PanelInGrid` pasa
+`payload.presentacion`, y `KpiParams` deja de llevar datos —`label`,
+`comparativo`, `medidor` con su contenido— para llevar los dos interruptores que
+el layout sí decide. Ausente muestra lo que el payload traiga; solo un `false`
+explícito oculta. Con el interruptor en `true` y sin dato no se inventa nada: el
+interruptor dice «acá va», no «inventá uno».
+
+**Las pruebas del cuerpo fijaban el defecto.** `KpiBody.test.tsx` metía el
+rótulo y el medidor en `params`, así que pasaban con el cuerpo leyendo del
+layout — la prueba verificaba que el bug funcionara. Movido el helper a
+`presentation`, y agregada la que faltaba: **el mismo layout con otro payload
+cambia el medidor**, que es la garantía por la que `Presentacion` existe.
+
+**Y una de superficie, porque un cuerpo solo no puede verla.** `KpiBody` prueba
+que pinta lo que le pasan; lo que faltaba era que ALGUIEN se lo pasara. La cadena
+`batch → adaptPayload → ConsoleContainer → PanelInGrid → Body` son cuatro saltos
+—la que `CLAUDE.md` nombra— y ninguna prueba la recorría entera con presentación.
+
+**Verificada por mutación, tres casos:** nadie pasa la presentación (el estado de
+ayer, 1 falla), el rótulo vuelve al layout (4 fallas), el medidor se descarta (6
+fallas). Y confirmada en pantalla contra el servicio real.
+
+**Sobre el criterio de «el que no la usa no la recibe»:** los doce cuerpos
+comparten `BodyProps`, así que `PanelInGrid` la pasa a todos y la declaración es
+no destructurarla. Once no la tocan. Dejarlo así y no partir el tipo es lo
+correcto mientras `Presentacion` siga siendo opcional en el contrato — el día que
+un segundo cuerpo la use, no hay nada que cambiar.
 
 #### ➕ F1.41 ⬜ Los nombres de los params, del cable al contrato
 **Descripción.** `PARAM_SCHEMAS` espera los params en español —`maximo`,

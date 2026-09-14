@@ -350,3 +350,39 @@ describe('§7 · cambiar de período NO vuelve a pedir el layout', () => {
     expect(layouts).toHaveLength(1)
   })
 })
+
+describe('F1.40 · la presentación del payload llega al cuerpo', () => {
+  // **Lo que un cuerpo solo no puede verificar.** `KpiBody.test.tsx` comprueba
+  // que pinta lo que le pasan; esto comprueba que ALGUIEN se lo pase. El hueco
+  // era justo ese: la prop estaba declarada, el cuerpo la habría leído, y la
+  // cadena `batch → adaptPayload → ConsoleContainer → PanelInGrid → Body` no la
+  // llevaba. Es la cadena de cuatro saltos que CLAUDE.md nombra.
+  //
+  // Encontrado corriendo la consola contra el servicio real: el payload traía
+  // medidor al 61% y dos comparativos, y en pantalla estaba la cifra sola.
+
+  it('el medidor y el comparativo del cable se ven en el panel', async () => {
+    conUnPanel({
+      ...DISPONIBLE,
+      presentation: {
+        label: 'USD · TOTAL',
+        meter: { label: 'PESO DE PERFORMANCE', percentage: 61, note: 'USD 2.61M DE USD 4.28M' },
+        comparative: [{ label: 'VS MES ANTERIOR', delta: 6.4 }],
+      },
+    })
+    montar()
+
+    // El rótulo del payload gana sobre el default del cuerpo.
+    expect(await screen.findByText('USD · TOTAL')).toBeInTheDocument()
+    expect(screen.getByText('PESO DE PERFORMANCE')).toBeInTheDocument()
+    expect(screen.getByText('VS MES ANTERIOR')).toBeInTheDocument()
+  })
+
+  it('sin presentación el panel sigue dibujando la cifra', async () => {
+    // Las otras siete formas no traen presentación —§4 ask 13— y eso no puede
+    // dejar el panel en blanco.
+    conUnPanel(DISPONIBLE)
+    montar()
+    expect(await screen.findByText('USD 4.28M')).toBeInTheDocument()
+  })
+})

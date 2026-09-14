@@ -77,6 +77,16 @@ export function PanelInGrid({
       return <Label as="div">Sin cuerpo para el tipo «{panel.tipo}»</Label>
     }
 
+    // **Los rótulos viajan con el DATO y no con el layout** · F1.40.
+    //
+    // `BodyProps.presentation` estaba declarada desde el port y NADIE la pasaba:
+    // `KpiBody` leía `label`, `medidor` y `comparativo` de `params`, o sea del
+    // layout. El contrato dice lo contrario y explica por qué — «el medidor
+    // marca 61% este mes y otra cosa el siguiente».
+    //
+    // Con el servicio real dejó de ser teórico: el payload trae `presentation`
+    // completa —medidor al 61%, dos comparativos, el label «USD · TOTAL»— y la
+    // pantalla mostraba la cifra sola.
     return (
       // EL MISMO ESQUELETO que el estado de carga, y no `null`. Para quien mira,
       // un chunk en vuelo y un dato en vuelo son indistinguibles: si el chunk
@@ -91,6 +101,7 @@ export function PanelInGrid({
           metric={metric.nombre}
           format={format}
           {...(metric.unidad == null ? {} : { unit: metric.unidad })}
+          {...(payload.presentacion === undefined ? {} : { presentation: payload.presentacion })}
         />
       </Suspense>
     )

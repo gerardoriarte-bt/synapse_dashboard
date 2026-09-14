@@ -4,21 +4,38 @@ import { Value } from '../primitives/Value'
 import { hue } from '../plots/core/seriesColor'
 import type { BodyProps } from '../types'
 
+/** **Interruptores, no datos** · F1.40.
+ *
+ *  Hasta hoy acá vivían `label`, `comparativo` y `medidor` con su CONTENIDO, y
+ *  eso contradecía al contrato: `Presentacion` los declara en el payload y dice
+ *  por qué —«el medidor marca 61% este mes y otra cosa el siguiente»—. Con los
+ *  rótulos en el layout, la cifra cambiaba de mes y el rótulo no.
+ *
+ *  Lo que queda son los dos interruptores que el layout sí decide: si este panel
+ *  compone medidor y comparativo. **Ausente = se muestra lo que el payload
+ *  traiga**; solo un `false` explícito lo oculta. Con `true` y sin dato en el
+ *  payload no se pinta nada, que es lo correcto: el interruptor dice «acá va»,
+ *  no «inventá uno». */
 export type KpiParams = {
-  /** Qué dice el label sobre la cifra. El `.pen` mete ahí la unidad —«USD ·
-   *  TOTAL»— en vez de pegarla al número. */
-  label?: string
-  /** Comparaciones contra otro período. El signo comunica dirección; el color
-   *  no, que es la regla dura 3. */
-  comparativo?: { label: string; delta: number; unidad?: string }[]
-  /** Avance contra un objetivo. `nota` explica qué es el 100%. */
-  medidor?: { label: string; porcentaje: number; nota?: string }
+  medidor?: boolean
+  comparativo?: boolean
 }
 
 const FULL = 100
 
-export function KpiBody({ value, params, family, unit, format }: BodyProps<'escalar', KpiParams>) {
-  const { comparativo = [], medidor, label = 'Total' } = params
+export function KpiBody({
+  value,
+  params,
+  presentation,
+  family,
+  unit,
+  format,
+}: BodyProps<'escalar', KpiParams>) {
+  // **El rótulo y las cifras de apoyo salen del PAYLOAD** · F1.40. Del layout
+  // salen solo los interruptores.
+  const label = presentation?.label ?? 'Total'
+  const medidor = params.medidor === false ? undefined : presentation?.medidor
+  const comparativo = params.comparativo === false ? [] : (presentation?.comparativo ?? [])
 
   // La unidad va en la cifra SOLO si el label no la lleva ya. El `.pen` escribe
   // «USD · TOTAL» arriba y «12.4M» abajo, y no por gusto: a 44px «USD 4.28M» no

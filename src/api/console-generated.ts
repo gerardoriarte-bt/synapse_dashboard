@@ -270,9 +270,20 @@ export interface components {
             base: string;
             unit?: string | null;
             /**
-             * @description El servicio manda un CÓDIGO; el contrato declara texto que se pinta
-             *     tal cual. Pregunta abierta al backend.
-             * @example HIGHER_IS_BETTER
+             * @description **TEXTO que se pinta tal cual, no un código** · corregido el
+             *     2026-09-14 contra el servicio real (F1.39).
+             *
+             *     La transcripción original decía «el servicio manda un CÓDIGO» y daba
+             *     `HIGHER_IS_BETTER` de ejemplo — salía de leer el comentario de
+             *     `dd_catalog_metric.go`, que dice «Ej. `HIGHER_IS_BETTER` para
+             *     color/flecha en front». El dato real de las doce métricas del tenant
+             *     dice `HIGHER = BETTER`: ya redactado, como el contrato lo declara.
+             *
+             *     Es la única diferencia que el humo encontró entre el cable real y
+             *     esta transcripción. Cierra la pregunta 7 de §4 del plan de
+             *     integración: **el front lo pinta y no lo traduce**, que es lo que el
+             *     adaptador ya hacía.
+             * @example HIGHER = BETTER
              */
             semantic_direction?: string | null;
             /**
