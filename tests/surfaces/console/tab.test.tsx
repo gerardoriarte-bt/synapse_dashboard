@@ -19,82 +19,89 @@ import { describe, expect, it } from 'vitest'
 import { ConsoleContainer } from '@/surfaces/console/ConsoleContainer'
 import { API, context, ok } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
-import type { Metric } from '@/api/types'
+import type { WireMetric, WirePanel } from '@/api/adapt'
 
-const gobierno = {
+/** Anidado en `governance` y con las claves del servicio · así viaja. */
+const governance = {
   base: '48 tiendas sobre 52',
-  capa: 'GOLD',
-  fuente: 'Snowflake',
-  frescura: '2026-09-02T08:00:00Z',
-  catalogVersion: 1,
+  layer: 'GOLD',
+  source: 'Snowflake',
+  freshness: '2026-09-02T08:00:00Z',
+  catalog_version: 1,
 }
 
-/** (tipo de panel, forma de la métrica, nombre, valor). Los cinco tipos que
- *  cubren cinco cuerpos distintos y cinco formas del contrato. */
+/** (tipo de panel, forma de la métrica EN EL CABLE, nombre, valor). Los cinco
+ *  tipos que cubren cinco cuerpos distintos y cinco formas.
+ *
+ *  **La forma va en el idioma del servicio** —`scalar`, no `escalar`— porque es
+ *  lo que `/config/catalog` manda y lo que el adaptador tiene que traducir. El
+ *  `valor` sigue en la forma del contrato: el payload lo adapta F1.34. */
 const PANELES = [
-  ['kpi', 'escalar', 'Venta diaria', { forma: 'escalar', v: 4280000 }],
-  ['bars', 'categorica', 'Ventas por canal', {
-    forma: 'categorica',
-    items: [{ etiqueta: 'Tienda', v: 60 }, { etiqueta: 'Online', v: 40 }],
+  ['kpi', 'scalar', 'Venta diaria', { shape: 'scalar', v: 4280000 }],
+  ['bars', 'categorical', 'Ventas por canal', {
+    shape: 'categorical',
+    items: [{ label: 'Tienda', v: 60 }, { label: 'Online', v: 40 }],
   }],
   ['list', 'ranking', 'Reposición prioritaria', {
-    forma: 'ranking',
-    items: [{ etiqueta: 'Talla M', v: 2, posicion: 1 }],
+    shape: 'ranking',
+    items: [{ label: 'Talla M', v: 2, position: 1 }],
   }],
-  ['prose', 'prosa', 'Lectura del mes', {
-    forma: 'prosa',
-    titular: 'El inventario cubre 31 días.',
-    pilares: [{ label: 'Cobertura', valor: '31 d' }],
+  ['prose', 'prose', 'Lectura del mes', {
+    shape: 'prose',
+    headline: 'El inventario cubre 31 días.',
+    // `value` del cable, `valor` del contrato: el pilar cita una cifra ya
+    // formateada y el adaptador solo le cambia el nombre a la clave.
+    pillars: [{ label: 'Cobertura', value: '31 d' }],
   }],
   ['table', 'tabular', 'Detalle por tienda', {
-    forma: 'tabular',
-    // `clave`, `titulo` y `numerica` son los tres `required` del contrato. El
-    // primer intento los escribió de memoria —`etiqueta` en vez de `titulo`— y
-    // la tabla se dibujaba vacía sin decir nada.
-    columnas: [
-      { clave: 'tienda', titulo: 'Tienda', numerica: false },
-      { clave: 'venta', titulo: 'Venta', numerica: true },
+    shape: 'tabular',
+    // `key`, `title` y `numeric` en el cable; `clave`, `titulo` y `numerica` en
+    // el contrato. El primer intento del contrato los escribió de memoria
+    // —`etiqueta` en vez de `titulo`— y la tabla se dibujaba vacía sin decirlo.
+    columns: [
+      { key: 'tienda', title: 'Tienda', numeric: false },
+      { key: 'venta', title: 'Venta', numeric: true },
     ],
-    filas: [{ tienda: 'Polanco', venta: 1200 }],
+    rows: [{ tienda: 'Polanco', venta: 1200 }],
   }],
 ] as const
 
-const metrics = PANELES.map(([tipo, forma, nombre]) => ({
+const metrics = PANELES.map(([tipo, shape, name]) => ({
   id: `m-${tipo}`,
+  tenant_id: 't-1',
   key: `k_${tipo}`,
-  nombre,
-  forma,
-  familia: 'demanda',
-  capa: 'GOLD',
-  fuente: 'Snowflake',
-  ventana: 'Últimos 30 días',
+  name,
+  shape,
+  family: 'demand',
+  layer: 'GOLD',
+  source: 'Snowflake',
   base: '48 tiendas sobre 52',
-  granoMinimo: 'mes',
-  estado: 'DISPONIBLE',
-  catalogVersion: 1,
+  min_grain: 'month',
+  dimensions: [],
+  catalog_version: 1,
   // La unidad es de la MÉTRICA y el KPI la antepone: sin ella la cifra sale
   // «4.28M» y no «USD 4.28M».
-  ...(tipo === 'kpi' ? { unidad: 'USD' } : {}),
-})) as unknown as Metric[]
+  ...(tipo === 'kpi' ? { unit: 'USD' } : {}),
+})) as unknown as WireMetric[]
 
 // La grilla es de 12: tres arriba de 4, dos abajo de 6.
 const panels = PANELES.map(([tipo], i) => ({
   id: `p-${tipo}`,
-  tipo,
-  metricId: `m-${tipo}`,
-  colStart: i < 3 ? i * 4 + 1 : (i - 3) * 6 + 1,
-  colSpan: i < 3 ? 4 : 6,
-  rowSpan: 4,
-}))
+  type: tipo,
+  metric_id: `m-${tipo}`,
+  col_start: i < 3 ? i * 4 + 1 : (i - 3) * 6 + 1,
+  col_span: i < 3 ? 4 : 6,
+  row_span: 4,
+})) as unknown as WirePanel[]
 
 const payloads = Object.fromEntries(
-  PANELES.map(([tipo, , , valor]) => [`p-${tipo}`, { estado: 'DISPONIBLE', valor, ...gobierno }]),
+  PANELES.map(([tipo, , , value]) => [`p-${tipo}`, { status: 'AVAILABLE', value, governance }]),
 )
 
 function laPestana(payloadsUsados: Record<string, unknown> = payloads) {
   server.use(
-    http.get(`${API}/config/catalog`, () => ok({ metrics })),
-    http.get(`${API}/config/tabs/:tabId`, () => ok({ ...context.tabs[0], panels })),
+    http.get(`${API}/config/catalog`, () => ok(metrics)),
+    http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: context.tabs[0], panels })),
     http.post(`${API}/config/panels:batch`, () => ok(payloadsUsados)),
   )
 }
@@ -185,7 +192,7 @@ describe('fallo parcial · un panel roto no arrastra a los otros', () => {
   it('cuatro con cifra y uno en ERROR, en la misma respuesta', async () => {
     laPestana({
       ...payloads,
-      'p-table': { estado: 'ERROR', mensaje: 'El almacén no respondió.' },
+      'p-table': { status: 'ERROR', message: 'El almacén no respondió.' },
     })
     montar()
 

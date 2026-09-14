@@ -1,0 +1,570 @@
+openapi: 3.1.0
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Synapse · EL CABLE de la consola
+#
+# ⚠ ESTO NO ES UN CONTRATO FIRMADO. Es una TRANSCRIPCIÓN escrita por el equipo
+# de front leyendo el código de Go, porque el servicio todavía no publica un
+# spec de estas rutas.
+#
+#   Transcrito el 2026-09-14 desde `AntPack-dev/synapse-api-go`
+#   rama   feature/dynamic-dashboard-backend
+#   commit 733c13c37dd54b9705e714cbc4718d8aa498092b  (2026-09-11)
+#
+# Archivos leídos, y son la autoridad si esto difiere:
+#   internal/core/ports/dd_config_service.go      los DTO de las seis rutas
+#   internal/core/services/dd_config_service.go   estados, gobierno, períodos
+#   internal/core/dashboard/blocks.go             BlockRule
+#   internal/core/domain/dd_catalog_metric.go     la métrica, con sus json tags
+#   internal/core/domain/dd_panel_data.go         las cinco constantes de estado
+#   internal/core/dashboard/materialize/          las nueve formas de `value`
+#   internal/adapters/handler/response.go         el envelope
+#   internal/adapters/handler/router.go           las rutas y sus middlewares
+#
+# ── POR QUÉ EXISTE ESTE ARCHIVO ──────────────────────────────────────────────
+#
+# `contracts/synapse-api.yaml` declara lo que el PRODUCTO necesita. Este declara
+# lo que el SERVICIO manda hoy. No coinciden, y la diferencia la absorbe
+# `src/api/adapt.ts` — el contrato sigue siendo la forma interna del front.
+#
+# Se escribe acá y no se tipa a mano contra el servicio por una razón con
+# antecedente: la primera versión del cliente de acceso se escribió leyendo
+# estructuras de Go y ya costó un error. Con el yaml, `console-drift` verifica
+# que los tipos no deriven de lo que dice este archivo.
+#
+# ── CUÁNDO SE BORRA ──────────────────────────────────────────────────────────
+#
+# Cuando el backend cierre su B0.7 —«extender el contrato con los 6 endpoints de
+# consola»— y su binario publique estas rutas en el OpenAPI que ya embebe. Ese
+# día este archivo se REEMPLAZA por el suyo y no cambia nada más: el adaptador
+# tipa contra `src/api/console-generated.ts`, que se genera de acá.
+#
+# ── LO QUE NO ESTÁ ───────────────────────────────────────────────────────────
+#
+# `/config/chat`, `/config/chat/hilos`, `/config/decisiones`,
+# `/config/accionables` y `/config/solicitudes` NO existen en el servicio. No se
+# transcriben: declarar una ruta que nadie sirve es el mismo problema que un
+# chequeo que pasa porque no encontró nada.
+# ─────────────────────────────────────────────────────────────────────────────
+
+info:
+  title: Synapse · el cable de la consola
+  version: 0.1.0-transcripcion
+  description: |
+    Las seis rutas `/config/*` que sirve `synapse-api-go`, tal como las sirve.
+
+    **Nombres en inglés snake_case**, que es la convención del servicio. No se
+    traducen acá: este archivo describe el cable. La traducción al vocabulario
+    del contrato ocurre una sola vez, en `src/api/adapt.ts`.
+
+servers:
+  - url: /api/v1
+
+security:
+  - bearer: []
+
+tags:
+  - name: config
+    description: Namespace `/config/*` · middleware JWT · el mismo binario que `/auth/*`.
+
+paths:
+  /config/me:
+    get:
+      tags: [config]
+      operationId: getMe
+      summary: Contexto del usuario del token
+      description: |
+        `DDConfigHandler.GetMe`. Las tabs salen del layout publicado del tenant,
+        filtradas por `roles.tab_ids`. El filtrado por rol lo hace el servidor.
+      responses:
+        '200':
+          description: Contexto
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/ContextResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /config/catalog:
+    get:
+      tags: [config]
+      operationId: getCatalog
+      summary: Métricas del tenant, filtradas por rol
+      description: |
+        `data` es un **arreglo desnudo**, no `{ metrics: [...] }`. Sale de
+        `SendSuccess(c, 200, metrics)` con `[]domain.DDCatalogMetric`.
+      responses:
+        '200':
+          description: Catálogo
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/CatalogMetric' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /config/blocks:
+    get:
+      tags: [config]
+      operationId: getBlocks
+      summary: La tabla tipo ↔ formas ↔ rangos de span
+      description: |
+        Catálogo GLOBAL, no por tenant. Sale de la tabla `blocks`. `data` también
+        es un arreglo desnudo.
+      responses:
+        '200':
+          description: Reglas de bloque
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/BlockRule' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /config/tabs/{tabId}:
+    get:
+      tags: [config]
+      operationId: getTab
+      summary: La composición de una pestaña, sin datos
+      description: |
+        Paneles filtrados por `roles.hidden_metric_ids` y con
+        `roles.layout_overrides` ya aplicados. Un `tabId` que no pertenece al
+        tenant devuelve **404**, no 403.
+      parameters:
+        - name: tabId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: layoutId
+          in: query
+          required: false
+          description: |
+            Sin él, el layout publicado del tenant. Con él, valida que el layout
+            sea del tenant y que la tab sea de ese layout — permite borradores.
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Pestaña con paneles
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/TabWithPanels' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /config/panels:batch:
+    post:
+      tags: [config]
+      operationId: batchPanels
+      summary: Los payloads de varios paneles en una llamada
+      description: |
+        **Los dos campos del body son `required` en el binding de Gin**, así que
+        un nombre equivocado devuelve 400 y no un batch vacío. `panel_ids` pide
+        `min=1`.
+
+        Lee `dd_panel_data`, nunca Snowflake. La clave del mapa de respuesta es
+        el `panel_id` en texto.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BatchRequest' }
+      responses:
+        '200':
+          description: Mapa panelId → payload
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        additionalProperties: { $ref: '#/components/schemas/Payload' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /config/me/preferences:
+    put:
+      tags: [config]
+      operationId: updatePreferences
+      summary: Persistir el tema del usuario
+      description: |
+        Escribe `users.theme`. **No hay ruta para leerlo**: `/config/me` no lo
+        devuelve, así que la preferencia se guarda y no se puede recuperar.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [theme]
+              properties:
+                theme: { type: string, enum: [dark, light] }
+      responses:
+        '200':
+          description: El tema guardado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [theme]
+                        properties:
+                          theme: { type: string, enum: [dark, light] }
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    BadRequest:
+      description: Request mal formado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Unauthorized:
+      description: Token ausente, inválido, o sin `role_id` en los claims
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    NotFound:
+      description: No existe, o no es de este tenant
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    ServerError:
+      description: Falla interna
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  schemas:
+    Envelope:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean, enum: [true] }
+
+    ErrorResponse:
+      type: object
+      description: |
+        **`error` es una CADENA, no un objeto.** `handler/response.go`:
+
+            type Response struct {
+                Success bool        `json:"success"`
+                Data    interface{} `json:"data,omitempty"`
+                Error   string      `json:"error,omitempty"`
+            }
+
+        No es el envelope de §4.1 del contrato, que declara
+        `{ codigo, mensaje, campo, desbloqueaCon }`. Leer esta cadena como objeto
+        da `code: undefined` y `message: ""` — una pantalla de error sin una
+        palabra. Es el mismo defecto por el que existe `api/auth.ts`.
+      required: [success, error]
+      properties:
+        success: { type: boolean, enum: [false] }
+        error:
+          type: string
+          examples: ['tab not found', 'invalid request: Key: ''DDBatchRequest.PanelIDs'' Error:Field validation for ''PanelIDs'' failed on the ''required'' tag']
+
+    # ── /config/me ───────────────────────────────────────────────────────────
+
+    ContextResponse:
+      type: object
+      description: |
+        `ports.DDContextResponse`. Comparado con el `Contexto` del contrato, le
+        faltan: `alcance`, `tenantsDisponibles`, `tenant.etiqueta`,
+        `tenant.vertical`, `role.puedeAprobar`, `user.capacidades`,
+        `user.preferencias.tema`, y en la pestaña `key`, `icono` y
+        `chatSugerencias`.
+      required: [user, tenant, role, tabs, periods, catalog_version]
+      properties:
+        user: { $ref: '#/components/schemas/UserInfo' }
+        tenant: { $ref: '#/components/schemas/TenantInfo' }
+        role: { $ref: '#/components/schemas/RoleInfo' }
+        tabs:
+          type: array
+          items: { $ref: '#/components/schemas/TabMeta' }
+        periods:
+          type: array
+          description: |
+            **Cadenas sueltas, no objetos.** `availablePeriods()` devuelve los
+            últimos doce meses del CALENDARIO contando desde `time.Now()`, tenga
+            o no tenga materialización. No traen etiqueta, rango, estado ni
+            grano.
+          items: { type: string, examples: ['2026-09'] }
+        catalog_version: { type: integer }
+
+    UserInfo:
+      type: object
+      description: El nombre llega partido; el contrato lo pide junto.
+      required: [id, email, first_name, last_name]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        first_name: { type: string }
+        last_name: { type: string }
+
+    TenantInfo:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, examples: ['Under Armour México'] }
+
+    RoleInfo:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, examples: ['planner'] }
+
+    TabMeta:
+      type: object
+      required: [id, name, operational_question, sort_order]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        operational_question: { type: string }
+        sort_order: { type: integer }
+
+    # ── /config/catalog ──────────────────────────────────────────────────────
+
+    CatalogMetric:
+      type: object
+      description: |
+        `domain.DDCatalogMetric`, serializado con sus etiquetas `json:`.
+
+        **`shape`, `family` y `layer` son `string` libre en Go**, no enumerados.
+        Los valores de abajo son los que el sistema sabe manejar; el servicio no
+        impide otros, y `sync-catalog` hace upsert de lo que diga una vista de
+        Snowflake. Cerrarlos es trabajo del adaptador · F1.35.
+
+        Le faltan cuatro campos que el contrato declara: `ventana`, `estado`,
+        `estadoRazon` y `notaLectura`.
+      required:
+        [id, tenant_id, key, name, shape, family, layer, source, base,
+         min_grain, dimensions, catalog_version]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        key: { type: string, examples: ['revenue', 'platform_return'] }
+        name: { type: string }
+        shape:
+          type: string
+          description: |
+            Las nueve que `materialize.TransformValue` sabe transformar. Una
+            décima sincroniza bien y falla al materializar con `ErrUnknownShape`.
+          examples:
+            - scalar
+            - scalar_with_interval
+            - time_series
+            - multi_series
+            - categorical
+            - ranking
+            - tabular
+            - prose
+            - composition
+        family:
+          type: string
+          description: De acá sale el color de datos del front.
+          examples: [demand, media, inventory, customer, external]
+        layer: { type: string, examples: [BRONZE, SILVER, GOLD] }
+        source: { type: string }
+        base: { type: string }
+        unit: { type: [string, 'null'] }
+        semantic_direction:
+          type: [string, 'null']
+          description: |
+            El servicio manda un CÓDIGO; el contrato declara texto que se pinta
+            tal cual. Pregunta abierta al backend.
+          examples: ['HIGHER_IS_BETTER']
+        min_grain: { type: string, examples: [day, week, month] }
+        dimensions:
+          type: array
+          items: { type: string }
+        catalog_version: { type: integer }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    # ── /config/blocks ───────────────────────────────────────────────────────
+
+    BlockRule:
+      type: object
+      description: |
+        `dashboard.BlockRule`. Quince filas en la tabla `blocks`.
+      required:
+        [type, ui_name, accepted_shapes, col_span_min, col_span_max,
+         row_span_min, row_span_max]
+      properties:
+        type:
+          type: string
+          examples: [kpi, prose, series, bars, table, gauge, forecast, list,
+                     reco, composition, comparison, distribution, blocked,
+                     matrix, graph]
+        ui_name:
+          type: string
+          description: Etiqueta para la UI de admin. El contrato no la tiene.
+        accepted_shapes:
+          type: array
+          description: |
+            **`blocked` declara `["*"]`**, un comodín que el contrato no tiene.
+            El adaptador lo expande o lo trata aparte.
+          items: { type: string }
+        col_span_min: { type: integer }
+        col_span_max: { type: integer }
+        row_span_min: { type: integer }
+        row_span_max: { type: integer }
+        layout_params:
+          type: array
+          description: |
+            Los nombres de param válidos, **en inglés**: `maximum`, `horizon`,
+            `order`, `cap`, `normalization`, `pillars`, `columns`, `band`,
+            `cut`, `window`. El front los espera en español · F1.41.
+          items: { type: string }
+
+    # ── /config/tabs/{tabId} ─────────────────────────────────────────────────
+
+    TabWithPanels:
+      type: object
+      required: [tab, panels]
+      properties:
+        tab: { $ref: '#/components/schemas/TabMeta' }
+        panels:
+          type: array
+          items: { $ref: '#/components/schemas/PanelDTO' }
+
+    PanelDTO:
+      type: object
+      description: |
+        `ports.DDPanelDTO`. En la base la columna es `block_type`; acá el campo
+        es `type`. Mapea limpio al `PanelConfigurado` del contrato.
+      required: [id, metric_id, type, col_start, col_span, row_span]
+      properties:
+        id: { type: string, format: uuid }
+        metric_id: { type: string, format: uuid }
+        type: { type: string }
+        col_start: { type: integer, minimum: 1, maximum: 12 }
+        col_span: { type: integer }
+        row_span:
+          type: integer
+          description: 'En unidades de grilla: px = 96·N − 16.'
+        options:
+          type: object
+          description: |
+            **Interruptores, no datos.** Para `kpi` llega
+            `{ "comparative": true, "meter": true }`: los booleanos dicen si
+            mostrar, y los VALORES viajan en `presentation` del payload. El front
+            hoy los busca acá, que es el bug de F1.40.
+          additionalProperties: true
+
+    # ── /config/panels:batch ─────────────────────────────────────────────────
+
+    BatchRequest:
+      type: object
+      required: [panel_ids, period]
+      properties:
+        panel_ids:
+          type: array
+          minItems: 1
+          items: { type: string, format: uuid }
+        period:
+          type: string
+          description: |
+            `ParsePeriod` solo acepta `YYYY-MM` y rechaza cualquier otra cosa —
+            ni días, ni semanas, ni rangos.
+          examples: ['2026-08']
+
+    Payload:
+      type: object
+      description: |
+        `ports.DDPayloadDTO`. **No es una unión discriminada**: es un struct con
+        campos `omitempty`, así que el tipo no impide un `BLOCKED` con valor ni
+        un `AVAILABLE` sin gobierno. El contrato sí lo impide, y el adaptador es
+        donde eso se vuelve a cerrar.
+
+        `governance` va ANIDADO; el contrato lo intersecta en el payload.
+      required: [status]
+      properties:
+        status:
+          type: string
+          description: |
+            Las cinco constantes de `domain/dd_panel_data.go`. **En inglés**, y
+            la guía de Postman del backend dice `DEGRADADO` — el código manda.
+          enum: [AVAILABLE, DEGRADED, BLOCKED, FORBIDDEN, ERROR]
+        governance: { $ref: '#/components/schemas/Governance' }
+        value:
+          description: |
+            El JSON crudo de `dd_panel_data.value`. Discriminado por `shape`.
+          type: object
+          additionalProperties: true
+        presentation:
+          description: |
+            **Solo se emite para `scalar` y `scalar_with_interval`.**
+            `PresentationFromRows` devuelve `nil` para las otras siete formas, así
+            que un panel de barras o de tabla llega sin rótulo.
+          type: object
+          additionalProperties: true
+        reason:
+          type: string
+          description: Razón del estado. En `DEGRADED` la redacta el servidor.
+        unlocks_with:
+          type: string
+          description: |
+            **Llega vacío en `BLOCKED`.** El servicio solo lo escribe al derivar
+            `DEGRADED`. §8 pide estado, razón y qué lo desbloquea.
+        message:
+          type: string
+          description: Solo en `ERROR`. Sale de `validatePanelOptions`.
+        request_from:
+          type: string
+          description: |
+            Solo en `FORBIDDEN`, y es **la constante `"administrator"`** escrita
+            en el código, no el rol que decide sobre la métrica.
+          examples: ['administrator']
+
+    Governance:
+      type: object
+      description: |
+        `ports.DDGovernanceDTO`. Los cinco campos que el contrato pide, con otros
+        nombres y un nivel más abajo.
+      required: [base, layer, source, freshness, catalog_version]
+      properties:
+        base: { type: string }
+        layer: { type: string }
+        source: { type: string }
+        freshness:
+          type: string
+          description: |
+            `materialized_at` en RFC 3339. **Cadena vacía** cuando el registro no
+            tiene fecha de materialización, no `null`.
+        catalog_version: { type: integer }

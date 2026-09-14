@@ -37,41 +37,45 @@ function montar() {
 
 function conUnPanel(payload: unknown) {
   server.use(
-    http.get(`${API}/config/catalog`, () => ok({ metrics: [kpiMetric] })),
-    http.get(`${API}/config/tabs/:tabId`, () => ok({ ...context.tabs[0], panels: [kpiPanel] })),
+    http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
+    http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: context.tabs[0], panels: [kpiPanel] })),
     http.post(`${API}/config/panels:batch`, () => ok({ [kpiPanel.id]: payload })),
   )
 }
 
-/** El gobierno que acompaña a los dos estados con cifra. Los otros cuatro NO lo
- *  llevan, y es a propósito: el contrato no se lo declara. */
-const gobierno = {
+/** El gobierno que acompaña a los dos estados con cifra, **con la forma del
+ *  CABLE**: anidado en `governance` y con las claves del servicio. Los otros
+ *  cuatro estados NO lo llevan, y es a propósito. */
+const governance = {
   base: '48 tiendas sobre 52',
-  capa: 'GOLD',
-  fuente: 'Snowflake',
-  frescura: '2026-09-02T08:00:00Z',
-  catalogVersion: 1,
+  layer: 'GOLD',
+  source: 'Snowflake',
+  freshness: '2026-09-02T08:00:00Z',
+  catalog_version: 1,
 }
 
-const DISPONIBLE = { estado: 'DISPONIBLE', valor: { forma: 'escalar', v: 4280000 }, ...gobierno }
+// `status` en inglés y `value` discriminado por `shape`: las cinco constantes
+// de `domain/dd_panel_data.go`.
+const DISPONIBLE = { status: 'AVAILABLE', governance, value: { shape: 'scalar', v: 4280000 } }
 
 const DEGRADADO = {
-  estado: 'DEGRADADO',
-  valor: { forma: 'escalar', v: 4280000 },
-  razon: 'El feed de inventario tiene 31 horas',
-  desbloqueaCon: 'Reconectar el snapshot de inventario',
-  ...gobierno,
+  status: 'DEGRADED',
+  governance,
+  value: { shape: 'scalar', v: 4280000 },
+  reason: 'El feed de inventario tiene 31 horas',
+  unlocks_with: 'Reconectar el snapshot de inventario',
 }
 
+// **Sin `unlocks_with`**, que es como el servicio lo manda de verdad: solo lo
+// escribe al derivar DEGRADED. El adaptador NO lo inventa.
 const BLOQUEADO = {
-  estado: 'BLOQUEADO',
-  razon: 'Falta identificador de persona en la orden',
-  desbloqueaCon: 'Feed transaccional con identidad estable',
+  status: 'BLOCKED',
+  reason: 'Falta identificador de persona en la orden',
 }
 
-const SIN_PERMISO = { estado: 'SIN_PERMISO', solicitarA: 'CMO' }
+const SIN_PERMISO = { status: 'FORBIDDEN', request_from: 'CMO' }
 
-const ERROR = { estado: 'ERROR', mensaje: 'El almacén no respondió a tiempo.' }
+const ERROR = { status: 'ERROR', message: 'El almacén no respondió a tiempo.' }
 
 const SEIS: [string, unknown][] = [
   ['CARGANDO', { estado: 'CARGANDO' }],
@@ -89,12 +93,34 @@ describe('F2.6 · el gobierno sigue visible en los seis estados', () => {
     expect(await screen.findByRole('heading', { level: 2 })).toHaveTextContent('Venta diaria')
   })
 
-  it.each(SEIS)('en %s la BASE sigue declarando denominador y ventana', async (_, payload) => {
+  it.each(SEIS)('en %s la BASE sigue declarando el denominador', async (_, payload) => {
     conUnPanel(payload)
     montar()
     const base = await screen.findByText(/^Base ·/)
     expect(base).toHaveTextContent('48 tiendas sobre 52')
-    expect(base).toHaveTextContent('Últimos 30 días')
+  })
+
+  // ── ATESTIGUA UN HUECO, NO LO TAPA · B1.25 ────────────────────────────────
+  //
+  // Esta prueba exigía también la VENTANA —«Últimos 30 días»—, que es la otra
+  // mitad de la BASE: «toda métrica declara su BASE (denominador + ventana)».
+  //
+  // **El cable no manda `ventana`.** `/config/catalog` devuelve once columnas y
+  // ninguna es esa, y el adaptador NO la inventa: dos métricas consultadas con
+  // el mismo `2026-07` pueden tener ventanas distintas —un total mensual y un
+  // promedio móvil de treinta días—, así que no hay de dónde derivarla.
+  //
+  // Se afirma que llega VACÍA en vez de borrar la aserción. La diferencia es que
+  // una prueba borrada no avisa cuando el campo aparece; esta falla el día que
+  // B1.25 llegue, y ese día vuelve a ser la de arriba.
+  it.each(SEIS)('en %s la ventana llega VACÍA · el cable no la manda', async (_, payload) => {
+    conUnPanel(payload)
+    montar()
+    const base = await screen.findByText(/^Base ·/)
+    expect(base).not.toHaveTextContent('Últimos 30 días')
+    // El separador queda colgando: «Base · 48 tiendas sobre 52 ·». Es visible a
+    // propósito — un hueco que se ve es un hueco que alguien arregla.
+    expect(base.textContent?.trimEnd().endsWith('·')).toBe(true)
   })
 
   it.each(SEIS)('en %s la procedencia sigue declarando capa y fuente', async (_, payload) => {
@@ -125,14 +151,17 @@ describe('F2.5 · la frescura es relativa a cuándo se materializó', () => {
     // que tocarla. Lo que se verifica es la distancia, que es lo que la regla
     // fija.
     const haceTresHoras = new Date(Date.now() - 3 * 3_600_000).toISOString()
-    conUnPanel({ ...DISPONIBLE, frescura: haceTresHoras })
+    conUnPanel({ ...DISPONIBLE, governance: { ...governance, freshness: haceTresHoras } })
     const { container } = montar()
     await screen.findByText('USD 4.28M')
     expect(container.textContent).toContain('HACE 3 H')
   })
 
   it('una frescura de hace minutos dice RECIÉN y no «HACE 0 H»', async () => {
-    conUnPanel({ ...DISPONIBLE, frescura: new Date(Date.now() - 120_000).toISOString() })
+    conUnPanel({
+      ...DISPONIBLE,
+      governance: { ...governance, freshness: new Date(Date.now() - 120_000).toISOString() },
+    })
     const { container } = montar()
     await screen.findByText('USD 4.28M')
     expect(container.textContent).toContain('RECIÉN')
@@ -172,11 +201,37 @@ describe('F2.2 · BLOQUEADO · sin cifra y sin aproximación', () => {
     expect(container.textContent).not.toMatch(/USD\s|\d[.,]\d{2}[MK]|\d{1,3}(,\d{3})+/)
   })
 
-  it('declara razón y qué lo desbloquea · §8', async () => {
+  it('declara la razón · §8', async () => {
     conUnPanel(BLOQUEADO)
     montar()
     expect(await screen.findByText(/Falta identificador de persona/)).toBeInTheDocument()
-    expect(screen.getByText(/Feed transaccional con identidad estable/)).toBeInTheDocument()
+  })
+
+  // ── ATESTIGUA UN HUECO, NO LO TAPA · §4 ask 4 ─────────────────────────────
+  //
+  // §8 pide estado, razón, QUÉ LO DESBLOQUEA y CTA. Esta prueba exigía las dos
+  // primeras y la tercera; el servicio manda `reason` y deja `unlocks_with`
+  // VACÍO en `BLOCKED` —solo lo escribe al derivar `DEGRADED`—, así que hoy son
+  // dos de tres.
+  //
+  // **El adaptador no lo inventa**: prometer un desbloqueo que nadie declaró es
+  // peor que no declararlo. Se afirma que llega vacío en vez de borrar la
+  // aserción, para que esto falle el día que el backend lo mande.
+  it('y NO promete un desbloqueo, porque el cable no lo manda', async () => {
+    conUnPanel(BLOQUEADO)
+    montar()
+    await screen.findByText(/Falta identificador de persona/)
+    expect(screen.queryByText(/Feed transaccional con identidad estable/)).toBeNull()
+  })
+
+  it('cuando el servicio SÍ lo manda, se pinta · el adaptador no lo pierde', async () => {
+    // La otra mitad: que el hueco sea del backend y no nuestro. Con
+    // `unlocks_with` presente, el desbloqueo llega a la pantalla.
+    conUnPanel({ ...BLOQUEADO, unlocks_with: 'Feed transaccional con identidad estable' })
+    montar()
+    expect(
+      await screen.findByText(/Feed transaccional con identidad estable/),
+    ).toBeInTheDocument()
   })
 })
 
@@ -214,17 +269,17 @@ describe('F2.4 · ERROR · el mensaje es del backend y el reintento es de ESE pa
     // Dos paneles: uno falló y el otro cargó bien. Es el escenario donde el
     // defecto se ve — con un solo panel, «re-pedir el batch» y «re-pedir ese
     // panel» son la misma llamada y la prueba no distingue nada.
-    const otro = { ...kpiPanel, id: 'p-2', colStart: 5 }
+    const otro = { ...kpiPanel, id: 'p-2', col_start: 5 }
     const pedidos: string[][] = []
 
     server.use(
-      http.get(`${API}/config/catalog`, () => ok({ metrics: [kpiMetric] })),
+      http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
       http.get(`${API}/config/tabs/:tabId`, () =>
-        ok({ ...context.tabs[0], panels: [kpiPanel, otro] }),
+        ok({ tab: context.tabs[0], panels: [kpiPanel, otro] }),
       ),
       http.post(`${API}/config/panels:batch`, async ({ request }) => {
-        const body = (await request.json()) as { panelIds: string[] }
-        pedidos.push(body.panelIds)
+        const body = (await request.json()) as { panel_ids: string[] }
+        pedidos.push(body.panel_ids)
         // El segundo viaje trae el panel ya resuelto: así se comprueba que el
         // resultado se funde en la caché y no que la pantalla no cambió.
         const roto = pedidos.length === 1 ? ERROR : DISPONIBLE
@@ -267,22 +322,18 @@ describe('§7 · cambiar de período NO vuelve a pedir el layout', () => {
 
     server.use(
       http.get(`${API}/config/me`, () =>
-        ok({
-          ...context,
-          periodos: [
-            { id: '2026-07', etiqueta: 'JUL 2026', grano: 'mes' },
-            { id: '2026-06', etiqueta: 'JUN 2026', grano: 'mes' },
-          ],
-        }),
+        // El cable manda CADENAS sueltas, no objetos: `availablePeriods()`
+        // devuelve los últimos doce meses del calendario y nada más.
+        ok({ ...context, periods: ['2026-07', '2026-06'] }),
       ),
-      http.get(`${API}/config/catalog`, () => ok({ metrics: [kpiMetric] })),
+      http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
       http.get(`${API}/config/tabs/:tabId`, ({ params }) => {
         layouts.push(String(params['tabId']))
-        return ok({ ...context.tabs[0], panels: [kpiPanel] })
+        return ok({ tab: context.tabs[0], panels: [kpiPanel] })
       }),
       http.post(`${API}/config/panels:batch`, async ({ request }) => {
-        const body = (await request.json()) as { periodo: string }
-        batches.push(body.periodo)
+        const body = (await request.json()) as { period: string }
+        batches.push(body.period)
         return ok({ [kpiPanel.id]: DISPONIBLE })
       }),
     )
@@ -291,7 +342,7 @@ describe('§7 · cambiar de período NO vuelve a pedir el layout', () => {
     await screen.findByText('USD 4.28M')
     expect(layouts).toHaveLength(1)
 
-    await userEvent.click(screen.getByRole('button', { name: 'JUN 2026' }))
+    await userEvent.click(screen.getByRole('button', { name: '2026-06' }))
 
     // El batch SÍ se vuelve a pedir —los datos dependen del período— y el
     // layout NO: la composición de la pestaña es la misma en junio y en julio.

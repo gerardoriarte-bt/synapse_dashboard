@@ -97,7 +97,7 @@ export function useRetryPanel(tabId: string | null, period: string) {
 export function useSaveTheme() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (theme: Theme) => api.savePreferences({ tema: theme }),
+    mutationFn: (theme: Theme) => api.savePreferences(theme),
     onSuccess: () => client.invalidateQueries({ queryKey: keys.me }),
   })
 }

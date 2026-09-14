@@ -1,12 +1,20 @@
 /** El cliente de autenticación · F0.5
  *
- *  **Es un servicio DISTINTO del de la consola, y por eso vive aparte.** El
- *  login lo sirve `synapse-api-go` (AntPack-dev), que es su propio despliegue;
- *  la consola la sirve la API del contrato. Los dos publican bajo `/api/v1`, así
- *  que sin dos bases el front no puede hablarle a los dos.
+ *  **Es el MISMO servicio que la consola** · corregido en F1.37, 2026-09-14.
+ *  `synapse-api-go` sirve `/auth/*`, `/config/*` y `/admin/*` desde el mismo
+ *  binario y bajo el mismo `/api/v1` — los tres cuelgan de
+ *  `v1 := router.Group("/api/v1")` en su `router.go`.
  *
- *  `VITE_AUTH_URL` cae a `VITE_API_URL` a propósito: si mañana los dos servicios
- *  quedan detrás del mismo origen —o se fusionan— no hay que tocar nada.
+ *  Este archivo decía lo contrario, y era lo que se sabía cuando se escribió: la
+ *  API de la consola no existía todavía y se esperaba de otro despliegue. Apareció
+ *  en el mismo.
+ *
+ *  `VITE_AUTH_URL` se conserva y cae a `VITE_API_URL`, que con un solo servicio
+ *  es lo que corresponde. Queda por si el login vuelve a separarse, que es más
+ *  barato que borrarlo y tener que reponerlo.
+ *
+ *  **Lo que NO cambia es que este archivo siga existiendo**, y la razón es la de
+ *  abajo: el envelope de error. Que sea un solo servicio no lo arregla.
  *
  *  ── EL ENVELOPE NO ES EL MISMO, Y NO SE PUEDE FINGIR QUE SÍ ─────────────────
  *

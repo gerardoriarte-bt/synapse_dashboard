@@ -186,7 +186,9 @@ equivocado.
 | `npm run spec-anclas` | cada regla de `design.md` atada a su código y su aserción |
 | `npm run contract-drift` | `src/api/generated.ts` == `contracts/synapse-api.yaml` |
 | `npm run auth-drift` | `src/api/auth-generated.ts` == `contracts/synapse-auth.yaml` |
+| `npm run console-drift` | `src/api/console-generated.ts` == `contracts/synapse-console-wire.yaml` |
 | `npm run gen:auth` | regenera los tipos del servicio de acceso |
+| `npm run gen:console-wire` | regenera los tipos del **cable** de la consola |
 | `npm run token-drift` | `src/tokens/` == lo que el `.pen` emite, **byte a byte** |
 | `npm run contraste` | contraste WCAG de los pares que el producto pinta, en los dos temas |
 | `npm run carga-diferida` | un chunk por cuerpo en `dist/` · **corre después del build** |
@@ -314,111 +316,73 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-**El flujo de acceso está consumido entero** desde el 2026-09-08: login,
-`token-info`, cambio obligatorio de contraseña, recuperación y solicitud de
-acceso. La única ruta de ese flujo que NO se llama es
-`GET /access-requests/tenants`, y la descartó el propio servicio —«ya no es
-necesario en el modal de registro; el tenant se asigna al aprobar»—, así que no
-es un olvido.
+**El backend de la consola existe desde el 2026-09-11**, y con él admin y
+builder. Está en la rama `feature/dynamic-dashboard-backend` de
+`AntPack-dev/synapse-api-go`, y su documentación en `docs/backdocs/`.
 
-**Son DOS servicios, no uno.** El login lo sirve
-`AntPack-dev/synapse-api-go` —un despliegue aparte, conectado el 2026-09-08— y
-la consola la sirve la API del contrato, que todavía no existe. Los dos publican
-bajo `/api/v1`, así que el front lleva dos bases: `VITE_AUTH_URL` para el acceso
-y `VITE_API_URL` para la consola. La primera cae a la segunda si algún día
-quedan detrás del mismo origen.
+**Es UN servicio, no dos.** `router.go` monta `/auth/*`, `/config/*` y
+`/admin/*` bajo el mismo `/api/v1` del mismo binario. `VITE_AUTH_URL` cae a
+`VITE_API_URL`; la separación que describía este archivo dejó de tener razón de
+ser (F1.37).
 
-**Su contrato se versiona acá.** `contracts/synapse-auth.yaml` es una copia del
-OpenAPI que ese servicio embebe en su binario, y `src/api/auth-generated.ts` sale
-de ella con `npm run gen:auth`. **No se escriben tipos a mano contra ese
-servicio**: la primera versión del cliente se escribió leyendo las estructuras de
-Go y ya costó una — el spec declaraba que con `password_updated: false` el front
-debe bloquear, y lo habíamos anotado como decisión pendiente.
+**Pero el backend no implementó `contracts/synapse-api.yaml`.** Su propia tarea
+B0.7 —«extender el contrato con los 6 endpoints de consola»— está sin marcar, y
+el OpenAPI que el binario embebe no declara ni una ruta `/config/*`. Lo que sirve
+es otra forma: inglés snake_case, `error` como cadena, arreglos desnudos donde el
+contrato declara un objeto, estados `AVAILABLE`/`DEGRADED`/`BLOCKED`/`FORBIDDEN`,
+`Gobierno` anidado en `governance` y el discriminador de `Valor` llamado `shape`.
 
-**Su envelope de error no es el de §4.1** —ahí `error` es una cadena, acá un
-objeto— y pasarlo por `api/client.ts` da `code: undefined` y `message: ""`: una
-pantalla de error sin una palabra. Por eso `api/auth.ts` desenvuelve por su
-cuenta en vez de reusar el cliente. Si el servicio adopta §4.1, ese archivo se
-borra.
+**La decisión es un adaptador en `src/api/`**, no reescribir `render/`. El
+contrato sigue siendo la forma interna: lleva `ventana`, `base`, `grano`,
+`direccionSemantica` y el período con etiqueta, que son los campos sobre los que
+se sostienen «ningún número desnudo» y «toda métrica declara su BASE y su
+PROCEDENCIA». Adoptar la forma del cable no sería renombrar, sería borrarlos.
 
-**Y tiene cinco documentos escritos para el front** —1.690 líneas— con
-funcionalidades que el plan no menciona en ninguna de sus 173 tareas: registro
-de acceso, «olvidé mi contraseña», listado de solicitudes y chat con selector de
-agente, más `/tickets`, que no tiene documento. **No están faltando**: son un
-alcance que nadie definió como nuestro, y hay señales de que se escribieron para
-otro front. El cruce está en `docs/AUDITORIA-2026-09-08-servicios.md`.
+**La regla del adaptador: renombra y reformatea; no calcula, no inventa una cifra
+y no escribe copy de producto.** Donde el cable no trae el campo, el campo queda
+ausente y la tarea que depende de él sigue bloqueada. Y tiene una segunda
+función que no es traducir: en el cable `shape`, `family`, `layer` y `block_type`
+son `string` libre, así que **es el único lugar donde un valor fuera del
+enumerado se puede detectar** — una familia desconocida pinta la serie sin color
+y nadie se entera.
 
-**El chat de ese servicio NO es del dashboard** (decidido el 2026-09-08). Son
-dos productos: el nuestro es el chat **contextual del panel** —C3, §7.1 de
-`design.md`, se abre desde un panel y lleva su métrica— y vive en
-`/config/chat`. El de ellos es otro. Eso saca de la mesa `/chat/stream`,
-`/cortex/threads*`, `/history/threads*` y dos documentos de integración.
+**Tres cosas hoy rotas en `src/api/client.ts`**, todas de una línea: el batch
+manda `{ panelIds, periodo }` y el cable pide `{ panel_ids, period }` con los dos
+`required`, así que devuelve **400**; las preferencias van a
+`/config/me/preferencias` con `{ tema }` y el cable es `/config/me/preferences`
+con `{ theme }`; y el error se lee como `body.error.codigo` sobre una cadena, que
+da `code: undefined` y `message: ""`. Lo último es el defecto exacto por el que
+existe `api/auth.ts`.
 
-**Lo que sigue abierto son las solicitudes de acceso**: `/config/solicitudes`
-del contrato y `/access-requests` del servicio de Go son lo mismo definido dos
-veces, y el de Go gana solo —tiene aprobar, rechazar, listar, y de ahí cuelga la
-recuperación de contraseña que F0.15 ya consume—. Falta decidir si F2.3 se
-reapunta. Está en `docs/PARA-BACKEND.md`.
+**El análisis completo está en `docs/PLAN-INTEGRACION-2026-09-11.md`**: el mapa
+campo por campo, las nueve formas de `Valor` que el backend materializa y las
+siete que no, y las veinte preguntas al backend ordenadas por esfuerzo de ellos.
+Las tareas están en `plan-de-trabajo.md` — **F1.32–F1.39** para la consola y
+**F4.22–F4.23** para el builder.
 
-**No hay una sola tarea de front desbloqueada. Estado al 2026-09-08.**
+**El orden.** F1.32 primero: sin la forma escrita, todo lo demás se escribe de
+memoria, que es lo que ya costó una vez con el servicio de acceso. Después F1.36
+y F1.37, que son lo que hace que la consola conteste algo en vez de 400 y 404.
+Después el adaptador (F1.33–F1.35). Y **F1.38 no se deja para el final**: hoy
+MSW responde la forma del contrato, así que si no se cambia, el adaptador no se
+ejecuta en ninguna prueba y **las 350 siguen verdes con el adaptador roto** — el
+modo de falla del 2026-08-20, cuando el colapso responsive violaba §3.1 de tres
+formas con 184 pruebas en verde.
 
-Eso es una conclusión, no una queja, y se verificó tarea por tarea: **62 de
-las 100 de front están hechas**, 4 quedaron parciales con la mitad que falta
-del lado del backend, y las 30 pendientes esperan todas algo del contrato. La
-puerta sale verde con **once chequeos y 350 pruebas**, sin bloqueados.
+**Lo que sigue bloqueado, y por qué.** El chat contextual (F3.2, F3.3, F3.6, la
+mitad de F3.7) espera `/config/chat` y `ContextoDePanel`: B3.1 y B3.2 están sin
+marcar, y el chat que el servicio sí tiene es otro producto, decidido el
+2026-09-08. F4.3 espera B4.8 —CRUD de roles—, F4.12 espera B4.9 —preview por
+rol—, F1.31 y F4.21 esperan `/config/plots` y B1.21, F5.1 espera poder listar
+los layouts de un usuario, F5.13 espera el patrón de `PeriodoId`, y el CTA de
+F2.3 espera que `request_from` deje de ser la constante `"administrator"`.
+F4.17–F4.20 siguen con su «no antes»: `transform.go` tiene nueve casos y sus
+tres formas no están.
 
-**Fase 0 está cerrada entera** —16 de 16— desde que apareció el servicio de
-acceso. Lo que falla después de entrar es la consola, y es lo esperado: pide
-`/config/me`, `/config/catalog`, `/config/tabs` y `/config/panels:batch`, que
-ningún servicio expone todavía.
-
-**La única acción siguiente es conseguir contrato.** Todo lo que el backend
-necesita está en `docs/PARA-BACKEND.md`, ordenado por esfuerzo de ellos: primero
-transcripciones de decisiones ya tomadas, después decisiones de una línea, y al
-final lo que necesita conversación.
-
-**Y si solo se lee una cosa, que sea el punto 0: faltan ocho rutas.** Cruzando
-el plan con el yaml el 2026-09-04: **el plan cita 22 rutas y el contrato declara
-14.** Seis son `/admin/*` —la Fase 4 entera—, y las otras dos son
-`/config/plots`, que B1.21 dice dónde va y bloquea F1.31, y `/auth/login`, que
-bloquea F0.5. Ninguno de `/admin/*` está, y `layouts` no aparece. Las tareas de backend existen (B4.1–B4.16) y
-ninguna llegó al yaml, así que **las 21 tareas de admin y builder no se pueden ni
-empezar**, y con ellas F5.1 y F5.2. Es de otro orden que los campos sueltos:
-aquello son campos, esto es una superficie entera. No hace falta el servicio,
-hace falta el contrato: con los endpoints declarados, las dos superficies se
-construyen contra MSW como se construyó la consola entera.
-
-Qué espera cada cosa, para no volver a averiguarlo:
-
-| Espera | Tareas |
-|---|---|
-| El contrato de admin/builder | Las 21 de Fase 4, F5.1, F5.2 |
-| `ContextoDePanel` · T4 | F3.2, F3.3, la mitad de F3.7 |
-| `DatoDeRespuesta.tipo` · pregunta 11 | F3.6 |
-| El patrón de `PeriodoId` · pregunta 12 | F5.13 |
-| `Contexto.locale` y moneda | La mitad de F1.13b |
-| El servicio de `/config/solicitudes` | F2.3 |
-| El seed · B1.16 y B1.20 | F1.25 |
-| La ruta `/config/plots` y B1.21 | F1.31, F4.21 |
-
-**Tres cosas que se podrían hacer y no se hacen, con la razón escrita**, para que
-nadie las retome creyendo que se olvidaron:
-
-1. **F4.17–F4.20** —`ComparisonBody`, `MatrixBody`, `GraphBody` y su registro—
-   **sí se podrían construir**: las cinco formas que necesitan están en el enum
-   `Forma` del contrato. Su criterio dice «no antes», y el razonamiento sigue en
-   pie: su único consumidor es el builder, que no se puede empezar. Escribirlos
-   ahora es verificarlos contra fixtures inventados, que es el modo de falla que
-   este repositorio persigue.
-2. **El CTA de `F2.3`** no se cablea aunque `/config/solicitudes` esté en el
-   contrato: no se sabe si el servicio existe, y un botón que devuelve 403 es
-   peor que uno ausente.
-3. **Las cifras del chat** no se pintan con un cuerpo elegido a dedo. Se declara
-   cuántas trajo la respuesta, porque pintarlas mal se vería bien y sería
-   mentira.
-
-Para el contexto de por qué el plan tiene las tareas que tiene, leer
-`plan-de-trabajo.md`: las siete decisiones cerradas y el camino crítico.
-`docs/BITACORA-2026-09-02.md` cuenta la jornada que cerró la Fase 1 y
-`docs/BITACORA-2026-09-04.md` los dos días que dejaron el front esperando al
-contrato.
+**Lo más barato que desbloquea más, para mandar al backend hoy:** cerrar B0.7
+—emitir `/config/*` y `/admin/layouts/*` en su OpenAPI—, devolver `theme` en
+`/config/me` (el campo existe en `users` y el `PUT` ya lo escribe: se guarda y no
+se puede leer), poner etiquetas `json:` en `DDLayoutVersion`, `DDTab` y `DDPanel`
+—hoy rompen sus propios tests de Postman—, y `json:"-"` en el campo `Tenant` de
+esos structs, que hoy no filtra nada porque nadie hace `Preload`, pero filtraría
+`PrivateKeyPEM` el día que alguien lo agregue.

@@ -31,9 +31,9 @@ function montar() {
 
 function conUnPanel(payload: unknown) {
   server.use(
-    http.get(`${API}/config/catalog`, () => ok({ metrics: [kpiMetric] })),
+    http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
     http.get(`${API}/config/tabs/:tabId`, () =>
-      ok({ ...context.tabs[0], panels: [kpiPanel] }),
+      ok({ tab: context.tabs[0], panels: [kpiPanel] }),
     ),
     http.post(`${API}/config/panels:batch`, () => ok({ [kpiPanel.id]: payload })),
   )
@@ -42,13 +42,15 @@ function conUnPanel(payload: unknown) {
 describe('la pantalla no está escrita · sale del layout', () => {
   it('dibuja el panel que devolvió /config/tabs con la cifra del batch', async () => {
     conUnPanel({
-      estado: 'DISPONIBLE',
-      valor: { forma: 'escalar', v: 4280000 },
-      base: '48 tiendas sobre 52',
-      capa: 'GOLD',
-      fuente: 'Snowflake',
-      frescura: '2026-09-02T08:00:00Z',
-      catalogVersion: 1,
+      status: 'AVAILABLE',
+      value: { shape: 'scalar', v: 4280000 },
+      governance: {
+        base: '48 tiendas sobre 52',
+        layer: 'GOLD',
+        source: 'Snowflake',
+        freshness: '2026-09-02T08:00:00Z',
+        catalog_version: 1,
+      },
     })
 
     montar()
@@ -72,7 +74,7 @@ describe('la pantalla no está escrita · sale del layout', () => {
 
 describe('F1.26 · la carga y el error viven en la superficie', () => {
   it('un fallo de /config/me deja la pantalla diciéndolo, no en blanco', async () => {
-    server.use(http.get(`${API}/config/me`, () => fail('SIN_SESION', 'Token vencido.', { status: 401 })))
+    server.use(http.get(`${API}/config/me`, () => fail('Token vencido.', { status: 401 })))
     montar()
 
     expect(await screen.findByText(/No se pudo cargar tu contexto/)).toBeInTheDocument()
@@ -84,10 +86,10 @@ describe('F1.26 · la carga y el error viven en la superficie', () => {
     // Es la diferencia que F1.26 pide: contexto y catálogo son la pantalla; el
     // batch son los datos de cada panel, y un panel roto no rompe los otros.
     server.use(
-      http.get(`${API}/config/catalog`, () => ok({ metrics: [kpiMetric] })),
-      http.get(`${API}/config/tabs/:tabId`, () => ok({ ...context.tabs[0], panels: [kpiPanel] })),
+      http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
+      http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: context.tabs[0], panels: [kpiPanel] })),
       http.post(`${API}/config/panels:batch`, () =>
-        fail('ETL_CAIDO', 'No se pudieron traer los datos.', { status: 500 }),
+        fail('No se pudieron traer los datos.', { status: 500 }),
       ),
     )
     montar()
@@ -107,7 +109,7 @@ describe('un metricId que el catálogo no resuelve', () => {
     // significa que el layout referencia algo que este rol no puede ver.
     server.use(
       http.get(`${API}/config/tabs/:tabId`, () =>
-        ok({ ...context.tabs[0], panels: [{ ...kpiPanel, metricId: 'm-fantasma' }] }),
+        ok({ tab: context.tabs[0], panels: [{ ...kpiPanel, metric_id: 'm-fantasma' }] }),
       ),
     )
     montar()
@@ -122,22 +124,21 @@ describe('el selector de período respeta el granoMinimo · F1.7', () => {
       http.get(`${API}/config/me`, () =>
         ok({
           ...context,
-          periodos: [
-            { id: '2026-07', etiqueta: 'JUL 2026', grano: 'mes' },
-            { id: '2026-W32', etiqueta: 'S32', grano: 'semana' },
-          ],
+          // Cadenas sueltas: el grano lo deduce el adaptador de la forma del
+          // id, que es lo que el contrato sanciona cuando no llega.
+          periods: ['2026-07', '2026-W32'],
         }),
       ),
-      http.get(`${API}/config/catalog`, () => ok({ metrics: [kpiMetric] })),
-      http.get(`${API}/config/tabs/:tabId`, () => ok({ ...context.tabs[0], panels: [kpiPanel] })),
+      http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
+      http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: context.tabs[0], panels: [kpiPanel] })),
       http.post(`${API}/config/panels:batch`, () => ok({ [kpiPanel.id]: { estado: 'CARGANDO' } })),
     )
     montar()
 
     // Ofrecer un período que la métrica no puede contestar es el mismo problema
     // que un panel sin BASE: promete algo que no puede cumplir.
-    await waitFor(() => expect(screen.getByRole('button', { name: 'S32' })).toBeDisabled())
-    expect(screen.getByRole('button', { name: 'JUL 2026' })).toBeEnabled()
+    await waitFor(() => expect(screen.getByRole('button', { name: '2026-W32' })).toBeDisabled())
+    expect(screen.getByRole('button', { name: '2026-07' })).toBeEnabled()
     expect(screen.getByText(/No aplica · alguna métrica se mide por mes/)).toBeInTheDocument()
   })
 })
@@ -147,26 +148,43 @@ describe('F1.29 · un param inválido degrada el panel con la razón visible', (
     // Antes: el cuerpo aplicaba `desc` y el panel se veía correcto mostrando
     // exactamente lo contrario de lo que el tenant configuró.
     server.use(
-      http.get(`${API}/config/catalog`, () => ok({ metrics: [kpiMetric] })),
+      http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
+      // Arreglo desnudo, y con la forma del cable.
+      //
+      // **`layout_params` va en español acá y el servicio los manda en inglés**
+      // —`order`, `cap`—. Es deuda declarada de F1.41, que es la tarea que
+      // traduce los nombres de param; hasta entonces este fixture NO es fiel al
+      // cable en ese campo, y está escrito para que se vea.
       http.get(`${API}/config/blocks`, () =>
-        ok({ blocks: [{ tipo: 'bars', paramsDisponibles: ['orden', 'tope'] }] }),
+        ok([
+          {
+            type: 'bars',
+            ui_name: 'Barras',
+            accepted_shapes: ['categorical'],
+            col_span_min: 4,
+            col_span_max: 8,
+            row_span_min: 4,
+            row_span_max: 5,
+            layout_params: ['orden', 'tope'],
+          },
+        ]),
       ),
       http.get(`${API}/config/tabs/:tabId`, () =>
-        ok({
-          ...context.tabs[0],
-          panels: [{ ...kpiPanel, tipo: 'bars', opciones: { orden: 'ascending' } }],
+        ok({ tab: context.tabs[0], panels: [{ ...kpiPanel, type: 'bars', options: { orden: 'ascending' } }],
         }),
       ),
       http.post(`${API}/config/panels:batch`, () =>
         ok({
           [kpiPanel.id]: {
-            estado: 'DISPONIBLE',
-            valor: { forma: 'categorica', items: [{ etiqueta: 'A', v: 1 }] },
-            base: 'x',
-            capa: 'GOLD',
-            fuente: 'Snowflake',
-            frescura: '2026-09-02T08:00:00Z',
-            catalogVersion: 1,
+            status: 'AVAILABLE',
+            value: { shape: 'categorical', items: [{ label: 'A', v: 1 }] },
+            governance: {
+              base: '48 tiendas sobre 52',
+              layer: 'GOLD',
+              source: 'Snowflake',
+              freshness: '2026-09-02T08:00:00Z',
+              catalog_version: 1,
+            },
           },
         }),
       ),
@@ -188,20 +206,22 @@ describe('F1.29 · un param inválido degrada el panel con la razón visible', (
     // Un param de más es ruido de configuración, no un panel que no se puede
     // componer: se descarta y se avisa en desarrollo.
     server.use(
-      http.get(`${API}/config/catalog`, () => ok({ metrics: [kpiMetric] })),
+      http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
       http.get(`${API}/config/tabs/:tabId`, () =>
-        ok({ ...context.tabs[0], panels: [{ ...kpiPanel, opciones: { colorcito: 'azul' } }] }),
+        ok({ tab: context.tabs[0], panels: [{ ...kpiPanel, options: { colorcito: 'azul' } }] }),
       ),
       http.post(`${API}/config/panels:batch`, () =>
         ok({
           [kpiPanel.id]: {
-            estado: 'DISPONIBLE',
-            valor: { forma: 'escalar', v: 4280000 },
-            base: 'x',
-            capa: 'GOLD',
-            fuente: 'Snowflake',
-            frescura: '2026-09-02T08:00:00Z',
-            catalogVersion: 1,
+            status: 'AVAILABLE',
+            value: { shape: 'scalar', v: 4280000 },
+            governance: {
+              base: '48 tiendas sobre 52',
+              layer: 'GOLD',
+              source: 'Snowflake',
+              freshness: '2026-09-02T08:00:00Z',
+              catalog_version: 1,
+            },
           },
         }),
       ),
@@ -221,11 +241,11 @@ describe('la cadena de callbacks llega hasta el botón', () => {
     // los cuatro compila y deja el botón muerto. Ya pasó tres veces.
     let intentos = 0
     server.use(
-      http.get(`${API}/config/catalog`, () => ok({ metrics: [kpiMetric] })),
-      http.get(`${API}/config/tabs/:tabId`, () => ok({ ...context.tabs[0], panels: [kpiPanel] })),
+      http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
+      http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: context.tabs[0], panels: [kpiPanel] })),
       http.post(`${API}/config/panels:batch`, () => {
         intentos++
-        return fail('ETL_CAIDO', 'No se pudieron traer los datos.', { status: 500 })
+        return fail('No se pudieron traer los datos.', { status: 500 })
       }),
     )
     montar()

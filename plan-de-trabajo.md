@@ -556,6 +556,158 @@ tipo: hoy `bars` puede recibir un ítem y dibujar una barra sola.
 - Cambiar el catálogo incrementa `catalogVersion`, y ese número viaja en cada
   payload.
 
+### El catálogo en Snowflake · 2026-09-14
+
+**Verificado el 2026-09-11 con consultas de solo lectura contra la cuenta.** Las
+dos tablas Gold que el materializador consulta existen y tienen las quince
+columnas que su SQL nombra: `GLD_ECOMM_DAILY_PERFORMANCE` (11/11) y
+`GLD_PAID_MEDIA` (4/4). **No falta ninguna tabla.**
+
+Lo que falta es **`SYNAPSE_METRIC_CATALOG`, que no existe en ninguna base de la
+cuenta**. Por eso `make sync-catalog` falla y el catálogo que sirve la API sale
+de un seed de Postgres en vez de Snowflake.
+
+**El front no ejecuta nada de esto.** Las tareas quedan registradas acá porque
+bloquean trabajo nuestro; las corre y las revisa quien es dueño de la cuenta. El
+SQL está escrito en `docs/snowflake/SYNAPSE_METRIC_CATALOG.sql` y la instrucción
+paso a paso en `docs/snowflake/INSTRUCCION-ALTA-TENANT.md`.
+
+**Y no hay ningún prompt que construir.** El catálogo y la materialización son
+SQL de punta a punta: el agente de Cortex solo aporta credenciales y el
+`db.schema` donde buscar. El agente se usa en `/chat/stream`, que es otro
+producto.
+
+#### ➕ B1.22 ⬜ Crear el catálogo de métricas en Snowflake
+**Descripción.** Los tres objetos en el mismo `db.schema` que tiene configurado
+el agente del tenant —para UA MX, `DB_BT_UA.BT_UA_MART_ANALYTICS`—, más el grant
+de lectura para el rol del agente.
+
+`DD_METRIC_CURATION` es una tabla y lleva lo editorial; `SYNAPSE_METRIC_CATALOG`
+es la vista que el backend lee, con las once columnas de su `SELECT` y esos
+nombres exactos; `SYNAPSE_METRIC_CATALOG_ISSUES` lista lo que está mal con su
+razón.
+
+Son tres y no uno porque `INFORMATION_SCHEMA.SEMANTIC_METRICS` da nombre,
+expresión y tipo de dato, y **ningún** campo de gobierno: esos son editoriales y
+necesitan dónde escribirse. Y la tercera existe porque Snowflake **no hace
+cumplir un `CHECK`**, así que los enumerados cerrados se verifican o no se
+verifican.
+**Guía:** `docs/snowflake/INSTRUCCION-ALTA-TENANT.md` §4 paso 1 y paso 4 · el SQL listo para correr en `docs/snowflake/SYNAPSE_METRIC_CATALOG.sql` secciones 1 a 3.
+
+**Criterio de aceptación.**
+- `SELECT * FROM SYNAPSE_METRIC_CATALOG` devuelve filas desde el `db.schema` del
+  agente, no desde una ruta fija: el backend califica la vista con lo que dice
+  `agents`, y una vista en el schema equivocado no se encuentra.
+- `SHOW GRANTS ON VIEW SYNAPSE_METRIC_CATALOG` muestra `SELECT` para el rol de
+  `tenants.snowflake_role`. Sin esto `sync-catalog` falla con un error de
+  permisos que no dice qué falta.
+- Las once columnas salen con los nombres que el `SELECT` de Go espera. Una
+  renombrada hace fallar la sincronización entera, no una métrica.
+- **La vista de issues NO filtra la vista principal.** Un catálogo que se arregla
+  descartando en silencio la fila mala hace que la métrica desaparezca del
+  dashboard sin que nadie sepa por qué.
+
+#### ➕ B1.23 ⬜ Escribir el gobierno de las métricas
+**Descripción.** La semilla deja las filas con `BASE`, `MEASUREMENT_WINDOW` y
+`SOURCE` marcados `⟨REVISAR⟩`. Son **texto que se pinta literal en pantalla**, así
+que se redactan, no se generan. También hay que revisar `FAMILY` —de ahí sale el
+color de cada serie— y `SEMANTIC_DIRECTION`, que se propusieron desde la
+expresión SQL.
+
+Van con marcador y no con un valor plausible por una razón: **una BASE inventada
+se lee bien y miente**, y nadie la audita después.
+**Guía:** `docs/snowflake/INSTRUCCION-ALTA-TENANT.md` §4 paso 2 · la semilla con los campos marcados `⟨REVISAR⟩` está en `docs/snowflake/SYNAPSE_METRIC_CATALOG.sql` sección 4.
+
+**Criterio de aceptación.**
+- `SELECT * FROM SYNAPSE_METRIC_CATALOG_ISSUES` devuelve **cero filas**. Mientras
+  devuelva algo, dice qué métrica y por qué.
+- Ninguna fila activa conserva el marcador `⟨REVISAR⟩` en los tres campos.
+- `BASE` declara un denominador, no una descripción: «312 SKU críticos sobre
+  18.240 activos» y no «ventas del período».
+- `MEASUREMENT_WINDOW` declara **el período que mide la métrica**, no el de la
+  consulta. Son cosas distintas y confundirlas es el bug.
+- `FAMILY` cae en las cinco que tienen rampa de color. Una sexta pinta la serie
+  sin color y no falla: es el mismo modo de silencio que una utilidad que nombra
+  un token inexistente.
+- Cada fila lleva `CURATED_BY`: un campo de gobierno sin quién lo firmó no es
+  auditable, que es justamente lo que estos campos existen para sostener.
+
+#### ➕ B1.24 ⬜ Alinear las claves del catálogo con el registro de queries
+**Descripción.** `METRIC_KEY` no es un nombre libre. El materializador tiene doce
+queries en un mapa de Go (`MetricRegistry`) y las busca **por esa clave**, con un
+mapa de alias en `snowflake/keys.go` como único puente.
+
+**Es el paso que se rompe en silencio:** una clave que no está en el mapa
+sincroniza bien, compone bien, y después sale `BLOQUEADO` sin que nada explique
+por qué. Es el mismo modo de falla que el spread condicional con una prop mal
+escrita, tres capas más abajo.
+**Guía:** `docs/snowflake/INSTRUCCION-ALTA-TENANT.md` §4 paso 3, que trae la tabla de las doce claves y los ocho alias · el porqué, en `docs/snowflake/CONTRATO-DE-TENANT.md`.
+
+**Criterio de aceptación.**
+- Toda `METRIC_KEY` activa resuelve a una entrada de `MetricRegistry`, directo o
+  por alias. Verificado corriendo el materializador, no leyendo las dos listas.
+- Una clave nueva entra con su alias en `keys.go` **en la misma jugada**. Las dos
+  mitades se mueven juntas o no se mueven.
+- `exec_resumen` y `month_decisions` **no se curan todavía**: el materializador
+  ya las trae con `Blocked: true` y la razón escrita —«Requires
+  BT_UA_DECISION_LOG actionable framework»—. Curarlas publicaría dos paneles que
+  solo pueden salir bloqueados.
+- Queda escrito que las claves de `SV_SYNAPSE_UA_ANALYTICS` **no sirven**: el
+  materializador no lee la capa semántica, lee las tablas Gold directo. Es el
+  error que ya se cometió una vez al escribir la primera semilla.
+
+#### ➕ B1.25 ⬜ `ventana` de punta a punta · de la vista al payload
+**Descripción.** Lo único de este bloque que es código y no Snowflake, y es de una
+línea en dos lugares: agregar `MEASUREMENT_WINDOW` al `SELECT` de
+`dd_catalog_sync_service.go`, y el campo a `DDCatalogMetric` para que salga por
+`GET /config/catalog`.
+
+**Sin esto la consola no se puede entregar.** `PanelShell` pinta
+`Base · {base} · {ventana}` en la cabecera de **todos** los paneles y en **todos**
+sus estados —es shell, no cuerpo, así que no se reemplaza nunca— y el template
+literal imprime la cadena `undefined`, no un hueco.
+**Guía:** `docs/snowflake/INSTRUCCION-ALTA-TENANT.md` §4 paso 5.
+
+**Criterio de aceptación.**
+- `GET /config/catalog` devuelve el campo para cada métrica.
+- Ningún panel de la consola muestra `undefined` en la línea de BASE, en ninguno
+  de los siete estados.
+- La columna se llama `MEASUREMENT_WINDOW` y no `WINDOW`: `WINDOW` es reservada
+  en ANSI y obligaría a citarla en la vista, en el `SELECT` de Go y en cada
+  consulta a mano. Si se prefiere `WINDOW`, se decide **antes** de escribir el
+  campo, no después.
+- El front lo consume por el adaptador de F1.33 sin lógica nueva: es un renombre,
+  no un cálculo.
+
+#### ➕ B1.26 ⬜ Decidir cómo escala el registro, antes del segundo tenant
+**Descripción.** El catálogo vive en Snowflake y el registro de queries en Go:
+**dos mitades del mismo hecho, en dos lugares, que se pueden separar sin que nadie
+se entere.** El puente es el mapa de alias de `keys.go`, escrito a mano.
+
+Un tenant cuyo catálogo declare `ventas` no tiene alias, no encuentra query, y la
+métrica sale bloqueada. Con un tenant se sostiene; con el segundo deja de
+sostenerse.
+
+**A · contrato de forma:** todo tenant expone dos objetos con las quince columnas,
+vía una vista que renombre lo que ya tenga. Barato y rígido — sin `BUDGET_TARGET`
+no hay `goal_attainment`.
+**B · el registro pasa a ser dato:** `MetricRegistry` sale de Go a una tabla por
+tenant. Caro y flexible — la clave del catálogo **es** la del registro y el alias
+desaparece.
+**Guía:** `docs/snowflake/CONTRATO-DE-TENANT.md` §7 y `docs/snowflake/INSTRUCCION-ALTA-TENANT.md` §7, con los dos caminos y su costo.
+
+**Criterio de aceptación.**
+- La decisión queda escrita con su razón, no elegida por omisión al dar de alta
+  el segundo tenant.
+- Si se elige A, **B queda declarado como destino y con fecha**. A sin fecha para
+  B es cómo el mapa de alias termina con cuarenta entradas.
+- Si se elige A, queda escrito qué pasa con un tenant al que le falta una columna:
+  hoy el panel sale bloqueado sin razón, y §8 pide estado, razón y qué lo
+  desbloquea.
+- La decisión nombra quién es dueño de la vista por tenant: hoy `sync-catalog`
+  asume que existe y falla sin decir que falta.
+
+
 ---
 
 ## Fase 2 — Materialización y cache
@@ -614,6 +766,32 @@ degradado con `razon` y `desbloqueaCon`.
 - Un panel recién materializado se ve con su frescura nueva sin esperar el TTL.
 - Un rol sin permiso sobre una métrica no recibe su payload aunque conozca el
   `panelId`.
+
+#### ➕ B2.12 ⬜ Correr el materializador contra datos reales y verificar los seis estados
+**Descripción.** Con el catálogo ya en Snowflake (B1.22–B1.24), correr
+`make materialize TENANT_ID=<uuid> PERIOD=<YYYY-MM>` y comprobar que la consola
+pinta datos del negocio y no los del fixture del seed.
+
+Es la primera vez que el camino completo se ejercita de punta a punta: vista →
+`sync-catalog` → `dd_catalog_metrics` → `materialize` → `dd_panel_data` →
+`panels:batch` → panel.
+**Guía:** `docs/snowflake/INSTRUCCION-ALTA-TENANT.md` §5, la verificación de punta a punta.
+
+**Criterio de aceptación.**
+- `POST /config/panels:batch` devuelve `AVAILABLE` con **valores distintos a los
+  del fixture**. Que conteste 200 no alcanza: el seed también contesta 200.
+- **Si llegan todos en `BLOCKED`, es B1.24** —las claves no caen en el registro—
+  y no un problema de datos. Queda escrito, porque el síntoma no lo dice.
+- Los seis estados se verifican contra el servicio real y no contra MSW:
+  `DEGRADED` envejeciendo `materialized_at` en la base, `BLOCKED` pidiendo un
+  período sin materializar, `FORBIDDEN` con el rol `planner`, `ERROR` con un
+  `gauge` sin `maximum`.
+- Las nueve formas que el transformador produce se ven en pantalla al menos una
+  vez. Las siete que no produce quedan anotadas como no alcanzables, con la
+  razón: no es un panel roto, es una forma que el backend no materializa.
+- Queda registrado contra qué commit del backend y con qué período se verificó.
+  Un «funcionó» sin eso no se puede repetir.
+
 
 ---
 
@@ -1710,6 +1888,415 @@ engañar. Sirve desde hoy, aun con un gráfico por tipo — hoy nada impide que
 - La regla dura se sostiene: `serieConBanda` solo admite gráficos con banda.
 - La tabla no está en el front: llega por API, igual que los bloques.
 
+### La integración con el backend real · 2026-09-11
+
+**El backend de la consola existe** —rama `feature/dynamic-dashboard-backend` de
+`AntPack-dev/synapse-api-go`, el mismo binario que ya sirve el login— y **no
+implementó el contrato**: claves en inglés snake_case, `error` como cadena,
+arreglos desnudos donde el contrato declara un objeto, estados en inglés,
+`Gobierno` anidado y el discriminador de `Valor` llamado `shape`.
+
+La decisión es **un adaptador en `src/api/`**: el contrato sigue siendo la forma
+interna y `render/` no se toca. El análisis completo, campo por campo, está en
+`docs/PLAN-INTEGRACION-2026-09-11.md`; las preguntas al backend, en §4 de ese
+documento.
+
+La regla del adaptador: **renombra y reformatea; no calcula, no inventa una cifra
+y no escribe copy de producto.** Donde el cable no trae el campo, el campo queda
+ausente y la tarea que depende de él sigue bloqueada.
+
+#### ➕ F1.32 ✅ Transcribir el cable de consola a un contrato versionado
+**Descripción.** `contracts/synapse-console-wire.yaml` con la forma que el
+servicio de Go realmente sirve en `/config/*`, más `npm run gen:console-wire` y
+`npm run console-drift`. Es el mismo tratamiento que ya recibió
+`contracts/synapse-auth.yaml`, y por la misma razón: **no se escriben tipos a
+mano contra un servicio.**
+
+El OpenAPI que el binario embebe no declara ni una ruta `/config/*` —es la tarea
+B0.7 de su plan, sin marcar—, así que esta primera versión es una transcripción
+nuestra leyendo `ports/dd_config_service.go`, `dashboard/blocks.go` y
+`domain/dd_*.go`.
+**Criterio de aceptación.**
+- El yaml lleva escrito adentro que es una transcripción del front y no un
+  contrato firmado, con la fecha y el commit desde el que se transcribió.
+- `console-drift` falla si `src/api/console-generated.ts` deja de coincidir con
+  el yaml, con la misma convención de salida que los otros chequeos: 0 conforme,
+  1 violación, 2 BLOQUEADO.
+- Cuando el backend cierre B0.7, el yaml se reemplaza por el suyo y no cambia
+  nada más: el adaptador ya tipa contra los tipos generados.
+- La puerta lo corre. Doce chequeos, sin bloqueados.
+
+**Cerrada el 2026-09-14.** `contracts/synapse-console-wire.yaml` · seis rutas,
+catorce esquemas, transcrito del commit `733c13c` de
+`feature/dynamic-dashboard-backend`. El yaml nombra adentro los ocho archivos de
+Go que se leyeron y declara que **ellos son la autoridad si esto difiere**.
+
+**No se duplicó el comparador.** `contract-drift.py` ya estaba escrito para
+varios contratos —su propio comentario dice que duplicarlo «habría creado dos
+comparadores que derivan»— así que el cable entró como un tercer par
+`yaml → .ts` y no como un script nuevo. Eso destapó una deuda del propio
+chequeo: los dos mensajes de «cómo arreglarlo» decían `npm run gen:api` fijo,
+así que el contrato de acceso venía recomendando el generador equivocado desde
+F0.14. Ahora sale del contrato que falló.
+
+**Verificada por mutación, cuatro casos:** editar el generado a mano (✗ 1),
+cambiar el yaml sin regenerar (✗ 1, y nombra las tres líneas), borrar el
+generado (⊘ 2 BLOQUEADO, no verde) y restaurar (✓ 0).
+
+**Lo que el yaml declara y el contrato no**, que es la lista que F1.33–F1.36 van
+a consumir: `error` como cadena; `data` como arreglo desnudo en `/catalog` y
+`/blocks`; `periods` como cadenas sueltas de los últimos doce meses del
+calendario; `governance` anidado; `status` en inglés; `presentation` solo para
+las dos formas escalares; `unlocks_with` vacío en `BLOCKED`; `request_from` como
+la constante `"administrator"`; `options` de `kpi` como interruptores y no datos;
+y `shape`, `family` y `layer` como `string` libre.
+
+**Las cinco rutas que el servicio NO tiene no se transcribieron** —`/config/chat`,
+`/config/chat/hilos`, `/config/decisiones`, `/config/accionables`,
+`/config/solicitudes`—: declarar una ruta que nadie sirve es el mismo problema
+que un chequeo que pasa porque no encontró nada.
+
+#### ➕ F1.33 ✅ `api/adapt.ts` · contexto, catálogo, bloques y pestaña
+**Descripción.** Las cuatro respuestas que no llevan datos. Traduce nombres
+—`col_span` a `colSpan`, `operational_question` a `pregunta`—, compone `nombre`
+desde `first_name` y `last_name`, y mapea por tabla los tres enumerados que
+cambian de idioma: `shape`, `family` y `min_grain`.
+**Hereda dos correcciones de F1.36** (2026-09-14): `/config/catalog` y
+`/config/blocks` devuelven **un arreglo desnudo** en `data`, no `{ metrics }` ni
+`{ blocks }`. Se mudaron acá porque cambian el tipo de retorno del cliente, y
+quien lo recibe es este adaptador.
+
+**Criterio de aceptación.**
+- `render/` y `catalog/` no cambian ni una línea: la frontera de §4 se sostiene.
+- Lo que el cable no trae queda **ausente**, nunca inventado. `alcance`,
+  `tenant.etiqueta`, `role.puedeAprobar`, `tabs[].key` y `user.capacidades` no
+  se rellenan con un valor plausible.
+- El mapeo de familia es explícito y verificado: las cinco familias del cable
+  producen las cinco del contrato, que son las que nombran los tokens
+  `--color-fam-*`.
+- Una prueba por cada una de las cuatro respuestas, con el fixture escrito desde
+  `synapse-console-wire.yaml` y no de memoria.
+
+**Cerrada el 2026-09-14.** `src/api/adapt.ts`, conectado en el borde de
+`client.ts`: `request<…>` pide el tipo del CABLE y lo que sale de `api.*` es el
+tipo del CONTRATO. **`render/` y `catalog/` no cambiaron ni una línea** —
+`git diff --stat` sobre las dos carpetas sale vacío—, y con ellas las 15 reglas
+de `design-lint` y las 10 anclas.
+
+**Las dos heredadas de F1.36 entraron acá**: `/config/catalog` y `/config/blocks`
+llegan como arreglo desnudo.
+
+**Los mocks pasaron al cable, y eso es lo que hizo el trabajo.** Mientras
+`handlers.ts` hablaba el idioma del contrato, el adaptador no se ejecutaba en
+ninguna prueba. Al cambiarlos **fallaron 16 solas**, y cada una señaló algo real:
+la ventana que no llega, los períodos como cadenas, la pestaña que el mock
+emitía como spread en vez de `{ tab, panels }`.
+
+**Y una de esas 16 encontró un bug MÍO.** Había fijado `grano: 'mes'` en vez de
+deducirlo de la forma del id, que es lo que el contrato sanciona explícitamente.
+Con eso, un período semanal se ofrecía como mensual y el selector no lo
+deshabilitaba — la garantía de F1.7 rota en silencio. La prueba del grano existía
+desde antes y la agarró.
+
+**Lo que NO se rellenó, y con qué queda en su lugar:**
+
+| Campo | Qué pasa | Por qué |
+|---|---|---|
+| `alcance` | `usuario` | Es el único que este servicio sostiene: `plataforma` necesita `tenantsDisponibles`, que tampoco existe |
+| `role.puedeAprobar` | `false` | Dirección a prueba de fallo. Con `true` el panel pinta APROBAR para todos |
+| `tenant.etiqueta` | El nombre completo | Fallback VISIBLE —se ve largo— y no una etiqueta recortada por nosotros |
+| `tabs[].key` | El id | Estable y único, que es para lo que sirve. Un slug del nombre se rompe al renombrar |
+| `metric.ventana` | **Vacía** | No se deriva del período: dos métricas con el mismo mes pueden tener ventanas distintas · B1.25 |
+| `periodo.etiqueta` | El id crudo | «AGO 2026» necesita un locale, y `Contexto.locale` tampoco llega |
+| `direccionSemantica` | El código, tal cual | Traducir a «MÁS ALTO = MEJOR» es escribir copy de producto |
+| `capacidades`, `preferencias`, `icono`, `chatSugerencias` | Ausentes | No llegan y no se inventan |
+
+**Y una consecuencia visible que hay que decir:** la línea de BASE sale
+`Base · 48 tiendas sobre 52 ·`, con el separador colgando, porque falta la
+ventana. Hay una prueba que lo AFIRMA —`la ventana llega VACÍA`— en vez de borrar
+la aserción vieja: una prueba borrada no avisa cuando el campo aparece; esta
+falla el día que B1.25 llegue.
+
+**Verificada por mutación, cinco casos:** familia mapeada mal, lo desconocido
+descartado en silencio, el grano fijo en vez de deducido, `colStart` ignorado y
+**la ventana inventada**. Las cinco rompen pruebas. La cuarta enseñó algo aparte:
+la primera corrida del arnés no la detectó porque el `sed` tenía la indentación
+mal — la mutación que «pasa» hay que verificarla también.
+
+#### ➕ F1.34 ✅ `api/adapt.ts` · payload, valor y presentación
+**Descripción.** Los cinco estados —`AVAILABLE`, `DEGRADED`, `BLOCKED`,
+`FORBIDDEN`, `ERROR`—, el `Gobierno` que viene anidado en `governance`, las nueve
+formas de `Valor` que el backend materializa y la `Presentacion` de las dos que
+la tienen.
+**Criterio de aceptación.**
+- Los cinco estados producen las cinco variantes de la unión discriminada, y el
+  `switch` exhaustivo de `Panel.tsx` sigue compilando sin cambios.
+- Las nueve formas se verifican una por una contra el fixture del cable. Las
+  siete que el backend no materializa —`distribucion`, `serieConBanda`,
+  `categoricaComparada`, `perfilMultiatributo`, `matriz`, `grafo`, `flujo`—
+  quedan declaradas como no alcanzables hoy, con la razón.
+- **`porcentaje` ausente en una composición no se deriva.** El contrato dice que
+  lo calcula el backend porque redondear en el cliente da columnas que suman
+  99,9. Sin él, el panel entra en `ERROR` con la razón escrita.
+- `BLOQUEADO` sin `unlocks_with` no se inventa un «qué lo desbloquea».
+- Verificada por mutación: cambiar un nombre de campo en el adaptador tiene que
+  romper una prueba.
+
+**Cerrada el 2026-09-14.** Los cinco estados, las nueve formas y la presentación.
+**406 pruebas**, y `render/` y `catalog/` siguen sin una línea tocada.
+
+**El cable NO es una unión discriminada, y ahí está el trabajo real.**
+`ports.DDPayloadDTO` es un struct con campos `omitempty`: su tipo permite un
+`AVAILABLE` sin `governance` y un `BLOCKED` con valor. El contrato lo hace
+imposible de construir. **El adaptador es donde eso se vuelve a cerrar**, y por
+eso puede fallar: un payload que no cumple la variante sale como `ERROR` con la
+razón escrita, nunca como una variante a medias. `ERROR` y no `BLOQUEADO` a
+propósito — bloqueado es «no hay dato y no puede haberlo», esto es un dato que
+llegó mal, y el usuario tiene que poder distinguirlos.
+
+**Lo que NO se deriva, con la cita que lo prohíbe:**
+
+- **`porcentaje` de una composición.** El contrato: «lo calcula el backend y no
+  el front: la suma tiene que dar 100 y redondear en el cliente produce columnas
+  que suman 99,9». En el cable es opcional, así que su ausencia rompe la
+  composición entera en vez de producir una que casi suma.
+- **La banda de un pronóstico.** Regla dura 6: «prohibida la estimación puntual
+  sin intervalo». Sin `lo`/`hi`/`nivel` el panel entra en `ERROR`.
+- **El «qué lo desbloquea» de un `BLOQUEADO`.** El servicio deja `unlocks_with`
+  vacío ahí; solo lo escribe al derivar `DEGRADED`.
+- **El `solicitarA` de un `SIN_PERMISO`.** Pasa la constante `"administrator"`
+  tal cual: mejorarla sería inventar a quién pedirle.
+
+**Las siete formas no alcanzables quedan declaradas con una prueba propia** que
+recorre `distribution`, `series_with_band`, `compared_categorical`,
+`multi_attribute_profile`, `matrix`, `graph` y `flow`. No son paneles rotos: son
+formas que el `switch` de `TransformValue` no produce. El día que alguna llegue,
+esa prueba falla y alguien decide qué se pinta.
+
+**Dos huecos más quedaron atestiguados por pruebas en vez de tapados**, igual que
+la `ventana` de F1.33: `BLOQUEADO` no promete un desbloqueo —con su par, que
+comprueba que SÍ se pinta cuando el servicio lo manda, para que el hueco quede
+del lado correcto— y un panel no escalar llega sin `presentacion`, que es §4 ask
+13 contra la regla dura de «ningún número desnudo».
+
+**Verificada por mutación, seis casos:** `label` leído como `etiqueta`, el
+porcentaje derivado, un desbloqueo inventado, el gobierno sin aplanar, el
+pronóstico sin banda publicado, y el pilar leyendo `valor` en vez de `value`.
+Las seis rompen pruebas.
+
+**Y el arnés de mutación volvió a fallar por comillas**, igual que en F1.33 con
+la indentación. Dos de las seis dijeron «pasa» sin haberse aplicado. **Una
+mutación que pasa hay que verificarla también**: ahora el script sale con 1 si el
+texto a reemplazar no está.
+
+#### ➕ F1.35 ⬜ Los enumerados cerrados no se abren en el cable
+**Descripción.** En el cable `shape`, `family`, `layer` y `block_type` son
+`string` libre; en el contrato son enumerados cerrados. `make sync-catalog` hace
+upsert de lo que diga una vista de Snowflake, así que un valor desconocido no es
+hipotético. El adaptador es el único lugar donde se puede detectar.
+**Criterio de aceptación.**
+- Una `family` fuera del enumerado **no pasa**. Si pasara, el color de la serie
+  sería `var(--color-fam-vendors-1)`, que no existe: la serie se pinta sin color
+  y nadie se entera. Es el mismo modo de falla que `text-labell`.
+- Una `shape` o un `block_type` desconocidos ponen ese panel en `ERROR` con la
+  razón —qué valor llegó y qué valores hay—, no rompen la pestaña entera ni se
+  sustituyen por un default.
+- El error es explícito. **Nunca se arregla un valor inválido en silencio**:
+  principio 6 de §1.
+- Verificada por mutación con una familia inventada en el fixture.
+
+#### ➕ F1.36 ✅ `client.ts` contra las rutas, los cuerpos y el error de este servicio
+**Descripción.** Seis correcciones: el batch manda `{ panel_ids, period }` y no
+`{ panelIds, periodo }` —los dos son `required` en el binding, así que hoy
+devuelve 400—; las preferencias van a `/config/me/preferences` con `{ theme }`;
+el catálogo y los bloques llegan como arreglo desnudo; los hilos apuntan a un
+endpoint que no existe; y **el envelope de error de este servicio es
+`{ success: false, error: "cadena" }`**, no el objeto de §4.1.
+**Criterio de aceptación.**
+- Ninguna llamada de la consola devuelve 400 ni 404 por forma del request contra
+  el servicio real.
+- Un error del servicio produce un `ApiError` con `message` legible. Hoy
+  `body.error.codigo` sobre una cadena da `code: undefined` y `message: ""` —una
+  pantalla de error sin una palabra—, que es el defecto exacto por el que existe
+  `api/auth.ts`.
+- El desenvolvimiento del envelope sigue ocurriendo **en un solo lugar**.
+- Mientras el servicio no emita códigos, el `code` es explícitamente desconocido
+  y el front no decide sobre él.
+
+**Cerrada el 2026-09-14, en dos tramos.** Cuatro correcciones entraron con la
+tarea —el cuerpo del batch (`panel_ids` / `period`), la ruta y la clave de
+preferencias (`/config/me/preferences`, `{ theme }`), el envelope de error como
+cadena, y `threads()` documentado contra un endpoint que el servicio no tiene— y
+**las dos de respuesta entraron con F1.33**, donde el tipo de retorno tiene quien
+lo reciba: el catálogo y los bloques llegan como arreglo desnudo.
+
+Se partió así y no por tiempo. Hacerlas antes del adaptador dejaba dos salidas y
+las dos malas: el árbol en rojo hasta que existiera `adapt.ts`, o un
+`request<Metric[]>` afirmando que el cable devuelve el tipo del contrato — un
+cast que miente y que el compilador deja pasar.
+
+**Los cuatro criterios, verificados y no asumidos:**
+
+| | Cómo se comprobó |
+|---|---|
+| Ninguna llamada difiere del cable | Cruzando las rutas y los cuerpos de `client.ts` contra `synapse-console-wire.yaml`. Las seis coinciden |
+| El error produce un `message` legible | Prueba con el envelope del cable, más la mutación que descarta el mensaje |
+| El envelope se desenvuelve en UN lugar | `grep` de `res.json()` y `body.success` sobre `src/`: una sola vez, en `client.ts` |
+| El `code` es explícitamente desconocido | `SIN_CODIGO`, y una prueba afirma que su familia NO es `CAMPO`, `REGLA` ni `FALLO` |
+
+**La única ruta que no existe es `/config/chat/hilos`, y no la llama nadie**:
+`useThreads` no tiene consumidor en `src/`. Se conserva porque F3.7 está escrita
+y bloqueada, no equivocada — lo que no se hace es montarla en la consola, que un
+riel que pide un 404 al abrir es peor que un riel ausente.
+
+**Y al cerrarla apareció algo que conviene decidir, no hacer de pasada.** La
+razón por la que `api/auth.ts` existe aparte era su envelope: «§4.1 declara el
+error como objeto y el servicio como cadena, y pasarlo por `client.ts` daba
+`code: undefined`». **Eso dejó de distinguirlos**: ahora `client.ts` lee el mismo
+envelope de cadena, así que los dos archivos hacen lo mismo con la misma forma.
+
+Lo que todavía los separa es poco: `auth.ts` asigna códigos con sentido
+—`AUTH_CREDENCIALES` frente a `AUTH_FALLO` según el 401— donde el cliente pone
+`SIN_CODIGO`, y estrecha los opcionales del spec. Es candidato a fundirse, y no
+se hizo acá porque toca el flujo de acceso entero —F0.5, F0.13, F0.15 y F0.16,
+las cuatro cerradas y probadas— y eso es una tarea con su propio criterio, no un
+arreglo al pasar.
+
+**El `code` es `SIN_CODIGO`**, y la familia `SIN` no es ninguna de las tres de
+§4.1 a propósito: ninguna rama futura sobre `CAMPO_`, `REGLA_` o `FALLO_` lo va a
+agarrar por accidente. Lo que sí queda es `httpStatus`, que el transporte declara.
+
+**Apareció una quinta corrección que no estaba en la lista**: `res.json()` tira
+cuando el 502 del proxy o un panic de Go devuelven HTML, y el mensaje que veía el
+usuario hablaba del parser y no de que el servicio no está.
+
+**Y el helper `fail()` de MSW emitía la forma del contrato** —es la razón por la
+que `body.error.codigo` sobrevivió meses sin que ninguna prueba se quejara: los
+mocks le daban de comer exactamente lo que esperaba—. Es F1.38 en chico, y
+confirma por qué esa tarea no se deja para el final.
+
+**Verificada por mutación, cuatro casos**, cada uno rompiendo una corrección:
+claves viejas del batch, ruta vieja de preferencias, mensaje del servicio
+descartado, y el `try` del JSON quitado. Las cuatro hacen fallar una prueba.
+
+#### ➕ F1.37 ✅ Una sola base de API
+**Descripción.** `/auth/*`, `/config/*` y `/admin/*` los sirve el mismo binario
+bajo el mismo `/api/v1`. Las dos bases del front dejan de tener razón de ser.
+**Criterio de aceptación.**
+- `VITE_AUTH_URL` ausente cae a `VITE_API_URL`, que es el comportamiento que ya
+  estaba previsto «si algún día quedan detrás del mismo origen».
+- Un `.env.example` declara las variables con el puerto real del servicio
+  (`4010`) y el `README` dice cómo levantar los dos lados.
+- `CLAUDE.md` deja de decir «son DOS servicios».
+
+**Cerrada el 2026-09-14.** La caída de `VITE_AUTH_URL` a `VITE_API_URL` ya estaba
+escrita desde F0.5 «por si algún día quedan detrás del mismo origen»; lo que
+faltaba era todo lo demás, que seguía asumiendo dos destinos.
+
+**El proxy de Vite enumeraba prefijos, uno por uno**, con la razón escrita: «la
+API de la consola es otro servicio y va a tener otro destino». Resultó no serlo.
+Enumerar ya había costado una vez —`password-reset-requests` cae fuera de `/auth`
+y el proxy devolvía 404, así que parecía que el endpoint no existía— y con
+`/config/*` y `/admin/*` la lista solo se alargaba. Ahora es `/api/v1` entero.
+
+`API_ORIGIN` reemplaza a `AUTH_ORIGIN`, que **sigue funcionando** para no romper
+entornos que ya lo tienen puesto.
+
+**El encabezado de `api/auth.ts` afirmaba que era otro servicio y ya no lo es.**
+Se corrigió dejando escrito qué se sabía cuando se escribió. Lo que NO cambia es
+que el archivo siga existiendo: su razón de ser es el envelope de error, y que
+sea un solo servicio no lo arregla.
+
+#### ➕ F1.38 ⬜ MSW responde la forma del cable, no la del contrato
+**Descripción.** Hoy `tests/mocks/handlers.ts` responde la forma del contrato.
+Si se queda así, **el adaptador no se ejecuta en ninguna prueba y las 350 siguen
+verdes con el adaptador roto** — el modo de falla exacto del 2026-08-20, cuando
+el colapso responsive violaba §3.1 de tres formas con 184 pruebas en verde.
+**Criterio de aceptación.**
+- Los handlers responden lo que responde Go: snake_case, `error` como cadena,
+  arreglos desnudos, estados en inglés, `governance` anidado, `shape` como
+  discriminador.
+- El adaptador queda en el camino de **toda** prueba de superficie: no hay ruta
+  por la que una prueba vea la forma del contrato sin pasar por él.
+- Los fixtures se escriben desde `synapse-console-wire.yaml`. Un fixture
+  inventado verifica el fixture.
+- Verificada por mutación: romper el adaptador tiene que romper pruebas de
+  superficie, no solo las del propio adaptador.
+
+#### ➕ F1.39 ⬜ Humo contra el servicio real
+**Descripción.** Una corrida contra el servicio levantado con su seed —login,
+`/config/me`, `/config/catalog`, `/config/blocks`, `/config/tabs/:tabId`,
+`panels:batch`— que compare lo que llega contra
+`contracts/synapse-console-wire.yaml`. Una prueba verde contra MSW demuestra que
+el adaptador es coherente con lo que nosotros creemos del cable, no con el cable.
+**Criterio de aceptación.**
+- Se corre a mano con credenciales y no forma parte de `npm run verify`: la
+  puerta no puede depender de un servicio externo.
+- Sale con 2 —BLOQUEADO— si no hay servicio al que apuntar, nunca con 0. Un
+  chequeo que pasa por falta de fuente miente sobre su cobertura.
+- Una diferencia entre el cable real y el yaml transcripto se reporta con el
+  campo y los dos valores, y **se corrige el yaml**, que es lo que puede estar
+  mal: el yaml es nuestra transcripción, el servicio es el hecho.
+- Queda registrado qué se verificó y con qué commit del backend.
+
+
+#### ➕ F1.40 ⬜ `Presentacion` llega al cuerpo · hoy está declarada y nadie la pasa
+**Descripción.** `BodyProps.presentation` existe en `render/types.ts`, está
+documentada correctamente —«rótulos y cifras de apoyo, redactados por el backend;
+viajan con el dato y no con el layout porque dependen del período»— y **ningún
+cuerpo la lee, ninguna superficie la pasa**. `KpiBody` toma `label`,
+`comparativo` y `medidor` de `params`, o sea de `PanelConfigurado.opciones`, que
+es el layout.
+
+**Es nuestro, no del backend, y contradice nuestro propio contrato.** `Presentacion`
+declara esos tres campos y dice por qué van en el payload: «el medidor marca 61%
+este mes y otra cosa el siguiente». Con el layout de por medio, el rótulo del KPI
+queda congelado en la composición.
+
+MSW lo tapaba porque los fixtures escribían el rótulo en `opciones`. El cable lo
+destapa: manda `options: { comparative: true, meter: true }` —interruptores— y
+los datos en `presentation`.
+**Criterio de aceptación.**
+- `Panel` pasa `presentation` al cuerpo, y `KpiBody` lee de ahí `label`,
+  `medidor` y `comparativo`. En `params` quedan los interruptores, que es lo que
+  el contrato llama «interruptores de composición, no datos».
+- Un KPI cuyo medidor cambia de período cambia en pantalla **sin republicar el
+  layout**. Es la garantía que justifica que `Presentacion` exista.
+- Verificada por mutación: mover el rótulo de vuelta a `opciones` tiene que
+  romper una prueba.
+- Los otros once cuerpos declaran si usan `presentation` o no. El que no la usa
+  no la recibe: una prop opcional que nadie lee es cómo esta se perdió.
+
+#### ➕ F1.41 ⬜ Los nombres de los params, del cable al contrato
+**Descripción.** `PARAM_SCHEMAS` espera los params en español —`maximo`,
+`horizonte`, `orden`, `tope`, `normalizacion`, `pilares`, `columnas`, `banda`,
+`corte`, `ventana`— y el cable los manda en inglés: `maximum`, `horizon`,
+`order`, `cap`, `normalization`, `pillars`, `columns`, `band`, `cut`, `window`.
+La tabla `blocks` los declara en `layout_params`.
+
+**El caso que lo hace urgente es `gauge`.** El backend **exige**
+`options.maximum` y emite `ERROR` si falta, así que el panel llega con
+`{ maximum: 100 }`. `GaugeBody` espera `maximo`. `adaptPanelParams` descarta
+`maximum` por desconocido, el cuerpo aplica su default y **el medidor se dibuja
+contra otro máximo, en silencio** — el modo de falla exacto que `params.ts`
+existe para evitar, entrando por el lado contrario. Lo mismo `forecast` con
+`horizon`.
+**Criterio de aceptación.**
+- El mapeo vive en el adaptador de `api/` y en un solo lugar, junto al de
+  familias y formas.
+- Un param del cable que el mapeo no conoce **se reporta**, no se descarta: es la
+  misma regla que `unknownParams` ya aplica, y ahora con dos vocabularios hay el
+  doble de superficie para que uno se pierda.
+- `paramsDisponibles` que llega de `/config/blocks` se traduce con la misma
+  tabla, para que la validación compare peras con peras.
+- Un `gauge` del seed dibuja su medidor contra el `maximum` que mandó el
+  backend. Verificado cambiando el valor en el fixture y viendo moverse el arco.
+- Queda declarado qué params del cable **no tienen contraparte** —`brand`,
+  `components`, `interval_level`, `stats`, `scale`, `clustering`, `reference`,
+  `profile_cap`, `cuts`— y por qué: son de los tres cuerpos que no existen y de
+  opciones que ningún cuerpo lee todavía.
+
+
 ---
 
 ## Fase 2 — Los estados de materialización en pantalla
@@ -2077,6 +2664,61 @@ la forma de la métrica elegida**, no los 49. Consume `/config/plots` vía
 - Al estar los quince, el registro pasa de `Partial<Record<PanelType, …>>` a
   `Record` completo, y **agregar un tipo al enumerado sin su cuerpo deja de
   compilar**.
+
+### La integración con el builder real · 2026-09-11
+
+**Las ocho rutas existen** en la rama `feature/dynamic-dashboard-backend`:
+`GET /admin/tenants`, `GET/POST /admin/tenants/:tenantId/layouts`,
+`GET/PUT /admin/layouts/:layoutId`, `POST /admin/layouts/:layoutId/validate`,
+`POST /admin/layouts/:layoutId/publish` y `GET /admin/tenants/:tenantId/catalog`.
+Con eso **trece de las veintiuna tareas de esta fase dejan de estar bloqueadas**.
+
+Siguen bloqueadas cuatro, y por dependencias nombradas: **F4.3** espera B4.8 —el
+CRUD de roles por tenant—, **F4.12** espera B4.9 —el preview por rol—, **F4.21**
+espera `/config/plots` y B1.21, y **F4.4** espera decidir si `POST /admin/agents`
+y `GET /admin/agents` alcanzan para la configuración de agente.
+
+**F4.17–F4.20 no se mueven**, y ahora con dos razones en vez de una: su único
+consumidor es el builder, y el backend tampoco materializa sus formas —
+`transform.go` tiene nueve casos y las tres que estas tareas necesitan no están.
+
+#### ➕ F4.22 ⬜ Transcribir el cable de admin y builder
+**Descripción.** Las ocho rutas en `contracts/synapse-admin-wire.yaml`, con el
+mismo tratamiento que F1.32. Los **cuerpos** de `PUT /admin/layouts/:id` son
+snake_case y razonables; las **respuestas** de `GET /admin/layouts/:id`,
+`POST .../layouts` y `POST .../publish` serializan structs de dominio de Go sin
+etiquetas `json:`, así que llegan en PascalCase: `ID`, `Status`, `ColStart`.
+**Criterio de aceptación.**
+- La deuda de PascalCase queda **declarada en el yaml**, no absorbida en
+  silencio: es una pregunta abierta al backend, no una convención nuestra.
+- El yaml declara que rompe los propios tests de Postman del backend
+  —`scriptCreateDraft` afirma `lv.status === 'draft'` y lo que llega es
+  `Status`— para que la pregunta tenga evidencia y no sea una preferencia.
+- `admin-drift` verifica que los tipos generados no deriven del yaml.
+- `DDLayoutValidationResult` y `DDCatalogMetric` sí traen etiquetas `json:` y se
+  transcriben tal cual.
+
+#### ➕ F4.23 ⬜ Los hooks del builder contra el cable
+**Descripción.** `useTenants`, `useLayouts`, `useLayoutDetail`, `useSaveLayout`,
+`useValidateLayout` y `usePublishLayout`, con su adaptador, siguiendo la figura
+de F4.16. El ciclo del builder es `crear borrador → PUT → validate → publish`, y
+solo un `draft` es editable: un `PUT` sobre un publicado devuelve 409.
+**Criterio de aceptación.**
+- **El servidor decide.** La validación del front es feedback inmediato; nunca se
+  publica algo que el front dio por bueno y el servidor no vio — es el criterio
+  que F4.11 ya declara y acá se sostiene con `POST .../validate` real.
+- Publicar invalida la caché de la consola: `/config/me` y las pestañas se
+  vuelven a pedir, porque publicar **demota el layout publicado anterior a
+  borrador** y lo que estaba en pantalla dejó de ser el layout vigente.
+- Un 409 sobre un layout publicado se muestra con la razón —«este layout ya está
+  publicado; duplicalo para editarlo»—, no como «error al guardar».
+- Los `errors[]` de validate se muestran **por panel**, que es como vienen
+  (`tab_id`, `panel_id`, `field`, `message`), y no como una lista suelta al pie.
+- El `PUT` es un **reemplazo completo** de tabs y paneles: se envía el layout
+  entero, y mandar una tab sin `id` genera una nueva. Queda escrito donde se
+  llama, porque es la clase de cosa que se descubre borrando el trabajo de
+  alguien.
+
 
 ---
 
