@@ -29,6 +29,7 @@ FASES = {
 
 # Un encabezado de tarea: `### ➕ F1.13a ⬜ Título · 🔒 depende de X`
 ENCABEZADO = re.compile(r'^#{3,4} (➕ )?([BF]\d+\.\d+[a-j]?) (✅|⚠️|⬜|🕓) (.+)$')
+ESPERA = re.compile(r'^\*\*Espera del backend\.\*\*')
 
 
 def parsear(texto: str) -> list[dict]:
@@ -95,6 +96,16 @@ def parsear(texto: str) -> list[dict]:
                 'titulo': re.sub(r'\s*·?\s*🔒.*$', '', titulo).strip(),
                 'dep': dep.group(1).strip() if dep else '',
             })
+            continue
+        # `**Espera del backend.**` NO es prosa de la tarea: es una dependencia,
+        # y su destino es `docs/PARA-BACKEND.md`, que se genera aparte. Si
+        # contara como prosa rompería el AGRUPADO —varias tareas comparten un
+        # bloque de descripción— y cerraría el grupo en la primera que lo lleve.
+        # Lo que sí hace es marcar la tarea como bloqueada, que es lo que el
+        # ticket necesita saber.
+        if ESPERA.match(linea):
+            if pendientes:
+                pendientes[-1]['bloqueada'] = True
             continue
         # Cualquier otro encabezado cierra el grupo abierto.
         if re.match(r'^#{1,3} ', linea):

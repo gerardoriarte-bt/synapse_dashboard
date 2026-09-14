@@ -1,723 +1,169 @@
 # Lo que el front necesita del backend
 
-**2026-09-04.** Todo lo que hoy bloquea trabajo del front, en un solo lugar, con
-el bloque de yaml listo para pegar donde corresponde.
+> **GENERADO.** Sale de `plan-de-trabajo.md` con `npm run plan` y se pisa
+> entero en cada corrida — editarlo a mano es trabajo que se pierde. Lo que
+> se pide vive **en la tarea que lo espera**, así que una tarea que se
+> desbloquea saca su pedido de acá sola.
 
-**Si solo van a leer una cosa, que sea el punto 0**: hay ocho rutas que el plan
-necesita y el contrato no declara, y seis de ellas son la fase más grande que
-queda. Los once puntos que le siguen son campos sueltos; ese son rutas enteras
-que no existen.
 
-**Cómo leerlo.** Está ordenado por esfuerzo de ustedes, no por importancia: lo
-primero son transcripciones de decisiones ya tomadas, después decisiones de una
-línea, y al final lo que necesita conversación. Cada punto dice **qué falta, por
-qué bloquea y qué desbloquea**.
+Cada punto dice **qué falta y por qué bloquea**, con el identificador de la
+tarea que está esperando. Los identificadores son los de
+`tareas-front-back.md`, el **ancestro común de los dos planes** — verificado
+en cada corrida de la puerta con `npm run plan:ancestro`.
 
-**Nada de esto está esperando código del front.** Todo lo que se podía construir
-sin la respuesta ya está construido, probado y en verde. Donde faltaba un campo,
-el front **no inventó una forma**: dejó la tarea bloqueada y lo anotó acá. Esa es
-una regla del proyecto, y la razón es concreta — una forma inventada en el front
-se descubre en integración y no en compilación.
 
 ---
 
-## De un vistazo
+## Lo que ya está de nuestro lado
 
-| # | Qué falta | Esfuerzo | Desbloquea |
-|---|---|---|---|
-| **0** | **Ocho rutas que el plan cita y el contrato no declara** | Grande · seis son una superficie entera | **Las 21 de Fase 4**, F5.1, F5.2, F1.31, F4.21 |
-| **∅** | **Cuál servicio sirve chat, hilos y solicitudes** | Arquitectura · decisión, no código | Que no reapuntemos el chat dos veces |
-| **1** | `ContextoDePanel` y `periodo` en `POST /config/chat` | Transcribir · ya está decidido | F3.2, F3.3 |
-| **2** | `tenant.zonaHoraria` | Transcribir · decidido el 2026-09-04 | F1.13b |
-| **3** | El patrón de `PeriodoId` | Transcribir · decidido el 2026-09-04 | F5.13 |
-| **4** | `DatoDeRespuesta.tipo` | Una línea, una decisión | F3.6 |
-| **5** | Panel y período en `HiloResumen` | Una línea, va con la 1 | La mitad de F3.7 |
-| **6** | `versionModeloSemantico` sigue en `nullable: true` | Una línea | Nada · limpieza |
-| **7** | `paramsDisponibles` con tipos y valores | Diseño de esquema | Borra una tabla duplicada |
-| **8** | Taxonomía de `error.codigo` | **Revisión** · hay propuesta | Ramificar por tipo de error |
-| **9** | El servicio de `/config/solicitudes` | Servicio, no contrato | F2.3 |
-| **10** | Seed determinista · B1.16 y B1.20 | Ya está en el plan | F1.25 |
-| **11** | Mínimos por gráfico · B1.21 | Ya está en el plan | F1.31 |
+No hace falta que esperen nada de estas para probar: están en `main` del
+front, con prueba y con la puerta en verde.
 
-Y **dos que decide producto**, no ustedes, pero que les van a llegar como campos:
-`locale` y moneda en `Contexto`, y `orden` en `PanelConfigurado`.
+- **F1.32** · Transcribir el cable de consola a un contrato versionado
+- **F1.33** · api/adapt.ts · contexto, catálogo, bloques y pestaña
+- **F1.34** · api/adapt.ts · payload, valor y presentación
+- **F1.36** · client.ts contra las rutas, los cuerpos y el error de este servicio
+- **F1.37** · Una sola base de API
+- **F1.40** · Presentacion llega al cuerpo · hoy está declarada y nadie la pasa
 
 ---
 
-# Antes de todo: apareció un segundo servicio
+## Lo que esperamos · 16 pedido(s)
 
-**`AntPack-dev/synapse-api-go` existe, corre y publica bajo `/api/v1`.** Se
-conectó el login el 2026-09-08 —F0.5 cerrada— y al leerlo aparecieron tres cosas
-que cambian lo que dice el resto de este documento.
 
-**No tocamos su repositorio.** Todo lo que este documento propone se describe
-acá —con el snippet, la línea exacta y la evidencia— y lo aplican ellos. El
-2026-09-08 se abrió un PR con dos cambios implementados y se revirtió el mismo
-día: aunque compilaran, tocar el código de otro equipo desde afuera les saca la
-decisión de las manos y parte en dos el lugar donde se revisa.
+### B0.4 · Middleware de auth y envelope
 
-**El mensaje que se le pasó a quien lo mantiene está en
-`docs/ENTREGA-2026-09-08-login.md`**, con lo que se entregó, dónde revisarlo y
-las tres cosas concretas que necesitamos de ese lado.
+*Estado de la tarea: pendiente.*
 
-**Y tiene su propio OpenAPI**: 1.796 líneas en
-`internal/adapters/handler/docs/openapi.yaml`, embebido en el binario y servido
-en `/docs/openapi.yaml`. **Eso es un contrato, no una implementación**, y hay que
-tratarlo como tal: la primera versión de nuestro cliente se escribió leyendo las
-estructuras de Go, y ese spec ya contestaba una pregunta que habíamos anotado
-como abierta. Ver F0.14.
 
-**Publica dieciséis rutas, y varias son las que este documento venía pidiendo,
-con otro nombre:**
+**El envelope de error estructurado de §4.1.** Hoy `error` es una cadena, así que el front no puede distinguir «error de campo» de «regla de negocio» de «fallo técnico». La propuesta está en el yaml desde el 2026-09-03 y es barata: `FAMILIA_DETALLE`, con la familia como prefijo hasta el primer `_`. **El front solo necesita el prefijo**, nunca la lista completa, así que pueden agregar códigos sin que nos desincronicemos.
 
-| Lo que pedimos acá | Lo que el servicio de Go ya tiene | ¿Es lo mismo? |
-|---|---|---|
-| `POST /auth/login` · punto 0 | `POST /api/v1/auth/login` | **Sí.** Ya está conectado |
-| `GET /admin/tenants` · punto 0 | `POST /api/v1/admin/tenants` | Solo crear. Falta listar |
-| Roles y usuarios · F4.3 | `POST /api/v1/admin/users` | Solo crear |
-| `/config/solicitudes` · punto 9 | `POST /access-requests`, `GET /admin/access-requests`, aprobar y rechazar | **Más completo que el nuestro** |
-| `POST /config/chat` SSE | `POST /api/v1/chat/stream` | Los dos son SSE. Los eventos no están comparados |
-| `GET /config/chat/hilos` | `GET /api/v1/history/threads` | Adyacente |
-| `GET /config/chat/hilos/{id}` | `GET /api/v1/cortex/threads/{id}` | Adyacente |
-| `GET /config/me` | `GET /api/v1/auth/token-info` | **Parcial** · devuelve el usuario del token, sin pestañas ni períodos |
 
-**Ninguna de `/config/*` de la consola está**: ni `catalog`, ni `blocks`, ni
-`tabs`, ni `panels:batch`. O sea que el servicio de Go **no es** la API de la
-consola, y la consola sigue sin backend.
+### B0.6 · Extender el contrato con admin y builder
 
-**Y tiene cinco documentos escritos para el front** —1.690 líneas— que describen
-funcionalidades que nuestro plan no menciona: registro de acceso, «olvidé mi
-contraseña», listado de solicitudes y chat con selector de agente. Más
-`/tickets`, que no tiene documento. El cruce completo está en
-`docs/AUDITORIA-2026-09-08-servicios.md`.
+*Estado de la tarea: pendiente.*
 
-## La mitad del chat ya está contestada · 2026-09-08
 
-**El chat del servicio de Go es de otro producto, no del dashboard** (decisión
-del humano). Eso saca de la mesa siete rutas y dos documentos:
+**Cerrar su B0.7: declarar `/config/*` y `/admin/layouts/*` en el OpenAPI que el binario ya embebe.** Mientras no esté, el front mantiene `contracts/synapse-console-wire.yaml`, que es una **transcripción nuestra leyendo structs de Go** — y eso ya costó un error con el servicio de acceso. Con el spec emitido, ese archivo se reemplaza por el suyo y `console-drift` lo verifica solo.
 
-| Fuera de alcance | |
-|---|---|
-| `POST /chat/stream` · `GET /chat/agents` | Chat del otro producto |
-| `/cortex/threads` · `/cortex/threads/{id}` | Sus hilos |
-| `/history/threads` · `/history/threads/{id}` | Su historial |
-| `admin-chat-agent-selector-frontend-integration.md` + `...ultimos-ajustes.md` | 494 líneas que no nos tocan |
 
-**Y confirma que lo que construimos está bien apuntado.** El chat de la Fase 3
-es el **contextual del panel** —C3, `design.md` §7.1: se abre desde un panel y
-lleva su métrica—, y vive en nuestro contrato como `/config/chat`. Son dos
-chats de dos productos, no dos definiciones del mismo.
+### B1.1 · GET /config/me
 
-## Lo que sigue abierto: las solicitudes de acceso
+*Estado de la tarea: pendiente.*
 
-`/config/solicitudes` del contrato de la consola y `/access-requests` del
-servicio de Go **sí son lo mismo**, definido dos veces:
 
-| Contrato de la consola | Servicio de acceso |
-|---|---|
-| `GET`/`POST /config/solicitudes` | `POST /access-requests` · `GET /access-requests/tenants` |
-| — | `GET /admin/access-requests` |
-| — | `POST /admin/access-requests/{id}/approve` · `/reject` |
+**`theme` en la respuesta.** El campo existe en `users`, la migración lo creó y `PUT /config/me/preferences` ya lo escribe — pero `/config/me` no lo devuelve, así que **la preferencia se guarda y no se puede leer**. El front la necesita antes del primer pixel: leerla en una segunda llamada haría que la consola pinte oscura y cambie a clara a la vista del usuario. Y falta el resto del contexto: `alcance`, `tenant.etiqueta` y `vertical`, `role.puedeAprobar`, `user.capabilities`, y en la pestaña `key`, `icon` y `chat_suggestions`.
 
-**El de Go gana solo**: tiene aprobar, rechazar, listar por tenant y correo, y
-además el flujo de recuperación de contraseña ya cuelga de ahí —F0.15 lo
-consume—. El del contrato tiene dos rutas y ninguna implementación conocida.
 
-**Lo que hace falta decidir es si F2.3 se reapunta.** Hoy el CTA de
-`SIN_PERMISO` no se pinta porque no sabíamos si había servicio. Ahora sabemos
-que hay uno; falta saber si es el que el dashboard debe usar. Si sí, es medio
-día: cambiar dos rutas y leer las solicitudes ya hechas desde el servidor.
+### B1.6 · POST /config/panels:batch
 
-## El envelope de error NO es el mismo, y falla en silencio
+*Estado de la tarea: pendiente.*
 
-§4.1 del contrato declara el error como un **objeto**; el servicio de Go lo
-declara como una **cadena**:
 
-```go
-type Response struct {
-    Success bool        `json:"success"`
-    Data    interface{} `json:"data,omitempty"`
-    Error   string      `json:"error,omitempty"`   // ← cadena
-}
-```
+**`unlocks_with` en `BLOCKED`** —hoy llega vacío; el servicio solo lo escribe al derivar `DEGRADED`, y §8 pide estado, razón **y qué lo desbloquea**— y **`request_from` real** en `FORBIDDEN`, que hoy es la constante `"administrator"` escrita en el código y no el rol que decide sobre la métrica.
 
-**No rompe: se calla.** Pasada la respuesta de Go por nuestro `api/client.ts`,
-`body.error.codigo` sobre una cadena da `undefined`. Medido el 2026-09-08 con un
-401 real del servicio:
 
-```
-code   : undefined
-message: ""
-```
+### B1.13 · Presentacion opcional
 
-El usuario ve una pantalla de error sin una palabra. Por eso el front tiene un
-`api/auth.ts` que desenvuelve por su cuenta y le pone el código —
-`AUTH_CREDENCIALES`, `AUTH_FALLO`— en vez de reusar el cliente.
+*Estado de la tarea: pendiente.*
 
-**Si el servicio de Go adopta el error de §4.1, ese archivo se borra** y los dos
-servicios se leen igual. Va con el punto 8, la taxonomía: es la misma
-conversación.
 
-## El `role` que devuelve la API no cumple su propio enum
+**`presentation` para las formas que no son escalares.** `PresentationFromRows` devuelve `nil` para siete de las nueve, así que un panel de barras, de tabla o de serie llega **sin rótulo** — y «ningún número desnudo» es regla dura. Falta también la `nota` de panel, distinta de la `note` que va dentro del `meter`. Verificado: de doce payloads, solo los seis escalares traen `presentation`.
 
-**Verificado contra la base el 2026-09-08**, con el servicio corriendo en local.
 
-El spec declara, en `LoginUserInfo`:
+### B1.14 · Transformar a las formas de Valor
 
-```yaml
-role:
-  type: string
-  enum: [admin, planner, user]
-```
+*Estado de la tarea: pendiente.*
 
-Y la tabla `roles` tiene `Planner` con mayúscula. El resultado:
 
-| Valor que devuelve la API | Usuarios | ¿Está en el enum? |
-|---|---|---|
-| `Planner` | **26** | **no** |
-| `admin` | 3 | sí |
-| `user` | 3 | sí |
+**`decimals` y `unit` por columna en `tabular`.** Sin `decimals` una columna de ROAS sale «4.2 · 4.5 · 3.5 · 3»: cada celda está bien y la columna se lee mal porque la coma deja de alinearse. Y las siete formas que faltan —`distribution`, `series_with_band`, `compared_categorical`, `multi_attribute_profile`, `matrix`, `graph`, `flow`— **no son urgentes**: entran cuando exista una métrica que las use, y el front tampoco tiene sus cuerpos.
 
-**26 de 32 usuarios —el 81%— reciben un `role` que el contrato no admite.**
 
-**Qué rompe, hoy y mañana.** Hoy nada visible: el
-`RoleAllowedMiddleware` normaliza con `ToLower` de los dos lados, así que la
-autorización funciona igual —eso lo verificamos y lo decimos para que nadie
-arregle lo que no está roto—. Lo que sí está roto es el contrato: nuestro tipo
-generado dice
+### B1.15 · Validar reglas mínimas por forma antes de enviar
 
-```ts
-role?: "admin" | "planner" | "user"
-```
+*Estado de la tarea: pendiente.*
 
-o sea que **TypeScript cree un valor que no llega nunca para 26 usuarios**. El
-front no ramifica por rol —los permisos los aplica el backend, es una regla
-nuestra— así que no explota. Pero el día que algo compare contra `"planner"`, va
-a fallar para el 81% de la gente y solo en producción.
 
-**La corrección es del dato, no del enum.** Ensanchar el enum a
-`[admin, Admin, planner, Planner, user]` bendice la inconsistencia y la duplica
-en cada consumidor. Normalizar en la salida de la API la esconde. Lo que
-corresponde:
+**`percentage` siempre en `composition`**, y la banda completa en `scalar_with_interval`. Hoy el porcentaje solo sale si venía en la fila, y el front **no lo puede calcular**: el contrato dice por qué —la suma tiene que dar 100 y redondear en el cliente da columnas que suman 99,9—. Sin él, el panel entra en `ERROR`.
 
-```sql
-UPDATE roles SET name = lower(name);
-```
 
-Y una restricción para que no vuelva —`CHECK (name = lower(name))`, o el enum de
-Postgres directamente.
+### B1.16 · Seed de demo: 1 tenant, 1 layout, 1 pestaña, 4–6 paneles
 
-**Ojo con lo que NO es el problema.** Los roles están duplicados **por tenant**
-—cada tenant tiene su fila de `admin`, `Planner`, `user`— y eso es el diseño,
-no un error: `roles.tenant_id` existe a propósito. Lo único que hay que
-unificar es la CAPITALIZACIÓN, no las filas.
+*Estado de la tarea: pendiente.*
 
-- **Bloquea** · nada hoy
-- **Cuesta** · una sentencia
-- **Si no se hace** · un `if (role === 'planner')` en cualquier lado, algún día,
-  falla para 26 de 32 usuarios y en el único ambiente donde duele
 
-## `password_updated` ya está decidido, y es nuestro
+**La métrica «Brand Momentum»**, que esta tarea pide por nombre y el seed no incluye. Si el requisito quedó viejo, conviene sacarlo de `tareas-front-back.md` —que es de los dos equipos—: mientras esté escrito, el próximo que lea la tarea la va a dar por incompleta.
 
-**Corrección del 2026-09-08.** Acá decía que faltaba decidir si el servicio
-rechaza el login o si el front intercepta. **Ya está decidido, y está escrito en
-el OpenAPI del servicio de Go**, que se leyó después:
 
-> Si `user.password_updated` es `false` el front debe mostrar un modal bloqueante
-> solicitando cambio de contraseña antes de acceder a la app.
+### B1.21 · Declarar los mínimos de datos por gráfico
 
-O sea: el servicio entrega el token a propósito y **el bloqueo es del front**.
-`POST /auth/change-password` existe y el spec lo declara. **No falta una
-decisión: falta el modal**, y es tarea nuestra · F0.13.
+*Estado de la tarea: pendiente.*
 
-Hasta que esté, un usuario con contraseña temporal entra a la consola.
+
+**La ruta `/config/plots` y el repertorio de gráficos con sus mínimos.** Bloquea F1.31 y F4.21: sin ella el builder no puede ofrecer gráficos filtrados por la forma de la métrica, y la consola no puede decir «este corte necesita al menos tres categorías; llegaron dos».
+
+
+### B1.17 · Modelo Metrica
+
+*Estado de la tarea: pendiente.*
+
+
+**`window` en el catálogo** — una columna de texto hermana de `base`, redactada («Venta media de los últimos treinta días»). Es lo único de esta lista que **se ve en pantalla**: el shell pinta `Base · {base} · {window}` en los doce paneles y en los siete estados, y sin él la línea queda `Base · COMPLETED · MONTH ·` con el separador colgando. No se puede derivar del período — dos métricas con el mismo `2026-09` pueden tener ventanas distintas. Verificado el 2026-09-14 contra el servicio.
+
+
+### B1.18 · Sincronizar el catálogo con las semantic views de Snowflake
+
+*Estado de la tarea: pendiente.*
+
+
+**La vista `SYNAPSE_METRIC_CATALOG`**, que no existe en ninguna base de la cuenta —verificado con `SHOW OBJECTS`, cero filas—, así que `make sync-catalog` falla. El SQL está escrito y listo para revisar en `docs/snowflake/SYNAPSE_METRIC_CATALOG.sql`, con los pasos en `INSTRUCCION-ALTA-TENANT.md`. **Nosotros no corremos nada en Snowflake.**
+
+
+### B1.19 · Filtrar el catálogo por permisos de rol
+
+*Estado de la tarea: pendiente.*
+
+
+**Un usuario de prueba con un rol restringido.** El mecanismo está en el código, pero con el usuario que tenemos —rol `Planner`— el catálogo devuelve las doce métricas, incluidas `executive_summary`, `roas` y `decisions`, que su propio documento dice que `planner` oculta. No decimos que esté roto: no se puede comprobar. Con un usuario así se cierran las dos mitades en un minuto — el catálogo recortado y un panel en `FORBIDDEN`.
+
+
+### B3.1 · POST /config/chat con SSE
+
+*Estado de la tarea: pendiente.*
+
+
+**`POST /config/chat` con `ContextoDePanel`.** Es la transversal T4 y bloquea F3.2, F3.3, F3.6 y la mitad de F3.7. El chat que el servicio sí tiene es **otro producto** —decidido el 2026-09-08—: el nuestro es el chat contextual del panel, se abre desde un panel y lleva su métrica.
+
+
+### B4.8 · CRUD de roles por tenant
+
+*Estado de la tarea: pendiente.*
+
+
+**CRUD de roles por tenant** —`tab_ids[]`, `hidden_metric_ids[]`, `layout_overrides`—. Bloquea F4.3, que es la gestión de usuarios y roles de la superficie de admin.
+
+
+### B4.9 · Preview por rol
+
+*Estado de la tarea: pendiente.*
+
+
+**El preview por rol.** Bloquea F4.12, y su criterio dice por qué no se puede resolver del lado del cliente: filtrar en el front lo que ya se tiene probaría el filtro del front, que no existe — el filtrado es del servidor.
+
+
+### B5.1 · Varios layouts por tenant
+
+*Estado de la tarea: pendiente.*
+
+
+**La lista de layouts que el usuario puede ver, en `/config/me`.** `GET /config/tabs/:tabId?layoutId=` ya funciona, pero no hay forma de saber qué layouts le tocan a alguien, así que el selector de F5.1 no se puede construir: no se ofrece una elección que no se sabe si existe.
+
 
 ---
 
-# 0 · Lo más grande, y hoy no está dicho en ninguna parte
+## Cómo avisar que algo llegó
 
-## Ocho rutas que el plan necesita y el contrato no declara
+No hace falta tocar este archivo. Con decirlo alcanza: el front quita el
+marcador de la tarea, la desbloquea y este documento se regenera sin ese
+punto. **Si un pedido sigue acá, es que sigue faltando.**
 
-Salió de cruzar las dos fuentes el 2026-09-04: **el plan cita 22 rutas y el
-contrato declara 14.** Las ocho que faltan no son un olvido de redacción — cada
-una bloquea trabajo del front, y juntas son la razón por la que hoy no queda una
-sola tarea de front desbloqueada.
-
-```
-/admin/tenants                     ·  F4.1, F4.2
-/admin/tenants/{id}/layouts        ·  F4.2, F4.6
-/admin/tenants/{id}/catalog        ·  F4.5
-/admin/layouts/{id}                ·  F4.8, F4.10, F4.13
-/admin/layouts/{id}/validate       ·  F4.11, F4.14
-/admin/layouts/{id}/publish        ·  F4.15
-/config/plots                      ·  F1.31, F4.21
-/auth/login                        ·  F0.5  ✅ RESUELTO: lo sirve synapse-api-go
-```
-
-**`/auth/login` ya no falta**: lo sirve `synapse-api-go` y el front está
-conectado desde el 2026-09-08. Queda la pregunta de si el contrato de la consola
-debe REFERENCIARLO —para que un lector del yaml sepa dónde se autentica— o si es
-correcto que un servicio aparte no aparezca ahí.
-
-Las seis primeras son la misma cosa y van juntas; las dos últimas son
-independientes y están abajo.
-
-## Las seis de admin y builder
-
-`contracts/synapse-api.yaml` declara **catorce endpoints y los catorce son
-`/config/*`**: consola, chat y decisiones.
-
-```
-/config/me              /config/chat                /config/solicitudes
-/config/catalog         /config/chat/hilos          /config/me/preferencias
-/config/blocks          /config/chat/hilos/{id}     /config/panels:batch
-/config/tabs/{tabId}    /config/decisiones          /config/decisiones/{id}
-                        /config/accionables         /config/accionables/{id}/respuesta
-```
-
-**Ninguno de `/admin/*`.** Y la palabra `layouts` no aparece en el yaml.
-
-El plan sí tiene las tareas —**B4.1 a B4.16**, con `GET /admin/tenants`,
-`GET /admin/tenants/{id}/layouts`, `POST .../layouts` para el borrador,
-`PUT /admin/layouts/{id}`, `POST /admin/layouts/{id}/publish`,
-`POST /admin/layouts/{id}/validate`, el CRUD de roles y el preview por rol—.
-Están escritas y ninguna llegó al contrato.
-
-**Qué bloquea, y por qué esto es de otro orden que los once puntos de abajo:**
-
-- **Las 21 tareas de la Fase 4.** Admin y builder son *lo genuinamente nuevo* —v2
-  no tiene una sola línea de las dos superficies— y el documento de arquitectura
-  las estima en **3–4 semanas de front**. Es el bloque de trabajo más grande que
-  queda en todo el proyecto.
-- **F5.1 y F5.2**, el selector de layout. `Contexto` no declara `layouts`, así
-  que el front no puede saber si un tenant tiene más de uno.
-
-**El front ya está preparado y eso hace el hueco más visible.** `useTab(tabId,
-layoutId)` y el `?layoutId=` del cliente están escritos desde F1.2, esperando un
-parámetro que el contrato nunca declaró. `catalog/blocks.ts` tiene los
-validadores de composición —`acceptsShape`, `spanInRange`, `invalidReason`, que
-devuelve la razón en la lengua del producto— listos para el builder.
-
-**No pedimos que se implemente el servicio: pedimos el contrato.** Con los
-endpoints declarados en el yaml, el front construye las dos superficies contra
-MSW, que es exactamente como se construyeron la consola entera y el chat. El
-servicio puede llegar después; hoy no podemos ni empezar.
-
-**Sugerencia de orden**, si sirve: primero `GET /admin/tenants` y
-`GET /admin/tenants/{id}/layouts` —con eso arranca F4.1 y F4.2—, después el
-borrador y el `PUT`, y `validate` y `publish` al final. El builder se puede
-construir de a poco; el admin no arranca sin los dos primeros.
-
-## `/config/plots` · el repertorio de gráficos
-
-**B1.21 ya dice dónde va** —«se expone en `GET /config/plots`, con la misma forma
-con la que `/config/blocks` expone la tabla de bloques»— y la ruta no está en el
-yaml.
-
-Lo que bloquea es más de lo que parece. **F1.31 no es el selector de gráficos:
-es la verificación de mínimos**, y su propia descripción dice que sirve desde
-hoy, con un gráfico por tipo — «hoy nada impide que `bars` reciba un ítem y
-dibuje una barra sola». Un gráfico con menos datos de los que necesita **dibuja
-algo que engaña**, y eso pasa hoy.
-
-Los mínimos no se pueden escribir en el front: serían una tabla inventada que
-además tendría que coincidir con la del backend. Es exactamente el problema que
-`paramsDisponibles` ya tiene (punto 7), y por eso B1.21 pide que la tabla viva
-en un solo lugar.
-
-- **Desbloquea** · F1.31 y F4.21
-- **Del lado del front ya está la figura** · `catalog/blocks.ts` opera sobre la
-  tabla que llega por `/config/blocks` sin tenerla adentro; `catalog/plots.ts`
-  es lo mismo con el repertorio
-
-## `POST /auth/login` · B0.10
-
-`tareas-front-back.md` pide en F0.5 «login → guardar JWT → redirigir», y
-**ninguna tarea de backend lo expone**: B0.3 define el JWT pero no la ruta que lo
-emite. B0.10 existe en el plan para eso y no llegó al contrato.
-
-Van con él **tres respuestas de integración** que el front necesita y que no son
-del yaml:
-
-1. **Con qué clave se guarda el token**, para que las dos partes lean la misma.
-2. **Si el login vive en otro origen.** Si sí, `localStorage` no cruza orígenes
-   y la estrategia entera cambia.
-3. **Adónde redirige un `401`** — a la pantalla de login, o a una de sesión
-   vencida que la distinga de un permiso faltante.
-
-- **Desbloquea** · F0.5, que es lo único que queda de Fase 0
-- **Apaño de hoy** · ninguno. El guard existe a medias y no hay contra qué
-  autenticarse
-
----
-
-# A · Decidido y escrito · solo falta transcribirlo al yaml
-
-Estos tres no necesitan que nadie piense. La decisión está tomada y anotada; lo
-que falta es que entre al contrato, que es su casa.
-
-## 1 · `ContextoDePanel` y `periodo` en `POST /config/chat`
-
-**Ya está decidido, y no por nosotros.** `nuevo-desarrollo.md:684` —que es
-**normativo** en la cadena de autoridad— declara los doce campos, y la línea 146
-declara el cuerpo del POST como `{ pregunta, contextoPanel, periodo, hiloId? }`.
-
-Hoy el yaml acepta `pregunta`, `tabId` y `hiloId`, y **nada más**: no hay campo
-por donde mandar desde qué panel se pregunta. `tabId` no está de más —se agregó
-después y es de donde salen las `chatSugerencias`—, los tres conviven.
-
-**Por qué `periodo` importa tanto como el contexto:** la cifra que el agente
-responde depende del período. Sin él, la respuesta y el panel pueden estar
-hablando de meses distintos y nada en pantalla lo delata.
-
-En el `requestBody` de `POST /config/chat`, junto a `tabId`:
-
-```yaml
-                contextoPanel:
-                  $ref: '#/components/schemas/ContextoDePanel'
-                periodo:
-                  $ref: '#/components/schemas/PeriodoId'
-```
-
-Y el esquema, en `components/schemas`:
-
-```yaml
-    ContextoDePanel:
-      type: object
-      description: |
-        Desde qué panel se pregunta. Declarado en `nuevo-desarrollo.md` §
-        «Contexto que el front envía»; entra al contrato para que sea una sola
-        fuente.
-
-        **Nunca lleva SQL.** El agente recibe el contexto de la métrica, no la
-        consulta del panel.
-      required:
-        [panelId, metricId, metricKey, nombre, base, fuente, capa, familia, periodo, tipo]
-      properties:
-        panelId:   { type: string }
-        metricId:  { type: string }
-        metricKey: { type: string }
-        nombre:    { type: string }
-        base:      { type: string }
-        fuente:    { type: string }
-        capa:      { $ref: '#/components/schemas/Capa' }
-        familia:   { $ref: '#/components/schemas/Familia' }
-        periodo:   { $ref: '#/components/schemas/PeriodoId' }
-        tipo:      { $ref: '#/components/schemas/TipoPanel' }
-        valorActual:
-          type: [string, number, 'null']
-          description: Resumen opcional para el agente.
-        dimensionesDisponibles:
-          type: array
-          items: { type: string }
-```
-
-- **Desbloquea** · F3.2 (construir el contexto al abrir) y la mitad de F3.3
-- **Del lado del front ya está listo** · `useChat` toma el contexto y lo manda;
-  hoy solo pasa `tabId` porque es lo único que el contrato acepta
-
-## 2 · `tenant.zonaHoraria`
-
-**Decisión del 2026-09-04 (humano): la zona horaria es del TENANT, una sola,
-aunque el tenant tenga tiendas en varios países.** Todo se alinea con el tenant
-de la consulta.
-
-**Son dos zonas horarias distintas y conviene que se llamen distinto**, porque
-confundirlas es el bug que este campo viene a prevenir:
-
-| | De quién | Para qué |
-|---|---|---|
-| **Corte del dato** | **Del tenant** | Dónde empieza y termina el día del negocio. Entra en la cifra |
-| **Presentación** | Del navegador | «HACE 3 H», el agrupado HOY/ESTA SEMANA del riel de hilos |
-
-Si la zona del **dato** saliera del navegador, el mismo panel mostraría cifras
-distintas a dos personas: «ventas de hoy» sería un número en Ciudad de México y
-otro en Baltimore. Una cifra que cambia según quién la mira no es auditable, y
-`base` deja de significar algo.
-
-La de **presentación** ya funciona con el huso del navegador y el contrato la
-sanciona explícitamente para el riel de hilos —«depende del huso del usuario»—,
-así que no hay que declararla.
-
-En `Contexto.tenant`, junto a `vertical`:
-
-```yaml
-            zonaHoraria:
-              type: string
-              description: |
-                IANA. **Dónde empieza el día del negocio de este tenant**, y por
-                lo tanto cómo se cortan día, semana y mes en toda cifra.
-
-                Es del tenant y es UNA, aunque el tenant tenga tiendas en varios
-                países (decisión del 2026-09-04, humano). Con la zona del
-                navegador, el mismo panel mostraría números distintos a dos
-                personas y `base` dejaría de significar algo.
-
-                NO es la zona de presentación: «HACE 3 H» y el agrupado del riel
-                de hilos salen del huso del navegador y no de acá.
-              examples: ['America/Mexico_City']
-```
-
-- **Desbloquea** · la mitad de F1.13b
-- **Lo que NO cierra** · la moneda. Un tenant multi-país vende en más de una, y
-  sumarlas necesita moneda de reporte, tipo de cambio y fecha de corte. Es otro
-  problema y sigue abierto
-
-## 3 · El patrón de `PeriodoId`
-
-**Decisión del 2026-09-04 (humano): se va con manejo de períodos libres.** El
-usuario elige un rango y la consola lo contesta.
-
-El patrón de hoy no lo permite — y **se contradice con el propio contrato en dos
-lugares**, así que esto es además una corrección:
-
-```
-pattern: ^\d{4}-(0[1-9]|1[0-2]|W\d{2})$
-
-  2026-07     acepta        2026-07-15   RECHAZA
-  2026-W32    acepta        2026-Q3      RECHAZA
-```
-
-- **`grano` declara `[dia, semana, mes]`** y su propia descripción dice que el
-  front deduce «`2026-07-15` día». El patrón rechaza los días. El front ya
-  maneja `dia`; el contrato no deja que llegue.
-- Esa misma descripción justifica que `grano` exista diciendo «deducir del id es
-  frágil en cuanto aparezca un período con nombre propio (un trimestre, una
-  temporada)» — y el patrón rechaza exactamente eso.
-
-**Relajar el patrón, no agregar un campo.** `periodo` ya es una clave única que
-atraviesa el batch, la clave de caché, los payloads y el hilo del chat. Un
-`rango: {desde, hasta}` en paralelo obligaría a cada consumidor a entender dos
-formas de decir «cuándo».
-
-```yaml
-    PeriodoId:
-      type: string
-      description: |
-        Clave absoluta, nunca relativa: `2026-07` y no `actual`. Con clave
-        relativa el selector de período obliga a reconstruir el índice.
-
-        Cinco formas: mes, semana ISO, trimestre, día, y rango libre
-        `desde_hasta` con los dos extremos inclusive.
-      pattern: '^\d{4}-(0[1-9]|1[0-2]|W(0[1-9]|[1-4]\d|5[0-3])|Q[1-4]|(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])(_\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))?)$'
-      examples: ['2026-07', '2026-W32', '2026-Q3', '2026-07-15', '2026-07-01_2026-07-17']
-```
-
-**De paso acota dos cosas que el patrón viejo dejaba pasar**: el día queda en
-01–31 y la semana ISO en 01–53. Antes `W\d{2}` aceptaba `2026-W99`. Probado
-contra 25 casos, 11 que tienen que entrar y 14 que no.
-
-**Un rango libre declara `grano: dia`. No hace falta un valor nuevo en el
-enum** — un rango se corta en días, así que una métrica con `granoMinimo: 'mes'`
-no lo puede contestar, y el selector del front **ya** deshabilita eso con la
-razón visible. Esa lógica está escrita desde F1.7 y no hay que tocarla.
-
-- **Desbloquea** · F5.13
-- **El costo real de esta decisión es de ustedes** · los períodos de hoy son
-  snapshots materializados —`estado: 'MTD CERRADO'`, `'CERRADO'`— y un rango
-  arbitrario hay que calcularlo a demanda, con lo que implica de caché e
-  invalidación
-
----
-
-# B · Decisiones de una línea
-
-## 4 · `DatoDeRespuesta` no declara con qué panel se dibuja
-
-`DatoDeRespuesta` trae `valor`, `familia`, `presentacion`, `metricId` y `titulo`,
-más `Gobierno` intersectado — **la procedencia viaja pegada a la cifra, que es la
-mitad difícil y ya está resuelta.** Lo que falta es con qué tipo de panel se
-dibuja.
-
-**No se puede derivar en el front.** `Bloque.formasAceptadas` va de muchos a
-muchos: varios tipos aceptan `escalar`, así que el front tendría que **elegir**
-uno. Elegirlo es inventar una decisión que el contrato no tomó — y el color de
-una cifra del chat **ya se inventó una vez**: el front tenía `familia` cableada a
-`demanda` porque el evento no la traía. Se arregló agregando el campo el
-2026-08-19, y corresponde lo mismo acá.
-
-```yaml
-# En DatoDeRespuesta, junto a `titulo`
-            tipo:
-              $ref: '#/components/schemas/TipoPanel'
-              description: |
-                Con qué cuerpo de panel se dibuja esta cifra. Sin él el front
-                tendría que elegirlo, porque `formasAceptadas` va de muchos a
-                muchos, y elegirlo es inventar una decisión del contrato.
-```
-
-**Cuidado con el nombre al mirarlo:** `EventoDato.tipo` ya existe y vale
-`'dato'` — es el discriminador de la unión de eventos, no un `TipoPanel`. Es
-fácil leerlo como si el campo ya estuviera.
-
-- **Desbloquea** · F3.6
-- **Apaño de hoy** · ninguno, a propósito. La hoja del chat declara cuántas
-  cifras trajo la respuesta en vez de pintar una con un tipo elegido a dedo:
-  pintarla mal se vería bien y sería mentira
-
-## 5 · `HiloResumen` no dice de qué panel salió la conversación
-
-`HiloResumen` trae `id`, `titulo`, `creadoEn`, `actualizadoEn`, `esDecision` y
-`decisionId`. **Ni panel ni período.** Y `Hilo` es `HiloResumen` + `mensajes`,
-así que tampoco.
-
-Es el punto 1 visto desde el otro extremo: si el contexto del panel no viaja al
-preguntar, tampoco vuelve al listar. Se resuelve junto con aquel — que el hilo
-guarde con qué contexto se abrió.
-
-```yaml
-# En HiloResumen, junto a `decisionId`
-        panelId:  { type: [string, 'null'] }
-        metricId: { type: [string, 'null'] }
-        periodo:
-          type: [string, 'null']
-          description: |
-            Con qué panel y período se abrió el hilo. Nulos cuando se preguntó
-            desde el chrome y no desde un panel. Cuando no es nulo tiene la
-            forma de `PeriodoId`.
-```
-
-- **Desbloquea** · la mitad de F3.7. El riel ya funciona: agrupa por tiempo,
-  marca las decisiones y retoma el hilo. Lo que no puede es decir de qué panel
-  salió
-
-## 6 · `versionModeloSemantico` sigue en `nullable: true`
-
-Quedó abierto al contestar la pregunta de la línea 430 el 2026-09-03. Si
-Snowflake lo emite **siempre**, el campo pasa a requerido dentro de `snapshot` y
-`inconcluso` deja de tener un tercer caso —«no sé con qué versión se
-respondió»— que hoy el tipo permite.
-
-No bloquea nada. Es cerrar bien lo que ya se decidió.
-
-## 7 · `paramsDisponibles` es solo una lista de nombres
-
-`Bloque.paramsDisponibles` es `string[]`: los **nombres** válidos por tipo, sin
-tipos, valores admitidos ni defaults. Así que los valores válidos viven
-**duplicados** en `PARAM_SCHEMAS` del front.
-
-Es duplicación inevitable hoy y verificable, no un defecto: F1.29 la cerró
-validando en el adaptador de `api/`, y un param inválido degrada el panel a
-`BLOQUEADO` con la razón. Pero mientras el contrato no declare los valores, dos
-tablas pueden derivar.
-
-**La propuesta:** que `paramsDisponibles` declare tipo, valores y default por
-param. Ahí `PARAM_SCHEMAS` desaparece y la deriva se vuelve imposible en vez de
-verificable.
-
-- **No bloquea nada** · hay una tabla duplicada y una prueba que la sostiene
-
----
-
-# C · Necesita revisión, no una decisión
-
-## 8 · La taxonomía de `error.codigo`
-
-**Es la única marca `# PREGUNTA:` que queda en el yaml.** Las otras cuatro se
-contestaron el 2026-09-03 y están escritas en el lugar donde estaba la marca.
-
-El front no necesita la lista completa: necesita distinguir **error de campo** de
-**regla de negocio** de **fallo técnico**. Dejamos una propuesta escrita en el
-yaml para que la revisión tenga contra qué reaccionar:
-
-```
-FAMILIA_DETALLE · y la familia es el prefijo hasta el primer «_»
-
-  CAMPO_*   error de campo      · SIEMPRE lleva `campo`
-  REGLA_*   regla de negocio    · puede llevar `desbloqueaCon`
-  FALLO_*   fallo técnico       · NUNCA lleva `campo`
-```
-
-**Lo único que importa del formato es que la familia sea el prefijo.** Eso hace
-que el front decida sobre el prefijo y **nunca necesite la lista completa**: el
-backend agrega códigos y el front no cambia ni se desincroniza. Es la misma
-propiedad que ya hace verificable a `estado` en el batch.
-
-Los códigos concretos —`CAMPO_REQUERIDO`, `REGLA_PERIODO_CERRADO`,
-`FALLO_UPSTREAM`— son ejemplos y los eligen ustedes. `REGLA_VIOLADA`, que ya
-estaba en el yaml, encaja sin cambiarlo.
-
-**Lo que hay que revisar son las tres invariantes**, no los códigos: son lo que
-el front puede verificar y lo que se rompería en silencio si no se cumplen.
-
-- **Bloquea** · ramificar por tipo de error
-- **Apaño de hoy** · todo error se trata igual y se muestra el mensaje del
-  backend
-
----
-
-# D · Servicio, no contrato
-
-## 9 · `/config/solicitudes`
-
-El contrato **ya lo declara**: `GET` para las solicitudes del usuario y `POST`
-`solicitarAcceso`, con el 409 cuando ya hay una pendiente. Lo que el front no
-sabe es si el servicio existe.
-
-**Mientras no exista, el CTA no se pinta**, y es deliberado: un botón que se
-aprieta y devuelve 403 es peor que uno ausente. El estado no queda sin salida —el
-detalle sigue diciendo qué rol decide— pero no promete una acción que no está.
-
-Cuando el servicio esté, avísennos: **la solicitud ya hecha tiene que salir del
-servidor y no de estado local.** Con estado local, recargar borra el pedido y la
-consola vuelve a ofrecer el CTA como si nada.
-
-- **Desbloquea** · F2.3
-
-## 10 y 11 · Seed y mínimos por gráfico
-
-Ya están en el plan y no hace falta agregar nada; van acá para que se vea qué
-esperan.
-
-- **B1.16 + B1.20** · seed determinista → desbloquea **F1.25**, conectar a la API
-  real. Hoy la consola dibuja de punta a punta contra MSW
-- **B1.21** · los mínimos de datos por gráfico → desbloquea **F1.31**. Va con
-  `/config/plots` del punto 0: la tabla y la ruta por donde viaja
-
----
-
-# E · Lo que decide producto y a ustedes les llega como campo
-
-No son de ustedes, pero conviene que sepan que vienen.
-
-- **`locale` y moneda en `Contexto`** · la zona horaria se decidió, estos dos no.
-  La moneda de un tenant multi-país es un problema de verdad: sumar ventas en dos
-  monedas necesita moneda de reporte, tipo de cambio y fecha de corte
-- **`orden` en `PanelConfigurado`** · §4 lo nombra para el orden de lectura al
-  colapsar a una columna. Hoy el front desempata por `colStart`, que funciona
-  pero el contrato no lo promete
-
----
-
-# Dos detalles del yaml que vimos al escribir esto
-
-**`nullable: true` es sintaxis de OpenAPI 3.0 y el documento declara 3.1.**
-Aparece 7 veces —`versionModeloSemantico`, `resultadoMedido`, `veredicto`,
-`respuestaCliente` y algunas más— mientras el resto del archivo usa la forma
-3.1, `type: [string, 'null']`.
-
-**Hoy no está roto**: `openapi-typescript` lo honra igual y los tipos generados
-salen con `| null`. Lo verificamos. Pero es un keyword que 3.1 no define, así
-que **otra herramienta lo ignora en silencio** y esos campos dejarían de ser
-nulables sin que nadie lo note. Son dos formas de decir lo mismo en un archivo
-que en todo lo demás dice una sola.
-
-No bloquea nada. Es limpieza, y va con el punto 6.
-
----
-
-# Una cosa que no es del yaml
-
-**`nuevo-desarrollo.md` quedó viejo con los nombres de los eventos de chat.** La
-línea 703 los lista como «pensando, fragmento, dato, sql, error, fin»; el
-contrato declara `texto`, `dato`, `auditoria`, `sugerencias`, `fin` y `error`.
-
-Gana el contrato, que es su casa para lo que viaja por la red — el front ya está
-escrito contra los seis correctos. Pero conviene que alguien corrija ese
-documento: **el plan de trabajo heredó los nombres viejos de ahí**, y va a seguir
-contagiando a quien lo lea.
-
----
-
-*Synapse · front dinámico · el detalle largo de cada punto está en
-`docs/B0.9-preguntas-abiertas.md`*

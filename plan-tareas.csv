@@ -12,12 +12,12 @@ B0.3,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e
 • Ningún endpoint devuelve tenant_id como identificador que el front deba reenviar: la pertenencia se resuelve del token.",pendiente,no,,equipo:backend fase:0 estado:pendiente
 B0.4,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e infraestructura,Middleware de auth y envelope,"Toda respuesta viaja como { success: true, data } o { success: false, error: { codigo, mensaje, campo?, desbloqueaCon? } }.","• No hay endpoint que devuelva el objeto pelado sin envelope.
 • mensaje está escrito desde el lado del usuario. §8 de design.md: los errores no se disculpan y nunca son vagos — «El feed de inventario tiene 31 horas», no «Error al obtener snapshot».
-• codigo es estable y sirve para decidir en código.",pendiente,no,,equipo:backend fase:0 estado:pendiente
+• codigo es estable y sirve para decidir en código.",pendiente,no,,equipo:backend fase:0 estado:pendiente bloqueada
 B0.5,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e infraestructura,Contrato de consola,"contracts/synapse-api.yaml ya existe y cubre los endpoints de consola: me, catalog, blocks, tabs/{tabId}, panels:batch, chat, chat/hilos, me/preferencias, más decisiones, accionables y solicitudes. Fue escrito por el front derivándolo de §4 y de lo que C1 consume.","• El backend lo revisa y lo adopta, o marca las diferencias en el propio archivo.
 • Al adoptarse deja de ser propuesta del front y pasa a ser fuente de los dos lados (T1).",hecho,no,,equipo:backend fase:0 estado:hecho
 B0.6,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e infraestructura,Extender el contrato con admin y builder,"Agregar al yaml los endpoints de §5: /admin/tenants, /admin/tenants/{id}/layouts, /admin/layouts/{id}, .../publish, .../validate, /admin/tenants/{id}/catalog, /admin/tenants/{id}/agents.","• Los esquemas de admin reutilizan PanelConfigurado, Metrica y Bloque; no se declaran versiones paralelas.
 • openapi-typescript genera sin errores y el front compila contra los tipos.
-• Cada endpoint declara qué aud del token acepta.",pendiente,no,,equipo:backend fase:0 estado:pendiente
+• Cada endpoint declara qué aud del token acepta.",pendiente,no,,equipo:backend fase:0 estado:pendiente bloqueada
 B0.7,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e infraestructura,Tipos de servidor desde OpenAPI,"Generar los tipos del backend desde el mismo yaml, o compartir el contrato de modo que una divergencia rompa el build de alguno de los dos.","• Cambiar un campo en el yaml sin actualizar el backend falla en CI.
 • No hay un segundo lugar donde estén escritos los mismos tipos a mano.",pendiente,no,,equipo:backend fase:0 estado:pendiente
 B0.8,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e infraestructura,Secret manager para credenciales Snowflake,Las credenciales por tenant salen de un gestor de secretos.,"• Ninguna credencial en código, en variables de entorno del front ni en ninguna respuesta de API.
@@ -30,7 +30,7 @@ B0.10,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos 
 B1.1,Backend · Fase 1 — API de consola,Backend,1,API de consola,GET /config/me,"Contexto de arranque: user (con capacidades y preferencias), tenant, role (con puedeAprobar), tabs sin paneles, periodos, catalogVersion, alcance y —si hay más de uno— layouts.","• Las pestañas llegan ya filtradas por el rol del token y en su orden.
 • Cada Periodo declara su grano (dia | semana | mes): sin él el front sabe que una métrica es mensual pero no si 2026-W32 es una semana.
 • No incluye paneles: pedirlos es GET /config/tabs/{tabId}.
-• Con alcance: plataforma incluye tenantsDisponibles; con usuario, no.",pendiente,no,,equipo:backend fase:1 estado:pendiente
+• Con alcance: plataforma incluye tenantsDisponibles; con usuario, no.",pendiente,no,,equipo:backend fase:1 estado:pendiente bloqueada
 B1.2,Backend · Fase 1 — API de consola,Backend,1,API de consola,GET /config/catalog,Las métricas del tenant filtradas por el rol del token.,"• Una métrica oculta para el rol no aparece, ni siquiera con estado restringido: ocultar no es permitir, pero tampoco es mostrar el nombre.
 • Cada métrica trae base obligatorio (ver D6), familia, forma, capa, fuente, ventana, granoMinimo, dimensiones y catalogVersion.
 • direccionSemantica viene solo en las compuestas, y es la frase que se pinta.",pendiente,no,,equipo:backend fase:1 estado:pendiente
@@ -43,7 +43,7 @@ B1.5,Backend · Fase 1 — API de consola,Backend,1,API de consola,GET /config/t
 • Cada panel trae id, tipo, metricId, colStart, colSpan, rowSpan y opciones?.",pendiente,no,,equipo:backend fase:1 estado:pendiente
 B1.6,Backend · Fase 1 — API de consola,Backend,1,API de consola,POST /config/panels:batch,"Un request por pestaña, no uno por panel. Body { panelIds, periodo } → { [panelId]: Payload }.","• Fallo parcial: un panel que no resuelve llega con estado: ERROR y el resto vuelve normal. No se falla el batch entero.
 • Ocho paneles se resuelven en una llamada.
-• No devuelve payload de una métrica oculta para el rol (B1.9).",pendiente,no,,equipo:backend fase:1 estado:pendiente
+• No devuelve payload de una métrica oculta para el rol (B1.9).",pendiente,no,,equipo:backend fase:1 estado:pendiente bloqueada
 B1.7,Backend · Fase 1 — API de consola,Backend,1,API de consola,Resolver el layout publicado,"La resolución que ocurre antes de responder: tomar el layout publicado, filtrar pestañas y paneles por rol, aplicar overrides.","• El front recibe solo lo resuelto y no aplica ningún filtro.
 • Una métrica oculta no llega ni en tabs, ni en catalog, ni en batch.
 • Un rol con override ve su composición propia sin huecos en la grilla.",pendiente,no,,equipo:backend fase:1 estado:pendiente
@@ -62,33 +62,33 @@ B1.11,Backend · Fase 1 — API de consola,Backend,1,API de consola,Unión discr
 B1.12,Backend · Fase 1 — API de consola,Backend,1,API de consola,Gobierno obligatorio en DISPONIBLE y DEGRADADO,"base, capa, fuente, frescura, catalogVersion intersectados en los dos estados que muestran número.","• Un valor sin procedencia es imposible de construir en el tipo, no algo que se recuerde poner.
 • frescura es ISO 8601 y refleja cuándo se materializó, no «ahora» (B2.10).",pendiente,no,,equipo:backend fase:1 estado:pendiente
 B1.13,Backend · Fase 1 — API de consola,Backend,1,API de consola,Presentacion opcional,"Los rótulos y cifras de apoyo que el panel pinta alrededor del valor: label, medidor, comparativo, nota. Viajan con el dato, no con el layout, porque dependen del período.","• El backend devuelve los rótulos ya redactados; el front no los compone.
-• label lleva la unidad («USD · TOTAL»), y por eso la cifra grande no la lleva pegada: a 44px «USD 4.28M» no entra en un panel de colSpan 3.",pendiente,no,,equipo:backend fase:1 estado:pendiente
+• label lleva la unidad («USD · TOTAL»), y por eso la cifra grande no la lleva pegada: a 44px «USD 4.28M» no entra en un panel de colSpan 3.",pendiente,no,,equipo:backend fase:1 estado:pendiente bloqueada
 B1.14,Backend · Fase 1 — API de consola,Backend,1,API de consola,Transformar a las formas de Valor,"Las 11 formas que el contrato ya declara, con las reglas mínimas de §8 del documento.","• escalarConIntervalo y serieConBanda traen lo, hi y nivel obligatorios: prohibida la estimación puntual sin intervalo.
 • composicion trae porcentaje calculado por el backend, y suma 100.
 • ranking trae posicion ≥ 1.
 • prosa trae pilares como objetos, nunca cadenas parseables.
-• tabular declara por columna si es numérica, con decimales y unidad.",pendiente,no,,equipo:backend fase:1 estado:pendiente
+• tabular declara por columna si es numérica, con decimales y unidad.",pendiente,no,,equipo:backend fase:1 estado:pendiente bloqueada
 B1.15,Backend · Fase 1 — API de consola,Backend,1,API de consola,Validar reglas mínimas por forma antes de enviar,,"• Un panel gauge sin maximo en opciones no se sirve como DISPONIBLE.
-• Una serieTemporal con cero puntos llega como DISPONIBLE con vacioRazon y vacioDesbloqueaCon, no como un array vacío: §8 pide que el vacío sea invitación a actuar, y un array vacío no alcanza para escribir «el período cierra el 1 de septiembre».",pendiente,no,,equipo:backend fase:1 estado:pendiente
+• Una serieTemporal con cero puntos llega como DISPONIBLE con vacioRazon y vacioDesbloqueaCon, no como un array vacío: §8 pide que el vacío sea invitación a actuar, y un array vacío no alcanza para escribir «el período cierra el 1 de septiembre».",pendiente,no,,equipo:backend fase:1 estado:pendiente bloqueada
 B1.16,Backend · Fase 1 — API de consola,Backend,1,API de consola,"Seed de demo: 1 tenant, 1 layout, 1 pestaña, 4–6 paneles",B1.16 pide datos de demo. Esto pide que sean estables: el front necesita que la misma llamada devuelva lo mismo para poder escribir pruebas de integración contra HTTP.,"• Un script recrea el seed de cero.
 • Con el seed cargado, panels:batch devuelve los mismos valores en dos corridas.
-• El seed cubre al menos un panel por cada estado: DISPONIBLE, DEGRADADO, BLOQUEADO, ERROR. Sin eso, F2.1–F2.4 no se pueden probar contra el backend.",pendiente,no,,equipo:backend fase:1 estado:pendiente
+• El seed cubre al menos un panel por cada estado: DISPONIBLE, DEGRADADO, BLOQUEADO, ERROR. Sin eso, F2.1–F2.4 no se pueden probar contra el backend.",pendiente,no,,equipo:backend fase:1 estado:pendiente bloqueada
 B1.20,Backend · Fase 1 — API de consola,Backend,1,API de consola,Seed determinista para desarrollo del front,B1.16 pide datos de demo. Esto pide que sean estables: el front necesita que la misma llamada devuelva lo mismo para poder escribir pruebas de integración contra HTTP.,"• Un script recrea el seed de cero.
 • Con el seed cargado, panels:batch devuelve los mismos valores en dos corridas.
 • El seed cubre al menos un panel por cada estado: DISPONIBLE, DEGRADADO, BLOQUEADO, ERROR. Sin eso, F2.1–F2.4 no se pueden probar contra el backend.",pendiente,si,,equipo:backend fase:1 estado:pendiente nueva
 B1.21,Backend · Fase 1 — API de consola,Backend,1,API de consola,Declarar los mínimos de datos por gráfico,"D2: los gráficos dependen de los datos, y hay que establecer los datos mínimos para construir el gráfico. contracts/synapse-plots.js declara hoy formas, soportaBanda y tope —el límite superior— pero no declara mínimos, así que nada impide que un gráfico reciba menos datos de los que necesita y dibuje algo que engaña. Va en Fase 1 y no en Fase 4 porque sirve ya, aun con un solo gráfico por tipo: hoy bars puede recibir un ítem y dibujar una barra sola.","• Cada entrada del repertorio declara minimos con su razón, no solo un número: la razón es lo que se muestra en pantalla.
 • Se expone en GET /config/plots, con la misma forma con la que /config/blocks expone la tabla de bloques.
 • Los mínimos son verificables contra el fixture: una serie de un punto, una composición de una parte y un ranking de dos ítems disparan el estado vacío con su razón.
-• La tabla vive en un solo lugar y la consumen los tres que validan: el builder, layouts/{id}/validate y el adaptador del front.",pendiente,si,,equipo:backend fase:1 estado:pendiente nueva
+• La tabla vive en un solo lugar y la consumen los tres que validan: el builder, layouts/{id}/validate y el adaptador del front.",pendiente,si,,equipo:backend fase:1 estado:pendiente nueva bloqueada
 B1.17,Backend · Fase 1 — API de consola,Backend,1,API de consola,Modelo Metrica,,"• El catálogo declara granoMinimo por métrica: el período más fino que puede contestar.
 • Una métrica cuyo insumo está en SILVER no declara GOLD: la compuesta hereda la peor capa.
-• Cambiar el catálogo incrementa catalogVersion, y ese número viaja en cada payload.",pendiente,no,,equipo:backend fase:1 estado:pendiente
+• Cambiar el catálogo incrementa catalogVersion, y ese número viaja en cada payload.",pendiente,no,,equipo:backend fase:1 estado:pendiente bloqueada
 B1.18,Backend · Fase 1 — API de consola,Backend,1,API de consola,Sincronizar el catálogo con las semantic views de Snowflake,,"• El catálogo declara granoMinimo por métrica: el período más fino que puede contestar.
 • Una métrica cuyo insumo está en SILVER no declara GOLD: la compuesta hereda la peor capa.
-• Cambiar el catálogo incrementa catalogVersion, y ese número viaja en cada payload.",pendiente,no,,equipo:backend fase:1 estado:pendiente
+• Cambiar el catálogo incrementa catalogVersion, y ese número viaja en cada payload.",pendiente,no,,equipo:backend fase:1 estado:pendiente bloqueada
 B1.19,Backend · Fase 1 — API de consola,Backend,1,API de consola,Filtrar el catálogo por permisos de rol,,"• El catálogo declara granoMinimo por métrica: el período más fino que puede contestar.
 • Una métrica cuyo insumo está en SILVER no declara GOLD: la compuesta hereda la peor capa.
-• Cambiar el catálogo incrementa catalogVersion, y ese número viaja en cada payload.",pendiente,no,,equipo:backend fase:1 estado:pendiente
+• Cambiar el catálogo incrementa catalogVersion, y ese número viaja en cada payload.",pendiente,no,,equipo:backend fase:1 estado:pendiente bloqueada
 B1.22,Backend · Fase 1 — API de consola,Backend,1,API de consola,Crear el catálogo de métricas en Snowflake,"Los tres objetos en el mismo db.schema que tiene configurado el agente del tenant —para UA MX, DB_BT_UA.BT_UA_MART_ANALYTICS—, más el grant de lectura para el rol del agente. DD_METRIC_CURATION es una tabla y lleva lo editorial; SYNAPSE_METRIC_CATALOG es la vista que el backend lee, con las once columnas de su SELECT y esos nombres exactos; SYNAPSE_METRIC_CATALOG_ISSUES lista lo que está mal con su razón. Son tres y no uno porque INFORMATION_SCHEMA.SEMANTIC_METRICS da nombre, expresión y tipo de dato, y ningún campo de gobierno: esos son editoriales y necesitan dónde escribirse. Y la tercera existe porque Snowflake no hace cumplir un CHECK, así que los enumerados cerrados se verifican o no se verifican. Guía: docs/snowflake/INSTRUCCION-ALTA-TENANT.md §4 paso 1 y paso 4 · el SQL listo para correr en docs/snowflake/SYNAPSE_METRIC_CATALOG.sql secciones 1 a 3.","• SELECT  FROM SYNAPSE_METRIC_CATALOG devuelve filas desde el db.schema del agente, no desde una ruta fija: el backend califica la vista con lo que dice agents, y una vista en el schema equivocado no se encuentra.
 • SHOW GRANTS ON VIEW SYNAPSE_METRIC_CATALOG muestra SELECT para el rol de tenants.snowflake_role. Sin esto sync-catalog falla con un error de permisos que no dice qué falta.
 • Las once columnas salen con los nombres que el SELECT de Go espera. Una renombrada hace fallar la sincronización entera, no una métrica.
@@ -150,7 +150,7 @@ B2.12,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización 
 • Queda registrado contra qué commit del backend y con qué período se verificó. Un «funcionó» sin eso no se puede repetir.",pendiente,si,,equipo:backend fase:2 estado:pendiente nueva
 B3.1,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,POST /config/chat con SSE,"Body { pregunta, contextoPanel, periodo, hiloId? }, respuesta por Server-Sent Events.","• Emite los eventos en orden: pensando → fragmento → dato → sql → fin, y error en cualquier punto.
 • El esquema EventoDeChat del yaml ya declara la unión; se respeta.
-• Una conexión cortada por el cliente no deja la query colgada.",pendiente,no,,equipo:backend fase:3 estado:pendiente
+• Una conexión cortada por el cliente no deja la query colgada.",pendiente,no,,equipo:backend fase:3 estado:pendiente bloqueada
 B3.2,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,GET /config/chat/hilos — historial,,"• El historial es del usuario y del tenant; nunca cruza tenants.
 • Un hilo guarda el contexto de panel con el que se abrió.",pendiente,no,,equipo:backend fase:3 estado:pendiente
 B3.10,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,Persistir hilos y mensajes en Postgres,,"• El historial es del usuario y del tenant; nunca cruza tenants.
@@ -211,16 +211,16 @@ B4.15,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Rechazar l
 • El error dice cuál panel y por qué, en la lengua del producto: «un bloque gauge no sabe dibujar la forma serieTemporal», no «validación fallida».
 • La regla dura de serieConBanda se verifica: solo gráficos con banda.",pendiente,no,,equipo:backend fase:4 estado:pendiente
 B4.8,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,CRUD de roles por tenant,,"• Un rol declara tabIds[], hiddenMetricIds[] y layoutOverrides opcionales.
-• El preview devuelve exactamente lo que ese rol vería, resuelto por el mismo código que sirve /config/me. No una simulación aparte.",pendiente,no,,equipo:backend fase:4 estado:pendiente
+• El preview devuelve exactamente lo que ese rol vería, resuelto por el mismo código que sirve /config/me. No una simulación aparte.",pendiente,no,,equipo:backend fase:4 estado:pendiente bloqueada
 B4.9,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Preview por rol,,"• Un rol declara tabIds[], hiddenMetricIds[] y layoutOverrides opcionales.
-• El preview devuelve exactamente lo que ese rol vería, resuelto por el mismo código que sirve /config/me. No una simulación aparte.",pendiente,no,,equipo:backend fase:4 estado:pendiente
+• El preview devuelve exactamente lo que ese rol vería, resuelto por el mismo código que sirve /config/me. No una simulación aparte.",pendiente,no,,equipo:backend fase:4 estado:pendiente bloqueada
 B4.10,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Asignación de layout publicado a roles,,"• Un rol declara tabIds[], hiddenMetricIds[] y layoutOverrides opcionales.
 • El preview devuelve exactamente lo que ese rol vería, resuelto por el mismo código que sirve /config/me. No una simulación aparte.",pendiente,no,,equipo:backend fase:4 estado:pendiente
 B4.16,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Declarar el gráfico en el layout,"D2 lo resolvió a favor. PanelConfigurado gana plot?: PlotId. Depende de B1.21: primero los mínimos, después el campo — elegir gráfico sin saber qué necesita cada uno es multiplicar el problema, no resolverlo.","• plot es opcional: ausente ⇒ el gráfico por defecto del tipo, que es exactamente lo que se dibuja hoy. El cambio no mueve ninguna pantalla existente.
 • layouts/{id}/validate verifica tres cosas contra el repertorio: compatibilidad gráfico ↔ forma, la regla dura de banda, y que la métrica pueda alcanzar los mínimos del gráfico en el grano que declara.
 • Un layout con un gráfico incompatible no publica, y el error dice cuál panel y por qué.",pendiente,si,,equipo:backend fase:4 estado:pendiente nueva
 B5.1,Backend · Fase 5 — Multi-dashboard y pulido,Backend,5,Multi-dashboard y pulido,Varios layouts por tenant,"Un tenant puede tener más de un dashboard publicado — «Operaciones», «Marca», «Ejecutivo»— cada uno con sus pestañas.","• Cada layout versiona por separado: publicar «Marca» no toca «Operaciones».
-• /config/me devuelve layouts solo cuando el usuario tiene más de uno asignado; con uno, el campo no viaja.",pendiente,no,,equipo:backend fase:5 estado:pendiente
+• /config/me devuelve layouts solo cuando el usuario tiene más de uno asignado; con uno, el campo no viaja.",pendiente,no,,equipo:backend fase:5 estado:pendiente bloqueada
 B5.2,Backend · Fase 5 — Multi-dashboard y pulido,Backend,5,Multi-dashboard y pulido,"Asignar layout por rol, o dejar elegir si el usuario tiene varios",,"• El superadmin asigna qué layout ve cada rol.
 • GET /config/tabs/{tabId}?layoutId= resuelve contra el layout pedido, y verifica que ese layout esté asignado al rol del token: si no, 404.",pendiente,no,,equipo:backend fase:5 estado:pendiente
 B5.3,Backend · Fase 5 — Multi-dashboard y pulido,Backend,5,Multi-dashboard y pulido,Formas v1.1 cuando haya datos,"categoricaComparada, perfilMultiatributo, matriz, grafo y flujo.","• Se activan cuando exista el dato, no antes. Construir contra formas que ningún endpoint devuelve es escribir a ciegas.
