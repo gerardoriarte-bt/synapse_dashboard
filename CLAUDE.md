@@ -340,8 +340,12 @@ una prueba borrada no avisa cuando el campo aparece.
 
 **F1.32–F1.37 y F1.40.** El cable transcripto (`contracts/synapse-console-wire.yaml`,
 con `console-drift` en la puerta), el adaptador entero, las rutas y el envelope de
-error, una sola base de API, y la presentación llegando al cuerpo. **416 pruebas,
-doce chequeos.**
+error, una sola base de API, y la presentación llegando al cuerpo.
+
+**El conteo de tareas, pruebas y chequeos no se escribe acá**: sale de
+`docs/ESTADO.md`, que se genera. Un número citado en prosa se vence sin que nadie
+lo note — lo encontró la auditoría del 2026-09-14 con «once chequeos» cuando ya
+eran quince.
 
 **F1.39 está hecha de hecho aunque figure pendiente**: el humo contra el servicio
 real se corrió y encontró **una sola diferencia** con el yaml —

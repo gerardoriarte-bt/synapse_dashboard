@@ -15,6 +15,7 @@ deterministas ya corren solos en la puerta:
 | `docs-registro` | Ningún documento entró sin declarar su rol |
 | `plan` | Ninguna tarea quedó sin criterio de aceptación |
 | `plan:diff <export>` | La plataforma no derivó del plan |
+| `backend-drift` | El backend no se movió desde lo que transcribimos |
 
 Esta auditoría contesta lo que esos no pueden: **¿lo que dice `✅` está hecho de
 verdad?** y **¿hay dos documentos diciendo lo mismo?**
@@ -25,9 +26,10 @@ verdad?** y **¿hay dos documentos diciendo lo mismo?**
 
 ```
 npm run verify
+npm run backend-drift     # necesita red · no está en la puerta a propósito
 ```
 
-Si algo sale en rojo, **se para acá y se informa**: auditar un plan sobre un
+Si `verify` sale en rojo, **se para acá y se informa**: auditar un plan sobre un
 árbol roto produce conclusiones sobre código que no compila.
 
 ---
@@ -76,7 +78,22 @@ suposición con forma de hecho.
 Recordar que **los identificadores no coinciden** con los de su plan: la tabla de
 equivalencias está en `docs/ESTADO-B1.13-B1.19-2026-09-14.md`.
 
-## 3 · Documentos que se superponen
+## 3 · Números citados en prosa
+
+**Un conteo escrito en una frase se vence sin que nadie lo note.** La auditoría
+del 2026-09-14 encontró «once chequeos» y «doce chequeos» cuando ya eran quince,
+y «406 pruebas» cuando eran 416. Se leen como hechos verificados y ya no lo son.
+
+Buscar conteos —chequeos, pruebas, tareas, líneas— en `CLAUDE.md` y en el plan, y
+comprobarlos. **La cura no es corregirlos: es sacarlos**, y apuntar a
+`docs/ESTADO.md`, que se genera.
+
+Del mismo tipo: **una afirmación verificada sin fecha.** El cierre de F1.33 decía
+«`render/` no cambió ni una línea · `git diff` sale vacío», cierto ese día y
+falso después, porque F1.40 tocó `KpiBody.tsx` con razón. Una verificación lleva
+cuándo se hizo o se lee como una promesa permanente.
+
+## 4 · Documentos que se superponen
 
 `docs-registro` detecta un archivo que entró sin rol. **No detecta que dos
 archivos con rol distinto digan lo mismo**, que es como empezó el problema del
@@ -90,7 +107,7 @@ Para cada documento de `docs/` que no sea generado ni histórico, preguntarse:
   cortes y no se actualizan** — si venció, va a `docs/historico/` con su aviso.
 - ¿Algo de acá debería estar en el plan, que es la fuente?
 
-## 4 · Lo que se informa
+## 5 · Lo que se informa
 
 Un resumen corto, y **en este orden**:
 

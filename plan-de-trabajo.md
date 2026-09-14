@@ -444,6 +444,7 @@ recibe todo resuelto en `/config/me`.
 - `codigo` es estable y sirve para decidir en código.
 
 ### B0.5 ✅ Contrato de consola
+**Verificado el 2026-09-14** · no contra el servicio, porque no produce una ruta sino un documento: lo sostiene `contracts/synapse-api.yaml`, que existe, y `contract-drift` en la puerta. **Una `B*` que no se observa en el servicio declara qué la sostiene**, y eso también es evidencia.
 **Descripción.** `contracts/synapse-api.yaml` ya existe y cubre los endpoints de
 consola: `me`, `catalog`, `blocks`, `tabs/{tabId}`, `panels:batch`, `chat`,
 `chat/hilos`, `me/preferencias`, más `decisiones`, `accionables` y
@@ -480,6 +481,7 @@ el contrato de modo que una divergencia rompa el build de alguno de los dos.
   credencial: la referencia por identificador.
 
 ### ➕ B0.9 ⚠️ Contestar las cinco `# PREGUNTA:` del contrato
+**Verificado el 2026-09-14** · igual que B0.5, lo sostiene un documento y no una respuesta: las cinco `# PREGUNTA:` están contestadas en el yaml con su bloque `DECIDIDO`, y el inventario en `docs/B0.9-preguntas-abiertas.md`. Sigue en ⚠️ porque una de las trece quedó sin decidir.
 **Descripción.** El yaml lleva cinco decisiones marcadas que el front no puede
 tomar. Contestarlas **en el propio archivo** es suficiente.
 
@@ -1320,7 +1322,7 @@ qué sha256.
 
 **`contract-drift` se parametrizó en vez de duplicarse.** Dos comparadores del
 mismo tipo derivan; ahora es uno con `--auth` y la salida dice cuál contrato
-verificó. La puerta pasa a once chequeos.
+verificó. La puerta pasó a once chequeos ese día; el conteo vigente sale de `docs/ESTADO.md`.
 
 **El generador encontró algo del spec ajeno.** `ErrorResponse.success` está
 declarado como `boolean` OPCIONAL en vez de un literal `false`, así que la unión
@@ -2076,7 +2078,7 @@ nuestra leyendo `ports/dd_config_service.go`, `dashboard/blocks.go` y
   1 violación, 2 BLOQUEADO.
 - Cuando el backend cierre B0.7, el yaml se reemplaza por el suyo y no cambia
   nada más: el adaptador ya tipa contra los tipos generados.
-- La puerta lo corre. Doce chequeos, sin bloqueados.
+- La puerta lo corre. La puerta lo corre, sin bloqueados.
 
 **Cerrada el 2026-09-14.** `contracts/synapse-console-wire.yaml` · seis rutas,
 catorce esquemas, transcrito del commit `733c13c` de
@@ -2131,9 +2133,11 @@ quien lo recibe es este adaptador.
 
 **Cerrada el 2026-09-14.** `src/api/adapt.ts`, conectado en el borde de
 `client.ts`: `request<…>` pide el tipo del CABLE y lo que sale de `api.*` es el
-tipo del CONTRATO. **`render/` y `catalog/` no cambiaron ni una línea** —
-`git diff --stat` sobre las dos carpetas sale vacío—, y con ellas las 15 reglas
-de `design-lint` y las 10 anclas.
+tipo del CONTRATO. **`render/` y `catalog/` no cambiaron ni una línea CON ESTA TAREA** —
+`git diff --stat` sobre las dos carpetas salía vacío el 2026-09-14—, y con ellas
+las 15 reglas de `design-lint` y las 10 anclas. *(F1.40 sí tocó `KpiBody.tsx`
+más tarde, y con razón: era un defecto de render. La afirmación es de esta tarea
+y no una promesa permanente — anclada por la auditoría del 2026-09-14.)*
 
 **Las dos heredadas de F1.36 entraron acá**: `/config/catalog` y `/config/blocks`
 llegan como arreglo desnudo.
@@ -2195,7 +2199,7 @@ la tienen.
   romper una prueba.
 
 **Cerrada el 2026-09-14.** Los cinco estados, las nueve formas y la presentación.
-**406 pruebas**, y `render/` y `catalog/` siguen sin una línea tocada.
+**las pruebas del repositorio**, y `render/` y `catalog/` siguen sin una línea tocada.
 
 **El cable NO es una unión discriminada, y ahí está el trabajo real.**
 `ports.DDPayloadDTO` es un struct con campos `omitempty`: su tipo permite un
@@ -2435,8 +2439,15 @@ los datos en `presentation`.
   layout**. Es la garantía que justifica que `Presentacion` exista.
 - Verificada por mutación: mover el rótulo de vuelta a `opciones` tiene que
   romper una prueba.
-- Los otros once cuerpos declaran si usan `presentation` o no. El que no la usa
-  no la recibe: una prop opcional que nadie lee es cómo esta se perdió.
+- **Queda UN solo lugar que la pasa y uno solo que la lee.** Los doce cuerpos
+  comparten `BodyProps`, así que `PanelInGrid` se la pasa a todos y la
+  declaración de quién la usa es **destructurarla o no**: hoy solo `KpiBody`.
+  Verificable con `grep`, y esa es la forma correcta del criterio — el que se
+  escribió primero pedía «el que no la usa no la recibe», que con un tipo de
+  props compartido no se puede cumplir sin partirlo en dos, y partirlo sería
+  peor: el día que un segundo cuerpo la use no habría nada que cambiar.
+  *Criterio corregido por la auditoría del 2026-09-14; el cierre lo
+  reinterpretaba y un criterio que el cierre reinterpreta no es un criterio.*
 
 **Cerrada el 2026-09-14, y dejó de ser teórica ese mismo día.** Al correr la
 consola contra el servicio real apareció la evidencia: el payload traía

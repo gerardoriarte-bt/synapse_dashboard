@@ -11,6 +11,12 @@ difieren: la guía de Postman dice `status: DEGRADADO` y
 sigue se implementa acá. Lo que necesita el otro lado sale como pregunta, no
 como parche.
 
+> ⚠️ **Los pedidos vigentes están en [`PARA-BACKEND.md`](PARA-BACKEND.md)**, que
+> se genera desde `plan-de-trabajo.md` en cada `npm run plan`. La lista de este
+> documento es de su fecha y **no se actualiza**: se conserva porque el
+> razonamiento de cada pedido explica por qué se pidió, y eso no caduca. Si los
+> dos difieren, manda el generado.
+
 ---
 
 ## 0 · Lo que cambió

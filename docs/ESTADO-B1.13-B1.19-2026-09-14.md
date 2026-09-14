@@ -5,6 +5,12 @@
 que dejó el seed. **Nada de esto es deducido del código**: cada afirmación sale
 de una respuesta real, y abajo dice cuál.
 
+> ⚠️ **Los pedidos vigentes están en [`PARA-BACKEND.md`](PARA-BACKEND.md)**, que
+> se genera desde `plan-de-trabajo.md` en cada `npm run plan`. La lista de este
+> documento es de su fecha y **no se actualiza**: se conserva porque el
+> razonamiento de cada pedido explica por qué se pidió, y eso no caduca. Si los
+> dos difieren, manda el generado.
+
 ---
 
 ## ⚠️ Primero: la numeración se separó, y hay un ancestro que lo resuelve
