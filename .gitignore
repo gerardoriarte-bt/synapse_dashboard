@@ -80,3 +80,7 @@ connections.toml
 # `docs/snowflake/` citan archivo, commit y consulta de todo lo que se derivó de
 # acá, así que cualquiera puede rehacer el razonamiento contra la fuente.
 docs/backdocs/
+
+# Artefactos para ENVIAR · un `.zip` de documentos que ya están versionados es
+# una segunda copia que va a derivar. Se generan al momento y no se commitean.
+docs/**/*.zip
