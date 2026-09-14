@@ -316,76 +316,64 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-**El backend de la consola existe desde el 2026-09-11**, y con él admin y
-builder. Está en la rama `feature/dynamic-dashboard-backend` de
-`AntPack-dev/synapse-api-go`, y su documentación en `docs/backdocs/`.
+**La consola corre contra el servicio real desde el 2026-09-14.** Doce paneles
+con datos del negocio, cero en `ERROR`. Para levantarla hacen falta los dos
+lados: `npm run dev` acá y, en `~/Documents/GitHub/synapse-api-go` (rama
+`feature/dynamic-dashboard-backend`), `make run` — **nunca con
+`DB_AUTO_MIGRATE=true`**, que la base es una RDS compartida y no una local.
 
-**Es UN servicio, no dos.** `router.go` monta `/auth/*`, `/config/*` y
-`/admin/*` bajo el mismo `/api/v1` del mismo binario. `VITE_AUTH_URL` cae a
-`VITE_API_URL`; la separación que describía este archivo dejó de tener razón de
-ser (F1.37).
+**Es UN servicio, no dos.** `/auth/*`, `/config/*` y `/admin/*` cuelgan del mismo
+`/api/v1` del mismo binario, y el proxy de Vite manda `/api/v1` entero a `:4010`.
 
-**Pero el backend no implementó `contracts/synapse-api.yaml`.** Su propia tarea
-B0.7 —«extender el contrato con los 6 endpoints de consola»— está sin marcar, y
-el OpenAPI que el binario embebe no declara ni una ruta `/config/*`. Lo que sirve
-es otra forma: inglés snake_case, `error` como cadena, arreglos desnudos donde el
-contrato declara un objeto, estados `AVAILABLE`/`DEGRADED`/`BLOCKED`/`FORBIDDEN`,
-`Gobierno` anidado en `governance` y el discriminador de `Valor` llamado `shape`.
-
-**La decisión es un adaptador en `src/api/`**, no reescribir `render/`. El
-contrato sigue siendo la forma interna: lleva `ventana`, `base`, `grano`,
-`direccionSemantica` y el período con etiqueta, que son los campos sobre los que
-se sostienen «ningún número desnudo» y «toda métrica declara su BASE y su
-PROCEDENCIA». Adoptar la forma del cable no sería renombrar, sería borrarlos.
+**El backend no implementó `contracts/synapse-api.yaml`, y la diferencia la
+absorbe `src/api/adapt.ts`.** El contrato sigue siendo la forma interna: lleva
+`ventana`, `base`, `grano` y `direccionSemantica`, que son los campos sobre los
+que se sostienen «ningún número desnudo» y «toda métrica declara su BASE».
+`render/` y `catalog/` no cambiaron ni una línea.
 
 **La regla del adaptador: renombra y reformatea; no calcula, no inventa una cifra
 y no escribe copy de producto.** Donde el cable no trae el campo, el campo queda
-ausente y la tarea que depende de él sigue bloqueada. Y tiene una segunda
-función que no es traducir: en el cable `shape`, `family`, `layer` y `block_type`
-son `string` libre, así que **es el único lugar donde un valor fuera del
-enumerado se puede detectar** — una familia desconocida pinta la serie sin color
-y nadie se entera.
+ausente y hay **una prueba que lo atestigua** en vez de una aserción borrada —
+una prueba borrada no avisa cuando el campo aparece.
 
-**Tres cosas hoy rotas en `src/api/client.ts`**, todas de una línea: el batch
-manda `{ panelIds, periodo }` y el cable pide `{ panel_ids, period }` con los dos
-`required`, así que devuelve **400**; las preferencias van a
-`/config/me/preferencias` con `{ tema }` y el cable es `/config/me/preferences`
-con `{ theme }`; y el error se lee como `body.error.codigo` sobre una cadena, que
-da `code: undefined` y `message: ""`. Lo último es el defecto exacto por el que
-existe `api/auth.ts`.
+### Hecho
 
-**El análisis completo está en `docs/PLAN-INTEGRACION-2026-09-11.md`**: el mapa
-campo por campo, las nueve formas de `Valor` que el backend materializa y las
-siete que no, y las veinte preguntas al backend ordenadas por esfuerzo de ellos.
-Las tareas están en `plan-de-trabajo.md` — **F1.32–F1.39** para la consola y
-**F4.22–F4.23** para el builder.
+**F1.32–F1.37 y F1.40.** El cable transcripto (`contracts/synapse-console-wire.yaml`,
+con `console-drift` en la puerta), el adaptador entero, las rutas y el envelope de
+error, una sola base de API, y la presentación llegando al cuerpo. **416 pruebas,
+doce chequeos.**
 
-**El orden.** F1.32 primero: sin la forma escrita, todo lo demás se escribe de
-memoria, que es lo que ya costó una vez con el servicio de acceso. Después F1.36
-y F1.37, que son lo que hace que la consola conteste algo en vez de 400 y 404.
-Después el adaptador (F1.33–F1.35). Y **F1.38 no se deja para el final**: hoy
-MSW responde la forma del contrato, así que si no se cambia, el adaptador no se
-ejecuta en ninguna prueba y **las 350 siguen verdes con el adaptador roto** — el
-modo de falla del 2026-08-20, cuando el colapso responsive violaba §3.1 de tres
-formas con 184 pruebas en verde.
+**F1.39 está hecha de hecho aunque figure pendiente**: el humo contra el servicio
+real se corrió y encontró **una sola diferencia** con el yaml —
+`semantic_direction` es texto ya redactado (`HIGHER = BETTER`) y no un código—,
+ya corregida. Falta escribir su cierre.
 
-**Lo que sigue bloqueado, y por qué.** El chat contextual (F3.2, F3.3, F3.6, la
-mitad de F3.7) espera `/config/chat` y `ContextoDePanel`: B3.1 y B3.2 están sin
-marcar, y el chat que el servicio sí tiene es otro producto, decidido el
-2026-09-08. F4.3 espera B4.8 —CRUD de roles—, F4.12 espera B4.9 —preview por
-rol—, F1.31 y F4.21 esperan `/config/plots` y B1.21, F5.1 espera poder listar
-los layouts de un usuario, F5.13 espera el patrón de `PeriodoId`, y el CTA de
-F2.3 espera que `request_from` deje de ser la constante `"administrator"`.
-F4.17–F4.20 siguen con su «no antes»: `transform.go` tiene nueve casos y sus
-tres formas no están.
+### Lo que sigue
 
-**Lo más barato que desbloquea más, para mandar al backend hoy:** cerrar B0.7
-—emitir `/config/*` y `/admin/layouts/*` en su OpenAPI—, devolver `theme` en
-`/config/me` (el campo existe en `users` y el `PUT` ya lo escribe: se guarda y no
-se puede leer), poner etiquetas `json:` en `DDLayoutVersion`, `DDTab` y `DDPanel`
-—hoy rompen sus propios tests de Postman—, y `json:"-"` en el campo `Tenant` de
-esos structs, que hoy no filtra nada porque nadie hace `Preload`, pero filtraría
-`PrivateKeyPEM` el día que alguien lo agregue.
+**F1.41** es la más urgente: el cable manda los params en inglés —`maximum`,
+`horizon`, `order`, `cap`— y `PARAM_SCHEMAS` los espera en español. Un `gauge`
+llega con `{ maximum: 100 }`, `GaugeBody` espera `maximo`, `adaptPanelParams` lo
+descarta por desconocido y **el arco se dibuja contra otro máximo, en silencio**.
+Después **F1.35** (los enumerados cerrados: `adaptCatalog` ya devuelve `rejected`,
+falta cablearlo a que el panel muestre `ERROR`) y **F1.38** (los mocks, ya medio
+hechos al ejercitar el adaptador).
+
+### Lo que se ve mal y es del backend
+
+La línea de BASE sale `Base · COMPLETED · MONTH ·` con el separador colgando
+porque falta `ventana` (B1.25). Los períodos salen como ids crudos —`2026-09`—
+porque no hay locale ni etiqueta. Y ningún panel que no sea escalar trae
+`presentacion`, que choca con «ningún número desnudo».
+
+**El estado de B1.13–B1.19 está en `docs/ESTADO-B1.13-B1.19-2026-09-14.md`**,
+verificado contra el servicio corriendo y con la tabla que mapea nuestra
+numeración contra la de ellos, que **no coincide**.
+
+### Del lado de datos
+
+**B1.22–B1.26 y B2.12** esperan a quien es dueño de la cuenta de Snowflake.
+`SYNAPSE_METRIC_CATALOG` no existe; el SQL y la instrucción están en
+`docs/snowflake/`. **Nosotros no corremos nada ahí.**
 
 **Para el contexto de cómo se llegó hasta acá**, las bitácoras cuentan lo que
 costó descubrir y no está en el log: `docs/BITACORA-2026-09-02.md` la jornada que
