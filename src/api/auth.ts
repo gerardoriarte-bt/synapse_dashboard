@@ -62,6 +62,34 @@ export type LoginUser = AuthSchemas['LoginUserInfo']
 type AuthError = AuthSchemas['ErrorResponse']
 type AuthOk<T> = { success?: boolean; data?: T }
 
+/** **No todo lo que vuelve es JSON** · 2026-09-14.
+ *
+ *  Un 502 del proxy con el servicio caído, un 404 de Vite o un panic de Go
+ *  devuelven HTML o nada, y `res.json()` tira ahí. Sin esta guarda lo que veía
+ *  el usuario era **«Failed to execute 'json' on 'Response': Unexpected end of
+ *  JSON input»** — en la PRIMERA pantalla, porque `AuthGuard` llama a
+ *  `tokenInfo()` al montar. Un mensaje que habla del parser y no de que el
+ *  servicio no está.
+ *
+ *  Es el mismo defecto que F1.36 arregló en `api/client.ts`, y sobrevivió acá
+ *  porque este archivo desenvuelve por su cuenta. Lo encontró levantar la app
+ *  sin backend, no una prueba. */
+async function cuerpo<T>(res: Response): Promise<(T & AuthError) | null> {
+  try {
+    return (await res.json()) as T & AuthError
+  } catch {
+    return null
+  }
+}
+
+/** El mensaje de error, distinguiendo «el servicio dijo algo» de «el servicio no
+ *  dijo nada». Los dos son fallos y se leen distinto: uno tiene una razón y el
+ *  otro tiene un número · §8, los errores nunca son vagos. */
+function mensajeDe(body: AuthError | null, res: Response): string {
+  if (body === null) return `El servicio de acceso respondió ${String(res.status)} sin cuerpo.`
+  return body.error ?? ''
+}
+
 /** Lo que un login exitoso devuelve. El spec declara `token` y `user` como
  *  OPCIONALES dentro de `data` —`SuccessResponse & { data?: {...} }`— así que el
  *  tipo generado los trae con `?`. Acá se estrecha una vez, con la comprobación
@@ -75,7 +103,7 @@ export async function login(email: string, password: string): Promise<LoginResul
     body: JSON.stringify({ email, password }),
   })
 
-  const body = (await res.json()) as AuthOk<Partial<LoginResult>> & AuthError
+  const body = await cuerpo<AuthOk<Partial<LoginResult>>>(res)
 
   if (!res.ok) {
     // 401 son credenciales; el resto es un fallo del servicio. La diferencia
@@ -83,7 +111,7 @@ export async function login(email: string, password: string): Promise<LoginResul
     // intentar», que son dos acciones distintas · §8.
     throw new ApiError(
       res.status === 401 ? 'AUTH_CREDENCIALES' : 'AUTH_FALLO',
-      body.error ?? '',
+      mensajeDe(body, res),
       res.status,
     )
   }
@@ -91,7 +119,7 @@ export async function login(email: string, password: string): Promise<LoginResul
   // El spec los declara opcionales; un 200 sin token es un servicio roto y hay
   // que decirlo, no seguir con `undefined` hasta que reviente en otro lado
   // · §1 principio 6.
-  const { token, user } = body.data ?? {}
+  const { token, user } = body?.data ?? {}
   if (token === undefined || user === undefined) {
     throw new ApiError('AUTH_FALLO', 'El servicio de acceso respondió sin sesión.', res.status)
   }
@@ -112,17 +140,17 @@ export async function tokenInfo(token: string): Promise<{ user: LoginUser }> {
   const res = await fetch(`${BASE}/auth/token-info`, {
     headers: { Authorization: `Bearer ${token}` },
   })
-  const body = (await res.json()) as AuthOk<{ user?: LoginUser }> & AuthError
+  const body = await cuerpo<AuthOk<{ user?: LoginUser }>>(res)
 
   if (!res.ok) {
     throw new ApiError(
       res.status === 401 ? 'AUTH_CREDENCIALES' : 'AUTH_FALLO',
-      body.error ?? '',
+      mensajeDe(body, res),
       res.status,
     )
   }
 
-  const user = body.data?.user
+  const user = body?.data?.user
   if (user === undefined) {
     throw new ApiError('AUTH_FALLO', 'El servicio de acceso respondió sin usuario.', res.status)
   }
@@ -147,19 +175,19 @@ export async function changePassword(current: string, next: string): Promise<Log
     },
     body: JSON.stringify({ current_password: current, new_password: next }),
   })
-  const body = (await res.json()) as AuthOk<{ user?: LoginUser }> & AuthError
+  const body = await cuerpo<AuthOk<{ user?: LoginUser }>>(res)
 
   if (!res.ok) {
     // Un 400 es la política; un 401 es la contraseña actual. Los dos traen el
     // texto del servicio, que ya dice cuál criterio falló.
     throw new ApiError(
       res.status === 401 ? 'AUTH_CREDENCIALES' : 'AUTH_POLITICA',
-      body.error ?? '',
+      mensajeDe(body, res),
       res.status,
     )
   }
 
-  const user = body.data?.user
+  const user = body?.data?.user
   if (user === undefined) {
     throw new ApiError('AUTH_FALLO', 'El servicio no devolvió el usuario.', res.status)
   }
@@ -194,17 +222,17 @@ export async function requestPasswordReset(email: string): Promise<string> {
     // sorpresa.
     body: JSON.stringify({ email: email.trim().toLowerCase() }),
   })
-  const body = (await res.json()) as AuthOk<{ message?: string }> & AuthError
+  const body = await cuerpo<AuthOk<{ message?: string }>>(res)
 
   if (!res.ok) {
     throw new ApiError(
       res.status === 409 ? 'AUTH_SOLICITUD_PENDIENTE' : 'AUTH_FALLO',
-      body.error ?? '',
+      mensajeDe(body, res),
       res.status,
     )
   }
 
-  return body.data?.message ?? 'Si el correo está registrado, tu solicitud fue enviada.'
+  return body?.data?.message ?? 'Si el correo está registrado, tu solicitud fue enviada.'
 }
 
 /** Los ocho campos que el servicio pide para solicitar acceso. Generado, no
@@ -235,10 +263,10 @@ export async function requestAccess(solicitud: AccessRequest): Promise<void> {
   })
 
   if (!res.ok) {
-    const body = (await res.json()) as AuthError
+    const body = await cuerpo<Record<string, never>>(res)
     throw new ApiError(
       res.status === 409 ? 'AUTH_SOLICITUD_PENDIENTE' : 'AUTH_SOLICITUD_INVALIDA',
-      body.error ?? '',
+      mensajeDe(body, res),
       res.status,
     )
   }

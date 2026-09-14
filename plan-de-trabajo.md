@@ -2162,6 +2162,25 @@ se hizo acá porque toca el flujo de acceso entero —F0.5, F0.13, F0.15 y F0.16
 las cuatro cerradas y probadas— y eso es una tarea con su propio criterio, no un
 arreglo al pasar.
 
+**Y esa separación ya costó un defecto, encontrado el mismo día levantando la
+app.** La guarda de JSON de F1.36 quedó solo en `client.ts`; `auth.ts` hacía
+`await res.json()` **cinco veces sin un `try`**. Con el backend apagado, el proxy
+devuelve un 502 vacío y la PRIMERA pantalla —`AuthGuard` llama a `tokenInfo()` al
+montar— decía «Failed to execute 'json' on 'Response': Unexpected end of JSON
+input»: un mensaje sobre el parser y no sobre el servicio que no está.
+
+Arreglado con un helper en `auth.ts`, y con tres pruebas: 502 vacío, 502 con
+HTML, y la que impide que la guarda se trague el error real —si lo hiciera,
+«credenciales inválidas» se volvería «respondió sin cuerpo»—. Verificado por
+mutación y en pantalla: ahora dice «El servicio de acceso respondió 502 sin
+cuerpo».
+
+**Lo encontró correr la aplicación, no una prueba.** Ninguna de las 406 lo
+cubría porque todas responden JSON: MSW no tiene forma de devolver un cuerpo
+vacío si nadie se lo pide. Es el mismo hueco que los mocks de F1.38, un nivel más
+abajo — el transporte también tiene estados que los fixtures no imitan por
+defecto.
+
 **El `code` es `SIN_CODIGO`**, y la familia `SIN` no es ninguna de las tres de
 §4.1 a propósito: ninguna rama futura sobre `CAMPO_`, `REGLA_` o `FALLO_` lo va a
 agarrar por accidente. Lo que sí queda es `httpStatus`, que el transporte declara.

@@ -104,3 +104,53 @@ describe('el envelope de Go no es el del contrato', () => {
     await expect(login('a@b.test', 'secreto123')).rejects.toBeInstanceOf(ApiError)
   })
 })
+
+describe('cuando el servicio no está · 2026-09-14', () => {
+  // Lo encontró levantar la app sin backend, no una prueba: `AuthGuard` llama a
+  // `tokenInfo()` al montar, y la PRIMERA pantalla decía «Failed to execute
+  // 'json' on 'Response': Unexpected end of JSON input» — un mensaje que habla
+  // del parser y no de que el servicio no está escuchando.
+  //
+  // Es el mismo defecto que F1.36 arregló en `client.ts`, y sobrevivió acá
+  // porque este archivo desenvuelve el envelope por su cuenta.
+
+  it('un 502 sin cuerpo dice el número, no «Unexpected end of JSON input»', async () => {
+    // Es exactamente lo que devuelve el proxy de Vite con el backend caído:
+    // verificado con `curl` contra :5173 · HTTP 502, cuerpo vacío.
+    server.use(http.post(AUTH, () => new HttpResponse(null, { status: 502 })))
+
+    const error = (await login('a@b.c', 'x').catch((e: unknown) => e)) as ApiError
+
+    expect(error).toBeInstanceOf(ApiError)
+    expect(error.httpStatus).toBe(502)
+    expect(error.message).toContain('502')
+    expect(error.message).not.toMatch(/JSON|json/)
+  })
+
+  it('un 502 que devuelve HTML tampoco explota con el parser', async () => {
+    // Un panic de Go o una página de error de un balanceador.
+    server.use(
+      http.post(AUTH, () => HttpResponse.text('<html>502 Bad Gateway</html>', { status: 502 })),
+    )
+
+    const error = (await login('a@b.c', 'x').catch((e: unknown) => e)) as ApiError
+
+    expect(error).toBeInstanceOf(ApiError)
+    expect(error.message).not.toMatch(/JSON|json/)
+  })
+
+  it('y cuando el servicio SÍ contesta, el mensaje sigue siendo el suyo', async () => {
+    // La otra mitad: la guarda no puede tragarse el error real. Si lo hiciera,
+    // «credenciales inválidas» se volvería «respondió sin cuerpo».
+    server.use(
+      http.post(AUTH, () =>
+        HttpResponse.json({ success: false, error: 'credenciales inválidas' }, { status: 401 }),
+      ),
+    )
+
+    const error = (await login('a@b.c', 'x').catch((e: unknown) => e)) as ApiError
+
+    expect(error.message).toBe('credenciales inválidas')
+    expect(error.code).toBe('AUTH_CREDENCIALES')
+  })
+})
