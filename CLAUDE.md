@@ -386,3 +386,11 @@ se puede leer), poner etiquetas `json:` en `DDLayoutVersion`, `DDTab` y `DDPanel
 —hoy rompen sus propios tests de Postman—, y `json:"-"` en el campo `Tenant` de
 esos structs, que hoy no filtra nada porque nadie hace `Preload`, pero filtraría
 `PrivateKeyPEM` el día que alguien lo agregue.
+
+**Para el contexto de cómo se llegó hasta acá**, las bitácoras cuentan lo que
+costó descubrir y no está en el log: `docs/BITACORA-2026-09-02.md` la jornada que
+cerró la Fase 1, `docs/BITACORA-2026-09-04.md` los dos días que dejaron el front
+esperando al contrato, y **`docs/BITACORA-2026-09-14.md` los días en que apareció
+el backend y resultó hablar otro idioma** — ahí están los aprendizajes de la
+integración, incluido el que más sirve: **un mock que habla el idioma de tu capa
+interna no prueba la frontera, la esconde.**
