@@ -29,7 +29,13 @@ FASES = {
 
 # Un encabezado de tarea: `### ➕ F1.13a ⬜ Título · 🔒 depende de X`
 ENCABEZADO = re.compile(r'^#{3,4} (➕ )?([BF]\d+\.\d+[a-j]?) (✅|⚠️|⬜|🕓) (.+)$')
+# Líneas de METADATO, no de prosa. Las dos cuelgan del encabezado y ninguna es
+# criterio de aceptación: `Espera del backend` es una dependencia y `Verificado`
+# es la evidencia que exige la regla de las tareas `B*`. Contarlas como prosa
+# rompería el AGRUPADO —varias tareas comparten un bloque de descripción— y
+# cerraría el grupo en la primera que las lleve.
 ESPERA = re.compile(r'^\*\*Espera del backend\.\*\*')
+VERIFICADO = re.compile(r'^\*\*Verificado el \d{4}-\d{2}-\d{2}')
 
 
 def parsear(texto: str) -> list[dict]:
@@ -106,6 +112,8 @@ def parsear(texto: str) -> list[dict]:
         if ESPERA.match(linea):
             if pendientes:
                 pendientes[-1]['bloqueada'] = True
+            continue
+        if VERIFICADO.match(linea):
             continue
         # Cualquier otro encabezado cierra el grupo abierto.
         if re.match(r'^#{1,3} ', linea):

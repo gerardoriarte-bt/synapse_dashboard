@@ -5,7 +5,7 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**69 de 193 tareas cerradas.** 5 parciales · 114 pendientes · 5 diferidas.
+**75 de 193 tareas cerradas.** 8 parciales · 105 pendientes · 5 diferidas.
 
 
 ## Front · 68 de 112
@@ -19,7 +19,7 @@
 | 4 · Admin y Builder | `······················` | 0/23 | 0 | 23 |
 | 5 · Pruebas y pulido | `████████████··········` | 7/13 | 1 | 4 |
 
-## Backend · 1 de 81
+## Backend · 7 de 81
 
 > ⚠️ **Este número está bajo y no refleja al backend.** El plan de acá
 > es la fuente del FRONT; el estado de las tareas `B*` solo se mueve
@@ -36,8 +36,8 @@
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██····················` | 1/10 | 1 | 8 |
-| 1 · API de consola | `······················` | 0/26 | 0 | 26 |
-| 2 · Materialización | `······················` | 0/12 | 0 | 12 |
+| 1 · API de consola | `████··················` | 5/26 | 3 | 18 |
+| 2 · Materialización | `██····················` | 1/12 | 0 | 11 |
 | 3 · Chat contextual | `······················` | 0/10 | 0 | 10 |
 | 4 · Admin y Builder | `······················` | 0/16 | 0 | 16 |
 | 5 · Multi-dashboard y pulido | `······················` | 0/7 | 0 | 6 |

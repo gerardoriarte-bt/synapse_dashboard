@@ -42,6 +42,43 @@ dependencia, y contarlo como prosa rompería el agrupado de las tareas que
 comparten bloque. Lo que sí hace es marcar la tarea como bloqueada, que es lo que
 el ticket necesita saber.
 
+### El estado de las tareas `B*` lo mueve el front · 2026-09-14
+
+**Decisión.** El front hace la integración final de todo lo que entrega el
+backend, así que **es el front quien marca una tarea `B*` como hecha** — y solo
+después de verificarla **contra el servicio corriendo**, no copiando el estado de
+`docs/dynamic-dashboard-backend.md`.
+
+**Por qué, y no es desconfianza.** Su documento marca `B1.13` como hecha —
+`Presentation` opcional— y es cierto para dos de las nueve formas. Ninguno de los
+dos está equivocado: ellos entregaron lo que su tarea decía, y el criterio de la
+nuestra pide más. **La única forma de saber cuál de las dos cosas está en la
+pantalla es mirarla.**
+
+**La consecuencia es una obligación nuestra:** una tarea `B*` en `✅` o `⚠️` lleva
+escrito **cómo se verificó** — qué endpoint, qué respondió, qué fecha. Una sin
+eso es una suposición con forma de hecho, y `docs/ESTADO.md` la va a publicar
+como avance.
+
+Mientras una `B*` no se haya verificado se queda en `⬜`, **aunque ellos la den
+por cerrada**. Eso hace que el número de backend de `ESTADO.md` salga bajo, y es
+correcto que salga bajo: mide lo que el front pudo comprobar, no lo que el
+backend construyó. El documento lo dice en su propia sección.
+
+### Auditar el plan · a demanda, no en loop
+
+Los chequeos deterministas corren solos en la puerta —`plan:ancestro`,
+`para-backend`, `docs-registro`, y `plan:diff` contra un export—. Lo que ellos no
+pueden contestar es **si un `✅` está sostenido de verdad** y **si dos documentos
+dicen lo mismo**: eso necesita juicio, y va en la skill `auditoria-plan`.
+
+**A demanda y no en loop**, por dos razones. Un agente que confirma que nada
+cambió el 95% de las veces gasta sin devolver, y —peor— un agente que opina
+sobre el estado se vuelve **una segunda fuente**, que es la enfermedad que todo
+este bloque existe para curar. Se corre al cerrar un tramo o antes de informar
+avances. **Reporta; no corrige**: cambiar el estado de una tarea es una decisión
+de quien la pidió.
+
 ### Registro de documentos · lo que `docs/` puede contener
 
 **Esta tabla es la lista blanca, y una máquina la hace cumplir.**
@@ -494,7 +531,8 @@ la ruta que lo emite.
 
 ## Fase 1 — API de consola
 
-### B1.1 ⬜ `GET /config/me`
+### B1.1 ⚠️ `GET /config/me`
+**Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `GET /config/me` responde con `user`, `tenant`, `role`, `tabs`, `periods` y `catalog_version`. **Parcial** porque faltan `theme` —el campo existe en `users` y el `PUT` lo escribe— y el resto del contexto que declara el contrato.
 **Espera del backend.** **`theme` en la respuesta.** El campo existe en `users`, la migración lo creó y `PUT /config/me/preferences` ya lo escribe — pero `/config/me` no lo devuelve, así que **la preferencia se guarda y no se puede leer**. El front la necesita antes del primer pixel: leerla en una segunda llamada haría que la consola pinte oscura y cambie a clara a la vista del usuario. Y falta el resto del contexto: `alcance`, `tenant.etiqueta` y `vertical`, `role.puedeAprobar`, `user.capabilities`, y en la pestaña `key`, `icon` y `chat_suggestions`.
 **Descripción.** Contexto de arranque: `user` (con `capacidades` y
 `preferencias`), `tenant`, `role` (con `puedeAprobar`), `tabs` **sin paneles**,
@@ -506,7 +544,8 @@ la ruta que lo emite.
 - No incluye paneles: pedirlos es `GET /config/tabs/{tabId}`.
 - Con `alcance: plataforma` incluye `tenantsDisponibles`; con `usuario`, no.
 
-### B1.2 ⬜ `GET /config/catalog`
+### B1.2 ✅ `GET /config/catalog`
+**Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `GET /config/catalog` devuelve 12 métricas con sus quince campos. El filtrado por rol es B1.19 y se audita aparte.
 **Descripción.** Las métricas del tenant filtradas por el rol del token.
 **Criterio de aceptación.**
 - Una métrica oculta para el rol **no aparece**, ni siquiera con `estado`
@@ -515,7 +554,8 @@ la ruta que lo emite.
   `fuente`, `ventana`, `granoMinimo`, `dimensiones` y `catalogVersion`.
 - `direccionSemantica` viene solo en las compuestas, y es la frase que se pinta.
 
-### B1.3 ⬜ `GET /config/blocks`
+### B1.3 ✅ `GET /config/blocks`
+**Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `GET /config/blocks` devuelve **los quince tipos** —de `kpi` a `graph`— con `accepted_shapes`, los cuatro rangos de span y `layout_params`.
 **Descripción.** La tabla tipo ↔ formas aceptadas ↔ rangos de `colSpan` y
 `rowSpan`, para los 15 tipos.
 **Criterio de aceptación.**
@@ -524,7 +564,8 @@ la ruta que lo emite.
 - El front la consume con `catalog/blocks.ts`, que ya está escrito, sin
   reescribir la tabla del lado del cliente.
 
-### B1.4 ⬜ `PUT /config/me/preferencias`
+### B1.4 ✅ `PUT /config/me/preferencias`
+**Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `PUT /config/me/preferences` responde **200** con `{ theme }`. Lo que falta —leerlo de vuelta en `/config/me`— es B1.1.
 **Descripción.** Persistir el tema del usuario.
 **Criterio de aceptación.**
 - El tema se guarda contra el **perfil**, no contra el tenant ni el navegador:
@@ -532,7 +573,8 @@ la ruta que lo emite.
   máquinas.
 - El valor inicial vuelve en `/config/me` → `user.preferencias.tema`.
 
-### B1.5 ⬜ `GET /config/tabs/{tabId}`
+### B1.5 ✅ `GET /config/tabs/{tabId}`
+**Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `GET /config/tabs/{tabId}` devuelve la pestaña y sus **12 paneles**, con `col_start`, `col_span`, `row_span` y `options`.
 **Descripción.** `{ tab, panels[] }` — el layout, sin datos. Acepta
 `?layoutId=` para multi-dashboard.
 **Criterio de aceptación.**
@@ -542,7 +584,8 @@ la ruta que lo emite.
 - Cada panel trae `id`, `tipo`, `metricId`, `colStart`, `colSpan`, `rowSpan` y
   `opciones?`.
 
-### B1.6 ⬜ `POST /config/panels:batch`
+### B1.6 ⚠️ `POST /config/panels:batch`
+**Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `POST /config/panels:batch` devuelve los 12 payloads y la consola los pinta. **Parcial** por `unlocks_with` vacío en `BLOCKED` y `request_from` como constante.
 **Espera del backend.** **`unlocks_with` en `BLOCKED`** —hoy llega vacío; el servicio solo lo escribe al derivar `DEGRADED`, y §8 pide estado, razón **y qué lo desbloquea**— y **`request_from` real** en `FORBIDDEN`, que hoy es la constante `"administrator"` escrita en el código y no el rol que decide sobre la métrica.
 **Descripción.** Un request por pestaña, no uno por panel. Body
 `{ panelIds, periodo }` → `{ [panelId]: Payload }`.
@@ -571,7 +614,8 @@ tomar el layout publicado, filtrar pestañas y paneles por rol, aplicar override
 - Ningún estado lleva campos de otro.
 - `CARGANDO` **no existe** del lado del servidor: es del cliente.
 
-### B1.12 ⬜ `Gobierno` obligatorio en `DISPONIBLE` y `DEGRADADO`
+### B1.12 ✅ `Gobierno` obligatorio en `DISPONIBLE` y `DEGRADADO`
+**Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. Los payloads con cifra traen `governance` con sus cinco campos: `base`, `layer`, `source`, `freshness` y `catalog_version`. La procedencia se pinta en los doce paneles.
 **Descripción.** `base`, `capa`, `fuente`, `frescura`, `catalogVersion`
 intersectados en los dos estados que muestran número.
 **Criterio de aceptación.**
@@ -610,7 +654,8 @@ mínimas de §8 del documento.
   invitación a actuar, y un array vacío no alcanza para escribir «el período
   cierra el 1 de septiembre».
 
-### B1.16 ⬜ Seed de demo: 1 tenant, 1 layout, 1 pestaña, 4–6 paneles
+### B1.16 ⚠️ Seed de demo: 1 tenant, 1 layout, 1 pestaña, 4–6 paneles
+**Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. El seed deja un layout publicado con **12 paneles y 6 tipos** —`prose`, `kpi`, `bars`, `series`, `table`, `reco`— sobre 12 métricas. Excede los 4–6 que pedía. **Parcial** solo por «Brand Momentum».
 **Espera del backend.** **La métrica «Brand Momentum»**, que esta tarea pide por nombre y el seed no incluye. Si el requisito quedó viejo, conviene sacarlo de `tareas-front-back.md` —que es de los dos equipos—: mientras esté escrito, el próximo que lea la tarea la va a dar por incompleta.
 ### ➕ B1.20 ⬜ Seed determinista para desarrollo del front
 **Descripción.** B1.16 pide datos de demo. Esto pide que sean **estables**: el
@@ -841,7 +886,8 @@ escribir en `panel_data`.
   Postgres.
 - TTL corto, 5–15 minutos.
 
-### B2.5 ⬜ Estado `DEGRADADO`
+### B2.5 ✅ Estado `DEGRADADO`
+**Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. Los doce paneles llegan en `DEGRADED` con razón redactada por el servidor —«Stale data: last materialization is older than 3 days»— y `unlocks_with`. **El front no decide que algo está degradado**: lo deriva `isDegraded` del servicio.
 **Descripción.** Si `frescura > cadencia × tolerancia`, el panel se marca
 degradado con `razon` y `desbloqueaCon`.
 **Criterio de aceptación.**

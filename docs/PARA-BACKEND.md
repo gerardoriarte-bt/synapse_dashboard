@@ -49,7 +49,7 @@ front, con prueba y con la puerta en verde.
 
 ### B1.1 · GET /config/me
 
-*Estado de la tarea: pendiente.*
+*Estado de la tarea: parcial.*
 
 
 **`theme` en la respuesta.** El campo existe en `users`, la migración lo creó y `PUT /config/me/preferences` ya lo escribe — pero `/config/me` no lo devuelve, así que **la preferencia se guarda y no se puede leer**. El front la necesita antes del primer pixel: leerla en una segunda llamada haría que la consola pinte oscura y cambie a clara a la vista del usuario. Y falta el resto del contexto: `alcance`, `tenant.etiqueta` y `vertical`, `role.puedeAprobar`, `user.capabilities`, y en la pestaña `key`, `icon` y `chat_suggestions`.
@@ -57,7 +57,7 @@ front, con prueba y con la puerta en verde.
 
 ### B1.6 · POST /config/panels:batch
 
-*Estado de la tarea: pendiente.*
+*Estado de la tarea: parcial.*
 
 
 **`unlocks_with` en `BLOCKED`** —hoy llega vacío; el servicio solo lo escribe al derivar `DEGRADED`, y §8 pide estado, razón **y qué lo desbloquea**— y **`request_from` real** en `FORBIDDEN`, que hoy es la constante `"administrator"` escrita en el código y no el rol que decide sobre la métrica.
@@ -89,7 +89,7 @@ front, con prueba y con la puerta en verde.
 
 ### B1.16 · Seed de demo: 1 tenant, 1 layout, 1 pestaña, 4–6 paneles
 
-*Estado de la tarea: pendiente.*
+*Estado de la tarea: parcial.*
 
 
 **La métrica «Brand Momentum»**, que esta tarea pide por nombre y el seed no incluye. Si el requisito quedó viejo, conviene sacarlo de `tareas-front-back.md` —que es de los dos equipos—: mientras esté escrito, el próximo que lea la tarea la va a dar por incompleta.

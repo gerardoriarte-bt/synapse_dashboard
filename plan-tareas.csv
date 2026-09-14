@@ -30,20 +30,20 @@ B0.10,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos 
 B1.1,Backend · Fase 1 — API de consola,Backend,1,API de consola,GET /config/me,"Contexto de arranque: user (con capacidades y preferencias), tenant, role (con puedeAprobar), tabs sin paneles, periodos, catalogVersion, alcance y —si hay más de uno— layouts.","• Las pestañas llegan ya filtradas por el rol del token y en su orden.
 • Cada Periodo declara su grano (dia | semana | mes): sin él el front sabe que una métrica es mensual pero no si 2026-W32 es una semana.
 • No incluye paneles: pedirlos es GET /config/tabs/{tabId}.
-• Con alcance: plataforma incluye tenantsDisponibles; con usuario, no.",pendiente,no,,equipo:backend fase:1 estado:pendiente bloqueada
+• Con alcance: plataforma incluye tenantsDisponibles; con usuario, no.",parcial,no,,equipo:backend fase:1 estado:parcial bloqueada
 B1.2,Backend · Fase 1 — API de consola,Backend,1,API de consola,GET /config/catalog,Las métricas del tenant filtradas por el rol del token.,"• Una métrica oculta para el rol no aparece, ni siquiera con estado restringido: ocultar no es permitir, pero tampoco es mostrar el nombre.
 • Cada métrica trae base obligatorio (ver D6), familia, forma, capa, fuente, ventana, granoMinimo, dimensiones y catalogVersion.
-• direccionSemantica viene solo en las compuestas, y es la frase que se pinta.",pendiente,no,,equipo:backend fase:1 estado:pendiente
+• direccionSemantica viene solo en las compuestas, y es la frase que se pinta.",hecho,no,,equipo:backend fase:1 estado:hecho
 B1.3,Backend · Fase 1 — API de consola,Backend,1,API de consola,GET /config/blocks,"La tabla tipo ↔ formas aceptadas ↔ rangos de colSpan y rowSpan, para los 15 tipos.","• Los 15 tipos están, incluidos los que ninguna métrica usa hoy (comparison, matrix, graph): el builder los ofrece.
-• El front la consume con catalog/blocks.ts, que ya está escrito, sin reescribir la tabla del lado del cliente.",pendiente,no,,equipo:backend fase:1 estado:pendiente
+• El front la consume con catalog/blocks.ts, que ya está escrito, sin reescribir la tabla del lado del cliente.",hecho,no,,equipo:backend fase:1 estado:hecho
 B1.4,Backend · Fase 1 — API de consola,Backend,1,API de consola,PUT /config/me/preferencias,Persistir el tema del usuario.,"• El tema se guarda contra el perfil, no contra el tenant ni el navegador: §2.4 lo declara preferencia de usuario, y la misma cuenta se ve igual en dos máquinas.
-• El valor inicial vuelve en /config/me → user.preferencias.tema.",pendiente,no,,equipo:backend fase:1 estado:pendiente
+• El valor inicial vuelve en /config/me → user.preferencias.tema.",hecho,no,,equipo:backend fase:1 estado:hecho
 B1.5,Backend · Fase 1 — API de consola,Backend,1,API de consola,GET /config/tabs/{tabId},"{ tab, panels[] } — el layout, sin datos. Acepta ?layoutId= para multi-dashboard.","• Un tabId que no pertenece al tenant y rol del token devuelve 404, no 403: no se revela la existencia.
 • La respuesta no contiene una sola cifra: cambiar de período no la invalida.
-• Cada panel trae id, tipo, metricId, colStart, colSpan, rowSpan y opciones?.",pendiente,no,,equipo:backend fase:1 estado:pendiente
+• Cada panel trae id, tipo, metricId, colStart, colSpan, rowSpan y opciones?.",hecho,no,,equipo:backend fase:1 estado:hecho
 B1.6,Backend · Fase 1 — API de consola,Backend,1,API de consola,POST /config/panels:batch,"Un request por pestaña, no uno por panel. Body { panelIds, periodo } → { [panelId]: Payload }.","• Fallo parcial: un panel que no resuelve llega con estado: ERROR y el resto vuelve normal. No se falla el batch entero.
 • Ocho paneles se resuelven en una llamada.
-• No devuelve payload de una métrica oculta para el rol (B1.9).",pendiente,no,,equipo:backend fase:1 estado:pendiente bloqueada
+• No devuelve payload de una métrica oculta para el rol (B1.9).",parcial,no,,equipo:backend fase:1 estado:parcial bloqueada
 B1.7,Backend · Fase 1 — API de consola,Backend,1,API de consola,Resolver el layout publicado,"La resolución que ocurre antes de responder: tomar el layout publicado, filtrar pestañas y paneles por rol, aplicar overrides.","• El front recibe solo lo resuelto y no aplica ningún filtro.
 • Una métrica oculta no llega ni en tabs, ni en catalog, ni en batch.
 • Un rol con override ve su composición propia sin huecos en la grilla.",pendiente,no,,equipo:backend fase:1 estado:pendiente
@@ -60,7 +60,7 @@ B1.11,Backend · Fase 1 — API de consola,Backend,1,API de consola,Unión discr
 • Ningún estado lleva campos de otro.
 • CARGANDO no existe del lado del servidor: es del cliente.",pendiente,no,,equipo:backend fase:1 estado:pendiente
 B1.12,Backend · Fase 1 — API de consola,Backend,1,API de consola,Gobierno obligatorio en DISPONIBLE y DEGRADADO,"base, capa, fuente, frescura, catalogVersion intersectados en los dos estados que muestran número.","• Un valor sin procedencia es imposible de construir en el tipo, no algo que se recuerde poner.
-• frescura es ISO 8601 y refleja cuándo se materializó, no «ahora» (B2.10).",pendiente,no,,equipo:backend fase:1 estado:pendiente
+• frescura es ISO 8601 y refleja cuándo se materializó, no «ahora» (B2.10).",hecho,no,,equipo:backend fase:1 estado:hecho
 B1.13,Backend · Fase 1 — API de consola,Backend,1,API de consola,Presentacion opcional,"Los rótulos y cifras de apoyo que el panel pinta alrededor del valor: label, medidor, comparativo, nota. Viajan con el dato, no con el layout, porque dependen del período.","• El backend devuelve los rótulos ya redactados; el front no los compone.
 • label lleva la unidad («USD · TOTAL»), y por eso la cifra grande no la lleva pegada: a 44px «USD 4.28M» no entra en un panel de colSpan 3.",pendiente,no,,equipo:backend fase:1 estado:pendiente bloqueada
 B1.14,Backend · Fase 1 — API de consola,Backend,1,API de consola,Transformar a las formas de Valor,"Las 11 formas que el contrato ya declara, con las reglas mínimas de §8 del documento.","• escalarConIntervalo y serieConBanda traen lo, hi y nivel obligatorios: prohibida la estimación puntual sin intervalo.
@@ -72,7 +72,7 @@ B1.15,Backend · Fase 1 — API de consola,Backend,1,API de consola,Validar regl
 • Una serieTemporal con cero puntos llega como DISPONIBLE con vacioRazon y vacioDesbloqueaCon, no como un array vacío: §8 pide que el vacío sea invitación a actuar, y un array vacío no alcanza para escribir «el período cierra el 1 de septiembre».",pendiente,no,,equipo:backend fase:1 estado:pendiente bloqueada
 B1.16,Backend · Fase 1 — API de consola,Backend,1,API de consola,"Seed de demo: 1 tenant, 1 layout, 1 pestaña, 4–6 paneles",B1.16 pide datos de demo. Esto pide que sean estables: el front necesita que la misma llamada devuelva lo mismo para poder escribir pruebas de integración contra HTTP.,"• Un script recrea el seed de cero.
 • Con el seed cargado, panels:batch devuelve los mismos valores en dos corridas.
-• El seed cubre al menos un panel por cada estado: DISPONIBLE, DEGRADADO, BLOQUEADO, ERROR. Sin eso, F2.1–F2.4 no se pueden probar contra el backend.",pendiente,no,,equipo:backend fase:1 estado:pendiente bloqueada
+• El seed cubre al menos un panel por cada estado: DISPONIBLE, DEGRADADO, BLOQUEADO, ERROR. Sin eso, F2.1–F2.4 no se pueden probar contra el backend.",parcial,no,,equipo:backend fase:1 estado:parcial bloqueada
 B1.20,Backend · Fase 1 — API de consola,Backend,1,API de consola,Seed determinista para desarrollo del front,B1.16 pide datos de demo. Esto pide que sean estables: el front necesita que la misma llamada devuelva lo mismo para poder escribir pruebas de integración contra HTTP.,"• Un script recrea el seed de cero.
 • Con el seed cargado, panels:batch devuelve los mismos valores en dos corridas.
 • El seed cubre al menos un panel por cada estado: DISPONIBLE, DEGRADADO, BLOQUEADO, ERROR. Sin eso, F2.1–F2.4 no se pueden probar contra el backend.",pendiente,si,,equipo:backend fase:1 estado:pendiente nueva
@@ -125,7 +125,7 @@ B2.4,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y
 • TTL corto, 5–15 minutos.",pendiente,no,,equipo:backend fase:2 estado:pendiente
 B2.5,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y cache,Estado DEGRADADO,"Si frescura > cadencia × tolerancia, el panel se marca degradado con razon y desbloqueaCon.","• El backend decide, no el front: nuevo-desarrollo.md §1.3 dice que el front no calcula degradación.
 • DEGRADADO sí lleva valor: muestra la cifra y declara la limitación. No es un estado sin dato.
-• La cadencia y la tolerancia son configurables por métrica, no una constante.",pendiente,no,,equipo:backend fase:2 estado:pendiente
+• La cadencia y la tolerancia son configurables por métrica, no una constante.",hecho,no,,equipo:backend fase:2 estado:hecho
 B2.6,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y cache,Estado BLOQUEADO,,"• Job fallido o precondición incumplida → sin valor, con razon y desbloqueaCon.
 • No se inventa un número aproximado. §8 de design.md: si un feed está vencido, el panel muestra estado, razón y qué lo desbloquea.",pendiente,no,,equipo:backend fase:2 estado:pendiente
 B2.7,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y cache,Estado SIN_PERMISO en el batch,,"• Publicar un layout deja de servir el anterior en la siguiente request.
