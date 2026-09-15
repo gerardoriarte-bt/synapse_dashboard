@@ -171,12 +171,17 @@ describe('§7.3 · los cuatro campos que la pantalla NO puede afirmar', () => {
     await screen.findByText('Ventas')
 
     const texto = container.textContent ?? ''
-    expect(texto).toContain('Faltan 4 datos')
-    for (const campo of ['Frescura', 'Ventana', 'Estado', 'En cuántos paneles']) {
+    expect(texto).toContain('Faltan 3 datos')
+    for (const campo of ['Frescura', 'Ventana', 'Estado']) {
       expect(texto).toContain(campo)
     }
     expect(texto).toContain('B1.17')
     expect(texto).toContain('B1.25')
+    // **«En cuántos paneles se usa» salió de la lista el 2026-09-15**: la
+    // columna `USO` lo cuenta sobre el layout publicado. Es el único de los
+    // cuatro que dejó de faltar.
+    expect(texto).not.toContain('En cuántos paneles se usa · contarlo')
+    expect(texto).toContain('del layout publicado')
   })
 
   it('declara que la acción de sincronizar no existe como ruta', async () => {

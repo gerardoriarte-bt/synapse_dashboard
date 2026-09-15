@@ -334,3 +334,80 @@ describe('lo que A2 y A3 todavía no pueden mostrar', () => {
     expect(texto).toContain('POST /admin/users')
   })
 })
+
+describe('A4 · la columna USO · divergencia 6', () => {
+  const conPanel = {
+    layout: layouts[1],
+    tabs: [
+      {
+        tab: { ID: 'tab-a', LayoutVersionID: 'l-1', Name: 'Resumen', OperationalQuestion: '¿?', SortOrder: 1, RoleIDs: [] },
+        panels: [
+          { ID: 'p-1', TabID: 'tab-a', MetricID: 'm-1', Type: 'kpi', ColStart: 1, ColSpan: 3, RowSpan: 4 },
+          { ID: 'p-2', TabID: 'tab-a', MetricID: 'm-1', Type: 'kpi', ColStart: 4, ColSpan: 3, RowSpan: 4 },
+        ],
+      },
+    ],
+  }
+
+  async function abrirCatalogo() {
+    await screen.findByText('Under Armour México')
+    await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
+    await screen.findByRole('table')
+  }
+
+  it('cuenta los paneles del layout PUBLICADO y nombra la pestaña', async () => {
+    base([http.get(`${API}/admin/layouts/:id`, () => ok(conPanel))])
+    montar()
+    await abrirCatalogo()
+
+    const fila = (await screen.findByText('Ventas')).closest('tr')
+    expect(within(fila as HTMLElement).getByText('2 panel(es)')).toBeInTheDocument()
+    expect(within(fila as HTMLElement).getByText('Resumen')).toBeInTheDocument()
+  })
+
+  it('avisa a cuántos ROLES afecta editarla · §7.3', async () => {
+    // «EDITAR SU NOMBRE, FAMILIA O TIPO CAMBIA LO QUE VEN 2 ROLES» · es lo que
+    // §7.3 pide antes de guardar una edición, y lo que hace útil al conteo
+    // mientras editar todavía no exista.
+    base([http.get(`${API}/admin/layouts/:id`, () => ok(conPanel))])
+    montar()
+    await abrirCatalogo()
+
+    const fila = (await screen.findByText('Ventas')).closest('tr')
+    expect(
+      within(fila as HTMLElement).getByText(/Editarla cambia lo que ven 2 rol\(es\) · CEO y Planner/),
+    ).toBeInTheDocument()
+  })
+
+  it('una métrica sin uso publicado NO dice «0» a secas', async () => {
+    // **Es toda la razón por la que F4.5 lo había descartado.** «0» invita a
+    // retirar una métrica que puede estar en un borrador.
+    base([http.get(`${API}/admin/layouts/:id`, () => ok(conPanel))])
+    montar()
+    await abrirCatalogo()
+
+    const fila = (await screen.findByText('Margen')).closest('tr')
+    expect(
+      within(fila as HTMLElement).getByText(/Sin uso publicado · puede estar en un borrador/),
+    ).toBeInTheDocument()
+    expect(within(fila as HTMLElement).queryByText('0 panel(es)')).toBeNull()
+  })
+
+  it('la columna declara que el conteo es del layout publicado', async () => {
+    base([http.get(`${API}/admin/layouts/:id`, () => ok(conPanel))])
+    montar()
+    await abrirCatalogo()
+
+    const encabezado = screen.getByRole('table').querySelector('thead')
+    expect(encabezado?.textContent).toContain('del layout publicado')
+  })
+
+  it('ya NO se declara ausente entre los faltantes', async () => {
+    base([http.get(`${API}/admin/layouts/:id`, () => ok(conPanel))])
+    const { container } = montar()
+    await abrirCatalogo()
+
+    expect(container.textContent).toContain('Faltan 3 datos')
+    expect(container.textContent).not.toContain('en cuántos paneles se usa')
+  })
+})

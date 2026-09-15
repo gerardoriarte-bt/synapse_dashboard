@@ -33,6 +33,7 @@ import {
 import { AdminChrome } from './AdminChrome'
 import { CatalogView } from './CatalogView'
 import { RoleEditor } from './RoleEditor'
+import { usoPorMetrica } from './uso'
 import { TenantList } from './TenantList'
 import { SurfaceMessage } from '../console/SurfaceMessage'
 import { Label } from '../../render/primitives/Label'
@@ -125,7 +126,10 @@ export function Admin() {
           error={mensajeDeRol(guardarRol.error) ?? mensajeDeRol(borrarRol.error)}
         />
       ) : pantalla === 'catalogo' ? (
-        <Catalogo query={catalogo} />
+        // **El uso sale del layout publicado y de los roles, que A2 ya pide.**
+        // No cuesta un viaje más, y contarlo sobre el publicado es lo correcto
+        // para la pregunta que responde: qué ven los usuarios hoy.
+        <Catalogo query={catalogo} uso={usoPorMetrica(detalle.data, roles.data ?? [])} />
       ) : (
         <TenantList
           tenants={lista}
@@ -141,7 +145,13 @@ export function Admin() {
  *  es de superficie entera y pinta su propio `<main>`; acá el chrome sigue en pie
  *  y lo que cambia es el contenido, igual que un estado de panel no reemplaza el
  *  shell. */
-function Catalogo({ query }: { query: ReturnType<typeof useAdminCatalog> }) {
+function Catalogo({
+  query,
+  uso,
+}: {
+  query: ReturnType<typeof useAdminCatalog>
+  uso: ReturnType<typeof usoPorMetrica>
+}) {
   if (query.isError) {
     return (
       <div className="flex flex-col gap-2">
@@ -169,6 +179,7 @@ function Catalogo({ query }: { query: ReturnType<typeof useAdminCatalog> }) {
     <CatalogView
       metrics={query.data?.metrics ?? []}
       rejected={query.data?.rejected ?? []}
+      uso={uso}
       cargando={query.data === undefined}
     />
   )

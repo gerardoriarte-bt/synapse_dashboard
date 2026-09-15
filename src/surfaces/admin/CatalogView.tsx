@@ -52,6 +52,7 @@ import { EmptyRow } from './EmptyRow'
 import { SkeletonRows } from './SkeletonRows'
 import type { Metric } from '../../api/types'
 import type { RejectedMetric } from '../../api/adapt'
+import type { UsoDeMetrica } from './uso'
 
 /** Las columnas, con su dueño según la tabla de §7.3. El dueño es dato y no
  *  comentario porque la pantalla lo pinta: un campo derivado y uno editorial se
@@ -68,11 +69,15 @@ const COLUMNAS = [
 
 /** Lo que §7.3 pide por métrica y esta pantalla **no puede afirmar**. Cada uno con
  *  su razón y qué lo desbloquea · la gramática de §8. */
+/** Lo que §7.3 pide por métrica y esta pantalla **no puede afirmar**.
+ *
+ *  **«En cuántos paneles se usa» salió de esta lista el 2026-09-15**, y es la
+ *  única que se fue: la columna `USO` la cuenta sobre el layout publicado, que
+ *  es el dato que A2 ya tiene en la mano. Ver `uso.ts`. */
 const FALTANTES = [
-  'Frescura · es del payload y depende del período · un catálogo no tiene período',
+  'Frescura · es del payload y depende del período · llega con la salud de feeds · B2.13',
   'Ventana · el cable no la trae y el adaptador la deja vacía · B1.17 y B1.25',
-  'Estado · el adaptador escribe DISPONIBLE fijo · pintarlo sería inventar · B1.17',
-  'En cuántos paneles se usa · contarlo sobre el publicado daría cero a las de borrador',
+  'Estado y su filtro · se DERIVA de la salud de la fuente, que no llega · B2.13',
 ] as const
 
 type Props = {
@@ -82,11 +87,14 @@ type Props = {
    *  dibuja, tampoco se puede asignar a un panel, y quien compone tiene que saber
    *  por qué no aparece en la lista. */
   rejected: readonly RejectedMetric[]
+  /** En cuántos paneles se usa cada métrica · calculado sobre el layout
+   *  **publicado**, que es lo que la gente ve. Ver `uso.ts`. */
+  uso: ReadonlyMap<string, UsoDeMetrica>
   /** Mientras el catálogo vuela · encabezado completo y filas de esqueleto. */
   cargando?: boolean
 }
 
-export function CatalogView({ metrics, rejected, cargando = false }: Props) {
+export function CatalogView({ metrics, rejected, uso, cargando = false }: Props) {
   // §7.3 pide filtro por ESTADO, y el estado no llega. Se ofrece por CAPA —que sí
   // llega y separa lo mismo que la pantalla busca: con qué respaldo puede afirmar
   // cada cosa— **y se dice que no es el filtro que el diseño pide**. Sustituirlo
@@ -174,14 +182,23 @@ export function CatalogView({ metrics, rejected, cargando = false }: Props) {
                 </div>
               </th>
             ))}
+            {/* `USO` no sale de la métrica sino del layout publicado, así que su
+                origen no es ninguno de los dos grupos de §7.3: es derivado de
+                otra cosa, y se dice. */}
+            <th className="text-left py-2 align-bottom">
+              <div className="flex flex-col gap-1">
+                <Label as="div">Uso</Label>
+                <Label as="div">del layout publicado</Label>
+              </div>
+            </th>
           </tr>
         </thead>
         <tbody>
-          {cargando && <SkeletonRows columnas={COLUMNAS.length} />}
+          {cargando && <SkeletonRows columnas={COLUMNAS.length + 1} />}
           {sinNada && (
             <EmptyRow
               clase="sistema"
-              columnas={COLUMNAS.length}
+              columnas={COLUMNAS.length + 1}
               razon="Este cliente no tiene métricas en el catálogo"
               salida="Se llenan sincronizando desde el modelo semántico · B1.18"
             />
@@ -189,7 +206,7 @@ export function CatalogView({ metrics, rejected, cargando = false }: Props) {
           {filtroVacio && (
             <EmptyRow
               clase="filtro"
-              columnas={COLUMNAS.length}
+              columnas={COLUMNAS.length + 1}
               razon={
                 q === ''
                   ? `Ninguna métrica es de la capa ${capa}`
@@ -209,6 +226,9 @@ export function CatalogView({ metrics, rejected, cargando = false }: Props) {
                   {c.leer(m)}
                 </td>
               ))}
+              <td className="py-2 text-celda">
+                <Uso uso={uso.get(m.id)} />
+              </td>
             </tr>
           ))}
         </tbody>
@@ -244,6 +264,31 @@ export function CatalogView({ metrics, rejected, cargando = false }: Props) {
           paneles afecta no tiene dónde dispararse
         </Label>
       </div>
+    </div>
+  )
+}
+
+/** La celda de `USO`.
+ *
+ *  **El cero se pinta acá y no en el cálculo**, y con su razón: una métrica que
+ *  no aparece en el layout publicado puede estar en un borrador, y decir «0» a
+ *  secas invita a retirarla. `uso.ts` no la incluye; esta celda lo traduce a
+ *  «sin uso publicado», que es lo que de verdad se sabe.
+ */
+function Uso({ uso }: { uso: UsoDeMetrica | undefined }) {
+  if (uso === undefined) {
+    return <Label as="div">Sin uso publicado · puede estar en un borrador</Label>
+  }
+  return (
+    <div className="flex flex-col gap-1">
+      <Label as="div">{`${String(uso.paneles)} panel(es)`}</Label>
+      <Label as="div">{uso.pestanas.join(' · ')}</Label>
+      {/* El aviso del `.pen`: «EDITAR SU NOMBRE, FAMILIA O TIPO CAMBIA LO QUE
+          VEN 2 ROLES». Es lo que §7.3 pide antes de guardar una edición, y
+          mientras editar no exista, es lo que hace útil al conteo. */}
+      {uso.roles.length > 0 && (
+        <Label as="div">{`Editarla cambia lo que ven ${String(uso.roles.length)} rol(es) · ${uso.roles.join(' y ')}`}</Label>
+      )}
     </div>
   )
 }

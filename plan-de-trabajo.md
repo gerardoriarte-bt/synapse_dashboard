@@ -4332,6 +4332,49 @@ acepta el tipo, sin decir que §5 gobierna, el conteo sin el total, la métrica 
 procedencia, la lista en blanco cuando ninguna sirve, y las incompatibles
 elegibles.
 
+### La columna `USO` de A4 · divergencia 6, cerrada el 2026-09-15
+
+`uso.ts` y la celda en `CatalogView`. **690 pruebas**, trece nuevas, diez
+mutaciones muertas.
+
+**F4.5 la había declarado ausente con un argumento que sigue siendo válido**:
+contarla sobre el layout publicado le da **cero** a una métrica que solo se usa
+en un borrador, y quien lo lea va a concluir «no se usa» y considerar retirarla.
+
+**Lo que cambió no es el argumento sino qué está en la mano.** Desde F4.3, la
+ficha de cliente ya pide el layout publicado y los roles del tenant, así que el
+conteo **no cuesta un viaje más**. Y el problema del cero se resuelve diciendo
+sobre qué se contó: la columna se rotula «del layout publicado», y una métrica
+que no aparece dice **«sin uso publicado · puede estar en un borrador»** en vez
+de «0».
+
+**Los borradores no se recorren**, y es una decisión de costo declarada: serían N
+viajes, uno por versión, para un dato que no cambia lo que los usuarios ven hoy.
+
+### Y el conteo sirve para lo que §7.3 realmente pide
+
+El `.pen` no muestra solo un número: la celda dice «2 · PANELES» y al desplegar,
+«PEGA EN · Inventory & Shopping» y **«EDITAR SU NOMBRE, FAMILIA O TIPO CAMBIA LO
+QUE VEN 2 ROLES»**. Ese aviso es lo que §7.3 pide antes de guardar una edición —
+«editar una métrica en uso advierte qué paneles afecta antes de guardar»— y es lo
+que hace útil al conteo **mientras editar todavía no existe**.
+
+**La regla que se aplica mal, y tiene prueba:** un rol con `pestanas` vacío **las
+ve todas**. Leerlo como «no ve ninguna» haría que A4 dijera que editar una
+métrica no afecta a nadie, que es lo contrario de lo que el aviso existe para
+decir.
+
+### Los faltantes de A4 bajan de cuatro a tres
+
+Y los tres que quedan cambiaron de razón con lo que se aprendió hoy: **frescura y
+estado ya no esperan un campo del catálogo sino la salud de feeds** · B2.13. La
+ventana sigue igual · B1.17 y B1.25.
+
+**Verificadas por mutación, diez:** el rol sin pestañas dejando de ver todas, las
+pestañas repetidas, el rol repetido, un panel sin métrica contado, los paneles sin
+sumar, el «0» a secas, el aviso de roles borrado, la columna sin declarar sobre
+qué contó, las pestañas sin nombrar, y el uso calculado sobre otro layout.
+
 ### Por qué F4.9 no se toma · y una trampa del propio parser
 
 **La interacción del arrastre no está declarada, y el bloqueo NO es del
