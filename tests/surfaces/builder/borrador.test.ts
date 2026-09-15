@@ -16,6 +16,8 @@ import {
   problemas,
   quitar,
   quitarPanel,
+  redimensionarPanel,
+  reubicarPanel,
   sembrar,
   sucio,
 } from '@/surfaces/builder/borrador'
@@ -253,5 +255,51 @@ describe('editarOpcion · una opción a la vez', () => {
     const tabs = editarOpcion(sembrar(detalle), 0, 0, 'maximo', 100)
     expect(tabs[0]?.panels[1]?.opciones).toBeUndefined()
     expect(tabs[1]?.panels[0]?.opciones).toBeUndefined()
+  })
+})
+
+describe('reubicarPanel · la fila es el ORDEN · F4.9', () => {
+  /** La pestaña «Resumen» ya trae `p-2` y `p-3`; se le suman dos vacíos. Cuatro. */
+  const tres = agregarPanel(agregarPanel(sembrar(detalle), 0, 'kpi', 6, 4), 0, 'kpi', 6, 4)
+
+  it('cambia la columna Y la posición en el arreglo', () => {
+    // **Las dos mitades juntas.** La columna se guarda; la fila no existe, es el
+    // orden. Hacerlas por separado deja un estado donde la disposición calculada
+    // no es ninguna de las dos.
+    const antes = tres[0]?.panels.map((p) => p.id)
+    const despues = reubicarPanel(tres, 0, 0, 7, 2)[0]?.panels
+    expect(despues?.map((p) => p.id)).not.toEqual(antes)
+    expect(despues?.[2]?.id).toBe('p-2')
+    expect(despues?.[2]?.colStart).toBe(7)
+  })
+
+  it('mover al principio lo pone primero', () => {
+    const despues = reubicarPanel(tres, 0, 2, 1, 0)[0]?.panels
+    expect(despues?.[0]?.colStart).toBe(1)
+    expect(despues?.[0]?.metricId).toBe('')
+  })
+
+  it('un destino más allá del final lo deja al final, sin perderlo', () => {
+    const despues = reubicarPanel(tres, 0, 0, 1, 99)[0]?.panels
+    expect(despues).toHaveLength(4)
+    expect(despues?.at(-1)?.id).toBe('p-2')
+  })
+
+  it('no toca las otras pestañas', () => {
+    expect(reubicarPanel(tres, 0, 0, 7, 2)[1]?.panels).toHaveLength(1)
+  })
+})
+
+describe('redimensionarPanel · el tope es el rango del TIPO', () => {
+  it('no pasa del máximo por más que se insista', () => {
+    let t = sembrar(detalle)
+    for (let i = 0; i < 10; i++) t = redimensionarPanel(t, 0, 0, 'colSpan', 1, 3, 8)
+    expect(t[0]?.panels[0]?.colSpan).toBe(8)
+  })
+
+  it('no baja del mínimo', () => {
+    let t = sembrar(detalle)
+    for (let i = 0; i < 10; i++) t = redimensionarPanel(t, 0, 0, 'colSpan', -1, 3, 8)
+    expect(t[0]?.panels[0]?.colSpan).toBe(3)
   })
 })

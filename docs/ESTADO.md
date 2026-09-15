@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**93 de 194 tareas cerradas.** 12 parciales · 84 pendientes · 5 diferidas.
+**94 de 194 tareas cerradas.** 12 parciales · 83 pendientes · 5 diferidas.
 
 
-## Front · 86 de 112
+## Front · 87 de 112
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -16,7 +16,7 @@
 | 1 · Consola y render/ | `████████████████████··` | 40/43 | 1 | 2 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `████████··············` | 4/11 | 1 | 3 |
-| 4 · Admin y Builder | `█████████████·········` | 14/23 | 2 | 7 |
+| 4 · Admin y Builder | `██████████████········` | 15/23 | 2 | 6 |
 | 5 · Pruebas y pulido | `████████████··········` | 7/13 | 1 | 4 |
 
 ## Backend · 7 de 82
@@ -65,7 +65,7 @@
 
 ---
 
-## Bloqueadas · 27
+## Bloqueadas · 26
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -77,7 +77,6 @@ Lo que el front espera del backend está detallado en
 - **F3.2** · Construir ContextoDePanel al abrir
 - **F3.6** · Reutilizar cuerpos de panel para respuestas estructuradas
 - **F4.4** · Configuración de agente Snowflake por tenant
-- **F4.9** · Canvas de 12 columnas — arrastrar y colocar
 - **F5.13** · Períodos libres en el selector
 
 **Backend**

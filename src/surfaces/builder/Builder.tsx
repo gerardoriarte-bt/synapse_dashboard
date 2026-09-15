@@ -39,6 +39,8 @@ import {
 import { BuilderChrome } from './BuilderChrome'
 import { ContextView } from './ContextView'
 import { TabEditor } from './TabEditor'
+import { Canvas } from './Canvas'
+import { Library } from './Library'
 import { PanelConfigurator } from './PanelConfigurator'
 import { PublishBar } from './PublishBar'
 import { RolePreview } from './RolePreview'
@@ -49,6 +51,8 @@ import {
   agregar,
   agregarPanel,
   cambiarTipo,
+  redimensionarPanel,
+  reubicarPanel,
   editar,
   editarOpcion,
   editarPanel,
@@ -69,11 +73,6 @@ import type { PantallaId } from './pantallas'
 /** Qué espera cada pantalla. Acá y no en un comentario: la pantalla lo pinta, así
  *  que quien la abre se entera sin leer el código. */
 const PENDIENTES: Partial<Record<PantallaId, { razon: string; desbloqueaCon: string }>> = {
-  canvas: {
-    razon:
-      'design.md describe el resultado del arrastre —slot vacío, badge HEREDADO, colisión marcada— y no la interacción: qué agarra el cursor, cómo se redimensiona, qué pasa al soltar fuera de la grilla.',
-    desbloqueaCon: 'Una decisión de diseño · F4.9 no se toma sin ella',
-  },
   grafico: {
     razon:
       'La biblioteca lista los gráficos por grupo y esa lista la sirve /config/plots, que no existe.',
@@ -120,6 +119,12 @@ export function Builder() {
   // corrige, que es un parpadeo y una ventana donde `sucio` miente.
   const [borrador, setBorrador] = useState<{ layoutId: string; tabs: TabParaGuardar[] } | null>(null)
   const [seleccion, setSeleccion] = useState<{ tab: number; panel: number } | null>(null)
+  /** **La pestaña que se compone en B2.** El `.pen` la pone en el chrome —
+   *  `PESTAÑA · eCommerce Overview`— porque el canvas compone UNA, no todas: un
+   *  lienzo con los paneles de las cuatro pestañas encimados no es una
+   *  composición, es una superposición. */
+  const [tabActiva, setTabActiva] = useState(0)
+  const [arrastrando, setArrastrando] = useState<string | null>(null)
 
   // **Las dos tablas que el binder necesita** · F4.10. `/config/blocks` manda qué
   // formas acepta cada tipo y qué spans; el catálogo de admin manda las métricas
@@ -221,7 +226,12 @@ export function Builder() {
         rol: roles.data?.find((r) => r.id === rolActivo)?.nombre ?? null,
         // La pestaña en foco sale de qué panel se está configurando. Sin
         // selección no hay una: se dice «Todas», que es lo que el editor muestra.
-        pestana: seleccion === null ? null : (tabs[seleccion.tab]?.nombre ?? null),
+        pestana:
+          pantalla === 'canvas'
+            ? (tabs[tabActiva]?.nombre ?? null)
+            : seleccion === null
+              ? null
+              : (tabs[seleccion.tab]?.nombre ?? null),
         // **Cuenta pestañas tocadas, no pulsaciones.** Un contador de teclas
         // diría «47 cambios» por escribir un nombre.
         cambios: semilla === null ? 0 : tabs.filter((t, i) => JSON.stringify(t) !== JSON.stringify(semilla[i])).length,
@@ -250,6 +260,82 @@ export function Builder() {
           <Label as="div">{pendiente.razon}</Label>
           <Label as="div">Se desbloquea con · {pendiente.desbloqueaCon}</Label>
         </div>
+      ) : pantalla === 'canvas' ? (
+        semilla === null ? (
+          <Label as="div">Elegí una versión en «Contexto de edición» para componerla</Label>
+        ) : tabs.length === 0 ? (
+          <Label as="div">Esta versión no tiene pestañas · se agregan en «Contexto de edición»</Label>
+        ) : (
+          <div className="flex gap-6">
+            <Library
+              bloques={listaDeBloques}
+              arrastrando={arrastrando}
+              onArrastrar={setArrastrando}
+            />
+            <div className="flex-1 flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <Label id="canvas-pestana">Componiendo</Label>
+                <select
+                  aria-labelledby="canvas-pestana"
+                  className="bg-w2 text-ink text-celda rounded-sm px-2 py-1 border border-w4"
+                  value={String(tabActiva)}
+                  onChange={(e) => {
+                    setTabActiva(Number(e.target.value))
+                    // La selección era de otra pestaña: su índice de panel no
+                    // significa nada acá.
+                    setSeleccion(null)
+                  }}
+                >
+                  {tabs.map((t, i) => (
+                    <option key={t.id ?? `nueva-${String(i)}`} value={String(i)}>
+                      {t.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <Canvas
+                panels={tabs[tabActiva]?.panels ?? []}
+                tabla={tabla}
+                metricas={catalogo.data?.metrics ?? []}
+                seleccionado={seleccion?.tab === tabActiva ? seleccion.panel : null}
+                onSeleccionar={(i) =>
+                  setSeleccion(i === null ? null : { tab: tabActiva, panel: i })
+                }
+                onReubicar={(i, colStart, destino) =>
+                  cambiar(reubicarPanel(tabs, tabActiva, i, colStart, destino))
+                }
+                onRedimensionar={(i, campo, delta) => {
+                  const p = tabs[tabActiva]?.panels[i]
+                  const b = p === undefined ? undefined : tabla.get(p.tipo as PanelConfig['tipo'])
+                  if (b === undefined) return
+                  // **El tope es el rango del TIPO, no la grilla.** Un `kpi`
+                  // ocupa entre 3 y 4 columnas, no entre 1 y 12.
+                  cambiar(
+                    redimensionarPanel(
+                      tabs,
+                      tabActiva,
+                      i,
+                      campo,
+                      delta,
+                      campo === 'colSpan' ? b.colSpanMin : b.rowSpanMin,
+                      campo === 'colSpan' ? b.colSpanMax : b.rowSpanMax,
+                    ),
+                  )
+                }}
+                onSoltarTipo={(tipo, colStart, destino) => {
+                  const b = tabla.get(tipo as PanelConfig['tipo'])
+                  if (b === undefined) return
+                  const conNuevo = agregarPanel(tabs, tabActiva, tipo, b.colSpanMin, b.rowSpanMin)
+                  const ultimo = (conNuevo[tabActiva]?.panels.length ?? 1) - 1
+                  cambiar(reubicarPanel(conNuevo, tabActiva, ultimo, colStart, destino))
+                  setArrastrando(null)
+                }}
+                arrastrando={arrastrando}
+              />
+            </div>
+          </div>
+        )
       ) : pantalla === 'preview' ? (
         <Preview
           roles={roles.data ?? []}

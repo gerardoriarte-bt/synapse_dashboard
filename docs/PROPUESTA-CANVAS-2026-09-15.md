@@ -1,8 +1,21 @@
 # Propuesta de spec · la interacción del canvas (B2 · F4.9)
 
-**Estado: APROBADA el 2026-09-15 (humano), con una condición: «debe ser fácil y
-clara la interacción para el armado de dashboard».** Y con una corrección de
-fuente que cambió la mitad del documento — ver abajo.
+**Estado: APROBADA e IMPLEMENTADA el 2026-09-15.** F4.9 está cerrada. Este
+documento queda como el registro de por qué el canvas hace lo que hace; lo que
+cambie de acá en adelante se decide sobre él.
+
+Aprobada por el humano con una condición: «debe ser fácil y clara la interacción
+para el armado de dashboard». Se tradujo en dos cosas verificables, las dos ya en
+pantalla: **la grilla visible con guías** mientras se arrastra, y el aviso de
+colisión que **nombra el panel**. Se sumó una tercera del `.pen` —«Span al
+soltar»—: el rectángulo que va a ocupar, dibujado antes de soltar, y con la razón
+adentro cuando no entra.
+
+**Lo que la implementación agregó a este documento**, y que no se sabía al
+escribirlo: `PanelConfigurado` **no tiene `rowStart`**. La fila la resuelve la
+colocación automática y el único control es el orden, así que «soltar en la fila
+5» se traduce a una posición del arreglo. La consecuencia que hay que ver es que
+**no se puede dejar un hueco a propósito**.
 
 **El `.pen` tenía B2 dibujada y este documento no lo sabía.** Se escribió leyendo
 solo `design.md` §7.2, que describe el resultado del arrastre y no la

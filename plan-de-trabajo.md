@@ -3492,7 +3492,7 @@ semántica en blanco en vez de «—». Las seis mueren.
 ### F4.6 ✅ `surfaces/builder/` — composición visual
 ### F4.7 ✅ Selector de tenant y plantilla base
 ### F4.8 ✅ Editor de pestañas: nombre, pregunta operativa, orden, sugerencias
-### F4.9 ⬜ Canvas de 12 columnas — arrastrar y colocar · 🔒 depende de una decisión de diseño
+### F4.9 ✅ Canvas de 12 columnas — arrastrar y colocar
 ### F4.10 ✅ Configurador de panel: métrica, tipo, spans, opciones
 ### F4.11 ✅ Validación en tiempo real contra `/config/blocks`
 ### F4.12 ⚠️ Preview por rol
@@ -4096,6 +4096,95 @@ persistir, el contexto sin rótulos, el contador ausente, el contador contando
 pulsaciones, guardar ofrecido sin cambios, guardar sobre una versión publicada,
 publicar sin veredicto, el selector de rol desaparecido, y el vacío de roles sin
 decir a dónde ir.
+
+### F4.9 cerrada el 2026-09-15 · el canvas
+
+`disposicion.ts`, `grupos.ts`, `Library`, `Canvas`, más `reubicarPanel` y
+`redimensionarPanel` en el borrador. **656 pruebas**, cuarenta y siete nuevas,
+veintiuna mutaciones muertas.
+
+**La propuesta se aprobó y se revisó contra el `.pen`** —
+`docs/PROPUESTA-CANVAS-2026-09-15.md`—, con una condición del humano: «debe ser
+fácil y clara la interacción». Eso se tradujo en dos cosas concretas que el frame
+`B2` ya dibujaba: la grilla visible con guías, y el aviso de colisión que
+**nombra el panel** en vez de solo marcarlo.
+
+### El hecho del modelo que condicionó todo
+
+**`PanelConfigurado` no tiene `rowStart`.** Declara `colStart`, `colSpan` y
+`rowSpan`; la fila la resuelve la colocación automática de CSS y el único control
+sobre ella es **el orden de los paneles**. Dos consecuencias que el canvas no
+puede esquivar:
+
+1. **Mover hacia arriba o hacia abajo es reordenar**, no fijar una fila. Soltar en
+   la fila 5 se traduce a una posición del arreglo · `ordenPara`.
+2. **No se puede dejar un hueco a propósito.** Los huecos que se ven son los que
+   la colocación dejó, y por eso se **derivan** en vez de guardarse.
+
+Y para saber qué panel está bajo el cursor hay que saber en qué fila cayó cada
+uno — eso lo decide el navegador, así que `disposicion.ts` **repite el algoritmo
+de `grid-auto-flow: row`**: orden del documento, primera fila libre desde un
+cursor que no retrocede. No es `dense`, y hay una prueba de que un hueco que quedó
+atrás no se rellena.
+
+### Las celdas son elementos, y eso borra toda la matemática de píxeles
+
+El lienzo pinta **12 × N celdas reales** detrás de los paneles, y cada una es su
+propio destino de soltado. «En qué celda cayó el cursor» lo contesta el navegador
+y no una cuenta con `getBoundingClientRect` —que además habría que recalcular en
+cada scroll—. **Y esas mismas celdas son las guías** que §7.2 pide. Una cosa para
+las dos, y en jsdom se puede probar, que con píxeles no: ahí todo mide cero.
+
+### Tres cosas que el arnés encontró y no eran pruebas débiles
+
+**Una guarda que dependía de un estado que a veces miente.** La verificación del
+borde usaba `arrastrando` —el estado que marca el ítem en vuelo— en vez del dato
+que el navegador entrega al soltar. Una prueba que soltaba sin pasar por la
+biblioteca pasaba igual. Ahora el estado solo alimenta la vista previa; las
+decisiones salen del `dataTransfer`.
+
+**Una verificación multifila que no se podía alcanzar.** La colocación revisaba
+las `rowSpan` filas antes de aceptar una posición, y la mutación que la reducía a
+una sola **sobrevivía**. No era una prueba floja: es que **alcanza con la primera
+fila, y se puede demostrar** — un panel que bloqueara una fila posterior sin
+bloquear la primera tendría que empezar más abajo que el cursor, y el cursor no
+retrocede. Comprobado además por fuerza bruta sobre **531.441 combinaciones de
+cuatro paneles: cero diferencias**. Se sacó el código en vez de inventarle un
+caso: **código defensivo que no se puede ejercitar es código que nadie va a
+mantener bien.**
+
+**Y un fixture que no distinguía.** Las pruebas de reubicación movían paneles en
+horizontal, donde el orden no cambia el resultado. La mutación que quitaba el
+reordenamiento sobrevivía; hace falta un movimiento vertical para verla.
+
+### El agrupado de la biblioteca vive en el front, y es una deuda declarada
+
+§7.2 nombra los cinco grupos y no dice qué tipo va en cuál; el reparto sale del
+`.pen`. **`/config/blocks` no manda el grupo**, así que la tabla está acá — la
+misma clase de duplicación que `PARAM_SCHEMAS`, y merece la misma propuesta de
+spec. Mientras tanto, **un tipo que el backend agregue no desaparece**: sale
+aparte, con su rótulo, igual que `adaptCatalog` hace con una forma desconocida.
+
+### Lo que no se implementó, con la razón
+
+**El arrastre continuo del handle.** Los handles redimensionan de a una celda por
+pulsación, y `shift` + flechas hace lo mismo. Un arrastre continuo que termina
+redondeando a la celda **no agrega ninguna posición alcanzable**: agrega la
+sensación del gesto. Es una mejora de interacción, no una capacidad que falte.
+
+**Y el badge `HEREDADO` sigue fuera**, como F4.7 ya había declarado: el cable no
+tiene herencia — ni vertical del tenant, ni plantillas, ni un campo que diga de
+dónde viene un panel.
+
+**Verificadas por mutación, veintiuna:** el alto sin marcar, el cursor
+retrocediendo, el `colStart` sin recortar, `choqueCon` sin ignorar el movido,
+pegado contado como encima, los huecos sin fundir, los huecos inventados abajo, la
+colisión sin nombrar, el borde sin verificar, el span sin salir del bloque, el
+teclado saltándose las reglas, `shift` sin redimensionar, `Escape` sin
+deseleccionar, la vista previa apagada, la fórmula de altura cambiada, los handles
+sin seleccionar, un tipo desconocido tragado, un grupo vacío desaparecido, el
+rango del tipo ignorado, reubicar sin reordenar, y la biblioteca sin declarar el
+rango.
 
 ### Por qué F4.9 no se toma · y una trampa del propio parser
 

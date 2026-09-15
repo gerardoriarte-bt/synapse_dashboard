@@ -105,7 +105,7 @@ describe('las pantallas que todavía no se pueden construir', () => {
     // Tres: B1 es F4.7, B4 es F4.10 y B5 es F4.12. Una pantalla que se declara
     // pendiente no es lo mismo que una que no está.
     montar()
-    const construidas = ['contexto', 'metrica', 'preview']
+    const construidas = ['contexto', 'canvas', 'metrica', 'preview']
     for (const p of PANTALLAS.filter((x) => !construidas.includes(x.id))) {
       await userEvent.click(screen.getByRole('button', { name: p.nombre }))
       expect(screen.getByText('Pendiente')).toBeInTheDocument()
@@ -131,15 +131,14 @@ describe('las pantallas que todavía no se pueden construir', () => {
     expect(await screen.findByLabelText('Cliente')).toBeInTheDocument()
   })
 
-  it('B2 espera una decisión de DISEÑO, no un endpoint', async () => {
-    // La distinción que importa: §7.2 describe el resultado del arrastre —slot
-    // vacío, badge HEREDADO, colisión marcada— y no la interacción. F4.9 no se
-    // toma sin esa decisión, y decirlo acá es lo que impide que alguien la
-    // invente creyendo que solo falta cable.
+  it('B2 ya NO se declara pendiente · la decisión de diseño llegó', async () => {
+    // Estuvo bloqueada mientras la interacción del arrastre no estaba
+    // declarada. La propuesta se aprobó el 2026-09-15 y se revisó contra el
+    // frame `B2` del `.pen`, así que F4.9 se tomó.
     montar()
     await userEvent.click(screen.getByRole('button', { name: 'Canvas' }))
-    expect(screen.getByText(/decisión de diseño/i)).toBeInTheDocument()
-    expect(screen.getByText(/no la interacción/)).toBeInTheDocument()
+    expect(screen.queryByText('Pendiente')).toBeNull()
+    expect(screen.queryByText(/decisión de diseño/i)).toBeNull()
   })
 
   it('B6 nombra los dos campos que el cable no trae', async () => {

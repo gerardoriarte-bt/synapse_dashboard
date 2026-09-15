@@ -245,3 +245,54 @@ export function editarOpcion(
       : t,
   )
 }
+
+/** Mover un panel a otra columna y a otra posición del orden · F4.9.
+ *
+ *  **Las dos mitades juntas y no dos funciones.** La columna se guarda y la fila
+ *  no existe: la fila es el orden. Hacerlas por separado deja un estado
+ *  intermedio donde el panel ya cambió de columna y todavía no de orden, y ahí
+ *  la disposición calculada no es ninguna de las dos. */
+export function reubicarPanel(
+  tabs: readonly TabParaGuardar[],
+  indiceTab: number,
+  indicePanel: number,
+  colStart: number,
+  indiceDestino: number,
+): TabParaGuardar[] {
+  return tabs.map((t, i) => {
+    if (i !== indiceTab) return t
+    const panel = t.panels[indicePanel]
+    if (panel === undefined) return t
+    const resto = t.panels.filter((_, j) => j !== indicePanel)
+    const destino = Math.max(0, Math.min(indiceDestino, resto.length))
+    return {
+      ...t,
+      panels: [...resto.slice(0, destino), { ...panel, colStart }, ...resto.slice(destino)],
+    }
+  })
+}
+
+/** Cambiar un span por pasos de UNA celda, acotado al rango del tipo.
+ *
+ *  §7.2: «siempre en unidades de grilla». Y el tope no es la grilla sino **el
+ *  rango del tipo**: un `kpi` ocupa entre 3 y 4 columnas, no entre 1 y 12. */
+export function redimensionarPanel(
+  tabs: readonly TabParaGuardar[],
+  indiceTab: number,
+  indicePanel: number,
+  campo: 'colSpan' | 'rowSpan',
+  delta: number,
+  min: number,
+  max: number,
+): TabParaGuardar[] {
+  return tabs.map((t, i) =>
+    i === indiceTab
+      ? {
+          ...t,
+          panels: t.panels.map((p, j) =>
+            j === indicePanel ? { ...p, [campo]: Math.max(min, Math.min(p[campo] + delta, max)) } : p,
+          ),
+        }
+      : t,
+  )
+}
