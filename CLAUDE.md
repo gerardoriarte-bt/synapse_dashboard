@@ -379,6 +379,17 @@ numeración contra la de ellos, que **no coincide**.
 `SYNAPSE_METRIC_CATALOG` no existe; el SQL y la instrucción están en
 `docs/snowflake/`. **Nosotros no corremos nada ahí.**
 
+### Pendiente que no es código · diferido a propósito
+
+**Rotar las credenciales de `docs/backdocs/environments.txt`** — contraseña de la
+RDS de producción, `JWT_SECRET`, `DATA_ENCRYPTION_KEY` y llaves de AWS activas.
+**Nunca llegaron al historial de git**, verificado con `git log -S`, y el archivo
+está ignorado desde el 2026-09-14. Pero circularon por un archivo compartido.
+
+**Decidido el 2026-09-15 (humano): se hace más adelante.** Queda escrito acá y no
+en el plan porque no es una tarea del front — es operación. **Está diferido, no
+olvidado**: si alguien lo vuelve a levantar, ya se decidió.
+
 **Para el contexto de cómo se llegó hasta acá**, las bitácoras cuentan lo que
 costó descubrir y no está en el log: `docs/BITACORA-2026-09-02.md` la jornada que
 cerró la Fase 1, `docs/BITACORA-2026-09-04.md` los dos días que dejaron el front

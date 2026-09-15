@@ -1128,10 +1128,28 @@ tres columnas desde B0.3 —`tab_ids uuid[]`, `hidden_metric_ids uuid[]`,
   responder. Un CRUD que los escriba mal recompone la consola de otro rol sin
   que nadie publique nada.
 
-**Lo que falta decidir antes de escribir una línea:** ¿PR a su repositorio, o
-mantenemos un fork? Es la pregunta que el `2de76de` ya había contestado que no,
-y ahora hay que contestarla de nuevo para este caso. **No se empieza sin eso**:
-escribir el código y después discutir dónde vive es cómo se pierde el trabajo.
+**Dónde vive el código: en un FORK.** Decidido el 2026-09-15 (humano). Un fork de
+`AntPack-dev/synapse-api-go` sobre `feature/dynamic-dashboard-backend`, y ahí se
+escriben B4.8 y B4.9.
+
+**Es coherente con `2de76de` y no lo contradice.** Esa regla dice que no se toca
+el repositorio de otro equipo *desde afuera*; un fork no lo toca. Escribimos en
+nuestro lado y la decisión de integrarlo sigue siendo de ellos — que era el punto
+de la regla: «les saca la decisión de las manos».
+
+**Lo que un fork trae, y hay que sostenerlo:**
+
+- **Deriva.** Su rama avanza y la nuestra no se entera sola. El aviso ya existe:
+  `npm run backend-drift` compara el commit que el cable declara contra la cabeza
+  de su rama. **Antes de tocar el fork se corre**, y si se movieron, primero se
+  rebasa.
+- **Un fork que nunca vuelve es un segundo backend.** Ese es el riesgo real, no
+  el técnico: dos servicios que hacen casi lo mismo y divergen. **Queda abierto
+  cómo vuelve el código a ellos** —PR desde el fork, parche, o que lo tomen
+  cuando quieran— y eso se decide **antes del primer merge a su rama**, no
+  después.
+- **El despliegue no cambia hoy.** El servicio que corre sigue siendo el suyo. Si
+  algún día se despliega el fork, esa es otra decisión y no esta.
 
 **Criterio de aceptación.**
 - Las cuatro operaciones existen bajo `AdminOnlyMiddleware` y responden con el
@@ -1142,7 +1160,9 @@ escribir el código y después discutir dónde vive es cómo se pierde el trabaj
   oculta directamente.
 - `layout_overrides` escrito por el CRUD se refleja en `GET /config/tabs/:tabId`
   del rol afectado **sin republicar el layout**.
-- Queda escrito dónde vive el código —PR o fork— antes del primer commit.
+- El fork está rebasado sobre su rama **al empezar** —`npm run backend-drift` en
+  verde— y se vuelve a rebasar antes de proponer el código de vuelta. Un fork
+  escrito sobre una base vieja no se puede integrar sin rehacerlo.
 ### B4.9 ⬜ Preview por rol · **LO IMPLEMENTA EL FRONT** · 2026-09-15
 **Decidido el 2026-09-15 (humano), junto con B4.8** y por la misma razón: son
 vecinas, tienen la misma forma, y las dos bloquean superficie de admin que hoy no
