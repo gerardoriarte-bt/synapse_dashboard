@@ -3298,14 +3298,6 @@ semántica en blanco en vez de «—». Las seis mueren.
 ### F4.7 ✅ Selector de tenant y plantilla base
 ### F4.8 ✅ Editor de pestañas: nombre, pregunta operativa, orden, sugerencias
 ### F4.9 ⬜ Canvas de 12 columnas — arrastrar y colocar · 🔒 depende de una decisión de diseño
-**Espera del backend.** *(No es del backend: es de DISEÑO. Va acá porque es la única marca que el plan tiene para «esta tarea no se puede tomar y la razón no es nuestra».)*
-
-**La interacción del arrastre no está declarada.** §7.2 describe el RESULTADO —slot vacío con su label, badge `HEREDADO`, colisión marcada, nada se suelta encima— y no qué hace el cursor: qué agarra, cómo se redimensiona, qué pasa al soltar fuera de la grilla, si hay teclado.
-
-**Hay propuesta escrita:** `docs/PROPUESTA-CANVAS-2026-09-15.md`, con cinco puntos, la razón de cada uno y la alternativa descartada. Espera revisión de diseño.
-
-**Y la mitad de `HEREDADO` queda fuera igual**, aunque el arrastre se decida: el cable no tiene herencia —ni vertical del tenant, ni plantillas, ni un campo que diga de dónde viene un panel—, que es la misma carencia que F4.7 declaró en B1.
-
 ### F4.10 ✅ Configurador de panel: métrica, tipo, spans, opciones
 ### F4.11 ✅ Validación en tiempo real contra `/config/blocks`
 ### F4.12 ⬜ Preview por rol
@@ -3786,6 +3778,44 @@ la forma de la métrica elegida**, no los 49. Consume `/config/plots` vía
   publicar que el gráfico va a quedar vacío en un tenant chico.
 - Con `serieConBanda`, solo aparecen gráficos con `soportaBanda`.
 - No elegir nada es válido: el panel usa el gráfico por defecto de su tipo.
+
+### Por qué F4.9 no se toma · y una trampa del propio parser
+
+**La interacción del arrastre no está declarada, y el bloqueo NO es del
+backend.** §7.2 describe el RESULTADO —slot vacío con su label, badge
+`HEREDADO`, colisión marcada, nada se suelta encima— y no qué hace el cursor: qué
+agarra, cómo se redimensiona, qué pasa al soltar fuera de la grilla, si hay
+teclado.
+
+**Hay propuesta escrita:** `docs/PROPUESTA-CANVAS-2026-09-15.md`, con cinco
+puntos, la razón de cada uno y la alternativa descartada. Espera revisión de
+diseño.
+
+**Y la mitad de `HEREDADO` queda fuera igual**, aunque el arrastre se decida: el
+cable no tiene herencia —ni vertical del tenant, ni plantillas, ni un campo que
+diga de dónde viene un panel—, que es la misma carencia que F4.7 declaró en B1.
+
+### Dos formas de escribir esto mal, y las dos se cometieron primero
+
+**Una.** El bloqueo se marcó con `**Espera del backend.**`, que era la única
+forma que el plan tenía de decir «esta tarea no se puede tomar y la razón no es
+nuestra». Eso metió F4.9 en `docs/PARA-BACKEND.md` — **el documento que se le
+manda al equipo de backend**. Una pregunta de diseño no es de ellos. El `🔒` del
+título alcanza: `plan-a-csv.py` lo lee y marca la tarea bloqueada sin generar un
+pedido.
+
+**Dos, y es del parser.** Puesta la explicación como `**Descripción.**` debajo del
+encabezado de F4.9, **se la quedaron también F4.6, F4.7 y F4.8**. No es un bug:
+es la regla de agrupado —«varias tareas pueden compartir un bloque de descripción;
+acá se les reparte a todas»— y F4.6 a F4.9 son cuatro encabezados seguidos sin
+cuerpo. Darle cuerpo al último se lo da a los cuatro, y tres de ellos estaban
+cerradas.
+
+**La regla que queda escrita: en una corrida de encabezados, el cuerpo es de
+todos.** Para decir algo de una sola tarea del grupo hay dos caminos —darle
+cuerpo propio a cada una, o escribirlo en una sección de evidencia como ésta, que
+el parser no reparte—. Se eligió el segundo, que es el que ya usan las once
+tareas cerradas de esta fase.
 
 ### F4.17 ⬜ `ComparisonBody` + `ComparePlot`
 ### F4.18 ⬜ `MatrixBody` + `HeatmapPlot`
