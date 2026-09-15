@@ -42,11 +42,27 @@ type Props = {
   onAgregar: () => void
   onQuitar: (indice: number) => void
   onMover: (indice: number, direccion: -1 | 1) => void
+  /** Elegir un panel para configurarlo · F4.10. El configurador no va adentro
+   *  de acá: necesita la tabla de bloques y el catálogo, que son del
+   *  contenedor. */
+  onPanel: (indiceTab: number, indicePanel: number) => void
+  onAgregarPanel: (indiceTab: number) => void
+  seleccion: { tab: number; panel: number } | null
   /** Si el borrador difiere de lo que el servidor devolvió. */
   sucio: boolean
 }
 
-export function TabEditor({ tabs, onEditar, onAgregar, onQuitar, onMover, sucio }: Props) {
+export function TabEditor({
+  tabs,
+  onEditar,
+  onAgregar,
+  onQuitar,
+  onMover,
+  onPanel,
+  onAgregarPanel,
+  seleccion,
+  sucio,
+}: Props) {
   const invalidas = tabs.filter((t) => problemas(t).length > 0).length
 
   return (
@@ -127,6 +143,39 @@ export function TabEditor({ tabs, onEditar, onAgregar, onQuitar, onMover, sucio 
               <Label as="div">
                 {`${String(t.panels.length)} panel(es) · ${t.roles.length === 0 ? 'todos los roles' : `${String(t.roles.length)} rol(es)`} · se conservan al guardar`}
               </Label>
+
+              {/* Los paneles de la pestaña · F4.10. Sin canvas todavía, así que
+                  se listan en el orden en que están y se configuran uno a uno. */}
+              <div className="flex flex-wrap items-center gap-2">
+                {t.panels.map((pan, j) => (
+                  <button
+                    key={pan.id ?? `nuevo-${String(j)}`}
+                    type="button"
+                    onClick={() => onPanel(i, j)}
+                    aria-pressed={seleccion?.tab === i && seleccion.panel === j}
+                    className={
+                      'text-label tracking-rotulo uppercase px-2 py-1 rounded-sm ' +
+                      (seleccion?.tab === i && seleccion.panel === j
+                        ? 'bg-w3 text-ink'
+                        : 'text-dim hover:bg-w3')
+                    }
+                  >
+                    {/* El tipo y no el nombre de la métrica: el nombre vive en el
+                        catálogo y esta lista no lo tiene. Un id crudo sería
+                        plomería. */}
+                    {pan.tipo}
+                    {pan.metricId === '' ? ' · sin métrica' : ''}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => onAgregarPanel(i)}
+                  aria-label={`Agregar panel a ${t.nombre}`}
+                  className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm border border-w4 text-ink hover:bg-w3"
+                >
+                  Agregar panel
+                </button>
+              </div>
 
               {t.id === undefined && (
                 // Sin `id` el servicio la CREA. No es un detalle de implementación:

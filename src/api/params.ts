@@ -87,7 +87,13 @@ export const PARAM_SCHEMAS: Partial<Record<PanelType, Record<string, ParamSpec>>
   },
 }
 
-function describe(spec: ParamSpec): string {
+/** Qué valores acepta un param, en la lengua del producto.
+ *
+ *  **Exportada desde F4.10**, para que el configurador del builder muestre
+ *  exactamente lo que el validador acepta. Si el builder escribiera su propia
+ *  descripción, la pantalla diría «desc, asc» el día que el esquema sume
+ *  «natural» y nadie se enteraría hasta que un panel saliera degradado. */
+export function describirParam(spec: ParamSpec): string {
   switch (spec.kind) {
     case 'enum':
       return spec.values.map((v) => `«${v}»`).join(', ')
@@ -157,7 +163,7 @@ export function validateParams(
     if (!isValid(spec, value)) {
       out.invalid.push({
         param,
-        reason: `«${param}» tiene el valor ${JSON.stringify(value)} y espera ${describe(spec)}`,
+        reason: `«${param}» tiene el valor ${JSON.stringify(value)} y espera ${describirParam(spec)}`,
       })
       continue
     }

@@ -23,15 +23,29 @@
  *  primera dice qué la desbloquea, que es lo que §8 pide de cualquier estado.
  */
 import { useState } from 'react'
-import { useLayoutDetail, useLayouts, useTenants } from '../../api/hooks'
+import { useAdminCatalog, useBlocks, useLayoutDetail, useLayouts, useTenants } from '../../api/hooks'
 import { BuilderChrome } from './BuilderChrome'
 import { ContextView } from './ContextView'
 import { TabEditor } from './TabEditor'
-import { agregar, editar, mover, quitar, sembrar, sucio } from './borrador'
+import { PanelConfigurator } from './PanelConfigurator'
+import {
+  agregar,
+  agregarPanel,
+  cambiarTipo,
+  editar,
+  editarPanel,
+  mover,
+  quitar,
+  quitarPanel,
+  sembrar,
+  sucio,
+} from './borrador'
+import { blockTable } from '../../catalog/blocks'
 import { SurfaceMessage } from '../console/SurfaceMessage'
 import { Label } from '../../render/primitives/Label'
 import { ApiError } from '../../api/types'
 import type { TabParaGuardar } from '../../api/admin'
+import type { PanelConfig } from '../../api/types'
 import type { PantallaId } from './pantallas'
 
 /** Qué espera cada pantalla. Acá y no en un comentario: la pantalla lo pinta, así
@@ -83,9 +97,26 @@ export function Builder() {
   // sincronice, el primer render pinta el borrador viejo y el segundo lo
   // corrige, que es un parpadeo y una ventana donde `sucio` miente.
   const [borrador, setBorrador] = useState<{ layoutId: string; tabs: TabParaGuardar[] } | null>(null)
+  const [seleccion, setSeleccion] = useState<{ tab: number; panel: number } | null>(null)
+
+  // **Las dos tablas que el binder necesita** · F4.10. `/config/blocks` manda qué
+  // formas acepta cada tipo y qué spans; el catálogo de admin manda las métricas
+  // del tenant SIN filtrar por rol, que es la lista que quien compone necesita.
+  const bloques = useBlocks()
+  const catalogo = useAdminCatalog(tenantActivo)
   const semilla = detalle.data === undefined ? null : sembrar(detalle.data)
   const tabs =
     borrador !== null && borrador.layoutId === version ? borrador.tabs : (semilla ?? [])
+
+  // `api.blocks` devuelve `{ blocks }`, no un arreglo.
+  const listaDeBloques = bloques.data?.blocks ?? []
+  const tabla = blockTable(listaDeBloques)
+  // **El panel elegido se resuelve por índice contra el borrador vigente**, y
+  // puede no existir: quitar una pestaña deja una selección apuntando a un hueco.
+  // Devolver `null` ahí es lo que impide un `undefined` que se propague hasta el
+  // configurador y explote al leer `panel.tipo`.
+  const configurable =
+    seleccion === null ? null : (tabs[seleccion.tab]?.panels[seleccion.panel] ?? null)
 
   // Elegir otra versión no necesita limpiar el borrador: se descarta por
   // identidad, porque su `layoutId` deja de coincidir.
@@ -144,7 +175,55 @@ export function Builder() {
               onAgregar={() => cambiar(agregar(tabs))}
               onQuitar={(i) => cambiar(quitar(tabs, i))}
               onMover={(i, d) => cambiar(mover(tabs, i, d))}
+              onPanel={(tab, panel) => setSeleccion({ tab, panel })}
+              onAgregarPanel={(i) => {
+                const primero = listaDeBloques[0]
+                if (primero === undefined) return
+                // **El primer tipo de la tabla y sus mínimos, no un default
+                // escrito acá.** `col_span` en 0 lo reemplaza el servicio por 3,
+                // y 3 puede estar fuera del rango del tipo.
+                cambiar(agregarPanel(tabs, i, primero.tipo, primero.colSpanMin, primero.rowSpanMin))
+                setSeleccion({ tab: i, panel: tabs[i]?.panels.length ?? 0 })
+              }}
+              seleccion={seleccion}
               sucio={sucio(tabs, semilla)}
+            />
+          )}
+          {configurable !== null && (
+            <PanelConfigurator
+              panel={configurable}
+              bloques={listaDeBloques}
+              tabla={tabla}
+              metrics={catalogo.data?.metrics ?? []}
+              onTipo={(tipo) => {
+                const b = tabla.get(tipo as PanelConfig['tipo'])
+                if (b === undefined || seleccion === null) return
+                cambiar(
+                  cambiarTipo(
+                    tabs,
+                    seleccion.tab,
+                    seleccion.panel,
+                    tipo,
+                    b.colSpanMin,
+                    b.colSpanMax,
+                    b.rowSpanMin,
+                    b.rowSpanMax,
+                  ),
+                )
+              }}
+              onMetrica={(metricId) => {
+                if (seleccion === null) return
+                cambiar(editarPanel(tabs, seleccion.tab, seleccion.panel, { metricId }))
+              }}
+              onSpan={(campo, valor) => {
+                if (seleccion === null) return
+                cambiar(editarPanel(tabs, seleccion.tab, seleccion.panel, { [campo]: valor }))
+              }}
+              onQuitar={() => {
+                if (seleccion === null) return
+                cambiar(quitarPanel(tabs, seleccion.tab, seleccion.panel))
+                setSeleccion(null)
+              }}
             />
           )}
         </ContextView>

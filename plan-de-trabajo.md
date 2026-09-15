@@ -3297,7 +3297,7 @@ semántica en blanco en vez de «—». Las seis mueren.
 ### F4.7 ✅ Selector de tenant y plantilla base
 ### F4.8 ✅ Editor de pestañas: nombre, pregunta operativa, orden, sugerencias
 ### F4.9 ⬜ Canvas de 12 columnas — arrastrar y colocar
-### F4.10 ⬜ Configurador de panel: métrica, tipo, spans, opciones
+### F4.10 ✅ Configurador de panel: métrica, tipo, spans, opciones
 ### F4.11 ⬜ Validación en tiempo real contra `/config/blocks`
 ### F4.12 ⬜ Preview por rol
 ### F4.13 ⬜ Guardar borrador
@@ -3497,6 +3497,73 @@ arrastrados, `roles` compartido en vez de copiado, `sembrar` sin ordenar,
 pregunta vacía dejando de ser problema, `sucio` contando pulsaciones, el campo de
 nombre sin `onChange`, el editor sin contar las inválidas, y el borrador sin atar
 a su versión.
+
+### F4.10 cerrada el 2026-09-15 · el rechazo explicado
+
+`PanelConfigurator` más las cuatro operaciones de panel en `borrador.ts`. **532
+pruebas**, veintitrés nuevas, catorce mutaciones muertas.
+
+**La frase de §7.2 que decide la pantalla no es la primera, es la última:** «las
+incompatibles aparecen listadas y deshabilitadas con la razón. **El rechazo
+explicado es lo que enseña el sistema**». Filtrar las incompatibles sería más
+corto, más limpio y no enseñaría nada — quien compone aprendería que «esa métrica
+no aparece» en vez de que un medidor no dibuja una serie temporal. Aparecen todas,
+en el mismo orden, y las que no sirven dicen por qué con `invalidReason`, que ya
+estaba escrito desde F1.3.
+
+**Y la razón se pregunta con los spans del BLOQUE, no con los del panel.** Si el
+panel tuviera un span fuera de rango —posible mientras el layout venga del
+servidor— todas las métricas saldrían rechazadas por una razón que no es de la
+métrica: «ocupa entre 3 y 4 columnas y se pidieron 8». La lista contestaría la
+pregunta equivocada.
+
+### Cuatro autoridades distintas en una sola pantalla
+
+| | Quién manda |
+|---|---|
+| Qué formas acepta un tipo | `/config/blocks` |
+| Qué rangos de span | La misma tabla |
+| Qué params **existen** por tipo | La misma tabla · `paramsDisponibles` |
+| Qué **valores** acepta cada param | `PARAM_SCHEMAS`, del front |
+
+La última es la duplicación declarada de F1.29, y acá se vuelve visible: el
+configurador muestra lo que el validador acepta llamando a `describirParam` —que
+se exportó para esto—, no una descripción escrita a mano. Si el esquema suma un
+valor, la pantalla lo dice sola. **Un param que el backend declara disponible y
+el front no sabe describir no se ofrece**: se declara, porque un campo libre ahí
+produce un param que `validateParams` descarta.
+
+### Cambiar el tipo borra las opciones, y eso no se ve venir
+
+Recortar los spans al rango nuevo es obvio. Lo otro no: **los params son por
+tipo** —`maximo` es de `gauge`, `bins` de `distribution`—, así que conservarlos al
+cambiar de tipo deja en el cuerpo del PUT un param que el tipo nuevo no lee.
+`validateParams` lo descartaría **al leerlo de vuelta**, pero entre medio se
+guarda y se publica basura. `cambiarTipo` los borra.
+
+### Lo que no se hizo, con la razón
+
+**`colStart` no se edita.** §7.2 lo pone en B2 —el canvas, F4.9— y un número
+elegido en un formulario es una columna que nadie eligió mirando. Se muestra y se
+declara de dónde va a salir.
+
+**Editar los valores de los params es F4.11.** Hoy se listan con lo que cada uno
+acepta, que es lo que hace falta para elegir el tipo con criterio.
+
+**Y el param de desagregación que §7.2 pide no existe en ningún lado** —ni en
+`paramsDisponibles`, ni en `PARAM_SCHEMAS`, ni en ningún cuerpo de `render/`—.
+`dimensiones[]` llega por métrica pero su único consumidor previsto es el
+drill-down de F5.4, diferido. **Es una decisión de diseño, no un campo que falte
+en un extremo**: quedó como la pregunta 14 de `docs/B0.9-preguntas-abiertas.md`,
+con las tres salidas posibles. No frena nada.
+
+**Verificadas por mutación, catorce casos:** las incompatibles filtradas, las
+incompatibles habilitadas, la razón no pintada, el rango que no acota el campo, la
+fórmula de altura cambiada, el panel sin métrica sin declararse, un param sin
+esquema ofrecido como si se supiera, `cambiarTipo` sin recortar, `cambiarTipo`
+conservando opciones, `cambiarTipo` perdiendo el id, el panel nuevo naciendo con
+métrica, `editarPanel` pisando el id, la selección sin resolver a `null` sobre un
+hueco, y el botón de panel sin decir que le falta métrica.
 - F4.12: el preview llama al endpoint con rol simulado (B4.9). No se simula del
   lado del cliente filtrando lo que ya se tiene: eso probaría el filtro del
   front, que no existe.

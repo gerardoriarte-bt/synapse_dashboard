@@ -5,7 +5,19 @@
  *  que renombrar una pestaña **los borre**, con 200 y sin aviso.
  */
 import { describe, expect, it } from 'vitest'
-import { agregar, editar, mover, problemas, quitar, sembrar, sucio } from '@/surfaces/builder/borrador'
+import {
+  agregar,
+  agregarPanel,
+  cambiarTipo,
+  editar,
+  editarPanel,
+  mover,
+  problemas,
+  quitar,
+  quitarPanel,
+  sembrar,
+  sucio,
+} from '@/surfaces/builder/borrador'
 import type { LayoutDetalle } from '@/api/admin'
 
 const detalle: LayoutDetalle = {
@@ -129,5 +141,77 @@ describe('sucio · contra la semilla, no contra las pulsaciones', () => {
     const vuelta = editar(ida, 0, 'nombre', 'Resumen')
     expect(sucio(ida, semilla)).toBe(true)
     expect(sucio(vuelta, semilla)).toBe(false)
+  })
+})
+
+describe('paneles · F4.10', () => {
+  it('el panel nuevo NO lleva id y nace sin métrica', () => {
+    // Sin `id` el servicio lo crea. Sin `metricId` no se ancla a nada, y §4 dice
+    // que un panel se ancla a un metricId: la pantalla tiene que pedirlo.
+    const tabs = agregarPanel(sembrar(detalle), 0, 'kpi', 3, 4)
+    const nuevo = tabs[0]?.panels.at(-1)
+    expect(nuevo?.id).toBeUndefined()
+    expect(nuevo?.metricId).toBe('')
+  })
+
+  it('nace con los MÍNIMOS del tipo, no con un default inventado', () => {
+    // `col_span` en 0 lo reemplaza el servicio por 3, y 3 puede estar fuera del
+    // rango del tipo. El mínimo del bloque es el único número afirmable.
+    const nuevo = agregarPanel(sembrar(detalle), 0, 'gauge', 4, 5)[0]?.panels.at(-1)
+    expect(nuevo?.colSpan).toBe(4)
+    expect(nuevo?.rowSpan).toBe(5)
+  })
+
+  it('agregar a una pestaña no toca las otras', () => {
+    const tabs = agregarPanel(sembrar(detalle), 0, 'kpi', 3, 4)
+    expect(tabs[1]?.panels).toHaveLength(1)
+  })
+
+  it('quitar saca solo ese panel', () => {
+    const tabs = quitarPanel(sembrar(detalle), 0, 0)
+    expect(tabs[0]?.panels.map((p) => p.id)).toEqual(['p-3'])
+  })
+
+  it('editar la métrica conserva el id del panel', () => {
+    // Perderlo convertiría «editar» en «borrar y crear», que es la misma trampa
+    // que con las pestañas y acá se ve menos.
+    const tabs = editarPanel(sembrar(detalle), 0, 0, { metricId: 'm-9' })
+    expect(tabs[0]?.panels[0]?.id).toBe('p-2')
+    expect(tabs[0]?.panels[0]?.metricId).toBe('m-9')
+  })
+})
+
+describe('cambiarTipo · recorta los spans y BORRA las opciones', () => {
+  const conOpciones = editarPanel(sembrar(detalle), 0, 0, {
+    colSpan: 12,
+    rowSpan: 9,
+    opciones: { maximo: 100 },
+  })
+
+  it('recorta al rango del tipo nuevo', () => {
+    const tabs = cambiarTipo(conOpciones, 0, 0, 'kpi', 3, 4, 3, 4)
+    expect(tabs[0]?.panels[0]?.colSpan).toBe(4)
+    expect(tabs[0]?.panels[0]?.rowSpan).toBe(4)
+  })
+
+  it('sube al mínimo cuando el span era más chico', () => {
+    const chico = editarPanel(sembrar(detalle), 0, 0, { colSpan: 1, rowSpan: 1 })
+    const tabs = cambiarTipo(chico, 0, 0, 'table', 6, 12, 4, 10)
+    expect(tabs[0]?.panels[0]?.colSpan).toBe(6)
+    expect(tabs[0]?.panels[0]?.rowSpan).toBe(4)
+  })
+
+  it('BORRA las opciones · son por tipo', () => {
+    // `maximo` es de `gauge`. Conservarlo al pasar a `kpi` deja en el cuerpo del
+    // PUT un param que el tipo nuevo no lee: `validateParams` lo descartaría al
+    // leerlo de vuelta, pero entre medio se guarda y se publica basura.
+    const tabs = cambiarTipo(conOpciones, 0, 0, 'kpi', 3, 4, 3, 4)
+    expect(tabs[0]?.panels[0]?.opciones).toBeUndefined()
+  })
+
+  it('conserva id y métrica', () => {
+    const tabs = cambiarTipo(conOpciones, 0, 0, 'kpi', 3, 4, 3, 4)
+    expect(tabs[0]?.panels[0]?.id).toBe('p-2')
+    expect(tabs[0]?.panels[0]?.metricId).toBe('m-2')
   })
 })

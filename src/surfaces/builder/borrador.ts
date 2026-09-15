@@ -112,3 +112,102 @@ export function problemas(tab: TabParaGuardar): string[] {
 export function sucio(actual: readonly TabParaGuardar[], semilla: readonly TabParaGuardar[]): boolean {
   return JSON.stringify(actual) !== JSON.stringify(semilla)
 }
+
+/* ── Paneles · F4.10 ──────────────────────────────────────────────────────── */
+
+export type PanelDeBorrador = TabParaGuardar['panels'][number]
+
+/** **Sin `id`, igual que una pestaña nueva**: es lo que le dice al servicio que
+ *  la cree.
+ *
+ *  Nace sin métrica —`metricId` vacío— y con los spans que el tipo declara como
+ *  mínimos. **No con un default inventado**: `col_span` en 0 lo reemplaza el
+ *  servicio por 3, y 3 puede estar fuera del rango del tipo. El mínimo del
+ *  bloque es el único número que se puede afirmar sin mirar el catálogo.
+ *
+ *  `colStart` arranca en 1 y **no se edita acá**: colocarlo es del canvas ·
+ *  F4.9. Uno al lado del otro en la columna 1 es una composición legible; una
+ *  columna elegida a dedo desde un formulario es una que nadie eligió mirando. */
+export function agregarPanel(
+  tabs: readonly TabParaGuardar[],
+  indiceTab: number,
+  tipo: string,
+  colSpanMin: number,
+  rowSpanMin: number,
+): TabParaGuardar[] {
+  return tabs.map((t, i) =>
+    i === indiceTab
+      ? {
+          ...t,
+          panels: [
+            ...t.panels,
+            { metricId: '', tipo, colStart: 1, colSpan: colSpanMin, rowSpan: rowSpanMin },
+          ],
+        }
+      : t,
+  )
+}
+
+export function quitarPanel(
+  tabs: readonly TabParaGuardar[],
+  indiceTab: number,
+  indicePanel: number,
+): TabParaGuardar[] {
+  return tabs.map((t, i) =>
+    i === indiceTab ? { ...t, panels: t.panels.filter((_, j) => j !== indicePanel) } : t,
+  )
+}
+
+export function editarPanel(
+  tabs: readonly TabParaGuardar[],
+  indiceTab: number,
+  indicePanel: number,
+  cambio: Partial<PanelDeBorrador>,
+): TabParaGuardar[] {
+  return tabs.map((t, i) =>
+    i === indiceTab
+      ? {
+          ...t,
+          panels: t.panels.map((p, j) => (j === indicePanel ? { ...p, ...cambio } : p)),
+        }
+      : t,
+  )
+}
+
+/** Cambiar el TIPO recorta los spans al rango del nuevo y **borra las opciones**.
+ *
+ *  Las dos mitades son necesarias y la segunda es la que no se ve venir: los
+ *  params son por tipo —`maximo` es de `gauge`, `bins` de `distribution`—, así
+ *  que conservarlos al cambiar de tipo deja en el cuerpo del PUT un param que el
+ *  nuevo tipo no lee. `validateParams` lo descartaría como desconocido, pero
+ *  recién al leerlo de vuelta: entre medio se guarda y se publica basura. */
+export function cambiarTipo(
+  tabs: readonly TabParaGuardar[],
+  indiceTab: number,
+  indicePanel: number,
+  tipo: string,
+  colSpanMin: number,
+  colSpanMax: number,
+  rowSpanMin: number,
+  rowSpanMax: number,
+): TabParaGuardar[] {
+  return tabs.map((t, i) =>
+    i === indiceTab
+      ? {
+          ...t,
+          panels: t.panels.map((p, j) =>
+            j === indicePanel
+              ? {
+                  ...(p.id === undefined ? {} : { id: p.id }),
+                  metricId: p.metricId,
+                  tipo,
+                  colStart: p.colStart,
+                  colSpan: Math.min(Math.max(p.colSpan, colSpanMin), colSpanMax),
+                  rowSpan: Math.min(Math.max(p.rowSpan, rowSpanMin), rowSpanMax),
+                }
+              : p,
+          ),
+        }
+      : t,
+  )
+}
