@@ -10,7 +10,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
 import { adminApi } from './admin'
-import type { TabParaGuardar } from './admin'
+import type { RolParaGuardar, TabParaGuardar } from './admin'
 import type { Theme } from '../tokens/theme'
 import type { Payload } from './types'
 
@@ -32,6 +32,8 @@ export const keys = {
   tenants: ['admin', 'tenants'] as const,
   layouts: (tenantId: string) => ['admin', 'layouts', tenantId] as const,
   adminCatalog: (tenantId: string) => ['admin', 'catalog', tenantId] as const,
+  roles: (tenantId: string) => ['admin', 'roles', tenantId] as const,
+  preview: (layoutId: string, rolId: string) => ['admin', 'preview', layoutId, rolId] as const,
   layout: (layoutId: string) => ['admin', 'layout', layoutId] as const,
 }
 
@@ -135,6 +137,55 @@ export function useAdminCatalog(tenantId: string | null) {
     queryKey: keys.adminCatalog(tenantId ?? ''),
     queryFn: () => adminApi.catalogo(tenantId as string),
     enabled: tenantId !== null && tenantId !== '',
+  })
+}
+
+/* ── B4.8 y B4.9 · del FORK ─────────────────────────────────────────────────
+ *
+ * **El servicio desplegado devuelve 404 en estas rutas.** Los hooks existen para
+ * que F4.3 y F4.12 se construyan contra MSW, que es como se construyó la consola
+ * entera antes de que existiera el servicio. El día que el fork se despliegue —o
+ * que el código vuelva a su rama— dejan de dar 404 y no cambia una línea de acá.
+ */
+
+export function useRoles(tenantId: string | null) {
+  return useQuery({
+    queryKey: keys.roles(tenantId ?? ''),
+    queryFn: () => adminApi.roles(tenantId as string),
+    enabled: tenantId !== null && tenantId !== '',
+  })
+}
+
+/** Las tres mutaciones invalidan la MISMA clave, y con eso alcanza: el listado
+ *  trae `usuarios` por rol, que es lo que decide si se puede borrar. Un `setQueryData`
+ *  con la respuesta de un `PUT` dejaría ese contador sin recalcular. */
+export function useSaveRole(tenantId: string | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { id?: string; rol: RolParaGuardar }) =>
+      v.id === undefined
+        ? adminApi.crearRol(tenantId as string, v.rol)
+        : adminApi.editarRol(v.id, v.rol),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.roles(tenantId ?? '') }),
+  })
+}
+
+export function useDeleteRole(tenantId: string | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (rolId: string) => adminApi.borrarRol(rolId),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.roles(tenantId ?? '') }),
+  })
+}
+
+/** **No cachea entre roles por accidente**: la clave lleva los dos ids. Un
+ *  preview servido desde el cache de otro rol es exactamente la mentira que
+ *  B4.9 existe para no cometer. */
+export function usePreview(layoutId: string | null, rolId: string | null) {
+  return useQuery({
+    queryKey: keys.preview(layoutId ?? '', rolId ?? ''),
+    queryFn: () => adminApi.previewPorRol(layoutId as string, rolId as string),
+    enabled: layoutId !== null && layoutId !== '' && rolId !== null && rolId !== '',
   })
 }
 

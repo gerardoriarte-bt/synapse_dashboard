@@ -3258,7 +3258,7 @@ estimación que no bajaría.
 
 ### F4.1 ✅ `surfaces/admin/` — layout base y navegación
 ### F4.2 ✅ Lista de tenants
-### F4.3 ⬜ Gestión de usuarios y roles por tenant
+### F4.3 ⚠️ Gestión de usuarios y roles por tenant
 ### F4.4 ⬜ Configuración de agente Snowflake por tenant
 ### F4.5 ✅ Vista del catálogo de métricas del tenant
 **Criterio de aceptación (los cinco).**
@@ -3288,6 +3288,64 @@ scroll, que es visible.
 **Tres pantallas se declaran pendientes en vez de mostrarse vacías**, cada una
 con qué la desbloquea. Una pantalla que dice qué le falta no es lo mismo que una
 en blanco.
+
+### F4.3 parcial el 2026-09-15 · la mitad de roles, no la de usuarios
+
+`RoleEditor` y el cliente de las rutas del fork. **590 pruebas**, doce nuevas,
+once mutaciones muertas.
+
+**Queda en ⚠️ y no en ✅ porque su título nombra dos cosas.** El CRUD de roles
+está —A2 lo sostiene entero—; **la lista de usuarios de A3 no**, y no por orden
+del plan: **ninguna ruta lista usuarios.** Existe `POST /admin/users` y nada más,
+así que §7.3 —«lista filtrable por tenant y rol, CRUD»— no tiene de dónde leer.
+
+### Las dos aserciones que sostienen esta tarea son de VOCABULARIO
+
+**`pestañas` vacío significa «ve TODAS», no «no ve ninguna».** Es la diferencia
+entre un rol recién creado —que ve todo hasta que alguien lo acote— y un rol
+tapiado. Pintar «0 pestañas» diría lo segundo, y quien administra actuaría sobre
+eso.
+
+**Ocultar una métrica NO es un permiso** · §1.4.20. El servidor vuelve a
+verificar en `/config/catalog` y en el batch, así que un rol con
+`hidden_metric_ids` **no es un rol que no pueda pedir esa métrica**. La pantalla
+lo declara una vez y siempre — no por fila, que la volvería decoración—, porque
+quien no lo sepa va a usar el campo como si fuera un permiso, y eso se descubre
+en una auditoría y no antes.
+
+**Ni los UUID de pestaña ni los de métrica se pintan**, que es la misma regla
+dura de §7.3 aplicada a otro campo.
+
+### Borrar, y por qué el conteo viaja en el listado
+
+Un rol con usuarios no se puede borrar. **El botón no aparece**, y en su lugar se
+dice qué lo impide y qué lo desbloquea — reasignar a los usuarios. Es la misma
+regla que `puedeResponder` en `RecoBody`: «un botón que se aprieta y devuelve 403
+es peor que un botón ausente». Para eso `user_count` viaja en el listado y no se
+descubre con el 409.
+
+### Dos pruebas que pasaban por el motivo equivocado
+
+**El fixture de layouts tenía el publicado en la posición 0.** La mutación que
+cambiaba «el publicado» por «el primero de la lista» sobrevivía, porque eran el
+mismo. Con el borrador primero, se separan.
+
+**Y el helper `base()` de MSW registraba los overrides AL FINAL.** `server.use`
+antepone los handlers y, entre los de una misma llamada, gana el primero — así
+que un override de una ruta que la base ya declaraba **nunca se aplicaba**. La
+prueba de «no ofrece las pestañas de un borrador» estaba escrita y no corría.
+Corregido en los tres archivos que usan ese helper, y los arneses de F4.13,
+F4.14 y F4.15 se volvieron a correr para confirmar que no dependían del bug.
+
+**Es la quinta vez en dos días que el arnés de mutación encuentra algo que las
+pruebas no podían ver**, y las cinco tienen la misma raíz: el fixture no
+distinguía los dos casos.
+
+**Verificadas por mutación, once casos:** «vacío» pintado como «ninguna», los
+UUID de pestaña, los ids de métrica, la advertencia de permiso borrada, borrar
+ofrecido con usuarios, el formulario sin precargar, guardar sin nombre, las
+pestañas de cualquier layout, el 404 como error genérico, el cuerpo sin métricas
+ocultas, y el 204 tratado como JSON.
 
 ### El choque de F4.2, y cómo se resolvió
 

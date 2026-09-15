@@ -42,6 +42,11 @@ export type WireLayoutVersion = A['LayoutVersion']
 export type WireLayoutDetail = A['LayoutDetail']
 export type WireValidationResult = A['ValidationResult']
 export type WireTenantOption = A['TenantOption']
+/** **Del FORK** · B4.8 y B4.9. El servicio desplegado no sirve estas rutas: hoy
+ *  devuelven 404. Están en el cable marcadas `x-origen: fork` para que F4.3 y
+ *  F4.12 se puedan construir contra MSW, igual que se construyó la consola. */
+export type WireRole = A['Role']
+export type WirePreview = A['Preview']
 
 const BASE = import.meta.env.VITE_API_URL ?? '/api/v1'
 
@@ -89,6 +94,40 @@ async function pedir<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
 export type Tenant = { id: string; nombre: string }
 
 export type EstadoDeLayout = 'borrador' | 'publicado'
+
+/** Un rol del tenant · B4.8.
+ *
+ *  **`pestanas` vacío significa «ve todas»**, no «no ve ninguna», y el nombre en
+ *  singular de cada campo importa: `metricasOcultas` OCULTA y no impide. El
+ *  servidor vuelve a verificar en `/config/catalog` y en el batch, así que un
+ *  rol que oculta una métrica no es un rol que no pueda pedirla · §1.4.20. */
+export type Rol = {
+  id: string
+  tenantId: string
+  nombre: string
+  pestanas: string[]
+  metricasOcultas: string[]
+  overrides: Record<string, unknown>
+  /** Con uno o más, borrar da 409. Viaja en el listado para que la pantalla lo
+   *  diga antes de ofrecer el botón, y no después del rechazo. */
+  usuarios: number
+}
+
+export type RolParaGuardar = {
+  nombre: string
+  pestanas: string[]
+  metricasOcultas: string[]
+  overrides?: Record<string, unknown>
+}
+
+/** El layout como lo vería un rol · B4.9. **Sin payloads**, y lo declara. */
+export type PreviewDeRol = {
+  layoutId: string
+  rolId: string
+  rolNombre: string
+  tabs: { tab: TabDeLayout; panels: PanelConfig[] }[]
+  sinPayloads: boolean
+}
 
 export type LayoutVersion = {
   id: string
@@ -234,6 +273,58 @@ function aCuerpo(tabs: readonly TabParaGuardar[]): A['LayoutUpdateRequest'] {
   }
 }
 
+function adaptarRol(w: WireRole): Rol {
+  return {
+    id: w.id,
+    tenantId: w.tenant_id,
+    nombre: w.name,
+    pestanas: w.tab_ids,
+    metricasOcultas: w.hidden_metric_ids,
+    overrides: (w.layout_overrides ?? {}) as Record<string, unknown>,
+    usuarios: w.user_count,
+  }
+}
+
+/** **La forma de la CONSOLA, no la del builder.** El preview sale de `GetTab`,
+ *  así que sus pestañas y paneles vienen en snake_case —`sort_order`,
+ *  `col_start`— y no en el PascalCase del dominio. Adaptarlos con
+ *  `adaptarDetalle` daría `undefined` en todo. */
+function adaptarPreview(w: WirePreview): PreviewDeRol {
+  return {
+    layoutId: w.layout_id,
+    rolId: w.role_id,
+    rolNombre: w.role_name,
+    tabs: w.tabs.map((t) => ({
+      tab: {
+        id: t.tab.id,
+        nombre: t.tab.name,
+        pregunta: t.tab.operational_question ?? '',
+        orden: t.tab.sort_order,
+        // El preview no devuelve los roles de la pestaña: la pregunta ya está
+        // contestada — es la pestaña de ESTE rol.
+        roles: [],
+      },
+      panels: t.panels.map((p) => ({
+        id: p.id,
+        tipo: p.type as PanelConfig['tipo'],
+        metricId: p.metric_id,
+        colStart: p.col_start,
+        colSpan: p.col_span,
+        rowSpan: p.row_span,
+        ...(p.options === undefined ? {} : { opciones: p.options }),
+      })),
+    })),
+    sinPayloads: w.without_payloads,
+  }
+}
+
+const cuerpoDeRol = (r: RolParaGuardar): A['RoleInput'] => ({
+  name: r.nombre,
+  tab_ids: r.pestanas,
+  hidden_metric_ids: r.metricasOcultas,
+  ...(r.overrides === undefined ? {} : { layout_overrides: r.overrides }),
+})
+
 export const adminApi = {
   tenants: async (): Promise<Tenant[]> =>
     (await pedir<WireTenantOption[]>('/admin/tenants')).map((t) => ({ id: t.id, nombre: t.name })),
@@ -248,6 +339,60 @@ export const adminApi = {
    *  familia fuera del enumerado tampoco se puede dibujar en el builder. */
   catalogo: async (tenantId: string): Promise<AdaptedCatalog> =>
     adaptCatalog(await pedir<WireMetric[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/catalog`)),
+
+  /* ── B4.8 y B4.9 · del FORK · el servicio desplegado devuelve 404 ──────── */
+
+  roles: async (tenantId: string): Promise<Rol[]> =>
+    (await pedir<WireRole[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/roles`)).map(
+      adaptarRol,
+    ),
+
+  crearRol: async (tenantId: string, rol: RolParaGuardar): Promise<Rol> =>
+    adaptarRol(
+      await pedir<WireRole>(`/admin/tenants/${encodeURIComponent(tenantId)}/roles`, {
+        method: 'POST',
+        body: JSON.stringify(cuerpoDeRol(rol)),
+      }),
+    ),
+
+  editarRol: async (rolId: string, rol: RolParaGuardar): Promise<Rol> =>
+    adaptarRol(
+      await pedir<WireRole>(`/admin/roles/${encodeURIComponent(rolId)}`, {
+        method: 'PUT',
+        body: JSON.stringify(cuerpoDeRol(rol)),
+      }),
+    ),
+
+  /** **204 sin cuerpo**, así que no pasa por `pedir`: aquel exige JSON y un 204
+   *  no lo trae. Leerlo con `res.json()` tiraría, y el catch diría «respondió
+   *  204 sin cuerpo» — que es cierto y es exactamente lo correcto. */
+  borrarRol: async (rolId: string): Promise<void> => {
+    const token = currentToken()
+    const res = await fetch(`${BASE}/admin/roles/${encodeURIComponent(rolId)}`, {
+      method: 'DELETE',
+      headers: { ...(token === null ? {} : { Authorization: `Bearer ${token}` }) },
+    })
+    if (res.status === 204) return
+    // Un 409 trae cuerpo y su mensaje dice cuántos usuarios tiene el rol.
+    let cuerpo: { error?: string } = {}
+    try {
+      cuerpo = (await res.json()) as typeof cuerpo
+    } catch {
+      throw new ApiError(SIN_CODIGO, `El servicio respondió ${String(res.status)} sin cuerpo.`, res.status)
+    }
+    throw new ApiError(
+      res.status === 409 ? 'REGLA_ROL_CON_USUARIOS' : SIN_CODIGO,
+      cuerpo.error ?? '',
+      res.status,
+    )
+  },
+
+  previewPorRol: async (layoutId: string, rolId: string): Promise<PreviewDeRol> =>
+    adaptarPreview(
+      await pedir<WirePreview>(
+        `/admin/layouts/${encodeURIComponent(layoutId)}/preview?roleId=${encodeURIComponent(rolId)}`,
+      ),
+    ),
 
   layouts: async (tenantId: string): Promise<LayoutVersion[]> =>
     (await pedir<WireLayoutVersion[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/layouts`)).map(

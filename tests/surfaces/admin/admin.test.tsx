@@ -154,13 +154,22 @@ describe('las pantallas que todavía no se pueden construir', () => {
     expect(screen.getByText(/Se desbloquea con/)).toBeInTheDocument()
   })
 
-  it('la ficha de cliente nombra B4.8, que es lo que espera', async () => {
-    server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
+  it('la ficha de cliente YA no se declara pendiente · F4.3', async () => {
+    // Desde que B4.8 está escrita en el fork, A2 se construye contra su cable.
+    // Lo que queda pendiente es que ese código se despliegue, y eso lo dice la
+    // propia pantalla cuando el 404 llega.
+    server.use(
+      http.get(`${API}/admin/tenants`, () => ok(tenants)),
+      http.get(`${API}/admin/tenants/:id/roles`, () => ok([])),
+      http.get(`${API}/admin/tenants/:id/layouts`, () => ok([])),
+      http.get(`${API}/admin/tenants/:id/catalog`, () => ok([])),
+    )
     montar()
     await screen.findByText('Under Armour México')
 
     await userEvent.click(screen.getByRole('button', { name: 'Ficha de cliente' }))
-    expect(await screen.findByText(/B4.8/)).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Nuevo rol' })).toBeInTheDocument()
+    expect(screen.queryByText('Pendiente')).toBeNull()
   })
 })
 

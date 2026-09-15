@@ -53,14 +53,19 @@ const bloques = [
 ]
 
 function base(extra: Parameters<typeof server.use> = []) {
+  // **Los overrides van PRIMERO.** `server.use` antepone los handlers y, entre
+  // los de una misma llamada, gana el primero. Con `...extra` al final, un
+  // override de una ruta que la base ya declara **nunca se aplica** — y la
+  // prueba pasa por el motivo equivocado. Lo encontró una mutación que
+  // sobrevivía: el override estaba escrito y no corría.
   server.use(
+    ...extra,
     http.get(`${API}/admin/tenants`, () => ok(tenants)),
     http.get(`${API}/admin/tenants/:id/catalog`, () => ok(metricas)),
     http.get(`${API}/config/blocks`, () => ok(bloques)),
     http.get(`${API}/admin/tenants/:id/layouts`, () => ok([borrador])),
     http.get(`${API}/admin/layouts/:id`, () => ok(detalle)),
     http.put(`${API}/admin/layouts/:id`, () => ok(detalle)),
-    ...extra,
   )
 }
 
