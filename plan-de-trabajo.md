@@ -3298,7 +3298,7 @@ semántica en blanco en vez de «—». Las seis mueren.
 ### F4.8 ✅ Editor de pestañas: nombre, pregunta operativa, orden, sugerencias
 ### F4.9 ⬜ Canvas de 12 columnas — arrastrar y colocar
 ### F4.10 ✅ Configurador de panel: métrica, tipo, spans, opciones
-### F4.11 ⬜ Validación en tiempo real contra `/config/blocks`
+### F4.11 ✅ Validación en tiempo real contra `/config/blocks`
 ### F4.12 ⬜ Preview por rol
 ### F4.13 ⬜ Guardar borrador
 ### F4.14 ⬜ Validar antes de publicar
@@ -3598,6 +3598,64 @@ resolver a `null` sobre un hueco, un param de estructura ofrecido como campo
 libre, el enum sin «sin declarar», borrar la opción dejando un objeto vacío
 colgado, `editarOpcion` pisando las otras, el número mandado como texto, y el
 botón de panel sin decir que le falta métrica.
+
+### F4.11 cerrada el 2026-09-15 · feedback inmediato que no decide
+
+`validar.ts` y `ValidationSummary`. **560 pruebas**, diecisiete nuevas, doce
+mutaciones muertas.
+
+**No reimplementa reglas.** Corre `invalidReason` de `catalog/blocks.ts` y
+`validateParams` de `api/params.ts` —las mismas que la consola usa para detectar
+un layout mal formado— sobre el borrador entero. Es lo que hace que el builder y
+el renderizador no puedan opinar distinto.
+
+**Y lo que dice con la misma claridad es que no decide.** El criterio lo escribe
+así: «la validación del front es feedback inmediato; **el servidor decide**
+(B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio». Por
+eso el aviso está **siempre**, no solo cuando hay problemas: **el caso peligroso
+es el limpio**, porque es donde alguien podría leer «listo para publicar».
+
+Cada problema dice qué pestaña, qué panel y la razón. Y se direcciona por
+**índice, no por id**: una pestaña o un panel recién agregados no tienen id
+todavía — lo asigna el servidor al guardar. Los problemas que devuelve `validate`
+sí vienen por id, y juntarlos es trabajo de F4.14.
+
+### Tres lugares que muestran lo mismo, una sola cuenta
+
+La pantalla marca composición en tres sitios —junto a la pestaña, en el botón del
+panel y en el resumen— y al principio cada uno lo calculaba por su cuenta:
+`TabEditor` llamaba a `problemas()`, `PanelConfigurator` a `validateParams()` y el
+resumen a `validarBorrador()`. **Tres cálculos que pueden discrepar es peor que
+un mensaje repetido**, así que `validarBorrador` corre una vez en el contenedor y
+los tres leen de ahí. Que la misma frase aparezca junto al campo y en el resumen
+es deliberado: son dos preguntas distintas —«¿este valor sirve?» y «¿qué bloquea
+publicar?»— y ahora no pueden contestarse distinto.
+
+### Una regla que se escribió y se sacó
+
+«Una pestaña sin paneles no contesta su pregunta con nada» era la regla obvia de
+agregar, y **no está escrita en ningún lado** — §7.2 B2 hasta contempla el slot
+vacío como estado legítimo del canvas. Inventarla haría que el front **bloqueara
+una publicación que el servidor acepta**, que es la falla de F4.11 al revés: no
+darse por bueno a uno mismo, pero tampoco ponerse más estricto que la autoridad.
+Quedó el comentario donde estaba el código, y una prueba que afirma que no es un
+problema.
+
+### Y una mutación que pedía una prueba que no existía
+
+`const invalidas = new Set(problemas.map((p) => p.tab)).size` cambiado por
+`problemas.length` **sobrevivía**: todos los fixtures tenían un problema por
+pestaña, así que las dos cuentas daban el mismo número. Hace falta una pestaña con
+dos problemas para que se separen. Es la tercera vez en dos días que el arnés
+encuentra lo mismo — **una prueba escrita sobre el caso más fácil de montar, no
+sobre el que distingue**.
+
+**Verificadas por mutación, doce casos:** el tipo sin validar contra la forma, el
+panel sin métrica sin marcar, una métrica fuera del catálogo pasando, el id de la
+métrica borrada pintado, los params sin validar, un param desconocido callado, los
+problemas de la pestaña sin recoger, la regla inventada de vuelta, el resumen sin
+decir que el servidor decide, el resumen sin decir en qué pestaña, el botón del
+panel sin marcar, y el contador contando problemas en vez de pestañas.
 - F4.12: el preview llama al endpoint con rol simulado (B4.9). No se simula del
   lado del cliente filtrando lo que ya se tiene: eso probaría el filtro del
   front, que no existe.

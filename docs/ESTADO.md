@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**88 de 193 tareas cerradas.** 8 parciales · 92 pendientes · 5 diferidas.
+**89 de 193 tareas cerradas.** 8 parciales · 91 pendientes · 5 diferidas.
 
 
-## Front · 81 de 112
+## Front · 82 de 112
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -16,7 +16,7 @@
 | 1 · Consola y render/ | `████████████████████··` | 40/43 | 1 | 2 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `████████··············` | 4/11 | 1 | 3 |
-| 4 · Admin y Builder | `█████████·············` | 9/23 | 0 | 14 |
+| 4 · Admin y Builder | `██████████············` | 10/23 | 0 | 13 |
 | 5 · Pruebas y pulido | `████████████··········` | 7/13 | 1 | 4 |
 
 ## Backend · 7 de 81
@@ -44,14 +44,13 @@
 
 ---
 
-## Se puede tomar hoy · 23 del front
+## Se puede tomar hoy · 22 del front
 
 - **F1.13b** · Portar format.ts e inyectar el locale
 - **F1.31** · Registro de gráficos y verificación de mínimos
 - **F2.3** · SIN_PERMISO · B0.9 (línea 1171) contestada
 - **F3.3** · «Ver detalle» y «Preguntar» en el shell del panel
 - **F3.7** · Historial de hilos
-- **F4.11** · Validación en tiempo real contra /config/blocks
 - **F4.12** · Preview por rol
 - **F4.13** · Guardar borrador
 - **F4.14** · Validar antes de publicar

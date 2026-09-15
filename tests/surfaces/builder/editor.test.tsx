@@ -89,6 +89,27 @@ function servir() {
       ok(versiones[params['id'] as keyof typeof versiones] ?? []),
     ),
     http.get(`${API}/admin/layouts/:id`, ({ params }) => ok(detalles[params['id'] as string])),
+    // El catálogo del tenant · sin él, `validarBorrador` marcaría cada panel
+    // como «su métrica ya no está en el catálogo», que es cierto y no es lo que
+    // estas pruebas miran.
+    http.get(`${API}/admin/tenants/:id/catalog`, () =>
+      ok([
+        {
+          id: 'm-1', tenant_id: 't-1', key: 'revenue', name: 'Ventas',
+          shape: 'scalar', family: 'demand', layer: 'GOLD', source: 'ERP',
+          base: 'x', min_grain: 'day', dimensions: [], catalog_version: 1,
+        },
+      ]),
+    ),
+    http.get(`${API}/config/blocks`, () =>
+      ok([
+        {
+          type: 'kpi', ui_name: 'KPI', accepted_shapes: ['scalar'],
+          col_span_min: 3, col_span_max: 4, row_span_min: 3, row_span_max: 4,
+          layout_params: [],
+        },
+      ]),
+    ),
   )
 }
 
@@ -138,8 +159,10 @@ describe('§7.2 · la pregunta operativa es una regla, no un campo opcional', ()
     const { container } = montar()
     await abrirVersion()
 
-    expect(container.textContent).toContain('1 pestaña(s) no se pueden componer')
-    expect(screen.getByText(/una pestaña que no contesta una pregunta no se compone/)).toBeInTheDocument()
+    expect(container.textContent).toContain('1 pestaña(s) con problemas de composición')
+    // Dos veces: junto a la pestaña y en el resumen. Las dos salen de la misma
+    // corrida de `validarBorrador`, así que no pueden discrepar.
+    expect(screen.getAllByText(/una pestaña que no contesta una pregunta no se compone/)).toHaveLength(2)
   })
 
   it('escribirla baja la cuenta a cero', async () => {
@@ -154,7 +177,7 @@ describe('§7.2 · la pregunta operativa es una regla, no un campo opcional', ()
     )
 
     await waitFor(() =>
-      expect(container.textContent).not.toContain('no se pueden componer'),
+      expect(container.textContent).not.toContain('pestaña(s) con problemas'),
     )
   })
 
@@ -164,7 +187,7 @@ describe('§7.2 · la pregunta operativa es una regla, no un campo opcional', ()
     await abrirVersion()
 
     await userEvent.click(screen.getByRole('button', { name: 'Agregar pestaña' }))
-    expect(container.textContent).toContain('2 pestaña(s) no se pueden componer')
+    expect(container.textContent).toContain('2 pestaña(s) con problemas de composición')
     expect(screen.getByText(/Nueva · se crea al guardar/)).toBeInTheDocument()
   })
 })

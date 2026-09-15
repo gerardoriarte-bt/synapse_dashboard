@@ -28,6 +28,8 @@ import { BuilderChrome } from './BuilderChrome'
 import { ContextView } from './ContextView'
 import { TabEditor } from './TabEditor'
 import { PanelConfigurator } from './PanelConfigurator'
+import { ValidationSummary } from './ValidationSummary'
+import { validarBorrador } from './validar'
 import {
   agregar,
   agregarPanel,
@@ -119,6 +121,12 @@ export function Builder() {
   const configurable =
     seleccion === null ? null : (tabs[seleccion.tab]?.panels[seleccion.panel] ?? null)
 
+  // **Se recalcula en cada render y eso es el punto** · F4.11: es feedback
+  // inmediato. Memorizarlo por `tabs` sería la optimización obvia y la trampa
+  // conocida — el borrador es un objeto nuevo en cada cambio, así que la memo
+  // nunca acertaría y solo agregaría una comparación.
+  const problemas = validarBorrador(tabs, tabla, catalogo.data?.metrics ?? [])
+
   // Elegir otra versión no necesita limpiar el borrador: se descarta por
   // identidad, porque su `layoutId` deja de coincidir.
   const cambiar = (siguiente: TabParaGuardar[]) => {
@@ -187,15 +195,23 @@ export function Builder() {
                 setSeleccion({ tab: i, panel: tabs[i]?.panels.length ?? 0 })
               }}
               seleccion={seleccion}
+              problemas={problemas}
               sucio={sucio(tabs, semilla)}
             />
           )}
+          {semilla === null ? null : (
+            <ValidationSummary problemas={problemas} nombres={tabs.map((t) => t.nombre)} />
+          )}
+
           {configurable !== null && (
             <PanelConfigurator
               panel={configurable}
               bloques={listaDeBloques}
               tabla={tabla}
               metrics={catalogo.data?.metrics ?? []}
+              problemas={problemas.filter(
+                (p) => p.tab === seleccion?.tab && p.panel === seleccion.panel,
+              )}
               onTipo={(tipo) => {
                 const b = tabla.get(tipo as PanelConfig['tipo'])
                 if (b === undefined || seleccion === null) return

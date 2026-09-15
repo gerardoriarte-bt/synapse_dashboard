@@ -49,10 +49,11 @@
  */
 import { Label } from '../../render/primitives/Label'
 import { invalidReason } from '../../catalog/blocks'
-import { PARAM_SCHEMAS, describirParam, validateParams } from '../../api/params'
+import { PARAM_SCHEMAS, describirParam } from '../../api/params'
 import type { BlockTable } from '../../catalog/blocks'
 import type { Block, Metric, PanelType } from '../../api/types'
 import type { PanelDeBorrador } from './borrador'
+import type { ProblemaLocal } from './validar'
 
 type Props = {
   panel: PanelDeBorrador
@@ -64,6 +65,8 @@ type Props = {
   onSpan: (campo: 'colSpan' | 'rowSpan', valor: number) => void
   /** `undefined` borra la opción · ver `editarOpcion`. */
   onOpcion: (nombre: string, valor: unknown) => void
+  /** Los de ESTE panel, ya calculados · una sola corrida de `validarBorrador`. */
+  problemas: readonly ProblemaLocal[]
   onQuitar: () => void
 }
 
@@ -76,18 +79,13 @@ export function PanelConfigurator({
   onMetrica,
   onSpan,
   onOpcion,
+  problemas,
   onQuitar,
 }: Props) {
   const tipo = panel.tipo as PanelType
   const bloque = tabla.get(tipo)
   const esquema = PARAM_SCHEMAS[tipo] ?? {}
 
-  // **Lo que este panel tendría si se guardara así**, con el mismo validador que
-  // corre al leer un layout de vuelta · `api/params.ts`. Preguntárselo acá es lo
-  // que hace que el campo de un número mande un número: un `"10"` viaja igual por
-  // JSON, compila igual, y recién degradaría el panel la próxima vez que alguien
-  // lo abra. Acá se ve mientras se escribe.
-  const validado = validateParams(tipo, panel.opciones, bloque?.paramsDisponibles)
 
   /** La razón por la que una métrica no sirve para este tipo, o `null`.
    *
@@ -279,16 +277,19 @@ export function PanelConfigurator({
             )
           })
         )}
-        {validado.invalid.map((p) => (
-          // «El rechazo explicado es lo que enseña el sistema», también acá: la
-          // razón sale del validador y no de una frase escrita a mano.
-          <Label key={p.param} as="div">
-            {p.reason}
-          </Label>
-        ))}
-        {validado.unknown.map((n) => (
-          <Label key={n} as="div">{`${n} · este tipo no lo lee · se va a descartar`}</Label>
-        ))}
+        {/* **Lo que este panel tendría si se guardara así.** Sale de la misma
+            corrida de `validarBorrador` que alimenta el resumen: es lo que hace
+            que el campo de un número mande un número —un `"10"` viaja igual por
+            JSON y recién degradaría el panel la próxima vez que alguien lo
+            abriera— y se ve mientras se escribe. La razón sale del validador,
+            no de una frase escrita a mano. */}
+        {problemas
+          .filter((p) => p.campo !== 'tipo' && p.campo !== 'metricId')
+          .map((p) => (
+            <Label key={p.campo} as="div">
+              {p.mensaje}
+            </Label>
+          ))}
 
         <Label as="div">
           Y falta la dimensión de desagregación que §7.2 pide · ningún tipo la declara como param

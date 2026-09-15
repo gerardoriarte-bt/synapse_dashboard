@@ -27,8 +27,8 @@
  *  arrastra · ver `borrador.ts`.
  */
 import { Label } from '../../render/primitives/Label'
-import { problemas } from './borrador'
 import type { TabParaGuardar } from '../../api/admin'
+import type { ProblemaLocal } from './validar'
 
 const FALTANTES = [
   'Sugerencias de chat · chatSugerencias[] está en el contrato y en §2, y el cable no lo trae ni lo acepta',
@@ -48,6 +48,11 @@ type Props = {
   onPanel: (indiceTab: number, indicePanel: number) => void
   onAgregarPanel: (indiceTab: number) => void
   seleccion: { tab: number; panel: number } | null
+  /** **Ya calculados, no se recalculan acá** · F4.11. Tres lugares de la pantalla
+   *  muestran problemas de composición —la pestaña, el botón del panel y el
+   *  resumen— y con tres cálculos podrían discrepar. `validarBorrador` corre una
+   *  vez en el contenedor y los tres leen de ahí. */
+  problemas: readonly ProblemaLocal[]
   /** Si el borrador difiere de lo que el servidor devolvió. */
   sucio: boolean
 }
@@ -61,9 +66,10 @@ export function TabEditor({
   onPanel,
   onAgregarPanel,
   seleccion,
+  problemas,
   sucio,
 }: Props) {
-  const invalidas = tabs.filter((t) => problemas(t).length > 0).length
+  const invalidas = new Set(problemas.map((p) => p.tab)).size
 
   return (
     <div className="flex flex-col gap-4">
@@ -74,13 +80,14 @@ export function TabEditor({
             es de ahora, porque sin él se edita creyendo que se guardó. */}
         <Label as="div">{sucio ? 'Sin guardar' : 'Sin cambios'}</Label>
         {invalidas > 0 && (
-          <Label as="div">{`${String(invalidas)} pestaña(s) no se pueden componer`}</Label>
+          <Label as="div">{`${String(invalidas)} pestaña(s) con problemas de composición`}</Label>
         )}
       </div>
 
       <ul className="flex flex-col gap-3 m-0 p-0 list-none">
         {tabs.map((t, i) => {
-          const fallas = problemas(t)
+          // Las de la PESTAÑA · las de sus paneles se marcan en cada botón.
+          const fallas = problemas.filter((p) => p.tab === i && p.panel === null)
           return (
             <li key={t.id ?? `nueva-${String(i)}`} className="flex flex-col gap-2 rounded-sm bg-w2 p-3">
               <div className="flex items-center gap-3">
@@ -165,6 +172,10 @@ export function TabEditor({
                         plomería. */}
                     {pan.tipo}
                     {pan.metricId === '' ? ' · sin métrica' : ''}
+                    {/* El panel con problemas se marca en su botón. El detalle
+                        está en el resumen y en el configurador: acá alcanza con
+                        que se vea cuál, sin abrir los doce. */}
+                    {problemas.some((pr) => pr.tab === i && pr.panel === j) ? ' ·' : ''}
                   </button>
                 ))}
                 <button
@@ -184,8 +195,8 @@ export function TabEditor({
               )}
 
               {fallas.map((f) => (
-                <Label key={f} as="div">
-                  {f}
+                <Label key={f.campo + f.mensaje} as="div">
+                  {f.mensaje}
                 </Label>
               ))}
             </li>

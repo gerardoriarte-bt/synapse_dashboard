@@ -362,7 +362,11 @@ describe('§7.2 · editar las opciones del panel', () => {
     // `tope` pide un entero de 1 en adelante.
     await userEvent.type(await screen.findByLabelText('tope'), '0')
 
-    expect(await screen.findByText(/«tope» tiene el valor 0 y espera un número entero/)).toBeInTheDocument()
+    // Dos veces: en el configurador, mientras se escribe, y en el resumen, que
+    // es lo que bloquea publicar. Las dos salen de la misma corrida.
+    await waitFor(() =>
+      expect(screen.getAllByText(/«tope» tiene el valor 0 y espera un número entero/)).toHaveLength(2),
+    )
   })
 
   it('un param de estructura se DECLARA, no se ofrece un textarea', async () => {
@@ -392,5 +396,73 @@ describe('§7.2 · editar las opciones del panel', () => {
     // Sigue sucio porque el TIPO cambió; lo que se verifica es que la opción se
     // fue y no quedó un `opciones: {}` colgado.
     expect(screen.getByLabelText<HTMLSelectElement>('orden').value).toBe('')
+  })
+})
+
+describe('§F4.11 · el resumen dice dónde y que NO decide', () => {
+  it('nombra la pestaña y el panel, no «composición inválida»', async () => {
+    servir()
+    montar()
+    await abrirPanel()
+
+    // El panel es `kpi` sobre una métrica `escalar`: cerrado. Se rompe a
+    // propósito pasándolo a `series`.
+    await userEvent.selectOptions(screen.getByLabelText('Tipo de panel'), 'series')
+
+    const resumen = await screen.findByText(/^Resumen · panel 1 · /)
+    expect(resumen.textContent).toContain('no sabe dibujar la forma')
+  })
+
+  it('declara que el servidor decide · también cuando está limpio', async () => {
+    // **El caso peligroso es el limpio**: es ahí donde alguien podría leer
+    // «listo para publicar». El criterio de F4.11 lo prohíbe explícitamente.
+    servir()
+    montar()
+    await abrirPanel()
+
+    expect(screen.getByText(/Sin problemas de composición que el front pueda ver/)).toBeInTheDocument()
+    expect(screen.getByText(/El servidor decide/)).toBeInTheDocument()
+  })
+
+  it('NO ofrece publicar · eso es F4.15', async () => {
+    servir()
+    montar()
+    await abrirPanel()
+    // Anclado: `/publicar/i` a secas matchea «borrador v4 sin publicar», que es
+    // el botón de la versión. Un falso positivo que haría pasar la prueba por
+    // el motivo equivocado.
+    expect(screen.queryByRole('button', { name: /^publicar/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^guardar/i })).toBeNull()
+  })
+
+  it('el botón del panel con problemas se marca', async () => {
+    servir()
+    montar()
+    await abrirPanel()
+
+    await userEvent.selectOptions(screen.getByLabelText('Tipo de panel'), 'series')
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /^series ·$/ })).toBeInTheDocument(),
+    )
+  })
+})
+
+describe('el contador de pestañas cuenta PESTAÑAS, no problemas', () => {
+  it('dos problemas en la misma pestaña siguen siendo una', async () => {
+    // **La prueba que la mutación pidió.** Con un problema por pestaña las dos
+    // cuentas dan lo mismo, así que `problemas.length` pasaba por `Set(tab).size`.
+    servir()
+    montar()
+    await abrirPanel()
+
+    // Uno: el tipo deja de aceptar la forma de la métrica.
+    await userEvent.selectOptions(screen.getByLabelText('Tipo de panel'), 'series')
+    // Dos: la pregunta operativa se borra.
+    await userEvent.clear(screen.getByDisplayValue('¿Cómo vamos?'))
+
+    await waitFor(() =>
+      expect(screen.getByText(/problema\(s\) de composición/).textContent).toMatch(/^2 problema/),
+    )
+    expect(screen.getByText('1 pestaña(s) con problemas de composición')).toBeInTheDocument()
   })
 })
