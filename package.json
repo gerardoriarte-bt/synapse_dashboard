@@ -24,6 +24,7 @@
     "estado": "python3 tools/estado.py",
     "docs-registro": "python3 tools/docs-registro.py",
     "backend-drift": "python3 tools/backend-drift.py",
+    "humo": "python3 tools/humo.py",
     "verify": "python3 tools/gate.py",
     "design-lint": "python3 tools/design-lint.py",
     "spec-anclas": "python3 tools/spec-anclas.py",

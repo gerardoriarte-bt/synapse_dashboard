@@ -2617,7 +2617,7 @@ Verificado por mutación devolviendo `SIN_PERMISO` al idioma del contrato. Lo
 sostiene `tsc`, que ya corre en la puerta — **una garantía que no necesita que
 nadie se acuerde.**
 
-#### ➕ F1.39 ⬜ Humo contra el servicio real
+#### ➕ F1.39 ⚠️ Humo contra el servicio real
 **Descripción.** Una corrida contra el servicio levantado con su seed —login,
 `/config/me`, `/config/catalog`, `/config/blocks`, `/config/tabs/:tabId`,
 `panels:batch`— que compare lo que llega contra
@@ -2632,6 +2632,29 @@ el adaptador es coherente con lo que nosotros creemos del cable, no con el cable
   campo y los dos valores, y **se corrige el yaml**, que es lo que puede estar
   mal: el yaml es nuestra transcripción, el servicio es el hecho.
 - Queda registrado qué se verificó y con qué commit del backend.
+
+**Parcial el 2026-09-15 · el script está, falta la corrida registrada.**
+
+`tools/humo.py` pide las cinco rutas al servicio y compara la respuesta contra
+los `required` de cada esquema del yaml, más las dos propiedades que no son de
+campos sino de forma: que `/config/catalog` y `/config/blocks` devuelvan
+**arreglo desnudo** y que `panels:batch` devuelva un **mapa**.
+
+**Verificado en sus dos caminos de BLOQUEADO**, que es la mitad del criterio: sin
+credenciales y sin servicio sale con **2**, nunca con 0, y las dos veces dice que
+no es un fallo del front. Un chequeo que pasa por falta de fuente miente sobre su
+cobertura.
+
+**Lo que falta es correrlo con credenciales y anotar el resultado con el commit
+del backend.** Se hizo a mano el 2026-09-14 —y encontró la única diferencia, que
+`semantic_direction` es texto y no un código— pero eso no queda registrado ni se
+puede repetir. La tarea cierra cuando la corrida esté anotada.
+
+    SYNAPSE_EMAIL=… SYNAPSE_PASSWORD=… npm run humo
+
+**No entra a la puerta**, y esa es una decisión: necesita el servicio levantado y
+credenciales, así que en CI saldría ⊘ todos los días — y un bloqueado cotidiano
+es cómo se deja de mirar un chequeo.
 
 
 #### ➕ F1.40 ✅ `Presentacion` llega al cuerpo · hoy está declarada y nadie la pasa

@@ -5,7 +5,7 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**78 de 193 tareas cerradas.** 8 parciales · 102 pendientes · 5 diferidas.
+**78 de 193 tareas cerradas.** 9 parciales · 101 pendientes · 5 diferidas.
 
 
 ## Front · 71 de 112
@@ -13,7 +13,7 @@
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██████████████████████` | 16/16 | 0 | 0 |
-| 1 · Consola y render/ | `████████████████████··` | 39/43 | 1 | 3 |
+| 1 · Consola y render/ | `████████████████████··` | 39/43 | 2 | 2 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `████████··············` | 4/11 | 1 | 3 |
 | 4 · Admin y Builder | `······················` | 0/23 | 0 | 23 |
