@@ -354,16 +354,23 @@ ya corregida. Falta escribir su cierre.
 
 ### Lo que sigue
 
-**F1.41** es la más urgente: el cable manda los params en inglés —`maximum`,
-`horizon`, `order`, `cap`— y `PARAM_SCHEMAS` los espera en español. Un `gauge`
-llega con `{ maximum: 100 }`, `GaugeBody` espera `maximo`, `adaptPanelParams` lo
-descarta por desconocido y **el panel muestra «Sin máximo declarado» teniendo
-el dato**. El cuerpo se niega a dibujar, que es correcto; lo que está mal es la
-razón.
-Después **F1.35** (los enumerados cerrados: `adaptCatalog` ya devuelve `rejected`,
-falta cablearlo a que el panel muestre `ERROR`) y **F1.38** (los mocks, ya medio
-hechos al ejercitar el adaptador).
+**La Fase 4 · admin y builder.** Son 23 tareas y cero hechas: es lo único
+genuinamente nuevo que queda, porque v2 no tiene una línea de esas dos
+superficies. Las rutas del backend ya existen, así que **trece se pueden empezar
+hoy**.
 
+**El punto de entrada es F4.22 + F4.23** —transcribir el cable de admin y los
+hooks del builder—, mismo patrón que F1.32 y F1.33. Ahí hay algo que decidir
+antes de empezar: sus respuestas de admin serializan structs de Go **en
+PascalCase** —`ID`, `Status`, `ColStart`—, al punto de romper sus propios tests
+de Postman. O se absorbe como el resto, o se les pide primero.
+
+**Y B4.8 + B4.9, que ahora son nuestras** · decidido el 2026-09-15, se escriben
+en un fork. Desbloquean F4.3 y F4.12. **Conviene hacerlas DESPUÉS de F4.22**: al
+transcribir el cable de admin se lee ese código de todas formas.
+
+**Lo que NO conviene tomar todavía:** F1.13b, F1.31 y F4.21 esperan campos o
+rutas que siguen en `docs/PARA-BACKEND.md`.
 ### Lo que se ve mal y es del backend
 
 La línea de BASE sale `Base · COMPLETED · MONTH ·` con el separador colgando
