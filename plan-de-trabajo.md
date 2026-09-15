@@ -2659,7 +2659,7 @@ no destructurarla. Once no la tocan. Dejarlo así y no partir el tipo es lo
 correcto mientras `Presentacion` siga siendo opcional en el contrato — el día que
 un segundo cuerpo la use, no hay nada que cambiar.
 
-#### ➕ F1.41 ⬜ Los nombres de los params, del cable al contrato
+#### ➕ F1.41 ✅ Los nombres de los params, del cable al contrato
 **Descripción.** `PARAM_SCHEMAS` espera los params en español —`maximo`,
 `horizonte`, `orden`, `tope`, `normalizacion`, `pilares`, `columnas`, `banda`,
 `corte`, `ventana`— y el cable los manda en inglés: `maximum`, `horizon`,
@@ -2667,11 +2667,16 @@ un segundo cuerpo la use, no hay nada que cambiar.
 La tabla `blocks` los declara en `layout_params`.
 
 **El caso que lo hace urgente es `gauge`.** El backend **exige**
-`options.maximum` y emite `ERROR` si falta, así que el panel llega con
-`{ maximum: 100 }`. `GaugeBody` espera `maximo`. `adaptPanelParams` descarta
-`maximum` por desconocido, el cuerpo aplica su default y **el medidor se dibuja
-contra otro máximo, en silencio** — el modo de falla exacto que `params.ts`
-existe para evitar, entrando por el lado contrario. Lo mismo `forecast` con
+`options.maximum` y emite `ERROR` si falta, así que el panel siempre llega con
+`{ maximum: 100 }`. `GaugeBody` espera `maximo`. `adaptPanelParams` descartaba
+`maximum` por desconocido y **el panel mostraba «Sin máximo declarado» teniendo
+el dato en la mano**.
+
+*Corregido el 2026-09-15 al escribir la prueba:* esta descripción decía antes que
+«el arco se dibuja contra otro máximo, en silencio». **Era falso.** `GaugeBody`
+comprueba `maximo === undefined` y **se niega a dibujar** — que es lo correcto, y
+por eso el defecto se veía en pantalla en vez de esconderse. El error era del
+diagnóstico, no del código. Lo mismo `forecast` con
 `horizon`.
 **Criterio de aceptación.**
 - El mapeo vive en el adaptador de `api/` y en un solo lugar, junto al de
@@ -2687,6 +2692,41 @@ existe para evitar, entrando por el lado contrario. Lo mismo `forecast` con
   `components`, `interval_level`, `stats`, `scale`, `clustering`, `reference`,
   `profile_cap`, `cuts`— y por qué: son de los tres cuerpos que no existen y de
   opciones que ningún cuerpo lee todavía.
+
+**Cerrada el 2026-09-15.** La tabla vive en `api/adapt.ts` **junto a la de formas
+y la de familias**, que era la mitad del criterio: tres tablas de traducción en
+tres archivos es cómo una se queda atrás.
+
+Trece nombres traducidos, y los nueve sin contraparte **pasan sin tocar** para que
+`validateParams` los reporte. Descartarlos en el adaptador habría sido peor: el
+panel se vería igual y quien compone no sabría por qué su opción no hace nada.
+
+**`paramsDisponibles` se traduce con la MISMA tabla**, y eso no es simetría
+estética: `validateParams` exige que el param esté en el esquema **y** en esa
+lista, así que traducir un lado y no el otro haría que todo saliera desconocido —
+el mismo síntoma que no traducir nada, y más difícil de encontrar.
+
+**Y el fixture de `ConsoleContainer` dejó de mentir.** Tenía `layout_params` en
+español con la deuda anotada al lado —«no es fiel al cable»—, puesta ahí cuando
+se escribió F1.33. Ahora manda `order` y `cap`, como el servicio.
+
+**Verificada por mutación, tres casos:** sin el mapeo de `maximum` (3 fallas),
+`cuts` traducido por descuido (1), y traducir el panel pero no la lista (2).
+
+### La corrección que trajo esta tarea
+
+**«El arco se dibuja contra otro máximo, en silencio» era falso**, y se repitió
+en el plan, en `CLAUDE.md` y en el análisis desde que se abrió F1.41.
+
+`GaugeBody` comprueba `maximo === undefined` y **se niega a dibujar**: muestra
+«Sin máximo declarado · no se puede leer como proporción». El defecto real era
+otro y peor de explicar aunque mejor de detectar — el backend manda el máximo, el
+adaptador no lo traducía, y **el panel declaraba que no lo tenía teniéndolo**.
+
+Lo encontró **leer el cuerpo al escribir su prueba**, no una revisión. Es el
+recordatorio de por qué las pruebas se escriben desde el contrato y el código y
+no desde lo que uno cree que pasa: el diagnóstico venía repitiéndose sin que
+nadie abriera el archivo.
 
 
 ---

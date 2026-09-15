@@ -431,7 +431,7 @@ que es la fuente. Acá va el orden y el porqué.
 | **F1.38** | MSW responde la forma del cable | Sin esto las 350 pruebas verifican el adaptador contra sí mismo |
 | **F1.39** | Humo contra el servicio real | Una prueba verde contra MSW no demuestra que el servicio conteste |
 | **F1.40** | `Presentacion` llega al cuerpo | Está declarada y nadie la pasa. **Es nuestro**, y contradice nuestro propio contrato |
-| **F1.41** | Los nombres de los params, del cable al contrato | `gauge` llega con `maximum` y `GaugeBody` espera `maximo`: el medidor se dibuja contra otro máximo, en silencio |
+| **F1.41** | Los nombres de los params, del cable al contrato | `gauge` llega con `maximum` y `GaugeBody` espera `maximo`: el panel dice «Sin máximo declarado» teniendo el dato |
 
 **F1.38 es la que sostiene todo lo demás.** Hoy `tests/mocks/handlers.ts`
 responde la forma del contrato. Si se queda así, el adaptador nunca se ejecuta en

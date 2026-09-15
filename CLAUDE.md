@@ -357,7 +357,9 @@ ya corregida. Falta escribir su cierre.
 **F1.41** es la más urgente: el cable manda los params en inglés —`maximum`,
 `horizon`, `order`, `cap`— y `PARAM_SCHEMAS` los espera en español. Un `gauge`
 llega con `{ maximum: 100 }`, `GaugeBody` espera `maximo`, `adaptPanelParams` lo
-descarta por desconocido y **el arco se dibuja contra otro máximo, en silencio**.
+descarta por desconocido y **el panel muestra «Sin máximo declarado» teniendo
+el dato**. El cuerpo se niega a dibujar, que es correcto; lo que está mal es la
+razón.
 Después **F1.35** (los enumerados cerrados: `adaptCatalog` ya devuelve `rejected`,
 falta cablearlo a que el panel muestre `ERROR`) y **F1.38** (los mocks, ya medio
 hechos al ejercitar el adaptador).

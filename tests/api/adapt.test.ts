@@ -208,8 +208,12 @@ describe('pestaña con paneles', () => {
     })
   })
 
-  it('las opciones pasan CRUDAS: quien las traduce y valida es `adaptPanelParams`', () => {
-    expect(adaptTab(wire).panels[0]?.opciones).toEqual({ comparative: true })
+  it('el adaptador traduce el NOMBRE del param; el VALOR lo valida params.ts', () => {
+    // El reparto, desde F1.41: acá se traduce `comparative` → `comparativo`, que
+    // es vocabulario; que `comparativo` sea un booleano y no un arreglo lo
+    // decide `validateParams`, que es esquema. Antes esta prueba afirmaba que
+    // pasaban crudas, y por eso el `maximum` de un `gauge` se descartaba.
+    expect(adaptTab(wire).panels[0]?.opciones).toEqual({ comparativo: true })
   })
 
   it('un panel sin opciones no declara la clave', () => {
@@ -459,5 +463,67 @@ describe('presentación', () => {
     // barras o de tabla llega sin rótulo, y «ningún número desnudo» es regla
     // dura. Es §4 ask 13, y acá no se compensa.
     expect(conValor({ shape: 'categorical', items: [] })).not.toHaveProperty('presentacion')
+  })
+})
+
+describe('los nombres de los params · F1.41', () => {
+  const panelConOpciones = (options: Record<string, unknown>): WireTabWithPanels => ({
+    tab: { id: 'tab-1', name: 'T', operational_question: '¿?', sort_order: 1 },
+    panels: [
+      { id: 'p-1', metric_id: 'm-1', type: 'gauge', col_start: 1, col_span: 3, row_span: 4, options },
+    ],
+  })
+
+  it('`maximum` llega como `maximo` · el caso que lo hacía urgente', () => {
+    // Sin traducir, `validateParams` no encuentra `maximum` en `PARAM_SCHEMAS`,
+    // lo descarta por desconocido, y **`GaugeBody` dibuja el arco contra su
+    // default**: el panel se ve bien mostrando otra cosa. El backend además lo
+    // EXIGE —`gauge requires options.maximum`—, así que siempre llega.
+    expect(adaptTab(panelConOpciones({ maximum: 100 })).panels[0]?.opciones).toEqual({
+      maximo: 100,
+    })
+  })
+
+  it('traduce los trece nombres que el cable usa', () => {
+    const cable = {
+      comparative: 1, meter: 2, pillars: 3, normalization: 4, cut: 5, order: 6,
+      columns: 7, band: 8, maximum: 9, horizon: 10, cap: 11, window: 12, bins: 13,
+    }
+    expect(Object.keys(adaptTab(panelConOpciones(cable)).panels[0]?.opciones ?? {})).toEqual([
+      'comparativo', 'medidor', 'pilares', 'normalizacion', 'corte', 'orden',
+      'columnas', 'banda', 'maximo', 'horizonte', 'tope', 'ventana', 'bins',
+    ])
+  })
+
+  it('`cut` se traduce y `cuts` NO · un plural de diferencia', () => {
+    // `cut` es de `series` y `forecast`; `cuts` es de `composition` y ningún
+    // cuerpo nuestro lo lee. Traducir el plural por descuido pondría un valor
+    // donde el cuerpo espera otro.
+    const o = adaptTab(panelConOpciones({ cut: 3, cuts: ['a'] })).panels[0]?.opciones
+    expect(o).toEqual({ corte: 3, cuts: ['a'] })
+  })
+
+  it('un param sin contraparte pasa SIN TOCAR, para que se reporte', () => {
+    // `brand`, `components`, `stats`… son del cable y ningún cuerpo nuestro los
+    // lee. Descartarlos acá en silencio sería peor: el panel se vería igual y
+    // quien compone no sabría por qué su opción no hace nada. Pasan crudos y
+    // `validateParams` los marca desconocidos.
+    expect(adaptTab(panelConOpciones({ components: 3 })).panels[0]?.opciones).toEqual({
+      components: 3,
+    })
+  })
+
+  it('`paramsDisponibles` se traduce con LA MISMA tabla', () => {
+    // `validateParams` exige que el param esté en el esquema Y en esta lista.
+    // Traducir un lado y no el otro haría que todo saliera desconocido — que es
+    // el mismo síntoma que no traducir nada, y más difícil de encontrar.
+    const [b] = adaptBlocks([
+      {
+        type: 'gauge', ui_name: 'Medidor', accepted_shapes: ['scalar'],
+        col_span_min: 3, col_span_max: 7, row_span_min: 4, row_span_max: 4,
+        layout_params: ['band', 'components', 'maximum'],
+      },
+    ])
+    expect(b?.paramsDisponibles).toEqual(['banda', 'components', 'maximo'])
   })
 })

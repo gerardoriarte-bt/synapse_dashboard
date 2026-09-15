@@ -149,12 +149,11 @@ describe('F1.29 · un param inválido degrada el panel con la razón visible', (
     // exactamente lo contrario de lo que el tenant configuró.
     server.use(
       http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
-      // Arreglo desnudo, y con la forma del cable.
+      // Arreglo desnudo, y con la forma del cable **en los dos campos**.
       //
-      // **`layout_params` va en español acá y el servicio los manda en inglés**
-      // —`order`, `cap`—. Es deuda declarada de F1.41, que es la tarea que
-      // traduce los nombres de param; hasta entonces este fixture NO es fiel al
-      // cable en ese campo, y está escrito para que se vea.
+      // Hasta F1.41 este fixture tenía `layout_params` en español, con la deuda
+      // escrita al lado: no era fiel al cable. Ahora sí lo es — `order` y `cap`,
+      // como los manda el servicio— y el adaptador los traduce.
       http.get(`${API}/config/blocks`, () =>
         ok([
           {
@@ -165,12 +164,12 @@ describe('F1.29 · un param inválido degrada el panel con la razón visible', (
             col_span_max: 8,
             row_span_min: 4,
             row_span_max: 5,
-            layout_params: ['orden', 'tope'],
+            layout_params: ['order', 'cap'],
           },
         ]),
       ),
       http.get(`${API}/config/tabs/:tabId`, () =>
-        ok({ tab: context.tabs[0], panels: [{ ...kpiPanel, type: 'bars', options: { orden: 'ascending' } }],
+        ok({ tab: context.tabs[0], panels: [{ ...kpiPanel, type: 'bars', options: { order: 'ascending' } }],
         }),
       ),
       http.post(`${API}/config/panels:batch`, () =>

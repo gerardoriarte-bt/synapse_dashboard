@@ -116,6 +116,61 @@ const GRANOS: Readonly<Record<string, 'dia' | 'semana' | 'mes'>> = {
   month: 'mes',
 }
 
+/** **Los nombres de los params de layout** · F1.41.
+ *
+ *  El cable los manda en inglés —`layout_params` de la tabla `blocks`— y
+ *  `PARAM_SCHEMAS` de `api/params.ts` los espera en español. Sin esta tabla, un
+ *  `gauge` llega con `{ maximum: 100 }`, `validateParams` no encuentra `maximum`
+ *  en el esquema, lo descarta como desconocido, y **el cuerpo dibuja el arco
+ *  contra su default**: el panel se ve bien mostrando otra cosa.
+ *
+ *  Es el modo de falla que `params.ts` existe para evitar, entrando por el lado
+ *  contrario — no un param mal escrito por quien compone, sino uno bien escrito
+ *  en el otro idioma.
+ *
+ *  Va acá y no en `params.ts` **porque acá están los otros dos mapeos**: formas y
+ *  familias. Tres tablas de traducción en tres archivos es cómo una se queda
+ *  atrás. */
+const PARAMS: Readonly<Record<string, string>> = {
+  comparative: 'comparativo',
+  meter: 'medidor',
+  pillars: 'pilares',
+  normalization: 'normalizacion',
+  cut: 'corte',
+  order: 'orden',
+  columns: 'columnas',
+  band: 'banda',
+  maximum: 'maximo',
+  horizon: 'horizonte',
+  cap: 'tope',
+  window: 'ventana',
+  bins: 'bins',
+}
+
+/** **Los que el cable declara y este front no lee**, con su tipo de panel:
+ *
+ *      brand (bars) · components (gauge) · interval_level (forecast)
+ *      cuts (composition) · reference, profile_cap (comparison)
+ *      stats (distribution) · scale (matrix) · clustering (graph)
+ *
+ *  **No se traducen a propósito y no se inventa un nombre.** Cinco son de los
+ *  tres cuerpos que todavía no existen —`comparison`, `matrix`, `graph`— y los
+ *  otros son opciones que ningún cuerpo nuestro lee hoy.
+ *
+ *  Pasan sin tocar, y `validateParams` los reporta como desconocidos: así el que
+ *  compone se entera de que configuró algo que no se dibuja. **Descartarlos acá
+ *  en silencio sería peor** — el panel se vería igual y nadie sabría por qué la
+ *  opción no hace nada.
+ *
+ *  Ojo con `cut` y `cuts`: el primero es de `series` y `forecast` y sí se
+ *  traduce; el segundo es de `composition` y no tiene contraparte. Un plural de
+ *  diferencia. */
+function traducirParams(o: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(o)) out[PARAMS[k] ?? k] = v
+  return out
+}
+
 /* ── Contexto ─────────────────────────────────────────────────────────────── */
 
 export function adaptContext(w: WireContext): AppContext {
@@ -298,7 +353,12 @@ export function adaptBlocks(rows: readonly WireBlock[]): Block[] {
     colSpanMax: b.col_span_max,
     rowSpanMin: b.row_span_min,
     rowSpanMax: b.row_span_max,
-    ...(b.layout_params === undefined ? {} : { paramsDisponibles: b.layout_params }),
+    // **La misma tabla que los params del panel**, y por eso importa que sea una
+    // sola: `validateParams` exige que el param esté en el esquema Y en esta
+    // lista. Traducir un lado y no el otro haría que todo saliera desconocido.
+    ...(b.layout_params === undefined
+      ? {}
+      : { paramsDisponibles: b.layout_params.map((n) => PARAMS[n] ?? n) }),
   }))
 }
 
@@ -319,10 +379,11 @@ function adaptPanel(p: WirePanel): PanelConfig {
     colStart: p.col_start,
     colSpan: p.col_span,
     rowSpan: p.row_span,
-    // Los nombres de los params van en inglés en el cable y en español en el
-    // front · F1.41. Acá se pasan crudos a propósito: quien los traduce y los
-    // valida es `adaptPanelParams`, que ya existe y ya tiene la tabla.
-    ...(p.options === undefined ? {} : { opciones: p.options }),
+    // **Los params se traducen acá** · F1.41. Quien los VALIDA sigue siendo
+    // `adaptPanelParams`, que compara contra `PARAM_SCHEMAS` y contra
+    // `paramsDisponibles`; lo que cambia es que ahora los dos lados de esa
+    // comparación hablan el mismo idioma.
+    ...(p.options === undefined ? {} : { opciones: traducirParams(p.options) }),
   }
 }
 

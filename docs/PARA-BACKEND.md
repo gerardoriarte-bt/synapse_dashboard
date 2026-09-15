@@ -26,6 +26,7 @@ verde.
 - **F1.36** · client.ts contra las rutas, los cuerpos y el error de este servicio
 - **F1.37** · Una sola base de API
 - **F1.40** · Presentacion llega al cuerpo · hoy está declarada y nadie la pasa
+- **F1.41** · Los nombres de los params, del cable al contrato
 
 ---
 

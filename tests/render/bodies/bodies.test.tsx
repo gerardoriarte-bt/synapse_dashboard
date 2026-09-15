@@ -423,3 +423,44 @@ describe('RecoBody · una acción sin quien la apruebe no ofrece botón', () => 
     expect(screen.queryByRole('button', { name: /aprobar/i })).toBeNull()
   })
 })
+
+describe('GaugeBody · el síntoma real de un `maximo` que no llega · F1.41', () => {
+  // **Corrección del 2026-09-15.** Durante toda la integración se dijo que sin
+  // `maximo` «el arco se dibuja contra otro máximo, en silencio». **Es falso**:
+  // el cuerpo se NIEGA a dibujar y lo dice. El defecto que F1.41 arregla es
+  // otro, y peor de explicar aunque mejor de detectar: el backend manda
+  // `maximum`, el adaptador no lo traducía, `validateParams` lo descartaba por
+  // desconocido, y el panel mostraba «Sin máximo declarado» **teniendo el dato**.
+  //
+  // Lo encontró leer `GaugeBody` al escribir esta prueba, no una revisión.
+
+  it('sin `maximo` no dibuja un arco equivocado: se niega y lo declara', () => {
+    render(
+      <GaugeBody
+        value={{ forma: 'escalar', v: 61 } as never}
+        params={{}}
+        span={{ colStart: 1, colSpan: 4, rowSpan: 4 }}
+        family="medios"
+        metric="Avance"
+        format={createFormat('es-MX')}
+      />,
+    )
+    expect(screen.getByText(/Sin máximo declarado/)).toBeInTheDocument()
+    expect(document.querySelector('svg')).toBeNull()
+  })
+
+  it('con `maximo` dibuja, y el pie declara contra qué', () => {
+    render(
+      <GaugeBody
+        value={{ forma: 'escalar', v: 61 } as never}
+        params={{ maximo: 100 }}
+        span={{ colStart: 1, colSpan: 4, rowSpan: 4 }}
+        family="medios"
+        metric="Avance"
+        format={createFormat('es-MX')}
+      />,
+    )
+    expect(screen.queryByText(/Sin máximo declarado/)).toBeNull()
+    expect(screen.getByText(/Sobre 100/)).toBeInTheDocument()
+  })
+})
