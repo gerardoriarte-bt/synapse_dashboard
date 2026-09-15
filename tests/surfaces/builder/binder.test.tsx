@@ -12,7 +12,7 @@
  *  `CatalogMetric` de `synapse-admin-wire.yaml`.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
@@ -67,6 +67,26 @@ const bloques = [
     row_span_min: 4,
     row_span_max: 8,
     layout_params: ['normalization'],
+  },
+  {
+    type: 'bars',
+    ui_name: 'Barras',
+    accepted_shapes: ['categorical'],
+    col_span_min: 4,
+    col_span_max: 12,
+    row_span_min: 4,
+    row_span_max: 8,
+    layout_params: ['order', 'cap'],
+  },
+  {
+    type: 'table',
+    ui_name: 'Tabla',
+    accepted_shapes: ['tabular'],
+    col_span_min: 6,
+    col_span_max: 12,
+    row_span_min: 4,
+    row_span_max: 10,
+    layout_params: ['columns'],
   },
   {
     type: 'gauge',
@@ -276,5 +296,101 @@ describe('agregar y quitar paneles', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Quitar Resumen' }))
     await waitFor(() => expect(screen.queryByLabelText('Tipo de panel')).toBeNull())
+  })
+})
+
+describe('§7.2 · editar las opciones del panel', () => {
+  it('un param de enum se elige de una lista, con «sin declarar»', async () => {
+    // El vacío no es un valor: el default lo aplica el cuerpo, y escribirlo acá
+    // lo congelaría el día que el cuerpo cambie de opinión.
+    servir()
+    montar()
+    await abrirPanel()
+
+    await userEvent.selectOptions(screen.getByLabelText('Tipo de panel'), 'bars')
+    const orden = await screen.findByLabelText<HTMLSelectElement>('orden')
+    expect(orden.value).toBe('')
+    expect(within(orden).getByText('Sin declarar')).toBeInTheDocument()
+
+    await userEvent.selectOptions(orden, 'asc')
+    expect(screen.getByLabelText<HTMLSelectElement>('orden').value).toBe('asc')
+  })
+
+  it('un param numérico se escribe y se manda como NÚMERO', async () => {
+    // `opciones` viaja como JSON y `validateParams` pide `typeof === 'number'`:
+    // mandar «10» degradaría el panel con razón visible, que es correcto y es un
+    // error que este campo no debe crear. Se verifica por el `type` del campo y
+    // por el valor que queda, que es lo observable desde acá.
+    servir()
+    montar()
+    await abrirPanel()
+
+    await userEvent.selectOptions(screen.getByLabelText('Tipo de panel'), 'bars')
+    const tope = await screen.findByLabelText<HTMLInputElement>('tope')
+    expect(tope.type).toBe('number')
+    expect(tope.min).toBe('1')
+
+    await userEvent.type(tope, '10')
+    expect(screen.getByLabelText<HTMLInputElement>('tope').value).toBe('10')
+  })
+
+  it('el número escrito llega como NÚMERO al validador', async () => {
+    // **La prueba que la mutación pidió.** El valor mostrado es el mismo con
+    // `Number(texto)` y sin él —`String(valor)` los iguala— así que el DOM del
+    // campo no distingue. Lo que sí distingue es `validateParams`, que pide
+    // `typeof === 'number'`: con la coerción no hay queja, sin ella el panel
+    // sale degradado con razón visible.
+    servir()
+    const { container } = montar()
+    await abrirPanel()
+
+    await userEvent.selectOptions(screen.getByLabelText('Tipo de panel'), 'bars')
+    await userEvent.type(await screen.findByLabelText('tope'), '10')
+
+    await waitFor(() =>
+      expect(screen.getByLabelText<HTMLInputElement>('tope').value).toBe('10'),
+    )
+    expect(container.textContent).not.toMatch(/«tope» tiene el valor/)
+  })
+
+  it('un valor que el esquema no acepta se explica, no se corrige solo', async () => {
+    servir()
+    montar()
+    await abrirPanel()
+
+    await userEvent.selectOptions(screen.getByLabelText('Tipo de panel'), 'bars')
+    // `tope` pide un entero de 1 en adelante.
+    await userEvent.type(await screen.findByLabelText('tope'), '0')
+
+    expect(await screen.findByText(/«tope» tiene el valor 0 y espera un número entero/)).toBeInTheDocument()
+  })
+
+  it('un param de estructura se DECLARA, no se ofrece un textarea', async () => {
+    // `columnas` es una lista de definiciones de columna. Un textarea de JSON
+    // compilaría y el error aparecería al publicar.
+    servir()
+    montar()
+    await abrirPanel()
+
+    await userEvent.selectOptions(screen.getByLabelText('Tipo de panel'), 'table')
+    expect(await screen.findByText(/columnas · una lista · no se edita acá/)).toBeInTheDocument()
+    expect(screen.queryByLabelText('columnas')).toBeNull()
+  })
+
+  it('escribir una opción ensucia el borrador · borrarla lo limpia', async () => {
+    servir()
+    montar()
+    await abrirPanel()
+
+    await userEvent.selectOptions(screen.getByLabelText('Tipo de panel'), 'bars')
+    const orden = await screen.findByLabelText<HTMLSelectElement>('orden')
+
+    await userEvent.selectOptions(orden, 'asc')
+    expect(screen.getByText('Sin guardar')).toBeInTheDocument()
+
+    await userEvent.selectOptions(screen.getByLabelText('orden'), '')
+    // Sigue sucio porque el TIPO cambió; lo que se verifica es que la opción se
+    // fue y no quedó un `opciones: {}` colgado.
+    expect(screen.getByLabelText<HTMLSelectElement>('orden').value).toBe('')
   })
 })

@@ -211,3 +211,37 @@ export function cambiarTipo(
       : t,
   )
 }
+
+/** Poner o borrar UNA opción del panel.
+ *
+ *  **`undefined` borra la clave entera y no la deja en `undefined`.** Con
+ *  `exactOptionalPropertyTypes` las dos compilan, y `JSON.stringify` descarta la
+ *  clave en los dos casos — así que del lado del cable da igual. Lo que no da
+ *  igual es `sucio`, que compara `JSON.stringify` del borrador contra la
+ *  semilla: un `opciones: {}` donde la semilla no tenía `opciones` marcaría
+ *  «sin guardar» sin que nadie haya cambiado nada. Por eso el objeto vacío se
+ *  borra también.
+ */
+export function editarOpcion(
+  tabs: readonly TabParaGuardar[],
+  indiceTab: number,
+  indicePanel: number,
+  nombre: string,
+  valor: unknown,
+): TabParaGuardar[] {
+  return tabs.map((t, i) =>
+    i === indiceTab
+      ? {
+          ...t,
+          panels: t.panels.map((p, j) => {
+            if (j !== indicePanel) return p
+            const siguiente = { ...p.opciones }
+            if (valor === undefined) delete siguiente[nombre]
+            else siguiente[nombre] = valor
+            const { opciones: _, ...resto } = p
+            return Object.keys(siguiente).length === 0 ? resto : { ...resto, opciones: siguiente }
+          }),
+        }
+      : t,
+  )
+}

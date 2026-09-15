@@ -33,6 +33,7 @@ import {
   agregarPanel,
   cambiarTipo,
   editar,
+  editarOpcion,
   editarPanel,
   mover,
   quitar,
@@ -218,6 +219,10 @@ export function Builder() {
               onSpan={(campo, valor) => {
                 if (seleccion === null) return
                 cambiar(editarPanel(tabs, seleccion.tab, seleccion.panel, { [campo]: valor }))
+              }}
+              onOpcion={(nombre, valor) => {
+                if (seleccion === null) return
+                cambiar(editarOpcion(tabs, seleccion.tab, seleccion.panel, nombre, valor))
               }}
               onQuitar={() => {
                 if (seleccion === null) return

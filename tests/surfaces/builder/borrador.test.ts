@@ -10,6 +10,7 @@ import {
   agregarPanel,
   cambiarTipo,
   editar,
+  editarOpcion,
   editarPanel,
   mover,
   problemas,
@@ -213,5 +214,44 @@ describe('cambiarTipo · recorta los spans y BORRA las opciones', () => {
     const tabs = cambiarTipo(conOpciones, 0, 0, 'kpi', 3, 4, 3, 4)
     expect(tabs[0]?.panels[0]?.id).toBe('p-2')
     expect(tabs[0]?.panels[0]?.metricId).toBe('m-2')
+  })
+})
+
+describe('editarOpcion · una opción a la vez', () => {
+  it('pone la opción sin tocar el resto del panel', () => {
+    const tabs = editarOpcion(sembrar(detalle), 0, 0, 'maximo', 100)
+    expect(tabs[0]?.panels[0]?.opciones).toEqual({ maximo: 100 })
+    expect(tabs[0]?.panels[0]?.id).toBe('p-2')
+  })
+
+  it('conviven dos opciones', () => {
+    const una = editarOpcion(sembrar(detalle), 0, 0, 'maximo', 100)
+    const dos = editarOpcion(una, 0, 0, 'banda', { alto: 1 })
+    expect(dos[0]?.panels[0]?.opciones).toEqual({ maximo: 100, banda: { alto: 1 } })
+  })
+
+  it('`undefined` BORRA la clave · no la deja en undefined', () => {
+    const una = editarOpcion(sembrar(detalle), 0, 0, 'maximo', 100)
+    const sin = editarOpcion(una, 0, 0, 'maximo', undefined)
+    expect(sin[0]?.panels[0]?.opciones).toBeUndefined()
+  })
+
+  it('borrar la última opción deja el panel IDÉNTICO a la semilla', () => {
+    // **La mitad que importa.** `JSON.stringify` descarta las claves
+    // `undefined`, así que del lado del cable `opciones: {}` y sin `opciones`
+    // producen el mismo JSON. Lo que no da igual es `sucio`, que compara
+    // `JSON.stringify` del borrador contra la semilla: un `{}` donde la semilla
+    // no tenía nada marcaría «sin guardar» sin que nadie cambiara nada.
+    const semilla = sembrar(detalle)
+    const ida = editarOpcion(semilla, 0, 0, 'maximo', 100)
+    const vuelta = editarOpcion(ida, 0, 0, 'maximo', undefined)
+    expect(sucio(ida, semilla)).toBe(true)
+    expect(sucio(vuelta, semilla)).toBe(false)
+  })
+
+  it('no toca los otros paneles ni las otras pestañas', () => {
+    const tabs = editarOpcion(sembrar(detalle), 0, 0, 'maximo', 100)
+    expect(tabs[0]?.panels[1]?.opciones).toBeUndefined()
+    expect(tabs[1]?.panels[0]?.opciones).toBeUndefined()
   })
 })

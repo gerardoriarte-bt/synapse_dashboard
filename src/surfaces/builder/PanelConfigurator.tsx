@@ -26,6 +26,14 @@
  *  no una descripción escrita a mano: si el esquema suma un valor, la pantalla lo
  *  dice sola.
  *
+ *  ── LO QUE SE EDITA Y LO QUE SOLO SE DECLARA ────────────────────────────────
+ *
+ *  Un param de tipo `enum`, `number` o `string` se edita. Los de `array` y
+ *  `object` **no**, y no es lo mismo que un param sin esquema: acá el esquema
+ *  existe, pero son estructuras —`columnas` es una lista de definiciones de
+ *  columna, `banda` un objeto con umbrales—. Un textarea de JSON compilaría y
+ *  sería la peor salida: el error aparecería al publicar.
+ *
  *  ── LO QUE §7.2 PIDE Y NO ESTÁ ──────────────────────────────────────────────
  *
  *  «Debajo, los parámetros del panel: ventana, corte, **dimensión de
@@ -41,7 +49,7 @@
  */
 import { Label } from '../../render/primitives/Label'
 import { invalidReason } from '../../catalog/blocks'
-import { PARAM_SCHEMAS, describirParam } from '../../api/params'
+import { PARAM_SCHEMAS, describirParam, validateParams } from '../../api/params'
 import type { BlockTable } from '../../catalog/blocks'
 import type { Block, Metric, PanelType } from '../../api/types'
 import type { PanelDeBorrador } from './borrador'
@@ -54,6 +62,8 @@ type Props = {
   onTipo: (tipo: string) => void
   onMetrica: (metricId: string) => void
   onSpan: (campo: 'colSpan' | 'rowSpan', valor: number) => void
+  /** `undefined` borra la opción · ver `editarOpcion`. */
+  onOpcion: (nombre: string, valor: unknown) => void
   onQuitar: () => void
 }
 
@@ -65,11 +75,19 @@ export function PanelConfigurator({
   onTipo,
   onMetrica,
   onSpan,
+  onOpcion,
   onQuitar,
 }: Props) {
   const tipo = panel.tipo as PanelType
   const bloque = tabla.get(tipo)
   const esquema = PARAM_SCHEMAS[tipo] ?? {}
+
+  // **Lo que este panel tendría si se guardara así**, con el mismo validador que
+  // corre al leer un layout de vuelta · `api/params.ts`. Preguntárselo acá es lo
+  // que hace que el campo de un número mande un número: un `"10"` viaja igual por
+  // JSON, compila igual, y recién degradaría el panel la próxima vez que alguien
+  // lo abra. Acá se ve mientras se escribe.
+  const validado = validateParams(tipo, panel.opciones, bloque?.paramsDisponibles)
 
   /** La razón por la que una métrica no sirve para este tipo, o `null`.
    *
@@ -191,21 +209,87 @@ export function PanelConfigurator({
         ) : (
           bloque.paramsDisponibles.map((nombre) => {
             const spec = esquema[nombre]
+            const valor = panel.opciones?.[nombre]
+
+            // El backend lo declara disponible y el front no sabe qué valores
+            // acepta. **No se ofrece un campo libre**: escribir ahí produce un
+            // param que `validateParams` va a descartar, que es el silencio que
+            // F1.29 vino a cerrar.
+            if (spec === undefined) {
+              return (
+                <Label key={nombre} as="div">
+                  {`${nombre} · el contrato no declara sus valores · B0.9`}
+                </Label>
+              )
+            }
+
+            // **`array` y `object` tampoco se editan acá**, y no es lo mismo que
+            // el caso de arriba: el esquema sí los declara, pero son estructuras
+            // —`columnas` es una lista de definiciones de columna, `banda` un
+            // objeto con dos umbrales—. Un textarea de JSON compilaría y sería
+            // la peor de las opciones: el error aparecería al publicar.
+            if (spec.kind === 'array' || spec.kind === 'object') {
+              return (
+                <Label key={nombre} as="div">
+                  {`${nombre} · ${describirParam(spec)} · no se edita acá · hace falta un editor propio`}
+                </Label>
+              )
+            }
+
             return (
-              <Label key={nombre} as="div">
-                {spec === undefined
-                  ? // El backend lo declara disponible y el front no sabe qué
-                    // valores acepta. No se ofrece un campo libre: escribir ahí
-                    // produce un param que `validateParams` va a descartar.
-                    `${nombre} · el contrato no declara sus valores · B0.9`
-                  : `${nombre} · espera ${describirParam(spec)}`}
-              </Label>
+              <label key={nombre} className="flex items-center gap-2">
+                <Label>{`${nombre} · espera ${describirParam(spec)}`}</Label>
+                {spec.kind === 'enum' ? (
+                  <select
+                    aria-label={nombre}
+                    value={typeof valor === 'string' ? valor : ''}
+                    onChange={(e) => onOpcion(nombre, e.target.value === '' ? undefined : e.target.value)}
+                    className="bg-w1 text-ink text-celda rounded-sm px-2 py-1 border border-w4"
+                  >
+                    {/* **El vacío es «sin declarar», no un valor.** El default lo
+                        aplica el cuerpo; escribirlo acá lo congelaría el día que
+                        el cuerpo cambie de opinión. */}
+                    <option value="">Sin declarar</option>
+                    {spec.values.map((v) => (
+                      <option key={v} value={v}>
+                        {v}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type={spec.kind === 'number' ? 'number' : 'text'}
+                    aria-label={nombre}
+                    value={valor === undefined ? '' : String(valor)}
+                    {...(spec.kind === 'number' && spec.min !== undefined ? { min: spec.min } : {})}
+                    {...(spec.kind === 'number' && spec.integer === true ? { step: 1 } : {})}
+                    onChange={(e) => {
+                      const texto = e.target.value
+                      if (texto === '') return onOpcion(nombre, undefined)
+                      // **Un número se manda como número.** `opciones` viaja
+                      // como JSON y `validateParams` pide `typeof === 'number'`:
+                      // mandar «100» degradaría el panel con razón visible, que
+                      // es correcto y es un error que este campo no debe crear.
+                      return onOpcion(nombre, spec.kind === 'number' ? Number(texto) : texto)
+                    }}
+                    className="bg-w1 text-ink text-celda rounded-sm px-2 py-1 border border-w4 w-32"
+                  />
+                )}
+              </label>
             )
           })
         )}
-        <Label as="div">
-          Editarlas es F4.11 · hoy se listan para que se vea qué acepta cada tipo
-        </Label>
+        {validado.invalid.map((p) => (
+          // «El rechazo explicado es lo que enseña el sistema», también acá: la
+          // razón sale del validador y no de una frase escrita a mano.
+          <Label key={p.param} as="div">
+            {p.reason}
+          </Label>
+        ))}
+        {validado.unknown.map((n) => (
+          <Label key={n} as="div">{`${n} · este tipo no lo lee · se va a descartar`}</Label>
+        ))}
+
         <Label as="div">
           Y falta la dimensión de desagregación que §7.2 pide · ningún tipo la declara como param
         </Label>

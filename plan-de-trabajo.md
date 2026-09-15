@@ -3500,8 +3500,8 @@ a su versión.
 
 ### F4.10 cerrada el 2026-09-15 · el rechazo explicado
 
-`PanelConfigurator` más las cuatro operaciones de panel en `borrador.ts`. **532
-pruebas**, veintitrés nuevas, catorce mutaciones muertas.
+`PanelConfigurator` más las cinco operaciones de panel en `borrador.ts`. **543
+pruebas**, treinta y cuatro nuevas, veinte mutaciones muertas.
 
 **La frase de §7.2 que decide la pantalla no es la primera, es la última:** «las
 incompatibles aparecen listadas y deshabilitadas con la razón. **El rechazo
@@ -3547,8 +3547,21 @@ guarda y se publica basura. `cambiarTipo` los borra.
 elegido en un formulario es una columna que nadie eligió mirando. Se muestra y se
 declara de dónde va a salir.
 
-**Editar los valores de los params es F4.11.** Hoy se listan con lo que cada uno
-acepta, que es lo que hace falta para elegir el tipo con criterio.
+**Las opciones se editan acá y no en F4.11**, aunque el primer cierre de esta
+tarea las dejó solo listadas. Es lo que `npm run verify` no mira: «opciones» está
+en el título de F4.10, así que empujarlas a la tarea siguiente era el criterio
+cumplido a medias sin bajar el estado a ⚠️ — el modo de falla que la auditoría del
+plan persigue. Corregido en la misma jornada, antes de tomar F4.11.
+
+Un param de `enum`, `number` o `string` se edita. Los de `array` y `object`
+**no**, y no es lo mismo que un param sin esquema: acá el esquema existe, pero son
+estructuras —`columnas` es una lista de definiciones de columna, `banda` un objeto
+con umbrales—. Un textarea de JSON compilaría y sería la peor salida: el error
+aparecería al publicar.
+
+**Y el vacío de un enum es «sin declarar», no un valor.** El default lo aplica el
+cuerpo; escribirlo en el layout lo congelaría el día que el cuerpo cambie de
+opinión.
 
 **Y el param de desagregación que §7.2 pide no existe en ningún lado** —ni en
 `paramsDisponibles`, ni en `PARAM_SCHEMAS`, ni en ningún cuerpo de `render/`—.
@@ -3557,13 +3570,34 @@ drill-down de F5.4, diferido. **Es una decisión de diseño, no un campo que fal
 en un extremo**: quedó como la pregunta 14 de `docs/B0.9-preguntas-abiertas.md`,
 con las tres salidas posibles. No frena nada.
 
-**Verificadas por mutación, catorce casos:** las incompatibles filtradas, las
+### Una mutación que no se podía matar desde el DOM, y qué se hizo
+
+**El campo de un param numérico manda `Number(texto)` y no el texto**, porque
+`opciones` viaja como JSON y `validateParams` pide `typeof === 'number'`: un
+`"10"` compila, viaja igual y **recién degradaría el panel la próxima vez que
+alguien lo abriera**.
+
+La mutación que quitaba la coerción **sobrevivía**, y no porque la prueba fuera
+floja: el valor mostrado es idéntico con `Number()` y sin él —`String(valor)` los
+iguala—, así que **el DOM del campo no distingue**. No era una prueba débil ni un
+cambio sin efecto: era un efecto real fuera del alcance de la superficie.
+
+La salida no fue una aserción más astuta sino **terminar el diseño**: el
+configurador corre `validateParams` sobre lo que el panel tendría si se guardara
+así, y pinta la razón. Con eso el número se vuelve observable —un `"10"` aparece
+como «espera un número entero»— y de paso la pantalla gana lo que §7.2 pide de
+ella: el rechazo explicado, también para los valores.
+
+**Verificadas por mutación, veinte casos:** las incompatibles filtradas, las
 incompatibles habilitadas, la razón no pintada, el rango que no acota el campo, la
 fórmula de altura cambiada, el panel sin métrica sin declararse, un param sin
-esquema ofrecido como si se supiera, `cambiarTipo` sin recortar, `cambiarTipo`
-conservando opciones, `cambiarTipo` perdiendo el id, el panel nuevo naciendo con
-métrica, `editarPanel` pisando el id, la selección sin resolver a `null` sobre un
-hueco, y el botón de panel sin decir que le falta métrica.
+esquema ofrecido como si se supiera, un valor inválido sin explicar, `cambiarTipo`
+sin recortar, `cambiarTipo` conservando opciones, `cambiarTipo` perdiendo el id, el
+panel nuevo naciendo con métrica, `editarPanel` pisando el id, la selección sin
+resolver a `null` sobre un hueco, un param de estructura ofrecido como campo
+libre, el enum sin «sin declarar», borrar la opción dejando un objeto vacío
+colgado, `editarOpcion` pisando las otras, el número mandado como texto, y el
+botón de panel sin decir que le falta métrica.
 - F4.12: el preview llama al endpoint con rol simulado (B4.9). No se simula del
   lado del cliente filtrando lo que ya se tiene: eso probaría el filtro del
   front, que no existe.
