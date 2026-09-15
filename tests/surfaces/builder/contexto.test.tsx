@@ -8,6 +8,11 @@
  *  de adentro sale con el nombre del campo de Go: `ID`, `Status`, `RoleIDs`. Un
  *  fixture escrito en snake_case pasaría por el adaptador dando `undefined` en
  *  todo y la prueba «pasaría» contra una pantalla vacía.
+ *
+ *  **Desde F4.8 la lista de pestañas la pinta `TabEditor`**, y lo que era la
+ *  tabla de solo lectura de acá —conteo de paneles, roles, la pestaña sin
+ *  pregunta— lo cubre `editor.test.tsx`. No se duplica: dos pruebas del mismo
+ *  hecho es la otra forma de deriva.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
@@ -120,60 +125,16 @@ describe('§7.2 · B1 es el punto de entrada', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
 
-    await screen.findByText('Resumen')
-    const filas = Array.from(container.querySelectorAll('tbody tr')).map(
-      (f) => f.textContent ?? '',
+    await screen.findByDisplayValue('Resumen')
+    const nombres = Array.from(container.querySelectorAll('li input')).map(
+      (i) => (i as HTMLInputElement).value,
     )
-    expect(filas[0]).toContain('Resumen')
-    expect(filas[1]).toContain('Inventario')
-  })
-
-  it('cuenta los paneles de cada pestaña', async () => {
-    servir()
-    montar()
-    await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
-
-    const fila = (await screen.findByText('Resumen')).closest('tr')
-    expect(within(fila as HTMLElement).getByText('2')).toBeInTheDocument()
-  })
-})
-
-describe('§7.2 · la pestaña sin pregunta se declara', () => {
-  it('no se disimula con una celda vacía', async () => {
-    // «Una pestaña que no contesta una pregunta no se compone» · F4.8. El cable
-    // deja `OperationalQuestion` en cadena vacía y el producto no. Una celda en
-    // blanco se leería como un dato que falta, no como una regla violada.
-    servir()
-    montar()
-    await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
-
-    const fila = (await screen.findByText('Inventario')).closest('tr')
-    expect(within(fila as HTMLElement).getByText(/no se debería poder componer/i)).toBeInTheDocument()
+    expect(nombres[0]).toBe('Resumen')
+    expect(nombres[2]).toBe('Inventario')
   })
 })
 
 describe('§7.2 · los roles', () => {
-  it('«vacío» significa todos los roles, y se dice · no «ninguno»', async () => {
-    servir()
-    montar()
-    await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
-
-    const fila = (await screen.findByText('Resumen')).closest('tr')
-    expect(within(fila as HTMLElement).getByText(/todos los roles/i)).toBeInTheDocument()
-  })
-
-  it('NO pinta los UUID de rol · son plomería, no un nombre', async () => {
-    // `RoleIDs` es un arreglo de UUID y ninguna ruta los resuelve a un nombre.
-    // Pintarlos es lo mismo que §7.3 prohíbe del lado de administración.
-    servir()
-    const { container } = montar()
-    await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
-    await screen.findByText('Inventario')
-
-    expect(container.textContent ?? '').not.toContain('a3f1c2d4')
-    expect(container.textContent ?? '').toContain('1 rol(es)')
-  })
-
   it('NO ofrece selector de rol, y dice por qué', async () => {
     // Se podría armar con la unión de los `RoleIDs` y sería la lista
     // equivocada: le faltaría todo rol que todavía no tiene pestaña, que es
@@ -210,11 +171,11 @@ describe('cambiar de cliente', () => {
     montar()
 
     await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
-    await screen.findByText('Resumen')
+    await screen.findByDisplayValue('Resumen')
 
     await userEvent.selectOptions(screen.getByLabelText('Cliente'), 't-2')
 
-    await waitFor(() => expect(screen.queryByText('Resumen')).toBeNull())
+    await waitFor(() => expect(screen.queryByDisplayValue('Resumen')).toBeNull())
     expect(await screen.findByRole('button', { name: /k1/ })).toBeInTheDocument()
   })
 })

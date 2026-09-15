@@ -1089,6 +1089,12 @@ vistazo qué cliente tiene el feed más atrasado es la mitad de para qué existe
 
 ### B4.3 ⬜ `POST /admin/tenants/{id}/layouts` — crear borrador
 ### B4.4 ⬜ `PUT /admin/layouts/{id}` — editar pestañas y paneles
+**Espera del backend.** **`chat_suggestions` e `icon` en la pestaña** — pedido el 2026-09-15, cuando F4.8 construyó el editor.
+
+Los dos están en el modelo de §2 de `design.md` y en `Pestana` del contrato, y no están en `DDTab` ni en `TabInput`: **no hay dónde escribirlos ni de dónde leerlos**. `chatSugerencias[]` es lo que C3 pinta como «chips de consulta sugerida por pestaña», así que sin el campo el chat abre en un vacío sin sugerencias. `icono` es menor y va de paso, porque es la misma línea.
+
+**Y una pregunta que es de ustedes, no un pedido.** `OperationalQuestion` no es requerido y el servicio acepta la cadena vacía. El producto dice lo contrario —«una pestaña que no contesta una pregunta no se compone», §7.2 y la descripción de `Pestana`—, así que hoy **la regla la sostiene el front solo**: el editor marca la pestaña, la cuenta y no la deja componer. Si además la rechazara el `validate` o el `publish`, la regla dejaría de depender de qué cliente haga el PUT. Es B4.15 quien decidiría.
+
 ### B4.5 ⬜ `POST /admin/layouts/{id}/publish`
 ### B4.7 ⬜ `GET /admin/tenants/{id}/catalog`
 **Criterio de aceptación (los seis).**
@@ -3289,7 +3295,7 @@ semántica en blanco en vez de «—». Las seis mueren.
 
 ### F4.6 ✅ `surfaces/builder/` — composición visual
 ### F4.7 ✅ Selector de tenant y plantilla base
-### F4.8 ⬜ Editor de pestañas: nombre, pregunta operativa, orden, sugerencias
+### F4.8 ✅ Editor de pestañas: nombre, pregunta operativa, orden, sugerencias
 ### F4.9 ⬜ Canvas de 12 columnas — arrastrar y colocar
 ### F4.10 ⬜ Configurador de panel: métrica, tipo, spans, opciones
 ### F4.11 ⬜ Validación en tiempo real contra `/config/blocks`
@@ -3429,6 +3435,68 @@ BLOQUEADO de la puerta: no hay contra qué comparar todavía.
 de cliente sin efecto, la versión no olvidada, las pestañas en el orden del
 arreglo, un borrador con fecha, la pestaña sin pregunta en blanco, «vacío» pintado
 como «ninguno», los UUID de rol en pantalla, y uno de los tres faltantes borrado.
+
+### F4.8 cerrada el 2026-09-15 · el reemplazo completo, y lo que borraría
+
+`borrador.ts` —funciones puras— y `TabEditor`, colgando de B1. **509 pruebas**,
+veinticinco nuevas, doce mutaciones muertas.
+
+**Vive en B1 y no en una pantalla propia.** §7.2 tiene seis y ninguna es «editor
+de pestañas»; B1 ya «muestra qué pestañas existen», así que hacer esa lista
+editable es el único lugar donde cabe sin inventar una séptima. La tabla de solo
+lectura de F4.7 se fue: dos vistas del mismo dato es la otra forma de deriva, y
+sus aserciones se mudaron a `editor.test.tsx` en vez de borrarse.
+
+### La trampa: un PUT de reemplazo completo con un editor parcial
+
+**`PUT /admin/layouts/{id}` manda el layout entero y lo que no venga se borra.**
+§7.2 le pide a F4.8 cuatro campos —nombre, pregunta, orden, sugerencias—, así que
+el editor natural produce un cuerpo de tres campos… y **renombrar una pestaña le
+borraría sus paneles y su asignación de roles**. Con 200 y sin aviso.
+
+Por eso el borrador tiene la forma de `TabParaGuardar` —que es exactamente el
+cuerpo del PUT— y **arrastra lo que no edita**. No hay una segunda traducción
+donde perder un campo, y la pantalla lo declara por pestaña: «1 panel(es) · todos
+los roles · se conservan al guardar».
+
+**La segunda mitad de la trampa es `id`.** Una pestaña sin `id` **genera una
+nueva** en vez de editar la existente. Así que ausente no significa «no sé»:
+significa «creá una», y solo `agregar` lo produce — y la pantalla lo dice,
+«Nueva · se crea al guardar».
+
+### La pregunta operativa la sostiene el front solo
+
+`OperationalQuestion` no es requerido en el cable y el servicio acepta la cadena
+vacía. §7.2 y el contrato dicen lo contrario con la misma frase: «una pestaña que
+no contesta una pregunta no se compone». La diferencia entre lo que el servicio
+acepta y lo que el producto permite se sostiene en `problemas()`: la pestaña se
+marca, **se cuenta** y bloquea la composición. No en un borde rojo —§2 lo
+prohíbe, y de todas formas un color no dice qué hacer—. Queda anotado en B4.4
+como una pregunta para ellos, no como un pedido.
+
+### Dos pruebas que no demostraban nada, y la mutación las encontró
+
+**`mover` fuera de rango, con dos pestañas.** Sin la guarda, `splice(0, 1)` y
+después `splice(-1, 0, …)` inserta antes del último — y **con dos elementos eso
+devuelve el mismo arreglo**. La prueba pasaba con la guarda y sin ella. Hacen
+falta tres para verlo: sin guarda, `[A,B,C]` mover A hacia arriba da `[B,A,C]`.
+
+**El borrador atado a su versión, probado cambiando de CLIENTE.** Ahí la versión
+se limpia a `null`, el detalle vuelve `undefined` y el editor desaparece entero,
+así que la prueba pasaba con o sin la atadura. Lo que la destapa es cambiar entre
+**dos versiones del mismo cliente**: el editor sigue en pantalla, y sin el
+`layoutId` adentro del borrador la segunda versión mostraría las pestañas
+editadas de la primera.
+
+Las dos son la misma forma: **una prueba escrita sobre el caso más fácil de
+montar, no sobre el caso que distingue**.
+
+**Verificadas por mutación, doce casos:** roles no arrastrados, paneles no
+arrastrados, `roles` compartido en vez de copiado, `sembrar` sin ordenar,
+`agregar` naciendo con id, `quitar` dejando huecos, `mover` sin guarda, la
+pregunta vacía dejando de ser problema, `sucio` contando pulsaciones, el campo de
+nombre sin `onChange`, el editor sin contar las inválidas, y el borrador sin atar
+a su versión.
 - F4.12: el preview llama al endpoint con rol simulado (B4.9). No se simula del
   lado del cliente filtrando lo que ya se tiene: eso probaría el filtro del
   front, que no existe.

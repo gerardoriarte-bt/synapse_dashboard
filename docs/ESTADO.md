@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**86 de 193 tareas cerradas.** 8 parciales · 94 pendientes · 5 diferidas.
+**87 de 193 tareas cerradas.** 8 parciales · 93 pendientes · 5 diferidas.
 
 
-## Front · 79 de 112
+## Front · 80 de 112
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -16,7 +16,7 @@
 | 1 · Consola y render/ | `████████████████████··` | 40/43 | 1 | 2 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `████████··············` | 4/11 | 1 | 3 |
-| 4 · Admin y Builder | `███████···············` | 7/23 | 0 | 16 |
+| 4 · Admin y Builder | `████████··············` | 8/23 | 0 | 15 |
 | 5 · Pruebas y pulido | `████████████··········` | 7/13 | 1 | 4 |
 
 ## Backend · 7 de 81
@@ -44,7 +44,7 @@
 
 ---
 
-## Se puede tomar hoy · 25 del front
+## Se puede tomar hoy · 24 del front
 
 - **F1.13b** · Portar format.ts e inyectar el locale
 - **F1.31** · Registro de gráficos y verificación de mínimos
@@ -65,7 +65,6 @@
 - **F4.21** · Selector de gráfico en el builder
 - **F4.3** · Gestión de usuarios y roles por tenant
 - **F4.4** · Configuración de agente Snowflake por tenant
-- **F4.8** · Editor de pestañas: nombre, pregunta operativa, orden, sugerencias
 - **F4.9** · Canvas de 12 columnas — arrastrar y colocar
 - **F5.1** · Selector de layout cuando hay más de uno
 - **F5.10** · Checklist de conformidad §17 por tipo de bloque integrado
@@ -74,7 +73,7 @@
 
 ---
 
-## Bloqueadas · 22
+## Bloqueadas · 23
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -106,6 +105,7 @@ Lo que el front espera del backend está detallado en
 - **B4.1** · GET /admin/tenants
 - **B4.10** · Asignación de layout publicado a roles
 - **B4.2** · GET /admin/tenants/{id}/layouts
+- **B4.4** · PUT /admin/layouts/{id} — editar pestañas y paneles
 - **B5.1** · Varios layouts por tenant
 
 ---

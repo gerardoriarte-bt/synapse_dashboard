@@ -26,9 +26,12 @@ import { useState } from 'react'
 import { useLayoutDetail, useLayouts, useTenants } from '../../api/hooks'
 import { BuilderChrome } from './BuilderChrome'
 import { ContextView } from './ContextView'
+import { TabEditor } from './TabEditor'
+import { agregar, editar, mover, quitar, sembrar, sucio } from './borrador'
 import { SurfaceMessage } from '../console/SurfaceMessage'
 import { Label } from '../../render/primitives/Label'
 import { ApiError } from '../../api/types'
+import type { TabParaGuardar } from '../../api/admin'
 import type { PantallaId } from './pantallas'
 
 /** Qué espera cada pantalla. Acá y no en un comentario: la pantalla lo pinta, así
@@ -74,6 +77,23 @@ export function Builder() {
   const versiones = useLayouts(tenantActivo)
   const detalle = useLayoutDetail(version)
 
+  // **El borrador se ata al layout que lo originó y se deriva en el render.**
+  // Sin el `layoutId` adentro, elegir otra versión mostraría las pestañas de la
+  // anterior hasta que algo volviera a montar; con un `useEffect` que lo
+  // sincronice, el primer render pinta el borrador viejo y el segundo lo
+  // corrige, que es un parpadeo y una ventana donde `sucio` miente.
+  const [borrador, setBorrador] = useState<{ layoutId: string; tabs: TabParaGuardar[] } | null>(null)
+  const semilla = detalle.data === undefined ? null : sembrar(detalle.data)
+  const tabs =
+    borrador !== null && borrador.layoutId === version ? borrador.tabs : (semilla ?? [])
+
+  // Elegir otra versión no necesita limpiar el borrador: se descarta por
+  // identidad, porque su `layoutId` deja de coincidir.
+  const cambiar = (siguiente: TabParaGuardar[]) => {
+    if (version === null) return
+    setBorrador({ layoutId: version, tabs: siguiente })
+  }
+
   if (tenants.isError) {
     // Mismo caso probable que en administración: estas rutas piden rol `admin`,
     // y un `planner` que abra `/builder` no está ante un fallo sino ante un
@@ -116,8 +136,18 @@ export function Builder() {
           versiones={versiones.data ?? []}
           versionActiva={version}
           onVersion={setVersion}
-          detalle={detalle.data}
-        />
+        >
+          {semilla === null ? null : (
+            <TabEditor
+              tabs={tabs}
+              onEditar={(i, campo, valor) => cambiar(editar(tabs, i, campo, valor))}
+              onAgregar={() => cambiar(agregar(tabs))}
+              onQuitar={(i) => cambiar(quitar(tabs, i))}
+              onMover={(i, d) => cambiar(mover(tabs, i, d))}
+              sucio={sucio(tabs, semilla)}
+            />
+          )}
+        </ContextView>
       )}
     </BuilderChrome>
   )

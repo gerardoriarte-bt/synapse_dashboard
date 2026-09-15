@@ -179,7 +179,7 @@ B4.3,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,POST /admin
 • Editar nunca muta la versión publicada.",pendiente,no,,equipo:backend fase:4 estado:pendiente
 B4.4,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,PUT /admin/layouts/{id} — editar pestañas y paneles,,"• Solo accesibles con aud: platform; con token de usuario devuelven 403.
 • Publicar genera versionId, sella publishedAt, registra quién publicó e invalida la cache del tenant.
-• Editar nunca muta la versión publicada.",pendiente,no,,equipo:backend fase:4 estado:pendiente
+• Editar nunca muta la versión publicada.",pendiente,no,,equipo:backend fase:4 estado:pendiente bloqueada
 B4.5,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,POST /admin/layouts/{id}/publish,,"• Solo accesibles con aud: platform; con token de usuario devuelven 403.
 • Publicar genera versionId, sella publishedAt, registra quién publicó e invalida la cache del tenant.
 • Editar nunca muta la versión publicada.",pendiente,no,,equipo:backend fase:4 estado:pendiente
@@ -480,7 +480,7 @@ F4.7,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Selector de ten
 • F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.",hecho,no,,equipo:front fase:4 estado:hecho
 F4.8,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,"Editor de pestañas: nombre, pregunta operativa, orden, sugerencias",,"• F4.8: una pestaña que no contesta una pregunta no se compone. La pregunta operativa es obligatoria, no un subtítulo opcional.
 • F4.11: usa catalog/blocks.ts, que ya está escrito. Un tipo incompatible con la forma de la métrica se marca con la razón, no con «inválido».
-• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.",pendiente,no,,equipo:front fase:4 estado:pendiente
+• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.",hecho,no,,equipo:front fase:4 estado:hecho
 F4.9,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Canvas de 12 columnas — arrastrar y colocar,,"• F4.8: una pestaña que no contesta una pregunta no se compone. La pregunta operativa es obligatoria, no un subtítulo opcional.
 • F4.11: usa catalog/blocks.ts, que ya está escrito. Un tipo incompatible con la forma de la métrica se marca con la razón, no con «inválido».
 • F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.",pendiente,no,,equipo:front fase:4 estado:pendiente

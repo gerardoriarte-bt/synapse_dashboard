@@ -4,7 +4,11 @@
  *  de la **plantilla de vertical** y cuáles tienen **override**. Punto de entrada
  *  de todo el builder.»
  *
- *  Son cuatro cosas y el cable sostiene dos: **el tenant y las pestañas**.
+ *  Son cuatro cosas y el cable sostiene dos: **el tenant y las pestañas**. La
+ *  lista de pestañas la pinta el editor de F4.8, que cuelga de acá como
+ *  `children`: B1 muestra qué pestañas existen y desde el 2026-09-15 además deja
+ *  editarlas, que es el único lugar de §7.2 donde eso cabe sin inventar una
+ *  séptima pantalla.
  *
  *  ── POR QUÉ NO HAY SELECTOR DE ROL, QUE PARECE QUE SÍ SE PODRÍA ─────────────
  *
@@ -33,7 +37,7 @@
  *  distinción no se puede pintar; con dos de tres, se pintaría mal.
  */
 import { Label } from '../../render/primitives/Label'
-import type { LayoutDetalle, LayoutVersion, Tenant } from '../../api/admin'
+import type { LayoutVersion, Tenant } from '../../api/admin'
 
 const FALTANTES = [
   'Elegir ROL · RoleIDs son UUID sin nombre, y la unión de los roles de las pestañas deja afuera al rol que todavía no tiene ninguna · B4.8',
@@ -48,8 +52,10 @@ type Props = {
   versiones: readonly LayoutVersion[]
   versionActiva: string | null
   onVersion: (id: string) => void
-  /** `undefined` mientras vuela o cuando no hay versión elegida. */
-  detalle: LayoutDetalle | undefined
+  /** Las pestañas de la versión elegida · el editor de F4.8. Va como `children`
+   *  y no como prop de datos: B1 es dueña del contexto —cliente y versión— y el
+   *  borrador de pestañas es del contenedor, que es quien lo va a guardar. */
+  children?: React.ReactNode
 }
 
 export function ContextView({
@@ -59,7 +65,7 @@ export function ContextView({
   versiones,
   versionActiva,
   onVersion,
-  detalle,
+  children,
 }: Props) {
   return (
     <div className="flex flex-col gap-6">
@@ -117,54 +123,7 @@ export function ContextView({
         )}
       </div>
 
-      {detalle !== undefined && (
-        <div className="flex flex-col gap-2">
-          <Label as="div">{`Pestañas · ${String(detalle.tabs.length)}`}</Label>
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-w4">
-                {['Orden', 'Pestaña', 'Pregunta operativa', 'Paneles', 'Alcance'].map((h) => (
-                  <th key={h} className="text-left py-2">
-                    <Label>{h}</Label>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {[...detalle.tabs]
-                .sort((a, b) => a.tab.orden - b.tab.orden)
-                .map(({ tab, panels }) => (
-                  <tr key={tab.id} className="border-b border-w3">
-                    <td className="py-2 text-dim text-celda">{tab.orden}</td>
-                    <td className="py-2 text-ink text-celda">{tab.nombre}</td>
-                    {/* **Una pestaña sin pregunta se declara, no se disimula.**
-                        §7.2 F4.8: «una pestaña que no contesta una pregunta no se
-                        compone». Una celda vacía se leería como un dato que
-                        falta; el hueco dicho se lee como lo que es. */}
-                    <td className="py-2 text-celda">
-                      {tab.pregunta === '' ? (
-                        <Label>Sin pregunta · no se debería poder componer</Label>
-                      ) : (
-                        <span className="text-ink">{tab.pregunta}</span>
-                      )}
-                    </td>
-                    <td className="py-2 text-dim text-celda">{panels.length}</td>
-                    {/* Cuántos roles, no cuáles: los IDs no tienen nombre. Y el
-                        vacío significa «la ven todos», que no es lo mismo que
-                        «ninguno» — decirlo es la mitad del dato. */}
-                    <td className="py-2 text-celda">
-                      {tab.roles.length === 0 ? (
-                        <Label>Todos los roles</Label>
-                      ) : (
-                        <Label>{`${String(tab.roles.length)} rol(es) · sin nombre · B4.8`}</Label>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {children}
 
       <div className="flex flex-col gap-1 rounded-sm bg-w2 p-3">
         <Label as="div">{`Faltan ${String(FALTANTES.length)} cosas que §7.2 pide de esta pantalla`}</Label>

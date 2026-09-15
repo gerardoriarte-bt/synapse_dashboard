@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 17 pedido(s)
+## Lo que esperamos · 18 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -228,6 +228,18 @@ vistazo qué cliente tiene el feed más atrasado es la mitad de para qué existe
 - **Revertir.** No hay ruta. `POST /admin/tenants/{id}/layouts` acepta un `version_id` de origen, así que puede que ya alcance con documentar que duplicar una versión vieja **es** revertir — si es así, es una línea de documentación y no código.
 
 **No bloquea el builder**, bloquea B6. Y B6 es la pantalla que hace reversible un error de composición en producción: sin ella, la única salida es recomponer a mano.
+
+
+### B4.4 · PUT /admin/layouts/{id} — editar pestañas y paneles
+
+*Estado de la tarea: pendiente.*
+
+
+**`chat_suggestions` e `icon` en la pestaña** — pedido el 2026-09-15, cuando F4.8 construyó el editor.
+
+Los dos están en el modelo de §2 de `design.md` y en `Pestana` del contrato, y no están en `DDTab` ni en `TabInput`: **no hay dónde escribirlos ni de dónde leerlos**. `chatSugerencias[]` es lo que C3 pinta como «chips de consulta sugerida por pestaña», así que sin el campo el chat abre en un vacío sin sugerencias. `icono` es menor y va de paso, porque es la misma línea.
+
+**Y una pregunta que es de ustedes, no un pedido.** `OperationalQuestion` no es requerido y el servicio acepta la cadena vacía. El producto dice lo contrario —«una pestaña que no contesta una pregunta no se compone», §7.2 y la descripción de `Pestana`—, así que hoy **la regla la sostiene el front solo**: el editor marca la pestaña, la cuenta y no la deja componer. Si además la rechazara el `validate` o el `publish`, la regla dejaría de depender de qué cliente haga el PUT. Es B4.15 quien decidiría.
 
 
 ### B4.10 · Asignación de layout publicado a roles
