@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**89 de 193 tareas cerradas.** 8 parciales · 91 pendientes · 5 diferidas.
+**90 de 193 tareas cerradas.** 8 parciales · 90 pendientes · 5 diferidas.
 
 
-## Front · 82 de 112
+## Front · 83 de 112
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -16,7 +16,7 @@
 | 1 · Consola y render/ | `████████████████████··` | 40/43 | 1 | 2 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `████████··············` | 4/11 | 1 | 3 |
-| 4 · Admin y Builder | `██████████············` | 10/23 | 0 | 13 |
+| 4 · Admin y Builder | `███████████···········` | 11/23 | 0 | 12 |
 | 5 · Pruebas y pulido | `████████████··········` | 7/13 | 1 | 4 |
 
 ## Backend · 7 de 81
@@ -44,7 +44,7 @@
 
 ---
 
-## Se puede tomar hoy · 22 del front
+## Se puede tomar hoy · 21 del front
 
 - **F1.13b** · Portar format.ts e inyectar el locale
 - **F1.31** · Registro de gráficos y verificación de mínimos
@@ -52,7 +52,6 @@
 - **F3.3** · «Ver detalle» y «Preguntar» en el shell del panel
 - **F3.7** · Historial de hilos
 - **F4.12** · Preview por rol
-- **F4.13** · Guardar borrador
 - **F4.14** · Validar antes de publicar
 - **F4.15** · Publicar sin deploy
 - **F4.16** · Hooks dedicados: useLayouts, useLayoutEditor, usePublishLayout

@@ -269,14 +269,16 @@ describe('el indicador de cambios sin guardar', () => {
     expect(screen.getByText('Sin guardar')).toBeInTheDocument()
   })
 
-  it('declara que guardar todavía no existe', async () => {
-    // Un botón «Guardar» que no llama a nada es peor que uno ausente.
+  it('guardar está deshabilitado mientras no haya cambios · F4.13', async () => {
+    // §7.2 B2: «guardado explícito». Sin cambios no hay nada que mandar, y un
+    // PUT de reemplazo completo sobre lo mismo toca `updated_at` de todo.
     servir()
-    const { container } = montar()
+    montar()
     await abrirVersion()
 
-    expect(screen.queryByRole('button', { name: /^Guardar/ })).toBeNull()
-    expect(container.textContent).toContain('este borrador vive solo en la pantalla')
+    expect(screen.getByRole('button', { name: 'Guardar borrador' })).toBeDisabled()
+    await userEvent.type(screen.getByDisplayValue('Resumen'), '!')
+    expect(screen.getByRole('button', { name: 'Guardar borrador' })).not.toBeDisabled()
   })
 })
 

@@ -432,7 +432,8 @@ describe('§F4.11 · el resumen dice dónde y que NO decide', () => {
     // el botón de la versión. Un falso positivo que haría pasar la prueba por
     // el motivo equivocado.
     expect(screen.queryByRole('button', { name: /^publicar/i })).toBeNull()
-    expect(screen.queryByRole('button', { name: /^guardar/i })).toBeNull()
+    // Guardar sí existe desde F4.13; lo que no existe es publicar.
+    expect(screen.getByRole('button', { name: 'Guardar borrador' })).toBeInTheDocument()
   })
 
   it('el botón del panel con problemas se marca', async () => {
@@ -460,8 +461,10 @@ describe('el contador de pestañas cuenta PESTAÑAS, no problemas', () => {
     // Dos: la pregunta operativa se borra.
     await userEvent.clear(screen.getByDisplayValue('¿Cómo vamos?'))
 
+    // Dos lugares lo dicen —la barra de guardado y el resumen— y los dos salen
+    // de la misma corrida.
     await waitFor(() =>
-      expect(screen.getByText(/problema\(s\) de composición/).textContent).toMatch(/^2 problema/),
+      expect(screen.getByText('2 problema(s) de composición')).toBeInTheDocument(),
     )
     expect(screen.getByText('1 pestaña(s) con problemas de composición')).toBeInTheDocument()
   })

@@ -3300,7 +3300,7 @@ semántica en blanco en vez de «—». Las seis mueren.
 ### F4.10 ✅ Configurador de panel: métrica, tipo, spans, opciones
 ### F4.11 ✅ Validación en tiempo real contra `/config/blocks`
 ### F4.12 ⬜ Preview por rol
-### F4.13 ⬜ Guardar borrador
+### F4.13 ✅ Guardar borrador
 ### F4.14 ⬜ Validar antes de publicar
 ### F4.15 ⬜ Publicar sin deploy
 ### F4.16 ⬜ Hooks dedicados: `useLayouts`, `useLayoutEditor`, `usePublishLayout`
@@ -3656,6 +3656,53 @@ métrica borrada pintado, los params sin validar, un param desconocido callado, 
 problemas de la pestaña sin recoger, la regla inventada de vuelta, el resumen sin
 decir que el servidor decide, el resumen sin decir en qué pestaña, el botón del
 panel sin marcar, y el contador contando problemas en vez de pestañas.
+
+### F4.13 cerrada el 2026-09-15 · el defecto que aparece la SEGUNDA vez
+
+`SaveBar` y el cableado de `useSaveLayout`. **568 pruebas**, ocho nuevas, ocho
+mutaciones muertas.
+
+**El borrador local se descarta al guardar, y eso es la tarea.** El PUT devuelve
+el layout con los `id` que el servidor acaba de asignar a las pestañas y paneles
+nuevos. Si el borrador sobreviviera, esos **seguirían sin `id`** y el guardado
+siguiente los crearía otra vez: duplicados. `useSaveLayout` ya deja el detalle
+fresco en el cache, así que soltar el borrador hace que la pantalla lea de ahí.
+
+**El síntoma solo aparece la segunda vez**, que es lo que lo hace peligroso: el
+primer guardado se ve perfecto. La prueba guarda dos veces y mira los dos cuerpos
+del PUT — `[tab-a, undefined]` y después `[tab-a, tab-nueva]`.
+
+### Tres decisiones sobre qué se bloquea y qué se avisa
+
+**Una versión publicada no se edita, y se dice antes de intentar.** El servicio
+contesta 409; dejar apretar para que falle es enseñar que el botón a veces no
+anda. Y la salida existe —duplicar la versión en un borrador nuevo, mandando su
+`versionId` de origen—, así que se ofrece ahí mismo y la pantalla salta al
+borrador creado.
+
+**El 409 igual puede llegar**, porque alguien puede publicar entre que la
+pantalla leyó la versión y el PUT sale. Se nombra con su causa y su salida, no
+como «error al guardar» — que taparía la única acción que desatasca.
+
+**Los problemas de composición NO bloquean guardar.** Un borrador es justamente
+donde una composición a medias puede vivir; lo que no se puede es publicarla, y
+eso lo deciden F4.14 y F4.15 contra el servidor. Se avisa cuántos quedan.
+
+**Y el indicador de «sin guardar» se mudó del editor a la barra**, que es donde
+está el botón: dos indicadores del mismo hecho envejecen igual que dos contadores.
+
+### La cuarta vez que la mutación pide la prueba que distingue
+
+`disabled={!sucio || guardando || publicada}` sin `publicada` **sobrevivía**:
+todas las pruebas de versión publicada tenían el borrador limpio, así que
+`!sucio` ya deshabilitaba el botón y las dos razones nunca se separaban. Hace
+falta editar una versión publicada para verlo.
+
+**Verificadas por mutación, ocho casos:** el borrador sobreviviendo al guardado,
+guardar habilitado sin cambios, una versión publicada dejando apretar, la versión
+publicada sin declararse, los problemas bloqueando, el 409 como error genérico,
+duplicar sin mandar el `versionId` de origen, y duplicar sin saltar al borrador
+nuevo.
 - F4.12: el preview llama al endpoint con rol simulado (B4.9). No se simula del
   lado del cliente filtrando lo que ya se tiene: eso probaría el filtro del
   front, que no existe.

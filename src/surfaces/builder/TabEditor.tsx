@@ -53,8 +53,6 @@ type Props = {
    *  resumen— y con tres cálculos podrían discrepar. `validarBorrador` corre una
    *  vez en el contenedor y los tres leen de ahí. */
   problemas: readonly ProblemaLocal[]
-  /** Si el borrador difiere de lo que el servidor devolvió. */
-  sucio: boolean
 }
 
 export function TabEditor({
@@ -67,7 +65,6 @@ export function TabEditor({
   onAgregarPanel,
   seleccion,
   problemas,
-  sucio,
 }: Props) {
   const invalidas = new Set(problemas.map((p) => p.tab)).size
 
@@ -75,10 +72,6 @@ export function TabEditor({
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-4">
         <Label as="div">{`Pestañas · ${String(tabs.length)}`}</Label>
-        {/* **El estado del borrador, dicho.** §7.2 B2 pide «guardado explícito,
-            con indicador de cambios sin guardar». Guardar es F4.13; el indicador
-            es de ahora, porque sin él se edita creyendo que se guardó. */}
-        <Label as="div">{sucio ? 'Sin guardar' : 'Sin cambios'}</Label>
         {invalidas > 0 && (
           <Label as="div">{`${String(invalidas)} pestaña(s) con problemas de composición`}</Label>
         )}
@@ -219,7 +212,6 @@ export function TabEditor({
             {f}
           </Label>
         ))}
-        <Label as="div">Guardar es F4.13 · este borrador vive solo en la pantalla</Label>
       </div>
     </div>
   )

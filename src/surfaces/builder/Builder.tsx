@@ -23,11 +23,20 @@
  *  primera dice qué la desbloquea, que es lo que §8 pide de cualquier estado.
  */
 import { useState } from 'react'
-import { useAdminCatalog, useBlocks, useLayoutDetail, useLayouts, useTenants } from '../../api/hooks'
+import {
+  useAdminCatalog,
+  useBlocks,
+  useCreateDraft,
+  useLayoutDetail,
+  useLayouts,
+  useSaveLayout,
+  useTenants,
+} from '../../api/hooks'
 import { BuilderChrome } from './BuilderChrome'
 import { ContextView } from './ContextView'
 import { TabEditor } from './TabEditor'
 import { PanelConfigurator } from './PanelConfigurator'
+import { SaveBar } from './SaveBar'
 import { ValidationSummary } from './ValidationSummary'
 import { validarBorrador } from './validar'
 import {
@@ -127,6 +136,20 @@ export function Builder() {
   // nunca acertaría y solo agregaría una comparación.
   const problemas = validarBorrador(tabs, tabla, catalogo.data?.metrics ?? [])
 
+  const guardar = useSaveLayout(version)
+  const duplicar = useCreateDraft(tenantActivo)
+  const publicada = detalle.data?.layout.estado === 'publicado'
+
+  /** El 409 tiene nombre propio y una salida concreta; el resto, lo que diga el
+   *  servicio. Sin distinguirlos, «error al guardar» taparía la única acción que
+   *  desatasca. */
+  const errorAlGuardar =
+    guardar.error === null
+      ? null
+      : guardar.error instanceof ApiError && guardar.error.code === 'REGLA_LAYOUT_PUBLICADO'
+        ? 'Alguien publicó esta versión mientras la editabas · duplicala para conservar los cambios'
+        : (guardar.error.message === '' ? 'No se pudo guardar' : guardar.error.message)
+
   // Elegir otra versión no necesita limpiar el borrador: se descarta por
   // identidad, porque su `layoutId` deja de coincidir.
   const cambiar = (siguiente: TabParaGuardar[]) => {
@@ -196,9 +219,43 @@ export function Builder() {
               }}
               seleccion={seleccion}
               problemas={problemas}
-              sucio={sucio(tabs, semilla)}
             />
           )}
+          {semilla === null ? null : (
+            <SaveBar
+              sucio={sucio(tabs, semilla)}
+              guardando={guardar.isPending}
+              problemas={problemas.length}
+              publicada={publicada}
+              error={errorAlGuardar}
+              onGuardar={() => {
+                guardar.mutate(tabs, {
+                  // **El borrador local se descarta al guardar, y es la mitad
+                  // que importa.** La respuesta trae los `id` que el servidor
+                  // acaba de asignar a las pestañas y paneles nuevos; si el
+                  // borrador sobreviviera, esos seguirían sin `id` y **el
+                  // siguiente guardado los crearía de nuevo**, duplicados. El
+                  // hook ya dejó el detalle fresco en el cache, así que soltar
+                  // el borrador hace que la pantalla lea de ahí.
+                  onSuccess: () => {
+                    setBorrador(null)
+                    setSeleccion(null)
+                  },
+                })
+              }}
+              onDuplicar={() => {
+                duplicar.mutate(detalle.data?.layout.versionId, {
+                  onSuccess: (nuevo) => {
+                    setBorrador(null)
+                    setSeleccion(null)
+                    setVersion(nuevo.id)
+                  },
+                })
+              }}
+              duplicando={duplicar.isPending}
+            />
+          )}
+
           {semilla === null ? null : (
             <ValidationSummary problemas={problemas} nombres={tabs.map((t) => t.nombre)} />
           )}
