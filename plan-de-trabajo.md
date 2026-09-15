@@ -2578,7 +2578,7 @@ Se corrigió dejando escrito qué se sabía cuando se escribió. Lo que NO cambi
 que el archivo siga existiendo: su razón de ser es el envelope de error, y que
 sea un solo servicio no lo arregla.
 
-#### ➕ F1.38 ⬜ MSW responde la forma del cable, no la del contrato
+#### ➕ F1.38 ✅ MSW responde la forma del cable, no la del contrato
 **Descripción.** Hoy `tests/mocks/handlers.ts` responde la forma del contrato.
 Si se queda así, **el adaptador no se ejecuta en ninguna prueba y las 350 siguen
 verdes con el adaptador roto** — el modo de falla exacto del 2026-08-20, cuando
@@ -2593,6 +2593,29 @@ el colapso responsive violaba §3.1 de tres formas con 184 pruebas en verde.
   inventado verifica el fixture.
 - Verificada por mutación: romper el adaptador tiene que romper pruebas de
   superficie, no solo las del propio adaptador.
+
+**Cerrada el 2026-09-15, y la mayor parte se había hecho sola.** Los handlers
+pasaron al cable en F1.33 y F1.34 porque **no había otra forma de ejercitar el
+adaptador**: mientras hablaban el idioma del contrato, no se ejecutaba en ninguna
+prueba. Ahí fallaron 16 solas y una encontró un bug propio.
+
+Lo que faltaba era la garantía, no la migración. **Auditado: ni un solo fixture
+HTTP habla el idioma del contrato.** Las dos apariciones que quedan están en
+`tests/render/state.test.ts`, que es una prueba unitaria de `render/` — y `render/`
+habla el contrato por diseño. Son correctas.
+
+**Y lo que impide que vuelva atrás es el COMPILADOR, no una revisión.** Los
+fixtures compartidos ya estaban tipados contra `WireContext`, `WireMetric` y
+`WirePanel`; los seis payloads de `states.test.tsx` y los de `tab.test.tsx` no lo
+estaban. Ahora van contra `WirePayload`, así que escribir `estado` en vez de
+`status` **deja de compilar**:
+
+    error TS2353: Object literal may only specify known properties,
+    and 'estado' does not exist in type '{ status: "AVAILABLE" | … }'
+
+Verificado por mutación devolviendo `SIN_PERMISO` al idioma del contrato. Lo
+sostiene `tsc`, que ya corre en la puerta — **una garantía que no necesita que
+nadie se acuerde.**
 
 #### ➕ F1.39 ⬜ Humo contra el servicio real
 **Descripción.** Una corrida contra el servicio levantado con su seed —login,

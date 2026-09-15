@@ -19,9 +19,12 @@ import { describe, expect, it } from 'vitest'
 import { ConsoleContainer } from '@/surfaces/console/ConsoleContainer'
 import { API, context, ok } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
-import type { WireMetric, WirePanel } from '@/api/adapt'
+import type { WireMetric, WirePanel, WirePayload } from '@/api/adapt'
 
-/** Anidado en `governance` y con las claves del servicio · así viaja. */
+/** Anidado en `governance` y con las claves del servicio · así viaja.
+ *
+ *  Los payloads van tipados contra `WirePayload` · F1.38: un fixture que vuelva
+ *  al idioma del contrato deja de compilar. */
 const governance = {
   base: '48 tiendas sobre 52',
   layer: 'GOLD',
@@ -95,7 +98,10 @@ const panels = PANELES.map(([tipo], i) => ({
 })) as unknown as WirePanel[]
 
 const payloads = Object.fromEntries(
-  PANELES.map(([tipo, , , value]) => [`p-${tipo}`, { status: 'AVAILABLE', value, governance }]),
+  PANELES.map(([tipo, , , value]) => [
+    `p-${tipo}`,
+    { status: 'AVAILABLE', value, governance } as WirePayload,
+  ]),
 )
 
 function laPestana(payloadsUsados: Record<string, unknown> = payloads) {
@@ -192,7 +198,7 @@ describe('fallo parcial · un panel roto no arrastra a los otros', () => {
   it('cuatro con cifra y uno en ERROR, en la misma respuesta', async () => {
     laPestana({
       ...payloads,
-      'p-table': { status: 'ERROR', message: 'El almacén no respondió.' },
+      'p-table': { status: 'ERROR', message: 'El almacén no respondió.' } as WirePayload,
     })
     montar()
 

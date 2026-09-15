@@ -22,6 +22,7 @@ import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { ConsoleContainer } from '@/surfaces/console/ConsoleContainer'
 import { API, context, kpiMetric, kpiPanel, ok } from '../../mocks/handlers'
+import type { WirePayload } from '@/api/adapt'
 import { server } from '../../mocks/server'
 
 function montar() {
@@ -45,7 +46,14 @@ function conUnPanel(payload: unknown) {
 
 /** El gobierno que acompaña a los dos estados con cifra, **con la forma del
  *  CABLE**: anidado en `governance` y con las claves del servicio. Los otros
- *  cuatro estados NO lo llevan, y es a propósito. */
+ *  cuatro estados NO lo llevan, y es a propósito.
+ *
+ *  **Tipados contra `WirePayload` desde F1.38**, y eso es lo que sostiene la
+ *  garantía: escribir `estado` en vez de `status`, o `valor` en vez de `value`,
+ *  **deja de compilar**. Un fixture que vuelve al idioma del contrato saca al
+ *  adaptador del camino sin que ninguna prueba se queje — que es exactamente
+ *  cómo tres defectos reales sobrevivieron meses. Lo verifica `tsc`, que ya está
+ *  en la puerta, y no una revisión. */
 const governance = {
   base: '48 tiendas sobre 52',
   layer: 'GOLD',
@@ -56,9 +64,13 @@ const governance = {
 
 // `status` en inglés y `value` discriminado por `shape`: las cinco constantes
 // de `domain/dd_panel_data.go`.
-const DISPONIBLE = { status: 'AVAILABLE', governance, value: { shape: 'scalar', v: 4280000 } }
+const DISPONIBLE: WirePayload = {
+  status: 'AVAILABLE',
+  governance,
+  value: { shape: 'scalar', v: 4280000 },
+}
 
-const DEGRADADO = {
+const DEGRADADO: WirePayload = {
   status: 'DEGRADED',
   governance,
   value: { shape: 'scalar', v: 4280000 },
@@ -68,14 +80,14 @@ const DEGRADADO = {
 
 // **Sin `unlocks_with`**, que es como el servicio lo manda de verdad: solo lo
 // escribe al derivar DEGRADED. El adaptador NO lo inventa.
-const BLOQUEADO = {
+const BLOQUEADO: WirePayload = {
   status: 'BLOCKED',
   reason: 'Falta identificador de persona en la orden',
 }
 
-const SIN_PERMISO = { status: 'FORBIDDEN', request_from: 'CMO' }
+const SIN_PERMISO: WirePayload = { status: 'FORBIDDEN', request_from: 'CMO' }
 
-const ERROR = { status: 'ERROR', message: 'El almacén no respondió a tiempo.' }
+const ERROR: WirePayload = { status: 'ERROR', message: 'El almacén no respondió a tiempo.' }
 
 const SEIS: [string, unknown][] = [
   ['CARGANDO', { estado: 'CARGANDO' }],
