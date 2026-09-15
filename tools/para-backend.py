@@ -29,6 +29,7 @@ Códigos: 0 conforme · 1 hay marcadores en tareas cerradas · 2 BLOQUEADO.
 """
 import pathlib
 import re
+import subprocess
 import sys
 
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
@@ -38,6 +39,18 @@ DESTINO = RAIZ / "docs" / "PARA-BACKEND.md"
 ENCABEZADO = re.compile(r"^#{3,4} (➕ )?([BF]\d+\.\d+[a-j]?) (✅|⚠️|⬜|🕓) (.+)$")
 ESPERA = re.compile(r"^\*\*Espera del backend\.\*\*\s*(.+)$")
 ESTADOS = {"✅": "hecho", "⚠️": "parcial", "⬜": "pendiente", "🕓": "diferida"}
+
+
+def rama_actual() -> str:
+    """La rama de verdad, no una escrita a mano.
+
+    Decía `main` y el trabajo vive en otra: alguien iba a ir a mirar y no iba a
+    encontrar nada. Es el mismo modo de falla que el documento entero existe para
+    evitar — un dato que fue cierto una vez y se quedó escrito."""
+    r = subprocess.run(
+        ["git", "branch", "--show-current"], capture_output=True, text=True, cwd=RAIZ
+    )
+    return r.stdout.strip() or "(rama desconocida)"
 
 
 def recolectar(texto: str):
@@ -80,8 +93,9 @@ def render(tareas, hechas) -> str:
     if hechas:
         o.append("\n---\n\n## Lo que ya está de nuestro lado\n")
         o.append(
-            "No hace falta que esperen nada de estas para probar: están en `main` del\n"
-            "front, con prueba y con la puerta en verde.\n"
+            f"No hace falta que esperen nada de estas para probar: están en la rama\n"
+            f"`{rama_actual()}` del repositorio del front, con prueba y con la puerta en\n"
+            "verde.\n"
         )
         for t in hechas:
             o.append(f"- **{t['id']}** · {t['titulo']}")

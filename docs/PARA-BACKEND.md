@@ -16,8 +16,9 @@ en cada corrida de la puerta con `npm run plan:ancestro`.
 
 ## Lo que ya está de nuestro lado
 
-No hace falta que esperen nada de estas para probar: están en `main` del
-front, con prueba y con la puerta en verde.
+No hace falta que esperen nada de estas para probar: están en la rama
+`Gerardo` del repositorio del front, con prueba y con la puerta en
+verde.
 
 - **F1.32** · Transcribir el cable de consola a un contrato versionado
 - **F1.33** · api/adapt.ts · contexto, catálogo, bloques y pestaña
