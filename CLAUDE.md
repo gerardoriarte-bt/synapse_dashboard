@@ -292,6 +292,15 @@ defecto es `node`; el archivo que renderiza pide jsdom con
 **Una prueba nueva se verifica rompiendo el código a propósito.** Si no la viste
 fallar, no demostró nada.
 
+**Y la mutación se corre sobre una línea de base VERDE.** Las dos mitades fallan
+distinto y las dos ya ocurrieron acá: una mutación que **no se aplicó** —por
+indentación o por comillas— se lee igual que una prueba débil, y una mutación que
+corre sobre un árbol **ya roto** se lee igual que una prueba fuerte, porque mata
+algo que ya estaba muerto. El 2026-09-15 las ocho mutaciones de F4.7 salieron en
+verde sin demostrar nada: el arnés corría toda la carpeta y ahí adentro había una
+prueba rota por otra razón. El arnés corre la base primero, sale 1 si el texto a
+mutar no está, y sale 2 si la base no está verde.
+
 **Y el fixture se escribe desde el contrato, no de memoria.** El 2026-09-04, al
 escribir las pruebas que faltaban, se escribieron de memoria tres fixtures y el
 yaml corrigió los tres: `columnas` pide `titulo` y `numerica` —no `etiqueta`—, y

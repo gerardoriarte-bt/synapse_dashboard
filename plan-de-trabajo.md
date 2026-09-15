@@ -3288,7 +3288,7 @@ ausentes borrado de la lista, las rechazadas ocultas, y el hueco de dirección
 semántica en blanco en vez de «—». Las seis mueren.
 
 ### F4.6 ✅ `surfaces/builder/` — composición visual
-### F4.7 ⬜ Selector de tenant y plantilla base
+### F4.7 ✅ Selector de tenant y plantilla base
 ### F4.8 ⬜ Editor de pestañas: nombre, pregunta operativa, orden, sugerencias
 ### F4.9 ⬜ Canvas de 12 columnas — arrastrar y colocar
 ### F4.10 ⬜ Configurador de panel: métrica, tipo, spans, opciones
@@ -3369,6 +3369,66 @@ solo falta cable.
 ancho interpolado, el chrome sin decir el ancho, B2 diciendo que espera código en
 vez de diseño, B6 sin nombrar lo que falta, y una pantalla pendiente mostrándose
 vacía.
+
+### F4.7 cerrada el 2026-09-15 · dos de las cuatro cosas que B1 pide
+
+`ContextView` más el estado del contenedor. **484 pruebas**, doce nuevas, ocho
+mutaciones muertas.
+
+§7.2 le pide a B1 cuatro cosas: «elegir **tenant y rol**; muestra qué pestañas
+existen, cuáles **heredan de la plantilla de vertical** y cuáles tienen
+**override**». El cable sostiene el tenant y las pestañas.
+
+**El selector de rol es el que había que mirar dos veces, porque sí se podría
+armar.** `LayoutDetail` trae `RoleIDs` por pestaña, así que la unión de todas
+llena un `select` sin pedir nada a nadie. Y sería la lista equivocada por dos
+razones distintas:
+
+1. **Son IDs, no nombres.** Ninguna ruta resuelve un `RoleIDs` a un nombre, así
+   que el selector ofrecería UUID — que es exactamente la plomería en pantalla
+   que §7.3 prohíbe del otro lado.
+2. **Le faltaría justo el rol que importa.** La unión de los roles que las
+   pestañas nombran deja afuera a **todo rol que todavía no tiene pestaña**, y
+   ése es el rol para el que uno abre el builder. Un selector que esconde el caso
+   de uso se ve igual que uno completo.
+
+**Y la herencia de plantilla no existe en ningún lado.** Supone tres cosas que el
+cable no tiene: que el tenant declare una vertical —no está ni en `TenantOption`
+ni en la ficha—, que exista una plantilla por vertical, y que una pestaña sepa si
+es propia o heredada. Con dos de tres se pintaría mal.
+
+**Tres cosas que la pantalla sí dice y que no son obvias.** Un borrador muestra
+«sin publicar» y no una fecha de creación. Una pestaña con `roles` vacío muestra
+«todos los roles», que no es lo mismo que «ninguno» — y es la mitad del dato. Y
+una pestaña sin pregunta operativa se declara: el cable deja el campo en cadena
+vacía y el producto dice que «una pestaña que no contesta una pregunta no se
+compone», así que una celda en blanco se leería como un dato que falta y no como
+una regla violada.
+
+**El bug que la prueba encontró antes de que existiera.** `/admin/layouts/{id}`
+no cuelga del tenant, así que un `layoutId` del cliente anterior **sigue
+resolviendo**: sin limpiarlo al cambiar de cliente, la pantalla mostraría las
+pestañas de un cliente bajo el nombre de otro. No lo ve el typecheck ni el lint.
+
+### El arnés de mutación necesita una línea de base verde
+
+**Encontrado el 2026-09-15, y es un modo de falla nuevo de los tres ya
+anotados.** Las ocho mutaciones de F4.7 salieron «✓ muere» en su primera corrida
+y **ninguna lo había demostrado**: el arnés corría todo
+`tests/surfaces/builder/`, y ahí adentro `builder.test.tsx` ya estaba en rojo
+—B1 había pasado a traer datos y su prueba montaba el componente sin proveedor—.
+Con el árbol roto, cualquier mutación «mata» algo.
+
+Es primo del que ya estaba escrito —«una mutación que pasa sin haberse aplicado
+se lee igual que una prueba débil»— pero al revés: **una mutación que muere sobre
+un árbol roto se lee igual que una prueba fuerte**. El arnés ahora corre la línea
+de base primero y sale 2 si no está verde, que es la misma convención de
+BLOQUEADO de la puerta: no hay contra qué comparar todavía.
+
+**Verificadas por mutación, ocho casos, con la línea de base en verde:** cambiar
+de cliente sin efecto, la versión no olvidada, las pestañas en el orden del
+arreglo, un borrador con fecha, la pestaña sin pregunta en blanco, «vacío» pintado
+como «ninguno», los UUID de rol en pantalla, y uno de los tres faltantes borrado.
 - F4.12: el preview llama al endpoint con rol simulado (B4.9). No se simula del
   lado del cliente filtrando lo que ya se tiene: eso probaría el filtro del
   front, que no existe.

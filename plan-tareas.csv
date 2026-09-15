@@ -477,7 +477,7 @@ F4.6,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,surfaces/builde
 • F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.",hecho,no,,equipo:front fase:4 estado:hecho
 F4.7,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Selector de tenant y plantilla base,,"• F4.8: una pestaña que no contesta una pregunta no se compone. La pregunta operativa es obligatoria, no un subtítulo opcional.
 • F4.11: usa catalog/blocks.ts, que ya está escrito. Un tipo incompatible con la forma de la métrica se marca con la razón, no con «inválido».
-• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.",pendiente,no,,equipo:front fase:4 estado:pendiente
+• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.",hecho,no,,equipo:front fase:4 estado:hecho
 F4.8,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,"Editor de pestañas: nombre, pregunta operativa, orden, sugerencias",,"• F4.8: una pestaña que no contesta una pregunta no se compone. La pregunta operativa es obligatoria, no un subtítulo opcional.
 • F4.11: usa catalog/blocks.ts, que ya está escrito. Un tipo incompatible con la forma de la métrica se marca con la razón, no con «inválido».
 • F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.",pendiente,no,,equipo:front fase:4 estado:pendiente
