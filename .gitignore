@@ -84,3 +84,7 @@ docs/backdocs/
 # Artefactos para ENVIAR · un `.zip` de documentos que ya están versionados es
 # una segunda copia que va a derivar. Se generan al momento y no se commitean.
 docs/**/*.zip
+
+# Mismo criterio que los zip: los PDF de otros equipos se leen, no se versionan.
+# El contenido que importa se transcribe a `.md`, que sí se puede diff-ear.
+docs/**/*.pdf
