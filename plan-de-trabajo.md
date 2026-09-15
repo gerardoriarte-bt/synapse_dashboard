@@ -1143,8 +1143,50 @@ escribir el código y después discutir dónde vive es cómo se pierde el trabaj
 - `layout_overrides` escrito por el CRUD se refleja en `GET /config/tabs/:tabId`
   del rol afectado **sin republicar el layout**.
 - Queda escrito dónde vive el código —PR o fork— antes del primer commit.
-### B4.9 ⬜ Preview por rol
-**Espera del backend.** **El preview por rol.** Bloquea F4.12, y su criterio dice por qué no se puede resolver del lado del cliente: filtrar en el front lo que ya se tiene probaría el filtro del front, que no existe — el filtrado es del servidor.
+### B4.9 ⬜ Preview por rol · **LO IMPLEMENTA EL FRONT** · 2026-09-15
+**Decidido el 2026-09-15 (humano), junto con B4.8** y por la misma razón: son
+vecinas, tienen la misma forma, y las dos bloquean superficie de admin que hoy no
+se puede empezar. El antecedente y el alcance de la excepción están escritos en
+B4.8 y no se repiten acá. **Sale de `docs/PARA-BACKEND.md`.**
+
+**Qué hay que implementar.** Una forma de resolver una pestaña *como la vería otro
+rol*, bajo `AdminOnlyMiddleware`. Dos caminos y conviene elegir con cuidado:
+
+| | |
+|---|---|
+| `GET /admin/layouts/:layoutId/preview?roleId=` | Ruta propia. Más explícita, y no toca `/config/*` |
+| `GET /config/tabs/:tabId?asRoleId=` | Un parámetro en la ruta que ya existe. Menos código, **pero mete una capacidad de admin en el namespace de la consola** |
+
+**La recomendación es la primera**, y no por gusto: `/config/*` lo sirve
+`RequireUser` y su invariante es «lo que ves es lo tuyo». Un parámetro que lo
+rompa es la clase de cosa que un día se llama sin `AdminOnlyMiddleware` delante.
+
+**Y la propiedad que hace que esto sirva o no sirva:**
+
+> **El preview tiene que pasar por el MISMO código de filtrado que la consola.**
+
+`GetTab` ya aplica `roles.tab_ids`, `hidden_metric_ids` y `layout_overrides`. El
+preview resuelve el rol de otra forma —del parámetro y no del JWT— y **de ahí en
+adelante es la misma función**. Reimplementar el filtrado en paralelo es cómo el
+preview termina mostrando algo que la consola no muestra, y un preview que miente
+es peor que no tenerlo: se publica confiando en él.
+
+Es la misma razón por la que F4.12 dice que no se puede simular en el cliente —
+«filtrar en el front lo que ya se tiene probaría el filtro del front, que no
+existe».
+
+**Criterio de aceptación.**
+- Bajo `AdminOnlyMiddleware`. Un usuario de consola que la llame recibe 403.
+- **Reusa `GetTab`**, no una copia: verificable porque cambiar el filtrado en un
+  solo lugar cambia la consola y el preview a la vez.
+- Para un rol con `hidden_metric_ids`, el preview devuelve **menos paneles** que
+  para uno sin ellos, y los `layout_overrides` de ese rol están aplicados.
+- Un `roleId` de otro tenant devuelve **404 y no 403**: no se revela que existe,
+  igual que `GET /config/tabs/:tabId`.
+- **Queda escrito si el preview incluye payloads o solo el layout.** Con solo el
+  layout alcanza para «CEO vs Planner», que es lo que F4.12 pide; con payloads
+  hay que decidir qué período usa y si un panel oculto llega como `SIN_PERMISO` o
+  no llega. Decidirlo antes, no durante.
 ### B4.10 ⬜ Asignación de layout publicado a roles
 **Criterio de aceptación.**
 - Un rol declara `tabIds[]`, `hiddenMetricIds[]` y `layoutOverrides` opcionales.
@@ -3003,7 +3045,7 @@ la forma de la métrica elegida**, no los 49. Consume `/config/plots` vía
 `POST /admin/layouts/:layoutId/publish` y `GET /admin/tenants/:tenantId/catalog`.
 Con eso **trece de las veintiuna tareas de esta fase dejan de estar bloqueadas**.
 
-Siguen bloqueadas tres. **F4.3 ya no espera a otro equipo**: B4.8 —el
+Siguen bloqueadas dos. **F4.3 y F4.12 ya no esperan a otro equipo**: B4.8 —el
 CRUD de roles por tenant—, **F4.12** espera B4.9 —el preview por rol—, **F4.21**
 espera `/config/plots` y B1.21, y **F4.4** espera decidir si `POST /admin/agents`
 y `GET /admin/agents` alcanzan para la configuración de agente.
