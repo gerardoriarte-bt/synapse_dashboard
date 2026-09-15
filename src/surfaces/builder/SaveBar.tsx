@@ -21,45 +21,24 @@
 import { Label } from '../../render/primitives/Label'
 
 type Props = {
-  sucio: boolean
-  guardando: boolean
   /** Cuántos problemas ve el front. **No bloquean guardar** · ver arriba. */
   problemas: number
   /** Una versión publicada no acepta `PUT`. */
   publicada: boolean
   /** El 409 ya ocurrido, o cualquier otro error del PUT. */
   error: string | null
-  onGuardar: () => void
   onDuplicar: () => void
   duplicando: boolean
 }
 
-export function SaveBar({
-  sucio,
-  guardando,
-  problemas,
-  publicada,
-  error,
-  onGuardar,
-  onDuplicar,
-  duplicando,
-}: Props) {
+export function SaveBar({ problemas, publicada, error, onDuplicar, duplicando }: Props) {
   return (
     <div className="flex flex-col gap-2 rounded-sm bg-w2 p-3">
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onGuardar}
-          // Sin cambios no hay nada que mandar, y un PUT de reemplazo completo
-          // sobre lo mismo no es inocuo: toca `updated_at` de todo el layout.
-          disabled={!sucio || guardando || publicada}
-          className="font-mono text-label tracking-rotulo uppercase rounded-md px-4 py-2 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w3 disabled:opacity-40"
-        >
-          {guardando ? 'Guardando…' : 'Guardar borrador'}
-        </button>
-
-        <Label as="div">{sucio ? 'Sin guardar' : 'Sin cambios'}</Label>
-
+        {/* **El botón de guardar y el contador se mudaron al chrome** el
+            2026-09-15: el `.pen` los tiene en la cabecera y ahí siguen al
+            usuario. Lo que queda acá es lo que NO es global — por qué no se
+            puede guardar esta versión, y cómo salir de eso. */}
         {problemas > 0 && (
           // **Se avisa, no se impide.** Un borrador es donde una composición a
           // medias puede vivir; lo que no se puede es publicarla.

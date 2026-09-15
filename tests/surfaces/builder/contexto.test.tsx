@@ -74,6 +74,14 @@ const detalles: Record<string, unknown> = {
 
 function servir() {
   server.use(
+    http.get(`${API}/admin/tenants/:id/roles`, () =>
+      ok([
+        { id: 'r-1', tenant_id: 't-1', name: 'CEO', tab_ids: ['tab-a'], hidden_metric_ids: [], layout_overrides: {}, user_count: 1 },
+        // **El que destapa la vieja aproximación**: no tiene ninguna pestaña, así
+        // que la unión de `RoleIDs` no lo habría encontrado nunca.
+        { id: 'r-2', tenant_id: 't-1', name: 'Sin pestañas', tab_ids: [], hidden_metric_ids: [], layout_overrides: {}, user_count: 0 },
+      ]),
+    ),
     http.get(`${API}/admin/tenants`, () => ok(tenants)),
     http.get(`${API}/admin/tenants/:id/layouts`, ({ params }) =>
       ok(versiones[params['id'] as keyof typeof versiones] ?? []),
@@ -135,16 +143,29 @@ describe('§7.2 · B1 es el punto de entrada', () => {
 })
 
 describe('§7.2 · los roles', () => {
-  it('NO ofrece selector de rol, y dice por qué', async () => {
-    // Se podría armar con la unión de los `RoleIDs` y sería la lista
-    // equivocada: le faltaría todo rol que todavía no tiene pestaña, que es
-    // justo el rol para el que uno abre el builder.
+  it('SÍ ofrece selector de rol desde B4.8, con la lista completa', async () => {
+    // **F4.7 lo declaró imposible y tenía razón entonces**: el único origen era
+    // `RoleIDs`, UUID sin nombre, y su unión deja afuera al rol que todavía no
+    // tiene pestaña. `GET /admin/tenants/:id/roles` devuelve todos, con nombre.
     servir()
-    const { container } = montar()
+    montar()
     await screen.findByRole('button', { name: /v4/ })
 
-    expect(screen.queryByLabelText(/^Rol$/i)).toBeNull()
-    expect(container.textContent ?? '').toContain('B4.8')
+    const selector = await screen.findByLabelText('Rol')
+    expect(within(selector).getByText('CEO')).toBeInTheDocument()
+    // El que no tiene ninguna pestaña asignada también está.
+    expect(within(selector).getByText('Sin pestañas')).toBeInTheDocument()
+  })
+
+  it('sin roles definidos manda a la ficha de cliente', async () => {
+    server.use(
+      http.get(`${API}/admin/tenants`, () => ok(tenants)),
+      http.get(`${API}/admin/tenants/:id/roles`, () => ok([])),
+      http.get(`${API}/admin/tenants/:id/layouts`, () => ok(versiones['t-1'])),
+    )
+    montar()
+    await screen.findByRole('button', { name: /v4/ })
+    expect(screen.getByText(/Sin roles definidos/)).toBeInTheDocument()
   })
 })
 
@@ -156,7 +177,9 @@ describe('§7.2 · la herencia de plantilla, que no existe en el cable', () => {
 
     const texto = container.textContent ?? ''
     expect(texto).toContain('Faltan 3 cosas')
-    expect(texto).toContain('HEREDAN')
+    // El `.pen` pide «la proporción real entre paneles heredados de la plantilla
+    // y propios del tenant» · «UA MX hereda 11 de 12 paneles en su overview».
+    expect(texto).toContain('HEREDADOS')
     expect(texto).toContain('OVERRIDE')
     expect(texto).toContain('vertical')
   })

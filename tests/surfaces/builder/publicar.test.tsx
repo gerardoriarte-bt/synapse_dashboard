@@ -116,7 +116,7 @@ describe('F4.14 · el servidor valida lo GUARDADO', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Validar en el servidor' }))
 
     expect(await screen.findByText(/El servidor encontró 1 problema\(s\) · no se publica/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Publicar' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
   })
 
   it('nombra la PESTAÑA del problema, no su UUID', async () => {
@@ -147,7 +147,7 @@ describe('F4.14 · el servidor valida lo GUARDADO', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Validar en el servidor' }))
     expect(await screen.findByText(/La dio por válida|dio por válida/)).toBeInTheDocument()
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Publicar' })).not.toBeDisabled(),
+      expect(screen.getByRole('button', { name: 'Publicar' })).toBeInTheDocument(),
     )
   })
 })
@@ -158,7 +158,7 @@ describe('F4.15 · publicar', () => {
     montar()
     await abrir()
 
-    expect(screen.getByRole('button', { name: 'Publicar' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
     expect(screen.getByText(/Sin validar · el servidor todavía no vio esta composición/)).toBeInTheDocument()
   })
 
@@ -174,11 +174,11 @@ describe('F4.15 · publicar', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Validar en el servidor' }))
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Publicar' })).not.toBeDisabled(),
+      expect(screen.getByRole('button', { name: 'Publicar' })).toBeInTheDocument(),
     )
 
     await userEvent.type(screen.getByDisplayValue('Resumen'), '!')
-    expect(screen.getByRole('button', { name: 'Publicar' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
   })
 
   it('GUARDAR después de validar también lo retira', async () => {
@@ -192,14 +192,14 @@ describe('F4.15 · publicar', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Validar en el servidor' }))
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Publicar' })).not.toBeDisabled(),
+      expect(screen.getByRole('button', { name: 'Publicar' })).toBeInTheDocument(),
     )
 
     await userEvent.type(screen.getByDisplayValue('Resumen'), '!')
-    await userEvent.click(screen.getByRole('button', { name: 'Guardar borrador' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }))
 
-    await waitFor(() => expect(screen.getByText('Sin cambios')).toBeInTheDocument())
-    expect(screen.getByRole('button', { name: 'Publicar' })).toBeDisabled()
+    await waitFor(() => expect(screen.queryByText(/cambio\(s\) sin guardar/)).toBeNull())
+    expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
     expect(screen.getByText(/todavía no vio esta composición/)).toBeInTheDocument()
   })
 
@@ -217,7 +217,7 @@ describe('F4.15 · publicar', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Validar en el servidor' }))
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Publicar' })).not.toBeDisabled(),
+      expect(screen.getByRole('button', { name: 'Publicar' })).toBeInTheDocument(),
     )
     await userEvent.click(screen.getByRole('button', { name: 'Publicar' }))
 
@@ -244,7 +244,7 @@ describe('F4.15 · publicar', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Validar en el servidor' }))
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Publicar' })).not.toBeDisabled(),
+      expect(screen.getByRole('button', { name: 'Publicar' })).toBeInTheDocument(),
     )
     await userEvent.click(screen.getByRole('button', { name: 'Publicar' }))
 

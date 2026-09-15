@@ -390,7 +390,7 @@ describe('§7.2 · editar las opciones del panel', () => {
     const orden = await screen.findByLabelText<HTMLSelectElement>('orden')
 
     await userEvent.selectOptions(orden, 'asc')
-    expect(screen.getByText('Sin guardar')).toBeInTheDocument()
+    expect(screen.getByText(/cambio\(s\) sin guardar/)).toBeInTheDocument()
 
     await userEvent.selectOptions(screen.getByLabelText('orden'), '')
     // Sigue sucio porque el TIPO cambió; lo que se verifica es que la opción se
@@ -432,9 +432,11 @@ describe('§F4.11 · el resumen dice dónde y que NO decide', () => {
     montar()
     await abrirPanel()
 
-    expect(screen.getByRole('button', { name: 'Publicar' })).toBeDisabled()
+    // **Ausente, con la razón en su lugar.** Un botón que se aprieta y no puede
+    // cumplir es peor que uno ausente · la regla de `RecoBody`.
+    expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
+    expect(screen.getByText(/Publicar · falta validar en el servidor/)).toBeInTheDocument()
     expect(screen.getByText(/el servidor todavía no vio esta composición/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Guardar borrador' })).toBeInTheDocument()
   })
 
   it('el botón del panel con problemas se marca', async () => {

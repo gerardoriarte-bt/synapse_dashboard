@@ -10,23 +10,19 @@
  *  editarlas, que es el único lugar de §7.2 donde eso cabe sin inventar una
  *  séptima pantalla.
  *
- *  ── POR QUÉ NO HAY SELECTOR DE ROL, QUE PARECE QUE SÍ SE PODRÍA ─────────────
+ *  ── EL SELECTOR DE ROL, QUE ANTES NO SE PODÍA Y AHORA SÍ ───────────────────
  *
- *  Sí se podría: `LayoutDetail` trae `RoleIDs` por pestaña, así que la unión de
- *  todas da una lista de roles y un `select` se llena solo. **Y sería la lista
- *  equivocada, por dos razones distintas.**
+ *  **F4.7 lo declaró imposible y tenía razón entonces.** El único origen de roles
+ *  era `RoleIDs` de `LayoutDetail`: UUID sin nombre, y la unión de los que las
+ *  pestañas nombran **deja afuera a todo rol que todavía no tiene pestaña** — que
+ *  es justo el rol para el que uno abre el builder.
  *
- *  1. **Son IDs, no nombres.** `RoleIDs` es un arreglo de UUID y no hay ruta que
- *     los resuelva a un nombre. Un selector de roles que ofrece
- *     `a3f1…-…-9c2e` no es un selector, es plomería en pantalla — lo mismo que
- *     §7.3 prohíbe mostrar del lado de administración.
- *  2. **Y le faltaría justo el rol que importa.** La unión de los roles que las
- *     pestañas nombran deja afuera a **todo rol que todavía no tiene pestaña**, y
- *     ése es precisamente el rol para el que uno abre el builder. Un selector que
- *     esconde el caso de uso se ve igual que uno completo.
+ *  **B4.8 lo desbloqueó**: `GET /admin/tenants/:id/roles` devuelve los roles del
+ *  cliente con su nombre, todos, tengan pestaña o no. Así que el selector se
+ *  arma con la lista correcta y no con una aproximación.
  *
- *  Los roles del tenant salen de B4.8, que escribimos nosotros. Hasta entonces se
- *  declara, no se aproxima.
+ *  Y el `.pen` confirma que va acá: «EL TENANT DEFINE EL CATÁLOGO Y LA PLANTILLA
+ *  · EL ROL DEFINE QUÉ PESTAÑAS SE EDITAN».
  *
  *  ── Y LA HERENCIA DE PLANTILLA NO EXISTE EN NINGÚN LADO ─────────────────────
  *
@@ -40,15 +36,18 @@ import { Label } from '../../render/primitives/Label'
 import type { LayoutVersion, Tenant } from '../../api/admin'
 
 const FALTANTES = [
-  'Elegir ROL · RoleIDs son UUID sin nombre, y la unión de los roles de las pestañas deja afuera al rol que todavía no tiene ninguna · B4.8',
-  'Qué pestañas HEREDAN de la plantilla de vertical · el tenant no declara vertical y no hay plantillas',
-  'Cuáles tienen OVERRIDE · una pestaña no sabe si es propia o heredada',
+  'Cuántos paneles de cada pestaña son HEREDADOS y cuántos propios · el `.pen` pide la proporción real y el cable no tiene herencia',
+  'De qué plantilla de vertical hereda · el tenant no declara vertical y no hay plantillas',
+  'Cuáles pestañas tienen OVERRIDE · una pestaña no sabe si es propia o heredada',
 ] as const
 
 type Props = {
   tenants: readonly Tenant[]
   tenantActivo: string | null
   onTenant: (id: string) => void
+  roles: readonly { id: string; nombre: string }[]
+  rolActivo: string | null
+  onRol: (id: string) => void
   versiones: readonly LayoutVersion[]
   versionActiva: string | null
   onVersion: (id: string) => void
@@ -62,6 +61,9 @@ export function ContextView({
   tenants,
   tenantActivo,
   onTenant,
+  roles,
+  rolActivo,
+  onRol,
   versiones,
   versionActiva,
   onVersion,
@@ -83,6 +85,28 @@ export function ContextView({
             </option>
           ))}
         </select>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Label id="builder-rol">Rol</Label>
+        {roles.length === 0 ? (
+          // No es un error: es un cliente al que todavía no le definieron roles,
+          // y la salida está en otra pantalla.
+          <Label as="div">Sin roles definidos · se definen en la ficha de cliente · F4.3</Label>
+        ) : (
+          <select
+            aria-labelledby="builder-rol"
+            className="bg-w2 text-ink text-celda rounded-sm px-2 py-1 border border-w4"
+            value={rolActivo ?? ''}
+            onChange={(e) => onRol(e.target.value)}
+          >
+            {roles.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.nombre}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="flex flex-col gap-2">

@@ -8,7 +8,7 @@
  *  el código y violaría la spec.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
@@ -87,13 +87,16 @@ describe('§4 · el ancho mínimo, que no es uniforme', () => {
     }
   })
 
-  it('el chrome DICE el ancho y por qué', async () => {
-    // Sin esto, que B5 se vea más angosta se lee como un defecto de maquetado.
+  it('el chrome DICE el ancho, y B5 no tiene dónde decirlo', async () => {
+    // **La única pantalla de 1440 es B5, y B5 no lleva chrome** —«SIN CHROME DE
+    // EDICIÓN», dice el `.pen`—. Lo dijo el compilador al narrowear por la forma
+    // de chrome, no una prueba: el rótulo de 1440 era código muerto.
     montar()
     expect(screen.getByText(/1600 · lienzo 1:1 a 1200 más 300 de biblioteca/)).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Vista previa por rol' }))
-    expect(screen.getByText(/1440 · la consola del cliente a su ancho real/)).toBeInTheDocument()
+    expect(screen.queryByText(/1600 · lienzo/)).toBeNull()
+    // El 1440 sigue declarado y verificado en `pantallas.ts`, arriba.
   })
 })
 
@@ -155,5 +158,60 @@ describe('las pantallas que todavía no se pueden construir', () => {
     // Dos veces: la razón y lo que la desbloquea.
     expect(screen.getAllByText(/config\/plots/).length).toBeGreaterThan(0)
     expect(screen.getByText(/B1.21/)).toBeInTheDocument()
+  })
+})
+
+describe('el chrome NO es uniforme · corregido contra el `.pen`', () => {
+  it('declara las cuatro formas, y cuál usa cada pantalla', () => {
+    // Del dato y no del render. B1 tomó prestada `composicion` hasta que F4.9
+    // mueva la composición a B2 — ahí vuelve a `identidad`, y esta prueba lo
+    // dice antes que ninguna otra.
+    const formas = Object.fromEntries(PANTALLAS.map((p) => [p.id, p.chrome]))
+    expect(formas).toEqual({
+      contexto: 'composicion',
+      canvas: 'composicion',
+      grafico: 'composicion',
+      metrica: 'composicion',
+      preview: 'ninguno',
+      historial: 'contexto',
+    })
+  })
+
+  it('B5 NO lleva chrome · «SIN CHROME DE EDICIÓN»', async () => {
+    montar()
+    expect(screen.getByRole('navigation', { name: 'Builder' })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Vista previa por rol' }))
+    expect(screen.queryByRole('navigation', { name: 'Builder' })).toBeNull()
+  })
+
+  it('el contexto es PERSISTENTE · se ve al cambiar de pantalla', async () => {
+    // La razón de la corrección: con el contexto en una barra del cuerpo, al
+    // salir de B1 se perdía de vista sobre qué cliente y qué rol se componía.
+    //
+    // **Acotado a la cabecera**, porque B1 también nombra al cliente en su
+    // selector: sin acotar, la prueba pasaría por el selector y no por el
+    // chrome, que es justo lo que se quiere verificar.
+    montar()
+    const cabecera = () => within(screen.getByRole('banner'))
+    expect(await cabecera().findByText('Under Armour México')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Historial de versiones' }))
+    expect(cabecera().getByText('Under Armour México')).toBeInTheDocument()
+    // Y en esa pantalla el selector de B1 ya no está: el nombre solo puede
+    // venir del chrome.
+    expect(screen.queryByLabelText('Cliente')).toBeNull()
+  })
+
+  it('cada dato del contexto lleva su rótulo', async () => {
+    // Tres nombres seguidos no dicen cuál es cuál.
+    montar()
+    await screen.findByRole('banner')
+    await userEvent.click(screen.getByRole('button', { name: 'Historial de versiones' }))
+
+    const cabecera = within(screen.getByRole('banner'))
+    for (const rotulo of ['Cliente', 'Rol', 'Pestaña']) {
+      expect(cabecera.getByText(rotulo)).toBeInTheDocument()
+    }
   })
 })

@@ -4032,6 +4032,71 @@ declarar, el 404 como error genérico, sin roles sin mandar a definirlos, el
 adaptador perdiendo `sinPayloads`, y el adaptador leyendo el preview en
 PascalCase.
 
+### El chrome del builder, rehecho el 2026-09-15 contra el `.pen`
+
+**Divergencia 1 de la auditoría.** `BuilderChrome`, `pantallas.ts`, `SaveBar` y
+`PublishBar`. **609 pruebas**, cuatro nuevas, diez mutaciones muertas.
+
+**El contexto va en la cabecera y es persistente.** El `.pen` dibuja
+`TENANT · ROL · PESTAÑA` arriba en B2, B4 y B6, con «3 CAMBIOS SIN GUARDAR`,
+`VISTA PREVIA` y `PUBLICAR`. F4.6–F4.15 los habían puesto en barras dentro del
+cuerpo, y eso tiene dos consecuencias: **al salir de B1 se perdía de vista sobre
+qué cliente y qué rol se estaba componiendo**, y el aviso de cambios sin guardar
+desaparecía al cambiar de pantalla — que es justo cuando hace falta.
+
+**El chrome tiene cuatro formas y cada pantalla declara la suya**, igual que el
+ancho: `identidad` (B1, que elige el contexto y por eso no lo muestra resuelto),
+`composicion` (contexto + guardar + vista previa + publicar), `contexto` (B6, que
+mira y no toca) y `ninguno` — **B5, que pinta la consola del cliente**: «SIN
+CHROME DE EDICIÓN · DATOS REALES · ASÍ SE PUBLICA».
+
+**B1 usa `composicion` prestada, y está dicho en una línea.** En el `.pen` B1 solo
+elige el contexto y la composición ocurre en B2; acá B1 hospeda además el editor
+porque **B2 no existe todavía** — es F4.9. Sin el contador y el botón de guardar,
+la pantalla donde se edita no tiene cómo guardar. **El día que F4.9 mueva la
+composición a B2, vuelve a `identidad`** y el cambio es esa línea.
+
+### El selector de rol, que F4.7 declaró imposible y ahora es posible
+
+**F4.7 tenía razón entonces y dejó de tenerla.** El único origen de roles era
+`RoleIDs` de `LayoutDetail`: UUID sin nombre, y su unión deja afuera a todo rol
+que todavía no tiene pestaña — justo el rol para el que uno abre el builder.
+**B4.8 lo desbloqueó**: `GET /admin/tenants/:id/roles` devuelve todos, con nombre.
+
+El `.pen` confirma que va en B1: «EL TENANT DEFINE EL CATÁLOGO Y LA PLANTILLA · EL
+ROL DEFINE QUÉ PESTAÑAS SE EDITAN». Y la prueba usa un fixture con un rol **sin
+ninguna pestaña asignada**, que es el que la vieja aproximación no habría
+encontrado nunca.
+
+### Dos cosas que dijo el compilador y no una prueba
+
+**El rótulo de «ancho 1440» era código muerto.** Al estrechar por la forma de
+chrome, TypeScript marcó que `pantalla.ancho === 1440` no puede ser cierto dentro
+de la cabecera: **la única pantalla de 1440 es B5, y B5 no lleva cabecera.** El
+1440 sigue declarado y verificado en `pantallas.ts`; lo que no existe es un lugar
+en la UI donde decirlo.
+
+**Y la rama de `identidad` quedó marcada como muerta también**, porque hoy
+ninguna pantalla la usa. Ahí la respuesta no era borrarla —vuelve con F4.9— sino
+**preguntar por predicados tipados en vez de comparar en línea**: un parámetro no
+se estrecha en el sitio de llamada, así que `sinChrome(forma)` y
+`conContexto(forma)` dicen lo que el componente soporta y no lo que la tabla usa
+hoy.
+
+### Una desviación del `.pen` que va dicha
+
+**El `.pen` no dibuja un botón de guardar.** Muestra «3 CAMBIOS SIN GUARDAR» y, al
+lado, solo `VISTA PREVIA` y `PUBLICAR`. §7.2 sí exige el guardado explícito, así
+que el botón hace falta y el único lugar coherente es junto al indicador que lo
+motiva. Queda anotado en el componente: si diseño resolvió el guardado de otra
+forma que no llegó al `.pen`, eso es lo que hay que cambiar.
+
+**Verificadas por mutación, diez casos:** B5 recuperando chrome, el contexto sin
+persistir, el contexto sin rótulos, el contador ausente, el contador contando
+pulsaciones, guardar ofrecido sin cambios, guardar sobre una versión publicada,
+publicar sin veredicto, el selector de rol desaparecido, y el vacío de roles sin
+decir a dónde ir.
+
 ### Por qué F4.9 no se toma · y una trampa del propio parser
 
 **La interacción del arrastre no está declarada, y el bloqueo NO es del

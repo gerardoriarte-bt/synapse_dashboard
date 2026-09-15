@@ -17,6 +17,11 @@
  *  3. **Publicar**, solo si el servidor dijo `valido`. Y cualquier edición
  *     posterior borra ese permiso: el veredicto era sobre lo que había.
  *
+ *  **El botón de publicar vive en el CHROME desde el 2026-09-15** —el `.pen` lo
+ *  dibuja ahí— y la condición del permiso la evalúa el contenedor con estos
+ *  mismos términos. Lo que queda acá es la mitad que el chrome no tiene lugar
+ *  para decir: qué contestó el servidor, y cuáles son los problemas.
+ *
  *  ── LOS PROBLEMAS DEL SERVIDOR VIENEN POR ID ────────────────────────────────
  *
  *  `ValidationError` trae `tab_id` y `panel_id`, mientras que los del front van
@@ -31,31 +36,23 @@ type Props = {
   sucio: boolean
   publicada: boolean
   validando: boolean
-  publicando: boolean
   /** `null` mientras nadie validó, o después de tocar algo. */
   veredicto: { valido: boolean; problemas: readonly ProblemaDeComposicion[] } | null
   /** Para nombrar la pestaña de un problema en vez de pintar su UUID. */
   nombreDeTab: (tabId: string | null) => string
   error: string | null
   onValidar: () => void
-  onPublicar: () => void
 }
 
 export function PublishBar({
   sucio,
   publicada,
   validando,
-  publicando,
   veredicto,
   nombreDeTab,
   error,
   onValidar,
-  onPublicar,
 }: Props) {
-  // **`valido === true` y no `veredicto !== null`.** Es la diferencia entre «el
-  // servidor contestó» y «el servidor dijo que sí».
-  const autorizado = veredicto?.valido === true && !sucio
-
   return (
     <div className="flex flex-col gap-2 rounded-sm bg-w2 p-3">
       <div className="flex items-center gap-3">
@@ -66,15 +63,6 @@ export function PublishBar({
           className="font-mono text-label tracking-rotulo uppercase rounded-md px-4 py-2 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w3 disabled:opacity-40"
         >
           {validando ? 'Validando…' : 'Validar en el servidor'}
-        </button>
-
-        <button
-          type="button"
-          onClick={onPublicar}
-          disabled={!autorizado || publicando || publicada}
-          className="font-mono text-label tracking-rotulo uppercase rounded-md px-4 py-2 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w3 disabled:opacity-40"
-        >
-          {publicando ? 'Publicando…' : 'Publicar'}
         </button>
 
         {sucio && (

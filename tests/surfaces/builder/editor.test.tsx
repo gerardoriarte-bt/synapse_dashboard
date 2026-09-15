@@ -264,9 +264,9 @@ describe('el indicador de cambios sin guardar', () => {
     montar()
     await abrirVersion()
 
-    expect(screen.getByText('Sin cambios')).toBeInTheDocument()
+    expect(screen.queryByText(/cambio\(s\) sin guardar/)).toBeNull()
     await userEvent.type(screen.getByDisplayValue('Resumen'), '!')
-    expect(screen.getByText('Sin guardar')).toBeInTheDocument()
+    expect(screen.getByText('1 cambio(s) sin guardar')).toBeInTheDocument()
   })
 
   it('guardar está deshabilitado mientras no haya cambios · F4.13', async () => {
@@ -276,9 +276,11 @@ describe('el indicador de cambios sin guardar', () => {
     montar()
     await abrirVersion()
 
-    expect(screen.getByRole('button', { name: 'Guardar borrador' })).toBeDisabled()
+    // **Ausente sin cambios, presente con cambios.** Un botón deshabilitado y
+    // uno ausente dicen cosas distintas; acá no hay nada que mandar.
+    expect(screen.queryByRole('button', { name: 'Guardar' })).toBeNull()
     await userEvent.type(screen.getByDisplayValue('Resumen'), '!')
-    expect(screen.getByRole('button', { name: 'Guardar borrador' })).not.toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Guardar' })).toBeInTheDocument()
   })
 })
 

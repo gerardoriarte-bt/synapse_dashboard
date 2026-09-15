@@ -146,7 +146,10 @@ export function Builder() {
   // nunca acertaría y solo agregaría una comparación.
   const problemas = validarBorrador(tabs, tabla, catalogo.data?.metrics ?? [])
 
-  // B5 · el preview · F4.12. Los roles salen del cable del fork, igual que A2.
+  /** **El rol es del CONTEXTO de edición, no de B5.** Lo elige B1 —«el rol
+   *  define qué pestañas se editan», dice el `.pen`— y B5 lo usa para pedir su
+   *  preview. Tenerlo acá arriba es lo que deja pintarlo en el chrome de todas
+   *  las pantallas de composición. */
   const [rol, setRol] = useState<string | null>(null)
   const roles = useRoles(tenantActivo)
   const rolActivo = rol ?? roles.data?.[0]?.id ?? null
@@ -195,8 +198,47 @@ export function Builder() {
   const pendiente = PENDIENTES[pantalla]
   const reubicada = EN_OTRA_PANTALLA[pantalla]
 
+  /** **Guardar invalida el veredicto anterior**, y **el borrador local se
+   *  descarta**. Lo segundo es lo que importa: la respuesta trae los `id` que el
+   *  servidor acaba de asignar a lo nuevo, y si el borrador sobreviviera esos
+   *  seguirían sin `id` — el guardado siguiente los crearía otra vez. */
+  const guardarBorrador = () => {
+    validar.reset()
+    guardar.mutate(tabs, {
+      onSuccess: () => {
+        setBorrador(null)
+        setSeleccion(null)
+      },
+    })
+  }
+
   return (
-    <BuilderChrome activa={pantalla} onIr={setPantalla}>
+    <BuilderChrome
+      activa={pantalla}
+      onIr={setPantalla}
+      contexto={{
+        tenant: lista.find((t) => t.id === tenantActivo)?.nombre ?? null,
+        rol: roles.data?.find((r) => r.id === rolActivo)?.nombre ?? null,
+        // La pestaña en foco sale de qué panel se está configurando. Sin
+        // selección no hay una: se dice «Todas», que es lo que el editor muestra.
+        pestana: seleccion === null ? null : (tabs[seleccion.tab]?.nombre ?? null),
+        // **Cuenta pestañas tocadas, no pulsaciones.** Un contador de teclas
+        // diría «47 cambios» por escribir un nombre.
+        cambios: semilla === null ? 0 : tabs.filter((t, i) => JSON.stringify(t) !== JSON.stringify(semilla[i])).length,
+      }}
+      onGuardar={
+        semilla !== null && sucio(tabs, semilla) && !publicada ? guardarBorrador : null
+      }
+      guardando={guardar.isPending}
+      onPublicar={
+        // El permiso es el mismo que usa `PublishBar`: el servidor dijo válido y
+        // no se tocó nada desde entonces. Sin él, el chrome dice por qué en vez
+        // de ofrecer un botón que no puede cumplir.
+        validar.data?.valido === true && semilla !== null && !sucio(tabs, semilla) && !publicada
+          ? () => publicar.mutate(detalle.data?.layout.versionId)
+          : null
+      }
+    >
       {reubicada !== undefined ? (
         <div className="flex flex-col gap-2">
           <Label as="div">Está construida, en otra pantalla</Label>
@@ -230,6 +272,9 @@ export function Builder() {
             // pestañas de un cliente bajo el nombre de otro.
             setVersion(null)
           }}
+          roles={roles.data ?? []}
+          rolActivo={rolActivo}
+          onRol={setRol}
           versiones={versiones.data ?? []}
           versionActiva={version}
           onVersion={setVersion}
@@ -257,29 +302,9 @@ export function Builder() {
           )}
           {semilla === null ? null : (
             <SaveBar
-              sucio={sucio(tabs, semilla)}
-              guardando={guardar.isPending}
               problemas={problemas.length}
               publicada={publicada}
               error={errorAlGuardar}
-              onGuardar={() => {
-                // **Guardar invalida el veredicto anterior.** Era sobre lo que
-                // había; lo que hay ahora el servidor no lo vio.
-                validar.reset()
-                guardar.mutate(tabs, {
-                  // **El borrador local se descarta al guardar, y es la mitad
-                  // que importa.** La respuesta trae los `id` que el servidor
-                  // acaba de asignar a las pestañas y paneles nuevos; si el
-                  // borrador sobreviviera, esos seguirían sin `id` y **el
-                  // siguiente guardado los crearía de nuevo**, duplicados. El
-                  // hook ya dejó el detalle fresco en el cache, así que soltar
-                  // el borrador hace que la pantalla lea de ahí.
-                  onSuccess: () => {
-                    setBorrador(null)
-                    setSeleccion(null)
-                  },
-                })
-              }}
               onDuplicar={() => {
                 duplicar.mutate(detalle.data?.layout.versionId, {
                   onSuccess: (nuevo) => {
@@ -298,7 +323,6 @@ export function Builder() {
               sucio={sucio(tabs, semilla)}
               publicada={publicada}
               validando={validar.isPending}
-              publicando={publicar.isPending}
               veredicto={
                 validar.data === undefined
                   ? null
@@ -319,7 +343,6 @@ export function Builder() {
                     : `No se pudo publicar · ${publicar.error.message}`
               }
               onValidar={() => validar.mutate()}
-              onPublicar={() => publicar.mutate(detalle.data?.layout.versionId)}
             />
           )}
 

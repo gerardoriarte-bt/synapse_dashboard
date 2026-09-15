@@ -109,7 +109,7 @@ describe('§7.2 · guardado explícito', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
     await userEvent.type(await screen.findByDisplayValue('Resumen'), ' ejecutivo')
-    await userEvent.click(screen.getByRole('button', { name: 'Guardar borrador' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }))
 
     await waitFor(() => expect(cuerpos).toHaveLength(1))
     const tab = (cuerpos[0] as { tabs: { role_ids: string[]; panels: unknown[] }[] }).tabs[0]
@@ -150,14 +150,14 @@ describe('§7.2 · guardado explícito', () => {
     await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
     await screen.findByDisplayValue('Resumen')
     await userEvent.click(screen.getByRole('button', { name: 'Agregar pestaña' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Guardar borrador' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }))
 
     await waitFor(() => expect(cuerpos).toHaveLength(1))
     expect(cuerpos[0]?.tabs.map((t) => t.id)).toEqual(['tab-a', undefined])
 
     // Segunda vuelta: se edita otra cosa y se vuelve a guardar.
     await userEvent.type(await screen.findByDisplayValue('Pestaña nueva'), '!')
-    await userEvent.click(screen.getByRole('button', { name: 'Guardar borrador' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }))
 
     await waitFor(() => expect(cuerpos).toHaveLength(2))
     // **Con `id`: se edita, no se duplica.**
@@ -174,10 +174,14 @@ describe('§7.2 · guardado explícito', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
     await userEvent.type(await screen.findByDisplayValue('Resumen'), ' ejecutivo')
-    expect(screen.getByText('Sin guardar')).toBeInTheDocument()
+    // **El contador vive en el chrome desde el 2026-09-15** y cuenta pestañas
+    // tocadas, no pulsaciones: un contador de teclas diría «10 cambios» por
+    // escribir una palabra.
+    expect(screen.getByText('1 cambio(s) sin guardar')).toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Guardar borrador' }))
-    await waitFor(() => expect(screen.getByText('Sin cambios')).toBeInTheDocument())
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(screen.queryByText(/cambio\(s\) sin guardar/)).toBeNull())
+    expect(screen.queryByRole('button', { name: 'Guardar' })).toBeNull()
   })
 
   it('los problemas de composición NO bloquean guardar', async () => {
@@ -207,7 +211,7 @@ describe('§7.2 · guardado explícito', () => {
     await userEvent.type(await screen.findByDisplayValue('Resumen'), '!')
 
     expect(screen.getByText(/se guardan igual, no se publican/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Guardar borrador' })).not.toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Guardar' })).toBeInTheDocument()
   })
 })
 
@@ -224,7 +228,8 @@ describe('una versión publicada no se edita', () => {
     await userEvent.click(await screen.findByRole('button', { name: /v3/ }))
     await screen.findByDisplayValue('Resumen')
 
-    expect(screen.getByRole('button', { name: 'Guardar borrador' })).toBeDisabled()
+    // **Ausente, no deshabilitado**: un CTA sin manejador no se pinta.
+    expect(screen.queryByRole('button', { name: 'Guardar' })).toBeNull()
     expect(screen.getByText(/está publicada y no se edita/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Crear borrador desde esta versión/ })).toBeInTheDocument()
   })
@@ -242,8 +247,8 @@ describe('una versión publicada no se edita', () => {
     await userEvent.click(await screen.findByRole('button', { name: /v3/ }))
     await userEvent.type(await screen.findByDisplayValue('Resumen'), '!')
 
-    expect(screen.getByText('Sin guardar')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Guardar borrador' })).toBeDisabled()
+    expect(screen.getByText('1 cambio(s) sin guardar')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Guardar' })).toBeNull()
   })
 
   it('duplicar manda el versionId de origen y salta al borrador nuevo', async () => {
@@ -287,7 +292,7 @@ describe('una versión publicada no se edita', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
     await userEvent.type(await screen.findByDisplayValue('Resumen'), '!')
-    await userEvent.click(screen.getByRole('button', { name: 'Guardar borrador' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }))
 
     expect(await screen.findByText(/Alguien publicó esta versión mientras la editabas/)).toBeInTheDocument()
   })
