@@ -98,15 +98,28 @@ describe('§4 · el ancho mínimo, que no es uniforme', () => {
 })
 
 describe('las pantallas que todavía no se pueden construir', () => {
-  it('las cinco dicen qué las desbloquea en vez de mostrarse vacías', async () => {
-    // Cinco y no seis: B1 está construida · F4.7. Una pantalla que se declara
+  it('las que quedan dicen qué las desbloquea en vez de mostrarse vacías', async () => {
+    // Tres: B1 es F4.7, B4 es F4.10 y B5 es F4.12. Una pantalla que se declara
     // pendiente no es lo mismo que una que no está.
     montar()
-    for (const p of PANTALLAS.filter((x) => x.id !== 'contexto')) {
+    const construidas = ['contexto', 'metrica', 'preview']
+    for (const p of PANTALLAS.filter((x) => !construidas.includes(x.id))) {
       await userEvent.click(screen.getByRole('button', { name: p.nombre }))
       expect(screen.getByText('Pendiente')).toBeInTheDocument()
       expect(screen.getByText(/Se desbloquea con/)).toBeInTheDocument()
     }
+  })
+
+  it('B4 dice que está construida en otra pantalla, no «pendiente»', async () => {
+    // **Decirle «Pendiente» a algo hecho miente sobre trabajo hecho.** El binder
+    // existe desde F4.10 y vive dentro de B1 porque configurar un panel exige
+    // tenerlo elegido. Es una desviación de §7.2 y va dicha, no escondida.
+    montar()
+    await userEvent.click(screen.getByRole('button', { name: 'Binder de métrica' }))
+
+    expect(screen.getByText('Está construida, en otra pantalla')).toBeInTheDocument()
+    expect(screen.queryByText('Pendiente')).toBeNull()
+    expect(screen.getByText(/exige tenerlo elegido/)).toBeInTheDocument()
   })
 
   it('B1 NO se declara pendiente · está construida', async () => {

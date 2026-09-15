@@ -3443,7 +3443,7 @@ semántica en blanco en vez de «—». Las seis mueren.
 ### F4.9 ⬜ Canvas de 12 columnas — arrastrar y colocar · 🔒 depende de una decisión de diseño
 ### F4.10 ✅ Configurador de panel: métrica, tipo, spans, opciones
 ### F4.11 ✅ Validación en tiempo real contra `/config/blocks`
-### F4.12 ⬜ Preview por rol
+### F4.12 ⚠️ Preview por rol
 ### F4.13 ✅ Guardar borrador
 ### F4.14 ✅ Validar antes de publicar
 ### F4.15 ✅ Publicar sin deploy
@@ -3921,6 +3921,64 @@ la forma de la métrica elegida**, no los 49. Consume `/config/plots` vía
   publicar que el gráfico va a quedar vacío en un tenant chico.
 - Con `serieConBanda`, solo aparecen gráficos con `soportaBanda`.
 - No elegir nada es válido: el panel usa el gráfico por defecto de su tipo.
+
+### F4.12 parcial el 2026-09-15 · la composición, no las cifras
+
+`RolePreview` y el cableado de `usePreview`. **604 pruebas**, doce nuevas, once
+mutaciones muertas.
+
+**Queda en ⚠️ por una razón que decidimos nosotros y está escrita.** §7.2 pide
+«renderiza la composición exactamente como la verá el rol, **con datos reales**»,
+y B4.9 decidió que el preview va **sin payloads**: con el layout alcanza para
+«CEO vs Planner», con payloads habría que fijar qué período usa y si un panel
+oculto llega como `SIN_PERMISO`, y materializar costaría lo mismo que la consola
+real. La mitad que falta es deliberada, no un olvido — y la pantalla la declara.
+
+**Los paneles NO se dibujan con `render/Panel`, y esa es la decisión del día.**
+Hacerlo exigiría inventarle un payload: un `BLOQUEADO` que ningún servidor emitió,
+o un `CARGANDO` que no está cargando. Compila, se ve bien y miente — que es
+exactamente lo que este repositorio persigue. Se dibuja **la grilla con las
+posiciones reales** —`gridStyle`, `panelStyle` y `readingOrder` de
+`render/grid.ts`, así que la colocación es la misma que la consola aplica— y cada
+hueco dice qué métrica va ahí y de qué tamaño. Hay una prueba que verifica que
+ninguno de los cuatro nombres de estado aparezca en pantalla.
+
+**El recorte lo hace el servidor y las pruebas lo respetan.** Los fixtures
+devuelven lo que `/admin/layouts/:id/preview?roleId=` contestaría, ya filtrado, y
+hay una prueba de que cambiar de rol **pide otro preview** en vez de filtrar acá.
+«Filtrar en el front lo que ya se tiene probaría el filtro del front, que no
+existe.» La clave de cache lleva los dos ids: un preview servido desde el cache de
+otro rol es la mentira que B4.9 existe para no cometer.
+
+### Un campo que nadie leía, encontrado por mutación
+
+`sinPayloads` viajaba desde el cable, se adaptaba… **y no lo leía nadie**: el
+aviso de «esta vista no trae cifras» estaba escrito fijo. Es el modo de falla de
+`BodyProps.presentation` —declarada meses, sin un solo consumidor— y la mutación
+que lo ponía en `false` sobrevivía.
+
+Ahora el aviso cuelga del campo. **El día que el servicio empiece a mandar cifras,
+el aviso se apaga solo**; escrito fijo habría seguido diciendo que no las hay, y
+nadie lo habría notado hasta mirar.
+
+### Y B4 · el binder dejó de declararse «pendiente»
+
+Su razón decía «falta construir la pantalla · F4.10» y eso era falso desde que
+F4.10 cerró: el binder existe y **vive dentro de B1**, porque configurar un panel
+exige tenerlo elegido y elegirlo es de B1. Una pantalla suelta obligaría a
+duplicar la selección de pestaña y de panel para llegar al mismo formulario.
+
+**Es una desviación de §7.2, que lo describe como pantalla propia, y va dicha**:
+la pantalla ahora dice «está construida, en otra pantalla» y dónde. Decirle
+«Pendiente» a algo hecho miente sobre trabajo hecho, que es el mismo error que
+marcar ✅ algo a medias, por el otro lado.
+
+**Verificadas por mutación, once casos:** el cache compartido entre roles, el
+aviso de «sin cifras» borrado, el aviso escrito fijo, el toggle que no dispara, la
+posición sin pintar, el id de métrica en vez del nombre, el rol vacío sin
+declarar, el 404 como error genérico, sin roles sin mandar a definirlos, el
+adaptador perdiendo `sinPayloads`, y el adaptador leyendo el preview en
+PascalCase.
 
 ### Por qué F4.9 no se toma · y una trampa del propio parser
 

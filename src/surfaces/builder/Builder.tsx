@@ -29,7 +29,9 @@ import {
   useCreateDraft,
   useLayoutDetail,
   useLayouts,
+  usePreview,
   usePublishLayout,
+  useRoles,
   useSaveLayout,
   useTenants,
   useValidateLayout,
@@ -39,6 +41,7 @@ import { ContextView } from './ContextView'
 import { TabEditor } from './TabEditor'
 import { PanelConfigurator } from './PanelConfigurator'
 import { PublishBar } from './PublishBar'
+import { RolePreview } from './RolePreview'
 import { SaveBar } from './SaveBar'
 import { ValidationSummary } from './ValidationSummary'
 import { validarBorrador } from './validar'
@@ -60,7 +63,7 @@ import { SurfaceMessage } from '../console/SurfaceMessage'
 import { Label } from '../../render/primitives/Label'
 import { ApiError } from '../../api/types'
 import type { TabParaGuardar } from '../../api/admin'
-import type { PanelConfig } from '../../api/types'
+import type { Metric, PanelConfig } from '../../api/types'
 import type { PantallaId } from './pantallas'
 
 /** Qué espera cada pantalla. Acá y no en un comentario: la pantalla lo pinta, así
@@ -76,19 +79,23 @@ const PENDIENTES: Partial<Record<PantallaId, { razon: string; desbloqueaCon: str
       'La biblioteca lista los gráficos por grupo y esa lista la sirve /config/plots, que no existe.',
     desbloqueaCon: 'B1.21 · la ruta /config/plots · después F4.21',
   },
-  metrica: {
-    razon: 'El catálogo y la tabla de bloques ya están; falta construir la pantalla.',
-    desbloqueaCon: 'F4.10 · configurador de panel',
-  },
-  preview: {
-    razon: 'Renderiza como lo verá un ROL, y no hay de dónde leer los roles del tenant.',
-    desbloqueaCon: 'B4.9 · preview por rol, que escribimos nosotros en un fork',
-  },
   historial: {
     razon:
       '§7.2 pide quién, cuándo y qué cambió. LayoutVersion trae cuándo y nada más: ni autor ni diferencia contra la versión anterior, y tampoco hay ruta para revertir.',
     desbloqueaCon: 'B4.10 · autor, diferencia y reversión en LayoutVersion',
   },
+}
+
+/** Pantallas de §7.2 que SÍ están construidas y **viven en otra**. No es lo
+ *  mismo que pendiente, y decirlo «Pendiente» sería mentir sobre trabajo hecho.
+ *
+ *  `design.md` describe B4 como pantalla propia. Acá vive dentro de B1 porque
+ *  **configurar un panel exige tenerlo elegido**, y elegirlo es de B1: una
+ *  pantalla suelta obligaría a duplicar la selección de pestaña y de panel para
+ *  llegar al mismo formulario. Es una desviación de la spec y va dicha. */
+const EN_OTRA_PANTALLA: Partial<Record<PantallaId, string>> = {
+  metrica:
+    'El binder está construido —F4.10— y vive en «Contexto de edición»: se elige un panel de una pestaña y se configura ahí. Configurar un panel exige tenerlo elegido, y elegirlo es de B1.',
 }
 
 export function Builder() {
@@ -139,6 +146,12 @@ export function Builder() {
   // nunca acertaría y solo agregaría una comparación.
   const problemas = validarBorrador(tabs, tabla, catalogo.data?.metrics ?? [])
 
+  // B5 · el preview · F4.12. Los roles salen del cable del fork, igual que A2.
+  const [rol, setRol] = useState<string | null>(null)
+  const roles = useRoles(tenantActivo)
+  const rolActivo = rol ?? roles.data?.[0]?.id ?? null
+  const preview = usePreview(pantalla === 'preview' ? version : null, rolActivo)
+
   const guardar = useSaveLayout(version)
   const validar = useValidateLayout(version)
   const publicar = usePublishLayout(version, tenantActivo)
@@ -180,15 +193,31 @@ export function Builder() {
   }
 
   const pendiente = PENDIENTES[pantalla]
+  const reubicada = EN_OTRA_PANTALLA[pantalla]
 
   return (
     <BuilderChrome activa={pantalla} onIr={setPantalla}>
-      {pendiente !== undefined ? (
+      {reubicada !== undefined ? (
+        <div className="flex flex-col gap-2">
+          <Label as="div">Está construida, en otra pantalla</Label>
+          <Label as="div">{reubicada}</Label>
+        </div>
+      ) : pendiente !== undefined ? (
         <div className="flex flex-col gap-2">
           <Label as="div">Pendiente</Label>
           <Label as="div">{pendiente.razon}</Label>
           <Label as="div">Se desbloquea con · {pendiente.desbloqueaCon}</Label>
         </div>
+      ) : pantalla === 'preview' ? (
+        <Preview
+          roles={roles.data ?? []}
+          rolActivo={rolActivo}
+          onRol={setRol}
+          query={preview}
+          metricas={catalogo.data?.metrics ?? []}
+          onVolver={() => setPantalla('contexto')}
+          hayVersion={version !== null}
+        />
       ) : (
         <ContextView
           tenants={lista}
@@ -345,5 +374,76 @@ export function Builder() {
         </ContextView>
       )}
     </BuilderChrome>
+  )
+}
+
+/** B5 dentro del chrome · el selector de rol más los tres estados del preview.
+ *
+ *  **El selector de rol vive acá y no en `RolePreview`**: aquel pinta lo que el
+ *  servidor devolvió y no decide de quién. §4 separa contenedor de
+ *  presentacional, y acá la separación además evita que la vista previa —que
+ *  §7.2 pide «sin chrome de edición»— tenga adentro un control de edición. */
+function Preview({
+  roles,
+  rolActivo,
+  onRol,
+  query,
+  metricas,
+  onVolver,
+  hayVersion,
+}: {
+  roles: readonly { id: string; nombre: string }[]
+  rolActivo: string | null
+  onRol: (id: string) => void
+  query: ReturnType<typeof usePreview>
+  metricas: readonly Metric[]
+  onVolver: () => void
+  hayVersion: boolean
+}) {
+  if (!hayVersion) {
+    return <Label as="div">Elegí una versión en «Contexto de edición» para previsualizarla</Label>
+  }
+  if (roles.length === 0) {
+    return (
+      <div className="flex flex-col gap-2">
+        <Label as="div">Este cliente no tiene roles definidos</Label>
+        <Label as="div">Se definen en la ficha de cliente de administración · F4.3</Label>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <Label id="preview-rol">Rol</Label>
+        <select
+          aria-labelledby="preview-rol"
+          className="bg-w2 text-ink text-celda rounded-sm px-2 py-1 border border-w4"
+          value={rolActivo ?? ''}
+          onChange={(e) => onRol(e.target.value)}
+        >
+          {roles.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.nombre}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {query.isError ? (
+        <div className="flex flex-col gap-2">
+          <Label as="div">No se pudo resolver el preview</Label>
+          <Label as="div">
+            {query.error instanceof ApiError && query.error.httpStatus === 404
+              ? 'El servicio desplegado todavía no sirve esta ruta · está escrita en el fork · B4.9'
+              : (query.error.message === '' ? 'Sin detalle del servidor' : query.error.message)}
+          </Label>
+        </div>
+      ) : query.data === undefined ? (
+        <Label as="div">Resolviendo el preview…</Label>
+      ) : (
+        <RolePreview preview={query.data} metricas={metricas} onVolver={onVolver} />
+      )}
+    </div>
   )
 }
