@@ -16,6 +16,7 @@
     "gen:api": "openapi-typescript contracts/synapse-api.yaml -o src/api/generated.ts",
     "gen:auth": "openapi-typescript contracts/synapse-auth.yaml -o src/api/auth-generated.ts",
     "gen:console-wire": "openapi-typescript contracts/synapse-console-wire.yaml -o src/api/console-generated.ts",
+    "gen:admin-wire": "openapi-typescript contracts/synapse-admin-wire.yaml -o src/api/admin-generated.ts",
     "gen:tokens": "python3 tools/gen-tokens.py",
     "plan": "python3 tools/plan-a-csv.py && python3 tools/plan-a-html.py && python3 tools/para-backend.py && python3 tools/estado.py",
     "plan:diff": "python3 tools/plan-diff.py",
@@ -31,6 +32,7 @@
     "contract-drift": "python3 tools/contract-drift.py",
     "auth-drift": "python3 tools/contract-drift.py --auth",
     "console-drift": "python3 tools/contract-drift.py --console-wire",
+    "admin-drift": "python3 tools/contract-drift.py --admin-wire",
     "token-drift": "python3 tools/token-drift.py",
     "contraste": "python3 tools/contraste.py",
     "carga-diferida": "python3 tools/carga-diferida.py"

@@ -1208,6 +1208,23 @@ existe».
   hay que decidir qué período usa y si un panel oculto llega como `SIN_PERMISO` o
   no llega. Decidirlo antes, no durante.
 ### B4.10 ⬜ Asignación de layout publicado a roles
+**Espera del backend.** **Tres etiquetas `json:`** en `DDLayoutVersion`, `DDTab` y `DDPanel`, y un **`json:"-"`** en sus campos `Tenant` / `LayoutVersion` / `Tab`.
+
+**No es una preferencia nuestra: rompe sus propios tests de Postman.**
+`scriptCreateDraft` de su colección F4 afirma `lv.status === 'draft'` y lo que
+llega es `Status`, así que compara `undefined` contra `'draft'`. Lo mismo
+`d.tabs[0].tab.name` en `F4-8`. Los DTO del builder sí las tienen; los structs de
+dominio no, y por eso la misma respuesta mezcla las dos convenciones.
+
+**Y el `json:"-"` es aparte, por si se prioriza distinto.** `DDLayoutVersion`
+tiene un campo `Tenant Tenant` sin él, y `domain.Tenant` guarda `PrivateKeyPEM` y
+`PrivateKeyPassphrase`. **Hoy no filtra** —ningún repositorio hace
+`Preload("Tenant")`, así que viajan cadenas vacías— pero el día que alguien
+agregue un `Preload` para mostrar el nombre del tenant, filtra, y nada lo
+detendría.
+
+**Mientras tanto el front lo absorbe** en su adaptador, igual que el resto del
+cable: no están bloqueando nada. Es higiene, y de la barata.
 **Criterio de aceptación.**
 - Un rol declara `tabIds[]`, `hiddenMetricIds[]` y `layoutOverrides` opcionales.
 - El preview devuelve **exactamente** lo que ese rol vería, resuelto por el
@@ -3203,7 +3220,7 @@ y `GET /admin/agents` alcanzan para la configuración de agente.
 consumidor es el builder, y el backend tampoco materializa sus formas —
 `transform.go` tiene nueve casos y las tres que estas tareas necesitan no están.
 
-#### ➕ F4.22 ⬜ Transcribir el cable de admin y builder
+#### ➕ F4.22 ✅ Transcribir el cable de admin y builder
 **Descripción.** Las ocho rutas en `contracts/synapse-admin-wire.yaml`, con el
 mismo tratamiento que F1.32. Los **cuerpos** de `PUT /admin/layouts/:id` son
 snake_case y razonables; las **respuestas** de `GET /admin/layouts/:id`,
@@ -3218,6 +3235,40 @@ etiquetas `json:`, así que llegan en PascalCase: `ID`, `Status`, `ColStart`.
 - `admin-drift` verifica que los tipos generados no deriven del yaml.
 - `DDLayoutValidationResult` y `DDCatalogMetric` sí traen etiquetas `json:` y se
   transcriben tal cual.
+
+**Cerrada el 2026-09-15.** `contracts/synapse-admin-wire.yaml` — seis rutas, ocho
+operaciones, trece esquemas. Cuarto contrato del repositorio, con su
+`gen:admin-wire` y su `admin-drift` en la puerta, que ahora son dieciséis
+chequeos.
+
+**Y una diferencia con F1.32 que hay que declarar: este NO se pudo verificar.**
+El cable de la consola se transcribió igual y después `npm run humo` lo confirmó
+contra el servicio, cero diferencias. Las ocho rutas de admin cuelgan de
+`AdminOnlyMiddleware` y el usuario de prueba disponible es `Planner`, así que
+`GET /admin/tenants` devuelve **403** — comprobado. **Este archivo describe lo
+que el código de Go dice que devuelve, no lo que se vio llegar**, y eso está
+escrito en su cabecera. Con un usuario `admin` se extiende `tools/humo.py` a
+estas rutas.
+
+**La deuda de PascalCase quedó declarada, no absorbida en silencio**, con su
+evidencia: rompe los propios tests de Postman del backend —`scriptCreateDraft`
+compara `lv.status` contra `'draft'` y lo que llega es `Status`—, que es lo que
+demuestra que es un descuido y no una convención.
+
+**Tres trampas que el yaml documenta y que no avisa nada:**
+
+- **`PUT /admin/layouts/:id` es un REEMPLAZO COMPLETO**, no un parche. Lo que no
+  venga se borra.
+- **Una tab sin `id` genera una NUEVA.** Mandar el UUID existente conserva el id
+  al reemplazar el contenido; omitirlo recrea. Es la diferencia entre editar y
+  duplicar.
+- **`validate` responde 200 aunque la composición sea inválida.** El resultado
+  va en `data.valid`; un 200 quiere decir que la validación corrió, no que esté
+  bien.
+
+**Verificado por mutación** en los dos casos —generado editado a mano, yaml
+cambiado sin regenerar— y comprobando que los otros tres contratos siguen
+conformes.
 
 #### ➕ F4.23 ⬜ Los hooks del builder contra el cable
 **Descripción.** `useTenants`, `useLayouts`, `useLayoutDetail`, `useSaveLayout`,

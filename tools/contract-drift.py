@@ -4,6 +4,7 @@
     python3 tools/contract-drift.py                  # el contrato de la consola
     python3 tools/contract-drift.py --auth           # el del servicio de acceso
     python3 tools/contract-drift.py --console-wire   # el CABLE de la consola
+    python3 tools/contract-drift.py --admin-wire     # el CABLE de admin
 
 Regenera sobre una copia y compara. Una edición a mano en el archivo generado se
 pierde en la próxima corrida de `npm run gen:api` y hasta entonces el front cree
@@ -39,11 +40,19 @@ CONTRATOS = {
     "consola": ("contracts/synapse-api.yaml", "src/api/generated.ts"),
     "acceso": ("contracts/synapse-auth.yaml", "src/api/auth-generated.ts"),
     "cable": ("contracts/synapse-console-wire.yaml", "src/api/console-generated.ts"),
+    "admin": ("contracts/synapse-admin-wire.yaml", "src/api/admin-generated.ts"),
 }
 
-REGENERA = {"consola": "gen:api", "acceso": "gen:auth", "cable": "gen:console-wire"}
+REGENERA = {
+    "consola": "gen:api",
+    "acceso": "gen:auth",
+    "cable": "gen:console-wire",
+    "admin": "gen:admin-wire",
+}
 
-if "--console-wire" in sys.argv:
+if "--admin-wire" in sys.argv:
+    CUAL = "admin"
+elif "--console-wire" in sys.argv:
     CUAL = "cable"
 elif "--auth" in sys.argv:
     CUAL = "acceso"

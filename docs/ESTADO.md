@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**79 de 193 tareas cerradas.** 8 parciales · 101 pendientes · 5 diferidas.
+**80 de 193 tareas cerradas.** 8 parciales · 100 pendientes · 5 diferidas.
 
 
-## Front · 72 de 112
+## Front · 73 de 112
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -16,7 +16,7 @@
 | 1 · Consola y render/ | `████████████████████··` | 40/43 | 1 | 2 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `████████··············` | 4/11 | 1 | 3 |
-| 4 · Admin y Builder | `······················` | 0/23 | 0 | 23 |
+| 4 · Admin y Builder | `█·····················` | 1/23 | 0 | 22 |
 | 5 · Pruebas y pulido | `████████████··········` | 7/13 | 1 | 4 |
 
 ## Backend · 7 de 81
@@ -44,7 +44,7 @@
 
 ---
 
-## Se puede tomar hoy · 32 del front
+## Se puede tomar hoy · 31 del front
 
 - **F1.13b** · Portar format.ts e inyectar el locale
 - **F1.31** · Registro de gráficos y verificación de mínimos
@@ -65,7 +65,6 @@
 - **F4.2** · Lista de tenants
 - **F4.20** · Registrar los tres con carga diferida
 - **F4.21** · Selector de gráfico en el builder
-- **F4.22** · Transcribir el cable de admin y builder
 - **F4.23** · Los hooks del builder contra el cable
 - **F4.3** · Gestión de usuarios y roles por tenant
 - **F4.4** · Configuración de agente Snowflake por tenant
@@ -81,7 +80,7 @@
 
 ---
 
-## Bloqueadas · 19
+## Bloqueadas · 20
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -110,6 +109,7 @@ Lo que el front espera del backend está detallado en
 - **B1.6** · POST /config/panels:batch
 - **B2.7** · Estado SIN_PERMISO en el batch
 - **B3.1** · POST /config/chat con SSE
+- **B4.10** · Asignación de layout publicado a roles
 - **B5.1** · Varios layouts por tenant
 
 ---

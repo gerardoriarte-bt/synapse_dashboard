@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 14 pedido(s)
+## Lo que esperamos · 15 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -194,6 +194,30 @@ Los pasos completos están en `docs/snowflake/INSTRUCCION-ALTA-TENANT.md`. **Nos
 
 
 **`POST /config/chat` con `ContextoDePanel`.** Es la transversal T4 y bloquea F3.2, F3.3, F3.6 y la mitad de F3.7. El chat que el servicio sí tiene es **otro producto** —decidido el 2026-09-08—: el nuestro es el chat contextual del panel, se abre desde un panel y lleva su métrica.
+
+
+### B4.10 · Asignación de layout publicado a roles
+
+*Estado de la tarea: pendiente.*
+
+
+**Tres etiquetas `json:`** en `DDLayoutVersion`, `DDTab` y `DDPanel`, y un **`json:"-"`** en sus campos `Tenant` / `LayoutVersion` / `Tab`.
+
+**No es una preferencia nuestra: rompe sus propios tests de Postman.**
+`scriptCreateDraft` de su colección F4 afirma `lv.status === 'draft'` y lo que
+llega es `Status`, así que compara `undefined` contra `'draft'`. Lo mismo
+`d.tabs[0].tab.name` en `F4-8`. Los DTO del builder sí las tienen; los structs de
+dominio no, y por eso la misma respuesta mezcla las dos convenciones.
+
+**Y el `json:"-"` es aparte, por si se prioriza distinto.** `DDLayoutVersion`
+tiene un campo `Tenant Tenant` sin él, y `domain.Tenant` guarda `PrivateKeyPEM` y
+`PrivateKeyPassphrase`. **Hoy no filtra** —ningún repositorio hace
+`Preload("Tenant")`, así que viajan cadenas vacías— pero el día que alguien
+agregue un `Preload` para mostrar el nombre del tenant, filtra, y nada lo
+detendría.
+
+**Mientras tanto el front lo absorbe** en su adaptador, igual que el resto del
+cable: no están bloqueando nada. Es higiene, y de la barata.
 
 
 ### B5.1 · Varios layouts por tenant

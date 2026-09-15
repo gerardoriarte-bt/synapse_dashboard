@@ -34,6 +34,7 @@ CHEQUEOS = [
     ("contract-drift", [sys.executable, "tools/contract-drift.py"], True),
     ("auth-drift", [sys.executable, "tools/contract-drift.py", "--auth"], True),
     ("console-drift", [sys.executable, "tools/contract-drift.py", "--console-wire"], True),
+    ("admin-drift", [sys.executable, "tools/contract-drift.py", "--admin-wire"], True),
     ("plan-ancestro", [sys.executable, "tools/plan-ancestro.py"], True),
     ("para-backend", [sys.executable, "tools/para-backend.py"], True),
     ("docs-registro", [sys.executable, "tools/docs-registro.py"], True),
