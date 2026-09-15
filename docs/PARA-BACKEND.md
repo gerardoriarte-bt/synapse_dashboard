@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 15 pedido(s)
+## Lo que esperamos · 16 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -194,6 +194,22 @@ Los pasos completos están en `docs/snowflake/INSTRUCCION-ALTA-TENANT.md`. **Nos
 
 
 **`POST /config/chat` con `ContextoDePanel`.** Es la transversal T4 y bloquea F3.2, F3.3, F3.6 y la mitad de F3.7. El chat que el servicio sí tiene es **otro producto** —decidido el 2026-09-08—: el nuestro es el chat contextual del panel, se abre desde un panel y lleva su métrica.
+
+
+### B4.1 · GET /admin/tenants
+
+*Estado de la tarea: pendiente.*
+
+
+**Cinco campos en `GET /admin/tenants`**: `status`, `vertical`, `user_count`, `oldest_feed_freshness` y `last_published_at`.
+
+Hoy devuelve `ports.TenantPublicOption` —`id` y `name`—, que nació para llenar un
+selector. **§7.3 de `design.md` describe la banda de clientes de A1 con seis
+columnas**, así que la pantalla muestra una y declara que faltan cinco.
+
+No bloquea: la lista funciona y el builder puede elegir tenant. Lo que falta es
+lo que convierte una lista en una pantalla de administración — saber de un
+vistazo qué cliente tiene el feed más atrasado es la mitad de para qué existe.
 
 
 ### B4.10 · Asignación de layout publicado a roles

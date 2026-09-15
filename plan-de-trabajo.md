@@ -1064,6 +1064,16 @@ warehouse, vistas semánticas permitidas y prompt base.
 ## Fase 4 — Admin y Builder
 
 ### B4.1 ⬜ `GET /admin/tenants`
+**Espera del backend.** **Cinco campos en `GET /admin/tenants`**: `status`, `vertical`, `user_count`, `oldest_feed_freshness` y `last_published_at`.
+
+Hoy devuelve `ports.TenantPublicOption` —`id` y `name`—, que nació para llenar un
+selector. **§7.3 de `design.md` describe la banda de clientes de A1 con seis
+columnas**, así que la pantalla muestra una y declara que faltan cinco.
+
+No bloquea: la lista funciona y el builder puede elegir tenant. Lo que falta es
+lo que convierte una lista en una pantalla de administración — saber de un
+vistazo qué cliente tiene el feed más atrasado es la mitad de para qué existe.
+
 ### B4.2 ⬜ `GET /admin/tenants/{id}/layouts`
 ### B4.3 ⬜ `POST /admin/tenants/{id}/layouts` — crear borrador
 ### B4.4 ⬜ `PUT /admin/layouts/{id}` — editar pestañas y paneles
@@ -3142,8 +3152,8 @@ Es lo genuinamente nuevo: v2 **no tiene una sola línea** de estas dos
 superficies. El documento las estima en 3–4 semanas de front y es la única
 estimación que no bajaría.
 
-### F4.1 ⬜ `surfaces/admin/` — layout base y navegación
-### F4.2 ⬜ Lista de tenants
+### F4.1 ✅ `surfaces/admin/` — layout base y navegación
+### F4.2 ✅ Lista de tenants
 ### F4.3 ⬜ Gestión de usuarios y roles por tenant
 ### F4.4 ⬜ Configuración de agente Snowflake por tenant
 ### F4.5 ⬜ Vista del catálogo de métricas del tenant
@@ -3155,6 +3165,60 @@ estimación que no bajaría.
 - La credencial de Snowflake **no se muestra ni se edita** desde acá: se
   referencia por identificador del gestor de secretos.
 - Un usuario ve su propia fila marcada «sin acción sobre tu cuenta».
+
+**F4.1 y F4.2 cerradas el 2026-09-15.** `AdminChrome`, `pantallas.ts`,
+`TenantList` y el contenedor `Admin`. 449 pruebas.
+
+**Las cinco pantallas de §7.3 están declaradas con su alcance**, y eso es lo que
+esta superficie tiene de distinto: en la consola el alcance sale del token y vale
+para toda la sesión; **acá cambia con la pantalla**. A1 y A3 cruzan clientes y no
+llevan selector; A2, A4 y A5 operan dentro de un tenant y sí. A3 es la que parece
+incoherente y §7.3 explica por qué no lo es: «cruza clientes porque su regla dura
+—el tenant de un usuario no se edita— solo es visible cuando el tenant es una
+columna que se compara».
+
+**El ancho mínimo es 1280 y no hay colapso**, que es la corrección de §4 del
+`.pen`: «las tablas no son grillas» y perdían contenido en silencio (PS-5). Hay
+scroll, que es visible.
+
+**Tres pantallas se declaran pendientes en vez de mostrarse vacías**, cada una
+con qué la desbloquea. Una pantalla que dice qué le falta no es lo mismo que una
+en blanco.
+
+### El choque de F4.2, y cómo se resolvió
+
+**§7.3 pide seis columnas para la banda de clientes y el cable trae dos.**
+`GET /admin/tenants` devuelve `ports.TenantPublicOption` —`id` y `name`—, que se
+llama «public option» porque nació para llenar un selector, no para sostener una
+tabla de administración. Faltan estado, vertical, cantidad de usuarios, frescura
+del feed más atrasado y última publicación.
+
+**Las cinco no se inventan ni se omiten.** Omitirlas daría una tabla que parece
+completa: quien la mire concluiría que no hay nada que saber del estado de un
+cliente. **La pantalla las declara ausentes**, con la gramática de §8 —qué falta,
+por qué, y que se desbloquea con B4.1—, que es la misma que el producto usa para
+un feed vencido.
+
+Por eso F4.2 queda cerrada **como lo que se puede construir hoy** y su carencia
+está registrada como pedido, no como deuda oculta.
+
+### Dos defectos propios que encontraron las herramientas
+
+**`design-lint` rechazó `AdminChrome` en su primera corrida**: exportaba
+`PANTALLAS` junto al componente y §4 regla 3 pide uno por archivo. Movido a
+`pantallas.ts` — que además deja que una prueba verifique la tabla de alcances
+sin montar nada, y silencia el aviso de fast-refresh de oxlint.
+
+**Y `tests/tokens/escala.test.ts` encontró `tracking-label`, un token que no
+existe.** Los que hay son `tracking-rotulo`, `tracking-titulo` y `tracking-kpi`.
+Es exactamente el silencio que esa prueba persigue —«una utilidad que nombra un
+token inexistente no es un error, es silencio: compila, pasa el lint y se pinta
+sin tracking»— y **no lo vio el typecheck ni el lint**: lo vio el chequeo que
+cruza cada utilidad contra las variables declaradas.
+
+**Verificadas por mutación, tres casos:** A3 pasada a alcance tenant, el selector
+apareciendo en una pantalla de plataforma (7 fallas), y las columnas faltantes
+omitidas en silencio.
 
 ### F4.6 ⬜ `surfaces/builder/` — composición visual
 ### F4.7 ⬜ Selector de tenant y plantilla base
