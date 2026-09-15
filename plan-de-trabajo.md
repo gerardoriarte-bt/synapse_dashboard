@@ -735,7 +735,13 @@ tipo: hoy `bars` puede recibir un ítem y dibujar una barra sola.
 
 Texto redactado, no un código: «Venta media de los últimos treinta días». **No se puede derivar del período** — dos métricas consultadas con el mismo `2026-09` pueden tener ventanas distintas, un total mensual y un promedio móvil de treinta días.
 
-**`state` y `state_reason` SÍ los pedimos desde el 2026-09-15**, y antes no. La razón anterior —«no los lee nadie en el front»— dejó de ser cierta cuando F4.5 construyó A4: §7.3 le pide a esa pantalla **filtro por estado**, y sin el campo el filtro no existe. Peor: el adaptador escribe `estado: 'DISPONIBLE'` fijo para satisfacer el contrato, así que **el campo compila y tiene valor**, y una columna con doce `DISPONIBLE` idénticos se ve igual que un catálogo verificado. Hoy A4 no lo pinta y declara por qué; con el campo, lo pinta y ofrece el filtro.
+**`state` NO se pide, y el pedido del 2026-09-15 por la mañana se RETIRA.** Ese día se pidieron `state` y `state_reason` porque F4.5 necesitaba el filtro por estado de A4. **Estaba mal, y lo corrigió el `.pen` esa misma tarde**: el estado de una métrica **se deriva, no se copia de un campo**.
+
+La nota de A4 lo dice con un ejemplo: «feed_vs_sales figura DISPONIBLE en el catálogo y sale DEGRADADA acá porque la frescura de su fuente la baja». Y la fila de `feed_gap` muestra las dos cosas a la vez —el estado del catálogo y el derivado— con la razón abajo: «Bloqueada porque su fuente tiene 31 h y se refresca cada hora. No degrada a un valor aproximado: se apaga».
+
+**Así que lo que hace falta no es una columna de estado sino la SALUD DE FEEDS**, que es lo que A5 muestra y lo que A4 necesita para derivar: por fuente, su **última carga, su frescura, su cadencia y su tolerancia**. Con eso el front deriva los cuatro estados sin que nadie los escriba, y de paso se desbloquea A5 entera. Está pedido en **B2.13**.
+
+**Pedir el campo habría sido peor que no pedirlo**: dos fuentes para el mismo hecho —el estado guardado y la frescura real— que se separan en el primer feed atrasado. Es el mismo error que este plan persigue en los documentos, aplicado a un dato.
 
 `reading_note` sigue sin pedirse: ahí sí no lo lee nadie todavía.
 ### B1.18 ⬜ Sincronizar el catálogo con las semantic views de Snowflake
@@ -1001,6 +1007,28 @@ Es la primera vez que el camino completo se ejercita de punta a punta: vista →
 - Queda registrado contra qué commit del backend y con qué período se verificó.
   Un «funcionó» sin eso no se puede repetir.
 
+#### ➕ B2.13 ⬜ Salud de feeds por fuente · de acá sale el ESTADO de cada métrica
+**Espera del backend.** **Una ruta que liste, por fuente del tenant: última carga, frescura, cadencia y tolerancia.** Más, si existen, filas procesadas y filas que fallaron la validación Silver→Gold.
+
+Pedida el 2026-09-15, **reemplazando un pedido anterior del mismo día que estaba mal.** Esa mañana se pidieron `state` y `state_reason` en el modelo `Metrica` (B1.17) porque A4 necesita filtrar por estado. El `.pen` lo corrigió esa tarde: **el estado de una métrica se DERIVA, no se guarda.**
+
+La nota de A4 lo dice con un ejemplo: «feed_vs_sales figura DISPONIBLE en el catálogo y sale DEGRADADA acá porque la frescura de su fuente la baja». Y la fila de `feed_gap` muestra las dos cosas a la vez, con la razón: «Bloqueada porque su fuente tiene 31 h y se refresca cada hora. No degrada a un valor aproximado: se apaga».
+
+**La regla es `frescura > cadencia × tolerancia`**, y los tres términos son de la fuente, no de la métrica. Con ellos el front deriva los cuatro estados sin que nadie los escriba.
+
+**Pedir el campo habría sido peor que no pedirlo**: dos fuentes para el mismo hecho —el estado guardado y la frescura real— que se separan en el primer feed atrasado.
+
+**Desbloquea dos pantallas, no una.** A5 entera —«la pantalla que explica por qué una métrica está degradada»— y la columna de estado de A4, con su filtro.
+**Descripción.** Exponer la salud de las fuentes de datos del tenant, que hoy no
+sale por ninguna ruta.
+**Criterio de aceptación.**
+- Por fuente: identificador legible, última carga, frescura, cadencia y
+  tolerancia. Sin vocabulario de infraestructura · §7.3.
+- La frescura es el **instante de materialización**, nunca «ahora» · misma regla
+  que B2.10.
+- El front deriva el estado y **el backend no lo manda**: un estado guardado y
+  una frescura real son dos fuentes del mismo hecho.
+
 
 ---
 
@@ -1181,10 +1209,26 @@ de la regla: «les saca la decisión de las manos».
   de su rama. **Antes de tocar el fork se corre**, y si se movieron, primero se
   rebasa.
 - **Un fork que nunca vuelve es un segundo backend.** Ese es el riesgo real, no
-  el técnico: dos servicios que hacen casi lo mismo y divergen. **Queda abierto
-  cómo vuelve el código a ellos** —PR desde el fork, parche, o que lo tomen
-  cuando quieran— y eso se decide **antes del primer merge a su rama**, no
-  después.
+  el técnico: dos servicios que hacen casi lo mismo y divergen.
+
+  **DECIDIDO el 2026-09-15 (humano): vuelve DESDE nuestro repositorio.** No se
+  abre PR contra el suyo. El fork es la fuente y ellos lo toman cuando quieran —
+  que es exactamente lo que `2de76de` protegía: «tocar el código de otro equipo
+  desde afuera les saca la decisión de las manos». Acá la decisión de integrar
+  sigue siendo de ellos, entera.
+
+  **Lo que eso nos obliga a sostener**, porque el costo se muda a nuestro lado:
+
+  1. **La rama se mantiene rebasada sobre la suya.** `npm run backend-drift`
+     avisa cuando su cabeza se movió, y se corre **antes de tocar el fork**. Un
+     fork escrito sobre una base vieja no se puede integrar sin rehacerlo.
+  2. **El commit tiene que explicarse solo.** Nadie de su lado estuvo en la
+     conversación donde se decidió: el mensaje lleva qué rutas, por qué se
+     escribieron desde acá, y las decisiones que no son obvias.
+  3. **Cero churn en su código.** Esto ya costó una corrección: ampliar
+     `RoleRepository` rompía ocho mocks de `auth`, `user` y `agent`. Un puerto
+     nuevo no rompe nada. **En un fork que tiene que volver, el churn evitable es
+     lo que lo vuelve inmergeable.**
 - **El despliegue no cambia hoy.** El servicio que corre sigue siendo el suyo. Si
   algún día se despliega el fork, esa es otra decisión y no esta.
 

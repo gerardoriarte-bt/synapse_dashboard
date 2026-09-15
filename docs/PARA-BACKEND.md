@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 19 pedido(s)
+## Lo que esperamos · 20 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -155,7 +155,13 @@ Lo que sí sirve ya es `decimals` y `unit` por columna: sin `decimals`, una colu
 
 Texto redactado, no un código: «Venta media de los últimos treinta días». **No se puede derivar del período** — dos métricas consultadas con el mismo `2026-09` pueden tener ventanas distintas, un total mensual y un promedio móvil de treinta días.
 
-**`state` y `state_reason` SÍ los pedimos desde el 2026-09-15**, y antes no. La razón anterior —«no los lee nadie en el front»— dejó de ser cierta cuando F4.5 construyó A4: §7.3 le pide a esa pantalla **filtro por estado**, y sin el campo el filtro no existe. Peor: el adaptador escribe `estado: 'DISPONIBLE'` fijo para satisfacer el contrato, así que **el campo compila y tiene valor**, y una columna con doce `DISPONIBLE` idénticos se ve igual que un catálogo verificado. Hoy A4 no lo pinta y declara por qué; con el campo, lo pinta y ofrece el filtro.
+**`state` NO se pide, y el pedido del 2026-09-15 por la mañana se RETIRA.** Ese día se pidieron `state` y `state_reason` porque F4.5 necesitaba el filtro por estado de A4. **Estaba mal, y lo corrigió el `.pen` esa misma tarde**: el estado de una métrica **se deriva, no se copia de un campo**.
+
+La nota de A4 lo dice con un ejemplo: «feed_vs_sales figura DISPONIBLE en el catálogo y sale DEGRADADA acá porque la frescura de su fuente la baja». Y la fila de `feed_gap` muestra las dos cosas a la vez —el estado del catálogo y el derivado— con la razón abajo: «Bloqueada porque su fuente tiene 31 h y se refresca cada hora. No degrada a un valor aproximado: se apaga».
+
+**Así que lo que hace falta no es una columna de estado sino la SALUD DE FEEDS**, que es lo que A5 muestra y lo que A4 necesita para derivar: por fuente, su **última carga, su frescura, su cadencia y su tolerancia**. Con eso el front deriva los cuatro estados sin que nadie los escriba, y de paso se desbloquea A5 entera. Está pedido en **B2.13**.
+
+**Pedir el campo habría sido peor que no pedirlo**: dos fuentes para el mismo hecho —el estado guardado y la frescura real— que se separan en el primer feed atrasado. Es el mismo error que este plan persigue en los documentos, aplicado a un dato.
 
 `reading_note` sigue sin pedirse: ahí sí no lo lee nadie todavía.
 
@@ -188,6 +194,24 @@ Los pasos completos están en `docs/snowflake/INSTRUCCION-ALTA-TENANT.md`. **Nos
 
 
 **Un usuario de prueba con un rol restringido.** El mecanismo está en el código, pero con el usuario que tenemos —rol `Planner`— el catálogo devuelve las doce métricas, incluidas `executive_summary`, `roas` y `decisions`, que su propio documento dice que `planner` oculta. No decimos que esté roto: no se puede comprobar. Con un usuario así se cierran las dos mitades en un minuto — el catálogo recortado y un panel en `FORBIDDEN`.
+
+
+### B2.13 · Salud de feeds por fuente · de acá sale el ESTADO de cada métrica
+
+*Estado de la tarea: pendiente.*
+
+
+**Una ruta que liste, por fuente del tenant: última carga, frescura, cadencia y tolerancia.** Más, si existen, filas procesadas y filas que fallaron la validación Silver→Gold.
+
+Pedida el 2026-09-15, **reemplazando un pedido anterior del mismo día que estaba mal.** Esa mañana se pidieron `state` y `state_reason` en el modelo `Metrica` (B1.17) porque A4 necesita filtrar por estado. El `.pen` lo corrigió esa tarde: **el estado de una métrica se DERIVA, no se guarda.**
+
+La nota de A4 lo dice con un ejemplo: «feed_vs_sales figura DISPONIBLE en el catálogo y sale DEGRADADA acá porque la frescura de su fuente la baja». Y la fila de `feed_gap` muestra las dos cosas a la vez, con la razón: «Bloqueada porque su fuente tiene 31 h y se refresca cada hora. No degrada a un valor aproximado: se apaga».
+
+**La regla es `frescura > cadencia × tolerancia`**, y los tres términos son de la fuente, no de la métrica. Con ellos el front deriva los cuatro estados sin que nadie los escriba.
+
+**Pedir el campo habría sido peor que no pedirlo**: dos fuentes para el mismo hecho —el estado guardado y la frescura real— que se separan en el primer feed atrasado.
+
+**Desbloquea dos pantallas, no una.** A5 entera —«la pantalla que explica por qué una métrica está degradada»— y la columna de estado de A4, con su filtro.
 
 
 ### B3.1 · POST /config/chat con SSE

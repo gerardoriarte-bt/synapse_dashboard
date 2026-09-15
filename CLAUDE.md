@@ -31,7 +31,31 @@ verifica nada.
 | Archivo | Qué manda |
 |---|---|
 | `design/design.md` | Reglas duras de producto. **Normativa** |
-| `design/Synapse_v2.pen` | Los tokens. La fuente de `tokens/tokens.css` |
+| `design/Synapse_v2.pen` | Los tokens **y las pantallas dibujadas**. Ver abajo |
+
+**El `.pen` NO es solo los tokens, y creerlo costó trabajo.** Hasta el 2026-09-15
+esta tabla decía «los tokens, la fuente de `tokens.css`», y con eso se
+construyeron diez pantallas de admin y builder **sin abrirlo**. Adentro estaban
+las quince diseñadas —B1–B6, A1–A6—, cada una con una nota de racional, más los
+tres tipos de estado vacío y el de carga.
+
+**Se lee como JSON plano**, igual que hace `tools/gen-tokens.py`:
+
+```python
+import json, pathlib
+d = json.loads(pathlib.Path('design/Synapse_v2.pen').read_text())
+[c['name'] for c in d['children']]          # las pantallas y sus notas
+```
+
+Los nodos `note` llevan el porqué de cada pantalla y son lo que hay que leer
+**antes** de construirla: qué se deriva y qué se copia, qué es dato mock, qué S3
+la originó. Los `frame` llevan el texto literal de la UI, que es más específico
+que `design.md` — ahí está «SE SOLAPA CON "DOCE MESES"» donde la spec solo decía
+«el panel en conflicto se marca».
+
+**Donde el `.pen` y `design.md` difieran, gana el `.pen` para lo visual y el
+literal de la UI**; `design.md` sigue mandando en las reglas duras. Y el agente
+no modifica ninguno de los dos.
 
 Los otros dos normativos siguen en el repositorio hermano
 `~/Documents/GitHub/synapse_v2` (`gerardoriarte-bt/Synapse-v2`), archivado:

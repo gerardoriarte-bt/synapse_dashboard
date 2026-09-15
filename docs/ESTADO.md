@@ -5,7 +5,7 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**93 de 193 tareas cerradas.** 12 parciales · 83 pendientes · 5 diferidas.
+**93 de 194 tareas cerradas.** 12 parciales · 84 pendientes · 5 diferidas.
 
 
 ## Front · 86 de 112
@@ -19,7 +19,7 @@
 | 4 · Admin y Builder | `█████████████·········` | 14/23 | 2 | 7 |
 | 5 · Pruebas y pulido | `████████████··········` | 7/13 | 1 | 4 |
 
-## Backend · 7 de 81
+## Backend · 7 de 82
 
 > ⚠️ **Este número está bajo y no refleja al backend.** El plan de acá
 > es la fuente del FRONT; el estado de las tareas `B*` solo se mueve
@@ -37,7 +37,7 @@
 |---|---|---|---|---|
 | 0 · Fundamentos | `██····················` | 1/10 | 1 | 8 |
 | 1 · API de consola | `████··················` | 5/26 | 3 | 18 |
-| 2 · Materialización | `██····················` | 1/12 | 0 | 11 |
+| 2 · Materialización | `██····················` | 1/13 | 0 | 12 |
 | 3 · Chat contextual | `······················` | 0/10 | 0 | 10 |
 | 4 · Admin y Builder | `······················` | 0/16 | 2 | 14 |
 | 5 · Multi-dashboard y pulido | `······················` | 0/7 | 0 | 6 |
@@ -65,7 +65,7 @@
 
 ---
 
-## Bloqueadas · 26
+## Bloqueadas · 27
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -94,6 +94,7 @@ Lo que el front espera del backend está detallado en
 - **B1.19** · Filtrar el catálogo por permisos de rol
 - **B1.21** · Declarar los mínimos de datos por gráfico
 - **B1.6** · POST /config/panels:batch
+- **B2.13** · Salud de feeds por fuente · de acá sale el ESTADO de cada métrica
 - **B2.7** · Estado SIN_PERMISO en el batch
 - **B3.1** · POST /config/chat con SSE
 - **B3.9** · CRUD /admin/tenants/{id}/agents
