@@ -4375,6 +4375,50 @@ pestañas repetidas, el rol repetido, un panel sin métrica contado, los paneles
 sumar, el «0» a secas, el aviso de roles borrado, la columna sin declarar sobre
 qué contó, las pestañas sin nombrar, y el uso calculado sobre otro layout.
 
+### El humo llega a `/admin/*`, y un modo para mirar · 2026-09-15
+
+**Tres usuarios probados contra el servicio real, ninguno es `admin`.**
+`gerardo.riarte@buentipo.com` y `rolando.aleman@underarmour.com` entran y son
+`Planner`; `jose.rodriguez@lobueno.co` da **401**, y se descartó que fuera el
+arnés —la contraseña llega intacta y el mismo script con otro usuario devuelve
+200—, así que o la clave no es ésa o ese usuario no está en la base que corre.
+
+**Lo que hace falta, con precisión:** el middleware compara el claim `role`
+contra `"admin"`, y ese claim sale de **`user.Role.Name`** — el nombre del rol en
+la tabla `roles`, en minúsculas y sin espacios. No es un permiso aparte ni un
+flag: hace falta un usuario cuyo rol **se llame** `admin`.
+
+**`npm run humo` ya cubre `/admin/*`** y **sale 2 · BLOQUEADO** cuando el usuario
+no es admin, con la consola verificada igual y dicho aparte — «un chequeo que
+pasa por falta de fuente miente sobre su cobertura». El día que exista el usuario
+es correr el comando.
+
+**Dos rutas se saltean a propósito.** `publish` demota el layout publicado del
+tenant y cambia lo que la consola sirve: un chequeo de humo no toca producción. Y
+las del fork dan 404 por diseño, así que contarlas como diferencia sería llorar
+por algo que ya sabemos.
+
+### `npm run dev:mock` · la Fase 4, navegable
+
+Un servicio falso completo —consola, admin, builder y las cinco rutas del fork—
+con estado en memoria: se compone, se guarda, se valida y se publica. Uno de cada
+cuatro paneles llega degradado y otro bloqueado, porque con todo en `DISPONIBLE`
+los siete estados de §8 no se ven nunca.
+
+**Vive en `dev/`, con entrada propia**, y eso no es comodidad: F0.8 está
+«cumplida por construcción» y la construcción es que **no exista ruta de import
+desde `src/` hasta un mock**. Un import condicionado por `import.meta.env.DEV`
+compila, anda, y deja el bundle a merced del tree-shaking.
+
+**Y ahora hay una máquina que lo sostiene.** `mocks-fuera` recorre `src/**` y
+falla si algún import —relativo o por alias, **incluido `import type`**— cae en
+`tests/` o en `dev/`. Verificado rompiéndolo: con la ruta puesta sale 1 y la
+nombra. La puerta pasa a **diecisiete chequeos**.
+
+**Una garantía que depende de que nadie escriba una línea es una convención, no
+una garantía** — y este repositorio ya había pagado por esa diferencia con
+`plan:ancestro` y con `docs-registro`.
+
 ### Por qué F4.9 no se toma · y una trampa del propio parser
 
 **La interacción del arrastre no está declarada, y el bloqueo NO es del

@@ -200,7 +200,8 @@ equivocado.
 
 | Comando | Qué hace |
 |---|---|
-| `npm run dev` | Vite en :5173 |
+| `npm run dev` | Vite en :5173 · contra el servicio real |
+| `npm run dev:mock` | Vite contra un servicio FALSO · abre `/index.dev.html` |
 | `npm run typecheck` | `tsc` strict, sin excepciones |
 | `npm run build` | typecheck + build de producción |
 | `npm run lint` | oxlint |
@@ -220,6 +221,8 @@ equivocado.
 | `npm run gen:api` | regenera `src/api/generated.ts` desde `contracts/synapse-api.yaml` |
 | `npm run plan` | regenera `plan-tareas.csv` y la página desde `plan-de-trabajo.md` |
 | `npm run plan:diff <export.csv>` | compara un export de la plataforma de seguimiento contra el plan |
+| `npm run mocks-fuera` | ningún archivo de `src/` importa un mock · F0.8 |
+| `SYNAPSE_EMAIL=… SYNAPSE_PASSWORD=… npm run humo` | el servicio real == los dos yaml transcriptos |
 
 ## El plan de trabajo
 
@@ -305,6 +308,29 @@ de B0.9— y el chequeo **falla si el número se mueve**.
 las 15 reglas y `spec-anclas` ancla las 9. Si vuelve a aparecer un ⊘, es que una
 regla se quedó sin ámbito o una cita de `design.md` dejó de tener quien la
 verifique — no es ruido.
+
+### `npm run dev:mock` · para MIRAR, no para verificar
+
+**Existe porque media Fase 4 no se puede ver corriendo.** `/admin/*` cuelga de
+`AdminOnlyMiddleware` y los usuarios que tenemos son `Planner` —el claim se
+compara contra `roles.name`, y con `Planner` da 403 en cada llamada—; y las
+rutas de B4.8 y B4.9 son del fork, que no está desplegado: 404. Admin y builder
+están construidos y probados, y hasta el 2026-09-15 no se podían recorrer.
+
+**Entrás con cualquier correo y contraseña**, y el usuario que devuelve es
+`admin`. El estado vive en memoria: guardar, publicar y el CRUD de roles
+funcionan, y recargar vuelve todo a cero.
+
+**Lo que este modo NO demuestra, y la consola lo dice al arrancar:** que la app
+ande contra los mocks no dice nada del servicio real. Los mocks responden lo que
+*nosotros creemos* del cable. Eso lo cierra `npm run humo`.
+
+**Vive en `dev/`, fuera de `src/`, con su propia entrada** —`dev/main.tsx` y
+`index.dev.html`—. Un `if (import.meta.env.DEV)` dentro de `main.tsx` habría sido
+más corto y habría cambiado una garantía por una confianza en el tree-shaking:
+F0.8 dice que los mocks no entran al bundle, y la garantía **es que no exista
+ruta de import desde `src/`**. Desde que hay dos directorios de mocks eso lo
+verifica `mocks-fuera`, en la puerta.
 
 **Las pruebas se agrupan en `tests/`, fuera de `src/`.** Espeja la estructura del
 código, y la carpeta separada no es preferencia: los handlers de MSW son datos

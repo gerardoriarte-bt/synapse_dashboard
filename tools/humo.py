@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
-"""Humo contra el servicio real · lo que llega == `synapse-console-wire.yaml`
+"""Humo contra el servicio real · lo que llega == lo que el yaml transcribe
 
     SYNAPSE_EMAIL=… SYNAPSE_PASSWORD=… npm run humo
+
+Dos cables, dos secciones y **dos resultados que no se mezclan**:
+
+  · `synapse-console-wire.yaml` · las cinco rutas de `/config/*`
+  · `synapse-admin-wire.yaml`   · las de `/admin/*` — **transcritas a ciegas**,
+    porque cuelgan de `AdminOnlyMiddleware` y hasta el 2026-09-15 no hubo un
+    usuario con rol `admin` para confirmarlas.
 
 ── QUÉ PRUEBA, Y POR QUÉ NO ALCANZA CON LAS OTRAS ───────────────────────────
 
@@ -41,6 +48,7 @@ import urllib.request
 
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
 CABLE = RAIZ / "contracts" / "synapse-console-wire.yaml"
+CABLE_ADMIN = RAIZ / "contracts" / "synapse-admin-wire.yaml"
 BASE = os.getenv("SYNAPSE_API", "http://localhost:4010/api/v1")
 
 
@@ -68,6 +76,95 @@ def faltantes(obj: object, requeridos: list[str]) -> list[str]:
     if not isinstance(obj, dict):
         return requeridos
     return [c for c in requeridos if c not in obj]
+
+
+def comprobar_admin(token: str, ctx: object, fallas: list[str]) -> str | None:
+    """Las rutas de `/admin/*` contra `synapse-admin-wire.yaml`.
+
+    Devuelve `None` si pudo comprobarlas, o la RAZÓN por la que no. Nunca falla
+    por no poder: no tener un usuario `admin` no es un defecto del front.
+
+    **Las cinco rutas del fork se saltean a propósito.** `/admin/tenants/{id}/roles`
+    y `/admin/layouts/{id}/preview` son B4.8 y B4.9, que escribimos nosotros y
+    que el servicio desplegado **no sirve**: un 404 ahí es lo esperado, y
+    contarlo como diferencia sería que el chequeo llore por algo que ya sabemos.
+    El yaml las marca con `x-origen: fork`.
+    """
+    if not CABLE_ADMIN.exists():
+        return f"falta {CABLE_ADMIN.name}"
+
+    import yaml
+
+    spec = yaml.safe_load(CABLE_ADMIN.read_text(encoding="utf-8"))
+    esquemas = spec["components"]["schemas"]
+
+    estado, cuerpo = pedir("/admin/tenants", token)
+    if estado == 403:
+        return "el usuario no tiene rol `admin` · el claim se compara contra roles.name"
+    if estado != 200:
+        return f"GET /admin/tenants respondió {estado}"
+
+    print("humo · /admin/*")
+    tenants = cuerpo.get("data") if isinstance(cuerpo, dict) else None
+    if not isinstance(tenants, list):
+        fallas.append("/admin/tenants · `data` no es un arreglo")
+        print("  ✗ /admin/tenants · `data` no es un arreglo")
+        return None
+
+    def revisar(nombre: str, obj: object, esquema: str) -> None:
+        req = esquemas[esquema].get("required", [])
+        falta = faltantes(obj, req)
+        if falta:
+            fallas.append(f"{nombre} · {esquema} no trae {', '.join(falta)}")
+            print(f"  ✗ {nombre} · faltan {', '.join(falta)}")
+        else:
+            print(f"  ✓ {nombre} · los {len(req)} campos requeridos")
+
+    if not tenants:
+        print("  ⊘ /admin/tenants · sin tenants · no hay con qué seguir")
+        return None
+    revisar("/admin/tenants[0]", tenants[0], "TenantOption")
+
+    # El tenant del usuario primero: es el que seguro tiene layouts.
+    propio = ((ctx or {}) if isinstance(ctx, dict) else {}).get("tenant") or {}
+    tid = propio.get("id") or tenants[0]["id"]
+
+    _, cat = pedir(f"/admin/tenants/{tid}/catalog", token)
+    metricas = cat.get("data") if isinstance(cat, dict) else None
+    if isinstance(metricas, list) and metricas:
+        revisar("/admin/tenants/{id}/catalog[0]", metricas[0], "CatalogMetric")
+
+    _, lays = pedir(f"/admin/tenants/{tid}/layouts", token)
+    layouts = lays.get("data") if isinstance(lays, dict) else None
+    if not isinstance(layouts, list) or not layouts:
+        print("  ⊘ /admin/tenants/{id}/layouts · sin versiones · no hay detalle que pedir")
+        return None
+    revisar("/admin/tenants/{id}/layouts[0]", layouts[0], "LayoutVersion")
+
+    # **Acá es donde la transcripción se puede haber equivocado.** El PascalCase
+    # de los structs de dominio salió de leer Go, no de ver una respuesta.
+    lid = layouts[0].get("ID") or layouts[0].get("id")
+    _, det = pedir(f"/admin/layouts/{lid}", token)
+    detalle = det.get("data") if isinstance(det, dict) else None
+    revisar("/admin/layouts/{id}", detalle, "LayoutDetail")
+    tabs = (detalle or {}).get("tabs") or []
+    if tabs:
+        revisar("  tabs[0].tab", tabs[0].get("tab"), "LayoutTab")
+        paneles = tabs[0].get("panels") or []
+        if paneles:
+            revisar("  tabs[0].panels[0]", paneles[0], "LayoutPanel")
+
+    # `validate` responde 200 aunque la composición sea inválida · el 200 dice
+    # que corrió, no que esté bien. Se comprueba la FORMA, no el veredicto.
+    _, val = pedir(f"/admin/layouts/{lid}/validate", token, {})
+    revisar("/admin/layouts/{id}/validate", val.get("data") if isinstance(val, dict) else None,
+            "ValidationResult")
+
+    # **Publicar NO se prueba.** Demota el layout publicado del tenant y cambia
+    # lo que la consola sirve: un chequeo de humo no toca producción.
+    print("  ⊘ /admin/layouts/{id}/publish · no se prueba · demota el publicado del tenant")
+    print("  ⊘ /admin/tenants/{id}/roles y /preview · son del fork, el servicio devuelve 404")
+    return None
 
 
 def main() -> int:
@@ -155,6 +252,15 @@ def main() -> int:
                 fallas.append("panels:batch · `data` no es un mapa de payloads")
                 print("  ✗ panels:batch · `data` no es un mapa")
 
+    # ── /admin/* ────────────────────────────────────────────────────────────
+    #
+    # **Se separa a propósito.** Un chequeo que no pudo correr no puede
+    # esconderse detrás del que sí: la convención de este repositorio cuenta los
+    # BLOQUEADOS aparte, porque «un chequeo que pasa por falta de fuente miente
+    # sobre su cobertura».
+    print()
+    bloqueado_admin = comprobar_admin(token, ctx, fallas)
+
     print()
     if fallas:
         print(f"humo ✗ {len(fallas)} diferencia(s) entre el servicio y el yaml")
@@ -167,9 +273,18 @@ def main() -> int:
         print("  adaptador necesita algo.")
         return 1
 
-    print("humo ✓ las cinco rutas coinciden con synapse-console-wire.yaml")
+    print("humo ✓ las cinco rutas de consola coinciden con synapse-console-wire.yaml")
     print("  Anotar en el cierre de F1.39 con qué commit del backend se verificó:")
     print("  npm run backend-drift")
+
+    if bloqueado_admin is not None:
+        print()
+        print(f"humo ⊘ BLOQUEADO para /admin/* · {bloqueado_admin}")
+        print("  **La consola SÍ se verificó** · lo de arriba vale.")
+        print("  `synapse-admin-wire.yaml` sigue sin confirmar contra el servicio.")
+        return 2
+
+    print("humo ✓ y las de admin coinciden con synapse-admin-wire.yaml")
     return 0
 
 

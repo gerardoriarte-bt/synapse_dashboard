@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:mock": "vite --open /index.dev.html",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test": "vitest run",
@@ -24,6 +25,7 @@
     "para-backend": "python3 tools/para-backend.py",
     "estado": "python3 tools/estado.py",
     "docs-registro": "python3 tools/docs-registro.py",
+    "mocks-fuera": "python3 tools/mocks-fuera.py",
     "backend-drift": "python3 tools/backend-drift.py",
     "humo": "python3 tools/humo.py",
     "verify": "python3 tools/gate.py",
@@ -66,5 +68,10 @@
     "typescript": "~5.9",
     "vite": "^8.2.2",
     "vitest": "^4.1.11"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }
