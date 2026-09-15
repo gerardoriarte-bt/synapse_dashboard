@@ -2414,7 +2414,7 @@ la indentación. Dos de las seis dijeron «pasa» sin haberse aplicado. **Una
 mutación que pasa hay que verificarla también**: ahora el script sale con 1 si el
 texto a reemplazar no está.
 
-#### ➕ F1.35 ⬜ Los enumerados cerrados no se abren en el cable
+#### ➕ F1.35 ✅ Los enumerados cerrados no se abren en el cable
 **Descripción.** En el cable `shape`, `family`, `layer` y `block_type` son
 `string` libre; en el contrato son enumerados cerrados. `make sync-catalog` hace
 upsert de lo que diga una vista de Snowflake, así que un valor desconocido no es
@@ -2429,6 +2429,33 @@ hipotético. El adaptador es el único lugar donde se puede detectar.
 - El error es explícito. **Nunca se arregla un valor inválido en silencio**:
   principio 6 de §1.
 - Verificada por mutación con una familia inventada en el fixture.
+
+**Cerrada el 2026-09-15.** La mitad estaba desde F1.33 —`adaptCatalog` ya
+separaba lo que no podía adaptar en `rejected`— y **lo que faltaba era que la
+razón llegara a la pantalla**. Un arreglo de rechazos que nadie lee deja un panel
+que no dibuja y no explica, que es la misma falla con otra cara.
+
+**Ahora la pantalla nombra el valor que llegó**: «Métrica no dibujable ·
+ventas_dia · familia desconocida: «vendors»» en vez de «Métrica no resuelta» a
+secas. **Y las dos siguen siendo distintas a propósito**: una métrica ausente del
+catálogo probablemente sea un layout que referencia algo que este rol no ve
+—problema de permisos—, y una rechazada es un valor fuera del enumerado.
+Confundirlas manda a buscar al lugar equivocado.
+
+**Y apareció un cast que era una afirmación sin evidencia.** `adaptBlocks` hacía
+`b.type as Block['tipo']` sobre un dato de red: el compilador se calla y un tipo
+inventado entra a la tabla como si fuera bueno. Ahora se comprueba contra una
+lista de los quince **en runtime**, porque `PanelType` es una unión de TypeScript
+y se borra al compilar.
+
+Esa lista es una copia del enumerado del contrato, así que lleva **su prueba de
+paridad contra el yaml** —`enumOf('TipoPanel')`, el mismo camino que ya usa
+`registry.test.tsx`—. Una copia a mano sin esa prueba se desactualiza con el
+contrato adelante.
+
+**Verificada por mutación, tres casos:** una familia inventada que pasa (5
+fallas), un tipo faltante en la lista de runtime (1), y la razón que no llega a la
+pantalla (2).
 
 #### ➕ F1.36 ✅ `client.ts` contra las rutas, los cuerpos y el error de este servicio
 **Descripción.** Seis correcciones: el batch manda `{ panel_ids, period }` y no

@@ -256,3 +256,70 @@ describe('la cadena de callbacks llega hasta el botón', () => {
     await waitFor(() => expect(intentos).toBe(2))
   })
 })
+
+describe('F1.35 · una métrica que el adaptador rechaza dice POR QUÉ', () => {
+  // El modo de silencio que esto cierra: una `family` fuera del enumerado
+  // produce `var(--color-fam-vendors-1)`, un token que no existe, y la serie se
+  // pinta SIN COLOR sin que nada falle. Igual que `text-labell`.
+  //
+  // El adaptador ya la separaba desde F1.33; lo que faltaba era que la razón
+  // llegara a la pantalla en vez de quedarse en un arreglo que nadie leía.
+
+  it('la pantalla nombra el valor que llegó, no «no resuelta» a secas', async () => {
+    server.use(
+      http.get(`${API}/config/catalog`, () => ok([{ ...kpiMetric, family: 'vendors' }])),
+      http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: context.tabs[0], panels: [kpiPanel] })),
+    )
+    montar()
+
+    // Dice qué métrica y qué valor: sin eso hay que ir a buscar a la base.
+    const aviso = await screen.findByText(/Métrica no dibujable/)
+    expect(aviso).toHaveTextContent('ventas_dia')
+    expect(aviso).toHaveTextContent('vendors')
+  })
+
+  it('una sola métrica rota NO vacía la pestaña', async () => {
+    // Fallo parcial, igual que en el batch: lo que se puede dibujar se dibuja.
+    const otra = { ...kpiMetric, id: 'm-ok', key: 'ok' }
+    server.use(
+      http.get(`${API}/config/catalog`, () =>
+        ok([{ ...kpiMetric, family: 'vendors' }, otra]),
+      ),
+      http.get(`${API}/config/tabs/:tabId`, () =>
+        ok({
+          tab: context.tabs[0],
+          panels: [kpiPanel, { ...kpiPanel, id: 'p-2', metric_id: 'm-ok', col_start: 5 }],
+        }),
+      ),
+      http.post(`${API}/config/panels:batch`, () =>
+        ok({
+          'p-2': {
+            status: 'AVAILABLE',
+            value: { shape: 'scalar', v: 4280000 },
+            governance: {
+              base: '48 tiendas sobre 52', layer: 'GOLD', source: 'Snowflake',
+              freshness: '2026-09-02T08:00:00Z', catalog_version: 1,
+            },
+          },
+        }),
+      ),
+    )
+    montar()
+
+    expect(await screen.findByText(/Métrica no dibujable/)).toBeInTheDocument()
+    expect(await screen.findByText('USD 4.28M')).toBeInTheDocument()
+  })
+
+  it('una métrica ausente sigue diciendo «no resuelta» · son cosas distintas', async () => {
+    // No rechazada: simplemente no está. La causa probable es otra —el layout
+    // referencia algo que este rol no ve— y confundirlas manda a buscar mal.
+    server.use(
+      http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
+      http.get(`${API}/config/tabs/:tabId`, () =>
+        ok({ tab: context.tabs[0], panels: [{ ...kpiPanel, metric_id: 'm-fantasma' }] }),
+      ),
+    )
+    montar()
+    expect(await screen.findByText(/Métrica no resuelta/)).toBeInTheDocument()
+  })
+})

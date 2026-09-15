@@ -17,6 +17,7 @@ import {
 } from '@/render/bodies/registry'
 import type { PanelType } from '@/api/types'
 import { enumOf } from '../../contract'
+import { TIPOS_DE_PANEL } from '@/api/adapt'
 
 /** El enumerado `TipoPanel`, LEÍDO DEL YAML · F5.6.
  *
@@ -93,5 +94,15 @@ describe('preloadBodies · los chunks viajan en paralelo con panels:batch', () =
 
   it('con la lista vacía no hace nada', () => {
     expect(() => preloadBodies([])).not.toThrow()
+  })
+})
+
+describe('F1.35 · los quince tipos del adaptador == los del contrato', () => {
+  it('`TIPOS_DE_PANEL` no se queda atrás del yaml', () => {
+    // `adapt.ts` necesita la lista EN RUNTIME para no castear `block_type`, y
+    // `PanelType` se borra al compilar. Es una copia, y una copia a mano se
+    // desactualiza con el contrato adelante — por eso se compara contra el yaml,
+    // igual que el registro de cuerpos.
+    expect([...TIPOS_DE_PANEL].sort()).toEqual([...enumOf('TipoPanel')].sort())
   })
 })

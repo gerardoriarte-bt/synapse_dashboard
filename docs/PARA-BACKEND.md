@@ -23,6 +23,7 @@ verde.
 - **F1.32** · Transcribir el cable de consola a un contrato versionado
 - **F1.33** · api/adapt.ts · contexto, catálogo, bloques y pestaña
 - **F1.34** · api/adapt.ts · payload, valor y presentación
+- **F1.35** · Los enumerados cerrados no se abren en el cable
 - **F1.36** · client.ts contra las rutas, los cuerpos y el error de este servicio
 - **F1.37** · Una sola base de API
 - **F1.40** · Presentacion llega al cuerpo · hoy está declarada y nadie la pasa

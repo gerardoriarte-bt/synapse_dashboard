@@ -5,15 +5,15 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**76 de 193 tareas cerradas.** 8 parciales · 104 pendientes · 5 diferidas.
+**77 de 193 tareas cerradas.** 8 parciales · 103 pendientes · 5 diferidas.
 
 
-## Front · 69 de 112
+## Front · 70 de 112
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██████████████████████` | 16/16 | 0 | 0 |
-| 1 · Consola y render/ | `███████████████████···` | 37/43 | 1 | 5 |
+| 1 · Consola y render/ | `███████████████████···` | 38/43 | 1 | 4 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `████████··············` | 4/11 | 1 | 3 |
 | 4 · Admin y Builder | `······················` | 0/23 | 0 | 23 |
@@ -44,11 +44,10 @@
 
 ---
 
-## Se puede tomar hoy · 35 del front
+## Se puede tomar hoy · 34 del front
 
 - **F1.13b** · Portar format.ts e inyectar el locale
 - **F1.31** · Registro de gráficos y verificación de mínimos
-- **F1.35** · Los enumerados cerrados no se abren en el cable
 - **F1.38** · MSW responde la forma del cable, no la del contrato
 - **F1.39** · Humo contra el servicio real
 - **F2.3** · SIN_PERMISO · B0.9 (línea 1171) contestada

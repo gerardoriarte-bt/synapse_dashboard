@@ -116,6 +116,30 @@ const GRANOS: Readonly<Record<string, 'dia' | 'semana' | 'mes'>> = {
   month: 'mes',
 }
 
+/** **Los quince tipos de panel, en runtime** · F1.35.
+ *
+ *  `PanelType` es una unión de TypeScript y **se borra al compilar**, así que no
+ *  sirve para decidir en tiempo de ejecución si `block_type` es uno de los
+ *  quince. En el cable es `string` libre.
+ *
+ *  Sin esta lista el adaptador hacía `b.type as Block['tipo']`, que es un cast:
+ *  el compilador se calla y un tipo inventado entra a la tabla como si fuera
+ *  bueno. **Una aserción de tipo sobre un dato de red es una afirmación sin
+ *  evidencia.**
+ *
+ *  Es una copia del enumerado del contrato y hay que decirlo: `tests/contract.ts`
+ *  lee el yaml y una prueba compara las dos, igual que `registry.test.tsx` hace
+ *  con el registro de cuerpos. Una copia a mano sin esa prueba se desactualiza
+ *  con el contrato adelante. */
+const TIPOS = [
+  'kpi', 'prose', 'series', 'bars', 'table', 'gauge', 'forecast', 'list', 'reco',
+  'composition', 'comparison', 'distribution', 'blocked', 'matrix', 'graph',
+] as const
+
+export const TIPOS_DE_PANEL: readonly string[] = TIPOS
+
+const esTipo = (s: string): s is Block['tipo'] => (TIPOS as readonly string[]).includes(s)
+
 /** **Los nombres de los params de layout** · F1.41.
  *
  *  El cable los manda en inglés —`layout_params` de la tabla `blocks`— y
@@ -336,9 +360,31 @@ export function adaptCatalog(rows: readonly WireMetric[]): AdaptedCatalog {
 /** Todas las formas del contrato, para expandir el comodín de `blocked`. */
 const TODAS_LAS_FORMAS = Object.values(FORMAS)
 
+/** Un bloque cuyo `type` no es uno de los quince **no entra a la tabla**, y sale
+ *  con su razón. Si entrara, `acceptsShape` y `spanInRange` opinarían sobre un
+ *  tipo que ningún cuerpo puede dibujar — y el builder lo ofrecería. */
+export type AdaptedBlocks = { blocks: Block[]; rejected: RejectedMetric[] }
+
 export function adaptBlocks(rows: readonly WireBlock[]): Block[] {
-  return rows.map((b) => ({
-    tipo: b.type as Block['tipo'],
+  return adaptBlocksConRechazo(rows).blocks
+}
+
+export function adaptBlocksConRechazo(rows: readonly WireBlock[]): AdaptedBlocks {
+  const blocks: Block[] = []
+  const rejected: RejectedMetric[] = []
+  for (const b of rows) {
+    if (!esTipo(b.type)) {
+      rejected.push({ id: b.type, key: b.type, razon: `tipo de panel desconocido: «${b.type}»` })
+      continue
+    }
+    blocks.push(unBloque(b, b.type))
+  }
+  return { blocks, rejected }
+}
+
+function unBloque(b: WireBlock, tipo: Block['tipo']): Block {
+  return {
+    tipo,
     // **`blocked` declara `["*"]`**, un comodín que el contrato no tiene. Se
     // expande a las formas que el backend puede materializar y no a las
     // dieciséis del enumerado: ofrecer una forma que ningún payload trae es la
@@ -359,7 +405,7 @@ export function adaptBlocks(rows: readonly WireBlock[]): Block[] {
     ...(b.layout_params === undefined
       ? {}
       : { paramsDisponibles: b.layout_params.map((n) => PARAMS[n] ?? n) }),
-  }))
+  }
 }
 
 /* ── Pestaña con paneles ──────────────────────────────────────────────────── */
