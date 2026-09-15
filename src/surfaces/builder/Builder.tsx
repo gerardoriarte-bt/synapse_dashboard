@@ -29,13 +29,16 @@ import {
   useCreateDraft,
   useLayoutDetail,
   useLayouts,
+  usePublishLayout,
   useSaveLayout,
   useTenants,
+  useValidateLayout,
 } from '../../api/hooks'
 import { BuilderChrome } from './BuilderChrome'
 import { ContextView } from './ContextView'
 import { TabEditor } from './TabEditor'
 import { PanelConfigurator } from './PanelConfigurator'
+import { PublishBar } from './PublishBar'
 import { SaveBar } from './SaveBar'
 import { ValidationSummary } from './ValidationSummary'
 import { validarBorrador } from './validar'
@@ -137,6 +140,8 @@ export function Builder() {
   const problemas = validarBorrador(tabs, tabla, catalogo.data?.metrics ?? [])
 
   const guardar = useSaveLayout(version)
+  const validar = useValidateLayout(version)
+  const publicar = usePublishLayout(version, tenantActivo)
   const duplicar = useCreateDraft(tenantActivo)
   const publicada = detalle.data?.layout.estado === 'publicado'
 
@@ -229,6 +234,9 @@ export function Builder() {
               publicada={publicada}
               error={errorAlGuardar}
               onGuardar={() => {
+                // **Guardar invalida el veredicto anterior.** Era sobre lo que
+                // había; lo que hay ahora el servidor no lo vio.
+                validar.reset()
                 guardar.mutate(tabs, {
                   // **El borrador local se descarta al guardar, y es la mitad
                   // que importa.** La respuesta trae los `id` que el servidor
@@ -253,6 +261,36 @@ export function Builder() {
                 })
               }}
               duplicando={duplicar.isPending}
+            />
+          )}
+
+          {semilla === null ? null : (
+            <PublishBar
+              sucio={sucio(tabs, semilla)}
+              publicada={publicada}
+              validando={validar.isPending}
+              publicando={publicar.isPending}
+              veredicto={
+                validar.data === undefined
+                  ? null
+                  : { valido: validar.data.valido, problemas: validar.data.problemas }
+              }
+              nombreDeTab={(tabId) =>
+                detalle.data?.tabs.find((t) => t.tab.id === tabId)?.tab.nombre ?? 'El layout'
+              }
+              error={
+                publicar.error === null
+                  ? validar.error === null
+                    ? null
+                    : `No se pudo validar · ${validar.error.message}`
+                  : // 422 es «hay paneles inválidos», que es información, no un
+                    // fallo del sistema · B4.15.
+                    publicar.error instanceof ApiError && publicar.error.httpStatus === 422
+                    ? 'El servidor rechazó la publicación: hay paneles inválidos'
+                    : `No se pudo publicar · ${publicar.error.message}`
+              }
+              onValidar={() => validar.mutate()}
+              onPublicar={() => publicar.mutate(detalle.data?.layout.versionId)}
             />
           )}
 

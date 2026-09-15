@@ -3301,9 +3301,9 @@ semántica en blanco en vez de «—». Las seis mueren.
 ### F4.11 ✅ Validación en tiempo real contra `/config/blocks`
 ### F4.12 ⬜ Preview por rol
 ### F4.13 ✅ Guardar borrador
-### F4.14 ⬜ Validar antes de publicar
-### F4.15 ⬜ Publicar sin deploy
-### F4.16 ⬜ Hooks dedicados: `useLayouts`, `useLayoutEditor`, `usePublishLayout`
+### F4.14 ✅ Validar antes de publicar
+### F4.15 ✅ Publicar sin deploy
+### F4.16 ✅ Hooks dedicados: `useLayouts`, `useLayoutEditor`, `usePublishLayout`
 **Criterio de aceptación destacado.**
 - F4.8: **una pestaña que no contesta una pregunta no se compone.** La pregunta
   operativa es obligatoria, no un subtítulo opcional.
@@ -3703,6 +3703,63 @@ guardar habilitado sin cambios, una versión publicada dejando apretar, la versi
 publicada sin declararse, los problemas bloqueando, el 409 como error genérico,
 duplicar sin mandar el `versionId` de origen, y duplicar sin saltar al borrador
 nuevo.
+
+### F4.14, F4.15 y F4.16 cerradas el 2026-09-15 · publicar es una secuencia
+
+`PublishBar` y el cableado de `useValidateLayout` y `usePublishLayout`. **578
+pruebas**, diez nuevas, diez mutaciones muertas.
+
+**«Nunca se publica algo que el front dio por bueno y el servidor no vio.»** Eso
+hace que publicar no sea un botón sino el final de tres pasos, y cada uno
+invalida al siguiente:
+
+1. **Guardar.** `POST /validate` valida lo que está **guardado**, no lo que se ve
+   en pantalla. Con cambios sin guardar, un «válido» estaría contestando sobre
+   otra composición — así que validar se deshabilita mientras el borrador esté
+   sucio, y se dice por qué.
+2. **Validar.** Y acá está la trampa del servicio: **responde 200 aunque la
+   composición sea inválida.** El 200 dice que la validación corrió, no que el
+   layout esté bien; lo que decide es `valido`. Leer el status sería dar por
+   bueno cualquier cosa.
+3. **Publicar**, solo si el servidor dijo `valido`. **Cualquier edición posterior
+   retira el permiso**, y guardar también: el veredicto era sobre lo que había.
+
+**El estado por defecto no es «listo».** Sin veredicto la pantalla dice «el
+servidor todavía no vio esta composición», porque el silencio se lee como
+aprobación. Es la misma razón por la que el resumen de F4.11 declara siempre que
+el servidor decide.
+
+**Los problemas del servidor vienen por id y acá ya no es un problema**: solo se
+valida lo guardado, y lo guardado tiene id. Se resuelven contra el detalle para
+nombrar la pestaña en vez de pintar su UUID.
+
+**El 422 de publicar es información, no un fallo** · B4.15: el servidor rechaza
+la publicación si hay paneles inválidos, y decirlo así es lo que distingue «hay
+algo que arreglar» de «se rompió el sistema».
+
+**Y publicar no despliega**, que la pantalla declara: es un cambio de dato sobre
+qué layout sirve la consola, no un build. Por eso `usePublishLayout` invalida
+también `me` y `tab` — las dos cachés de la consola—, que es el defecto silencioso
+que F4.23 había anticipado y que `tests/api/admin.test.tsx` sostiene.
+
+### F4.16 · los hooks estaban, y ahora tienen consumidor
+
+`useLayouts`, `useLayoutDetail`, `useCreateDraft`, `useSaveLayout`,
+`useValidateLayout` y `usePublishLayout` se escribieron en F4.23. **Lo que
+cambió hoy es que los ocho tienen consumidor**, que es la diferencia entre un
+hook y `BodyProps.presentation` — declarada meses, sin un solo llamador.
+
+**Una desviación de nombre, dicha:** el plan pedía `useLayoutEditor` y lo que hay
+son dos, `useLayoutDetail` para leer y `useSaveLayout` para escribir. Fundirlos en
+uno habría mezclado una consulta con una mutación, que en TanStack son cosas
+distintas con cachés distintos. La intención del nombre está cubierta; el nombre
+no.
+
+**Verificadas por mutación, diez casos:** publicar autorizando con que el servidor
+haya contestado, editar sin retirar el permiso, validar con cambios sin guardar, el
+motivo sin decirse, el silencio leído como aprobación, los problemas del servidor
+sin listar, el UUID pintado en vez del nombre, guardar sin invalidar el veredicto,
+el 422 como error genérico, y publicar sin mandar el `versionId`.
 - F4.12: el preview llama al endpoint con rol simulado (B4.9). No se simula del
   lado del cliente filtrando lo que ya se tiene: eso probaría el filtro del
   front, que no existe.

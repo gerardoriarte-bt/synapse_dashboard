@@ -424,15 +424,16 @@ describe('§F4.11 · el resumen dice dónde y que NO decide', () => {
     expect(screen.getByText(/El servidor decide/)).toBeInTheDocument()
   })
 
-  it('NO ofrece publicar · eso es F4.15', async () => {
+  it('publicar existe pero NO está autorizado sin veredicto del servidor', async () => {
+    // Desde F4.15 el botón está; lo que no está es el permiso. «Nunca se publica
+    // algo que el front dio por bueno y el servidor no vio»: sin validar, el
+    // botón se ve y no se puede apretar.
     servir()
     montar()
     await abrirPanel()
-    // Anclado: `/publicar/i` a secas matchea «borrador v4 sin publicar», que es
-    // el botón de la versión. Un falso positivo que haría pasar la prueba por
-    // el motivo equivocado.
-    expect(screen.queryByRole('button', { name: /^publicar/i })).toBeNull()
-    // Guardar sí existe desde F4.13; lo que no existe es publicar.
+
+    expect(screen.getByRole('button', { name: 'Publicar' })).toBeDisabled()
+    expect(screen.getByText(/el servidor todavía no vio esta composición/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Guardar borrador' })).toBeInTheDocument()
   })
 
