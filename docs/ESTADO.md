@@ -5,15 +5,15 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**78 de 193 tareas cerradas.** 9 parciales · 101 pendientes · 5 diferidas.
+**79 de 193 tareas cerradas.** 8 parciales · 101 pendientes · 5 diferidas.
 
 
-## Front · 71 de 112
+## Front · 72 de 112
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██████████████████████` | 16/16 | 0 | 0 |
-| 1 · Consola y render/ | `████████████████████··` | 39/43 | 2 | 2 |
+| 1 · Consola y render/ | `████████████████████··` | 40/43 | 1 | 2 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `████████··············` | 4/11 | 1 | 3 |
 | 4 · Admin y Builder | `······················` | 0/23 | 0 | 23 |
@@ -44,11 +44,10 @@
 
 ---
 
-## Se puede tomar hoy · 33 del front
+## Se puede tomar hoy · 32 del front
 
 - **F1.13b** · Portar format.ts e inyectar el locale
 - **F1.31** · Registro de gráficos y verificación de mínimos
-- **F1.39** · Humo contra el servicio real
 - **F2.3** · SIN_PERMISO · B0.9 (línea 1171) contestada
 - **F3.3** · «Ver detalle» y «Preguntar» en el shell del panel
 - **F3.7** · Historial de hilos

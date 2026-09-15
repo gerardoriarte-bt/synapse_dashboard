@@ -2617,7 +2617,7 @@ Verificado por mutación devolviendo `SIN_PERMISO` al idioma del contrato. Lo
 sostiene `tsc`, que ya corre en la puerta — **una garantía que no necesita que
 nadie se acuerde.**
 
-#### ➕ F1.39 ⚠️ Humo contra el servicio real
+#### ➕ F1.39 ✅ Humo contra el servicio real
 **Descripción.** Una corrida contra el servicio levantado con su seed —login,
 `/config/me`, `/config/catalog`, `/config/blocks`, `/config/tabs/:tabId`,
 `panels:batch`— que compare lo que llega contra
@@ -2633,7 +2633,7 @@ el adaptador es coherente con lo que nosotros creemos del cable, no con el cable
   mal: el yaml es nuestra transcripción, el servicio es el hecho.
 - Queda registrado qué se verificó y con qué commit del backend.
 
-**Parcial el 2026-09-15 · el script está, falta la corrida registrada.**
+**Cerrada el 2026-09-15.**
 
 `tools/humo.py` pide las cinco rutas al servicio y compara la respuesta contra
 los `required` de cada esquema del yaml, más las dos propiedades que no son de
@@ -2645,10 +2645,26 @@ credenciales y sin servicio sale con **2**, nunca con 0, y las dos veces dice qu
 no es un fallo del front. Un chequeo que pasa por falta de fuente miente sobre su
 cobertura.
 
-**Lo que falta es correrlo con credenciales y anotar el resultado con el commit
-del backend.** Se hizo a mano el 2026-09-14 —y encontró la única diferencia, que
-`semantic_direction` es texto y no un código— pero eso no queda registrado ni se
-puede repetir. La tarea cierra cuando la corrida esté anotada.
+**LA CORRIDA, REGISTRADA · 2026-09-15 · las cinco rutas conformes.**
+
+| Endpoint | Esquema | Requeridos |
+|---|---|---|
+| `/config/me` | `ContextResponse` | 6 / 6 |
+| `/config/catalog[0]` | `CatalogMetric` | 12 / 12 |
+| `/config/blocks[0]` | `BlockRule` | 7 / 7 |
+| `/config/tabs/{id}` | `TabWithPanels` | 2 / 2 |
+| `panels[0]` | `PanelDTO` | 6 / 6 |
+| `panels:batch[0]` | `Payload` | 1 / 1 |
+| `governance` | `Governance` | 5 / 5 |
+
+**Contra `AntPack-dev/synapse-api-go` en `733c13c`** —`feature/dynamic-dashboard-backend`,
+del 2026-09-11, confirmado con `npm run backend-drift`—, con el seed de UA MX.
+Cero diferencias: el yaml transcripto describe lo que el servicio sirve.
+
+**Y eso no era obvio.** La corrida a mano del 2026-09-14 había encontrado una
+—`semantic_direction` es texto ya redactado y no un código, al revés del
+comentario de Go del que se transcribió—. Se corrigió el yaml ese día; esta
+corrida confirma que no quedó ninguna otra.
 
     SYNAPSE_EMAIL=… SYNAPSE_PASSWORD=… npm run humo
 
