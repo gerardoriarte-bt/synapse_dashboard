@@ -31,6 +31,8 @@
  */
 import { ApiError, SIN_CODIGO } from './types'
 import type { PanelConfig } from './types'
+import { adaptCatalog } from './adapt'
+import type { AdaptedCatalog, WireMetric } from './adapt'
 import type { components as admin } from './admin-generated'
 import { currentToken } from '../app/auth/session'
 
@@ -235,6 +237,17 @@ function aCuerpo(tabs: readonly TabParaGuardar[]): A['LayoutUpdateRequest'] {
 export const adminApi = {
   tenants: async (): Promise<Tenant[]> =>
     (await pedir<WireTenantOption[]>('/admin/tenants')).map((t) => ({ id: t.id, nombre: t.name })),
+
+  /** **El catálogo SIN filtrar por rol** · es la diferencia con
+   *  `/config/catalog`. Quien compone tiene que poder asignar una métrica que
+   *  después un rol no verá; filtrarla acá escondería la mitad del inventario.
+   *
+   *  Devuelve el mismo `Metric` del contrato, así que reusa el adaptador de la
+   *  consola: una métrica es una métrica, y darle dos formas garantizaría que se
+   *  separen. Y por lo mismo devuelve también `rejected` — una métrica con una
+   *  familia fuera del enumerado tampoco se puede dibujar en el builder. */
+  catalogo: async (tenantId: string): Promise<AdaptedCatalog> =>
+    adaptCatalog(await pedir<WireMetric[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/catalog`)),
 
   layouts: async (tenantId: string): Promise<LayoutVersion[]> =>
     (await pedir<WireLayoutVersion[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/layouts`)).map(

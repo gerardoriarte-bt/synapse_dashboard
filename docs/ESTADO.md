@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**83 de 193 tareas cerradas.** 8 parciales · 97 pendientes · 5 diferidas.
+**84 de 193 tareas cerradas.** 8 parciales · 96 pendientes · 5 diferidas.
 
 
-## Front · 76 de 112
+## Front · 77 de 112
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -16,7 +16,7 @@
 | 1 · Consola y render/ | `████████████████████··` | 40/43 | 1 | 2 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `████████··············` | 4/11 | 1 | 3 |
-| 4 · Admin y Builder | `████··················` | 4/23 | 0 | 19 |
+| 4 · Admin y Builder | `█████·················` | 5/23 | 0 | 18 |
 | 5 · Pruebas y pulido | `████████████··········` | 7/13 | 1 | 4 |
 
 ## Backend · 7 de 81
@@ -44,7 +44,7 @@
 
 ---
 
-## Se puede tomar hoy · 28 del front
+## Se puede tomar hoy · 27 del front
 
 - **F1.13b** · Portar format.ts e inyectar el locale
 - **F1.31** · Registro de gráficos y verificación de mínimos
@@ -65,7 +65,6 @@
 - **F4.21** · Selector de gráfico en el builder
 - **F4.3** · Gestión de usuarios y roles por tenant
 - **F4.4** · Configuración de agente Snowflake por tenant
-- **F4.5** · Vista del catálogo de métricas del tenant
 - **F4.6** · surfaces/builder/ — composición visual
 - **F4.7** · Selector de tenant y plantilla base
 - **F4.8** · Editor de pestañas: nombre, pregunta operativa, orden, sugerencias

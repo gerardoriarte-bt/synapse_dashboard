@@ -31,6 +31,7 @@ export const keys = {
    */
   tenants: ['admin', 'tenants'] as const,
   layouts: (tenantId: string) => ['admin', 'layouts', tenantId] as const,
+  adminCatalog: (tenantId: string) => ['admin', 'catalog', tenantId] as const,
   layout: (layoutId: string) => ['admin', 'layout', layoutId] as const,
 }
 
@@ -127,6 +128,14 @@ export function useSaveTheme() {
 
 export function useTenants() {
   return useQuery({ queryKey: keys.tenants, queryFn: adminApi.tenants })
+}
+
+export function useAdminCatalog(tenantId: string | null) {
+  return useQuery({
+    queryKey: keys.adminCatalog(tenantId ?? ''),
+    queryFn: () => adminApi.catalogo(tenantId as string),
+    enabled: tenantId !== null && tenantId !== '',
+  })
 }
 
 export function useLayouts(tenantId: string | null) {

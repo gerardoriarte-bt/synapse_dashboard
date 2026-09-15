@@ -155,7 +155,9 @@ Lo que sí sirve ya es `decimals` y `unit` por columna: sin `decimals`, una colu
 
 Texto redactado, no un código: «Venta media de los últimos treinta días». **No se puede derivar del período** — dos métricas consultadas con el mismo `2026-09` pueden tener ventanas distintas, un total mensual y un promedio móvil de treinta días.
 
-Los otros tres campos que faltan —`state`, `state_reason`, `reading_note`— **no los pedimos**: hoy no los lee nadie en el front.
+**`state` y `state_reason` SÍ los pedimos desde el 2026-09-15**, y antes no. La razón anterior —«no los lee nadie en el front»— dejó de ser cierta cuando F4.5 construyó A4: §7.3 le pide a esa pantalla **filtro por estado**, y sin el campo el filtro no existe. Peor: el adaptador escribe `estado: 'DISPONIBLE'` fijo para satisfacer el contrato, así que **el campo compila y tiene valor**, y una columna con doce `DISPONIBLE` idénticos se ve igual que un catálogo verificado. Hoy A4 no lo pinta y declara por qué; con el campo, lo pinta y ofrece el filtro.
+
+`reading_note` sigue sin pedirse: ahí sí no lo lee nadie todavía.
 
 
 ### B1.18 · Sincronizar el catálogo con las semantic views de Snowflake

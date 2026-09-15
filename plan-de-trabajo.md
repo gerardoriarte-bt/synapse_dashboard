@@ -734,7 +734,9 @@ tipo: hoy `bars` puede recibir un ítem y dibujar una barra sola.
 
 Texto redactado, no un código: «Venta media de los últimos treinta días». **No se puede derivar del período** — dos métricas consultadas con el mismo `2026-09` pueden tener ventanas distintas, un total mensual y un promedio móvil de treinta días.
 
-Los otros tres campos que faltan —`state`, `state_reason`, `reading_note`— **no los pedimos**: hoy no los lee nadie en el front.
+**`state` y `state_reason` SÍ los pedimos desde el 2026-09-15**, y antes no. La razón anterior —«no los lee nadie en el front»— dejó de ser cierta cuando F4.5 construyó A4: §7.3 le pide a esa pantalla **filtro por estado**, y sin el campo el filtro no existe. Peor: el adaptador escribe `estado: 'DISPONIBLE'` fijo para satisfacer el contrato, así que **el campo compila y tiene valor**, y una columna con doce `DISPONIBLE` idénticos se ve igual que un catálogo verificado. Hoy A4 no lo pinta y declara por qué; con el campo, lo pinta y ofrece el filtro.
+
+`reading_note` sigue sin pedirse: ahí sí no lo lee nadie todavía.
 ### B1.18 ⬜ Sincronizar el catálogo con las semantic views de Snowflake
 **Espera del backend.** **La vista `SYNAPSE_METRIC_CATALOG`.** No existe en ninguna base de la cuenta —verificado con `SHOW OBJECTS`, cero filas—, así que `make sync-catalog` falla y el catálogo sale del seed de Postgres.
 
@@ -3156,7 +3158,7 @@ estimación que no bajaría.
 ### F4.2 ✅ Lista de tenants
 ### F4.3 ⬜ Gestión de usuarios y roles por tenant
 ### F4.4 ⬜ Configuración de agente Snowflake por tenant
-### F4.5 ⬜ Vista del catálogo de métricas del tenant
+### F4.5 ✅ Vista del catálogo de métricas del tenant
 **Criterio de aceptación (los cinco).**
 - **No se muestra vocabulario de infraestructura** (§7.3 de `design.md`): ni
   base, ni rol técnico, ni grants, ni warehouse. Se declara la consecuencia
@@ -3219,6 +3221,61 @@ cruza cada utilidad contra las variables declaradas.
 **Verificadas por mutación, tres casos:** A3 pasada a alcance tenant, el selector
 apareciendo en una pantalla de plataforma (7 fallas), y las columnas faltantes
 omitidas en silencio.
+
+### F4.5 cerrada el 2026-09-15 · y lo que encontró
+
+`CatalogView` y el contenedor `Catalogo` dentro de `Admin`. **462 pruebas**, trece
+de ellas nuevas, seis mutaciones muertas.
+
+**A4 es la única de las cuatro pantallas de tenant que tiene ruta**, y §7.3 le
+pide ocho campos por métrica. `GET /admin/tenants/{tenantId}/catalog` sostiene
+cuatro: forma, capa, fuente y dirección semántica.
+
+**Los otros cuatro no se rellenan, y dos de ellos son la trampa de esta
+pantalla.** `frescura` y «en cuántos paneles se usa» simplemente no están y se
+declaran como tales. Pero `ventana` y `estado` **sí existen en el tipo `Metrica`,
+compilan y tienen valor**: el adaptador de F1.33 escribe `ventana: ''` y `estado:
+'DISPONIBLE'` fijo porque el contrato los exige como obligatorios y el cable no
+los trae. Una columna «Estado» con doce `DISPONIBLE` idénticos se ve exactamente
+igual que un catálogo verificado, y no lo es.
+
+**Es el mismo modo de falla que el spread condicional y que `text-labell`**: algo
+que compila, pasa el lint y miente. Por eso la lista de ausentes de esta pantalla
+se escribió mirando `adaptCatalog`, no el tipo — el tipo dice que los ocho campos
+están.
+
+**El filtro por estado que §7.3 pide no se puede ofrecer**, y en su lugar hay uno
+por capa **que declara que no es el que el diseño pide**. Sustituirlo en silencio
+daría una pantalla que parece cumplir §7.3 y no cumple.
+
+**El origen de cada columna se declara** —derivado o editorial—, que es lo que
+§7.3 pide con PS-13: «sincronizar y editar no compiten, cada campo tiene un solo
+dueño», y A4 muestra los derivados con su origen. Editar no se ofrece: **ninguna
+de las seis rutas de `synapse-admin-wire.yaml` escribe sobre el catálogo**, así
+que el aviso de «qué paneles afecta» que §7.3 pide antes de guardar no tiene
+dónde dispararse. Tampoco la acción de sincronizar: hoy es `make sync-catalog`,
+un CLI, no una ruta.
+
+**Las métricas rechazadas por el adaptador se nombran con su razón.** Acá pesa
+más que en la consola: una forma fuera del enumerado no solo no se dibuja,
+tampoco se puede asignar a un panel, y quien compone tiene que saber por qué no
+está en la lista.
+
+**Lo que NO se hizo, con la razón escrita.** Contar los paneles que usan cada
+métrica sobre el layout **publicado** es un `GET` más y da un número — y sería el
+número equivocado: una métrica usada solo en un borrador saldría en cero, y quien
+la mire va a leer «no se usa» y va a considerar retirarla. Contarlo bien exige
+recorrer todos los layouts del tenant, uno por borrador, y esa es una decisión de
+costo que no corresponde tomar en una vista.
+
+**Y esta tarea cambió una decisión de B1.17.** Ese pedido decía que `state` y
+`state_reason` «no los pedimos: hoy no los lee nadie en el front». Dejó de ser
+cierto el día que A4 existe — §7.3 le pide filtro por estado. Queda pedido.
+
+**Verificadas por mutación, seis casos:** una columna de `estado` agregada a la
+tabla, el filtro devolviendo todo, el encabezado sin su origen, uno de los cuatro
+ausentes borrado de la lista, las rechazadas ocultas, y el hueco de dirección
+semántica en blanco en vez de «—». Las seis mueren.
 
 ### F4.6 ⬜ `surfaces/builder/` — composición visual
 ### F4.7 ⬜ Selector de tenant y plantilla base
