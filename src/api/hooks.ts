@@ -9,6 +9,8 @@
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
+import { adminApi } from './admin'
+import type { TabParaGuardar } from './admin'
 import type { Theme } from '../tokens/theme'
 import type { Payload } from './types'
 
@@ -19,6 +21,17 @@ export const keys = {
   tab: (tabId: string, layoutId?: string) => ['config', 'tab', tabId, layoutId ?? null] as const,
   panels: (tabId: string, period: string) => ['panels', tabId, period] as const,
   threads: ['chat', 'hilos'] as const,
+
+  /* ── Builder · F4.23 ─────────────────────────────────────────────────────
+   *
+   * **Viven acá y no en un archivo aparte a propósito.** Publicar un layout
+   * tiene que invalidar la caché de la CONSOLA —`me` y `tab`—, y para eso las
+   * dos familias de claves tienen que estar al alcance. Separarlas obligaría a
+   * importar las de la consola desde el builder, que es la dependencia al revés.
+   */
+  tenants: ['admin', 'tenants'] as const,
+  layouts: (tenantId: string) => ['admin', 'layouts', tenantId] as const,
+  layout: (layoutId: string) => ['admin', 'layout', layoutId] as const,
 }
 
 /** Contexto al montar la app. Una sola vez: no cambia con el período. */
@@ -99,5 +112,85 @@ export function useSaveTheme() {
   return useMutation({
     mutationFn: (theme: Theme) => api.savePreferences(theme),
     onSuccess: () => client.invalidateQueries({ queryKey: keys.me }),
+  })
+}
+
+
+/* ══ Builder · F4.23 ═════════════════════════════════════════════════════════
+ *
+ * **El servidor decide.** Lo que estos hooks hacen es traer y mandar; la
+ * validación del front —`catalog/blocks.ts`— es feedback inmediato para no
+ * dejar componer algo imposible, pero **nunca se publica algo que el front dio
+ * por bueno y el servidor no vio**. Por eso `useValidateLayout` existe y llama
+ * al endpoint en vez de decidir acá.
+ */
+
+export function useTenants() {
+  return useQuery({ queryKey: keys.tenants, queryFn: adminApi.tenants })
+}
+
+export function useLayouts(tenantId: string | null) {
+  return useQuery({
+    queryKey: keys.layouts(tenantId ?? ''),
+    queryFn: () => adminApi.layouts(tenantId as string),
+    enabled: tenantId !== null && tenantId !== '',
+  })
+}
+
+export function useLayoutDetail(layoutId: string | null) {
+  return useQuery({
+    queryKey: keys.layout(layoutId ?? ''),
+    queryFn: () => adminApi.layout(layoutId as string),
+    enabled: layoutId !== null && layoutId !== '',
+  })
+}
+
+export function useCreateDraft(tenantId: string | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (versionId?: string) => adminApi.crearBorrador(tenantId as string, versionId),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.layouts(tenantId ?? '') }),
+  })
+}
+
+/** Guardar **reemplaza el layout entero**: el servicio no acepta parches.
+ *
+ *  `setQueryData` con lo que devuelve el PUT y no `invalidateQueries`: la
+ *  respuesta YA es el layout guardado, así que volver a pedirlo sería un viaje
+ *  para traer lo que ya está en la mano. */
+export function useSaveLayout(layoutId: string | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (tabs: readonly TabParaGuardar[]) => adminApi.guardar(layoutId as string, tabs),
+    onSuccess: (detalle) => qc.setQueryData(keys.layout(layoutId ?? ''), detalle),
+  })
+}
+
+/** **No cachea, y es a propósito.** Validar es una pregunta sobre el estado de
+ *  ESTE momento; una respuesta guardada diría «válido» sobre una composición que
+ *  ya cambió. Por eso es mutación y no consulta. */
+export function useValidateLayout(layoutId: string | null) {
+  return useMutation({ mutationFn: () => adminApi.validar(layoutId as string) })
+}
+
+/** Publicar toca DOS cachés, y olvidar la segunda es el defecto silencioso.
+ *
+ *  **Publicar demota el layout publicado anterior del tenant a borrador**, así
+ *  que cambia la lista de layouts —lo evidente— y también **lo que la consola
+ *  está mostrando**: sus pestañas y su contexto salen del layout publicado. Sin
+ *  invalidar `me` y `tab`, quien acaba de publicar sigue viendo el layout viejo
+ *  en la consola y cree que no funcionó. */
+export function usePublishLayout(layoutId: string | null, tenantId: string | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (versionId?: string) => adminApi.publicar(layoutId as string, versionId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.layouts(tenantId ?? '') })
+      void qc.invalidateQueries({ queryKey: keys.layout(layoutId ?? '') })
+      // La consola. `me` trae las pestañas del layout publicado y `tab` su
+      // composición: publicar las cambia a las dos.
+      void qc.invalidateQueries({ queryKey: keys.me })
+      void qc.invalidateQueries({ queryKey: ['config', 'tab'] })
+    },
   })
 }

@@ -3270,7 +3270,7 @@ demuestra que es un descuido y no una convención.
 cambiado sin regenerar— y comprobando que los otros tres contratos siguen
 conformes.
 
-#### ➕ F4.23 ⬜ Los hooks del builder contra el cable
+#### ➕ F4.23 ✅ Los hooks del builder contra el cable
 **Descripción.** `useTenants`, `useLayouts`, `useLayoutDetail`, `useSaveLayout`,
 `useValidateLayout` y `usePublishLayout`, con su adaptador, siguiendo la figura
 de F4.16. El ciclo del builder es `crear borrador → PUT → validate → publish`, y
@@ -3290,6 +3290,52 @@ solo un `draft` es editable: un `PUT` sobre un publicado devuelve 409.
   entero, y mandar una tab sin `id` genera una nueva. Queda escrito donde se
   llama, porque es la clase de cosa que se descubre borrando el trabajo de
   alguien.
+
+**Cerrada el 2026-09-15.** `src/api/admin.ts` —cliente y adaptador— más seis
+hooks en `hooks.ts`. 437 pruebas.
+
+**Los hooks del builder viven en `hooks.ts` y no en un archivo aparte**, y no es
+comodidad: **publicar tiene que invalidar la caché de la CONSOLA**, y para eso
+las dos familias de claves tienen que estar al alcance. Separarlas obligaría a
+importar las de la consola desde el builder, que es la dependencia al revés.
+
+**Ese es el defecto silencioso de esta tarea y tiene su prueba.** Publicar demota
+el layout publicado anterior del tenant a borrador, así que cambia la lista de
+layouts —lo evidente— y también **lo que la consola está mostrando**: sus
+pestañas y su contexto salen del layout publicado. Sin invalidar `me` y `tab`,
+quien acaba de publicar sigue viendo el layout viejo y cree que no funcionó:
+**todo responde 200 y la pantalla no cambia.**
+
+**La forma que sale del adaptador es una PROPUESTA, no el contrato.**
+`synapse-api.yaml` declara en su alcance que admin y builder entran «cuando esas
+superficies prueben qué necesitan». Así que esto es lo que va a proponerse en
+B0.6, y sigue las convenciones del contrato: español, camelCase, y **reusa
+`PanelConfig`** — un panel del builder es el mismo que la consola dibuja, y darle
+dos formas sería garantizar que se separen.
+
+**Tres decisiones que quedaron escritas donde se toman:**
+
+- **El 409 tiene código propio** —`REGLA_LAYOUT_PUBLICADO`—. Sin distinguirlo, el
+  builder diría «error al guardar» sobre algo que tiene una salida concreta:
+  duplicar el layout.
+- **Un `Status` desconocido cae en `borrador`, no en `publicado`.** Es la lectura
+  segura: un layout del que no se sabe si está publicado no se trata como
+  publicado. La dirección importa.
+- **`validar` no cachea.** Es una pregunta sobre el estado de ESTE momento; una
+  respuesta guardada diría «válido» sobre una composición que ya cambió. Por eso
+  es mutación y no consulta.
+
+**Verificada por mutación, y la cuarta enseñó algo.** Tres rompieron pruebas:
+publicar sin invalidar la consola, el 409 sin su código, y un estado desconocido
+leído como publicado. **La cuarta —quitar el spread condicional del `id`— no
+rompió ninguna, y no era una prueba débil**: `JSON.stringify` descarta las claves
+`undefined`, así que mandar `id: undefined` produce el mismo JSON. El spread es
+una garantía de TIPO —`exactOptionalPropertyTypes`— y no de cable. Corregido el
+comentario, que decía otra cosa.
+
+Es la tercera forma de «una mutación que pasa»: no que el arnés fallara ni que la
+prueba fuera débil, sino que **el cambio no tenía efecto observable**. Las tres
+se distinguen mirando; ninguna se puede dar por buena sin hacerlo.
 
 
 ---

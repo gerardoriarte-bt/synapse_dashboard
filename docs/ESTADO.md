@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**80 de 193 tareas cerradas.** 8 parciales · 100 pendientes · 5 diferidas.
+**81 de 193 tareas cerradas.** 8 parciales · 99 pendientes · 5 diferidas.
 
 
-## Front · 73 de 112
+## Front · 74 de 112
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -16,7 +16,7 @@
 | 1 · Consola y render/ | `████████████████████··` | 40/43 | 1 | 2 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `████████··············` | 4/11 | 1 | 3 |
-| 4 · Admin y Builder | `█·····················` | 1/23 | 0 | 22 |
+| 4 · Admin y Builder | `██····················` | 2/23 | 0 | 21 |
 | 5 · Pruebas y pulido | `████████████··········` | 7/13 | 1 | 4 |
 
 ## Backend · 7 de 81
@@ -44,7 +44,7 @@
 
 ---
 
-## Se puede tomar hoy · 31 del front
+## Se puede tomar hoy · 30 del front
 
 - **F1.13b** · Portar format.ts e inyectar el locale
 - **F1.31** · Registro de gráficos y verificación de mínimos
@@ -65,7 +65,6 @@
 - **F4.2** · Lista de tenants
 - **F4.20** · Registrar los tres con carga diferida
 - **F4.21** · Selector de gráfico en el builder
-- **F4.23** · Los hooks del builder contra el cable
 - **F4.3** · Gestión de usuarios y roles por tenant
 - **F4.4** · Configuración de agente Snowflake por tenant
 - **F4.5** · Vista del catálogo de métricas del tenant
