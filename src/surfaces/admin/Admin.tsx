@@ -127,7 +127,11 @@ export function Admin() {
       ) : pantalla === 'catalogo' ? (
         <Catalogo query={catalogo} />
       ) : (
-        <TenantList tenants={lista} onAbrir={() => setPantalla('cliente')} />
+        <TenantList
+          tenants={lista}
+          onAbrir={() => setPantalla('cliente')}
+          cargando={tenants.data === undefined}
+        />
       )}
     </AdminChrome>
   )
@@ -158,9 +162,16 @@ function Catalogo({ query }: { query: ReturnType<typeof useAdminCatalog> }) {
     )
   }
 
-  if (query.data === undefined) return <Label as="div">Cargando el catálogo…</Label>
-
-  return <CatalogView metrics={query.data.metrics} rejected={query.data.rejected} />
+  // **Se pinta la pantalla, no un texto.** El encabezado, los filtros y la
+  // declaración de lo que falta no dependen de los datos: reemplazarlos por
+  // «Cargando…» es tirar información que ya estaba lista.
+  return (
+    <CatalogView
+      metrics={query.data?.metrics ?? []}
+      rejected={query.data?.rejected ?? []}
+      cargando={query.data === undefined}
+    />
+  )
 }
 
 /** El 409 de rol tiene dos causas y las dos tienen salida; el resto es lo que
@@ -198,11 +209,10 @@ function Cliente({
       </div>
     )
   }
-  if (roles.data === undefined) return <Label as="div">Cargando los roles…</Label>
-
   return (
     <RoleEditor
-      roles={roles.data}
+      roles={roles.data ?? []}
+      cargando={roles.data === undefined}
       pestanas={pestanas}
       metricas={metricas}
       onGuardar={onGuardar}

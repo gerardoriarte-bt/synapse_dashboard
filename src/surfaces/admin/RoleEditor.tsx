@@ -50,6 +50,10 @@ type Props = {
   onBorrar: (id: string) => void
   guardando: boolean
   error: string | null
+  /** Mientras los roles vuelan. **No es una tabla**, así que su esqueleto son
+   *  tarjetas con la forma de una ficha de rol — la misma idea que
+   *  `SkeletonRows`: prometer la forma que va a llegar, no decir «esperá». */
+  cargando?: boolean
 }
 
 export function RoleEditor({
@@ -60,6 +64,7 @@ export function RoleEditor({
   onBorrar,
   guardando,
   error,
+  cargando = false,
 }: Props) {
   const [editando, setEditando] = useState<string | null>(null)
   const [nombre, setNombre] = useState('')
@@ -83,7 +88,9 @@ export function RoleEditor({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
-        <Label as="div">{`${String(roles.length)} rol(es)`}</Label>
+        {/* CARGANDO y no una cifra: «2 roles» mientras carga afirma algo que
+            todavía no llegó. */}
+        <Label as="div">{cargando ? 'Roles · cargando' : `${String(roles.length)} rol(es)`}</Label>
         <button
           type="button"
           onClick={() => abrir(null)}
@@ -93,8 +100,19 @@ export function RoleEditor({
         </button>
       </div>
 
-      {roles.length === 0 && (
+      {roles.length === 0 && !cargando && (
         <Label as="div">Este cliente no tiene roles definidos todavía</Label>
+      )}
+
+      {cargando && (
+        <ul className="flex flex-col gap-2 m-0 p-0 list-none" aria-busy="true">
+          {[0, 1].map((i) => (
+            <li key={i} className="flex flex-col gap-2 rounded-sm bg-w2 p-3" aria-hidden="true">
+              <div className="bg-w3 rounded-xs h-3 w-1/4" />
+              <div className="bg-w3 rounded-xs h-3 w-2/3" />
+            </li>
+          ))}
+        </ul>
       )}
 
       <ul className="flex flex-col gap-2 m-0 p-0 list-none">

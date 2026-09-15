@@ -25,6 +25,7 @@
  *  acá ni va a aparecer**: esa capa la opera el equipo interno.
  */
 import { Label } from '../../render/primitives/Label'
+import { SkeletonRows } from './SkeletonRows'
 import type { Tenant } from '../../api/admin'
 
 /** Lo que §7.3 pide y el cable no trae. Se declara acá y no en un comentario
@@ -42,10 +43,13 @@ type Props = {
   tenants: readonly Tenant[]
   /** Abrir la ficha del cliente · A2. */
   onAbrir: (id: string) => void
+  /** Mientras la lista vuela. **La tabla se pinta igual**: encabezado completo y
+   *  filas de esqueleto · `SkeletonRows`. */
+  cargando?: boolean
 }
 
-export function TenantList({ tenants, onAbrir }: Props) {
-  if (tenants.length === 0) {
+export function TenantList({ tenants, onAbrir, cargando = false }: Props) {
+  if (tenants.length === 0 && !cargando) {
     // §8: el estado vacío es una invitación a actuar, no un error. Y acá la
     // causa probable es concreta.
     return (
@@ -58,7 +62,13 @@ export function TenantList({ tenants, onAbrir }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
-      <table className="w-full border-collapse">
+      {/* El conteo dice CARGANDO y no una cifra: «3 clientes» mientras carga es
+          afirmar algo que todavía no llegó. */}
+      <Label as="div">
+        {cargando ? 'Clientes · cargando' : `Clientes · ${String(tenants.length)}`}
+      </Label>
+
+      <table className="w-full border-collapse" aria-busy={cargando}>
         <thead>
           <tr className="border-b border-w4">
             <th className="text-left py-2">
@@ -70,6 +80,7 @@ export function TenantList({ tenants, onAbrir }: Props) {
           </tr>
         </thead>
         <tbody>
+          {cargando && <SkeletonRows columnas={2} />}
           {tenants.map((t) => (
             <tr key={t.id} className="border-b border-w3">
               <td className="py-3 text-ink text-celda">{t.nombre}</td>

@@ -4186,6 +4186,45 @@ sin seleccionar, un tipo desconocido tragado, un grupo vacío desaparecido, el
 rango del tipo ignorado, reubicar sin reordenar, y la biblioteca sin declarar el
 rango.
 
+### El estado de carga de administración · divergencia 3, cerrada el 2026-09-15
+
+`SkeletonRows` y el cableado en A1, A2 y A4. **666 pruebas**, diez nuevas, doce
+mutaciones muertas.
+
+**Esqueleto y nunca spinner**, que es lo que la nota de `A1 · Clientes ·
+cargando` escribe: «la tabla ya sabe cuántas columnas tiene y de qué ancho, así
+que **puede prometer la forma que va a llegar**. Un spinner solo dice "esperá"».
+Es la misma decisión que `render/states/LoadingState` toma para un panel, con una
+vuelta de tuerca: una tabla promete más, porque su encabezado ya dice qué columnas
+van a venir.
+
+**Lo que cambió no es solo el widget: es qué se reemplaza.** Antes la pantalla
+entera se sustituía por «Cargando el catálogo…», y eso **tira información que ya
+estaba lista** — el encabezado, los filtros, los CTA y la declaración de los
+cuatro campos que §7.3 pide y el cable no trae no dependen de los datos. Ahora se
+pinta la pantalla y solo las filas son esqueleto.
+
+**Y los conteos dicen CARGANDO, no una cifra.** «3 clientes» mientras carga
+afirma algo que todavía no llegó — la misma regla que impide pintar un número
+aproximado en un panel degradado.
+
+**Una sola variante para las cuatro**, como pide la nota: el esqueleto no sabe de
+qué tabla es, recibe cuántas columnas tiene. A2 no es una tabla y lleva tarjetas
+con forma de ficha de rol — misma idea, otra forma.
+
+### Dos afirmaciones que el código hacía y nadie comprobaba
+
+**«Las barras no son todas del mismo ancho»**, que el componente justifica con
+que «una grilla de barras idénticas se lee como un patrón y no como texto que va a
+llegar». La mutación que las igualaba **sobrevivía**: el comentario decía algo que
+ninguna prueba miraba. Ahora hay una que cuenta anchos distintos.
+
+**Y el esqueleto de A4 no estaba verificado**: la prueba miraba `aria-busy` y no
+las filas, así que la tabla podía quedar vacía y marcada como ocupada.
+
+Es la misma forma que el arnés viene encontrando toda la jornada — **una
+aserción que mira el borde del efecto y no el efecto**.
+
 ### Por qué F4.9 no se toma · y una trampa del propio parser
 
 **La interacción del arrastre no está declarada, y el bloqueo NO es del

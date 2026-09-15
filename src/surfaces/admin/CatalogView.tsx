@@ -48,6 +48,7 @@
  */
 import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
+import { SkeletonRows } from './SkeletonRows'
 import type { Metric } from '../../api/types'
 import type { RejectedMetric } from '../../api/adapt'
 
@@ -80,9 +81,11 @@ type Props = {
    *  dibuja, tampoco se puede asignar a un panel, y quien compone tiene que saber
    *  por qué no aparece en la lista. */
   rejected: readonly RejectedMetric[]
+  /** Mientras el catálogo vuela · encabezado completo y filas de esqueleto. */
+  cargando?: boolean
 }
 
-export function CatalogView({ metrics, rejected }: Props) {
+export function CatalogView({ metrics, rejected, cargando = false }: Props) {
   // §7.3 pide filtro por ESTADO, y el estado no llega. Se ofrece por CAPA —que sí
   // llega y separa lo mismo que la pantalla busca: con qué respaldo puede afirmar
   // cada cosa— **y se dice que no es el filtro que el diseño pide**. Sustituirlo
@@ -91,7 +94,7 @@ export function CatalogView({ metrics, rejected }: Props) {
   const capas = [...new Set(metrics.map((m) => m.capa))].sort()
   const visibles = capa === '' ? metrics : metrics.filter((m) => m.capa === capa)
 
-  if (metrics.length === 0 && rejected.length === 0) {
+  if (metrics.length === 0 && rejected.length === 0 && !cargando) {
     // §8: el vacío invita a actuar. Y acá la causa probable es concreta — el
     // catálogo sale del seed o de `sync-catalog`, no de la nada.
     return (
@@ -119,12 +122,14 @@ export function CatalogView({ metrics, rejected }: Props) {
             </option>
           ))}
         </select>
-        <Label>{`${String(visibles.length)} de ${String(metrics.length)} métricas`}</Label>
+        <Label>
+          {cargando ? 'Cargando' : `${String(visibles.length)} de ${String(metrics.length)} métricas`}
+        </Label>
         {/* Se declara que este NO es el filtro de §7.3. */}
         <Label>El filtro por estado no se puede ofrecer · el estado no llega</Label>
       </div>
 
-      <table className="w-full border-collapse">
+      <table className="w-full border-collapse" aria-busy={cargando}>
         <thead>
           <tr className="border-b border-w4">
             {COLUMNAS.map((c) => (
@@ -139,6 +144,7 @@ export function CatalogView({ metrics, rejected }: Props) {
           </tr>
         </thead>
         <tbody>
+          {cargando && <SkeletonRows columnas={COLUMNAS.length} />}
           {visibles.map((m) => (
             <tr key={m.id} className="border-b border-w3">
               {COLUMNAS.map((c) => (
