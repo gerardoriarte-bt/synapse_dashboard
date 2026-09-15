@@ -137,12 +137,19 @@ function montar() {
 async function abrirPanel() {
   await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
   await screen.findByDisplayValue('Resumen')
-  await userEvent.click(await screen.findByRole('button', { name: 'kpi' }))
+  // **Anclado y no exacto.** El botón del panel gana un « ·» cuando el panel
+  // tiene problemas de composición —por ejemplo, una métrica que no está en el
+  // catálogo de la prueba— y el nombre accesible deja de ser «kpi» a secas.
+  await userEvent.click(await screen.findByRole('button', { name: /^kpi/ }))
   await screen.findByLabelText('Tipo de panel')
 }
 
 describe('§7.2 · el rechazo explicado es lo que enseña el sistema', () => {
-  it('las incompatibles APARECEN, deshabilitadas y con la razón', async () => {
+  it('las incompatibles APARECEN, deshabilitadas y con la razón DESDE LA MÉTRICA', async () => {
+    // El `.pen` la escribe así: «REQUIERE serieTemporal · ESTA ES escalar».
+    // `invalidReason` la dice desde el bloque —«un bloque kpi no sabe dibujar»—
+    // y ahí está bien, porque lo consume la consola: el sujeto es el panel que
+    // no pudo dibujar. Acá el sujeto es la métrica que se está por elegir.
     servir()
     montar()
     await abrirPanel()
@@ -151,8 +158,21 @@ describe('§7.2 · el rechazo explicado es lo que enseña el sistema', () => {
     const incompatible = screen.getByRole('button', { name: /Tendencia de ventas/ })
     expect(incompatible).toBeInTheDocument()
     expect(incompatible).toBeDisabled()
-    expect(incompatible.textContent).toMatch(/no sabe dibujar la forma/)
-    expect(incompatible.textContent).toContain('serieTemporal')
+    expect(incompatible.textContent).toMatch(
+      /Requiere escalar o escalarConIntervalo · esta es serieTemporal/,
+    )
+  })
+
+  it('las separa en dos listas y declara qué acepta el tipo', async () => {
+    servir()
+    const { container } = montar()
+    await abrirPanel()
+
+    expect(screen.getByText(/Tipo kpi · acepta escalar · escalarConIntervalo/)).toBeInTheDocument()
+    expect(container.textContent).toContain('Compatibles · 1 de 2 métricas del catálogo')
+    expect(container.textContent).toContain('No compatibles · 1 · agrupadas por razón')
+    // §5 gobierna la lista, y se dice.
+    expect(screen.getByText(/§5 gobierna esta lista/)).toBeInTheDocument()
   })
 
   it('las compatibles se pueden elegir', async () => {
@@ -163,11 +183,13 @@ describe('§7.2 · el rechazo explicado es lo que enseña el sistema', () => {
     expect(screen.getByRole('button', { name: /Ventas/ })).not.toBeDisabled()
   })
 
-  it('cuenta cuántas sirven, sobre el total', async () => {
+  it('la métrica compatible trae su procedencia · forma, capa y fuente', async () => {
+    // Del `.pen`: «seriesMultiples · GOLD · ERP + GA4». Es lo que deja elegir
+    // entre dos métricas que sirven las dos.
     servir()
     montar()
     await abrirPanel()
-    expect(screen.getByText(/1 de 2 compatibles/)).toBeInTheDocument()
+    expect(screen.getByText('escalar · GOLD · ERP')).toBeInTheDocument()
   })
 
   it('cambiar el tipo cambia QUIÉN es compatible', async () => {
@@ -181,7 +203,10 @@ describe('§7.2 · el rechazo explicado es lo que enseña el sistema', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /Tendencia de ventas/ })).not.toBeDisabled(),
     )
-    expect(screen.getByRole('button', { name: /Ventas$|Ventas ·|Ventas escalar/ })).toBeDisabled()
+    // Y la que servía deja de servir, con la razón dada vuelta.
+    const ventas = screen.getByRole('button', { name: /^Ventas/ })
+    expect(ventas).toBeDisabled()
+    expect(ventas.textContent).toMatch(/Requiere serieTemporal o seriesMultiples · esta es escalar/)
   })
 })
 
@@ -470,5 +495,73 @@ describe('el contador de pestañas cuenta PESTAÑAS, no problemas', () => {
       expect(screen.getByText('2 problema(s) de composición')).toBeInTheDocument(),
     )
     expect(screen.getByText('1 pestaña(s) con problemas de composición')).toBeInTheDocument()
+  })
+})
+
+describe('con un catálogo grande · el agrupado es la diferencia entre una lista y un muro', () => {
+  /** Treinta y cuatro métricas, como el `.pen`: «4 DE 34 MÉTRICAS DEL CATÁLOGO»
+   *  y «30 · AGRUPADAS POR RAZÓN». Con dos métricas el agrupado no se ve; con
+   *  treinta, es toda la diferencia. */
+  const muchas = [
+    ...Array.from({ length: 4 }, (_, i) => ({
+      ...metricas[0], id: `ok-${String(i)}`, key: `ok${String(i)}`, name: `Compatible ${String(i)}`,
+    })),
+    ...Array.from({ length: 13 }, (_, i) => ({
+      ...metricas[1], id: `ts-${String(i)}`, key: `ts${String(i)}`, name: `Serie ${String(i)}`,
+      shape: 'time_series',
+    })),
+    ...Array.from({ length: 5 }, (_, i) => ({
+      ...metricas[1], id: `pr-${String(i)}`, key: `pr${String(i)}`, name: `Prosa ${String(i)}`,
+      shape: 'prose',
+    })),
+    ...Array.from({ length: 2 }, (_, i) => ({
+      ...metricas[1], id: `ta-${String(i)}`, key: `ta${String(i)}`, name: `Tabla ${String(i)}`,
+      shape: 'tabular',
+    })),
+  ]
+
+  it('muestra seis con su razón y resume el resto por forma', async () => {
+    servir()
+    server.use(http.get(`${API}/admin/tenants/:id/catalog`, () => ok(muchas)))
+    const { container } = montar()
+    await abrirPanel()
+
+    await waitFor(() =>
+      expect(container.textContent).toContain('Compatibles · 4 de 24 métricas del catálogo'),
+    )
+    expect(container.textContent).toContain('No compatibles · 20 · agrupadas por razón')
+
+    // Seis individuales · «+ 24 MÁS» en el `.pen` sobre treinta.
+    expect(screen.getAllByText(/Requiere escalar/)).toHaveLength(6)
+
+    // Y el resto, agrupado por forma con su conteo.
+    expect(container.textContent).toMatch(/\+ 14 más · .*serieTemporal \(13\)/)
+    expect(container.textContent).toMatch(/prosa \(5\)/)
+    expect(container.textContent).toMatch(/tabular \(2\)/)
+  })
+
+  it('el resumen NO aparece cuando entran todas', async () => {
+    // Con pocas incompatibles, un «+ 0 más» sería ruido.
+    servir()
+    const { container } = montar()
+    await abrirPanel()
+    expect(container.textContent).not.toMatch(/\+ \d+ más/)
+  })
+
+  it('si NINGUNA sirve lo dice, y no deja la lista en blanco', async () => {
+    // No es un error de la pantalla: el tipo elegido no tiene con qué. La salida
+    // es cambiar de tipo.
+    servir()
+    server.use(
+      http.get(`${API}/admin/tenants/:id/catalog`, () =>
+        ok(muchas.filter((m) => m.shape !== 'scalar')),
+      ),
+    )
+    montar()
+    await abrirPanel()
+
+    expect(
+      await screen.findByText(/Ninguna métrica de este cliente tiene una forma que este tipo acepte/),
+    ).toBeInTheDocument()
   })
 })

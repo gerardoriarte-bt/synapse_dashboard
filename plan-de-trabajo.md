@@ -4295,6 +4295,43 @@ vacíos, el conteo sin el total, el vacío mostrándose con la tabla llena, limp
 sin limpiar la búsqueda, la búsqueda sin filtrar, A2 sin distinguir el de alta, y
 A2 sin decir la consecuencia.
 
+### El agrupado del binder · divergencia 2, cerrada el 2026-09-15
+
+`PanelConfigurator`. **677 pruebas**, seis nuevas, once mutaciones muertas.
+
+**Dos cambios, y el segundo es el que importa con treinta y cuatro métricas.**
+
+**Uno · la razón se escribe desde la MÉTRICA.** El `.pen`: «REQUIERE
+serieTemporal · ESTA ES escalar». `invalidReason` la dice desde el bloque —«un
+bloque kpi no sabe dibujar la forma escalar»— y **ahí está bien y no se tocó**:
+lo consume también la consola, donde el sujeto es el panel que no pudo dibujar.
+Acá el sujeto es la métrica que se está por elegir, y la frase tiene que
+contestar «¿por qué no puedo usar ésta?».
+
+**Dos · las incompatibles van agrupadas.** «30 · AGRUPADAS POR RAZÓN», y después
+«+ 24 MÁS · escalar (13) · prosa (2) · categorica (2)…». Seis individuales con su
+razón **enseñan la regla**; treinta la esconden. Con dos métricas el agrupado no
+se ve, y por eso la prueba usa un catálogo de veinticuatro: es el tamaño donde la
+diferencia existe.
+
+La razón de agrupar por **forma** y no por el mensaje completo: todas las
+escalares fallan por lo mismo contra un tipo dado, así que agrupar por el mensaje
+daría los mismos grupos con un rótulo más largo.
+
+### Y tres cosas del `.pen` que faltaban
+
+**Qué acepta el tipo, declarado** —«TIPO series · ACEPTA serieTemporal ·
+seriesMultiples»—, que es la regla que gobierna las dos listas. **Que §5 la
+gobierna**, dicho: «el binder no ofrece lo que el tipo no puede renderizar». Y
+**la procedencia de cada métrica compatible** —«seriesMultiples · GOLD · ERP +
+GA4»—, que es lo que deja elegir entre dos que sirven las dos.
+
+**Verificadas por mutación, once:** las incompatibles filtradas, la razón desde el
+bloque, sin agrupar, el resumen sin conteos, el resumen con cero, sin declarar qué
+acepta el tipo, sin decir que §5 gobierna, el conteo sin el total, la métrica sin
+procedencia, la lista en blanco cuando ninguna sirve, y las incompatibles
+elegibles.
+
 ### Por qué F4.9 no se toma · y una trampa del propio parser
 
 **La interacción del arrastre no está declarada, y el bloqueo NO es del

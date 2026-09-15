@@ -97,7 +97,38 @@ export function PanelConfigurator({
       ? `El tipo «${panel.tipo}» no está en la tabla de bloques.`
       : invalidReason(tabla, tipo, m.forma, bloque.colSpanMin, bloque.rowSpanMin)
 
-  const compatibles = metrics.filter((m) => razon(m) === null).length
+  /** La razón **desde la métrica**, que es como el `.pen` la escribe: «REQUIERE
+   *  serieTemporal · ESTA ES escalar».
+   *
+   *  `invalidReason` la dice desde el bloque —«un bloque kpi no sabe dibujar la
+   *  forma escalar»— y ahí está bien: lo consume también la consola, donde el
+   *  sujeto es el panel que no pudo dibujar. **Acá el sujeto es la métrica que
+   *  se está por elegir**, y la frase tiene que contestar «¿por qué no puedo
+   *  usar ésta?». `invalidReason` no se toca. */
+  const porQueNo = (m: Metric): string =>
+    bloque === undefined
+      ? `El tipo «${panel.tipo}» no está en la tabla de bloques`
+      : `Requiere ${bloque.formasAceptadas.join(' o ')} · esta es ${m.forma}`
+
+  const compatibles = metrics.filter((m) => razon(m) === null)
+  const incompatibles = metrics.filter((m) => razon(m) !== null)
+
+  /** **Agrupadas por razón**, que con 34 métricas es la diferencia entre una
+   *  lista y un muro. El `.pen`: «30 · AGRUPADAS POR RAZÓN» y después
+   *  «+ 24 MÁS · escalar (13) · prosa (2) · categorica (2)…».
+   *
+   *  La razón de una métrica incompatible **es su forma**: todas las escalares
+   *  fallan por lo mismo contra un tipo dado. Agrupar por el mensaje completo
+   *  daría los mismos grupos con un rótulo más largo. */
+  const porForma = new Map<string, number>()
+  for (const m of incompatibles) porForma.set(m.forma, (porForma.get(m.forma) ?? 0) + 1)
+
+  /** Seis individuales y el resto en el resumen · es lo que el `.pen` muestra:
+   *  treinta incompatibles, «+ 24 MÁS». Ver algunas con su razón enseña la
+   *  regla; ver las treinta la esconde. */
+  const A_LA_VISTA = 6
+  const visiblesNo = incompatibles.slice(0, A_LA_VISTA)
+  const resto = incompatibles.length - visiblesNo.length
 
   return (
     <div className="flex flex-col gap-4 rounded-sm bg-w2 p-4">
@@ -129,39 +160,82 @@ export function PanelConfigurator({
         </select>
       </label>
 
-      <div className="flex flex-col gap-2">
-        <Label as="div">{`Métrica · ${String(compatibles)} de ${String(metrics.length)} compatibles`}</Label>
+      <div className="flex flex-col gap-3">
+        {/* Qué acepta este tipo · es la regla que gobierna las dos listas. */}
+        {bloque !== undefined && (
+          <Label as="div">
+            {`Tipo ${panel.tipo} · acepta ${bloque.formasAceptadas.join(' · ')}`}
+          </Label>
+        )}
+        <Label as="div">
+          §5 gobierna esta lista · el binder no ofrece lo que el tipo no puede renderizar
+        </Label>
+
         {panel.metricId === '' && (
           // Un panel sin métrica no se ancla a nada · §4: «un panel se ancla a un
           // metricId, jamás a un SQL ni a un nombre de tabla».
           <Label as="div">Sin métrica · el panel no se puede componer</Label>
         )}
-        <ul className="flex flex-col gap-1 m-0 p-0 list-none">
-          {metrics.map((m) => {
-            const falla = razon(m)
-            return (
+
+        <Label as="div">
+          {`Compatibles · ${String(compatibles.length)} de ${String(metrics.length)} métricas del catálogo`}
+        </Label>
+        {compatibles.length === 0 ? (
+          // Ninguna sirve: no es un error de la pantalla, es que el tipo elegido
+          // no tiene con qué. La salida es cambiar de tipo.
+          <Label as="div">Ninguna métrica de este cliente tiene una forma que este tipo acepte</Label>
+        ) : (
+          <ul className="flex flex-col gap-1 m-0 p-0 list-none">
+            {compatibles.map((m) => (
               <li key={m.id}>
                 <button
                   type="button"
                   onClick={() => onMetrica(m.id)}
-                  disabled={falla !== null}
                   aria-pressed={m.id === panel.metricId}
                   className={
-                    'w-full text-left text-celda px-3 py-2 rounded-sm disabled:opacity-40 ' +
+                    'w-full text-left text-celda px-3 py-2 rounded-sm ' +
                     (m.id === panel.metricId ? 'bg-w3 text-ink' : 'text-dim hover:bg-w3')
                   }
                 >
-                  {m.nombre} <Label>{m.forma}</Label>
-                  {/* **La razón, no un asterisco.** «El rechazo explicado es lo
-                      que enseña el sistema»: sin ella, quien compone aprende que
-                      la métrica «no anda», que no es una regla que se pueda
-                      aplicar la próxima vez. */}
-                  {falla !== null && <Label> · {falla}</Label>}
+                  {m.nombre} <Label>{`${m.forma} · ${m.capa} · ${m.fuente}`}</Label>
                 </button>
               </li>
-            )
-          })}
-        </ul>
+            ))}
+          </ul>
+        )}
+
+        {incompatibles.length > 0 && (
+          <>
+            <Label as="div">
+              {`No compatibles · ${String(incompatibles.length)} · agrupadas por razón`}
+            </Label>
+            <ul className="flex flex-col gap-1 m-0 p-0 list-none">
+              {visiblesNo.map((m) => (
+                <li key={m.id}>
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full text-left text-celda px-3 py-2 rounded-sm opacity-40 text-dim"
+                  >
+                    {/* **La razón, no un asterisco** · «el rechazo explicado es
+                        lo que enseña el sistema». Y escrita desde la métrica:
+                        contesta «¿por qué no puedo usar ésta?». */}
+                    {m.nombre} <Label>{porQueNo(m)}</Label>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {resto > 0 && (
+              // El resumen · con 34 métricas, ver las treinta esconde la regla
+              // que ver seis enseña.
+              <Label as="div">
+                {`+ ${String(resto)} más · ${[...porForma]
+                  .map(([forma, n]) => `${forma} (${String(n)})`)
+                  .join(' · ')}`}
+              </Label>
+            )}
+          </>
+        )}
       </div>
 
       {bloque !== undefined && (
