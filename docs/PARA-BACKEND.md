@@ -77,7 +77,18 @@ verde.
 *Estado de la tarea: pendiente.*
 
 
-**`decimals` y `unit` por columna en `tabular`.** Sin `decimals` una columna de ROAS sale «4.2 · 4.5 · 3.5 · 3»: cada celda está bien y la columna se lee mal porque la coma deja de alinearse. Y las siete formas que faltan —`distribution`, `series_with_band`, `compared_categorical`, `multi_attribute_profile`, `matrix`, `graph`, `flow`— **no son urgentes**: entran cuando exista una métrica que las use, y el front tampoco tiene sus cuerpos.
+**`decimals` y `unit` por columna en `tabular`**, y las siete formas que `TransformValue` no produce.
+
+**NO depende de Snowflake.** Es código Go: las tablas Gold que el materializador consulta ya existen con sus quince columnas, verificado el 2026-09-14.
+
+**Y las siete no son un solo trabajo, son dos.** El contrato declara dieciséis formas en el enum `Forma` pero **solo once tienen esquema de `Valor`**:
+
+- **`distribucion` y `serieConBanda` tienen esquema** y las puede hacer el backend hoy: un caso más en el `switch` de `internal/core/dashboard/materialize/transform.go`, emitiendo `{shape, cuts:[{label, v}]}` y `{shape, level, points:[{t, v, lo, hi}]}`.
+- **`categoricaComparada`, `perfilMultiatributo`, `matriz`, `flujo` y `grafo` NO tienen esquema.** Antes de que alguien las materialice hay que declararlas en el contrato, y **eso es trabajo nuestro**, no suyo. Hasta entonces no hay contra qué implementar.
+
+**Ninguna de las siete es urgente**, y conviene decirlo: sus consumidores son los cuerpos `comparison`, `matrix`, `graph` y `distribution`, que el front tampoco va a construir hasta que exista una métrica que los use. **Entran juntos o no entran.**
+
+Lo que sí sirve ya es `decimals` y `unit` por columna: sin `decimals`, una columna de ROAS sale «4.2 · 4.5 · 3.5 · 3» y la coma deja de alinearse.
 
 
 ### B1.15 · Validar reglas mínimas por forma antes de enviar
@@ -85,7 +96,16 @@ verde.
 *Estado de la tarea: pendiente.*
 
 
-**`percentage` siempre en `composition`**, y la banda completa en `scalar_with_interval`. Hoy el porcentaje solo sale si venía en la fila, y el front **no lo puede calcular**: el contrato dice por qué —la suma tiene que dar 100 y redondear en el cliente da columnas que suman 99,9—. Sin él, el panel entra en `ERROR`.
+**`percentage` siempre en `composition`**, y la banda completa en `scalar_with_interval`.
+
+**NO depende de Snowflake.** La validación vive en el servicio y en el transformador, no en la vista.
+
+**Qué hay que hacer, concretamente:**
+
+1. En `composition`, que `percentage` salga **siempre**. Hoy `transformComposition` solo lo escribe si venía en la fila. Lo puede calcular el backend —la suma de las partes es conocida ahí— y **el front no**: el contrato dice por qué, la suma tiene que dar 100 y redondear en el cliente produce columnas que suman 99,9.
+2. En `scalar_with_interval`, exigir `lo`, `hi` y `level` antes de escribir en `panel_data`. Sin los tres, el front rechaza: «un pronóstico sin banda no se publica» es regla dura 6.
+
+**Un aviso para que no lo prioricen mal: hoy ninguna métrica del seed usa `composition`**, así que este caso no se está ejercitando en ninguna pantalla. Es prevención, no un defecto que alguien esté viendo.
 
 
 ### B1.16 · Seed de demo: 1 tenant, 1 layout, 1 pestaña, 4–6 paneles
@@ -101,7 +121,18 @@ verde.
 *Estado de la tarea: pendiente.*
 
 
-**La ruta `/config/plots` y el repertorio de gráficos con sus mínimos.** Bloquea F1.31 y F4.21: sin ella el builder no puede ofrecer gráficos filtrados por la forma de la métrica, y la consola no puede decir «este corte necesita al menos tres categorías; llegaron dos».
+**La ruta `/config/plots` con el repertorio de gráficos y sus mínimos.** Bloquea F1.31 y F4.21.
+
+**NO depende de Snowflake.** No toca datos: es una tabla de reglas y un endpoint, como `/config/blocks`.
+
+**Pero la primera mitad es NUESTRA y todavía no está.** El repertorio declara hoy `formas`, `soportaBanda` y `tope` —el límite superior— y **no declara mínimos**. Decidir cuántos puntos necesita una serie, cuántas categorías una barra y cuántas partes una composición para no engañar es trabajo de producto y front, no de backend.
+
+**El orden que proponemos:**
+
+1. El front declara los mínimos por gráfico y los propone en el contrato.
+2. El backend los sirve en `/config/plots`, con la misma figura que `/config/blocks`: una tabla global, no por tenant.
+
+**Sirve desde el primer día aunque haya un gráfico por tipo**, que es por qué está en Fase 1 y no en Fase 4: hoy nada impide que `bars` reciba un ítem y dibuje una barra sola.
 
 
 ### B1.17 · Modelo Metrica
@@ -109,7 +140,18 @@ verde.
 *Estado de la tarea: pendiente.*
 
 
-**`window` en el catálogo** — una columna de texto hermana de `base`, redactada («Venta media de los últimos treinta días»). Es lo único de esta lista que **se ve en pantalla**: el shell pinta `Base · {base} · {window}` en los doce paneles y en los siete estados, y sin él la línea queda `Base · COMPLETED · MONTH ·` con el separador colgando. No se puede derivar del período — dos métricas con el mismo `2026-09` pueden tener ventanas distintas. Verificado el 2026-09-14 contra el servicio.
+**`window` en el catálogo** — el único de esta lista que se ve en pantalla. El shell pinta `Base · {base} · {window}` en los doce paneles y en los siete estados, y sin él la línea queda `Base · COMPLETED · MONTH ·` con el separador colgando.
+
+**Depende de Snowflake solo EN LA SEGUNDA MITAD**, y conviene no confundirlas:
+
+- **Hoy el catálogo NO sale de Snowflake**, sale del seed de Postgres —`sync-catalog` falla porque la vista no existe—. Así que **esto se puede cerrar ya, sin esperar a nadie**: columna en `DDCatalogMetric`, migración, valor en `dd_seed.go` para las doce métricas, y el campo en la respuesta de `/config/catalog`.
+- **Y se rompe el día que `sync-catalog` funcione** si la vista no trae la columna. Por eso el SQL que dejamos ya declara `MEASUREMENT_WINDOW` — ver B1.18.
+
+**Son las dos mitades, no una.** Una `B1.17` cerrada sin la columna en la vista vuelve a estar abierta en el primer sync.
+
+Texto redactado, no un código: «Venta media de los últimos treinta días». **No se puede derivar del período** — dos métricas consultadas con el mismo `2026-09` pueden tener ventanas distintas, un total mensual y un promedio móvil de treinta días.
+
+Los otros tres campos que faltan —`state`, `state_reason`, `reading_note`— **no los pedimos**: hoy no los lee nadie en el front.
 
 
 ### B1.18 · Sincronizar el catálogo con las semantic views de Snowflake
@@ -117,7 +159,21 @@ verde.
 *Estado de la tarea: pendiente.*
 
 
-**La vista `SYNAPSE_METRIC_CATALOG`**, que no existe en ninguna base de la cuenta —verificado con `SHOW OBJECTS`, cero filas—, así que `make sync-catalog` falla. El SQL está escrito y listo para revisar en `docs/snowflake/SYNAPSE_METRIC_CATALOG.sql`, con los pasos en `INSTRUCCION-ALTA-TENANT.md`. **Nosotros no corremos nada en Snowflake.**
+**La vista `SYNAPSE_METRIC_CATALOG`.** No existe en ninguna base de la cuenta —verificado con `SHOW OBJECTS`, cero filas—, así que `make sync-catalog` falla y el catálogo sale del seed de Postgres.
+
+**ESTA ES LA QUE DEPENDE DE SNOWFLAKE**, y es la única de este bloque. Las otras cuatro son código.
+
+**Qué hay que hacer, en orden:**
+
+1. **Ingeniería de datos** corre `docs/snowflake/SYNAPSE_METRIC_CATALOG.sql` en el `db.schema` del agente del tenant —para UA MX, `DB_BT_UA.BT_UA_MART_ANALYTICS`—. Crea tres objetos: la tabla de curaduría, la vista que ustedes leen, y una tercera que lista lo que está mal con su razón.
+2. **Producto y datos** escriben los campos marcados `⟨REVISAR⟩`: `BASE`, `MEASUREMENT_WINDOW` y `SOURCE`. Son texto que se pinta literal, así que se redactan.
+3. **Grant de `SELECT`** para el rol del agente. Sin esto `sync-catalog` falla con un error de permisos que no dice qué falta.
+4. **Backend** agrega `MEASUREMENT_WINDOW` al `SELECT` de `dd_catalog_sync_service.go` — ver B1.17.
+5. Correr `make sync-catalog TENANT_ID=<uuid>`.
+
+**El paso que se rompe en silencio es la clave.** `METRIC_KEY` tiene que caer en `MetricRegistry` o en el alias de `keys.go`: una clave que no está **sincroniza bien y después todos los paneles salen `BLOCKED`** sin que nada lo explique. Nos pasó al escribir la primera versión de ese SQL.
+
+Los pasos completos están en `docs/snowflake/INSTRUCCION-ALTA-TENANT.md`. **Nosotros no corremos nada en Snowflake.**
 
 
 ### B1.19 · Filtrar el catálogo por permisos de rol

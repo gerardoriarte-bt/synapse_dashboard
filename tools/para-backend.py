@@ -54,9 +54,21 @@ def rama_actual() -> str:
 
 
 def recolectar(texto: str):
-    """Recorre el plan llevando la última tarea vista, y le cuelga sus esperas."""
-    tareas, actual = [], None
+    """Recorre el plan llevando la última tarea vista, y le cuelga sus esperas.
+
+    **La espera es un BLOQUE, no una línea.** Empezó siéndolo —«falta X»— y creció
+    a decir qué hay que hacer, en orden, con los archivos. Leer solo la primera
+    línea dejaba el documento del backend con el titular y sin las instrucciones.
+    """
+    tareas, actual, acumulando = [], None, None
     for linea in texto.split("\n"):
+        if acumulando is not None:
+            if linea.startswith("**Descripci") or linea.startswith("**Criterio") or ENCABEZADO.match(linea):
+                actual["esperas"].append("\n".join(acumulando).strip())
+                acumulando = None
+            else:
+                acumulando.append(linea)
+                continue
         m = ENCABEZADO.match(linea)
         if m:
             actual = {
@@ -70,7 +82,9 @@ def recolectar(texto: str):
             continue
         e = ESPERA.match(linea)
         if e and actual is not None:
-            actual["esperas"].append(e.group(1).strip())
+            acumulando = [e.group(1).strip()]
+    if acumulando is not None and actual is not None:
+        actual["esperas"].append("\n".join(acumulando).strip())
     return [t for t in tareas if t["esperas"]]
 
 

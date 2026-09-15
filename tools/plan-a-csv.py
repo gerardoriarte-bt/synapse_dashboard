@@ -48,6 +48,7 @@ def parsear(texto: str) -> list[dict]:
     tareas: list[dict] = []
     pendientes: list[dict] = []
     buffer: list[str] = []
+    en_metadato = False
 
     def cerrar() -> None:
         nonlocal pendientes, buffer
@@ -86,6 +87,7 @@ def parsear(texto: str) -> list[dict]:
     for linea in texto.split('\n'):
         m = ENCABEZADO.match(linea)
         if m:
+            en_metadato = False
             if buffer and pendientes:
                 cerrar()
             nueva, tid, estado, titulo = m.group(1) is not None, *m.group(2, 3, 4)
@@ -109,12 +111,22 @@ def parsear(texto: str) -> list[dict]:
         # bloque de descripción— y cerraría el grupo en la primera que lo lleve.
         # Lo que sí hace es marcar la tarea como bloqueada, que es lo que el
         # ticket necesita saber.
+        # El metadato es un BLOQUE, no una línea: `Espera del backend` puede
+        # explayarse en qué hay que hacer. Se saltea hasta que empieza la prosa
+        # de la tarea, que es `**Descripción.**` o `**Criterio`.
         if ESPERA.match(linea):
             if pendientes:
                 pendientes[-1]['bloqueada'] = True
+            en_metadato = True
             continue
         if VERIFICADO.match(linea):
+            en_metadato = True
             continue
+        if en_metadato:
+            if linea.startswith('**Descripci') or linea.startswith('**Criterio'):
+                en_metadato = False
+            else:
+                continue
         # Cualquier otro encabezado cierra el grupo abierto.
         if re.match(r'^#{1,3} ', linea):
             cerrar()
