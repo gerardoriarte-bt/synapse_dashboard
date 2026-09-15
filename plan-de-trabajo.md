@@ -1016,6 +1016,25 @@ La nota de A4 lo dice con un ejemplo: «feed_vs_sales figura DISPONIBLE en el ca
 
 **La regla es `frescura > cadencia × tolerancia`**, y los tres términos son de la fuente, no de la métrica. Con ellos el front deriva los cuatro estados sin que nadie los escriba.
 
+**AMPLIADO el 2026-09-15 después de leer su código**, porque el pedido original estaba subestimado. Dos cosas que conviene mirar juntas:
+
+**a · La fuente no existe como entidad.** Buscado en `internal/core/domain/` y `internal/core/ports/`: no hay `Feed`, ni `DataSource`, ni nada equivalente. `source` es **texto libre en la métrica** —«ERP + Ads API»— así que no hay dónde colgar una última carga ni una cadencia. Esto no es agregar cuatro campos: es **crear la entidad** y relacionarla con las métricas que dependen de ella.
+
+**b · Y ya existe una derivación de degradación, con otra regla.** `dd_config_service.go` tiene `const freshnessToleranceDays = 3` y marca `DEGRADED` cuando la última materialización pasó ese plazo:
+
+```go
+if status == Available && isDegraded(data, now) {
+    status = Degraded
+    reason = "Stale data: last materialization is older than 3 days"
+}
+```
+
+**Es una constante global aplicada por payload de panel**, y §7.3 pide una tolerancia **por fuente**: Merchant Center con cadencia de una hora y 31 h de atraso está degradado, y una fuente diaria con 31 h no. Con la regla de hoy las dos dan lo mismo — o las dos disponibles, o las dos degradadas, según el plazo.
+
+**No es un bug: es una aproximación razonable mientras no exista la entidad.** Pero conviene decidirlo explícitamente, porque el día que la fuente exista **hay dos reglas de degradación** y la del panel gana sin que nadie lo haya elegido.
+
+**Y algo que el front NO va a pedir**: que `/config/panels:batch` deje de derivar. Esa derivación es correcta donde está —el payload sabe cuándo se materializó— y es la que hace que un panel degradado se vea degradado sin consultar nada más.
+
 **Pedir el campo habría sido peor que no pedirlo**: dos fuentes para el mismo hecho —el estado guardado y la frescura real— que se separan en el primer feed atrasado.
 
 **Desbloquea dos pantallas, no una.** A5 entera —«la pantalla que explica por qué una métrica está degradada»— y la columna de estado de A4, con su filtro.
@@ -4224,6 +4243,57 @@ las filas, así que la tabla podía quedar vacía y marcada como ocupada.
 
 Es la misma forma que el arnés viene encontrando toda la jornada — **una
 aserción que mira el borde del efecto y no el efecto**.
+
+### Los tres tipos de vacío · divergencia 4, cerrada el 2026-09-15
+
+`EmptyRow`, más la búsqueda de A4. **673 pruebas**, siete nuevas, once mutaciones
+muertas.
+
+**Son tres cosas distintas y la salida cambia con la causa**, que es lo que las
+tres notas de vacío del `.pen` repiten: «un estado sin salida es una queja».
+
+| | Qué pasó | La salida |
+|---|---|---|
+| `sistema` | Nadie dio de alta nada todavía | Crear el primero |
+| `filtro` | Los datos están · el filtro los esconde | **Deshacer lo que uno hizo** |
+| `alta` | El cliente es nuevo y el trabajo está por hacerse | El siguiente paso |
+
+**Confundir el de filtro con el de sistema manda a crear lo que ya existe**, y
+es el error concreto que esto evita. Por eso el conteo lleva el total —«0
+métricas con este filtro · 28 en total»—: sin él, cero con filtro y cero sin nada
+se leen igual.
+
+**Y el encabezado se conserva en los tres.** «Las columnas siguen diciendo qué
+habría acá», así que el vacío es una FILA con `colSpan` y no un reemplazo de la
+pantalla. Antes A1 y A4 se salían de la tabla y perdían lo único que explicaba
+qué falta.
+
+### El vacío de filtro era INALCANZABLE, y lo encontró la prueba
+
+`CatalogView` filtraba solo por capa, **y el selector de capas se arma con las
+capas que hay**: elegir una siempre devuelve al menos una métrica. El estado que
+se estaba implementando no podía ocurrir.
+
+La salida no fue relajar la prueba sino **completar la pantalla**: el `.pen` pone
+«BUSCAR» al lado de los dos selectores, y una búsqueda sí puede dejar la tabla en
+cero. Con eso el estado existe de verdad y la prueba lo alcanza.
+
+**Es la segunda vez en la jornada que aparece código para un estado imposible** —
+la primera fue la verificación multifila de la colocación. Las dos veces el arnés
+lo mostró como una mutación que sobrevivía, y las dos veces la pregunta correcta
+fue «¿esto puede pasar?» y no «¿cómo lo pruebo?».
+
+### Y una guarda redundante, demostrable
+
+`filtroVacio` preguntaba además si había un filtro puesto. Sobra: sin filtro,
+`visibles` es `metrics` entero, así que con métricas cargadas la única forma de
+que `visibles` quede en cero es que algún filtro esté activo. Se sacó.
+
+**Verificadas por mutación, once:** el vacío de filtro sin deshacer, el vacío sin
+`colSpan`, el vacío sin salida, A1 saliéndose de la tabla, A4 confundiendo los dos
+vacíos, el conteo sin el total, el vacío mostrándose con la tabla llena, limpiar
+sin limpiar la búsqueda, la búsqueda sin filtrar, A2 sin distinguir el de alta, y
+A2 sin decir la consecuencia.
 
 ### Por qué F4.9 no se toma · y una trampa del propio parser
 

@@ -25,6 +25,7 @@
  *  acá ni va a aparecer**: esa capa la opera el equipo interno.
  */
 import { Label } from '../../render/primitives/Label'
+import { EmptyRow } from './EmptyRow'
 import { SkeletonRows } from './SkeletonRows'
 import type { Tenant } from '../../api/admin'
 
@@ -49,16 +50,10 @@ type Props = {
 }
 
 export function TenantList({ tenants, onAbrir, cargando = false }: Props) {
-  if (tenants.length === 0 && !cargando) {
-    // §8: el estado vacío es una invitación a actuar, no un error. Y acá la
-    // causa probable es concreta.
-    return (
-      <div className="flex flex-col gap-2">
-        <Label as="div">No hay clientes todavía</Label>
-        <Label as="div">Se dan de alta con POST /admin/tenants</Label>
-      </div>
-    )
-  }
+  // **Nunca se sale de la tabla.** El vacío es una FILA, no un reemplazo: «las
+  // columnas siguen diciendo qué habría acá» · las tres notas del `.pen`. Una
+  // pantalla que se vacía entera pierde lo único que explicaba qué falta.
+  const vacio = tenants.length === 0 && !cargando
 
   return (
     <div className="flex flex-col gap-4">
@@ -81,6 +76,14 @@ export function TenantList({ tenants, onAbrir, cargando = false }: Props) {
         </thead>
         <tbody>
           {cargando && <SkeletonRows columnas={2} />}
+          {vacio && (
+            <EmptyRow
+              clase="sistema"
+              columnas={2}
+              razon="Ningún cliente dado de alta todavía"
+              salida="Se crean con POST /admin/tenants · crear uno exige elegir plantilla de vertical"
+            />
+          )}
           {tenants.map((t) => (
             <tr key={t.id} className="border-b border-w3">
               <td className="py-3 text-ink text-celda">{t.nombre}</td>

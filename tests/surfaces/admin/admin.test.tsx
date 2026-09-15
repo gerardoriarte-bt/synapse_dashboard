@@ -132,10 +132,17 @@ describe('F4.2 · la lista de clientes', () => {
     expect(texto).toContain('B4.1')
   })
 
-  it('sin clientes invita a actuar, no dice «error»', async () => {
+  it('sin clientes invita a actuar, y NO se sale de la tabla', async () => {
+    // «Las columnas siguen diciendo qué habría acá» · las tres notas de vacío
+    // del `.pen`. Una pantalla que se vacía entera pierde lo único que explicaba
+    // qué falta.
     server.use(http.get(`${API}/admin/tenants`, () => ok([])))
     montar()
-    expect(await screen.findByText(/No hay clientes todavía/)).toBeInTheDocument()
+
+    expect(await screen.findByText(/Ningún cliente dado de alta todavía/)).toBeInTheDocument()
+    const tabla = screen.getByRole('table')
+    expect(within(tabla).getByText('Cliente')).toBeInTheDocument()
+    expect(within(tabla).getByText('Acción')).toBeInTheDocument()
   })
 })
 

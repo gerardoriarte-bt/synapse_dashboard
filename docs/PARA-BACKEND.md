@@ -209,6 +209,25 @@ La nota de A4 lo dice con un ejemplo: «feed_vs_sales figura DISPONIBLE en el ca
 
 **La regla es `frescura > cadencia × tolerancia`**, y los tres términos son de la fuente, no de la métrica. Con ellos el front deriva los cuatro estados sin que nadie los escriba.
 
+**AMPLIADO el 2026-09-15 después de leer su código**, porque el pedido original estaba subestimado. Dos cosas que conviene mirar juntas:
+
+**a · La fuente no existe como entidad.** Buscado en `internal/core/domain/` y `internal/core/ports/`: no hay `Feed`, ni `DataSource`, ni nada equivalente. `source` es **texto libre en la métrica** —«ERP + Ads API»— así que no hay dónde colgar una última carga ni una cadencia. Esto no es agregar cuatro campos: es **crear la entidad** y relacionarla con las métricas que dependen de ella.
+
+**b · Y ya existe una derivación de degradación, con otra regla.** `dd_config_service.go` tiene `const freshnessToleranceDays = 3` y marca `DEGRADED` cuando la última materialización pasó ese plazo:
+
+```go
+if status == Available && isDegraded(data, now) {
+    status = Degraded
+    reason = "Stale data: last materialization is older than 3 days"
+}
+```
+
+**Es una constante global aplicada por payload de panel**, y §7.3 pide una tolerancia **por fuente**: Merchant Center con cadencia de una hora y 31 h de atraso está degradado, y una fuente diaria con 31 h no. Con la regla de hoy las dos dan lo mismo — o las dos disponibles, o las dos degradadas, según el plazo.
+
+**No es un bug: es una aproximación razonable mientras no exista la entidad.** Pero conviene decidirlo explícitamente, porque el día que la fuente exista **hay dos reglas de degradación** y la del panel gana sin que nadie lo haya elegido.
+
+**Y algo que el front NO va a pedir**: que `/config/panels:batch` deje de derivar. Esa derivación es correcta donde está —el payload sabe cuándo se materializó— y es la que hace que un panel degradado se vea degradado sin consultar nada más.
+
 **Pedir el campo habría sido peor que no pedirlo**: dos fuentes para el mismo hecho —el estado guardado y la frescura real— que se separan en el primer feed atrasado.
 
 **Desbloquea dos pantallas, no una.** A5 entera —«la pantalla que explica por qué una métrica está degradada»— y la columna de estado de A4, con su filtro.

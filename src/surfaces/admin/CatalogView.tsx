@@ -48,6 +48,7 @@
  */
 import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
+import { EmptyRow } from './EmptyRow'
 import { SkeletonRows } from './SkeletonRows'
 import type { Metric } from '../../api/types'
 import type { RejectedMetric } from '../../api/adapt'
@@ -91,23 +92,48 @@ export function CatalogView({ metrics, rejected, cargando = false }: Props) {
   // cada cosa— **y se dice que no es el filtro que el diseño pide**. Sustituirlo
   // en silencio daría una pantalla que parece cumplir §7.3 y no cumple.
   const [capa, setCapa] = useState('')
+  const [busqueda, setBusqueda] = useState('')
   const capas = [...new Set(metrics.map((m) => m.capa))].sort()
-  const visibles = capa === '' ? metrics : metrics.filter((m) => m.capa === capa)
 
-  if (metrics.length === 0 && rejected.length === 0 && !cargando) {
-    // §8: el vacío invita a actuar. Y acá la causa probable es concreta — el
-    // catálogo sale del seed o de `sync-catalog`, no de la nada.
-    return (
-      <div className="flex flex-col gap-2">
-        <Label as="div">Este cliente no tiene métricas en el catálogo</Label>
-        <Label as="div">Se llenan con la sincronización desde el modelo semántico · B1.18</Label>
-      </div>
-    )
-  }
+  /** **La búsqueda es lo único que puede dejar la tabla en cero.** El selector
+   *  de capa se arma con las capas que hay, así que elegir una siempre devuelve
+   *  al menos una métrica: el vacío de filtro era inalcanzable sin esto. Lo
+   *  encontró una prueba que no podía elegir una capa inexistente.
+   *
+   *  Y está en el diseño: el `.pen` pone «BUSCAR» al lado de los dos selectores. */
+  const q = busqueda.trim().toLowerCase()
+  const visibles = metrics.filter(
+    (m) =>
+      (capa === '' || m.capa === capa) &&
+      (q === '' || m.nombre.toLowerCase().includes(q) || m.key.toLowerCase().includes(q)),
+  )
+
+
+  // **Dos vacíos distintos, y confundirlos es el error.** Sin métricas es de
+  // SISTEMA —el catálogo se llena sincronizando—; con métricas y un filtro que
+  // no deja ninguna es de FILTRO, y ahí la salida es deshacer, no sincronizar.
+  const sinNada = metrics.length === 0 && rejected.length === 0 && !cargando
+  /** **No hace falta preguntar si hay un filtro puesto, y se puede demostrar.**
+   *  Sin filtro, `visibles` es `metrics` entero —las dos condiciones del
+   *  `filter` son verdaderas para todo—, así que con `metrics.length > 0` la
+   *  única forma de que `visibles` quede en cero es que algún filtro esté
+   *  activo. La guarda `&& filtrando` que estaba acá era redundante, y lo
+   *  encontró una mutación que la quitaba y sobrevivía. */
+  const filtroVacio = metrics.length > 0 && visibles.length === 0
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
+        <label className="flex items-center gap-2">
+          <Label>Buscar</Label>
+          <input
+            type="search"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="bg-w2 text-ink text-celda rounded-sm px-2 py-1 border border-w4"
+          />
+        </label>
+
         <Label id="filtro-capa">Capa</Label>
         <select
           aria-labelledby="filtro-capa"
@@ -123,7 +149,14 @@ export function CatalogView({ metrics, rejected, cargando = false }: Props) {
           ))}
         </select>
         <Label>
-          {cargando ? 'Cargando' : `${String(visibles.length)} de ${String(metrics.length)} métricas`}
+          {cargando
+            ? 'Cargando'
+            : filtroVacio
+              ? // **El total va en el mensaje** · «0 MÉTRICAS CON ESTE FILTRO ·
+                // 28 EN TOTAL». Sin él, cero con filtro y cero sin nada se leen
+                // igual, y alguien concluye que se perdieron.
+                `0 métricas con este filtro · ${String(metrics.length)} en total`
+              : `${String(visibles.length)} de ${String(metrics.length)} métricas`}
         </Label>
         {/* Se declara que este NO es el filtro de §7.3. */}
         <Label>El filtro por estado no se puede ofrecer · el estado no llega</Label>
@@ -145,6 +178,30 @@ export function CatalogView({ metrics, rejected, cargando = false }: Props) {
         </thead>
         <tbody>
           {cargando && <SkeletonRows columnas={COLUMNAS.length} />}
+          {sinNada && (
+            <EmptyRow
+              clase="sistema"
+              columnas={COLUMNAS.length}
+              razon="Este cliente no tiene métricas en el catálogo"
+              salida="Se llenan sincronizando desde el modelo semántico · B1.18"
+            />
+          )}
+          {filtroVacio && (
+            <EmptyRow
+              clase="filtro"
+              columnas={COLUMNAS.length}
+              razon={
+                q === ''
+                  ? `Ninguna métrica es de la capa ${capa}`
+                  : `Ninguna métrica coincide con «${busqueda.trim()}»`
+              }
+              salida="Las métricas siguen ahí · el filtro las esconde"
+              onLimpiarFiltro={() => {
+                setCapa('')
+                setBusqueda('')
+              }}
+            />
+          )}
           {visibles.map((m) => (
             <tr key={m.id} className="border-b border-w3">
               {COLUMNAS.map((c) => (

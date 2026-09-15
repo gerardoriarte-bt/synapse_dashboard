@@ -101,7 +101,20 @@ export function RoleEditor({
       </div>
 
       {roles.length === 0 && !cargando && (
-        <Label as="div">Este cliente no tiene roles definidos todavía</Label>
+        // **Vacío de ALTA, que es el tercer tipo** · el `.pen` le dedica un
+        // frame entero, `A2 · Ficha · tenant en alta`: «no falta un filtro ni
+        // falla nada: el cliente es nuevo y el trabajo está por hacerse». La
+        // salida es el siguiente paso, no deshacer ni reintentar.
+        <div className="flex flex-col gap-2 rounded-sm bg-w2 p-3">
+          <Label as="div">Este cliente todavía no tiene roles · está en alta</Label>
+          <Label as="div">
+            Sin ningún rol nadie puede entrar a la consola de este cliente, y sus pestañas no
+            tienen a quién servirle
+          </Label>
+          <Label as="div">
+            El siguiente paso es crear el primero · «Nuevo rol», acá arriba
+          </Label>
+        </div>
       )}
 
       {cargando && (
