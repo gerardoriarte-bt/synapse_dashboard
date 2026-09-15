@@ -372,10 +372,14 @@ no se escriben acá, que es como se vencen sin que nadie lo note.
 | | Espera |
 |---|---|
 | **F4.9 · canvas** | Una **decisión de diseño**. Hay propuesta escrita: `docs/PROPUESTA-CANVAS-2026-09-15.md` |
-| F4.3 · usuarios y roles | Que B4.8 se despliegue. El código está en el fork |
-| F4.12 · preview por rol | Lo mismo con B4.9 |
-| F4.4 · agente Snowflake | Ninguna ruta de admin expone configuración de agente |
+| F4.4 · agente Snowflake | B3.9 · existe `POST /admin/agents` y nada más. Lo que falta no es el CRUD sino **el estado del acceso**: vigente, cuándo se verificó, qué hacer si no |
 | F4.17–F4.21 | Formas que el backend no materializa, y `/config/plots` |
+
+**F4.3 y F4.12 están construidas y en ⚠️**, contra el cable del fork y con MSW.
+Lo que les falta para ✅ es distinto en cada una: F4.3 no tiene la lista de
+usuarios de A3 —**ninguna ruta lista usuarios**, solo existe `POST /admin/users`—
+y F4.12 no trae cifras, que es una decisión de B4.9 con su razón escrita, no un
+olvido.
 
 **B4.8 y B4.9 están escritas y en ⚠️, no en ✅.** El código vive en
 `gerardoriarte-bt/synapse-api-go`, rama `feature/roles-y-preview`, partida del

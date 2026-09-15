@@ -1053,6 +1053,14 @@ por el usuario, no un dashboard entero.
   cuerpo. Es un solo modelo de datos, no dos.
 
 ### B3.9 ⬜ CRUD `/admin/tenants/{id}/agents`
+**Espera del backend.** **La ruta entera** — pedida el 2026-09-15, cuando F4.4 quedó sin nada que consumir.
+
+Existe `POST /admin/agents` y **nada más**: no hay forma de leer la configuración de un tenant ni de editarla. Las seis rutas de `/admin/*` que el servicio sirve no incluyen ninguna de agente.
+
+**Y lo que el front necesita no es la configuración, es su CONSECUENCIA.** §7.3 prohíbe mostrar vocabulario de infraestructura —ni base, ni rol técnico, ni warehouse, ni grant— y pide en su lugar: **si el acceso a datos está vigente, cuándo se verificó por última vez, y qué hacer si no lo está.** Tres campos, no un CRUD.
+
+Con esos tres, F4.4 y la mitad que le falta a la ficha de cliente se cierran. El CRUD completo de B3.9 es otra cosa y puede esperar: **lo que bloquea es el estado, no la edición.**
+
 **Descripción.** El superadmin configura el agente de cada tenant: cuenta,
 warehouse, vistas semánticas permitidas y prompt base.
 **Criterio de aceptación.**
@@ -3259,7 +3267,7 @@ estimación que no bajaría.
 ### F4.1 ✅ `surfaces/admin/` — layout base y navegación
 ### F4.2 ✅ Lista de tenants
 ### F4.3 ⚠️ Gestión de usuarios y roles por tenant
-### F4.4 ⬜ Configuración de agente Snowflake por tenant
+### F4.4 ⬜ Configuración de agente Snowflake por tenant · 🔒 depende de B3.9
 ### F4.5 ✅ Vista del catálogo de métricas del tenant
 **Criterio de aceptación (los cinco).**
 - **No se muestra vocabulario de infraestructura** (§7.3 de `design.md`): ni

@@ -167,7 +167,7 @@ B3.7,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,Formato de 
 B3.8,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,"La respuesta puede incluir { forma, datos, procedencia }",,"• Cuando el agente devuelve un dato estructurado, viene con la misma unión Valor + Gobierno que un panel, para que el front lo dibuje con el mismo cuerpo. Es un solo modelo de datos, no dos.",pendiente,no,,equipo:backend fase:3 estado:pendiente
 B3.9,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,CRUD /admin/tenants/{id}/agents,"El superadmin configura el agente de cada tenant: cuenta, warehouse, vistas semánticas permitidas y prompt base.","• Solo accesible con aud: platform.
 • La credencial no se edita acá: se referencia por identificador del gestor de secretos (B0.8), y ninguna respuesta la incluye.
-• Cambiar las vistas permitidas surte efecto en la siguiente pregunta, sin reiniciar el servicio.",pendiente,no,,equipo:backend fase:3 estado:pendiente
+• Cambiar las vistas permitidas surte efecto en la siguiente pregunta, sin reiniciar el servicio.",pendiente,no,,equipo:backend fase:3 estado:pendiente bloqueada
 B4.1,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,GET /admin/tenants,,"• Solo accesibles con aud: platform; con token de usuario devuelven 403.
 • Publicar genera versionId, sella publishedAt, registra quién publicó e invalida la cache del tenant.
 • Editar nunca muta la versión publicada.",pendiente,no,,equipo:backend fase:4 estado:pendiente bloqueada
@@ -468,7 +468,7 @@ F4.3,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Gestión de usu
 • Un usuario ve su propia fila marcada «sin acción sobre tu cuenta».",parcial,no,,equipo:front fase:4 estado:parcial
 F4.4,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Configuración de agente Snowflake por tenant,,"• No se muestra vocabulario de infraestructura (§7.3 de design.md): ni base, ni rol técnico, ni grants, ni warehouse. Se declara la consecuencia —acceso vigente, última verificación— no la plomería. Única excepción: la lista de subprocesadores, que es obligación legal.
 • La credencial de Snowflake no se muestra ni se edita desde acá: se referencia por identificador del gestor de secretos.
-• Un usuario ve su propia fila marcada «sin acción sobre tu cuenta».",pendiente,no,,equipo:front fase:4 estado:pendiente
+• Un usuario ve su propia fila marcada «sin acción sobre tu cuenta».",pendiente,no,B3.9,equipo:front fase:4 estado:pendiente bloqueada
 F4.5,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Vista del catálogo de métricas del tenant,,"• No se muestra vocabulario de infraestructura (§7.3 de design.md): ni base, ni rol técnico, ni grants, ni warehouse. Se declara la consecuencia —acceso vigente, última verificación— no la plomería. Única excepción: la lista de subprocesadores, que es obligación legal.
 • La credencial de Snowflake no se muestra ni se edita desde acá: se referencia por identificador del gestor de secretos.
 • Un usuario ve su propia fila marcada «sin acción sobre tu cuenta».",hecho,no,,equipo:front fase:4 estado:hecho

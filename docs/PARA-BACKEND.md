@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 18 pedido(s)
+## Lo que esperamos · 19 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -196,6 +196,20 @@ Los pasos completos están en `docs/snowflake/INSTRUCCION-ALTA-TENANT.md`. **Nos
 
 
 **`POST /config/chat` con `ContextoDePanel`.** Es la transversal T4 y bloquea F3.2, F3.3, F3.6 y la mitad de F3.7. El chat que el servicio sí tiene es **otro producto** —decidido el 2026-09-08—: el nuestro es el chat contextual del panel, se abre desde un panel y lleva su métrica.
+
+
+### B3.9 · CRUD /admin/tenants/{id}/agents
+
+*Estado de la tarea: pendiente.*
+
+
+**La ruta entera** — pedida el 2026-09-15, cuando F4.4 quedó sin nada que consumir.
+
+Existe `POST /admin/agents` y **nada más**: no hay forma de leer la configuración de un tenant ni de editarla. Las seis rutas de `/admin/*` que el servicio sirve no incluyen ninguna de agente.
+
+**Y lo que el front necesita no es la configuración, es su CONSECUENCIA.** §7.3 prohíbe mostrar vocabulario de infraestructura —ni base, ni rol técnico, ni warehouse, ni grant— y pide en su lugar: **si el acceso a datos está vigente, cuándo se verificó por última vez, y qué hacer si no lo está.** Tres campos, no un CRUD.
+
+Con esos tres, F4.4 y la mitad que le falta a la ficha de cliente se cierran. El CRUD completo de B3.9 es otra cosa y puede esperar: **lo que bloquea es el estado, no la edición.**
 
 
 ### B4.1 · GET /admin/tenants
