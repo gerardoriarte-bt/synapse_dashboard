@@ -1077,6 +1077,16 @@ lo que convierte una lista en una pantalla de administración — saber de un
 vistazo qué cliente tiene el feed más atrasado es la mitad de para qué existe.
 
 ### B4.2 ⬜ `GET /admin/tenants/{id}/layouts`
+**Espera del backend.** **Autor, diferencia y reversión en `LayoutVersion`** — pedido el 2026-09-15, cuando F4.6 declaró B6.
+
+§7.2 describe el historial de versiones en una línea: «**quién, cuándo, qué cambió. Permite revertir.** Sin esto, un error de composición en producción no tiene vuelta atrás». La respuesta de hoy trae **cuándo** y nada más.
+
+- **Quién.** El criterio compartido de B4.2–B4.7 ya dice que publicar «registra quién publicó», así que el dato existe del lado de ustedes; lo que falta es que salga en la respuesta.
+- **Qué cambió.** Contra la versión publicada anterior. No hace falta un diff estructural: alcanza con qué pestañas y qué paneles se agregaron, se quitaron o se movieron.
+- **Revertir.** No hay ruta. `POST /admin/tenants/{id}/layouts` acepta un `version_id` de origen, así que puede que ya alcance con documentar que duplicar una versión vieja **es** revertir — si es así, es una línea de documentación y no código.
+
+**No bloquea el builder**, bloquea B6. Y B6 es la pantalla que hace reversible un error de composición en producción: sin ella, la única salida es recomponer a mano.
+
 ### B4.3 ⬜ `POST /admin/tenants/{id}/layouts` — crear borrador
 ### B4.4 ⬜ `PUT /admin/layouts/{id}` — editar pestañas y paneles
 ### B4.5 ⬜ `POST /admin/layouts/{id}/publish`
@@ -3277,7 +3287,7 @@ tabla, el filtro devolviendo todo, el encabezado sin su origen, uno de los cuatr
 ausentes borrado de la lista, las rechazadas ocultas, y el hueco de dirección
 semántica en blanco en vez de «—». Las seis mueren.
 
-### F4.6 ⬜ `surfaces/builder/` — composición visual
+### F4.6 ✅ `surfaces/builder/` — composición visual
 ### F4.7 ⬜ Selector de tenant y plantilla base
 ### F4.8 ⬜ Editor de pestañas: nombre, pregunta operativa, orden, sugerencias
 ### F4.9 ⬜ Canvas de 12 columnas — arrastrar y colocar
@@ -3295,6 +3305,70 @@ semántica en blanco en vez de «—». Las seis mueren.
   la forma de la métrica se marca **con la razón**, no con «inválido».
 - F4.11: la validación del front es feedback inmediato; **el servidor decide**
   (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.
+
+### F4.6 cerrada el 2026-09-15 · el ancho, que no es uniforme
+
+`pantallas.ts`, `BuilderChrome` y el contenedor `Builder` reemplazan el stub de
+una línea que `routes.tsx` ya importaba. **472 pruebas**, diez nuevas, seis
+mutaciones muertas.
+
+**En administración lo que cambia con la pantalla es el alcance; acá cambia el
+ancho mínimo**, y §4 da dos números con dos razones que conviene no fundir:
+
+- **1600 en B1–B4 y B6** = 1200 de lienzo 1:1 más 300 de biblioteca. Si el lienzo
+  se escala, un panel de `colSpan` 4 deja de medir cuatro columnas en pantalla y
+  **el arrastre pierde su unidad**.
+- **1440 en B5**, que es la excepción que §4 escribe: la vista previa no es una
+  maqueta del builder, es la consola del cliente a su ancho real. A 1600 se
+  mostraría a un ancho que ningún usuario tiene.
+
+Ninguno colapsa: §4 gobierna el grid de paneles y «las otras dos superficies no
+son grids y declaran ancho mínimo en vez de colapso».
+
+### Un modo de falla nuevo, que encontró la mutación
+
+**Una utilidad de Tailwind armada por interpolación compila, deja el atributo
+`class` correcto en el DOM y nunca llega al CSS.** Es el hermano de
+`text-labell`: aquel nombra un token que no existe, éste arma un nombre que el
+escáner no puede leer.
+
+Lo encontró una mutación que cambiaba la tabla de anchos de `BuilderChrome` por
+`min-w-[${ancho}px]`: **sobrevivía a las diez pruebas de la superficie**, porque en
+jsdom las dos formas producen exactamente el mismo atributo. Lo que cambia es el
+build, no el DOM — y ninguna prueba de render puede verlo.
+
+Quedó cubierto en `tests/tokens/escala.test.ts`, que es donde vive el otro medio
+silencio: cruza toda plantilla que va a `className` y falla si un `${…}` queda
+pegado dentro de una utilidad. Un `${…}` entre espacios sí vale — ahí la
+interpolación aporta la utilidad entera y las dos ramas están escritas.
+
+**Y el propio chequeo encontró algo**: `text-labell` escrito en un comentario de
+`BuilderChrome` lo disparó. El escáner no distingue comentario de código, así que
+esa prueba no puede citar literalmente el token roto. Reescrito el comentario.
+
+### Las cinco pantallas pendientes, y qué frena a cada una
+
+Lo que las frena **no es lo mismo**, y esa distinción es la que importa:
+
+| | Qué falta | De qué orden |
+|---|---|---|
+| B2 · Canvas | La interacción de arrastre no está en `design.md` | **Diseño**, no cable |
+| B3 · Selector de gráfico | `/config/plots` · B1.21 · es F4.21 | Cable |
+| B4 · Binder de métrica | Nada: es F4.10 y se puede tomar | Orden del plan |
+| B5 · Vista previa por rol | Roles por tenant · B4.9, que escribimos nosotros | Cable |
+| B6 · Historial | Ni **quién** publicó ni **qué cambió** · pedido en B4.2 | Cable |
+
+**B2 es la que hay que mirar dos veces.** §7.2 describe el RESULTADO del arrastre
+—slot vacío con su label, badge `HEREDADO`, colisión marcada, nada se suelta
+encima— y no la INTERACCIÓN: qué agarra el cursor, cómo se redimensiona por
+handles, qué pasa al soltar fuera de la grilla. F4.9 no se toma sin esa decisión,
+y decirlo en la pantalla es lo que impide que alguien la invente creyendo que
+solo falta cable.
+
+**Verificadas por mutación, seis casos:** B5 perdiendo su excepción de ancho, el
+ancho interpolado, el chrome sin decir el ancho, B2 diciendo que espera código en
+vez de diseño, B6 sin nombrar lo que falta, y una pantalla pendiente mostrándose
+vacía.
 - F4.12: el preview llama al endpoint con rol simulado (B4.9). No se simula del
   lado del cliente filtrando lo que ya se tiene: eso probaría el filtro del
   front, que no existe.

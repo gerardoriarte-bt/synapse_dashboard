@@ -173,7 +173,7 @@ B4.1,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,GET /admin/
 • Editar nunca muta la versión publicada.",pendiente,no,,equipo:backend fase:4 estado:pendiente bloqueada
 B4.2,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,GET /admin/tenants/{id}/layouts,,"• Solo accesibles con aud: platform; con token de usuario devuelven 403.
 • Publicar genera versionId, sella publishedAt, registra quién publicó e invalida la cache del tenant.
-• Editar nunca muta la versión publicada.",pendiente,no,,equipo:backend fase:4 estado:pendiente
+• Editar nunca muta la versión publicada.",pendiente,no,,equipo:backend fase:4 estado:pendiente bloqueada
 B4.3,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,POST /admin/tenants/{id}/layouts — crear borrador,,"• Solo accesibles con aud: platform; con token de usuario devuelven 403.
 • Publicar genera versionId, sella publishedAt, registra quién publicó e invalida la cache del tenant.
 • Editar nunca muta la versión publicada.",pendiente,no,,equipo:backend fase:4 estado:pendiente
@@ -474,59 +474,37 @@ F4.5,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Vista del catá
 • Un usuario ve su propia fila marcada «sin acción sobre tu cuenta».",hecho,no,,equipo:front fase:4 estado:hecho
 F4.6,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,surfaces/builder/ — composición visual,,"• F4.8: una pestaña que no contesta una pregunta no se compone. La pregunta operativa es obligatoria, no un subtítulo opcional.
 • F4.11: usa catalog/blocks.ts, que ya está escrito. Un tipo incompatible con la forma de la métrica se marca con la razón, no con «inválido».
-• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.
-• F4.12: el preview llama al endpoint con rol simulado (B4.9). No se simula del lado del cliente filtrando lo que ya se tiene: eso probaría el filtro del front, que no existe.
-• F4.15: publicar surte efecto sin deploy, y se ve en la consola en la siguiente carga.",pendiente,no,,equipo:front fase:4 estado:pendiente
+• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.",hecho,no,,equipo:front fase:4 estado:hecho
 F4.7,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Selector de tenant y plantilla base,,"• F4.8: una pestaña que no contesta una pregunta no se compone. La pregunta operativa es obligatoria, no un subtítulo opcional.
 • F4.11: usa catalog/blocks.ts, que ya está escrito. Un tipo incompatible con la forma de la métrica se marca con la razón, no con «inválido».
-• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.
-• F4.12: el preview llama al endpoint con rol simulado (B4.9). No se simula del lado del cliente filtrando lo que ya se tiene: eso probaría el filtro del front, que no existe.
-• F4.15: publicar surte efecto sin deploy, y se ve en la consola en la siguiente carga.",pendiente,no,,equipo:front fase:4 estado:pendiente
+• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.",pendiente,no,,equipo:front fase:4 estado:pendiente
 F4.8,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,"Editor de pestañas: nombre, pregunta operativa, orden, sugerencias",,"• F4.8: una pestaña que no contesta una pregunta no se compone. La pregunta operativa es obligatoria, no un subtítulo opcional.
 • F4.11: usa catalog/blocks.ts, que ya está escrito. Un tipo incompatible con la forma de la métrica se marca con la razón, no con «inválido».
-• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.
-• F4.12: el preview llama al endpoint con rol simulado (B4.9). No se simula del lado del cliente filtrando lo que ya se tiene: eso probaría el filtro del front, que no existe.
-• F4.15: publicar surte efecto sin deploy, y se ve en la consola en la siguiente carga.",pendiente,no,,equipo:front fase:4 estado:pendiente
+• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.",pendiente,no,,equipo:front fase:4 estado:pendiente
 F4.9,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Canvas de 12 columnas — arrastrar y colocar,,"• F4.8: una pestaña que no contesta una pregunta no se compone. La pregunta operativa es obligatoria, no un subtítulo opcional.
 • F4.11: usa catalog/blocks.ts, que ya está escrito. Un tipo incompatible con la forma de la métrica se marca con la razón, no con «inválido».
-• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.
-• F4.12: el preview llama al endpoint con rol simulado (B4.9). No se simula del lado del cliente filtrando lo que ya se tiene: eso probaría el filtro del front, que no existe.
-• F4.15: publicar surte efecto sin deploy, y se ve en la consola en la siguiente carga.",pendiente,no,,equipo:front fase:4 estado:pendiente
+• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.",pendiente,no,,equipo:front fase:4 estado:pendiente
 F4.10,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,"Configurador de panel: métrica, tipo, spans, opciones",,"• F4.8: una pestaña que no contesta una pregunta no se compone. La pregunta operativa es obligatoria, no un subtítulo opcional.
 • F4.11: usa catalog/blocks.ts, que ya está escrito. Un tipo incompatible con la forma de la métrica se marca con la razón, no con «inválido».
-• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.
-• F4.12: el preview llama al endpoint con rol simulado (B4.9). No se simula del lado del cliente filtrando lo que ya se tiene: eso probaría el filtro del front, que no existe.
-• F4.15: publicar surte efecto sin deploy, y se ve en la consola en la siguiente carga.",pendiente,no,,equipo:front fase:4 estado:pendiente
+• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.",pendiente,no,,equipo:front fase:4 estado:pendiente
 F4.11,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Validación en tiempo real contra /config/blocks,,"• F4.8: una pestaña que no contesta una pregunta no se compone. La pregunta operativa es obligatoria, no un subtítulo opcional.
 • F4.11: usa catalog/blocks.ts, que ya está escrito. Un tipo incompatible con la forma de la métrica se marca con la razón, no con «inválido».
-• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.
-• F4.12: el preview llama al endpoint con rol simulado (B4.9). No se simula del lado del cliente filtrando lo que ya se tiene: eso probaría el filtro del front, que no existe.
-• F4.15: publicar surte efecto sin deploy, y se ve en la consola en la siguiente carga.",pendiente,no,,equipo:front fase:4 estado:pendiente
+• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.",pendiente,no,,equipo:front fase:4 estado:pendiente
 F4.12,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Preview por rol,,"• F4.8: una pestaña que no contesta una pregunta no se compone. La pregunta operativa es obligatoria, no un subtítulo opcional.
 • F4.11: usa catalog/blocks.ts, que ya está escrito. Un tipo incompatible con la forma de la métrica se marca con la razón, no con «inválido».
-• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.
-• F4.12: el preview llama al endpoint con rol simulado (B4.9). No se simula del lado del cliente filtrando lo que ya se tiene: eso probaría el filtro del front, que no existe.
-• F4.15: publicar surte efecto sin deploy, y se ve en la consola en la siguiente carga.",pendiente,no,,equipo:front fase:4 estado:pendiente
+• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.",pendiente,no,,equipo:front fase:4 estado:pendiente
 F4.13,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Guardar borrador,,"• F4.8: una pestaña que no contesta una pregunta no se compone. La pregunta operativa es obligatoria, no un subtítulo opcional.
 • F4.11: usa catalog/blocks.ts, que ya está escrito. Un tipo incompatible con la forma de la métrica se marca con la razón, no con «inválido».
-• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.
-• F4.12: el preview llama al endpoint con rol simulado (B4.9). No se simula del lado del cliente filtrando lo que ya se tiene: eso probaría el filtro del front, que no existe.
-• F4.15: publicar surte efecto sin deploy, y se ve en la consola en la siguiente carga.",pendiente,no,,equipo:front fase:4 estado:pendiente
+• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.",pendiente,no,,equipo:front fase:4 estado:pendiente
 F4.14,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Validar antes de publicar,,"• F4.8: una pestaña que no contesta una pregunta no se compone. La pregunta operativa es obligatoria, no un subtítulo opcional.
 • F4.11: usa catalog/blocks.ts, que ya está escrito. Un tipo incompatible con la forma de la métrica se marca con la razón, no con «inválido».
-• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.
-• F4.12: el preview llama al endpoint con rol simulado (B4.9). No se simula del lado del cliente filtrando lo que ya se tiene: eso probaría el filtro del front, que no existe.
-• F4.15: publicar surte efecto sin deploy, y se ve en la consola en la siguiente carga.",pendiente,no,,equipo:front fase:4 estado:pendiente
+• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.",pendiente,no,,equipo:front fase:4 estado:pendiente
 F4.15,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Publicar sin deploy,,"• F4.8: una pestaña que no contesta una pregunta no se compone. La pregunta operativa es obligatoria, no un subtítulo opcional.
 • F4.11: usa catalog/blocks.ts, que ya está escrito. Un tipo incompatible con la forma de la métrica se marca con la razón, no con «inválido».
-• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.
-• F4.12: el preview llama al endpoint con rol simulado (B4.9). No se simula del lado del cliente filtrando lo que ya se tiene: eso probaría el filtro del front, que no existe.
-• F4.15: publicar surte efecto sin deploy, y se ve en la consola en la siguiente carga.",pendiente,no,,equipo:front fase:4 estado:pendiente
+• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.",pendiente,no,,equipo:front fase:4 estado:pendiente
 F4.16,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,"Hooks dedicados: useLayouts, useLayoutEditor, usePublishLayout",,"• F4.8: una pestaña que no contesta una pregunta no se compone. La pregunta operativa es obligatoria, no un subtítulo opcional.
 • F4.11: usa catalog/blocks.ts, que ya está escrito. Un tipo incompatible con la forma de la métrica se marca con la razón, no con «inválido».
-• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.
-• F4.12: el preview llama al endpoint con rol simulado (B4.9). No se simula del lado del cliente filtrando lo que ya se tiene: eso probaría el filtro del front, que no existe.
-• F4.15: publicar surte efecto sin deploy, y se ve en la consola en la siguiente carga.",pendiente,no,,equipo:front fase:4 estado:pendiente
+• F4.11: la validación del front es feedback inmediato; el servidor decide (B4.6). Nunca se publica algo que el front dio por bueno y el servidor no vio.",pendiente,no,,equipo:front fase:4 estado:pendiente
 F4.21,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Selector de gráfico en el builder,"El configurador de panel ofrece los gráficos compatibles con la forma de la métrica elegida, no los 49. Consume /config/plots vía catalog/plots.ts.","• La lista se filtra por formas; los incompatibles no se muestran, no se muestran deshabilitados sin explicación.
 • Cada opción declara su mínimo y su tope, para que quien compone sepa antes de publicar que el gráfico va a quedar vacío en un tenant chico.
 • Con serieConBanda, solo aparecen gráficos con soportaBanda.

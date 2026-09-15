@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 16 pedido(s)
+## Lo que esperamos · 17 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -212,6 +212,22 @@ columnas**, así que la pantalla muestra una y declara que faltan cinco.
 No bloquea: la lista funciona y el builder puede elegir tenant. Lo que falta es
 lo que convierte una lista en una pantalla de administración — saber de un
 vistazo qué cliente tiene el feed más atrasado es la mitad de para qué existe.
+
+
+### B4.2 · GET /admin/tenants/{id}/layouts
+
+*Estado de la tarea: pendiente.*
+
+
+**Autor, diferencia y reversión en `LayoutVersion`** — pedido el 2026-09-15, cuando F4.6 declaró B6.
+
+§7.2 describe el historial de versiones en una línea: «**quién, cuándo, qué cambió. Permite revertir.** Sin esto, un error de composición en producción no tiene vuelta atrás». La respuesta de hoy trae **cuándo** y nada más.
+
+- **Quién.** El criterio compartido de B4.2–B4.7 ya dice que publicar «registra quién publicó», así que el dato existe del lado de ustedes; lo que falta es que salga en la respuesta.
+- **Qué cambió.** Contra la versión publicada anterior. No hace falta un diff estructural: alcanza con qué pestañas y qué paneles se agregaron, se quitaron o se movieron.
+- **Revertir.** No hay ruta. `POST /admin/tenants/{id}/layouts` acepta un `version_id` de origen, así que puede que ya alcance con documentar que duplicar una versión vieja **es** revertir — si es así, es una línea de documentación y no código.
+
+**No bloquea el builder**, bloquea B6. Y B6 es la pantalla que hace reversible un error de composición en producción: sin ella, la única salida es recomponer a mano.
 
 
 ### B4.10 · Asignación de layout publicado a roles
