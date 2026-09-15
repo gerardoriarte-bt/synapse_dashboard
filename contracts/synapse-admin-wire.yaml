@@ -15,6 +15,20 @@ openapi: 3.1.0
 # código de Go dice que devuelve, no lo que se vio llegar. Con un usuario `admin`
 # se extiende `tools/humo.py` a estas rutas y se confirma.
 #
+# ── CINCO RUTAS SON NUESTRAS Y NO ESTÁN DESPLEGADAS ─────────────────────────
+#
+# Desde el 2026-09-15 este archivo declara **dos cosas distintas** y hay que
+# poder distinguirlas de un vistazo:
+#
+#   · Las OCHO operaciones de ellos, transcritas de su código.
+#   · Las CINCO de B4.8 y B4.9, que escribimos nosotros en un fork
+#     —`gerardoriarte-bt/synapse-api-go`, rama `feature/roles-y-preview`— y que
+#     **el servicio que corre NO sirve**. Llamarlas hoy devuelve 404.
+#
+# Están acá porque el front las necesita para construir F4.3 y F4.12 contra MSW,
+# igual que se construyó la consola entera antes de que existiera el servicio.
+# Van marcadas una por una con `x-origen: fork`.
+#
 #   Transcrito el 2026-09-15 desde `AntPack-dev/synapse-api-go`
 #   rama   feature/dynamic-dashboard-backend
 #   commit 733c13c37dd54b9705e714cbc4718d8aa498092b  (2026-09-11)
@@ -255,6 +269,145 @@ paths:
                       data: { $ref: '#/components/schemas/ValidationResult' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+  # ── B4.8 · CRUD de roles · DEL FORK, NO DESPLEGADO ───────────────────────
+  /admin/tenants/{tenantId}/roles:
+    get:
+      tags: [admin]
+      operationId: listRoles
+      summary: Los roles del cliente
+      x-origen: fork
+      description: |
+        **No la sirve el servicio desplegado.** Escrita en el fork · B4.8.
+
+        `user_count` viaja en el listado a propósito: es lo que decide si el rol
+        se puede borrar, y la pantalla tiene que poder decirlo **antes** de
+        ofrecer el botón, no después de un 409.
+      parameters: [{ $ref: '#/components/parameters/tenantId' }]
+      responses:
+        '200':
+          description: Los roles
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Role' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [admin]
+      operationId: createRole
+      summary: Crear un rol
+      x-origen: fork
+      description: |
+        **409 si ya existe un rol con ese nombre en el cliente.** El índice único
+        es `(tenant_id, name)` y el servicio pregunta antes para poder decir qué
+        pasó en vez de devolver el error de Postgres como un 500.
+      parameters: [{ $ref: '#/components/parameters/tenantId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RoleInput' }
+      responses:
+        '201':
+          description: El rol creado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Role' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /admin/roles/{roleId}:
+    put:
+      tags: [admin]
+      operationId: updateRole
+      summary: Editar un rol
+      x-origen: fork
+      description: |
+        **Escribe cuatro columnas: `name`, `tab_ids`, `hidden_metric_ids` y
+        `layout_overrides`.** `tenant_id` no se toca: un rol no cambia de cliente.
+
+        `layout_overrides` ausente se escribe como `{}`, no se deja intacto.
+      parameters: [{ $ref: '#/components/parameters/roleId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RoleInput' }
+      responses:
+        '200':
+          description: El rol editado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Role' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [admin]
+      operationId: deleteRole
+      summary: Borrar un rol
+      x-origen: fork
+      description: |
+        **204 sin cuerpo.** Y **409 con la razón y el número si tiene usuarios
+        asignados** — no borra en cascada: dejaría usuarios sin rol, que es un
+        usuario que no puede entrar a ninguna pestaña.
+      parameters: [{ $ref: '#/components/parameters/roleId' }]
+      responses:
+        '204': { description: Borrado }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  # ── B4.9 · preview por rol · DEL FORK, NO DESPLEGADO ─────────────────────
+  /admin/layouts/{layoutId}/preview:
+    get:
+      tags: [admin]
+      operationId: previewLayout
+      summary: El layout como lo vería un rol
+      x-origen: fork
+      description: |
+        **No la sirve el servicio desplegado.** Escrita en el fork · B4.9.
+
+        **Pasa por el mismo `GetTab` que sirve a la consola**, así que
+        `tab_ids`, `hidden_metric_ids` y `layout_overrides` se aplican una sola
+        vez y en un solo lugar. Un preview que reimplemente el filtrado termina
+        mostrando algo que la consola no muestra, y se publica confiando en él.
+
+        **Viene SIN payloads** y lo declara en `without_payloads`. Con el layout
+        alcanza para «CEO vs Planner»; con payloads habría que decidir qué
+        período usa y si un panel oculto llega como `SIN_PERMISO`.
+
+        Un `roleId` de otro tenant devuelve **404 y no 403**: un 403 confirmaría
+        que el rol existe.
+      parameters:
+        - $ref: '#/components/parameters/layoutId'
+        - name: roleId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: El layout filtrado por ese rol
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Preview' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   /admin/layouts/{layoutId}/publish:
     post:
       tags: [admin]
@@ -303,6 +456,11 @@ components:
       in: path
       required: true
       schema: { type: string, format: uuid }
+    roleId:
+      name: roleId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
 
   responses:
     BadRequest:
@@ -322,6 +480,13 @@ components:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
     Unprocessable:
       description: Composición inválida
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Conflict:
+      description: |
+        Choca con una regla · nombre de rol duplicado, o un rol con usuarios
+        asignados. **El mensaje dice qué hacer**, no «conflicto».
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -532,3 +697,104 @@ components:
         panel_id: { type: ['string', 'null'], format: uuid }
         field: { type: string }
         message: { type: string }
+
+    # ── B4.8 y B4.9 · DEL FORK, NO DESPLEGADO ────────────────────────────────
+
+    Role:
+      type: object
+      description: |
+        `ports.DDRoleDTO`. **SÍ lleva etiquetas `json:`**, así que sale en
+        snake_case entero — a diferencia de `LayoutVersion` y compañía. Es lo
+        que B4.10 pide para aquellos.
+      required: [id, tenant_id, name, tab_ids, hidden_metric_ids, user_count]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        name: { type: string, examples: ['Planner'] }
+        tab_ids:
+          type: array
+          description: Vacío significa «ve todas las pestañas».
+          items: { type: string, format: uuid }
+        hidden_metric_ids:
+          type: array
+          description: |
+            **Oculta, NO impide.** El servidor vuelve a verificar en
+            `/config/catalog` y en el batch: un rol que oculta una métrica no es
+            un rol que no pueda pedirla.
+          items: { type: string, format: uuid }
+        layout_overrides:
+          type: object
+          description: |
+            Por pestaña y por panel · `col_start`, `col_span`, `row_span`,
+            `options`. **No muta el layout publicado**: `GetTab` los aplica al
+            responder.
+          additionalProperties: true
+        user_count:
+          type: integer
+          description: Cuántos usuarios tienen el rol. Con uno o más, borrar da 409.
+
+    RoleInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        tab_ids:
+          type: array
+          items: { type: string, format: uuid }
+        hidden_metric_ids:
+          type: array
+          items: { type: string, format: uuid }
+        layout_overrides:
+          type: object
+          description: 'Ausente se escribe como `{}`: «sin overrides» es un estado, no una omisión.'
+          additionalProperties: true
+
+    Preview:
+      type: object
+      description: |
+        `ports.DDPreviewResponse` · el layout como lo vería un rol, resuelto por
+        el **mismo `GetTab`** que sirve a la consola.
+      required: [layout_id, role_id, role_name, tabs, without_payloads]
+      properties:
+        layout_id: { type: string, format: uuid }
+        role_id: { type: string, format: uuid }
+        role_name: { type: string }
+        tabs:
+          type: array
+          description: |
+            Solo las que el rol puede ver, con sus paneles ya filtrados y los
+            overrides aplicados. **Forma de la CONSOLA** —`ports.DDTabWithPanels`,
+            snake_case— y no la del builder.
+          items:
+            type: object
+            required: [tab, panels]
+            properties:
+              tab:
+                type: object
+                required: [id, name, sort_order]
+                properties:
+                  id: { type: string, format: uuid }
+                  name: { type: string }
+                  operational_question: { type: string }
+                  sort_order: { type: integer }
+              panels:
+                type: array
+                items:
+                  type: object
+                  required: [id, metric_id, type, col_start, col_span, row_span]
+                  properties:
+                    id: { type: string, format: uuid }
+                    metric_id: { type: string, format: uuid }
+                    type: { type: string }
+                    col_start: { type: integer }
+                    col_span: { type: integer }
+                    row_span: { type: integer }
+                    options:
+                      type: object
+                      additionalProperties: true
+        without_payloads:
+          type: boolean
+          description: |
+            Siempre `true` hoy. **Es una declaración, no un flag**: quien la
+            consuma tiene que saber que los paneles vienen sin datos, para no
+            dibujar un cuerpo vacío creyendo que el panel está en blanco.

@@ -1119,7 +1119,7 @@ la replica para dar feedback inmediato, pero **el servidor es el que decide**.
   bloque gauge no sabe dibujar la forma serieTemporal», no «validación fallida».
 - La regla dura de `serieConBanda` se verifica: solo gráficos con banda.
 
-### B4.8 ⬜ CRUD de roles por tenant · **LO IMPLEMENTA EL FRONT** · 2026-09-15
+### B4.8 ⚠️ CRUD de roles por tenant · **LO IMPLEMENTA EL FRONT** · 2026-09-15
 **Decidido el 2026-09-15 (humano): esta la escribimos nosotros, en Go.**
 
 **Y eso revierte una regla, así que va con su antecedente.** El 2026-09-08 se
@@ -1192,7 +1192,7 @@ de la regla: «les saca la decisión de las manos».
 - El fork está rebasado sobre su rama **al empezar** —`npm run backend-drift` en
   verde— y se vuelve a rebasar antes de proponer el código de vuelta. Un fork
   escrito sobre una base vieja no se puede integrar sin rehacerlo.
-### B4.9 ⬜ Preview por rol · **LO IMPLEMENTA EL FRONT** · 2026-09-15
+### B4.9 ⚠️ Preview por rol · **LO IMPLEMENTA EL FRONT** · 2026-09-15
 **Decidido el 2026-09-15 (humano), junto con B4.8** y por la misma razón: son
 vecinas, tienen la misma forma, y las dos bloquean superficie de admin que hoy no
 se puede empezar. El antecedente y el alcance de la excepción están escritos en
@@ -1236,6 +1236,91 @@ existe».
   layout alcanza para «CEO vs Planner», que es lo que F4.12 pide; con payloads
   hay que decidir qué período usa y si un panel oculto llega como `SIN_PERMISO` o
   no llega. Decidirlo antes, no durante.
+### B4.8 y B4.9 escritas el 2026-09-15 · en el fork, y en ⚠️ y no en ✅
+
+**El código está y las dos quedan PARCIALES**, que es lo que la regla de este
+repositorio obliga: «el estado de una tarea de backend lo mueve el front, y solo
+después de verificarlo **contra el servicio corriendo**». El fork no está
+desplegado, así que no hay servicio contra el cual verificar. Marcarlas ✅ sería
+exactamente la suposición con forma de hecho que esa regla persigue.
+
+**Dónde está:** `gerardoriarte-bt/synapse-api-go`, rama `feature/roles-y-preview`,
+partida de `feature/dynamic-dashboard-backend` en `733c13c` — el mismo commit que
+`backend-drift` declara, verificado en verde antes de empezar. El fork es
+**privado**, porque el repositorio de origen lo es. **No se abrió PR**: cómo
+vuelve el código a ellos sigue sin decidirse, y esa decisión es anterior al
+primer merge.
+
+**18 pruebas nuevas, once mutaciones muertas, y las suyas siguen pasando sin
+tocar una sola.**
+
+### Cuatro decisiones del lado de Go que no son obvias
+
+**Un puerto NUEVO en vez de ampliar el que estaba.** La primera versión le agregó
+los cinco métodos a `RoleRepository` y **rompió ocho mocks** de `auth`, `user` y
+`agent` que no tienen nada que ver con esta tarea. `DDRoleRepository` aparte,
+implementado por el mismo adaptador, no rompe nada — y es la misma separación que
+ya existe entre `dd_repositories.go` y `repositories.go`. **En un fork que tiene
+que volver, el churn evitable es lo que lo hace inmergeable.**
+
+**`Updates` con cuatro columnas, no `Save`.** Un `Save` de GORM manda el struct
+entero, incluido `tenant_id`. Un rol no cambia de cliente, y dejar esa puerta
+abierta es cómo un rol termina en otro.
+
+**Borrar con usuarios se rechaza con la razón y el número.** La FK ya tiene
+`OnDelete:RESTRICT`, así que fallaría igual — **como un error de Postgres
+convertido en 500 que no le dice a nadie qué hacer**. Y en cascada sería peor:
+dejaría usuarios sin rol, que es un usuario que no puede entrar a ninguna
+pestaña. El `user_count` viaja además en el listado, para que la pantalla lo diga
+antes de ofrecer el botón y no después del 409.
+
+**`layout_overrides` ausente se escribe como `{}`, no como nil.** En un UPDATE
+parcial, nil deja la columna intacta: «sin overrides» es un estado, no una
+omisión.
+
+### B4.9 · lo que salió gratis, y la decisión que había que tomar
+
+**`GetTab` ya recibe el `roleID` por parámetro y no del JWT.** Eso hace que
+«reusa `GetTab`, no una copia» no cueste nada: el preview resuelve el rol de otra
+forma y de ahí en adelante es literalmente la misma función. Hay una prueba con
+un espía que lo verifica llamada por llamada — si alguien reimplementara el
+filtrado, el espía vería cero.
+
+**Y va bajo `/admin/*` y no como `?asRoleId=` en `/config/tabs/:tabId`.** Ese
+namespace lo sirve `RequireUser` y su invariante es «lo que ves es lo tuyo». Un
+parámetro que lo rompa es la clase de cosa que un día se llama sin
+`AdminOnlyMiddleware` delante.
+
+**Decidido: el preview va SIN payloads**, que es lo que el criterio pedía
+resolver antes y no durante. Con el layout alcanza para «CEO vs Planner». Con
+payloads habría que decidir qué período usa y si un panel oculto llega como
+`SIN_PERMISO` —dos decisiones de producto para una pantalla que no existe— y
+materializar costaría lo mismo que la consola real. La respuesta lo declara en
+`without_payloads`, para que nadie dibuje un cuerpo vacío creyendo que el panel
+está en blanco.
+
+### Las cinco rutas entran al cable marcadas como nuestras
+
+`contracts/synapse-admin-wire.yaml` declara ahora **dos cosas distintas**: las
+ocho de ellos y las cinco del fork, cada una con `x-origen: fork` y el aviso de
+que **el servicio desplegado devuelve 404**. Están ahí porque F4.3 y F4.12 se
+construyen contra MSW, igual que se construyó la consola entera antes de que
+existiera el servicio.
+
+### Una prueba que dice qué NO demuestra
+
+`TestEditarNoTocaElTenantDelRol` prueba que el **servicio** no toca `TenantID`.
+**No** prueba la otra mitad —que el repositorio escriba solo cuatro columnas—
+porque el mock reemplaza el rol entero y esa mitad necesita una base de datos. Se
+dejó dicho en el comentario en vez de dejar que el nombre prometiera de más.
+
+### Lo que falta para cerrarlas en ✅
+
+Un despliegue del fork, o que el código vuelva a su rama y se despliegue el suyo.
+Recién ahí `humo.py` puede verificarlas contra un servicio corriendo — y para las
+rutas de admin hace falta además **un usuario `admin`**, que sigue siendo el
+mismo pedido que dejó `synapse-admin-wire.yaml` sin confirmar.
+
 ### B4.10 ⬜ Asignación de layout publicado a roles
 **Espera del backend.** **Tres etiquetas `json:`** en `DDLayoutVersion`, `DDTab` y `DDPanel`, y un **`json:"-"`** en sus campos `Tenant` / `LayoutVersion` / `Tab`.
 

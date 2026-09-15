@@ -116,6 +116,97 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/tenants/{tenantId}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Los roles del cliente
+         * @description **No la sirve el servicio desplegado.** Escrita en el fork · B4.8.
+         *
+         *     `user_count` viaja en el listado a propósito: es lo que decide si el rol
+         *     se puede borrar, y la pantalla tiene que poder decirlo **antes** de
+         *     ofrecer el botón, no después de un 409.
+         */
+        get: operations["listRoles"];
+        put?: never;
+        /**
+         * Crear un rol
+         * @description **409 si ya existe un rol con ese nombre en el cliente.** El índice único
+         *     es `(tenant_id, name)` y el servicio pregunta antes para poder decir qué
+         *     pasó en vez de devolver el error de Postgres como un 500.
+         */
+        post: operations["createRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/roles/{roleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Editar un rol
+         * @description **Escribe cuatro columnas: `name`, `tab_ids`, `hidden_metric_ids` y
+         *     `layout_overrides`.** `tenant_id` no se toca: un rol no cambia de cliente.
+         *
+         *     `layout_overrides` ausente se escribe como `{}`, no se deja intacto.
+         */
+        put: operations["updateRole"];
+        post?: never;
+        /**
+         * Borrar un rol
+         * @description **204 sin cuerpo.** Y **409 con la razón y el número si tiene usuarios
+         *     asignados** — no borra en cascada: dejaría usuarios sin rol, que es un
+         *     usuario que no puede entrar a ninguna pestaña.
+         */
+        delete: operations["deleteRole"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/layouts/{layoutId}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * El layout como lo vería un rol
+         * @description **No la sirve el servicio desplegado.** Escrita en el fork · B4.9.
+         *
+         *     **Pasa por el mismo `GetTab` que sirve a la consola**, así que
+         *     `tab_ids`, `hidden_metric_ids` y `layout_overrides` se aplican una sola
+         *     vez y en un solo lugar. Un preview que reimplemente el filtrado termina
+         *     mostrando algo que la consola no muestra, y se publica confiando en él.
+         *
+         *     **Viene SIN payloads** y lo declara en `without_payloads`. Con el layout
+         *     alcanza para «CEO vs Planner»; con payloads habría que decidir qué
+         *     período usa y si un panel oculto llega como `SIN_PERMISO`.
+         *
+         *     Un `roleId` de otro tenant devuelve **404 y no 403**: un 403 confirmaría
+         *     que el rol existe.
+         */
+        get: operations["previewLayout"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/layouts/{layoutId}/publish": {
         parameters: {
             query?: never;
@@ -322,6 +413,90 @@ export interface components {
             field?: string;
             message: string;
         };
+        /**
+         * @description `ports.DDRoleDTO`. **SÍ lleva etiquetas `json:`**, así que sale en
+         *     snake_case entero — a diferencia de `LayoutVersion` y compañía. Es lo
+         *     que B4.10 pide para aquellos.
+         */
+        Role: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            /** @example Planner */
+            name: string;
+            /** @description Vacío significa «ve todas las pestañas». */
+            tab_ids: string[];
+            /**
+             * @description **Oculta, NO impide.** El servidor vuelve a verificar en
+             *     `/config/catalog` y en el batch: un rol que oculta una métrica no es
+             *     un rol que no pueda pedirla.
+             */
+            hidden_metric_ids: string[];
+            /**
+             * @description Por pestaña y por panel · `col_start`, `col_span`, `row_span`,
+             *     `options`. **No muta el layout publicado**: `GetTab` los aplica al
+             *     responder.
+             */
+            layout_overrides?: {
+                [key: string]: unknown;
+            };
+            /** @description Cuántos usuarios tienen el rol. Con uno o más, borrar da 409. */
+            user_count: number;
+        };
+        RoleInput: {
+            name: string;
+            tab_ids?: string[];
+            hidden_metric_ids?: string[];
+            /** @description Ausente se escribe como `{}`: «sin overrides» es un estado, no una omisión. */
+            layout_overrides?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * @description `ports.DDPreviewResponse` · el layout como lo vería un rol, resuelto por
+         *     el **mismo `GetTab`** que sirve a la consola.
+         */
+        Preview: {
+            /** Format: uuid */
+            layout_id: string;
+            /** Format: uuid */
+            role_id: string;
+            role_name: string;
+            /**
+             * @description Solo las que el rol puede ver, con sus paneles ya filtrados y los
+             *     overrides aplicados. **Forma de la CONSOLA** —`ports.DDTabWithPanels`,
+             *     snake_case— y no la del builder.
+             */
+            tabs: {
+                tab: {
+                    /** Format: uuid */
+                    id: string;
+                    name: string;
+                    operational_question?: string;
+                    sort_order: number;
+                };
+                panels: {
+                    /** Format: uuid */
+                    id: string;
+                    /** Format: uuid */
+                    metric_id: string;
+                    type: string;
+                    col_start: number;
+                    col_span: number;
+                    row_span: number;
+                    options?: {
+                        [key: string]: unknown;
+                    };
+                }[];
+            }[];
+            /**
+             * @description Siempre `true` hoy. **Es una declaración, no un flag**: quien la
+             *     consuma tiene que saber que los paneles vienen sin datos, para no
+             *     dibujar un cuerpo vacío creyendo que el panel está en blanco.
+             */
+            without_payloads: boolean;
+        };
     };
     responses: {
         /** @description Identificador mal formado */
@@ -360,10 +535,23 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
+        /**
+         * @description Choca con una regla · nombre de rol duplicado, o un rol con usuarios
+         *     asignados. **El mensaje dice qué hacer**, no «conflicto».
+         */
+        Conflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
     };
     parameters: {
         tenantId: string;
         layoutId: string;
+        roleId: string;
     };
     requestBodies: never;
     headers: never;
@@ -564,6 +752,137 @@ export interface operations {
                 };
             };
             403: components["responses"]["Forbidden"];
+        };
+    };
+    listRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los roles */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["Role"][];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleInput"];
+            };
+        };
+        responses: {
+            /** @description El rol creado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["Role"];
+                    };
+                };
+            };
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roleId: components["parameters"]["roleId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleInput"];
+            };
+        };
+        responses: {
+            /** @description El rol editado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["Role"];
+                    };
+                };
+            };
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roleId: components["parameters"]["roleId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Borrado */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            409: components["responses"]["Conflict"];
+        };
+    };
+    previewLayout: {
+        parameters: {
+            query: {
+                roleId: string;
+            };
+            header?: never;
+            path: {
+                layoutId: components["parameters"]["layoutId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El layout filtrado por ese rol */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["Preview"];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
         };
     };
     publishLayout: {

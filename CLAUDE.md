@@ -363,20 +363,30 @@ ya corregida. Falta escribir su cierre.
 
 ### Lo que sigue
 
-**La Fase 4 · admin y builder.** Son 23 tareas y cero hechas: es lo único
-genuinamente nuevo que queda, porque v2 no tiene una línea de esas dos
-superficies. Las rutas del backend ya existen, así que **trece se pueden empezar
-hoy**.
+**La Fase 4 está en 13 de 23**, cerrada el 2026-09-15 hasta donde el cable y el
+diseño alcanzan. Las cuentas exactas salen de `docs/ESTADO.md`, que se genera —
+no se escriben acá, que es como se vencen sin que nadie lo note.
 
-**El punto de entrada es F4.22 + F4.23** —transcribir el cable de admin y los
-hooks del builder—, mismo patrón que F1.32 y F1.33. Ahí hay algo que decidir
-antes de empezar: sus respuestas de admin serializan structs de Go **en
-PascalCase** —`ID`, `Status`, `ColStart`—, al punto de romper sus propios tests
-de Postman. O se absorbe como el resto, o se les pide primero.
+**Lo que queda y qué lo frena, que no es lo mismo en cada una:**
 
-**Y B4.8 + B4.9, que ahora son nuestras** · decidido el 2026-09-15, se escriben
-en un fork. Desbloquean F4.3 y F4.12. **Conviene hacerlas DESPUÉS de F4.22**: al
-transcribir el cable de admin se lee ese código de todas formas.
+| | Espera |
+|---|---|
+| **F4.9 · canvas** | Una **decisión de diseño**. Hay propuesta escrita: `docs/PROPUESTA-CANVAS-2026-09-15.md` |
+| F4.3 · usuarios y roles | Que B4.8 se despliegue. El código está en el fork |
+| F4.12 · preview por rol | Lo mismo con B4.9 |
+| F4.4 · agente Snowflake | Ninguna ruta de admin expone configuración de agente |
+| F4.17–F4.21 | Formas que el backend no materializa, y `/config/plots` |
+
+**B4.8 y B4.9 están escritas y en ⚠️, no en ✅.** El código vive en
+`gerardoriarte-bt/synapse-api-go`, rama `feature/roles-y-preview`, partida del
+mismo commit que `backend-drift` declara. **No hay PR**: cómo vuelve el código a
+ellos sigue sin decidirse, y esa decisión va antes del primer merge. Se quedan en
+parcial porque la regla de este repositorio es que una `B*` solo pasa a ✅
+**verificada contra el servicio corriendo**, y el fork no está desplegado.
+
+**Las cinco rutas del fork SÍ están en el cable**, marcadas `x-origen: fork` y
+con el aviso de que el servicio desplegado devuelve 404. Es lo que deja construir
+F4.3 y F4.12 contra MSW, igual que se construyó la consola entera.
 
 **Lo que NO conviene tomar todavía:** F1.13b, F1.31 y F4.21 esperan campos o
 rutas que siguen en `docs/PARA-BACKEND.md`.
