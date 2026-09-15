@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 18 pedido(s)
+## Lo que esperamos · 19 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -272,6 +272,20 @@ cable: no están bloqueando nada. Es higiene, y de la barata.
 
 
 **La lista de layouts que el usuario puede ver, en `/config/me`.** `GET /config/tabs/:tabId?layoutId=` ya funciona, pero no hay forma de saber qué layouts le tocan a alguien, así que el selector de F5.1 no se puede construir: no se ofrece una elección que no se sabe si existe.
+
+
+### F4.9 · Canvas de 12 columnas — arrastrar y colocar
+
+*Estado de la tarea: pendiente.*
+
+
+*(No es del backend: es de DISEÑO. Va acá porque es la única marca que el plan tiene para «esta tarea no se puede tomar y la razón no es nuestra».)*
+
+**La interacción del arrastre no está declarada.** §7.2 describe el RESULTADO —slot vacío con su label, badge `HEREDADO`, colisión marcada, nada se suelta encima— y no qué hace el cursor: qué agarra, cómo se redimensiona, qué pasa al soltar fuera de la grilla, si hay teclado.
+
+**Hay propuesta escrita:** `docs/PROPUESTA-CANVAS-2026-09-15.md`, con cinco puntos, la razón de cada uno y la alternativa descartada. Espera revisión de diseño.
+
+**Y la mitad de `HEREDADO` queda fuera igual**, aunque el arrastre se decida: el cable no tiene herencia —ni vertical del tenant, ni plantillas, ni un campo que diga de dónde viene un panel—, que es la misma carencia que F4.7 declaró en B1.
 
 
 ---

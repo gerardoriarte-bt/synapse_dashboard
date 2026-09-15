@@ -44,7 +44,7 @@
 
 ---
 
-## Se puede tomar hoy · 18 del front
+## Se puede tomar hoy · 17 del front
 
 - **F1.13b** · Portar format.ts e inyectar el locale
 - **F1.31** · Registro de gráficos y verificación de mínimos
@@ -59,7 +59,6 @@
 - **F4.21** · Selector de gráfico en el builder
 - **F4.3** · Gestión de usuarios y roles por tenant
 - **F4.4** · Configuración de agente Snowflake por tenant
-- **F4.9** · Canvas de 12 columnas — arrastrar y colocar
 - **F5.1** · Selector de layout cuando hay más de uno
 - **F5.10** · Checklist de conformidad §17 por tipo de bloque integrado
 - **F5.2** · Pasar layoutId a GET /config/tabs/{tabId}
@@ -67,7 +66,7 @@
 
 ---
 
-## Bloqueadas · 23
+## Bloqueadas · 24
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -78,6 +77,7 @@ Lo que el front espera del backend está detallado en
 - **F1.25** · Conectar a la API real
 - **F3.2** · Construir ContextoDePanel al abrir
 - **F3.6** · Reutilizar cuerpos de panel para respuestas estructuradas
+- **F4.9** · Canvas de 12 columnas — arrastrar y colocar
 - **F5.13** · Períodos libres en el selector
 
 **Backend**

@@ -100,6 +100,7 @@ decir qué rol cumple**, porque ahí empieza la superposición.
 | `docs/AUDITORIA-*.md` | **Histórico.** Un cruce puntual, con fecha |
 | `docs/ENTREGA-*.md` | **Histórico.** Qué se entregó y cuándo |
 | `docs/B0.9-preguntas-abiertas.md` | Las preguntas del contrato, con su resolución |
+| `docs/PROPUESTA-*-*.md` | Una **propuesta de spec** abierta, con fecha. Lo que `design.md` no declara y el código no puede inventar |
 | `docs/F1.28-escala-tipografica.md` | La bitácora de una tarea que cambió el sistema |
 | `docs/FOLDER_STRUCTURE.md` | La estructura de `src/`, para quien llega |
 | `docs/historico/*` | Documentos **vencidos**, con el aviso adentro. No se consultan para planificar |
@@ -3296,7 +3297,15 @@ semántica en blanco en vez de «—». Las seis mueren.
 ### F4.6 ✅ `surfaces/builder/` — composición visual
 ### F4.7 ✅ Selector de tenant y plantilla base
 ### F4.8 ✅ Editor de pestañas: nombre, pregunta operativa, orden, sugerencias
-### F4.9 ⬜ Canvas de 12 columnas — arrastrar y colocar
+### F4.9 ⬜ Canvas de 12 columnas — arrastrar y colocar · 🔒 depende de una decisión de diseño
+**Espera del backend.** *(No es del backend: es de DISEÑO. Va acá porque es la única marca que el plan tiene para «esta tarea no se puede tomar y la razón no es nuestra».)*
+
+**La interacción del arrastre no está declarada.** §7.2 describe el RESULTADO —slot vacío con su label, badge `HEREDADO`, colisión marcada, nada se suelta encima— y no qué hace el cursor: qué agarra, cómo se redimensiona, qué pasa al soltar fuera de la grilla, si hay teclado.
+
+**Hay propuesta escrita:** `docs/PROPUESTA-CANVAS-2026-09-15.md`, con cinco puntos, la razón de cada uno y la alternativa descartada. Espera revisión de diseño.
+
+**Y la mitad de `HEREDADO` queda fuera igual**, aunque el arrastre se decida: el cable no tiene herencia —ni vertical del tenant, ni plantillas, ni un campo que diga de dónde viene un panel—, que es la misma carencia que F4.7 declaró en B1.
+
 ### F4.10 ✅ Configurador de panel: métrica, tipo, spans, opciones
 ### F4.11 ✅ Validación en tiempo real contra `/config/blocks`
 ### F4.12 ⬜ Preview por rol
