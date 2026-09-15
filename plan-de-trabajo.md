@@ -1090,8 +1090,59 @@ la replica para dar feedback inmediato, pero **el servidor es el que decide**.
   bloque gauge no sabe dibujar la forma serieTemporal», no «validación fallida».
 - La regla dura de `serieConBanda` se verifica: solo gráficos con banda.
 
-### B4.8 ⬜ CRUD de roles por tenant
-**Espera del backend.** **CRUD de roles por tenant** —`tab_ids[]`, `hidden_metric_ids[]`, `layout_overrides`—. Bloquea F4.3, que es la gestión de usuarios y roles de la superficie de admin.
+### B4.8 ⬜ CRUD de roles por tenant · **LO IMPLEMENTA EL FRONT** · 2026-09-15
+**Decidido el 2026-09-15 (humano): esta la escribimos nosotros, en Go.**
+
+**Y eso revierte una regla, así que va con su antecedente.** El 2026-09-08 se
+había abierto `AntPack-dev/synapse-api-go#1` con dos cambios chicos y se
+**revirtió** —commit `2de76de`— con un criterio que sigue valiendo en general:
+«tocar el código de otro equipo desde afuera les saca la decisión de las manos y
+parte en dos el lugar donde se revisa». Lo que proponíamos se describía y lo
+aplicaban ellos.
+
+**La excepción es de alcance, no de criterio.** B4.8 bloquea F4.3, y F4.3 es
+superficie de admin que hoy no se puede ni empezar. Esperar un CRUD de roles para
+construir la pantalla que lo consume deja parada una fase entera por un trabajo
+que son cuatro endpoints sobre una tabla que ya existe.
+
+**Sale de `docs/PARA-BACKEND.md`**: dejó de ser algo que esperamos.
+
+**Qué hay que implementar.** Cuatro operaciones sobre `roles`, que ya tiene las
+tres columnas desde B0.3 —`tab_ids uuid[]`, `hidden_metric_ids uuid[]`,
+`layout_overrides jsonb`—, bajo `AdminOnlyMiddleware` como el resto de
+`/admin/*`:
+
+| | |
+|---|---|
+| `GET /admin/tenants/:tenantId/roles` | Listar, con las tres columnas |
+| `POST /admin/tenants/:tenantId/roles` | Crear |
+| `PUT /admin/roles/:roleId` | Editar las tres |
+| `DELETE /admin/roles/:roleId` | Borrar · **rechazar si hay usuarios asignados** |
+
+**Dos cosas que no son obvias y hay que respetar:**
+
+- **`hidden_metric_ids` oculta y NO permite.** §1.4.20: el servidor vuelve a
+  verificar en `/config/catalog` y en el batch. Un rol que oculta una métrica no
+  es un rol que no puede pedirla — eso ya está implementado y no se toca.
+- **`layout_overrides` no muta el layout publicado.** `GetTab` los aplica al
+  responder. Un CRUD que los escriba mal recompone la consola de otro rol sin
+  que nadie publique nada.
+
+**Lo que falta decidir antes de escribir una línea:** ¿PR a su repositorio, o
+mantenemos un fork? Es la pregunta que el `2de76de` ya había contestado que no,
+y ahora hay que contestarla de nuevo para este caso. **No se empieza sin eso**:
+escribir el código y después discutir dónde vive es cómo se pierde el trabajo.
+
+**Criterio de aceptación.**
+- Las cuatro operaciones existen bajo `AdminOnlyMiddleware` y responden con el
+  envelope del servicio, no con uno nuestro.
+- Borrar un rol con usuarios asignados **falla con razón**, no en cascada.
+- `hidden_metric_ids` sigue siendo filtro de composición y no de permiso: el
+  servidor verifica igual, y hay una prueba que lo demuestra pidiendo una métrica
+  oculta directamente.
+- `layout_overrides` escrito por el CRUD se refleja en `GET /config/tabs/:tabId`
+  del rol afectado **sin republicar el layout**.
+- Queda escrito dónde vive el código —PR o fork— antes del primer commit.
 ### B4.9 ⬜ Preview por rol
 **Espera del backend.** **El preview por rol.** Bloquea F4.12, y su criterio dice por qué no se puede resolver del lado del cliente: filtrar en el front lo que ya se tiene probaría el filtro del front, que no existe — el filtrado es del servidor.
 ### B4.10 ⬜ Asignación de layout publicado a roles
@@ -2952,7 +3003,7 @@ la forma de la métrica elegida**, no los 49. Consume `/config/plots` vía
 `POST /admin/layouts/:layoutId/publish` y `GET /admin/tenants/:tenantId/catalog`.
 Con eso **trece de las veintiuna tareas de esta fase dejan de estar bloqueadas**.
 
-Siguen bloqueadas cuatro, y por dependencias nombradas: **F4.3** espera B4.8 —el
+Siguen bloqueadas tres. **F4.3 ya no espera a otro equipo**: B4.8 —el
 CRUD de roles por tenant—, **F4.12** espera B4.9 —el preview por rol—, **F4.21**
 espera `/config/plots` y B1.21, y **F4.4** espera decidir si `POST /admin/agents`
 y `GET /admin/agents` alcanzan para la configuración de agente.

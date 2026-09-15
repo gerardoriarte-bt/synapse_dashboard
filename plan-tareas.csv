@@ -210,8 +210,11 @@ B4.15,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Rechazar l
 • Un kpi con colSpan 8 no publica: su rango es 3–4.
 • El error dice cuál panel y por qué, en la lengua del producto: «un bloque gauge no sabe dibujar la forma serieTemporal», no «validación fallida».
 • La regla dura de serieConBanda se verifica: solo gráficos con banda.",pendiente,no,,equipo:backend fase:4 estado:pendiente
-B4.8,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,CRUD de roles por tenant,,"• Un rol declara tabIds[], hiddenMetricIds[] y layoutOverrides opcionales.
-• El preview devuelve exactamente lo que ese rol vería, resuelto por el mismo código que sirve /config/me. No una simulación aparte.",pendiente,no,,equipo:backend fase:4 estado:pendiente bloqueada
+B4.8,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,CRUD de roles por tenant · LO IMPLEMENTA EL FRONT · 2026-09-15,,"• Las cuatro operaciones existen bajo AdminOnlyMiddleware y responden con el envelope del servicio, no con uno nuestro.
+• Borrar un rol con usuarios asignados falla con razón, no en cascada.
+• hidden_metric_ids sigue siendo filtro de composición y no de permiso: el servidor verifica igual, y hay una prueba que lo demuestra pidiendo una métrica oculta directamente.
+• layout_overrides escrito por el CRUD se refleja en GET /config/tabs/:tabId del rol afectado sin republicar el layout.
+• Queda escrito dónde vive el código —PR o fork— antes del primer commit.",pendiente,no,,equipo:backend fase:4 estado:pendiente
 B4.9,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Preview por rol,,"• Un rol declara tabIds[], hiddenMetricIds[] y layoutOverrides opcionales.
 • El preview devuelve exactamente lo que ese rol vería, resuelto por el mismo código que sirve /config/me. No una simulación aparte.",pendiente,no,,equipo:backend fase:4 estado:pendiente bloqueada
 B4.10,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Asignación de layout publicado a roles,,"• Un rol declara tabIds[], hiddenMetricIds[] y layoutOverrides opcionales.

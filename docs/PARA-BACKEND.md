@@ -29,7 +29,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 16 pedido(s)
+## Lo que esperamos · 15 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -190,14 +190,6 @@ Los pasos completos están en `docs/snowflake/INSTRUCCION-ALTA-TENANT.md`. **Nos
 
 
 **`POST /config/chat` con `ContextoDePanel`.** Es la transversal T4 y bloquea F3.2, F3.3, F3.6 y la mitad de F3.7. El chat que el servicio sí tiene es **otro producto** —decidido el 2026-09-08—: el nuestro es el chat contextual del panel, se abre desde un panel y lleva su métrica.
-
-
-### B4.8 · CRUD de roles por tenant
-
-*Estado de la tarea: pendiente.*
-
-
-**CRUD de roles por tenant** —`tab_ids[]`, `hidden_metric_ids[]`, `layout_overrides`—. Bloquea F4.3, que es la gestión de usuarios y roles de la superficie de admin.
 
 
 ### B4.9 · Preview por rol

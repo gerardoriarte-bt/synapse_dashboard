@@ -50,6 +50,13 @@ otro equipo desde afuera les saca la decisión de las manos y parte en dos el
 lugar donde se revisa. Lo que proponemos se describe —con el snippet, la línea y
 la evidencia— y lo aplican ellos.
 
+> **Excepción registrada el 2026-09-15 · B4.8.** El CRUD de roles por tenant lo
+> escribe el front, en Go. **La regla de arriba no cambia**; lo que cambia es su
+> alcance para un caso: B4.8 bloquea F4.3, y F4.3 es una superficie de admin que
+> hoy no se puede ni empezar. El razonamiento completo está en la tarea, en
+> `plan-de-trabajo.md`. Sigue abierto dónde vive ese código —PR o fork—, que es
+> justamente lo que este documento había contestado que no.
+
 Así que este documento **es la entrega**. Lo que sigue se pasa como mensaje.
 
 ## Necesito cuatro cosas

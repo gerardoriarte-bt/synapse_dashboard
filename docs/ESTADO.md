@@ -85,7 +85,7 @@
 
 ---
 
-## Bloqueadas · 21
+## Bloqueadas · 20
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -114,7 +114,6 @@ Lo que el front espera del backend está detallado en
 - **B1.6** · POST /config/panels:batch
 - **B2.7** · Estado SIN_PERMISO en el batch
 - **B3.1** · POST /config/chat con SSE
-- **B4.8** · CRUD de roles por tenant
 - **B4.9** · Preview por rol
 - **B5.1** · Varios layouts por tenant
 
