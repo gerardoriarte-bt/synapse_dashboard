@@ -457,9 +457,24 @@ numeración contra la de ellos, que **no coincide**.
 
 ### Del lado de datos
 
-**B1.22–B1.26 y B2.12** esperan a quien es dueño de la cuenta de Snowflake.
-`SYNAPSE_METRIC_CATALOG` no existe; el SQL y la instrucción están en
-`docs/snowflake/`. **Nosotros no corremos nada ahí.**
+**Snowflake ya está hecho, y lo que falta es correr el sync.** El equipo de datos
+entregó B1.22–B1.24 el 2026-09-15 —`docs/snowflake/synapse-catalogo-metricas.md`—:
+la vista `SYNAPSE_METRIC_CATALOG` existe en `DB_BT_UA.BT_UA_MART_ANALYTICS`, con
+sus textos de gobierno firmados, la vista de validación en cero filas y el grant
+para `SYNAPSE_APP_ROLE`.
+
+**Y `make sync-catalog` no se corrió**, lo cual se ve desde acá: `/config/catalog`
+devuelve las **doce** claves de la semilla de Postgres —`sales`, `investment`,
+`executive_summary`…— y no las **diez** de Snowflake —`revenue`, `spend`,
+`platform_return`…—. Dos de las doce de hoy **no están** en Snowflake:
+`executive_summary` y `decisions`, que son los paneles de prosa y recomendación.
+
+**`MEASUREMENT_WINDOW` existe en la vista con valor en las diez**, así que B1.25
+ya no espera a Snowflake: espera dos líneas de Go. Y el nombre del campo JSON lo
+acordamos nosotros — **que sea `measurement_window`**, igual que la columna: al
+adaptador le da lo mismo y un tercer nombre es una traducción más que mantener.
+
+**Nosotros no corremos nada en Snowflake.**
 
 ### Pendiente que no es código · diferido a propósito
 

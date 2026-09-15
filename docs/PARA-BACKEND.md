@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 20 pedido(s)
+## Lo que esperamos · 22 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -194,6 +194,34 @@ Los pasos completos están en `docs/snowflake/INSTRUCCION-ALTA-TENANT.md`. **Nos
 
 
 **Un usuario de prueba con un rol restringido.** El mecanismo está en el código, pero con el usuario que tenemos —rol `Planner`— el catálogo devuelve las doce métricas, incluidas `executive_summary`, `roas` y `decisions`, que su propio documento dice que `planner` oculta. No decimos que esté roto: no se puede comprobar. Con un usuario así se cierran las dos mitades en un minuto — el catálogo recortado y un panel en `FORBIDDEN`.
+
+
+### B1.25 · ventana de punta a punta · de la vista al payload
+
+*Estado de la tarea: pendiente.*
+
+
+**Ya no espera a Snowflake: espera dos líneas de Go.** Verificado el 2026-09-15.
+
+`MEASUREMENT_WINDOW` **existe en la vista, con valor en las diez métricas y sin nulos** —lo entrega el equipo de datos en `docs/snowflake/synapse-catalogo-metricas.md` §8—, y con ese nombre justamente para no chocar con `WINDOW`, reservada en ANSI. Falta lo de siempre: leerla en el `SELECT` de `dd_catalog_sync_service.go` y exponerla en `GET /config/catalog`.
+
+**Comprobado contra el servicio corriendo:** las claves de una métrica de `/config/catalog` son `base, catalog_version, created_at, dimensions, family, id, key, layer, min_grain, name, semantic_direction, shape, source, tenant_id, updated_at`. **No hay ningún campo de ventana**, ni `measurement_window` ni `window`.
+
+**Y la pregunta que el equipo de datos nos devuelve, contestada:** el nombre del campo JSON lo acordamos backend y front, y **al front le da igual** — el adaptador de F1.33 renombra, es lo que hace con los catorce campos que ya traduce. **Que sea `measurement_window`**, igual que la columna: un tercer nombre para el mismo dato es una traducción más que mantener, y el cable ya sale en snake_case.
+
+
+### B1.27 · El período declara si está cerrado
+
+*Estado de la tarea: pendiente.*
+
+
+**Un campo en `Periodo`** que diga si el período está cerrado o en curso — pedido el 2026-09-15.
+
+`availablePeriods()` emite los últimos doce meses **contando el actual**, y el actual está incompleto. Hoy los trece llegan iguales: una cadena `2026-09`. La consola los ofrece todos con la misma pinta, y quien compare el mes en curso contra el anterior lee una caída que es «todavía no terminó».
+
+**Es barato de los dos lados**: el backend ya sabe cuál es el mes en curso al generarlos. Y con eso el front lo marca —el `.pen` lo dibuja en B5: «1 – 31 JUL 2026 · **MTD CERRADO**»— sin comparar contra el reloj del navegador, que sería el error: el corte del día es **del tenant y su huso**, no de quien mira.
+
+**Lo pidió el equipo de datos sin saberlo.** Su aviso decía «si la consola deja elegir meses futuros, mostrará 0 y roas 0x». Los futuros no se ofrecen —verificado en `availablePeriods()`—, pero el mes en curso sí, y es el mismo problema en chico.
 
 
 ### B2.13 · Salud de feeds por fuente · de acá sale el ESTADO de cada métrica

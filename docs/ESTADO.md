@@ -5,21 +5,21 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**94 de 194 tareas cerradas.** 12 parciales · 83 pendientes · 5 diferidas.
+**94 de 196 tareas cerradas.** 13 parciales · 84 pendientes · 5 diferidas.
 
 
-## Front · 87 de 112
+## Front · 87 de 113
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██████████████████████` | 16/16 | 0 | 0 |
-| 1 · Consola y render/ | `████████████████████··` | 40/43 | 1 | 2 |
+| 1 · Consola y render/ | `████████████████████··` | 40/44 | 1 | 3 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `████████··············` | 4/11 | 1 | 3 |
 | 4 · Admin y Builder | `██████████████········` | 15/23 | 2 | 6 |
 | 5 · Pruebas y pulido | `████████████··········` | 7/13 | 1 | 4 |
 
-## Backend · 7 de 82
+## Backend · 7 de 83
 
 > ⚠️ **Este número está bajo y no refleja al backend.** El plan de acá
 > es la fuente del FRONT; el estado de las tareas `B*` solo se mueve
@@ -36,7 +36,7 @@
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██····················` | 1/10 | 1 | 8 |
-| 1 · API de consola | `████··················` | 5/26 | 3 | 18 |
+| 1 · API de consola | `████··················` | 5/27 | 4 | 18 |
 | 2 · Materialización | `██····················` | 1/13 | 0 | 12 |
 | 3 · Chat contextual | `······················` | 0/10 | 0 | 10 |
 | 4 · Admin y Builder | `······················` | 0/16 | 2 | 14 |
@@ -44,10 +44,11 @@
 
 ---
 
-## Se puede tomar hoy · 16 del front
+## Se puede tomar hoy · 17 del front
 
 - **F1.13b** · Portar format.ts e inyectar el locale
 - **F1.31** · Registro de gráficos y verificación de mínimos
+- **F1.42** · El mes en curso está incompleto y el selector no lo dice
 - **F2.3** · SIN_PERMISO · B0.9 (línea 1171) contestada
 - **F3.3** · «Ver detalle» y «Preguntar» en el shell del panel
 - **F3.7** · Historial de hilos
@@ -65,7 +66,7 @@
 
 ---
 
-## Bloqueadas · 26
+## Bloqueadas · 28
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -92,6 +93,8 @@ Lo que el front espera del backend está detallado en
 - **B1.18** · Sincronizar el catálogo con las semantic views de Snowflake
 - **B1.19** · Filtrar el catálogo por permisos de rol
 - **B1.21** · Declarar los mínimos de datos por gráfico
+- **B1.25** · ventana de punta a punta · de la vista al payload
+- **B1.27** · El período declara si está cerrado
 - **B1.6** · POST /config/panels:batch
 - **B2.13** · Salud de feeds por fuente · de acá sale el ESTADO de cada métrica
 - **B2.7** · Estado SIN_PERMISO en el batch

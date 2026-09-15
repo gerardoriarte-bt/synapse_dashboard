@@ -791,7 +791,13 @@ SQL de punta a punta: el agente de Cortex solo aporta credenciales y el
 `db.schema` donde buscar. El agente se usa en `/chat/stream`, que es otro
 producto.
 
-#### ➕ B1.22 ⬜ Crear el catálogo de métricas en Snowflake
+#### ➕ B1.22 ⚠️ Crear el catálogo de métricas en Snowflake
+**Verificado el 2026-09-15 contra el servicio corriendo.** **El lado de Snowflake está HECHO** —lo entrega `docs/snowflake/synapse-catalogo-metricas.md`, del equipo de datos: la vista `SYNAPSE_METRIC_CATALOG` existe en `DB_BT_UA.BT_UA_MART_ANALYTICS`, con `DD_METRIC_CURATION` detrás, la vista de validación `SYNAPSE_METRIC_CATALOG_ISSUES` en cero filas y el grant para `SYNAPSE_APP_ROLE`.
+
+**Queda en ⚠️ y no en ✅ porque `make sync-catalog` NO se corrió**, y eso se ve desde acá sin preguntarle a nadie: `GET /config/catalog` devuelve **doce métricas con las claves de la semilla de Postgres** —`sales`, `investment`, `visits`, `goals_vs_actual`, `executive_summary`, `decisions`…— y no las **diez** que la vista de Snowflake declara —`revenue`, `spend`, `sessions`, `goal_attainment`, `platform_return`, `media_efficiency_12m`…—. El catálogo que la consola consume **sigue saliendo del seed**.
+
+**Y hay una consecuencia que conviene ver antes de correrlo, no después:** de las doce de hoy, **`executive_summary` y `decisions` no están** en las diez de Snowflake. Son los paneles de prosa y de recomendación. Después del sync, o se agregan a `DD_METRIC_CURATION` o esos dos paneles se quedan sin métrica.
+
 **Descripción.** Los tres objetos en el mismo `db.schema` que tiene configurado
 el agente del tenant —para UA MX, `DB_BT_UA.BT_UA_MART_ANALYTICS`—, más el grant
 de lectura para el rol del agente.
@@ -871,6 +877,14 @@ escrita, tres capas más abajo.
   error que ya se cometió una vez al escribir la primera semilla.
 
 #### ➕ B1.25 ⬜ `ventana` de punta a punta · de la vista al payload
+**Espera del backend.** **Ya no espera a Snowflake: espera dos líneas de Go.** Verificado el 2026-09-15.
+
+`MEASUREMENT_WINDOW` **existe en la vista, con valor en las diez métricas y sin nulos** —lo entrega el equipo de datos en `docs/snowflake/synapse-catalogo-metricas.md` §8—, y con ese nombre justamente para no chocar con `WINDOW`, reservada en ANSI. Falta lo de siempre: leerla en el `SELECT` de `dd_catalog_sync_service.go` y exponerla en `GET /config/catalog`.
+
+**Comprobado contra el servicio corriendo:** las claves de una métrica de `/config/catalog` son `base, catalog_version, created_at, dimensions, family, id, key, layer, min_grain, name, semantic_direction, shape, source, tenant_id, updated_at`. **No hay ningún campo de ventana**, ni `measurement_window` ni `window`.
+
+**Y la pregunta que el equipo de datos nos devuelve, contestada:** el nombre del campo JSON lo acordamos backend y front, y **al front le da igual** — el adaptador de F1.33 renombra, es lo que hace con los catorce campos que ya traduce. **Que sea `measurement_window`**, igual que la columna: un tercer nombre para el mismo dato es una traducción más que mantener, y el cable ya sale en snake_case.
+
 **Descripción.** Lo único de este bloque que es código y no Snowflake, y es de una
 línea en dos lugares: agregar `MEASUREMENT_WINDOW` al `SELECT` de
 `dd_catalog_sync_service.go`, y el campo a `DDCatalogMetric` para que salga por
@@ -892,6 +906,15 @@ literal imprime la cadena `undefined`, no un hueco.
   campo, no después.
 - El front lo consume por el adaptador de F1.33 sin lógica nueva: es un renombre,
   no un cálculo.
+
+#### ➕ B1.27 ⬜ El período declara si está cerrado
+**Espera del backend.** **Un campo en `Periodo`** que diga si el período está cerrado o en curso — pedido el 2026-09-15.
+
+`availablePeriods()` emite los últimos doce meses **contando el actual**, y el actual está incompleto. Hoy los trece llegan iguales: una cadena `2026-09`. La consola los ofrece todos con la misma pinta, y quien compare el mes en curso contra el anterior lee una caída que es «todavía no terminó».
+
+**Es barato de los dos lados**: el backend ya sabe cuál es el mes en curso al generarlos. Y con eso el front lo marca —el `.pen` lo dibuja en B5: «1 – 31 JUL 2026 · **MTD CERRADO**»— sin comparar contra el reloj del navegador, que sería el error: el corte del día es **del tenant y su huso**, no de quien mira.
+
+**Lo pidió el equipo de datos sin saberlo.** Su aviso decía «si la consola deja elegir meses futuros, mostrará 0 y roas 0x». Los futuros no se ofrecen —verificado en `availablePeriods()`—, pero el mes en curso sí, y es el mismo problema en chico.
 
 #### ➕ B1.26 ⬜ Decidir cómo escala el registro, antes del segundo tenant
 **Descripción.** El catálogo vive en Snowflake y el registro de queries en Go:
@@ -3021,6 +3044,33 @@ nadie abriera el archivo.
 
 
 ---
+
+#### ➕ F1.42 ⬜ El mes en curso está incompleto y el selector no lo dice
+**Descripción.** El equipo de datos avisó el 2026-09-15 que
+`GLD_ECOMM_DAILY_PERFORMANCE` tiene filas hasta **dic-2028 con valores en 0**
+—metas de planeación— y que **el mes en curso está incompleto**.
+
+**La mitad de ese aviso no aplica, y conviene devolvérselo.** Lo verificamos
+contra el código: `availablePeriods()` genera los **últimos doce meses contando
+el actual** y nunca uno futuro, así que la consola no puede ofrecer dic-2028. Esa
+preocupación es real para quien consulte Snowflake a mano, no para el front.
+
+**La otra mitad sí, y es nuestra.** El mes en curso se ofrece igual que los
+cerrados, y `PeriodPicker` no lo distingue: alguien compara septiembre contra
+agosto y lee una caída que es «el mes todavía no terminó». Es el mismo problema
+que un panel degradado mostrando un número aproximado — **la cifra es correcta y
+la lectura es falsa**.
+
+El `.pen` ya lo dibuja en B5: «PERÍODO · 1 – 31 JUL 2026 · **MTD CERRADO**».
+**Criterio de aceptación.**
+- El período en curso se marca como **parcial**, con qué parte del mes cubre. No
+  se deshabilita: mirar el mes en curso es legítimo, lo que no es legítimo es que
+  se vea igual que uno cerrado.
+- El texto sale de lo que el período declara, **no de comparar contra `new
+  Date()` en el front**: el corte del día es del tenant y su huso, no del
+  navegador · la regla de las dos zonas horarias.
+- **Eso lo hace esperar un campo**: hoy `Periodo` no declara si está cerrado. Va
+  pedido a backend.
 
 ## Fase 2 — Los estados de materialización en pantalla
 
