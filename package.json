@@ -25,6 +25,7 @@
     "para-backend": "python3 tools/para-backend.py",
     "estado": "python3 tools/estado.py",
     "docs-registro": "python3 tools/docs-registro.py",
+    "afirmaciones": "python3 tools/afirmaciones.py",
     "mocks-fuera": "python3 tools/mocks-fuera.py",
     "backend-drift": "python3 tools/backend-drift.py",
     "humo": "python3 tools/humo.py",

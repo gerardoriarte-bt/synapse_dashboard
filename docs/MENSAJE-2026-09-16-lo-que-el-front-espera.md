@@ -124,7 +124,7 @@ es para elegir por dónde empezar.
 | 5 | Locale, moneda y zona horaria en `tenant` | 1 · hoy `/config/me` manda `tenant: {id, name}` y el front formatea con `es-MX` **escrito a mano** | Tres campos |
 | 6 | Cuál de los períodos está abierto | 1 · hoy llegan como cadenas sueltas —`['2026-09', …]`— y septiembre se ve igual que agosto: alguien lee una caída que es «el mes no terminó». Lo necesitamos del servidor, porque el corte del día es del cliente y su huso, no del navegador | Un campo |
 | 7 | Panel y período en `HiloResumen` | La otra mitad del historial de hilos | Dos campos |
-| 8 | `GET /admin/users` · en el router solo está el `POST` | La otra mitad de la gestión de usuarios | Ruta nueva |
+| 8 | Una ruta que **liste** usuarios · `GET /admin/users` da **404** y en el router solo está el `POST` | La otra mitad de la gestión de usuarios | Ruta nueva |
 | 9 | `/config/solicitudes` · ya está en el contrato | 1 · el botón de pedir acceso cuando un panel sale `SIN_PERMISO`. Hoy hay una prueba que fija que el botón **no** está, para que aparezca el día que se cablee | Ruta nueva |
 
 **Cuatro tareas nuestras no están acá a propósito** —los cuerpos de panel

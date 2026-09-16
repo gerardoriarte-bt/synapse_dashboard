@@ -222,6 +222,7 @@ equivocado.
 | `npm run plan` | regenera `plan-tareas.csv` y la página desde `plan-de-trabajo.md` |
 | `npm run plan:diff <export.csv>` | compara un export de la plataforma de seguimiento contra el plan |
 | `npm run mocks-fuera` | ningún archivo de `src/` importa un mock · F0.8 |
+| `npm run afirmaciones` | lo citable de `docs/` se verifica · método+ruta, commits y tareas |
 | `SYNAPSE_EMAIL=… SYNAPSE_PASSWORD=… npm run humo` | el servicio real == los dos yaml transcriptos |
 
 ## El plan de trabajo
@@ -357,6 +358,37 @@ algo que ya estaba muerto. El 2026-09-15 las ocho mutaciones de F4.7 salieron en
 verde sin demostrar nada: el arnés corría toda la carpeta y ahí adentro había una
 prueba rota por otra razón. El arnés corre la base primero, sale 1 si el texto a
 mutar no está, y sale 2 si la base no está verde.
+
+**NADA SE ESCRIBE DE MEMORIA — y eso ya no es solo para los fixtures.**
+
+La regla de abajo estaba acotada a las pruebas y se cumplía ahí. El 2026-09-16
+esa misma falla apareció **cinco veces fuera** de las pruebas, y una de ellas
+estuvo a punto de irse al equipo de backend: la tabla de quince bloques del modo
+mock con las quince filas mal, «cero churn» sobre un commit con 62 borrados,
+«ocho mocks» cuando eran tres, y `PUT /admin/tenants/{id}/roles` cuando el propio
+yaml ya decía `/admin/roles/{roleId}`.
+
+**No son cinco descuidos: es uno, cinco veces.** Vale para todo lo que se
+afirma — un comentario, una tabla, un commit, un documento que sale del
+repositorio. **Si se puede leer de la fuente, se lee.** Y si la fuente es un
+endpoint, **se captura y se anota de dónde salió con qué fecha**, en vez de
+transcribirla.
+
+Lo sostiene `afirmaciones`, en la puerta desde el 2026-09-16: método+ruta contra
+los contratos, commits alcanzables desde una rama, identificadores contra el
+plan. **No verifica que algo sea verdadero, solo que sea citable** — lo que cubre
+es citar mal lo que está a dos archivos de distancia, que es la clase barata y
+frecuente.
+
+**UN BLOQUEO ESCRITO NO SE RAZONA POR ENCIMA.** El 2026-09-16 se tomaron
+F4.17–F4.20 con el plan diciendo «se construyen cuando el backend envíe esas
+formas, no antes» y la instrucción diciendo «no tomar». Había un argumento —que
+la razón citada había vencido— y era cierto **a medias**: de las dos razones, una
+había vencido y la otra no, y era la que mandaba.
+
+Lo grave no es la conclusión equivocada. Es haber tratado una decisión escrita
+como una opinión a revisar. **Si el bloqueo parece vencido, se dice y se
+pregunta; no se resuelve solo y se empieza a construir.**
 
 **Y el fixture se escribe desde el contrato, no de memoria.** El 2026-09-04, al
 escribir las pruebas que faltaban, se escribieron de memoria tres fixtures y el
