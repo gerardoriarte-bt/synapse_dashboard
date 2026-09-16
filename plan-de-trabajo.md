@@ -4976,6 +4976,41 @@ Verificadas hoy, y por quién:
 - **«Clic abre chat con `metricId` + contexto»** · 🔒 F3.2, que espera a T4.
 - **«Cambiar tenant/rol recomponen sin deploy»** · 🔒 necesita el contrato de
   admin y builder, que no existe.
+
+##### Doce de trece desde el 2026-09-15 · la casilla del tenant y el rol
+
+**La razón por la que estaba bloqueada venció.** «Necesita el contrato de admin y
+builder, que no existe» se escribió el 2026-09-04; el contrato existe desde F4.22
+—`contracts/synapse-admin-wire.yaml`, con `admin-drift` en la puerta— y la vista
+previa por rol está construida en F4.12. Lo que faltaba era la prueba.
+
+**Y no la cubría la casilla 1.** «Layout viene de `GET /config/tabs`, no de
+código» dice que la composición llega del servidor; ésta dice que **el tenant y
+el rol son los que la mueven**. Un front que pintara el layout que llega y además
+tuviera escrito «si el rol es CEO, esta pestaña no» cumpliría la primera y
+fallaría ésta — y la diferencia solo se ve cambiando el rol.
+
+`tests/surfaces/console/porRolYTenant.test.tsx` monta **el mismo componente dos
+veces** contra dos contextos distintos: otro tenant, otro rol, otra pestaña, otra
+pregunta operativa, otra métrica, otro tipo de panel y otra cifra. Sin build en
+el medio. La segunda prueba aísla el eje del rol —mismo tenant, dos paneles
+contra uno, porque `hidden_metric_ids` ya se aplicó del lado del servidor— y la
+tercera fija que **el front no reimplementa el filtro**: un panel cuya métrica
+este rol no ve se dice, no se esconde. Esconderlo sería lo mismo que
+`RolePreview` explica que no hay que simular.
+
+**Verificada por mutación, seis casos sobre línea de base verde.** La pregunta
+operativa escrita en el front, el nombre de la métrica escrito en el adaptador,
+los paneles recortados a uno, el filtro por rol reimplementado, el orden de
+lectura ignorado y el catálogo cayendo a una métrica fija. Mueren los seis.
+
+**Queda una, y sigue 🔒 de verdad.** «Clic abre chat con `metricId` + contexto»
+es F3.2 y espera a **T4**: `POST /config/chat` acepta `pregunta`, `tabId` y
+`hiloId`, y **no hay campo por donde mandar el panel**. La cadena de callbacks
+está construida hasta el botón —`Console → PanelInGrid → Panel → PanelShell`—;
+lo que no existe es el manejador arriba, y por la regla de este repositorio un
+CTA sin manejador **no se pinta**. Inventar el campo sería escribir contra un
+contrato que no lo declara.
 - ~~«Cambiar período no re-fetch layout»~~ · **cerrada el mismo día que la
   auditoría la encontró.** Estaba implementada —`keys.tab` no lleva el período—
   y escrita en un comentario de `hooks.ts`, pero **ninguna prueba la sostenía**:
