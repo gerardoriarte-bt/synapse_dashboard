@@ -172,7 +172,16 @@ export const detalle = (layout: string) => ({
 export const contexto = {
   user: { id: usuario.id, email: usuario.email, first_name: usuario.first_name, last_name: usuario.last_name },
   tenant: { id: TENANT, name: 'Under Armour México', timezone: 'America/Mexico_City' },
-  role: { id: R(1), name: 'CEO' },
+  // **`admin`, y no uno de los tres roles del cliente.** El login de este modo
+  // ya devolvía `role: 'admin'` y `/config/me` devolvía `CEO`: la consola lee el
+  // segundo, así que el menú de usuario escondía la salida a administración y al
+  // builder — justo lo que este modo existe para poder recorrer.
+  //
+  // Va con id propio y no con `R(1)`: el super-admin es del plano PLATAFORMA
+  // —§3.1, «cross-tenant por diseño»— y CEO, Planner y Analista son roles DEL
+  // cliente. Reusar el id de CEO habría hecho que el mismo identificador
+  // significara dos cosas.
+  role: { id: '66666666-6666-6666-6666-6666666666ad', name: 'admin' },
   tabs: tabsDe(LAYOUT_PUB).map((t) => ({
     id: t.tab.ID,
     name: t.tab.Name,

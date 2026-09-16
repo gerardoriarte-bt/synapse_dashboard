@@ -31,6 +31,7 @@
  *  este rol no ve se pintaría distinto. No se pinta distinto — se dice que no se
  *  resuelve, que es lo que `RolePreview` explica que no hay que simular.
  */
+import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import { http } from 'msw'
@@ -46,7 +47,11 @@ function montar() {
   })
   return render(
     <QueryClientProvider client={client}>
-      <ConsoleContainer />
+      {/* En un router: desde el 2026-09-16 el Topbar monta `UserMenu`, que
+          navega a las otras superficies. */}
+      <MemoryRouter>
+        <ConsoleContainer />
+      </MemoryRouter>
     </QueryClientProvider>,
   )
 }

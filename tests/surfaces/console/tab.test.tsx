@@ -12,6 +12,7 @@
  *  Cinco paneles, cinco tipos, cinco formas. Todo entra por MSW: ni un fixture
  *  JS importado por la superficie.
  */
+import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, within } from '@testing-library/react'
 import { http } from 'msw'
@@ -118,7 +119,11 @@ function montar() {
   })
   return render(
     <QueryClientProvider client={client}>
-      <ConsoleContainer />
+      {/* En un router: desde el 2026-09-16 el Topbar monta `UserMenu`, que
+          navega a las otras superficies. */}
+      <MemoryRouter>
+        <ConsoleContainer />
+      </MemoryRouter>
     </QueryClientProvider>,
   )
 }

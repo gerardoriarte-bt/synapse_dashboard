@@ -9,6 +9,7 @@
  *  rechaza con **422** si hay paneles inválidos, que es información y no un fallo
  *  del sistema.
  */
+import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -75,7 +76,13 @@ function montar() {
   })
   return render(
     <QueryClientProvider client={client}>
-      <Builder />
+      {/* **En un router, porque el contenedor navega.** Desde el 2026-09-16
+          `Admin`/`Builder` ofrecen «volver a la consola» y eso es `useNavigate`,
+          que fuera de un router lanza. Montarlos sin él probaba una app que la
+          real no es. */}
+      <MemoryRouter>
+        <Builder />
+      </MemoryRouter>
     </QueryClientProvider>,
   )
 }

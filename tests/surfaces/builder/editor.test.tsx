@@ -7,6 +7,7 @@
  *  que uno que funciona, y el spread condicional no lo detecta— y que el
  *  borrador se ate a su versión.
  */
+import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -117,7 +118,13 @@ function montar() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <Builder />
+      {/* **En un router, porque el contenedor navega.** Desde el 2026-09-16
+          `Admin`/`Builder` ofrecen «volver a la consola» y eso es `useNavigate`,
+          que fuera de un router lanza. Montarlos sin él probaba una app que la
+          real no es. */}
+      <MemoryRouter>
+        <Builder />
+      </MemoryRouter>
     </QueryClientProvider>,
   )
 }

@@ -74,6 +74,8 @@ const NOTA_GUARDAR = 'Guardar'
 type Props = {
   activa: PantallaId
   onIr: (id: PantallaId) => void
+  /** Volver a la consola · `undefined` no pinta el control. */
+  onVolver?: () => void
   contexto: ContextoDeEdicion
   /** `null` cuando no hay nada que publicar todavía · la razón la da la pantalla. */
   onPublicar: (() => void) | null
@@ -86,6 +88,7 @@ type Props = {
 export function BuilderChrome({
   activa,
   onIr,
+  onVolver,
   contexto,
   onPublicar,
   onGuardar,
@@ -115,7 +118,27 @@ export function BuilderChrome({
                   narrowear por `forma`, no una prueba. El 1440 sigue declarado en
                   `pantallas.ts` y verificado ahí; lo que no existe es un lugar en
                   la UI donde decirlo, porque esa pantalla no tiene cabecera. */}
-              <Label>Ancho 1600 · lienzo 1:1 a 1200 más 300 de biblioteca</Label>
+              <div className="flex items-center gap-4">
+                {/* **La vuelta a la consola.** El `.pen` no la dibuja —ninguna de las
+                  quince pantallas navega hacia otra superficie— y sin ella se
+                  entra acá y no se sale sin escribir la URL.
+
+                  **Es un callback y no un `useNavigate` acá adentro**, que es la
+                  regla que este archivo ya declaraba arriba: «la navegación es
+                  del contenedor, no del chrome». Escrito con el hook, además,
+                  rompía doce pruebas que montan el chrome sin router — y tenían
+                  razón en romperse. */}
+              {onVolver !== undefined && (
+                <button
+                  type="button"
+                  onClick={onVolver}
+                  className="font-mono text-label tracking-rotulo uppercase text-dim hover:text-ink cursor-pointer bg-transparent border-0 p-0"
+                >
+                  ← Consola
+                </button>
+              )}
+                <Label>Ancho 1600 · lienzo 1:1 a 1200 más 300 de biblioteca</Label>
+              </div>
             </div>
 
             {conContexto(forma) && (

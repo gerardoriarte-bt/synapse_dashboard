@@ -22,6 +22,7 @@
  *  Una pantalla que se declara pendiente no es lo mismo que una que no está: la
  *  primera dice qué la desbloquea, que es lo que §8 pide de cualquier estado.
  */
+import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import {
   useAdminCatalog,
@@ -98,6 +99,7 @@ const EN_OTRA_PANTALLA: Partial<Record<PantallaId, string>> = {
 }
 
 export function Builder() {
+  const navegar = useNavigate()
   const [pantalla, setPantalla] = useState<PantallaId>('contexto')
   const [tenant, setTenant] = useState<string | null>(null)
   const [version, setVersion] = useState<string | null>(null)
@@ -219,6 +221,7 @@ export function Builder() {
 
   return (
     <BuilderChrome
+      onVolver={() => void navegar('/')}
       activa={pantalla}
       onIr={setPantalla}
       contexto={{

@@ -35,6 +35,9 @@ type Props = {
   activa: PantallaId
   /** Qué pantalla se pide. La navegación es del contenedor, no del chrome. */
   onIr: (id: PantallaId) => void
+  /** Volver a la consola · `undefined` no pinta el control, que es la regla del
+   *  CTA sin manejador. */
+  onVolver?: () => void
   /** El tenant en contexto, para las pantallas de alcance `tenant`. */
   tenants: readonly { id: string; nombre: string }[]
   tenantActivo: string | null
@@ -42,7 +45,7 @@ type Props = {
   children: React.ReactNode
 }
 
-export function AdminChrome({ activa, onIr, tenants, tenantActivo, onTenant, children }: Props) {
+export function AdminChrome({ activa, onIr, onVolver, tenants, tenantActivo, onTenant, children }: Props) {
   const pantalla = PANTALLAS.find((p) => p.id === activa) ?? PANTALLAS[0]
   const porTenant = pantalla.alcance === 'tenant'
 
@@ -61,6 +64,24 @@ export function AdminChrome({ activa, onIr, tenants, tenantActivo, onTenant, chi
                 eso tiene consecuencias —lo que se hace acá afecta a todos—, así
                 que no se deduce del contenido: se declara. */}
             <div className="flex items-center gap-4">
+              {/* **La vuelta a la consola.** El `.pen` no la dibuja —ninguna de las
+                  quince pantallas navega hacia otra superficie— y sin ella se
+                  entra acá y no se sale sin escribir la URL.
+
+                  **Es un callback y no un `useNavigate` acá adentro**, que es la
+                  regla que este archivo ya declaraba arriba: «la navegación es
+                  del contenedor, no del chrome». Escrito con el hook, además,
+                  rompía doce pruebas que montan el chrome sin router — y tenían
+                  razón en romperse. */}
+              {onVolver !== undefined && (
+                <button
+                  type="button"
+                  onClick={onVolver}
+                  className="font-mono text-label tracking-rotulo uppercase text-dim hover:text-ink cursor-pointer bg-transparent border-0 p-0"
+                >
+                  ← Consola
+                </button>
+              )}
               <Label>{porTenant ? 'Alcance · cliente' : 'Alcance · plataforma'}</Label>
               {porTenant ? (
                 <select

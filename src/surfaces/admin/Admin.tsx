@@ -20,6 +20,7 @@
  *  Una pantalla que se declara pendiente **no es lo mismo que una que no está**:
  *  la primera dice qué la desbloquea, que es lo que §8 pide de cualquier estado.
  */
+import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import {
   useAdminCatalog,
@@ -54,6 +55,7 @@ const PENDIENTES: Partial<Record<PantallaId, { razon: string; desbloqueaCon: str
 }
 
 export function Admin() {
+  const navegar = useNavigate()
   const [pantalla, setPantalla] = useState<PantallaId>('clientes')
   const [tenant, setTenant] = useState<string | null>(null)
   const tenants = useTenants()
@@ -103,6 +105,7 @@ export function Admin() {
 
   return (
     <AdminChrome
+      onVolver={() => void navegar('/')}
       activa={pantalla}
       onIr={setPantalla}
       tenants={lista}

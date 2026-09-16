@@ -4874,6 +4874,52 @@ se distinguen mirando; ninguna se puede dar por buena sin hacerlo.
 
 ---
 
+### La navegación entre superficies · decidida el 2026-09-16
+
+**El `.pen` no la dibuja.** Recorridos los quince frames uno por uno: cada
+superficie se declara a sí misma con su chip —`ADMINISTRACIÓN`, `BUILDER`— y
+navega hacia adentro con su nav horizontal, y **ninguna navega hacia al lado**.
+No hay «ir a administración» en la consola ni «volver» en el builder.
+
+**Decisión humana: el builder y administración los ve solo el admin.**
+
+**Dónde vive, y por qué ahí.** `design.md` §7.1 ya declaraba que el punto de
+usuario «abre un panel con nombre, correo, rol con su descripción y cliente». Ese
+panel estaba especificado y el código tenía el nombre suelto como rótulo. Las dos
+entradas cuelgan de ahí: es el lugar que el diseño ya tenía abierto, en vez de un
+control nuevo en el navbar —que sí habría sido inventar—.
+
+**Y esconder no es proteger.** `esAdmin` decide si se PINTA la entrada, no si se
+puede entrar: el permiso lo aplica `AdminOnlyMiddleware` con un 403, y quien
+escriba `/admin` a mano llega igual a la pantalla. Es la regla de siempre —«un
+botón que se aprieta y devuelve 403 es peor que un botón ausente»— y por eso **no
+va en `AuthGuard`**, que a propósito no decide por rol.
+
+**Se normaliza la mayúscula porque el servicio la normaliza.** El rol llega como
+`Admin` y `/admin/tenants` le responde 200; comparar contra `'admin'` a secas
+habría escondido una entrada que el servidor sí habilita.
+
+**Tres cosas que salieron al construirlo:**
+
+- **El chrome no navega.** El primer intento puso `useNavigate` dentro de
+  `AdminChrome`, y **rompió doce pruebas que lo montan sin router**. Tenían
+  razón: el propio archivo ya declaraba «la navegación es del contenedor, no del
+  chrome». Ahora es un callback, y `undefined` no pinta el control.
+- **Las pruebas de contenedor ahora montan en un `MemoryRouter`**, que es lo que
+  la app real hace. Montarlos afuera probaba una app que no existe.
+- **El modo mock decía dos cosas distintas del mismo usuario**: el login devolvía
+  `role: 'admin'` y `/config/me` devolvía `CEO`. La consola lee el segundo, así
+  que el menú escondía las dos salidas — justo lo que ese modo existe para poder
+  recorrer. Corregido con id propio: el super-admin es del plano plataforma, no
+  un rol del cliente.
+
+**Verificada por mutación, nueve casos sobre línea de base verde.** Las entradas
+a cualquier rol, a ninguno, el rol sin normalizar, **la entrada que se pinta y no
+navega** —el botón muerto—, las dos al mismo destino, el panel sin correo, sin
+cliente, el nombre que deja de abrir y Escape que no cierra. Mueren las nueve.
+
+---
+
 ## Fase 5 — Multi-dashboard, pruebas y pulido
 
 ### F5.1 ⬜ Selector de layout cuando hay más de uno · 🔒 `Contexto` no declara `layouts`

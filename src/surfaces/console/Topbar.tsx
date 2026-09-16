@@ -9,6 +9,7 @@
 import { Label } from '../../render/primitives/Label'
 import { PeriodPicker } from './PeriodPicker'
 import { Tabs } from './Tabs'
+import { UserMenu } from './UserMenu'
 import { ThemeToggle } from './ThemeToggle'
 import type { Theme } from '../../tokens/theme'
 import type { AppContext, Metric, Tab } from '../../api/types'
@@ -76,7 +77,12 @@ export function Topbar({
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          <Label>{context.user.nombre}</Label>
+          {/* **El nombre abre un panel, y no es un rótulo.** `design.md` ya lo
+              declaraba así —«abre un panel con nombre, correo, rol con su
+              descripción y cliente»— y acá era texto suelto. Desde el
+              2026-09-16 cuelga de ahí además la salida a las otras dos
+              superficies, para el admin. */}
+          <UserMenu context={context} />
           <ThemeToggle {...(onChangeTheme === undefined ? {} : { onChange: onChangeTheme })} />
         </div>
       </div>

@@ -15,6 +15,7 @@
  *  payload que no la trae, es porque salió del catálogo. Es D6 verificada, no
  *  declarada.
  */
+import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -31,7 +32,11 @@ function montar() {
   })
   return render(
     <QueryClientProvider client={client}>
-      <ConsoleContainer />
+      {/* En un router: desde el 2026-09-16 el Topbar monta `UserMenu`, que
+          navega a las otras superficies. */}
+      <MemoryRouter>
+        <ConsoleContainer />
+      </MemoryRouter>
     </QueryClientProvider>,
   )
 }
