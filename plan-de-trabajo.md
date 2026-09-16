@@ -4520,9 +4520,22 @@ una garantía** — y este repositorio ya había pagado por esa diferencia con
 ### Segunda tanda en el fork · 2026-09-15 · B1.25, B1.27, B4.1, B4.2 y B4.4
 
 **Decidido por el humano tras ver el alcance:** el front escribe también estas
-cinco, en el mismo fork. Commit `b13fccd`, once pruebas nuevas, nueve mutaciones
+cinco, en el mismo fork. Commit `6f10b8e`, once pruebas nuevas, nueve mutaciones
 muertas, y las suyas verdes sin tocar una sola línea que no fuera una firma que
 cambió.
+
+**El commit cambió de hash el 2026-09-16 · era `b13fccd`.** Se reescribió para
+sacarle 44 líneas de reindentación: `gofmt` alinea bloques de campos
+**contiguos**, así que un comentario metido en medio de un struct parte el bloque
+y realinea líneas que nadie tocó. Los campos nuevos ahora van al final del
+struct, con su comentario, formando su propio grupo. **De 63 borrados a 19**, y
+los 19 que quedan son cambios de firma que se propagan a los mocks de ellos.
+
+**Y se aprendió algo que vale para la próxima:** su repositorio **no está
+`gofmt`-limpio** —hay varios archivos que `go fmt ./...` cambiaría hoy—, así que
+correr el formateador sobre archivos suyos mete ruido ajeno al cambio. Es la
+segunda vez que pasa: la primera se revirtieron tres archivos enteros. **La regla
+es no formatear archivos de ellos**, aunque el editor lo ofrezca.
 
 **Las cinco quedan en ⚠️, no en ✅**, por la misma regla que B4.8 y B4.9: una
 `B*` pasa a ✅ **verificada contra el servicio corriendo**, y el fork no está

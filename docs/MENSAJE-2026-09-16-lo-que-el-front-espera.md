@@ -67,7 +67,7 @@ Siete tareas de backend están implementadas en
 | Commit | Qué |
 |---|---|
 | `d326ebf` | CRUD de roles por tenant · y preview de layout por rol |
-| `b13fccd` | `measurement_window`, el período abierto, quién publicó, sugerencias de chat, ícono, y el diff de layouts |
+| `6f10b8e` | `measurement_window`, el período abierto, quién publicó, sugerencias de chat, ícono, y el diff de layouts |
 
 **No hay PR y no lo va a haber**: el código vuelve desde nuestro repositorio y lo
 toman cuando quieran, en el orden que quieran.

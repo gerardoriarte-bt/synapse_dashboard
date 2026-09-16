@@ -24,7 +24,7 @@ no que existan con nuestro código.
 ```
 Repositorio  https://github.com/gerardoriarte-bt/synapse-api-go
 Rama         feature/roles-y-preview
-Commits      d326ebf  y  b13fccd
+Commits      d326ebf  y  6f10b8e
 ```
 
 Está empujado. Se puede abrir y leer sin pedirnos nada.
@@ -59,7 +59,7 @@ un puerto de repositorio nuevo.
   `RoleRepository`.** Ensanchar el que ya existe rompía ocho mocks de ustedes.
   Con un puerto aparte, cero.
 
-### `b13fccd` — mejoras, ninguna urgente
+### `6f10b8e` — mejoras, ninguna urgente
 
 Agrega cinco campos que hoy faltan, y un endpoint de diff:
 
@@ -100,7 +100,7 @@ aplica con `git am`. Pídannoslo.
 ### Camino largo · cuando quieran
 
 ```sh
-git cherry-pick b13fccd
+git cherry-pick 6f10b8e
 ```
 
 Y las cinco columnas. `AutoMigrate` las aplicaría, pero eso implica
@@ -152,21 +152,28 @@ Números exactos, para que no haya sorpresa al abrir el diff:
 | | Archivos | Agrega | Borra |
 |---|---|---|---|
 | `d326ebf` | 12 | 1.188 | **1** |
-| `b13fccd` | 21 | 830 | 62 |
+| `6f10b8e` | 21 | 807 | **18** |
 
 **`d326ebf` es casi todo código nuevo:** diez archivos nuevos, más 11 líneas en
 `router.go` y 8 en `bootstrap/app.go`.
 
-**En `b13fccd`, de los 62 borrados solo 17 son código.** Los otros 45 son
-reindentación: `gofmt` realinea un bloque de campos de struct cuando se le mete
-un comentario en el medio, y eso movió diez líneas de
-`dd_catalog_metric.go` que no tenían por qué cambiar.
+**Los 19 borrados de las dos, juntos, son casi todos cambios de firma reales.**
+Empezaron siendo 63: los otros 44 eran reindentación de `gofmt` y los limpiamos
+el 2026-09-16 antes de entregarles esto.
 
-**Es ruido nuestro y es evitable** — si les molesta al revisar, lo limpiamos y
-volvemos a empujar la rama. Díganlo y lo hacemos.
+**Vale contar por qué**, porque afecta a cualquiera que toque este repositorio:
+`gofmt` alinea bloques de campos **contiguos**, así que un comentario metido en
+medio de un struct parte el bloque y realinea líneas que nadie cambió. Los campos
+nuevos ahora van **al final del struct**, con su comentario, formando su propio
+grupo — el diff queda en lo que de verdad se agregó.
 
-**Los 17 borrados que sí son código** son cambios de firma que se propagan a los
-mocks de sus pruebas, y no hay forma de evitarlos:
+**Y hay algo que conviene saber de su repo:** no está `gofmt`-limpio. Hay varios
+archivos que `go fmt ./...` cambiaría hoy. Por eso **no corrimos el formateador
+sobre archivos suyos**: hacerlo mete ruido que no tiene nada que ver con este
+cambio. Si alguna vez lo normalizan, mejor en un commit aparte que no mezcle.
+
+**Los 18 borrados que quedan** son cambios de firma que se propagan a los mocks
+de sus pruebas, y no hay forma de evitarlos:
 
 - `Publish(...)` recibe dos parámetros más: quién publicó y su correo.
 - `ListTenants()` devuelve un tipo nuevo, `DDTenantAdminOption`. **Es a

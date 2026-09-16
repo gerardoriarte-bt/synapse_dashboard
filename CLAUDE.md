@@ -444,7 +444,20 @@ código vive en `gerardoriarte-bt/synapse-api-go`, rama `feature/roles-y-preview
 | Commit | Qué |
 |---|---|
 | `d326ebf` | B4.8 · CRUD de roles · y B4.9 · preview por rol |
-| `b13fccd` | B1.25, B1.27, B4.1, B4.2 y B4.4 |
+| `6f10b8e` | B1.25, B1.27, B4.1, B4.2 y B4.4 |
+
+**El commit cambió de hash el 2026-09-16 · era `b13fccd`.** Se reescribió para
+sacarle 44 líneas de reindentación: `gofmt` alinea bloques de campos
+**contiguos**, así que un comentario metido en medio de un struct parte el bloque
+y realinea líneas que nadie tocó. Los campos nuevos ahora van al final del
+struct, con su comentario, formando su propio grupo. **De 63 borrados a 19**, y
+los 19 que quedan son cambios de firma que se propagan a los mocks de ellos.
+
+**Y se aprendió algo que vale para la próxima:** su repositorio **no está
+`gofmt`-limpio** —hay varios archivos que `go fmt ./...` cambiaría hoy—, así que
+correr el formateador sobre archivos suyos mete ruido ajeno al cambio. Es la
+segunda vez que pasa: la primera se revirtieron tres archivos enteros. **La regla
+es no formatear archivos de ellos**, aunque el editor lo ofrezca.
 
 **Quedan en ⚠️ y no en ✅** porque la regla de este repositorio es que una `B*`
 solo pasa a ✅ **verificada contra el servicio corriendo**, y el fork no está
