@@ -44,20 +44,14 @@
 
 ---
 
-## Se puede tomar hoy · 8 del front
+## Se puede tomar hoy · 0 del front
 
-- **F1.42** · El mes en curso está incompleto y el selector no lo dice
-- **F2.3** · SIN_PERMISO · B0.9 (línea 1171) contestada
-- **F3.3** · «Ver detalle» y «Preguntar» en el shell del panel
-- **F3.7** · Historial de hilos
-- **F4.12** · Preview por rol
-- **F4.3** · Gestión de usuarios y roles por tenant
-- **F5.1** · Selector de layout cuando hay más de uno
-- **F5.10** · Checklist de conformidad §17 por tipo de bloque integrado
+Nada del front está libre: todo lo pendiente espera algo.
+
 
 ---
 
-## Bloqueadas · 36
+## Bloqueadas · 44
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -68,14 +62,22 @@ Lo que el front espera del backend está detallado en
 - **F1.13b** · Portar format.ts e inyectar el locale
 - **F1.25** · Conectar a la API real
 - **F1.31** · Registro de gráficos y verificación de mínimos
+- **F1.42** · El mes en curso está incompleto y el selector no lo dice
+- **F2.3** · SIN_PERMISO · B0.9 (línea 1171) contestada
 - **F3.2** · Construir ContextoDePanel al abrir
+- **F3.3** · «Ver detalle» y «Preguntar» en el shell del panel
 - **F3.6** · Reutilizar cuerpos de panel para respuestas estructuradas
+- **F3.7** · Historial de hilos
+- **F4.12** · Preview por rol
 - **F4.17** · ComparisonBody + ComparePlot
 - **F4.18** · MatrixBody + HeatmapPlot
 - **F4.19** · GraphBody + GraphPlot
 - **F4.20** · Registrar los tres con carga diferida
 - **F4.21** · Selector de gráfico en el builder
+- **F4.3** · Gestión de usuarios y roles por tenant
 - **F4.4** · Configuración de agente Snowflake por tenant
+- **F5.1** · Selector de layout cuando hay más de uno
+- **F5.10** · Checklist de conformidad §17 por tipo de bloque integrado
 - **F5.13** · Períodos libres en el selector
 - **F5.3** · Completar los plots que falten
 

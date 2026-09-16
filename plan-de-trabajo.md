@@ -3092,7 +3092,7 @@ nadie abriera el archivo.
 
 ---
 
-#### ➕ F1.42 ⬜ El mes en curso está incompleto y el selector no lo dice
+#### ➕ F1.42 ⬜ El mes en curso está incompleto y el selector no lo dice · 🔒 el período llega como cadena suelta
 **Descripción.** El equipo de datos avisó el 2026-09-15 que
 `GLD_ECOMM_DAILY_PERFORMANCE` tiene filas hasta **dic-2028 con valores en 0**
 —metas de planeación— y que **el mes en curso está incompleto**.
@@ -3155,7 +3155,7 @@ La prueba de «sin aproximación» no busca un texto: busca que no haya **ningun
 forma de cifra** en el panel —ni `USD `, ni `4.28M`, ni miles con separador—,
 porque un número aproximado que se cuele no va a llamarse como el fixture.
 
-### F2.3 ⚠️ `SIN_PERMISO` · B0.9 (línea 1171) contestada
+### F2.3 ⚠️ `SIN_PERMISO` · B0.9 (línea 1171) contestada · 🔒 `/config/solicitudes` da 404
 **Criterio de aceptación.** Muestra `solicitarA` y ofrece pedir acceso. Si D3
 resuelve conservar el viaje de solicitud, se cablea contra
 `/config/solicitudes`: la solicitud ya hecha sale del servidor y **no de estado
@@ -3241,7 +3241,7 @@ Es exactamente T4 —«Acordar `ContextoDePanel` · declarado en el yaml, no en 
 documento aparte»— que sigue abierta. Construir el objeto en el front sin que el
 contrato lo declare sería inventar una forma que el backend no va a leer.
 
-### F3.3 ⬜ «Ver detalle» y «Preguntar» en el shell del panel
+### F3.3 ⬜ «Ver detalle» y «Preguntar» en el shell del panel · 🔒 la mitad que queda espera a T4
 **Criterio de aceptación.**
 - Los dos son CALLBACKS del shell, no navegación escrita adentro: `render/` no
   sabe a dónde llevan y la superficie es dueña del viaje.
@@ -3324,7 +3324,7 @@ existiera.
 Mientras tanto la UI **declara cuántas cifras trajo la respuesta** en vez de
 pintar una con un cuerpo elegido a dedo. Es la pregunta 11 de B0.9.
 
-### F3.7 ⚠️ Historial de hilos
+### F3.7 ⚠️ Historial de hilos · 🔒 `HiloResumen` no trae panel ni período
 **Descripción.** Listado de conversaciones previas del usuario, desde
 `GET /config/chat/hilos`.
 **Criterio de aceptación.**
@@ -3426,7 +3426,7 @@ estimación que no bajaría.
 
 ### F4.1 ✅ `surfaces/admin/` — layout base y navegación
 ### F4.2 ✅ Lista de tenants
-### F4.3 ⚠️ Gestión de usuarios y roles por tenant
+### F4.3 ⚠️ Gestión de usuarios y roles por tenant · 🔒 `/admin/users` y `/admin/roles` dan 404
 ### F4.4 ⬜ Configuración de agente Snowflake por tenant · 🔒 depende de B3.9
 ### F4.5 ✅ Vista del catálogo de métricas del tenant
 **Criterio de aceptación (los cinco).**
@@ -3611,7 +3611,7 @@ semántica en blanco en vez de «—». Las seis mueren.
 ### F4.9 ✅ Canvas de 12 columnas — arrastrar y colocar
 ### F4.10 ✅ Configurador de panel: métrica, tipo, spans, opciones
 ### F4.11 ✅ Validación en tiempo real contra `/config/blocks`
-### F4.12 ⚠️ Preview por rol
+### F4.12 ⚠️ Preview por rol · 🔒 la ruta es del fork y no está desplegada
 ### F4.13 ✅ Guardar borrador
 ### F4.14 ✅ Validar antes de publicar
 ### F4.15 ✅ Publicar sin deploy
@@ -4640,7 +4640,45 @@ Las ocho, cada una verificada hoy y no deducida:
 | F4.21 | `/config/plots` | **404**, la misma corrida |
 | F5.3 | Los plots de F4.17–F4.19 | — |
 
-Quedan **ocho tomables**, que es el número que había de verdad.
+Y al verificar las ocho que quedaban, **las ocho también estaban bloqueadas**.
+La lista quedó en **cero**, que es el número real.
+
+| Tarea | Qué la frena | Cómo se comprobó |
+|---|---|---|
+| F1.42 | El período llega como cadena suelta | `/config/me` manda `['2026-09', '2026-08', …]`: sin `estado` ni cobertura. Y el criterio **prohíbe** derivarlo de `new Date()` en el front |
+| F2.3 | `/config/solicitudes` | **404** |
+| F3.3 | La mitad que queda espera a T4 | La otra mitad ya está bien: «hoy no se pinta ninguno de los dos y eso es correcto», dice su propio criterio |
+| F3.7 | `HiloResumen` no trae panel ni período | El yaml. Es el mismo hueco que T4, por el otro lado |
+| F4.3 | Ninguna ruta lista usuarios | `/admin/users` **404**, `/admin/roles` **404** |
+| F4.12 | La ruta es del fork, sin desplegar | `/admin/roles` **404** |
+| F5.1 | `Contexto` no declara `layouts` | El yaml, y `/config/layouts` **404** |
+| F5.10 | La casilla 13 espera a T4 | `POST /config/chat` no tiene campo para el panel |
+
+**No se marcó ninguna sin medirla.** Las que dicen 404 se probaron contra el
+servicio corriendo el 2026-09-15 con un token válido; las que dicen «el yaml» se
+leyeron del contrato.
+
+#### Y eso deja el front sin trabajo tomable · 2026-09-15
+
+**Cero no es un error del conteo: es el estado.** Lo que queda del front son
+veintiocho tareas y **ninguna depende de nosotros**. Tres cosas las desbloquean,
+y en este orden de rendimiento:
+
+1. **T4 · el contexto del panel en `POST /config/chat`.** Desbloquea F3.2, la
+   mitad de F3.3, la casilla 13 de §17 —y con ella F5.10— y la primera mitad de
+   F3.7. Es **un campo en el cuerpo del endpoint**.
+2. **Que tomen el fork.** Desbloquea F4.12 entera y la mitad de roles de F4.3.
+   El código está escrito y probado; falta desplegarlo.
+3. **`/config/plots`** · desbloquea F1.31, F4.21 y F5.3.
+
+Lo demás son campos sueltos: `layouts` en `Contexto` (F5.1), locale y moneda en
+`tenant` (F1.13b), el estado del período (F1.42), panel y período en
+`HiloResumen` (F3.7), una ruta que liste usuarios (F4.3).
+
+**Las cinco formas de `Valor` (F4.17–F4.20) son las únicas que no conviene pedir
+todavía**, y por la razón que el propio yaml escribe: no hay métrica que las
+declare, así que declararlas sería agregar una forma que ningún endpoint
+devuelve.
 
 #### Se intentaron el 2026-09-15 y siguen cerradas · con la razón medida
 
@@ -4803,7 +4841,7 @@ se distinguen mirando; ninguna se puede dar por buena sin hacerlo.
 
 ## Fase 5 — Multi-dashboard, pruebas y pulido
 
-### F5.1 ⬜ Selector de layout cuando hay más de uno
+### F5.1 ⬜ Selector de layout cuando hay más de uno · 🔒 `Contexto` no declara `layouts`
 **Descripción.** Un tenant puede tener varios dashboards —«Operaciones»,
 «Marca», «Ejecutivo»—. El selector aparece solo si `ctx.layouts.length > 1`.
 **Criterio de aceptación.**
@@ -4971,7 +5009,7 @@ contradice con la descripción de `grano`, que dice que el front deduce
 hoy son snapshots materializados —`estado: 'MTD CERRADO'`, `'CERRADO'`— y un
 rango arbitrario hay que calcularlo a demanda.
 
-### F5.10 ⚠️ Checklist de conformidad §17 por tipo de bloque integrado
+### F5.10 ⚠️ Checklist de conformidad §17 por tipo de bloque integrado · 🔒 la casilla 13 espera a T4
 ### F5.11 ✅ Verificar tema oscuro y claro en todo componente
 ### F5.12 ✅ Verificar la carga diferida
 **Criterio de aceptación.**
