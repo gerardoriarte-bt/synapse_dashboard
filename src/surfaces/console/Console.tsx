@@ -10,7 +10,7 @@
  */
 import { useLayoutEffect } from 'react'
 import { Label } from '../../render/primitives/Label'
-import { gridStyle, readingOrder } from '../../render/grid'
+import { COLUMNS, gridStyle, readingOrder } from '../../render/grid'
 import { useColumns } from '../../render/useColumns'
 import { measureLayoutCommit, measureLayoutPainted } from '../../render/budget'
 import { PanelInGrid } from './PanelInGrid'
@@ -93,10 +93,24 @@ export function Console({
       />
 
       <div style={gridStyle(columns)}>
-        {/* Con la grilla colapsada el orden visual ES el orden del DOM, así que
-            se ordena de verdad · §ANCLA:RESP-3. A doce columnas el orden lo fija
-            `colStart` en el estilo y esto no cambia nada. */}
-        {readingOrder(panels).map((panel) => {
+        {/* **Se reordena SOLO con la grilla colapsada** · §ANCLA:RESP-3, que lo
+            pide «por debajo de 768px a 1 columna». Ahí el orden visual ES el
+            orden del DOM y hay que ordenar de verdad.
+
+            **A doce columnas reordenar ROMPE la composición, y acá decía lo
+            contrario.** Medido en el navegador el 2026-09-16 sobre el layout
+            publicado: `readingOrder` ordena por `colStart` globalmente, así que
+            el DOM quedaba `prosa(1/12) · kpi(1/3) · bars(1/6) · series(1/6) ·
+            tabla(1/7)` y recién después los de `colStart` 4, 7 y 10. CSS grid
+            coloca en el orden del DOM con un cursor que **no retrocede** —sin
+            `dense`—, así que el kpi de la columna 4 ya no entraba en la fila del
+            de la columna 1 y bajaba. El dashboard se veía apilado en una
+            columna con doce paneles bien compuestos detrás.
+
+            **El orden del arreglo ES la fila**, porque `PanelConfigurado` no
+            declara `rowStart`: ordenarlo por `colStart` borra la única
+            información de fila que existe. */}
+        {(columns === COLUMNS ? panels : readingOrder(panels)).map((panel) => {
           const metric = metricsById.get(panel.metricId)
 
           // Un `metricId` que el catálogo no resuelve NO se pinta con un

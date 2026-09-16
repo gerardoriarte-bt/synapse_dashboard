@@ -80,6 +80,13 @@ export function spanFor(colSpan: number, columns: number): number {
 
 /** El orden de lectura con la grilla colapsada · §ANCLA:RESP-3
  *
+ *  **SOLO con la grilla colapsada, y hasta el 2026-09-16 se llamaba siempre.**
+ *  A doce columnas reordenar el DOM rompe la composición: CSS grid coloca en el
+ *  orden del DOM con un cursor que no retrocede, así que un panel de `colStart`
+ *  1 que llega después de otro de `colStart` 1 baja de fila y arrastra al resto.
+ *  El dashboard publicado se veía apilado con doce paneles bien compuestos
+ *  detrás. Quien llama decide; lo hace `Console.tsx`, con su razón escrita.
+ *
  *  §4: «por debajo de 768px a 1 columna, **orden de lectura según `colStart` +
  *  `orden`**».
  *
