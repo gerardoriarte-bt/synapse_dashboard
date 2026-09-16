@@ -76,6 +76,11 @@ toman cuando quieran, en el orden que quieran.
 movió desde el 2026-09-11, así que **no hace falta rebasar**—, `go build ./...`
 sale limpio y **`go test ./...` pasa entero**. Cero churn en código de ustedes.
 
+**Para revisarlo cómodo hay un PR**, en nuestro fork y no en el de ustedes:
+<https://github.com/gerardoriarte-bt/synapse-api-go/pull/1>. La base es una copia
+exacta de su rama en `733c13c`, así que el diff es exactamente lo que se
+agregaría. Nadie del front lo va a mergear.
+
 **Cómo tomarlo está escrito aparte**, para que no haya que leer nuestro plan:
 [`ENTREGA-2026-09-16-fork-como-tomarlo.md`](ENTREGA-2026-09-16-fork-como-tomarlo.md).
 Ahí están los dos `cherry-pick`, las **cinco `ALTER TABLE` explícitas** —para no

@@ -468,8 +468,16 @@ aplica `AutoMigrate` y **la base es la RDS compartida de producción**: escribir
 campo es código, correrlo es un cambio de esquema en producción y esa decisión no
 es nuestra. Las cinco son aditivas y con default.
 
-**No hay PR ni lo va a haber**: decidido el 2026-09-15, **el código vuelve DESDE
-nuestro repositorio** y ellos lo toman cuando quieran. Eso nos obliga a mantener
+**No hay PR contra su repositorio ni lo va a haber**: decidido el 2026-09-15,
+**el código vuelve DESDE nuestro repositorio** y ellos lo toman cuando quieran.
+
+**Sí hay un PR, y vive en NUESTRO fork** · 2026-09-16 ·
+<https://github.com/gerardoriarte-bt/synapse-api-go/pull/1>. Va de
+`feature/roles-y-preview` contra nuestra copia de su rama en `733c13c`, así que
+el diff que muestra es exactamente lo que se agregaría. **Existe para que lo
+lean y comenten, no para mergear**, y no escribe una línea en
+`AntPack-dev/synapse-api-go`. Es la forma de darles una revisión cómoda sin
+romper la regla. Eso nos obliga a mantener
 la rama rebasada (`backend-drift` antes de tocarla), a commits que se expliquen
 solos, y a **cero churn en su código**.
 

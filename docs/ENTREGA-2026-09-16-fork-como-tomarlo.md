@@ -29,6 +29,15 @@ Commits      d326ebf  y  6f10b8e
 
 Está empujado. Se puede abrir y leer sin pedirnos nada.
 
+**Y hay un PR para revisarlo cómodo:**
+<https://github.com/gerardoriarte-bt/synapse-api-go/pull/1>
+
+**Ese PR vive en NUESTRO fork, no en el de ustedes.** La base es una copia exacta
+de `feature/dynamic-dashboard-backend` en `733c13c`, así que el diff que muestra
+es exactamente lo que agregaríamos. Está para que se pueda leer y comentar línea
+por línea; **nadie del front lo va a mergear**, y no escribe nada en
+`AntPack-dev/synapse-api-go`. El código se toma con `cherry-pick`, abajo.
+
 La rama sale de `733c13c`, que es **la cabeza actual de
 `feature/dynamic-dashboard-backend`**. Su rama no se movió desde el 2026-09-11,
 así que **no hace falta rebasar nada**.
