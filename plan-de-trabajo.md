@@ -627,7 +627,13 @@ intersectados en los dos estados que muestran número.
 - `frescura` es ISO 8601 y refleja **cuándo se materializó**, no «ahora» (B2.10).
 
 ### B1.13 ⬜ `Presentacion` opcional
-**Espera del backend.** **`presentation` para las formas que no son escalares.** `PresentationFromRows` devuelve `nil` para siete de las nueve, así que un panel de barras, de tabla o de serie llega **sin rótulo** — y «ningún número desnudo» es regla dura. Falta también la `nota` de panel, distinta de la `note` que va dentro del `meter`. Verificado: de doce payloads, solo los seis escalares traen `presentation`.
+**Espera del backend.** **Solo la `nota` de panel.** El pedido grande que había acá —«`presentation` para las siete formas que no son escalares»— **se retira: estaba mal**, y lo corrigió leer nuestro propio código el 2026-09-15.
+
+**`presentation` la lee UN solo cuerpo: `KpiBody`.** Ningún otro la toca — verificado con un grep sobre `src/render/bodies/`. Y no es un olvido: los demás sacan sus rótulos **del propio valor**. `BarsBody` hace `value.items.map(i => i.etiqueta)`; cada ítem viaja con su etiqueta. **«Ningún número desnudo» lo cumple la estructura del dato, no `presentation`.**
+
+Así que `PresentationFromRows` devolviendo `nil` para las otras siete **es correcto**, y pedirlas habría sido pedir un campo que nadie lee — el mismo modo de falla de `BodyProps.presentation`, que existió meses sin un solo consumidor.
+
+Lo que sí falta es la **`nota` de panel** —la lectura al pie, distinta de la `note` que va dentro del `medidor`—: el contrato la declara y el cable no la trae. Es un campo, no siete.
 **Descripción.** Los rótulos y cifras de apoyo que el panel pinta alrededor del
 valor: `label`, `medidor`, `comparativo`, `nota`. **Viajan con el dato, no con el
 layout**, porque dependen del período.
@@ -876,7 +882,7 @@ escrita, tres capas más abajo.
   materializador no lee la capa semántica, lee las tablas Gold directo. Es el
   error que ya se cometió una vez al escribir la primera semilla.
 
-#### ➕ B1.25 ⬜ `ventana` de punta a punta · de la vista al payload
+#### ➕ B1.25 ⚠️ `ventana` de punta a punta · de la vista al payload
 **Espera del backend.** **Ya no espera a Snowflake: espera dos líneas de Go.** Verificado el 2026-09-15.
 
 `MEASUREMENT_WINDOW` **existe en la vista, con valor en las diez métricas y sin nulos** —lo entrega el equipo de datos en `docs/snowflake/synapse-catalogo-metricas.md` §8—, y con ese nombre justamente para no chocar con `WINDOW`, reservada en ANSI. Falta lo de siempre: leerla en el `SELECT` de `dd_catalog_sync_service.go` y exponerla en `GET /config/catalog`.
@@ -907,7 +913,7 @@ literal imprime la cadena `undefined`, no un hueco.
 - El front lo consume por el adaptador de F1.33 sin lógica nueva: es un renombre,
   no un cálculo.
 
-#### ➕ B1.27 ⬜ El período declara si está cerrado
+#### ➕ B1.27 ⚠️ El período declara si está cerrado
 **Espera del backend.** **Un campo en `Periodo`** que diga si el período está cerrado o en curso — pedido el 2026-09-15.
 
 `availablePeriods()` emite los últimos doce meses **contando el actual**, y el actual está incompleto. Hoy los trece llegan iguales: una cadena `2026-09`. La consola los ofrece todos con la misma pinta, y quien compare el mes en curso contra el anterior lee una caída que es «todavía no terminó».
@@ -1144,7 +1150,7 @@ warehouse, vistas semánticas permitidas y prompt base.
 
 ## Fase 4 — Admin y Builder
 
-### B4.1 ⬜ `GET /admin/tenants`
+### B4.1 ⚠️ `GET /admin/tenants`
 **Espera del backend.** **Cinco campos en `GET /admin/tenants`**: `status`, `vertical`, `user_count`, `oldest_feed_freshness` y `last_published_at`.
 
 Hoy devuelve `ports.TenantPublicOption` —`id` y `name`—, que nació para llenar un
@@ -1155,7 +1161,7 @@ No bloquea: la lista funciona y el builder puede elegir tenant. Lo que falta es
 lo que convierte una lista en una pantalla de administración — saber de un
 vistazo qué cliente tiene el feed más atrasado es la mitad de para qué existe.
 
-### B4.2 ⬜ `GET /admin/tenants/{id}/layouts`
+### B4.2 ⚠️ `GET /admin/tenants/{id}/layouts`
 **Espera del backend.** **Autor, diferencia y reversión en `LayoutVersion`** — pedido el 2026-09-15, cuando F4.6 declaró B6.
 
 §7.2 describe el historial de versiones en una línea: «**quién, cuándo, qué cambió. Permite revertir.** Sin esto, un error de composición en producción no tiene vuelta atrás». La respuesta de hoy trae **cuándo** y nada más.
@@ -1167,7 +1173,7 @@ vistazo qué cliente tiene el feed más atrasado es la mitad de para qué existe
 **No bloquea el builder**, bloquea B6. Y B6 es la pantalla que hace reversible un error de composición en producción: sin ella, la única salida es recomponer a mano.
 
 ### B4.3 ⬜ `POST /admin/tenants/{id}/layouts` — crear borrador
-### B4.4 ⬜ `PUT /admin/layouts/{id}` — editar pestañas y paneles
+### B4.4 ⚠️ `PUT /admin/layouts/{id}` — editar pestañas y paneles
 **Espera del backend.** **`chat_suggestions` e `icon` en la pestaña** — pedido el 2026-09-15, cuando F4.8 construyó el editor.
 
 Los dos están en el modelo de §2 de `design.md` y en `Pestana` del contrato, y no están en `DDTab` ni en `TabInput`: **no hay dónde escribirlos ni de dónde leerlos**. `chatSugerencias[]` es lo que C3 pinta como «chips de consulta sugerida por pestaña», así que sin el campo el chat abre en un vacío sin sugerencias. `icono` es menor y va de paso, porque es la misma línea.
@@ -4468,6 +4474,57 @@ nombra. La puerta pasa a **diecisiete chequeos**.
 **Una garantía que depende de que nadie escriba una línea es una convención, no
 una garantía** — y este repositorio ya había pagado por esa diferencia con
 `plan:ancestro` y con `docs-registro`.
+
+### Segunda tanda en el fork · 2026-09-15 · B1.25, B1.27, B4.1, B4.2 y B4.4
+
+**Decidido por el humano tras ver el alcance:** el front escribe también estas
+cinco, en el mismo fork. Commit `b13fccd`, once pruebas nuevas, nueve mutaciones
+muertas, y las suyas verdes sin tocar una sola línea que no fuera una firma que
+cambió.
+
+**Las cinco quedan en ⚠️, no en ✅**, por la misma regla que B4.8 y B4.9: una
+`B*` pasa a ✅ **verificada contra el servicio corriendo**, y el fork no está
+desplegado.
+
+**Cinco columnas nuevas, y las migraciones NO las corrimos.** Son campos en los
+structs, así que las aplica `AutoMigrate` — y la base es **la RDS compartida de
+producción**. Escribir el campo es código; correrlo es un cambio de esquema en
+producción, y esa decisión no es nuestra. Las cinco son aditivas y con default,
+así que el servicio viejo sigue funcionando contra el esquema nuevo.
+
+### Tres cosas que salieron de leer su código, no de escribirlo
+
+**Una de seguridad.** B4.1 pedía cinco campos en `/admin/tenants`, y esa lista la
+sirve `ListPublicOptions` — **que también alimenta el flujo PÚBLICO de solicitud
+de acceso**. Sumarle `user_count` ahí filtraría cuántos usuarios tiene cada
+cliente a quien todavía no es usuario de ninguno. Va en un DTO aparte. Es la
+tercera vez que la misma forma aparece —`RoleRepository`, `TenantPublicOption`—:
+**una estructura compartida se ensancha para todos sus consumidores, y no todos
+tienen el mismo permiso.**
+
+**Una que retira un pedido nuestro.** B1.13 pedía `presentation` para las siete
+formas que no son escalares, «porque choca con ningún número desnudo».
+**Estaba mal**: `presentation` la lee **un solo cuerpo, `KpiBody`**, y los demás
+sacan sus rótulos del propio valor —`BarsBody` usa `i.etiqueta` de cada ítem—.
+`PresentationFromRows` devolviendo `nil` para las otras siete **es correcto**.
+Pedirlas habría sido pedir un campo que nadie lee.
+
+**Y una de alcance.** De los cinco campos de B4.1, solo dos se pueden calcular:
+`status` y `vertical` no existen como columna y la frescura del feed más atrasado
+necesita B2.13. Se entregan los dos y se dice cuáles faltan.
+
+### Lo que NO tomamos, y por qué
+
+| | Por qué |
+|---|---|
+| B2.13 · salud de feeds | Crear la entidad exige acordar el modelo con el equipo de datos y una ingesta que no existe |
+| B3.9 · estado del acceso | Exige saber cómo se verifica ese acceso hoy |
+| B1.21 · mínimos por gráfico | Es una decisión de producto |
+| Correr `sync-catalog` y `materialize` | Es operar su servicio contra Snowflake productivo |
+
+**Y la regla que nos pusimos: paramos acá hasta que tomen lo que hay.** «Un fork
+que nunca vuelve es un segundo backend»; con dos endpoints era una excepción, con
+siete es una implementación paralela que alguien va a tener que reconciliar.
 
 ### Por qué F4.9 no se toma · y una trampa del propio parser
 

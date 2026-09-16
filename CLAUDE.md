@@ -448,8 +448,10 @@ rutas que siguen en `docs/PARA-BACKEND.md`.
 
 La línea de BASE sale `Base · COMPLETED · MONTH ·` con el separador colgando
 porque falta `ventana` (B1.25). Los períodos salen como ids crudos —`2026-09`—
-porque no hay locale ni etiqueta. Y ningún panel que no sea escalar trae
-`presentacion`, que choca con «ningún número desnudo».
+porque no hay locale ni etiqueta. Y **lo de `presentacion` era nuestro
+error**: la lee solo `KpiBody`, y los demás cuerpos sacan sus rótulos del propio
+valor —`BarsBody` usa `i.etiqueta` de cada ítem—. «Ningún número desnudo» lo
+cumple la estructura del dato. Corregido el 2026-09-15 · ver B1.13.
 
 **El estado de B1.13–B1.19 está en `docs/ESTADO-B1.13-B1.19-2026-09-14.md`**,
 verificado contra el servicio corriendo y con la tabla que mapea nuestra

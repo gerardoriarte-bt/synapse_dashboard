@@ -73,7 +73,13 @@ verde.
 *Estado de la tarea: pendiente.*
 
 
-**`presentation` para las formas que no son escalares.** `PresentationFromRows` devuelve `nil` para siete de las nueve, así que un panel de barras, de tabla o de serie llega **sin rótulo** — y «ningún número desnudo» es regla dura. Falta también la `nota` de panel, distinta de la `note` que va dentro del `meter`. Verificado: de doce payloads, solo los seis escalares traen `presentation`.
+**Solo la `nota` de panel.** El pedido grande que había acá —«`presentation` para las siete formas que no son escalares»— **se retira: estaba mal**, y lo corrigió leer nuestro propio código el 2026-09-15.
+
+**`presentation` la lee UN solo cuerpo: `KpiBody`.** Ningún otro la toca — verificado con un grep sobre `src/render/bodies/`. Y no es un olvido: los demás sacan sus rótulos **del propio valor**. `BarsBody` hace `value.items.map(i => i.etiqueta)`; cada ítem viaja con su etiqueta. **«Ningún número desnudo» lo cumple la estructura del dato, no `presentation`.**
+
+Así que `PresentationFromRows` devolviendo `nil` para las otras siete **es correcto**, y pedirlas habría sido pedir un campo que nadie lee — el mismo modo de falla de `BodyProps.presentation`, que existió meses sin un solo consumidor.
+
+Lo que sí falta es la **`nota` de panel** —la lectura al pie, distinta de la `note` que va dentro del `medidor`—: el contrato la declara y el cable no la trae. Es un campo, no siete.
 
 
 ### B1.14 · Transformar a las formas de Valor
@@ -198,7 +204,7 @@ Los pasos completos están en `docs/snowflake/INSTRUCCION-ALTA-TENANT.md`. **Nos
 
 ### B1.25 · ventana de punta a punta · de la vista al payload
 
-*Estado de la tarea: pendiente.*
+*Estado de la tarea: parcial.*
 
 
 **Ya no espera a Snowflake: espera dos líneas de Go.** Verificado el 2026-09-15.
@@ -212,7 +218,7 @@ Los pasos completos están en `docs/snowflake/INSTRUCCION-ALTA-TENANT.md`. **Nos
 
 ### B1.27 · El período declara si está cerrado
 
-*Estado de la tarea: pendiente.*
+*Estado de la tarea: parcial.*
 
 
 **Un campo en `Periodo`** que diga si el período está cerrado o en curso — pedido el 2026-09-15.
@@ -285,7 +291,7 @@ Con esos tres, F4.4 y la mitad que le falta a la ficha de cliente se cierran. El
 
 ### B4.1 · GET /admin/tenants
 
-*Estado de la tarea: pendiente.*
+*Estado de la tarea: parcial.*
 
 
 **Cinco campos en `GET /admin/tenants`**: `status`, `vertical`, `user_count`, `oldest_feed_freshness` y `last_published_at`.
@@ -301,7 +307,7 @@ vistazo qué cliente tiene el feed más atrasado es la mitad de para qué existe
 
 ### B4.2 · GET /admin/tenants/{id}/layouts
 
-*Estado de la tarea: pendiente.*
+*Estado de la tarea: parcial.*
 
 
 **Autor, diferencia y reversión en `LayoutVersion`** — pedido el 2026-09-15, cuando F4.6 declaró B6.
@@ -317,7 +323,7 @@ vistazo qué cliente tiene el feed más atrasado es la mitad de para qué existe
 
 ### B4.4 · PUT /admin/layouts/{id} — editar pestañas y paneles
 
-*Estado de la tarea: pendiente.*
+*Estado de la tarea: parcial.*
 
 
 **`chat_suggestions` e `icon` en la pestaña** — pedido el 2026-09-15, cuando F4.8 construyó el editor.
