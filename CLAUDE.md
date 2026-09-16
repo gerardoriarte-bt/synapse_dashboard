@@ -431,12 +431,31 @@ usuarios de A3 —**ninguna ruta lista usuarios**, solo existe `POST /admin/user
 y F4.12 no trae cifras, que es una decisión de B4.9 con su razón escrita, no un
 olvido.
 
-**B4.8 y B4.9 están escritas y en ⚠️, no en ✅.** El código vive en
-`gerardoriarte-bt/synapse-api-go`, rama `feature/roles-y-preview`, partida del
-mismo commit que `backend-drift` declara. **No hay PR**: cómo vuelve el código a
-ellos sigue sin decidirse, y esa decisión va antes del primer merge. Se quedan en
-parcial porque la regla de este repositorio es que una `B*` solo pasa a ✅
-**verificada contra el servicio corriendo**, y el fork no está desplegado.
+**Siete tareas de backend están escritas en un fork, y las siete en ⚠️.** El
+código vive en `gerardoriarte-bt/synapse-api-go`, rama `feature/roles-y-preview`:
+
+| Commit | Qué |
+|---|---|
+| `d326ebf` | B4.8 · CRUD de roles · y B4.9 · preview por rol |
+| `b13fccd` | B1.25, B1.27, B4.1, B4.2 y B4.4 |
+
+**Quedan en ⚠️ y no en ✅** porque la regla de este repositorio es que una `B*`
+solo pasa a ✅ **verificada contra el servicio corriendo**, y el fork no está
+desplegado.
+
+**La segunda tanda agrega cinco columnas, y las migraciones NO se corrieron.** Las
+aplica `AutoMigrate` y **la base es la RDS compartida de producción**: escribir el
+campo es código, correrlo es un cambio de esquema en producción y esa decisión no
+es nuestra. Las cinco son aditivas y con default.
+
+**No hay PR ni lo va a haber**: decidido el 2026-09-15, **el código vuelve DESDE
+nuestro repositorio** y ellos lo toman cuando quieran. Eso nos obliga a mantener
+la rama rebasada (`backend-drift` antes de tocarla), a commits que se expliquen
+solos, y a **cero churn en su código**.
+
+**Y paramos acá hasta que tomen lo que hay.** «Un fork que nunca vuelve es un
+segundo backend»: con dos endpoints era una excepción, con siete es una
+implementación paralela que alguien va a tener que reconciliar.
 
 **Las cinco rutas del fork SÍ están en el cable**, marcadas `x-origen: fork` y
 con el aviso de que el servicio desplegado devuelve 404. Es lo que deja construir
