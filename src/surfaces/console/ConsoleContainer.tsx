@@ -69,6 +69,15 @@ export function ConsoleContainer() {
   // front no filtra nada · F1.27.
   const byId = new Map<string, Metric>((catalog.data?.metrics ?? []).map((m) => [m.id, m]))
 
+  // **Lo que el adaptador NO pudo adaptar, con su razón** · F1.35. Una métrica
+  // con una familia fuera del enumerado no se descarta en silencio: si pasara,
+  // el color de su serie sería `var(--color-fam-vendors-1)` —un token que no
+  // existe— y la serie se pintaría SIN COLOR sin que nada falle. Es el mismo
+  // modo de silencio que una utilidad que nombra un token inexistente.
+  const rejectedMetrics = new Map<string, string>(
+    (catalog.data?.rejected ?? []).map((r) => [r.id, `${r.key} · ${r.razon}`]),
+  )
+
   // El tema inicial llega en `/config/me` y lo aplica la superficie · F1.12. El
   // switcher visual no pasa por acá: escribe el atributo y ya.
   const savedTheme = context.data?.user.preferencias?.tema
@@ -168,6 +177,7 @@ export function ConsoleContainer() {
       metricsById={byId}
       payloadOf={payloadWithParams}
       paramsOf={(id) => paramsOf(id).params}
+      rejectedMetrics={rejectedMetrics}
       format={format}
       onSelectTab={setTabId}
       onSelectPeriod={setPeriodId}

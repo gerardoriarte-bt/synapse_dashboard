@@ -91,3 +91,42 @@ describe('toda utilidad de tipografía nombra un token que existe', () => {
     expect(huérfanas).toEqual([])
   })
 })
+
+describe('una utilidad NO se arma por interpolación · el mismo silencio', () => {
+  /** Toda plantilla que va a parar a `className`, con su archivo. */
+  const plantillas = (): { archivo: string; cuerpo: string }[] =>
+    tsx(resolve(RAIZ, 'src')).flatMap((archivo) =>
+      [...readFileSync(archivo, 'utf-8').matchAll(/className=\{`([^`]*)`/g)].map((m) => ({
+        archivo,
+        cuerpo: m[1] as string,
+      })),
+    )
+
+  it('ningún `${…}` queda pegado dentro de una utilidad', () => {
+    // **Es el mismo modo de falla que `text-labell`, por el otro extremo.**
+    // Aquel nombra un token que no existe; éste arma un nombre que el escáner
+    // de Tailwind no puede leer: `min-w-[${ancho}px]` compila, el atributo
+    // `class` sale correcto en el DOM —así que una prueba de render lo da por
+    // bueno— y la clase **nunca se emite al CSS**. Se pinta sin ancho.
+    //
+    // Verificado: una mutación que cambiaba la tabla de anchos de
+    // `BuilderChrome` por una plantilla interpolada **sobrevivía** a las nueve
+    // pruebas de `builder.test.tsx`, porque en jsdom las dos formas producen
+    // exactamente el mismo atributo. Lo que cambia es el build, no el DOM.
+    //
+    // Un `${…}` entre espacios sí vale: ahí la interpolación aporta la utilidad
+    // entera y las dos ramas están escritas en el archivo.
+    const culpables = plantillas().flatMap(({ archivo, cuerpo }) =>
+      [...cuerpo.matchAll(/\$\{[^}]*\}/g)]
+        .filter((m) => {
+          const antes = cuerpo[(m.index ?? 0) - 1]
+          const despues = cuerpo[(m.index ?? 0) + m[0].length]
+          const libre = (c: string | undefined) => c === undefined || c === ' ' || c === '\n'
+          return !libre(antes) || !libre(despues)
+        })
+        .map((m) => `${archivo.replace(RAIZ + '/', '')} · ${m[0]}`),
+    )
+
+    expect(culpables).toEqual([])
+  })
+})

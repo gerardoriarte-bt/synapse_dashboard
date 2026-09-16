@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """contract-drift · los tipos generados == el yaml del que salen · F0.11, F0.14
 
-    python3 tools/contract-drift.py            # el contrato de la consola
-    python3 tools/contract-drift.py --auth     # el del servicio de acceso
+    python3 tools/contract-drift.py                  # el contrato de la consola
+    python3 tools/contract-drift.py --auth           # el del servicio de acceso
+    python3 tools/contract-drift.py --console-wire   # el CABLE de la consola
+    python3 tools/contract-drift.py --admin-wire     # el CABLE de admin
 
 Regenera sobre una copia y compara. Una edición a mano en el archivo generado se
 pierde en la próxima corrida de `npm run gen:api` y hasta entonces el front cree
@@ -30,12 +32,32 @@ RAIZ = pathlib.Path(__file__).resolve().parent.parent
 # nuestro. Lo que se verifica es lo mismo en los dos: que el `.ts` generado sea
 # exactamente lo que sale del yaml. Duplicar el script para el segundo habría
 # creado dos comparadores que derivan · F0.14.
+# El tercero entró con F1.32: el CABLE es la transcripción de lo que el servicio
+# sirve hoy, frente al contrato, que declara lo que el producto necesita. Los dos
+# conviven a propósito — la diferencia entre ambos es la lista de lo que falta
+# pedirle al backend, y borrar uno sería perder la lista.
 CONTRATOS = {
     "consola": ("contracts/synapse-api.yaml", "src/api/generated.ts"),
     "acceso": ("contracts/synapse-auth.yaml", "src/api/auth-generated.ts"),
+    "cable": ("contracts/synapse-console-wire.yaml", "src/api/console-generated.ts"),
+    "admin": ("contracts/synapse-admin-wire.yaml", "src/api/admin-generated.ts"),
 }
 
-CUAL = "acceso" if "--auth" in sys.argv else "consola"
+REGENERA = {
+    "consola": "gen:api",
+    "acceso": "gen:auth",
+    "cable": "gen:console-wire",
+    "admin": "gen:admin-wire",
+}
+
+if "--admin-wire" in sys.argv:
+    CUAL = "admin"
+elif "--console-wire" in sys.argv:
+    CUAL = "cable"
+elif "--auth" in sys.argv:
+    CUAL = "acceso"
+else:
+    CUAL = "consola"
 YAML = RAIZ / CONTRATOS[CUAL][0]
 GENERADO = RAIZ / CONTRATOS[CUAL][1]
 
@@ -61,7 +83,7 @@ def main():
         return 2
     if not GENERADO.exists():
         print(f"contract-drift ⊘ BLOQUEADO · {CUAL} · falta {GENERADO.relative_to(RAIZ)}")
-        print("  correr: npm run gen:api")
+        print(f"  correr: npm run {REGENERA[CUAL]}")
         return 2
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -89,7 +111,7 @@ def main():
         return 0
 
     print(f"contract-drift ✗ {CUAL} · {GENERADO.name} difiere de {YAML.name}")
-    print("  editado a mano, o el yaml cambió sin regenerar. Correr: npm run gen:api")
+    print(f"  editado a mano, o el yaml cambió sin regenerar. Correr: npm run {REGENERA[CUAL]}")
     print()
     for n, hay, deberia in primeras_diferencias(esperado, actual):
         print(f"  línea {n}")

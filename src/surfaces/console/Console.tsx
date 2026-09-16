@@ -26,6 +26,11 @@ type Props = {
   panels: readonly PanelConfig[]
   metricsById: ReadonlyMap<string, Metric>
   payloadOf: (panelId: string) => Payload
+  /** Por qué una métrica del catálogo NO se pudo adaptar · F1.35. Llega desde
+   *  `adaptCatalog`, que las separa en vez de descartarlas: una métrica que
+   *  desaparece sin decir por qué deja un panel que no dibuja y no explica. */
+  rejectedMetrics?: ReadonlyMap<string, string>
+
   /** Los params YA validados · F1.29. La superficie no los lee: solo los pasa.
    *  Quien valida es el adaptador de `api/`. */
   paramsOf: (panelId: string) => Record<string, unknown>
@@ -46,6 +51,7 @@ export function Console({
   metricsById,
   payloadOf,
   paramsOf,
+  rejectedMetrics,
   format,
   onSelectTab,
   onSelectPeriod,
@@ -97,10 +103,21 @@ export function Console({
           // fallback silencioso: el catálogo llega ya filtrado por rol, así que
           // una métrica ausente significa que el layout referencia algo que este
           // rol no puede ver. Es un error del backend, no una celda vacía.
+          //
+          // **Y desde F1.35 dice POR QUÉ cuando se sabe.** El adaptador rechaza
+          // las métricas con una forma, familia o capa que no están en el
+          // contrato, y esas no son «no resueltas»: son conocidas y no se pueden
+          // dibujar. «No resuelta» a secas mandaba a buscar un problema de
+          // permisos donde había un valor fuera del enumerado.
           if (metric === undefined) {
+            const razon = rejectedMetrics?.get(panel.metricId)
             return (
               <section key={panel.id} className="rounded-xl bg-panel border border-w4 p-6">
-                <Label as="div">Métrica no resuelta · {panel.metricId}</Label>
+                <Label as="div">
+                  {razon === undefined
+                    ? `Métrica no resuelta · ${panel.metricId}`
+                    : `Métrica no dibujable · ${razon}`}
+                </Label>
               </section>
             )
           }

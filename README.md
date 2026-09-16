@@ -27,8 +27,35 @@ los dibuja.
 ```bash
 npm install
 cp .env.example .env
-npm run dev
+npm run dev            # Vite en :5173
 ```
+
+### Con el backend
+
+**Es un solo servicio.** `AntPack-dev/synapse-api-go` sirve `/auth/*`,
+`/config/*` y `/admin/*` desde el mismo binario, bajo el mismo `/api/v1`. En
+local levanta en **:4010**, y `vite.config.ts` proxea `/api/v1` entero hacia
+ahí — no hace falta configurar nada.
+
+```bash
+# en el repo del backend, rama feature/dynamic-dashboard-backend
+DB_AUTO_MIGRATE=true make run     # la primera vez: migra y siembra
+make run                          # después
+```
+
+El seed deja un layout publicado con doce paneles y tres roles —`user`,
+`planner`, `admin`—, así que la consola tiene qué pintar sin tocar Snowflake.
+
+Si el servicio corre en otro lado:
+
+```bash
+API_ORIGIN=http://otro-host:4010 npm run dev
+```
+
+**Lo que todavía no anda contra el servicio real**: el front habla el vocabulario
+del contrato y el servicio habla otro. La traducción es el adaptador de
+`src/api/` — tareas F1.32–F1.41 del plan. El análisis está en
+`docs/PLAN-INTEGRACION-2026-09-11.md`.
 
 ## Los tres objetos que el front consume
 

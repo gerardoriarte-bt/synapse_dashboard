@@ -13,33 +13,35 @@ export default defineConfig({
   },
 
   server: {
-    /* El acceso lo sirve OTRO despliegue · `AntPack-dev/synapse-api-go`, que en
-     * local levanta en 4010 con su `docker-compose`. Sin este proxy el front
-     * pide `/api/v1/auth/login` contra el propio Vite y le vuelve un 404 sin
+    /* **Un solo servicio, una sola base** · F1.37, 2026-09-14.
+     *
+     * `AntPack-dev/synapse-api-go` sirve `/auth/*`, `/config/*` y `/admin/*`
+     * desde el MISMO binario y bajo el mismo `/api/v1` — verificado en su
+     * `router.go`, donde los tres cuelgan de `v1 := router.Group("/api/v1")`.
+     * En local levanta en 4010 con su `docker-compose`.
+     *
+     * Hasta hoy esto proxeaba las rutas de acceso UNA POR UNA, con la razón
+     * escrita: «la API de la consola es otro servicio y va a tener otro
+     * destino». Resultó no serlo. Enumerar prefijos ya había costado una vez
+     * —`password-reset-requests` cae fuera de `/auth` y el proxy devolvía 404,
+     * así que parecía que el endpoint no existía— y con `/config/*` y
+     * `/admin/*` la lista solo se alarga.
+     *
+     * Sin el proxy el front pide contra el propio Vite y le vuelve un 404 sin
      * cuerpo: la pantalla dice «no se pudo conectar» y parece un problema del
      * login cuando es que nadie está escuchando.
      *
-     * **Se proxea solo el prefijo de acceso, no `/api/v1` entero.** La API de
-     * la consola es otro servicio y va a tener otro destino; mandar las dos al
-     * mismo esconde cuál contestó.
-     *
-     * El destino se puede mover sin tocar esto —`AUTH_ORIGIN=http://otro:4010
-     * npm run dev`—, que es lo que hace falta cuando el servicio corre en un
-     * contenedor con otro nombre de red. */
-    proxy: Object.fromEntries(
-      // Las rutas del servicio de acceso, UNA POR UNA y no `/api/v1` entero.
-      // Mandar todo al mismo destino funcionaría hoy —la API de la consola no
-      // existe— y rompería el día que exista, además de esconder cuál contestó.
-      //
-      // `password-reset-requests` está fuera del prefijo `/auth` y se descubrió
-      // tarde: el proxy devolvía 404 y parecía que el endpoint no existía.
-      ['/api/v1/auth', '/api/v1/password-reset-requests', '/api/v1/access-requests'].map(
-        (ruta) => [
-          ruta,
-          { target: process.env['AUTH_ORIGIN'] ?? 'http://localhost:4010', changeOrigin: true },
-        ],
-      ),
-    ),
+     * El destino se mueve sin tocar esto: `API_ORIGIN=http://otro:4010 npm run
+     * dev`, que es lo que hace falta cuando el servicio corre en un contenedor
+     * con otro nombre de red. `AUTH_ORIGIN` sigue funcionando para no romperle
+     * el entorno a nadie. */
+    proxy: {
+      '/api/v1': {
+        target:
+          process.env['API_ORIGIN'] ?? process.env['AUTH_ORIGIN'] ?? 'http://localhost:4010',
+        changeOrigin: true,
+      },
+    },
   },
   test: {
     /* Las pruebas se agrupan en `tests/`, fuera de `src/`. Los handlers de MSW

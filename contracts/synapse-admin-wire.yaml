@@ -1,0 +1,800 @@
+openapi: 3.1.0
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Synapse · EL CABLE de admin y builder
+#
+# ⚠ TRANSCRIPCIÓN, y **SIN VERIFICAR CONTRA EL SERVICIO**.
+#
+# El cable de la consola —`synapse-console-wire.yaml`— se transcribió igual y
+# después `npm run humo` lo confirmó contra el servicio corriendo, cero
+# diferencias. **Este NO se pudo confirmar**: las ocho rutas cuelgan de
+# `AdminOnlyMiddleware` y el usuario de prueba que tenemos es `Planner`, así que
+# `GET /admin/tenants` devuelve 403. Comprobado el 2026-09-15.
+#
+# **Eso baja la confianza de este archivo y hay que decirlo**: describe lo que el
+# código de Go dice que devuelve, no lo que se vio llegar. Con un usuario `admin`
+# se extiende `tools/humo.py` a estas rutas y se confirma.
+#
+# ── CINCO RUTAS SON NUESTRAS Y NO ESTÁN DESPLEGADAS ─────────────────────────
+#
+# Desde el 2026-09-15 este archivo declara **dos cosas distintas** y hay que
+# poder distinguirlas de un vistazo:
+#
+#   · Las OCHO operaciones de ellos, transcritas de su código.
+#   · Las CINCO de B4.8 y B4.9, que escribimos nosotros en un fork
+#     —`gerardoriarte-bt/synapse-api-go`, rama `feature/roles-y-preview`— y que
+#     **el servicio que corre NO sirve**. Llamarlas hoy devuelve 404.
+#
+# Están acá porque el front las necesita para construir F4.3 y F4.12 contra MSW,
+# igual que se construyó la consola entera antes de que existiera el servicio.
+# Van marcadas una por una con `x-origen: fork`.
+#
+#   Transcrito el 2026-09-15 desde `AntPack-dev/synapse-api-go`
+#   rama   feature/dynamic-dashboard-backend
+#   commit 733c13c37dd54b9705e714cbc4718d8aa498092b  (2026-09-11)
+#
+# Archivos leídos, y son la autoridad si esto difiere:
+#   internal/core/ports/dd_layout_builder_service.go   los DTO del builder
+#   internal/core/ports/repositories.go                TenantPublicOption
+#   internal/core/domain/dd_layout_version.go          SIN etiquetas json
+#   internal/core/domain/dd_tab.go                     SIN etiquetas json
+#   internal/core/domain/dd_panel.go                   SIN etiquetas json
+#   internal/adapters/handler/dd_layout_builder_handler.go
+#   internal/adapters/handler/router.go
+#
+# ── LA DEUDA QUE NO SE ABSORBE EN SILENCIO ───────────────────────────────────
+#
+# **Las respuestas mezclan dos convenciones**, y no por diseño:
+#
+#   · Los DTO del builder —`DDLayoutValidationResult`, `DDLayoutDetail`— llevan
+#     etiquetas `json:` y salen en snake_case, como el resto del servicio.
+#   · Los structs de DOMINIO —`DDLayoutVersion`, `DDTab`, `DDPanel`— **no llevan
+#     ninguna**, así que Go los serializa con el nombre del campo: `ID`,
+#     `TenantID`, `Status`, `ColStart`, `OperationalQuestion`.
+#
+# **Esto rompe los propios tests de Postman del backend**, y esa es la evidencia
+# de que es un descuido y no una convención: `scriptCreateDraft` de
+# `Synapse — Dashboard dinámico F4.postman_collection.json` afirma
+# `lv.status === 'draft'` y lo que llega es `Status`, así que compara `undefined`
+# contra `'draft'`. Lo mismo `d.tabs[0].tab.name` en `F4-8`.
+#
+# Se transcribe como llega —el front lo absorbe en su adaptador, igual que el
+# resto del cable— **y se pide arreglarlo**: son tres etiquetas `json:`. Está en
+# `docs/PARA-BACKEND.md`.
+#
+# ── Y UN RIESGO QUE NO ES DE NOMBRES ─────────────────────────────────────────
+#
+# `DDLayoutVersion` tiene un campo `Tenant Tenant` **sin `json:"-"`**, y
+# `domain.Tenant` guarda `PrivateKeyPEM` y `PrivateKeyPassphrase`.
+#
+# **Hoy no filtra**: ningún repositorio hace `Preload("Tenant")`, así que lo que
+# se serializa es un `Tenant` en cero y lo que viaja son cadenas vacías. Pero los
+# nombres de los campos de un almacén de credenciales aparecen en una respuesta
+# de admin, y **el día que alguien agregue un `Preload` para mostrar el nombre
+# del tenant, filtra y nada lo detendría.** Es un `json:"-"` de una línea.
+# ─────────────────────────────────────────────────────────────────────────────
+
+info:
+  title: Synapse · el cable de admin y builder
+  version: 0.1.0-transcripcion-sin-verificar
+  description: |
+    Las ocho rutas del builder, tal como el código de Go dice que las sirve.
+
+    **Sin verificar contra el servicio**: requieren rol `admin` y el usuario de
+    prueba disponible es `planner`.
+
+servers:
+  - url: /api/v1
+
+security:
+  - bearer: []
+
+tags:
+  - name: admin
+    description: Namespace `/admin/*` · middleware `AdminOnlyMiddleware`.
+
+paths:
+  /admin/tenants:
+    get:
+      tags: [admin]
+      operationId: listTenants
+      summary: Los tenants, para elegir cuál se compone
+      responses:
+        '200':
+          description: Lista de tenants
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/TenantOption' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/tenants/{tenantId}/layouts:
+    get:
+      tags: [admin]
+      operationId: listLayouts
+      summary: Las versiones de layout del tenant · borrador y publicada
+      parameters: [{ $ref: '#/components/parameters/tenantId' }]
+      responses:
+        '200':
+          description: Versiones
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/LayoutVersion' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [admin]
+      operationId: createDraft
+      summary: Crear un borrador vacío
+      description: |
+        Responde **201**, no 200. `version_id` es opcional al crear: se puede
+        poner al publicar.
+      parameters: [{ $ref: '#/components/parameters/tenantId' }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                version_id: { type: string, examples: ['borrador-f4'] }
+      responses:
+        '201':
+          description: El borrador creado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/LayoutVersion' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/tenants/{tenantId}/catalog:
+    get:
+      tags: [admin]
+      operationId: adminCatalog
+      summary: Las métricas del tenant, SIN filtrar por rol
+      description: |
+        La diferencia con `/config/catalog` es esa: acá no se aplica
+        `hidden_metric_ids`, porque quien compone tiene que poder asignar una
+        métrica que después un rol no verá.
+
+        Devuelve el mismo `CatalogMetric` que la consola — **ese struct SÍ tiene
+        etiquetas `json:`**.
+      parameters: [{ $ref: '#/components/parameters/tenantId' }]
+      responses:
+        '200':
+          description: Catálogo completo del tenant
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/CatalogMetric' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/layouts/{layoutId}:
+    get:
+      tags: [admin]
+      operationId: getLayout
+      summary: El layout con sus pestañas y paneles · para el builder
+      parameters: [{ $ref: '#/components/parameters/layoutId' }]
+      responses:
+        '200':
+          description: Detalle del layout
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/LayoutDetail' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [admin]
+      operationId: updateLayout
+      summary: Reemplazar las pestañas y los paneles
+      description: |
+        **Es un REEMPLAZO COMPLETO**, no un parche: se envía el layout entero y
+        lo que no venga se borra.
+
+        **Solo un `draft` es editable** — sobre uno publicado responde 409.
+
+        El cuerpo va en **snake_case**, a diferencia de la respuesta.
+      parameters: [{ $ref: '#/components/parameters/layoutId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LayoutUpdateRequest' }
+      responses:
+        '200':
+          description: El layout guardado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/LayoutDetail' }
+        '409':
+          description: El layout está publicado y no se puede editar
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /admin/layouts/{layoutId}/validate:
+    post:
+      tags: [admin]
+      operationId: validateLayout
+      summary: Validar la composición contra la tabla `blocks`
+      description: |
+        **Responde 200 aunque la composición sea inválida**: el resultado va en
+        `data.valid` y `data.errors`. Un 200 no quiere decir que el layout esté
+        bien — quiere decir que la validación corrió.
+      parameters: [{ $ref: '#/components/parameters/layoutId' }]
+      responses:
+        '200':
+          description: Resultado de la validación
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/ValidationResult' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  # ── B4.8 · CRUD de roles · DEL FORK, NO DESPLEGADO ───────────────────────
+  /admin/tenants/{tenantId}/roles:
+    get:
+      tags: [admin]
+      operationId: listRoles
+      summary: Los roles del cliente
+      x-origen: fork
+      description: |
+        **No la sirve el servicio desplegado.** Escrita en el fork · B4.8.
+
+        `user_count` viaja en el listado a propósito: es lo que decide si el rol
+        se puede borrar, y la pantalla tiene que poder decirlo **antes** de
+        ofrecer el botón, no después de un 409.
+      parameters: [{ $ref: '#/components/parameters/tenantId' }]
+      responses:
+        '200':
+          description: Los roles
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Role' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [admin]
+      operationId: createRole
+      summary: Crear un rol
+      x-origen: fork
+      description: |
+        **409 si ya existe un rol con ese nombre en el cliente.** El índice único
+        es `(tenant_id, name)` y el servicio pregunta antes para poder decir qué
+        pasó en vez de devolver el error de Postgres como un 500.
+      parameters: [{ $ref: '#/components/parameters/tenantId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RoleInput' }
+      responses:
+        '201':
+          description: El rol creado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Role' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /admin/roles/{roleId}:
+    put:
+      tags: [admin]
+      operationId: updateRole
+      summary: Editar un rol
+      x-origen: fork
+      description: |
+        **Escribe cuatro columnas: `name`, `tab_ids`, `hidden_metric_ids` y
+        `layout_overrides`.** `tenant_id` no se toca: un rol no cambia de cliente.
+
+        `layout_overrides` ausente se escribe como `{}`, no se deja intacto.
+      parameters: [{ $ref: '#/components/parameters/roleId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RoleInput' }
+      responses:
+        '200':
+          description: El rol editado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Role' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [admin]
+      operationId: deleteRole
+      summary: Borrar un rol
+      x-origen: fork
+      description: |
+        **204 sin cuerpo.** Y **409 con la razón y el número si tiene usuarios
+        asignados** — no borra en cascada: dejaría usuarios sin rol, que es un
+        usuario que no puede entrar a ninguna pestaña.
+      parameters: [{ $ref: '#/components/parameters/roleId' }]
+      responses:
+        '204': { description: Borrado }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  # ── B4.9 · preview por rol · DEL FORK, NO DESPLEGADO ─────────────────────
+  /admin/layouts/{layoutId}/preview:
+    get:
+      tags: [admin]
+      operationId: previewLayout
+      summary: El layout como lo vería un rol
+      x-origen: fork
+      description: |
+        **No la sirve el servicio desplegado.** Escrita en el fork · B4.9.
+
+        **Pasa por el mismo `GetTab` que sirve a la consola**, así que
+        `tab_ids`, `hidden_metric_ids` y `layout_overrides` se aplican una sola
+        vez y en un solo lugar. Un preview que reimplemente el filtrado termina
+        mostrando algo que la consola no muestra, y se publica confiando en él.
+
+        **Viene SIN payloads** y lo declara en `without_payloads`. Con el layout
+        alcanza para «CEO vs Planner»; con payloads habría que decidir qué
+        período usa y si un panel oculto llega como `SIN_PERMISO`.
+
+        Un `roleId` de otro tenant devuelve **404 y no 403**: un 403 confirmaría
+        que el rol existe.
+      parameters:
+        - $ref: '#/components/parameters/layoutId'
+        - name: roleId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: El layout filtrado por ese rol
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Preview' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /admin/layouts/{layoutId}/publish:
+    post:
+      tags: [admin]
+      operationId: publishLayout
+      summary: Publicar la versión
+      description: |
+        **Demota el layout publicado anterior del tenant a `draft`.** Solo hay
+        uno publicado por tenant, así que publicar cambia lo que ve la consola en
+        su próxima carga.
+
+        Rechaza con **422** si hay paneles inválidos.
+      parameters: [{ $ref: '#/components/parameters/layoutId' }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                version_id: { type: string, examples: ['v3'] }
+      responses:
+        '200':
+          description: La versión publicada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/LayoutVersion' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer, bearerFormat: JWT }
+
+  parameters:
+    tenantId:
+      name: tenantId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    layoutId:
+      name: layoutId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    roleId:
+      name: roleId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    BadRequest:
+      description: Identificador mal formado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Forbidden:
+      description: El JWT no es de rol `admin`
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    NotFound:
+      description: No existe
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Unprocessable:
+      description: Composición inválida
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Conflict:
+      description: |
+        Choca con una regla · nombre de rol duplicado, o un rol con usuarios
+        asignados. **El mensaje dice qué hacer**, no «conflicto».
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  schemas:
+    Envelope:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean, enum: [true] }
+
+    ErrorResponse:
+      type: object
+      description: El mismo de la consola · `error` es una CADENA.
+      required: [success, error]
+      properties:
+        success: { type: boolean, enum: [false] }
+        error: { type: string }
+
+    TenantOption:
+      type: object
+      description: '`ports.TenantPublicOption` · SÍ tiene etiquetas `json:`.'
+      required: [id, name]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+
+    CatalogMetric:
+      type: object
+      description: |
+        `domain.DDCatalogMetric`, el mismo de `/config/catalog`. **Con etiquetas
+        `json:`**, así que sale en snake_case. Ver `synapse-console-wire.yaml`
+        para el detalle de cada campo — no se duplica acá.
+      required: [id, tenant_id, key, name, shape, family, layer, source, base, min_grain, dimensions, catalog_version]
+      additionalProperties: true
+      properties:
+        id: { type: string, format: uuid }
+        key: { type: string }
+        name: { type: string }
+        shape: { type: string }
+        family: { type: string }
+        layer: { type: string }
+        source: { type: string }
+        base: { type: string }
+        min_grain: { type: string }
+        catalog_version: { type: integer }
+
+    # ── LO QUE SALE EN PascalCase ────────────────────────────────────────────
+
+    LayoutVersion:
+      type: object
+      description: |
+        `domain.DDLayoutVersion`, **serializado SIN etiquetas `json:`**. Las
+        claves son los nombres de los campos de Go.
+
+        `Tenant` viaja porque el struct lo declara y no lleva `json:"-"`. Hoy
+        llega en cero —nadie hace `Preload`— y por eso no se declaran sus
+        campos acá: **lo que sea que traiga, el front no lo lee**.
+      required: [ID, TenantID, Status, VersionID]
+      properties:
+        ID: { type: string, format: uuid }
+        TenantID: { type: string, format: uuid }
+        Status:
+          type: string
+          description: Solo uno `published` por tenant. Publicar demota al anterior.
+          enum: [draft, published]
+        VersionID:
+          type: string
+          description: Etiqueta legible. Cadena vacía si nunca se puso.
+        PublishedAt: { type: ['string', 'null'], format: date-time }
+        CreatedAt: { type: string, format: date-time }
+        UpdatedAt: { type: string, format: date-time }
+        Tenant:
+          type: object
+          description: '**No se lee.** Ver el aviso de la cabecera del archivo.'
+          additionalProperties: true
+
+    LayoutTab:
+      type: object
+      description: '`domain.DDTab`, también sin etiquetas `json:`.'
+      required: [ID, LayoutVersionID, Name, SortOrder]
+      properties:
+        ID: { type: string, format: uuid }
+        LayoutVersionID: { type: string, format: uuid }
+        Name: { type: string }
+        OperationalQuestion:
+          type: string
+          description: |
+            La pregunta operativa. Cadena vacía si no se puso — **y el producto
+            dice que una pestaña que no contesta una pregunta no se compone**,
+            así que el builder no la deja vacía aunque el backend sí.
+        SortOrder: { type: integer }
+        RoleIDs:
+          type: array
+          description: Vacío significa «la ven todos los roles».
+          items: { type: string, format: uuid }
+        CreatedAt: { type: string, format: date-time }
+        UpdatedAt: { type: string, format: date-time }
+
+    LayoutPanel:
+      type: object
+      description: |
+        `domain.DDPanel`, sin etiquetas `json:`. **Ojo con `Type`**: en la base la
+        columna es `block_type` y acá el campo es `Type`.
+      required: [ID, TabID, MetricID, Type, ColStart, ColSpan, RowSpan]
+      properties:
+        ID: { type: string, format: uuid }
+        TabID: { type: string, format: uuid }
+        MetricID: { type: string, format: uuid }
+        Type: { type: string }
+        ColStart: { type: integer, minimum: 1, maximum: 12 }
+        ColSpan: { type: integer }
+        RowSpan: { type: integer }
+        Options:
+          type: object
+          description: Los nombres van en inglés · ver `PARAMS` del adaptador.
+          additionalProperties: true
+        CreatedAt: { type: string, format: date-time }
+        UpdatedAt: { type: string, format: date-time }
+
+    LayoutDetail:
+      type: object
+      description: |
+        `ports.DDLayoutDetail`. **Las dos claves de afuera SÍ tienen etiqueta**
+        —`layout`, `tabs`— y lo de adentro no. Esa mezcla es toda la deuda.
+      required: [layout, tabs]
+      properties:
+        layout: { $ref: '#/components/schemas/LayoutVersion' }
+        tabs:
+          type: array
+          items:
+            type: object
+            required: [tab, panels]
+            properties:
+              tab: { $ref: '#/components/schemas/LayoutTab' }
+              panels:
+                type: array
+                items: { $ref: '#/components/schemas/LayoutPanel' }
+
+    # ── LO QUE VA EN snake_case ──────────────────────────────────────────────
+
+    LayoutUpdateRequest:
+      type: object
+      description: |
+        `ports.DDLayoutUpdateRequest`. **El cuerpo va en snake_case y la respuesta
+        en PascalCase**: el builder manda una forma y recibe otra.
+      required: [tabs]
+      properties:
+        tabs:
+          type: array
+          items: { $ref: '#/components/schemas/TabInput' }
+
+    TabInput:
+      type: object
+      required: [name]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: |
+            Omitir —o mandar el UUID cero— **genera una pestaña nueva**. Mandar un
+            UUID existente conserva el id al reemplazar el contenido. Es la
+            diferencia entre editar y recrear, y no la avisa nada.
+        name: { type: string }
+        operational_question: { type: string }
+        sort_order:
+          type: integer
+          description: 'Default si viene 0: el índice del arreglo + 1.'
+        role_ids:
+          type: array
+          items: { type: string, format: uuid }
+        panels:
+          type: array
+          items: { $ref: '#/components/schemas/PanelInput' }
+
+    PanelInput:
+      type: object
+      required: [metric_id, type]
+      properties:
+        id: { type: string, format: uuid }
+        metric_id: { type: string, format: uuid }
+        type: { type: string }
+        col_start: { type: integer, description: 'Default si viene 0: 1.' }
+        col_span: { type: integer, description: 'Default si viene 0: 3.' }
+        row_span: { type: integer, description: 'Default si viene 0: 4.' }
+        options:
+          type: object
+          additionalProperties: true
+
+    ValidationResult:
+      type: object
+      description: '`ports.DDLayoutValidationResult` · SÍ tiene etiquetas `json:`.'
+      required: [valid, errors]
+      properties:
+        valid: { type: boolean }
+        errors:
+          type: array
+          items: { $ref: '#/components/schemas/ValidationIssue' }
+
+    ValidationIssue:
+      type: object
+      description: |
+        Trae `tab_id` y `panel_id` cuando aplica, **así que el error se puede
+        mostrar SOBRE el panel** y no en una lista al pie.
+      required: [message]
+      properties:
+        tab_id: { type: ['string', 'null'], format: uuid }
+        panel_id: { type: ['string', 'null'], format: uuid }
+        field: { type: string }
+        message: { type: string }
+
+    # ── B4.8 y B4.9 · DEL FORK, NO DESPLEGADO ────────────────────────────────
+
+    Role:
+      type: object
+      description: |
+        `ports.DDRoleDTO`. **SÍ lleva etiquetas `json:`**, así que sale en
+        snake_case entero — a diferencia de `LayoutVersion` y compañía. Es lo
+        que B4.10 pide para aquellos.
+      required: [id, tenant_id, name, tab_ids, hidden_metric_ids, user_count]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        name: { type: string, examples: ['Planner'] }
+        tab_ids:
+          type: array
+          description: Vacío significa «ve todas las pestañas».
+          items: { type: string, format: uuid }
+        hidden_metric_ids:
+          type: array
+          description: |
+            **Oculta, NO impide.** El servidor vuelve a verificar en
+            `/config/catalog` y en el batch: un rol que oculta una métrica no es
+            un rol que no pueda pedirla.
+          items: { type: string, format: uuid }
+        layout_overrides:
+          type: object
+          description: |
+            Por pestaña y por panel · `col_start`, `col_span`, `row_span`,
+            `options`. **No muta el layout publicado**: `GetTab` los aplica al
+            responder.
+          additionalProperties: true
+        user_count:
+          type: integer
+          description: Cuántos usuarios tienen el rol. Con uno o más, borrar da 409.
+
+    RoleInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        tab_ids:
+          type: array
+          items: { type: string, format: uuid }
+        hidden_metric_ids:
+          type: array
+          items: { type: string, format: uuid }
+        layout_overrides:
+          type: object
+          description: 'Ausente se escribe como `{}`: «sin overrides» es un estado, no una omisión.'
+          additionalProperties: true
+
+    Preview:
+      type: object
+      description: |
+        `ports.DDPreviewResponse` · el layout como lo vería un rol, resuelto por
+        el **mismo `GetTab`** que sirve a la consola.
+      required: [layout_id, role_id, role_name, tabs, without_payloads]
+      properties:
+        layout_id: { type: string, format: uuid }
+        role_id: { type: string, format: uuid }
+        role_name: { type: string }
+        tabs:
+          type: array
+          description: |
+            Solo las que el rol puede ver, con sus paneles ya filtrados y los
+            overrides aplicados. **Forma de la CONSOLA** —`ports.DDTabWithPanels`,
+            snake_case— y no la del builder.
+          items:
+            type: object
+            required: [tab, panels]
+            properties:
+              tab:
+                type: object
+                required: [id, name, sort_order]
+                properties:
+                  id: { type: string, format: uuid }
+                  name: { type: string }
+                  operational_question: { type: string }
+                  sort_order: { type: integer }
+              panels:
+                type: array
+                items:
+                  type: object
+                  required: [id, metric_id, type, col_start, col_span, row_span]
+                  properties:
+                    id: { type: string, format: uuid }
+                    metric_id: { type: string, format: uuid }
+                    type: { type: string }
+                    col_start: { type: integer }
+                    col_span: { type: integer }
+                    row_span: { type: integer }
+                    options:
+                      type: object
+                      additionalProperties: true
+        without_payloads:
+          type: boolean
+          description: |
+            Siempre `true` hoy. **Es una declaración, no un flag**: quien la
+            consuma tiene que saber que los paneles vienen sin datos, para no
+            dibujar un cuerpo vacío creyendo que el panel está en blanco.

@@ -47,3 +47,44 @@ design/sesiones.md
 design/plan-diseno.md
 design/design_loop.md
 design/prototipo/
+
+# ── CREDENCIALES · nada de esto entra al repositorio ─────────────────────────
+#
+# El 2026-09-14, `docs/backdocs/environments.txt` llegó con la contraseña de la
+# RDS de producción, el `JWT_SECRET`, el `DATA_ENCRYPTION_KEY` y un par de llaves
+# de AWS **activas** — sin trackear y sin ignorar, o sea a un `git add .` de
+# publicarse. De ahí sale esta sección.
+#
+# Las reglas son por FORMA y no por archivo a propósito: el que viene mañana se
+# va a llamar de otra manera.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p8
+*.p12
+*credentials*
+*secrets*
+connections.toml
+.snowflake/
+
+# `docs/backdocs/` · el material que compartió el equipo de backend.
+#
+# Se ignora ENTERO y no solo el archivo de credenciales, por dos razones: lleva
+# `environments.txt` con secretos vivos, y las colecciones de Postman traen un
+# JWT real —vencido, pero emitido contra un tenant real—. Es material de ellos y
+# su casa es su repositorio.
+#
+# **No se pierde nada verificable**: `docs/PLAN-INTEGRACION-2026-09-11.md` y
+# `docs/snowflake/` citan archivo, commit y consulta de todo lo que se derivó de
+# acá, así que cualquiera puede rehacer el razonamiento contra la fuente.
+docs/backdocs/
+
+# Artefactos para ENVIAR · un `.zip` de documentos que ya están versionados es
+# una segunda copia que va a derivar. Se generan al momento y no se commitean.
+docs/**/*.zip
+
+# Mismo criterio que los zip: los PDF de otros equipos se leen, no se versionan.
+# El contenido que importa se transcribe a `.md`, que sí se puede diff-ear.
+docs/**/*.pdf
