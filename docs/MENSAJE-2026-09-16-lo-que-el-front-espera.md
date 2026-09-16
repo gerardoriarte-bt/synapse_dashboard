@@ -70,14 +70,24 @@ Siete tareas de backend están implementadas en
 | `b13fccd` | `measurement_window`, el período abierto, quién publicó, sugerencias de chat, ícono, y el diff de layouts |
 
 **No hay PR y no lo va a haber**: el código vuelve desde nuestro repositorio y lo
-toman cuando quieran, en el orden que quieran. Está rebasado contra su rama y con
-cero cambios en código de ustedes.
+toman cuando quieran, en el orden que quieran.
+
+**Verificado hoy:** está sobre `733c13c` —la cabeza actual de su rama, que no se
+movió desde el 2026-09-11, así que **no hace falta rebasar**—, `go build ./...`
+sale limpio y **`go test ./...` pasa entero**. Cero churn en código de ustedes.
+
+**Cómo tomarlo está escrito aparte**, para que no haya que leer nuestro plan:
+[`ENTREGA-2026-09-16-fork-como-tomarlo.md`](ENTREGA-2026-09-16-fork-como-tomarlo.md).
+Ahí están los dos `cherry-pick`, las **cinco `ALTER TABLE` explícitas** —para no
+tener que correr `DB_AUTO_MIGRATE` sobre la RDS compartida— y qué destraba cada
+commit. Los dos son independientes: se puede tomar solo el primero.
 
 **Dos advertencias que van con eso:**
 
-- La segunda tanda **agrega cinco columnas** y las aplica `AutoMigrate`. **No
-  corrimos las migraciones**: la base es la RDS compartida de producción y esa
-  decisión no es nuestra. Las cinco son aditivas y con default.
+- La segunda tanda **agrega cinco columnas**. **No corrimos las migraciones**: es
+  un cambio de esquema en producción y esa decisión no es nuestra. Las cinco son
+  aditivas y con default o nulables, así que el binario viejo sigue andando con
+  la tabla nueva — se pueden correr antes de desplegar.
 - Mientras el fork no esté desplegado, `/admin/tenants/{id}/roles` y `/preview`
   dan **404**, y con eso quedan bloqueadas dos pantallas nuestras que ya están
   construidas: la gestión de roles y la vista previa por rol.
