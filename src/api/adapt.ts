@@ -81,17 +81,50 @@ export type WirePanel = W['PanelDTO']
  *  están acá porque el backend no las materializa: su `switch` tiene nueve casos
  *  y un `default` que devuelve `ErrUnknownShape`. Ponerlas sería declarar una
  *  traducción para algo que nunca llega. */
-const FORMAS: Readonly<Record<string, Shape>> = {
-  scalar: 'escalar',
-  scalar_with_interval: 'escalarConIntervalo',
-  time_series: 'serieTemporal',
-  multi_series: 'seriesMultiples',
-  categorical: 'categorica',
+/** **El nombre de cable de cada forma, y va al revés a propósito.**
+ *
+ *  Un `Record<string, Shape>` —que es como estuvo hasta el 2026-09-15— no puede
+ *  estar incompleto, porque toda cadena es una clave válida. Y estaba: le
+ *  faltaba `distribution`, así que `distribucion` salía de `accepted_shapes`
+ *  **en silencio** y un bloque `distribution` quedaba con la lista vacía. El
+ *  cuerpo está construido desde F1.13 y el builder no lo podía colocar nunca.
+ *
+ *  No se vio porque hoy ninguna métrica declara esa forma —verificado contra
+ *  `/config/catalog` el 2026-09-15: seis `scalar`, dos `prose`, y una de
+ *  `categorical`, `multi_series`, `tabular` y `time_series`—. Era un bug con
+ *  fecha de activación, no uno inofensivo.
+ *
+ *  Escrito con la forma del contrato como CLAVE, **`Record` completo y no
+ *  `Partial`**, agregar una forma al enumerado sin su nombre de cable deja de
+ *  compilar. Es el mismo mecanismo que el criterio de F4.20 pide para el
+ *  registro de cuerpos, acá donde sí se puede sostener hoy.
+ *
+ *  Los cinco nombres de las formas v1.1 no son inventados: los manda
+ *  `/config/blocks` del servicio corriendo —`comparison` acepta
+ *  `compared_categorical` y `multi_attribute_profile`, `matrix` acepta `matrix`,
+ *  `graph` acepta `graph` y `flow`—. */
+const NOMBRE_DE_FORMA: Readonly<Record<Shape, string>> = {
+  escalar: 'scalar',
+  escalarConIntervalo: 'scalar_with_interval',
+  serieTemporal: 'time_series',
+  serieConBanda: 'series_with_band',
+  seriesMultiples: 'multi_series',
+  categorica: 'categorical',
+  categoricaComparada: 'compared_categorical',
+  perfilMultiatributo: 'multi_attribute_profile',
+  composicion: 'composition',
+  distribucion: 'distribution',
+  matriz: 'matrix',
+  flujo: 'flow',
+  grafo: 'graph',
   ranking: 'ranking',
   tabular: 'tabular',
-  prose: 'prosa',
-  composition: 'composicion',
+  prosa: 'prose',
 }
+
+const FORMAS: Readonly<Record<string, Shape>> = Object.fromEntries(
+  Object.entries(NOMBRE_DE_FORMA).map(([forma, nombre]) => [nombre, forma as Shape]),
+)
 
 /** **De acá sale el color de cada serie.** Los nombres del contrato son los que
  *  nombran los tokens: `--color-fam-demanda-1`. Una familia fuera de estas cinco
@@ -308,7 +341,18 @@ export function adaptCatalog(rows: readonly WireMetric[]): AdaptedCatalog {
     const falla =
       forma === undefined
         ? `forma desconocida: «${m.shape}»`
-        : familia === undefined
+        : // **Ésta es una puerta aparte, y hasta el 2026-09-15 no lo era.** El
+          // rechazo salía de que la forma no estuviera en el mapa de nombres, así
+          // que «no sé cómo se llama» y «el backend no la materializa» eran la
+          // misma línea. Completar el mapa —que es lo que hace que agregar una
+          // forma al contrato sin su nombre de cable no compile— habría dejado
+          // pasar `distribucion` al catálogo en silencio.
+          //
+          // Lo agarró `adapt.test.ts`, que afirmaba el rechazo con su razón
+          // escrita. La prueba estaba bien y la lectura era mía.
+          !MATERIALIZABLES.includes(forma)
+          ? `forma que el backend todavía no materializa: «${m.shape}»`
+          : familia === undefined
           ? `familia desconocida: «${m.family}»`
           : capa === undefined
             ? `capa desconocida: «${m.layer}»`
@@ -357,8 +401,28 @@ export function adaptCatalog(rows: readonly WireMetric[]): AdaptedCatalog {
 
 /* ── Bloques ──────────────────────────────────────────────────────────────── */
 
-/** Todas las formas del contrato, para expandir el comodín de `blocked`. */
-const TODAS_LAS_FORMAS = Object.values(FORMAS)
+/** **Lo que el comodín de `blocked` significa, y NO son las dieciséis.**
+ *
+ *  Antes salía de `Object.values(FORMAS)`, que daba lo mismo mientras el mapa de
+ *  nombres estuviera incompleto —nueve— y dejó de darlo al completarlo. La
+ *  coincidencia escondía que son dos preguntas distintas: **cómo se llama cada
+ *  forma en el cable** es una tabla de nombres, y **cuáles sabe materializar el
+ *  backend** es un hecho sobre su `transform.go`, que tiene nueve casos.
+ *
+ *  Expandir el `*` a las dieciséis ofrecería formas que ningún payload trae, que
+ *  es la misma promesa vacía que un período sin datos. Las siete que faltan
+ *  entran con B5.3, junto con los cuerpos de F4.17–F4.19. */
+const MATERIALIZABLES: readonly Shape[] = [
+  'escalar',
+  'escalarConIntervalo',
+  'serieTemporal',
+  'seriesMultiples',
+  'categorica',
+  'ranking',
+  'tabular',
+  'prosa',
+  'composicion',
+]
 
 /** Un bloque cuyo `type` no es uno de los quince **no entra a la tabla**, y sale
  *  con su razón. Si entrara, `acceptsShape` y `spanInRange` opinarían sobre un
@@ -390,7 +454,7 @@ function unBloque(b: WireBlock, tipo: Block['tipo']): Block {
     // dieciséis del enumerado: ofrecer una forma que ningún payload trae es la
     // misma promesa vacía que un período sin datos.
     formasAceptadas: b.accepted_shapes.includes('*')
-      ? [...TODAS_LAS_FORMAS]
+      ? [...MATERIALIZABLES]
       : b.accepted_shapes.flatMap((s) => {
           const forma = FORMAS[s]
           return forma === undefined ? [] : [forma]

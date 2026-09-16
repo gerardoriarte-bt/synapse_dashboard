@@ -81,23 +81,47 @@ export const catalogo = FORMAS.flatMap(([shape, family], i) =>
 
 /** Los quince tipos con sus rangos · es lo que gobierna la biblioteca y el
  *  binder, así que tiene que estar completo o el builder miente sobre qué
- *  existe. */
+ *  existe.
+ *
+ *  ── CAPTURADO DEL SERVICIO, NO ESCRITO DE MEMORIA · 2026-09-15 ──────────────
+ *
+ *  `GET /api/v1/config/blocks` contra el servicio corriendo. La primera versión
+ *  de esta tabla se escribió de memoria y **las quince filas estaban mal**: cinco
+ *  con `accepted_shapes` equivocadas, los quince `ui_name` traducidos al español
+ *  —el cable los manda en inglés— y casi todos los rangos de span.
+ *
+ *  Las cinco formas importan más que el resto porque son las que decide
+ *  `invalidReason`: el mock decía que `distribution` acepta `tabular` y que
+ *  `comparison` acepta `categorical`, así que **componer contra el mock daba una
+ *  validación que el servidor no da**. Es la trampa que ya está escrita en
+ *  `CLAUDE.md` —«un mock que habla el idioma de tu capa interna no prueba la
+ *  frontera, la esconde»— en su otra mitad: uno que habla el idioma equivocado
+ *  del cable tampoco.
+ *
+ *  **`blocked` no trae `layout_params`** y acá se respeta la ausencia: es el
+ *  caso que cubre el spread condicional de `adapt.ts`. Ponerle `[]` lo escondía.
+ *
+ *  **Los `ui_name` en inglés son del servicio y quedan tal cual**, que es la
+ *  regla del fixture. No llegan a la pantalla: `Bloque` del contrato no tiene
+ *  campo de nombre, así que `adaptBlocks` no lo lleva y la biblioteca del
+ *  builder rotula con `tipo`. Traducirlos acá habría hecho que el fixture
+ *  pareciera resolver algo que el adaptador ni mira. */
 export const bloques = [
-  { type: 'kpi', ui_name: 'KPI', accepted_shapes: ['scalar', 'scalar_with_interval'], col_span_min: 3, col_span_max: 4, row_span_min: 3, row_span_max: 4, layout_params: ['maximum'] },
-  { type: 'prose', ui_name: 'Prosa', accepted_shapes: ['prose'], col_span_min: 4, col_span_max: 12, row_span_min: 3, row_span_max: 6, layout_params: ['pillars'] },
-  { type: 'series', ui_name: 'Serie', accepted_shapes: ['time_series', 'multi_series'], col_span_min: 6, col_span_max: 12, row_span_min: 4, row_span_max: 8, layout_params: ['normalization'] },
-  { type: 'bars', ui_name: 'Barras', accepted_shapes: ['categorical', 'ranking'], col_span_min: 4, col_span_max: 8, row_span_min: 4, row_span_max: 5, layout_params: ['order', 'cap'] },
-  { type: 'table', ui_name: 'Tabla', accepted_shapes: ['tabular'], col_span_min: 6, col_span_max: 12, row_span_min: 4, row_span_max: 10, layout_params: ['columns', 'order'] },
-  { type: 'gauge', ui_name: 'Medidor', accepted_shapes: ['scalar'], col_span_min: 3, col_span_max: 4, row_span_min: 4, row_span_max: 5, layout_params: ['maximum', 'band'] },
-  { type: 'forecast', ui_name: 'Pronóstico', accepted_shapes: ['scalar_with_interval'], col_span_min: 6, col_span_max: 12, row_span_min: 4, row_span_max: 8, layout_params: ['horizon', 'cut'] },
-  { type: 'list', ui_name: 'Lista', accepted_shapes: ['ranking'], col_span_min: 3, col_span_max: 6, row_span_min: 4, row_span_max: 8, layout_params: ['cap', 'order'] },
-  { type: 'reco', ui_name: 'Recomendación', accepted_shapes: ['prose'], col_span_min: 4, col_span_max: 8, row_span_min: 4, row_span_max: 8, layout_params: ['cap', 'window'] },
-  { type: 'composition', ui_name: 'Composición', accepted_shapes: ['composition'], col_span_min: 4, col_span_max: 6, row_span_min: 4, row_span_max: 6, layout_params: ['order'] },
-  { type: 'comparison', ui_name: 'Comparación', accepted_shapes: ['categorical'], col_span_min: 4, col_span_max: 8, row_span_min: 4, row_span_max: 6, layout_params: [] },
-  { type: 'distribution', ui_name: 'Distribución', accepted_shapes: ['tabular'], col_span_min: 4, col_span_max: 8, row_span_min: 4, row_span_max: 6, layout_params: ['bins'] },
-  { type: 'blocked', ui_name: 'Bloqueado', accepted_shapes: ['*'], col_span_min: 3, col_span_max: 12, row_span_min: 3, row_span_max: 6, layout_params: [] },
-  { type: 'matrix', ui_name: 'Matriz', accepted_shapes: ['tabular'], col_span_min: 6, col_span_max: 12, row_span_min: 4, row_span_max: 8, layout_params: [] },
-  { type: 'graph', ui_name: 'Grafo', accepted_shapes: ['multi_series'], col_span_min: 6, col_span_max: 12, row_span_min: 4, row_span_max: 8, layout_params: [] },
+  { type: 'kpi', ui_name: 'KPI', accepted_shapes: ['scalar'], col_span_min: 3, col_span_max: 4, row_span_min: 3, row_span_max: 4, layout_params: ['comparative', 'meter'] },
+  { type: 'prose', ui_name: 'Prose / summary', accepted_shapes: ['prose'], col_span_min: 8, col_span_max: 12, row_span_min: 3, row_span_max: 4, layout_params: ['pillars'] },
+  { type: 'series', ui_name: 'Time series', accepted_shapes: ['time_series', 'multi_series'], col_span_min: 5, col_span_max: 7, row_span_min: 4, row_span_max: 5, layout_params: ['normalization', 'cut'] },
+  { type: 'bars', ui_name: 'Bars', accepted_shapes: ['categorical', 'ranking'], col_span_min: 4, col_span_max: 8, row_span_min: 4, row_span_max: 5, layout_params: ['order', 'brand'] },
+  { type: 'table', ui_name: 'Table', accepted_shapes: ['tabular'], col_span_min: 5, col_span_max: 8, row_span_min: 4, row_span_max: 5, layout_params: ['order', 'columns'] },
+  { type: 'gauge', ui_name: 'Gauge', accepted_shapes: ['scalar'], col_span_min: 3, col_span_max: 7, row_span_min: 4, row_span_max: 4, layout_params: ['band', 'components', 'maximum'] },
+  { type: 'forecast', ui_name: 'Forecast', accepted_shapes: ['scalar_with_interval', 'series_with_band'], col_span_min: 4, col_span_max: 6, row_span_min: 4, row_span_max: 5, layout_params: ['horizon', 'interval_level', 'cut'] },
+  { type: 'list', ui_name: 'List / ranking', accepted_shapes: ['ranking'], col_span_min: 3, col_span_max: 5, row_span_min: 4, row_span_max: 5, layout_params: ['order', 'cap'] },
+  { type: 'reco', ui_name: 'Recommendation', accepted_shapes: ['prose'], col_span_min: 4, col_span_max: 5, row_span_min: 4, row_span_max: 5, layout_params: ['cap', 'window'] },
+  { type: 'composition', ui_name: 'Composition / stacked', accepted_shapes: ['composition'], col_span_min: 4, col_span_max: 8, row_span_min: 4, row_span_max: 5, layout_params: ['cuts', 'order'] },
+  { type: 'comparison', ui_name: 'Comparison', accepted_shapes: ['compared_categorical', 'multi_attribute_profile'], col_span_min: 5, col_span_max: 8, row_span_min: 4, row_span_max: 5, layout_params: ['reference', 'order', 'profile_cap'] },
+  { type: 'distribution', ui_name: 'Distribution', accepted_shapes: ['distribution'], col_span_min: 5, col_span_max: 8, row_span_min: 4, row_span_max: 5, layout_params: ['bins', 'stats'] },
+  { type: 'blocked', ui_name: 'Blocked panel', accepted_shapes: ['*'], col_span_min: 4, col_span_max: 6, row_span_min: 4, row_span_max: 4 },
+  { type: 'matrix', ui_name: 'Matrix / heatmap', accepted_shapes: ['matrix'], col_span_min: 6, col_span_max: 12, row_span_min: 5, row_span_max: 7, layout_params: ['scale'] },
+  { type: 'graph', ui_name: 'Graph / flow', accepted_shapes: ['graph', 'flow'], col_span_min: 6, col_span_max: 12, row_span_min: 7, row_span_max: 7, layout_params: ['clustering'] },
 ]
 
 export const roles = [

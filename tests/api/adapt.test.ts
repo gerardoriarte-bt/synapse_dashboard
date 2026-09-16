@@ -177,6 +177,43 @@ describe('bloques', () => {
     expect(b?.formasAceptadas).toHaveLength(9)
     expect(b?.formasAceptadas).toContain('escalar')
   })
+
+  /** ── LO QUE `/config/blocks` MANDA DE VERDAD · 2026-09-15 ────────────────
+   *
+   *  Capturado del servicio corriendo, no escrito de memoria. Es la prueba que
+   *  faltaba: hasta hoy el mapa de nombres tenía nueve entradas y las seis que
+   *  faltaban salían de `accepted_shapes` **en silencio** —`flatMap` sobre un
+   *  `undefined` devuelve `[]` y no deja rastro—, así que tres de los quince
+   *  bloques llegaban a la biblioteca del builder con la lista de formas vacía.
+   *
+   *  Ninguna prueba lo vio porque todas usaban `bars`, cuyas dos formas sí
+   *  estaban. Un fixture que solo ejercita el caso que funciona no cubre nada. */
+  it.each([
+    ['comparison', ['compared_categorical', 'multi_attribute_profile'], ['categoricaComparada', 'perfilMultiatributo']],
+    ['matrix', ['matrix'], ['matriz']],
+    ['graph', ['graph', 'flow'], ['grafo', 'flujo']],
+    ['distribution', ['distribution'], ['distribucion']],
+    ['forecast', ['scalar_with_interval', 'series_with_band'], ['escalarConIntervalo', 'serieConBanda']],
+  ])('%s traduce sus formas y no llega con la lista vacía', (type, cable, contrato) => {
+    const [b] = adaptBlocks([{ ...bars, type, accepted_shapes: cable }])
+    expect(b?.formasAceptadas).toEqual(contrato)
+  })
+
+  it('que el BLOQUE nombre una forma no la hace materializable · son dos puertas', () => {
+    // El servicio dice que `distribution` acepta la forma `distribution`, y el
+    // bloque la nombra. Pero una MÉTRICA con esa forma sigue sin entrar al
+    // catálogo, porque `transform.go` no la escribe en `panel_data`.
+    //
+    // Las dos afirmaciones van juntas a propósito. Hasta el 2026-09-15 eran una
+    // sola tabla —la forma se rechazaba por no tener nombre de cable—, y la
+    // tentación de volver a juntarlas es exactamente lo que esta prueba impide.
+    const [b] = adaptBlocks([{ ...bars, type: 'distribution', accepted_shapes: ['distribution'] }])
+    expect(b?.formasAceptadas).toEqual(['distribucion'])
+
+    const { metrics, rejected } = adaptCatalog([{ ...metrica, shape: 'distribution' }])
+    expect(metrics).toHaveLength(0)
+    expect(rejected[0]?.razon).toContain('todavía no materializa')
+  })
 })
 
 describe('pestaña con paneles', () => {

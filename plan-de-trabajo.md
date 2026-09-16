@@ -2688,6 +2688,47 @@ contrato adelante.
 fallas), un tipo faltante en la lista de runtime (1), y la razón que no llega a la
 pantalla (2).
 
+##### Corrección del 2026-09-15 · una sola tabla contestaba dos preguntas
+
+Al medir `/config/blocks` contra el servicio corriendo apareció que el mapa de
+nombres de forma tenía **nueve de dieciséis** entradas, y que las que faltaban se
+descartaban **en silencio**: `flatMap` sobre un `undefined` devuelve `[]` y no
+deja rechazo ni razón. Consecuencia concreta: tres de los quince bloques llegaban
+a la biblioteca del builder con la lista de formas vacía.
+
+No lo vio ninguna prueba porque todas ejercitaban `bars`, cuyas dos formas sí
+estaban. **Un fixture que solo recorre el caso que funciona no cubre nada.**
+
+**Lo que estaba pasando es que una tabla contestaba dos preguntas.** «Cómo se
+llama esta forma en el cable» es una tabla de nombres y tiene que estar completa;
+«el backend sabe materializar esta forma» es un hecho sobre su `transform.go`,
+que tiene nueve casos. Mientras coincidieran, faltar en una significaba faltar en
+la otra.
+
+Al separarlas, la prueba `una forma que el backend no materializa tampoco pasa`
+—que estaba bien escrita— falló, y ahí se vio que el rechazo del catálogo salía
+de la ausencia en el mapa y no de una comprobación. **Se hizo explícita.**
+
+Ahora el mapa es `Record<Shape, string>` completo: agregar una forma al contrato
+sin su nombre de cable **deja de compilar**. Es el mismo mecanismo que pide el
+criterio de F4.20 para el registro de cuerpos, puesto donde hoy sí se sostiene.
+
+**Verificada por mutación, diez casos sobre línea de base verde:** cinco formas
+que pierden su nombre de cable, `flujo` y `grafo` cruzados, la puerta de
+materializable apagada, `distribucion` declarada materializable, el comodín de
+`blocked` expandido a las dieciséis y recortado, y las formas aceptadas
+descartadas enteras. Mueren las diez.
+
+**Y el mock de desarrollo estaba escrito de memoria.** Las quince filas de
+`dev/mocks/datos.ts` diferían del servicio: cinco `accepted_shapes` equivocadas,
+los quince `ui_name` traducidos al español —el cable los manda en inglés— y casi
+todos los rangos de span. Las formas son lo que importa, porque son lo que decide
+`invalidReason`: componer contra el mock daba una validación que el servidor no
+da. Reemplazadas por la captura del servicio, con su fecha y su endpoint escritos
+en el archivo. Es la otra mitad de lo que ya dice `BITACORA-2026-09-14.md` —«un
+mock que habla el idioma de tu capa interna no prueba la frontera, la esconde»—:
+uno que habla mal el idioma del cable tampoco.
+
 #### ➕ F1.36 ✅ `client.ts` contra las rutas, los cuerpos y el error de este servicio
 **Descripción.** Seis correcciones: el batch manda `{ panel_ids, period }` y no
 `{ panelIds, periodo }` —los dos son `required` en el binding, así que hoy
@@ -4574,6 +4615,28 @@ tareas cerradas de esta fase.
 - Al estar los quince, el registro pasa de `Partial<Record<PanelType, …>>` a
   `Record` completo, y **agregar un tipo al enumerado sin su cuerpo deja de
   compilar**.
+
+#### Se intentaron el 2026-09-15 y siguen cerradas · con la razón medida
+
+**El argumento para tomarlas era que la primera razón del plan había vencido.**
+«Su único consumidor es el builder, que no se puede empezar» dejó de ser cierto:
+el builder está construido y la biblioteca ofrece los quince tipos. De ahí salía
+que la consola no puede dibujar tres de los que el builder ofrece.
+
+**La segunda razón no venció, y es la que manda.** `Valor` no declara
+`categoricaComparada`, `perfilMultiatributo`, `matriz`, `flujo` ni `grafo` —lo
+dice el propio yaml, con su decisión fechada el 2026-08-19—, así que escribir los
+tres cuerpos sería escribir contra formas inventadas. Es lo mismo que ya está
+escrito en `registry.ts` sobre `MISSING_TYPES`.
+
+**Y el hueco que motivaba tomarlas no existe.** Medido contra el servicio
+corriendo, `GET /config/blocks` declara que esos tres tipos aceptan **solo** esas
+cinco formas —`comparison` → `compared_categorical` y
+`multi_attribute_profile`; `matrix` → `matrix`; `graph` → `graph` y `flow`—, y
+ninguna métrica del catálogo declara ninguna. `invalidReason` rechaza el panel
+antes de publicar, así que la consola no recibe un tipo que no sabe dibujar.
+
+**Lo que la medición sí encontró está abajo**, y es de otra tarea.
 
 ### La integración con el builder real · 2026-09-11
 
