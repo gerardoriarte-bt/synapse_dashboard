@@ -99,6 +99,7 @@ decir qué rol cumple**, porque ahí empieza la superposición.
 | `docs/BITACORA-*.md` | **Histórico.** Lo que costó descubrir. No se tocan |
 | `docs/AUDITORIA-*.md` | **Histórico.** Un cruce puntual, con fecha |
 | `docs/ENTREGA-*.md` | **Histórico.** Qué se entregó y cuándo |
+| `docs/MENSAJE-*-*.md` | **Histórico.** Un mensaje mandado, con fecha. Qué se pidió y con qué evidencia |
 | `docs/B0.9-preguntas-abiertas.md` | Las preguntas del contrato, con su resolución |
 | `docs/PROPUESTA-*-*.md` | Una **propuesta de spec** abierta, con fecha. Lo que `design.md` no declara y el código no puede inventar |
 | `docs/F1.28-escala-tipografica.md` | La bitácora de una tarea que cambió el sistema |
