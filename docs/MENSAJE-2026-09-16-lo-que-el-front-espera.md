@@ -109,16 +109,32 @@ impide que un gráfico de barras reciba un ítem y dibuje una barra sola.
 
 ---
 
-## Campos sueltos · cada uno destraba una tarea
+## El resumen · qué destraba cada cosa
 
-| Falta | Dónde | Qué destraba |
-|---|---|---|
-| `layouts` | `Contexto`, en `/config/me` | El selector de dashboard cuando el tenant tiene más de uno. Hoy el front **no puede saber** que hay más de uno |
-| Locale, moneda y zona horaria | `tenant`, en `/config/me` | Hoy `/config/me` manda `tenant: {id, name}`. El front formatea con `es-MX` **escrito a mano**, con el supuesto declarado en el código |
-| El estado del período | `/config/me` manda `['2026-09', '2026-08', …]`, cadenas sueltas | Que el selector diga que **el mes en curso está incompleto**. Hoy septiembre se ve igual que agosto y alguien lee una caída que es «el mes no terminó». Lo necesitamos del servidor: el corte del día es del tenant y su huso, no del navegador |
-| Panel y período | `HiloResumen` | Que el historial diga con qué panel se abrió cada hilo |
-| Una ruta que **liste** usuarios | `GET /admin/users` da **404** · en el router solo está `POST /users` | La pantalla de gestión de usuarios por tenant |
-| `/config/solicitudes` | Da **404**, y el contrato ya lo declara | El botón de pedir acceso cuando un panel sale `SIN_PERMISO`. Hoy hay una prueba que fija que el botón **no** está, para que aparezca el día que se cablee |
+Todo lo de arriba, en una tabla, **ordenada por cuánto suelta y no por esfuerzo**
+— porque los dos que más rinden son los más chicos. No hace falta hacerla entera:
+es para elegir por dónde empezar.
+
+| # | Lo que haría falta | Destraba | Tamaño |
+|---|---|---|---|
+| 1 | **Un campo en el cuerpo de `POST /config/chat`** para decir desde qué panel se preguntó | **4 tareas** · abrir el chat desde un panel, el botón «Preguntar», la última casilla de nuestro checklist de conformidad y media del historial de hilos | Un campo |
+| 2 | **`cherry-pick d326ebf` + deploy** | **2 tareas** · la vista previa por rol completa, y la mitad de roles de la gestión de usuarios | Sin tocar la base |
+| 3 | **`GET /config/plots`** · el repertorio con sus mínimos y topes | **3 tareas** · el registro de gráficos, el selector en el builder y los plots que faltan | Ruta nueva |
+| 4 | `layouts` en el `Contexto` de `/config/me` | 1 · el selector de dashboard cuando el cliente tiene más de uno. Hoy el front **no puede saber** que hay más de uno | Un campo |
+| 5 | Locale, moneda y zona horaria en `tenant` | 1 · hoy `/config/me` manda `tenant: {id, name}` y el front formatea con `es-MX` **escrito a mano** | Tres campos |
+| 6 | Cuál de los períodos está abierto | 1 · hoy llegan como cadenas sueltas —`['2026-09', …]`— y septiembre se ve igual que agosto: alguien lee una caída que es «el mes no terminó». Lo necesitamos del servidor, porque el corte del día es del cliente y su huso, no del navegador | Un campo |
+| 7 | Panel y período en `HiloResumen` | La otra mitad del historial de hilos | Dos campos |
+| 8 | `GET /admin/users` · en el router solo está el `POST` | La otra mitad de la gestión de usuarios | Ruta nueva |
+| 9 | `/config/solicitudes` · ya está en el contrato | 1 · el botón de pedir acceso cuando un panel sale `SIN_PERMISO`. Hoy hay una prueba que fija que el botón **no** está, para que aparezca el día que se cablee | Ruta nueva |
+
+**Cuatro tareas nuestras no están acá a propósito** —los cuerpos de panel
+`comparison`, `matrix` y `graph`, y su registro—. Necesitan cinco formas de dato
+que el contrato no declara **y que no estamos pidiendo**: ninguna métrica las usa
+hoy, así que declararlas sería agregar una forma que ningún endpoint devuelve.
+
+Y otras cuatro esperan cosas suyas que ya están en su propio plan: conectar el
+catálogo real, las respuestas estructuradas del chat, la configuración del agente
+de Snowflake y los períodos libres en el selector.
 
 ---
 

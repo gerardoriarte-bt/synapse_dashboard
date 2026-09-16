@@ -205,39 +205,14 @@ de sus pruebas, y no hay forma de evitarlos:
 
 ---
 
-## Qué destraba cada cosa · el front está frenado entero
+## Dónde encaja esto en todo lo demás
 
-Hoy el front **no tiene una sola tarea que pueda tomar**: 88 de 113 cerradas, y
-de las 25 que quedan, 21 esperan algo de este lado y 4 están diferidas por
-decisión nuestra. Esta tabla es para elegir por dónde empezar, no para hacerla
-entera.
-
-**Ordenada por cuánto destraba, no por esfuerzo:**
-
-| # | Lo que haría falta | Destraba | Tamaño |
-|---|---|---|---|
-| 1 | **Un campo en el cuerpo de `POST /config/chat`** para decir desde qué panel se preguntó | **4 tareas** · abrir el chat desde un panel, el botón «Preguntar», la última casilla de nuestro checklist de conformidad y media del historial de hilos | Un campo |
-| 2 | **`cherry-pick d326ebf` + deploy** | **2 tareas** · la vista previa por rol completa, y la mitad de roles de la gestión de usuarios | Sin tocar la base |
-| 3 | **`GET /config/plots`** · el repertorio de gráficos con sus mínimos y topes | **3 tareas** · el registro de gráficos, el selector en el builder y los plots que faltan | Ruta nueva |
-| 4 | `layouts` en el `Contexto` de `/config/me` | 1 · el selector de dashboard cuando el cliente tiene más de uno | Un campo |
-| 5 | Locale, moneda y zona horaria en `tenant` | 1 · hoy el front formatea con `es-MX` escrito a mano | Tres campos |
-| 6 | Cuál de los períodos está abierto | 1 · que el selector avise que el mes en curso está incompleto | Un campo |
-| 7 | Panel y período en `HiloResumen` | La otra mitad del historial de hilos | Dos campos |
-| 8 | `GET /admin/users` · hoy solo existe el `POST` | La otra mitad de la gestión de usuarios | Ruta nueva |
-| 9 | `/config/solicitudes` · ya está en el contrato | 1 · el botón de pedir acceso cuando un panel sale `SIN_PERMISO` | Ruta nueva |
-
-**Los dos primeros son los que más rinden por lo que cuestan**, y el primero no
-es una funcionalidad: es un campo que hoy no tiene por dónde viajar.
-
-**Cuatro tareas nuestras no están en esta tabla a propósito** —los cuerpos de
-panel `comparison`, `matrix` y `graph`, y su registro—. Necesitan cinco formas de
-dato que el contrato no declara **y que no estamos pidiendo**: ninguna métrica
-las usa hoy, así que declararlas sería agregar una forma que ningún endpoint
-devuelve. Entran cuando exista una métrica que las necesite.
-
-Y otras cuatro esperan cosas suyas que ya están en su propio plan: conectar el
-catálogo real, las respuestas estructuradas del chat, la configuración del agente
-de Snowflake y los períodos libres en el selector.
+Tomar el fork destraba **dos** de las veinticinco tareas que el front tiene
+abiertas. **La lista completa —qué destraba cada cosa y cuánto cuesta— está en
+[`MENSAJE-2026-09-16-lo-que-el-front-espera.md`](MENSAJE-2026-09-16-lo-que-el-front-espera.md)**,
+que es el documento que la mantiene. Acá no se repite a propósito: dos tablas
+iguales en dos archivos se desincronizan, y la que quede vieja se lee igual de
+convincente.
 
 ## Qué pasa después de que desplieguen
 
