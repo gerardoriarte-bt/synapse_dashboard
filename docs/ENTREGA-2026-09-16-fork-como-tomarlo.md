@@ -6,14 +6,28 @@
 
 ## Lo que hace falta, en corto
 
-**Tres cosas, y solo una es técnica:**
+**Lo ejecutan ustedes, y son tres pasos — pero el que nos destraba son dos.**
 
-1. **Decidir tomarlo.** Es el bloqueo real. El código está escrito, compila y sus
-   tests pasan.
-2. **Correr cinco `ALTER TABLE`** (abajo, explícitos — no hace falta
-   `DB_AUTO_MIGRATE`).
-3. **Desplegar.** Recién ahí `/admin/tenants/{id}/roles` y `/preview` dejan de
-   dar 404, y se nos destraban dos pantallas ya construidas.
+**Camino corto · lo que nos saca del bloqueo, SIN tocar la base:**
+
+1. `git cherry-pick d326ebf`
+2. Desplegar
+
+**`d326ebf` no agrega ni una columna** —verificado: no toca ningún archivo de
+`domain/` ni de migraciones—. Son rutas, servicios y un puerto nuevo. Con eso
+`/admin/tenants/{id}/roles` y `/preview` dejan de dar 404 y se nos destraban dos
+pantallas ya construidas, **sin un solo cambio de esquema**.
+
+**Camino largo · el segundo commit, cuando quieran:**
+
+3. `git cherry-pick b13fccd` + las cinco `ALTER TABLE` de abajo
+
+Ese es el único que toca la base, y es el que arregla lo que hoy se ve mal —la
+línea de BASE colgando, el período sin estado—. No nos bloquea nada: puede ir
+después, o no ir.
+
+**Nosotros no ejecutamos ninguno de los tres pasos**: no corremos migraciones en
+la RDS, no desplegamos y no escribimos en su repositorio.
 
 ## El estado del código · verificado hoy
 
