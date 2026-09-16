@@ -4785,11 +4785,40 @@ se distinguen mirando; ninguna se puede dar por buena sin hacerlo.
 - Cambiar de layout reinicia la pestaña activa, porque la pestaña de un layout no
   existe en el otro.
 
-### F5.2 ⬜ Pasar `layoutId` a `GET /config/tabs/{tabId}`
+### F5.2 ✅ Pasar `layoutId` a `GET /config/tabs/{tabId}`
 **Criterio de aceptación.**
 - El `layoutId` entra en la clave de cache de la pestaña: dos layouts no comparten
   entrada.
 - Sin `layoutId` el backend resuelve el layout por defecto del rol.
+
+**Cerrada el 2026-09-15 · el código estaba y la prueba que importaba no.**
+`api.tab` ya aceptaba el `layoutId` y `keys.tab` ya lo ponía en la clave, desde
+que se escribieron los hooks del builder. Lo que había era **media prueba**:
+`client.test.ts` verificaba la URL —«escapa el tabId y agrega el layoutId solo si
+vino»— y nada verificaba la clave, que es el punto del criterio.
+
+**No son la misma mitad.** La URL puede estar perfecta y la clave estar mal: si
+`keys.tab` ignorara el `layoutId`, la segunda pestaña se leería del cache **sin
+pedir nada**, con una URL correcta escrita en un fetch que nunca ocurre. El
+síntoma sería el builder mostrando el borrador donde va lo publicado, y los dos
+se ven igual de bien.
+
+`tests/api/useTab.test.tsx` lo afirma sobre lo observable a los dos lados —qué
+URLs se pidieron y qué datos llegó a cada hook—, no sobre el arreglo que
+`keys.tab` devuelve: una aserción sobre la clave fija la forma de la clave, no su
+consecuencia.
+
+**Y hubo que congelar la frescura para que el conteo hablara de la clave.** Con
+el `staleTime: 0` de fábrica una entrada COMPARTIDA se vuelve a pedir igual —el
+segundo hook lee del cache y dispara un refetch de fondo—, así que la red se ve
+idéntica compartiendo entrada y no compartiéndola. Medido: la prueba del mismo
+layout salía `['layout-a', 'layout-a']` con el código correcto. Contar llamadas
+medía la política de frescura y no la clave.
+
+**Verificada por mutación, siete casos sobre línea de base verde.** Seis mueren
+de entrada; el séptimo —sacar el `tabId` de la clave— **sobrevivía**, porque las
+tres primeras pruebas usaban una sola pestaña. La clave tiene dos partes
+variables y solo una estaba sostenida. Se agregó la cuarta prueba y muere.
 
 ### F5.3 ⬜ Completar los plots que falten
 **Descripción.** Los gráficos que necesiten los cuerpos v1.1 (F4.17–F4.19).

@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**94 de 196 tareas cerradas.** 18 parciales · 79 pendientes · 5 diferidas.
+**95 de 196 tareas cerradas.** 18 parciales · 78 pendientes · 5 diferidas.
 
 
-## Front · 87 de 113
+## Front · 88 de 113
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -17,7 +17,7 @@
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `████████··············` | 4/11 | 1 | 3 |
 | 4 · Admin y Builder | `██████████████········` | 15/23 | 2 | 6 |
-| 5 · Pruebas y pulido | `████████████··········` | 7/13 | 1 | 4 |
+| 5 · Pruebas y pulido | `██████████████········` | 8/13 | 1 | 3 |
 
 ## Backend · 7 de 83
 
@@ -44,7 +44,7 @@
 
 ---
 
-## Se puede tomar hoy · 17 del front
+## Se puede tomar hoy · 16 del front
 
 - **F1.13b** · Portar format.ts e inyectar el locale
 - **F1.31** · Registro de gráficos y verificación de mínimos
@@ -61,7 +61,6 @@
 - **F4.3** · Gestión de usuarios y roles por tenant
 - **F5.1** · Selector de layout cuando hay más de uno
 - **F5.10** · Checklist de conformidad §17 por tipo de bloque integrado
-- **F5.2** · Pasar layoutId a GET /config/tabs/{tabId}
 - **F5.3** · Completar los plots que falten
 
 ---
