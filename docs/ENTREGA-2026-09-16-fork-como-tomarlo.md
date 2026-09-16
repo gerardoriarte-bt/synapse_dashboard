@@ -41,8 +41,17 @@ Agrega dos cosas al API de admin:
 
 | Ruta | Qué hace |
 |---|---|
-| `GET/POST/PUT/DELETE /admin/tenants/{id}/roles` | Crear, listar, editar y borrar roles de un cliente |
-| `GET /admin/layouts/{id}/preview?roleId=` | Devuelve la composición **tal como la vería ese rol** |
+| `GET /admin/tenants/{tenantId}/roles` | Lista los roles de un cliente |
+| `POST /admin/tenants/{tenantId}/roles` | Crea uno |
+| `PUT /admin/roles/{roleId}` | Lo edita |
+| `DELETE /admin/roles/{roleId}` | Lo borra |
+| `GET /admin/layouts/{layoutId}/preview?roleId=` | Devuelve la composición **tal como la vería ese rol** |
+
+**Editar y borrar cuelgan de `/admin/roles/{roleId}` y no del cliente**, porque
+el id del rol ya lo identifica: repetir el tenant en la ruta permitiría pedir un
+rol de un cliente con el id de otro, y habría que validar la combinación en cada
+llamada. Están así en `contracts/synapse-admin-wire.yaml`, que es la forma que el
+front ya consume.
 
 **Esto no toca la base de datos.** Verificado: no modifica ningún archivo de
 `domain/` ni de migraciones, y no agrega ninguna columna. Son rutas, servicios y
@@ -56,8 +65,10 @@ un puerto de repositorio nuevo.
   algo distinto de lo que la consola muestra, y nadie se enteraría hasta que un
   cliente lo viera.
 - **`DDRoleRepository` es un puerto nuevo, no un ensanchamiento de
-  `RoleRepository`.** Ensanchar el que ya existe rompía ocho mocks de ustedes.
-  Con un puerto aparte, cero.
+  `RoleRepository`.** El que ya existe lo implementan cuatro tipos —el
+  repositorio real y **tres mocks de sus pruebas**: `mockRoleRepoForAgent`,
+  `mockRoleRepoForDD` y `mockRoleRepo`—, y todos habrían tenido que crecer con
+  métodos que no usan. Con un puerto aparte, ninguno se toca.
 
 ### `6f10b8e` — mejoras, ninguna urgente
 
