@@ -10,11 +10,16 @@
  *  traduzca nada y la prueba pasara igual — el mismo defecto que los mocks de la
  *  consola tuvieron durante meses.
  *
- *  **Con una advertencia que ese yaml lleva adentro:** a diferencia del cable de
- *  la consola, este NO se pudo confirmar contra el servicio —las rutas piden rol
- *  `admin` y el usuario de prueba es `planner`—. Así que estas pruebas verifican
- *  el adaptador contra lo que el código de Go dice que devuelve, no contra lo
- *  que se vio llegar. Es una capa menos de evidencia y conviene recordarlo.
+ *  **Y desde el 2026-09-16 están confirmados contra el servicio.** Hasta esa
+ *  fecha no se podían: las rutas piden rol `admin` y el usuario de prueba era
+ *  `planner`, así que estas pruebas verificaban el adaptador contra lo que el
+ *  código de Go DICE que devuelve y no contra lo que se vio llegar — una capa
+ *  menos de evidencia. Con el rol cambiado, `npm run humo` recorre las ocho
+ *  rutas y compara campo por campo contra el yaml.
+ *
+ *  **El PascalCase quedó confirmado, no deducido**: `GET /admin/tenants/{id}/layouts`
+ *  devuelve `ID`, `TenantID`, `Status`, `VersionID` y `PublishedAt`. Era la
+ *  deuda que el yaml declaraba como pregunta abierta, y la respuesta es que sí.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'

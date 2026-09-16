@@ -4736,6 +4736,27 @@ etiquetas `json:`, así que llegan en PascalCase: `ID`, `Status`, `ColStart`.
 - `DDLayoutValidationResult` y `DDCatalogMetric` sí traen etiquetas `json:` y se
   transcriben tal cual.
 
+**Confirmado contra el servicio el 2026-09-16.** Hasta esa fecha este yaml era la
+única de las cuatro transcripciones **sin verificar contra el servicio corriendo**
+—las rutas piden rol `admin` y nuestro usuario era `planner`—, así que estaba
+deducido del código de Go. El backend cambió el rol de
+`gerardo.riarte@buentipo.com` a `Admin` y `npm run humo` recorrió las ocho rutas
+campo por campo: **coinciden**.
+
+**El PascalCase es real.** `GET /admin/tenants/{id}/layouts` devuelve `ID`,
+`TenantID`, `Status`, `VersionID` y `PublishedAt`. La deuda que el yaml declaraba
+como pregunta abierta tiene respuesta, y la respuesta es que sí.
+
+**Dos quedan sin probar, y a propósito**: `publish` demotaría el layout publicado
+del tenant, y las del fork devuelven 404 porque no está desplegado. El humo las
+imprime como ⊘, que es distinto de verde.
+
+**Y apareció algo que no es nuestro pero conviene que sepan.** Esa respuesta trae
+un `Tenant` embebido que hoy llega en cero; `domain.Tenant` serializa
+`PrivateKeyPEM`, `PrivateKeyPassphrase` y `KmsKeyArn` **sin `json:"-"`**, así que
+un `Preload("Tenant")` en esa consulta mandaría la llave privada al navegador.
+Hoy no pasa. Va en el mensaje del 2026-09-16 como latente, no como urgente.
+
 **Cerrada el 2026-09-15.** `contracts/synapse-admin-wire.yaml` — seis rutas, ocho
 operaciones, trece esquemas. Cuarto contrato del repositorio, con su
 `gen:admin-wire` y su `admin-drift` en la puerta, que ahora son dieciséis

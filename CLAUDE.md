@@ -311,11 +311,18 @@ verifique — no es ruido.
 
 ### `npm run dev:mock` · para MIRAR, no para verificar
 
-**Existe porque media Fase 4 no se puede ver corriendo.** `/admin/*` cuelga de
-`AdminOnlyMiddleware` y los usuarios que tenemos son `Planner` —el claim se
-compara contra `roles.name`, y con `Planner` da 403 en cada llamada—; y las
-rutas de B4.8 y B4.9 son del fork, que no está desplegado: 404. Admin y builder
-están construidos y probados, y hasta el 2026-09-15 no se podían recorrer.
+**Nació porque media Fase 4 no se podía ver corriendo**, y esa razón se achicó
+el **2026-09-16**: `gerardo.riarte@buentipo.com` pasó a rol `Admin` —lo hizo el
+backend, no nosotros— y `/admin/*` dejó de dar 403. El claim se compara contra
+`roles.name` **normalizando la mayúscula**, así que `Admin` entra.
+
+**Lo que sigue sin verse contra el servicio son las rutas del fork** —B4.8 y
+B4.9—, que no está desplegado: 404. Para esas dos pantallas el modo mock sigue
+siendo la única forma de recorrerlas.
+
+**Y el humo de `/admin/*` ya corrió** · 2026-09-16, las ocho rutas contra
+`synapse-admin-wire.yaml`, campo por campo. **El PascalCase quedó confirmado y no
+deducido**: `ID`, `TenantID`, `Status`, `VersionID`, `PublishedAt`.
 
 **Entrás con cualquier correo y contraseña**, y el usuario que devuelve es
 `admin`. El estado vive en memoria: guardar, publicar y el CRUD de roles
