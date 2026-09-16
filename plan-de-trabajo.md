@@ -1953,7 +1953,7 @@ desglosado en diez tareas.
   techo 1M el máximo es «1M» de dos caracteres y el tick «500K» son cuatro, y
   calculado sobre el máximo se salía por la izquierda y se leía «00K».
 
-#### F1.13b ⚠️ Portar `format.ts` e **inyectar el locale**
+#### F1.13b ⚠️ Portar `format.ts` e **inyectar el locale** · 🔒 `Contexto` no trae locale, moneda ni zona
 **Descripción.** El formateo de cifras, en un solo lugar. En v2 `LOCALE` es la
 constante `'es-MX'` y **cinco de los seis plots importan el formateador directo**
 en vez de recibirlo, así que la prop existe y está muerta.
@@ -2418,7 +2418,7 @@ regla dice: mientras el campo no exista, dos paneles con el mismo `colStart`
 dependen de un orden que el contrato no promete estable. **Propuesta de spec para
 B0.9.**
 
-#### ➕ F1.31 ⬜ Registro de gráficos y verificación de mínimos
+#### ➕ F1.31 ⬜ Registro de gráficos y verificación de mínimos · 🔒 `/config/plots` da 404
 **Descripción.** D2 lo resolvió a favor. Dos piezas: `catalog/plots.ts` con los
 validadores sobre el repertorio que llega de `/config/plots` —la misma figura que
 `catalog/blocks.ts`, sin la tabla escrita adentro—, y
@@ -4078,7 +4078,7 @@ el 422 como error genérico, y publicar sin mandar el `versionId`.
 - F4.15: publicar surte efecto sin deploy, y se ve en la consola en la siguiente
   carga.
 
-### ➕ F4.21 ⬜ Selector de gráfico en el builder
+### ➕ F4.21 ⬜ Selector de gráfico en el builder · 🔒 `/config/plots` da 404
 **Descripción.** El configurador de panel ofrece los gráficos **compatibles con
 la forma de la métrica elegida**, no los 49. Consume `/config/plots` vía
 `catalog/plots.ts`.
@@ -4605,16 +4605,42 @@ cuerpo propio a cada una, o escribirlo en una sección de evidencia como ésta, 
 el parser no reparte—. Se eligió el segundo, que es el que ya usan las once
 tareas cerradas de esta fase.
 
-### F4.17 ⬜ `ComparisonBody` + `ComparePlot`
-### F4.18 ⬜ `MatrixBody` + `HeatmapPlot`
-### F4.19 ⬜ `GraphBody` + `GraphPlot`
-### F4.20 ⬜ Registrar los tres con carga diferida
+### F4.17 ⬜ `ComparisonBody` + `ComparePlot` · 🔒 `Valor` no declara `categoricaComparada`
+### F4.18 ⬜ `MatrixBody` + `HeatmapPlot` · 🔒 `Valor` no declara `matriz`
+### F4.19 ⬜ `GraphBody` + `GraphPlot` · 🔒 `Valor` no declara `grafo` ni `flujo`
+### F4.20 ⬜ Registrar los tres con carga diferida · 🔒 espera a F4.17–F4.19
 **Criterio de aceptación.**
 - Se construyen **cuando el backend envíe esas formas** (B5.3), no antes. Hoy
   ninguna métrica las usa; existen para que el builder pueda ofrecerlas.
 - Al estar los quince, el registro pasa de `Partial<Record<PanelType, …>>` a
   `Record` completo, y **agregar un tipo al enumerado sin su cuerpo deja de
   compilar**.
+
+#### La lista de «se puede tomar hoy» decía el doble de lo que era · 2026-09-15
+
+**Ocho de las dieciséis que `docs/ESTADO.md` ofrecía estaban bloqueadas**, y el
+documento no podía saberlo: `estado.py` lee `🔒` en el título o
+`**Espera del backend.**` en el cuerpo, **y de nada más** —está escrito en su
+propia cabecera—. La razón de cada una vivía en prosa, y la prosa no llega a la
+herramienta.
+
+Es el mismo modo de falla que ya está registrado con «once chequeos» cuando ya
+eran quince: un dato escrito a mano que se vence sin que nadie lo note. Acá era
+peor que un número desactualizado, porque **la lista es lo que alguien lee para
+decidir qué hacer después**, y ofrecía trabajo imposible.
+
+Las ocho, cada una verificada hoy y no deducida:
+
+| Tarea | Qué la frena | Cómo se comprobó |
+|---|---|---|
+| F1.13b | `Contexto` no trae locale, moneda ni zona | `/config/me` devuelve `tenant: {id, name}` y nada más |
+| F1.31 | `/config/plots` | **404** contra el servicio corriendo |
+| F4.17–F4.19 | `Valor` no declara sus formas | El yaml, con su decisión del 2026-08-19 |
+| F4.20 | Espera a las tres de arriba | — |
+| F4.21 | `/config/plots` | **404**, la misma corrida |
+| F5.3 | Los plots de F4.17–F4.19 | — |
+
+Quedan **ocho tomables**, que es el número que había de verdad.
 
 #### Se intentaron el 2026-09-15 y siguen cerradas · con la razón medida
 
@@ -4820,7 +4846,7 @@ de entrada; el séptimo —sacar el `tabId` de la clave— **sobrevivía**, porq
 tres primeras pruebas usaban una sola pestaña. La clave tiene dos partes
 variables y solo una estaba sostenida. Se agregó la cuarta prueba y muere.
 
-### F5.3 ⬜ Completar los plots que falten
+### F5.3 ⬜ Completar los plots que falten · 🔒 espera a F4.17–F4.19
 **Descripción.** Los gráficos que necesiten los cuerpos v1.1 (F4.17–F4.19).
 **Criterio de aceptación.**
 - Cada uno acepta `PlotProps<F>` y compone primitivas de `core/`. Si necesita algo
