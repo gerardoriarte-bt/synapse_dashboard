@@ -375,6 +375,15 @@ export function Builder() {
               onAgregar={() => cambiar(agregar(tabs))}
               onQuitar={(i) => cambiar(quitar(tabs, i))}
               onMover={(i, d) => cambiar(mover(tabs, i, d))}
+              // **Las dos cosas a la vez, y ese es el punto.** El `.pen` dice
+              // «al entrar se abre B2 CON ESTE CONTEXTO»: elegir la pestaña y
+              // cambiar de pantalla son un solo gesto. Separado —elegí versión,
+              // ahora andá a Canvas— es lo que hacía que el canvas pareciera no
+              // existir.
+              onComponer={(i) => {
+                setTabActiva(i)
+                setPantalla('canvas')
+              }}
               onPanel={(tab, panel) => setSeleccion({ tab, panel })}
               onAgregarPanel={(i) => {
                 const primero = listaDeBloques[0]

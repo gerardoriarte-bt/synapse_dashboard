@@ -47,6 +47,9 @@ type Props = {
    *  contenedor. */
   onPanel: (indiceTab: number, indicePanel: number) => void
   onAgregarPanel: (indiceTab: number) => void
+  /** Abrir el canvas CON esta pestaña · el CTA que pide B1. `undefined` no lo
+   *  pinta, que es la regla del CTA sin manejador. */
+  onComponer?: (indiceTab: number) => void
   seleccion: { tab: number; panel: number } | null
   /** **Ya calculados, no se recalculan acá** · F4.11. Tres lugares de la pantalla
    *  muestran problemas de composición —la pestaña, el botón del panel y el
@@ -63,6 +66,7 @@ export function TabEditor({
   onMover,
   onPanel,
   onAgregarPanel,
+  onComponer,
   seleccion,
   problemas,
 }: Props) {
@@ -106,11 +110,39 @@ export function TabEditor({
                 >
                   Bajar
                 </button>
+                {/* **`COMPONER ‹pestaña›` · el `.pen` lo pide y era por qué B2
+                    parecía no existir.**
+
+                    La nota de B1 lo llama «el punto de entrada del builder» y
+                    cada pestaña lleva su CTA con el rótulo
+                    `AL ENTRAR SE ABRE B2 CON ESTE CONTEXTO`. Sin él había que
+                    elegir versión y después acordarse de ir a «Canvas»; quien no
+                    hacía las dos cosas veía «Elegí una versión…» y concluía que
+                    el canvas no estaba construido.
+
+                    **Sin el conteo, y no es un olvido.** La fila ya lo declara
+                    arriba —«N panel(es) · N rol(es)»— y el `.pen` tampoco lo
+                    pone en el CTA: dice `COMPONER ECOMMERCE OVERVIEW` a secas.
+                    Repetirlo lo destapó una prueba que ya buscaba ese texto en
+                    la misma fila y encontró dos.
+
+                    Lo que el `.pen` sí pide ahí y no se puede pintar es la
+                    proporción entre heredados y propios: ningún contrato declara
+                    herencia, y está dicho en `ContextView`. */}
+                {onComponer !== undefined && (
+                  <button
+                    type="button"
+                    onClick={() => onComponer(i)}
+                    className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-ink border border-w4 hover:bg-w3 ml-auto"
+                  >
+                    {`Componer ${t.nombre}`}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => onQuitar(i)}
                   aria-label={`Quitar ${t.nombre}`}
-                  className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-acc hover:bg-w3 ml-auto"
+                  className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-acc hover:bg-w3"
                 >
                   Quitar
                 </button>

@@ -130,6 +130,7 @@ ve mal en pantalla y el dato ya lo tienen del otro lado.
 | 8 | Una ruta que **liste** usuarios · `GET /admin/users` da **404** y en el router solo está el `POST` | La otra mitad de la gestión de usuarios | Ruta nueva |
 | 9 | `/config/solicitudes` · ya está en el contrato | 1 · el botón de pedir acceso cuando un panel sale `SIN_PERMISO`. Hoy hay una prueba que fija que el botón **no** está, para que aparezca el día que se cablee | Ruta nueva |
 | 10 | **El nombre del cliente en `/config/me`** · llega `tenant: {id, name: ""}` y `GET /admin/tenants` dice que ese mismo cliente se llama `Synapse UA HTML` | Ninguna tarea · **arregla un defecto que hoy se ve**: el navbar de la consola pinta el rótulo del cliente **en blanco** | Poblar un campo que ya existe |
+| 11 | **Si un panel es heredado de la plantilla o propio del cliente** · ningún contrato lo declara, ni `PanelConfigurado` ni `LayoutPanel` | 2 piezas del builder que el diseño dibuja y no se pueden pintar: la proporción «11 heredados · 1 propio» por pestaña, y el cuarto estado del panel en el canvas | Un campo booleano por panel |
 
 **Cuatro tareas nuestras no están acá a propósito** —los cuerpos de panel
 `comparison`, `matrix` y `graph`, y su registro—. Necesitan cinco formas de dato

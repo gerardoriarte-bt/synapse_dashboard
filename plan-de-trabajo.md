@@ -4874,6 +4874,43 @@ se distinguen mirando; ninguna se puede dar por buena sin hacerlo.
 
 ---
 
+### B1 y B2 contra el `.pen` · 2026-09-16
+
+**Revisado frame por frame** después de que la revisión humana dijera «no veo la
+serie de pantallas B». **B2 estaba construido**: las guías de doce, la regla
+—«Grilla 12 · columna 80 · gap 16 · fila base 80»—, el slot vacío, los handles y
+la colisión. Lo que no estaba era **cómo llegar**.
+
+**El `.pen` lo dice y nosotros no lo teníamos.** La nota de B1 lo llama «el punto
+de entrada del builder» y cada pestaña lleva su CTA `COMPONER ‹PESTAÑA›` con el
+rótulo `AL ENTRAR SE ABRE B2 CON ESTE CONTEXTO`. Sin eso había que elegir versión
+y después acordarse de ir a «Canvas» por la navegación; quien no hacía las dos
+cosas veía «Elegí una versión…» y concluía que el canvas no existía.
+
+**Ahora el gesto hace las dos cosas** —fija la pestaña y cambia de pantalla—, que
+es lo que la prueba fija: cada mitad por separado se ve bien y no resuelve nada.
+Verificado por mutación, seis casos sobre línea de base verde.
+
+**Sin conteo en el CTA**, y lo destapó una prueba: la fila ya declara «N panel(es)
+· N rol(es)» y el `.pen` dice `COMPONER ECOMMERCE OVERVIEW` a secas. Repetirlo
+hacía que dos elementos de la misma fila dijeran lo mismo.
+
+#### Lo que queda de B1 y B2, y las dos esperan al backend
+
+**Ningún contrato declara herencia.** Ni `PanelConfigurado` ni `LayoutPanel`
+tienen un campo que diga si un panel viene de la plantilla o es propio del
+tenant, y sin eso no se pueden pintar:
+
+- **La proporción heredados/propios por pestaña** que B1 dibuja —«11 HEREDADOS DE
+  LA PLANTILLA · 1 PROPIO»—. Ya estaba declarado como hueco en `ContextView`.
+- **El estado `heredado` del panel en el canvas.** La nota de B2 pide cuatro
+  estados —heredado, seleccionado con handles, slot vacío y colisión— y tenemos
+  tres.
+
+**No se rellenan.** Inventar la distinción haría que el builder afirmara algo que
+el dato no sostiene, y un panel marcado «propio» que en realidad se hereda es
+peor que ninguna marca.
+
 ### La navegación entre superficies · decidida el 2026-09-16
 
 **El `.pen` no la dibuja.** Recorridos los quince frames uno por uno: cada
