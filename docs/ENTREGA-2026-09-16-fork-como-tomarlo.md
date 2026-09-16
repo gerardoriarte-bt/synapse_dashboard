@@ -1,72 +1,112 @@
-# Cómo tomar el fork · 2026-09-16
+# El fork · qué es, qué tiene y qué hay que hacer con él
 
-> **Histórico.** Qué se entregó y cuándo. Acompaña a
-> [`MENSAJE-2026-09-16-lo-que-el-front-espera.md`](MENSAJE-2026-09-16-lo-que-el-front-espera.md),
-> punto 2. Escrito para que tomarlo no requiera leer nuestro plan.
+**2026-09-16.** Acompaña a
+[`MENSAJE-2026-09-16-lo-que-el-front-espera.md`](MENSAJE-2026-09-16-lo-que-el-front-espera.md),
+punto 2. Está escrito para leerse solo, sin conocer nuestro plan ni nuestra
+numeración de tareas.
 
-## Lo que hace falta, en corto
+---
 
-**Lo ejecutan ustedes, y son tres pasos — pero el que nos destraba son dos.**
+## Por qué existe esto
 
-**Camino corto · lo que nos saca del bloqueo, SIN tocar la base:**
+El front necesitaba dos endpoints que el servicio no tiene, y sin ellos dos
+pantallas ya construidas no se podían terminar. En vez de esperar, las
+escribimos nosotros.
 
-1. `git cherry-pick d326ebf`
-2. Desplegar
+**No lo pusimos en su repositorio.** Está en un fork nuestro, y no hay pull
+request ni lo va a haber: el código vuelve desde nuestro lado y la decisión de
+integrarlo —o de no integrarlo— sigue siendo de ustedes. Si prefieren escribirlo
+ustedes mismos, también nos sirve; lo que nos destraba es que las rutas existan,
+no que existan con nuestro código.
 
-**`d326ebf` no agrega ni una columna** —verificado: no toca ningún archivo de
-`domain/` ni de migraciones—. Son rutas, servicios y un puerto nuevo. Con eso
-`/admin/tenants/{id}/roles` y `/preview` dejan de dar 404 y se nos destraban dos
-pantallas ya construidas, **sin un solo cambio de esquema**.
+## Dónde está, para mirarlo ahora
 
-**Camino largo · el segundo commit, cuando quieran:**
+```
+Repositorio  https://github.com/gerardoriarte-bt/synapse-api-go
+Rama         feature/roles-y-preview
+Commits      d326ebf  y  b13fccd
+```
 
-3. `git cherry-pick b13fccd` + las cinco `ALTER TABLE` de abajo
+Está empujado. Se puede abrir y leer sin pedirnos nada.
 
-Ese es el único que toca la base, y es el que arregla lo que hoy se ve mal —la
-línea de BASE colgando, el período sin estado—. No nos bloquea nada: puede ir
+La rama sale de `733c13c`, que es **la cabeza actual de
+`feature/dynamic-dashboard-backend`**. Su rama no se movió desde el 2026-09-11,
+así que **no hace falta rebasar nada**.
+
+## Qué hay adentro · dos commits independientes
+
+### `d326ebf` — el que nos destraba
+
+Agrega dos cosas al API de admin:
+
+| Ruta | Qué hace |
+|---|---|
+| `GET/POST/PUT/DELETE /admin/tenants/{id}/roles` | Crear, listar, editar y borrar roles de un cliente |
+| `GET /admin/layouts/{id}/preview?roleId=` | Devuelve la composición **tal como la vería ese rol** |
+
+**Esto no toca la base de datos.** Verificado: no modifica ningún archivo de
+`domain/` ni de migraciones, y no agrega ninguna columna. Son rutas, servicios y
+un puerto de repositorio nuevo.
+
+**Dos decisiones de implementación que conviene conocer antes de revisarlo:**
+
+- **El preview reusa `GetTab`**, el mismo camino que ya sirve a la consola. Así
+  `tab_ids`, `hidden_metric_ids` y `layout_overrides` se aplican una sola vez y
+  en un solo lugar. Si el preview reimplementara ese filtro, terminaría mostrando
+  algo distinto de lo que la consola muestra, y nadie se enteraría hasta que un
+  cliente lo viera.
+- **`DDRoleRepository` es un puerto nuevo, no un ensanchamiento de
+  `RoleRepository`.** Ensanchar el que ya existe rompía ocho mocks de ustedes.
+  Con un puerto aparte, cero.
+
+### `b13fccd` — mejoras, ninguna urgente
+
+Agrega cinco campos que hoy faltan, y un endpoint de diff:
+
+| Campo | Para qué |
+|---|---|
+| `measurement_window` | Hoy la línea de BASE del panel sale `Base · COMPLETED · MONTH ·`, con el separador colgando porque falta este dato |
+| `open_period` | Para que el selector pueda avisar que el mes en curso está incompleto |
+| `published_by` y `published_by_email` | Quién publicó cada versión |
+| `chat_suggestions` y `icon` | Sugerencias de chat e ícono de cada pestaña |
+
+Más `GET /admin/layouts/{layoutId}/diff`, que compara dos versiones **por id y
+no por posición** — comparar por posición reporta «cambió» cuando alguien nada
+más movió un panel de lugar.
+
+**Este es el único que toca la base**, y **no nos bloquea nada**: puede ir
 después, o no ir.
 
-**Nosotros no ejecutamos ninguno de los tres pasos**: no corremos migraciones en
-la RDS, no desplegamos y no escribimos en su repositorio.
+---
 
-## El estado del código · verificado hoy
+## Qué hay que hacer · lo ejecuta backend
 
-| | |
-|---|---|
-| Repositorio | `gerardoriarte-bt/synapse-api-go`, rama `feature/roles-y-preview` |
-| Sobre qué está | `733c13c`, la cabeza actual de `feature/dynamic-dashboard-backend` |
-| ¿Hace falta rebasar? | **No.** Su rama no se movió desde el 2026-09-11 |
-| ¿Compila? | Sí · `go build ./...` limpio |
-| ¿Sus tests? | **Pasan todos** · `go test ./...` sin fallos |
-| Commits nuestros | Dos · `d326ebf` y `b13fccd` |
+Nosotros no corremos migraciones, no desplegamos y no escribimos en su
+repositorio. Estos pasos son de ustedes.
 
-**Cero churn en código de ustedes.** Los dos commits agregan archivos y campos;
-no reformatean ni reordenan nada existente. Es deliberado: un fork que reformatea
-es un fork que nadie puede revisar.
-
-## Las dos formas de tomarlo
-
-**Con remoto** — si les sirve tener la rama:
+### Camino corto · lo que nos saca del bloqueo
 
 ```sh
 git remote add front https://github.com/gerardoriarte-bt/synapse-api-go.git
 git fetch front feature/roles-y-preview
-git cherry-pick d326ebf          # B4.8 y B4.9
-git cherry-pick b13fccd          # B1.25, B1.27, B4.1, B4.2, B4.4
+git cherry-pick d326ebf
 ```
 
-**Con parches** — si prefieren no agregar un remoto, se los mandamos como dos
-`.patch` (`git format-patch`, 112 KB) y se aplican con `git am`. Pídannoslos.
+Y desplegar. **Nada más — ningún cambio de esquema.**
 
-**Los dos commits son independientes.** Se puede tomar solo el primero —roles y
-preview, que es lo que nos destraba— y dejar el segundo para después.
+Si prefieren no agregar un remoto, se los mandamos como un archivo `.patch` y se
+aplica con `git am`. Pídannoslo.
 
-## Las cinco columnas · explícitas, sin `AutoMigrate`
+### Camino largo · cuando quieran
 
-El segundo commit agrega cinco campos a structs existentes. `AutoMigrate` las
-aplicaría, pero **`DB_AUTO_MIGRATE=true` toca todas las tablas** y en una RDS
-compartida eso es más superficie de la que este cambio necesita. Estas cinco
-sentencias hacen exactamente lo mismo y nada más:
+```sh
+git cherry-pick b13fccd
+```
+
+Y las cinco columnas. `AutoMigrate` las aplicaría, pero eso implica
+`DB_AUTO_MIGRATE=true`, que **toca todas las tablas** — mucha más superficie de
+la que este cambio necesita en una base compartida. Estas cinco sentencias hacen
+exactamente lo mismo y nada más:
 
 ```sql
 ALTER TABLE dd_catalog_metrics
@@ -81,50 +121,73 @@ ALTER TABLE dd_tabs
   ADD COLUMN IF NOT EXISTS icon text DEFAULT '';
 ```
 
-**Son aditivas y todas con default o nulables**, así que el binario viejo sigue
-funcionando con la tabla nueva — se pueden correr antes de desplegar.
+Son **aditivas y todas con default o nulables**, así que el binario que está
+corriendo hoy sigue funcionando con la tabla nueva: se pueden correr antes de
+desplegar, sin ventana de mantenimiento. Y dejan un `AutoMigrate` posterior en
+no-op para estas cinco, porque GORM agrega las columnas que faltan y no toca las
+que ya están.
 
-**Y dejan un `AutoMigrate` posterior en no-op** para estas cinco: GORM agrega
-columnas faltantes y no toca las que ya están.
+---
 
-**Nosotros no las corrimos.** Es un cambio de esquema en producción y esa
-decisión no es nuestra.
+## Qué verificamos nosotros, y qué les toca verificar
 
-## Qué destraba cada commit
+**Corrido hoy, 2026-09-16, sobre la rama:**
 
-**`d326ebf` · B4.8 y B4.9** — es el que nos importa:
-
-- `GET/POST/PUT/DELETE /admin/tenants/{id}/roles` · CRUD de roles por tenant
-- `GET /admin/layouts/{id}/preview?roleId=` · la composición como la ve un rol
-
-Destraba **F4.3** (gestión de roles) y **F4.12** (vista previa por rol), las dos
-construidas y hoy probadas solo contra mocks.
-
-**Una nota de diseño que va con esto:** el preview reusa `GetTab`, el **mismo**
-camino que sirve a la consola, así que `tab_ids`, `hidden_metric_ids` y
-`layout_overrides` se aplican una sola vez y en un solo lugar. Si el preview
-reimplementara el filtro, terminaría mostrando algo distinto de lo que la consola
-muestra.
-
-**Y `DDRoleRepository` es un puerto aparte a propósito.** Ensanchar
-`RoleRepository` rompía ocho mocks de ustedes; con un puerto nuevo, cero.
-
-**`b13fccd` · B1.25, B1.27, B4.1, B4.2, B4.4** — lo que arregla cosas que hoy se
-ven mal:
-
-| Campo | Qué arregla |
+| | |
 |---|---|
-| `measurement_window` | La línea de BASE sale hoy `Base · COMPLETED · MONTH ·` con el separador colgando. **El nombre del campo JSON lo acordamos igual a la columna** para no tener un tercer nombre que mantener |
-| `open_period` | Que el selector pueda decir que el mes en curso está incompleto |
-| `published_by` · `published_by_email` | Quién publicó cada versión |
-| `chat_suggestions` · `icon` | Las sugerencias de chat y el ícono de la pestaña |
+| `go build ./...` | Limpio |
+| `go test ./...` | **Pasa entero** · cero fallos en sus pruebas |
+| ¿Está empujado? | Sí, sin nada colgando en local |
+| ¿Sobre su cabeza? | Sí, `733c13c` · no hace falta rebasar |
 
-Más `GET /admin/layouts/{layoutId}/diff`, que compara dos versiones **por id y no
-por posición** — comparar por posición reporta «cambió» cuando alguien solo movió
-un panel.
+**Lo que NO probamos, y es la parte que les toca:** nada de esto corrió contra la
+base real. No levantamos el servicio con estos cambios ni ejecutamos las rutas
+nuevas contra datos de verdad, porque eso implica desplegar. Nuestras pruebas son
+unitarias, con repositorios simulados.
 
-## Si prefieren no tomarlo
+## Cuánto van a tener que revisar
 
-Nos sirve saberlo igual. Lo que nos destraba es que esas rutas existan, no que
-existan con nuestro código: si lo van a escribir ustedes, con la forma del cable
-que ya está en `synapse-admin-wire.yaml` alcanza para que sigamos.
+Números exactos, para que no haya sorpresa al abrir el diff:
+
+| | Archivos | Agrega | Borra |
+|---|---|---|---|
+| `d326ebf` | 12 | 1.188 | **1** |
+| `b13fccd` | 21 | 830 | 62 |
+
+**`d326ebf` es casi todo código nuevo:** diez archivos nuevos, más 11 líneas en
+`router.go` y 8 en `bootstrap/app.go`.
+
+**En `b13fccd`, de los 62 borrados solo 17 son código.** Los otros 45 son
+reindentación: `gofmt` realinea un bloque de campos de struct cuando se le mete
+un comentario en el medio, y eso movió diez líneas de
+`dd_catalog_metric.go` que no tenían por qué cambiar.
+
+**Es ruido nuestro y es evitable** — si les molesta al revisar, lo limpiamos y
+volvemos a empujar la rama. Díganlo y lo hacemos.
+
+**Los 17 borrados que sí son código** son cambios de firma que se propagan a los
+mocks de sus pruebas, y no hay forma de evitarlos:
+
+- `Publish(...)` recibe dos parámetros más: quién publicó y su correo.
+- `ListTenants()` devuelve un tipo nuevo, `DDTenantAdminOption`. **Es a
+  propósito:** el que existía, `TenantPublicOption`, también alimenta el flujo
+  **público** de solicitud de acceso, y ensancharlo habría filtrado el
+  `user_count` a gente sin sesión.
+- Dos métodos nuevos de interfaz —`DiffLayout` y `ListForAdmin`— que obligan a
+  agregar un stub en los mocks.
+
+---
+
+## Qué pasa después de que desplieguen
+
+De nuestro lado: corremos el humo contra esas dos rutas —hoy salen ⊘ porque dan
+404— y cerramos las dos pantallas con evidencia contra el servicio real en vez de
+contra mocks. Eso es nuestro y no les cuesta nada.
+
+## Si deciden no tomarlo
+
+Nos sirve saberlo igual, y no hace falta explicación. Lo único que necesitamos es
+que esas dos rutas existan. Si las van a escribir ustedes, la forma exacta del
+cable que el front espera ya está transcripta en
+`contracts/synapse-admin-wire.yaml` de nuestro repositorio — con eso alcanza para
+que sigamos sin tocar nada más.
