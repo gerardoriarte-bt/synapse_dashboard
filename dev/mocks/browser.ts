@@ -47,6 +47,93 @@ const estado = {
   roles: structuredClone(roles),
 }
 
+/** `panelId` → la forma de la métrica que ese panel dibuja.
+ *
+ *  El layout y el catálogo ya estaban; lo único que faltaba era cruzarlos. Sin
+ *  esto el handler emitía un valor por índice, sin mirar qué forma pedía cada
+ *  panel — así que hasta un `bars` recibía un escalar. */
+function formaDe(panelId: string): string {
+  const paneles = [...estado.detalles.values()].flatMap((d) => d.tabs.flatMap((t) => t.panels))
+  const panel = paneles.find((p) => p.ID === panelId)
+  if (panel === undefined) return 'scalar'
+  return catalogo.find((m) => m.id === panel.MetricID)?.shape ?? 'scalar'
+}
+
+/** Un valor del CABLE para cada una de las nueve formas que el backend
+ *  materializa. **Las claves salen de `synapse-console-wire.yaml`**, no de la
+ *  memoria: `v` y no `valor`, `headline` y no `titular`, `t`/`v` en los puntos. */
+function valorPara(forma: string, i: number): Record<string, unknown> {
+  const n = 128_400 + i * 1_000
+  const meses = ['abr', 'may', 'jun', 'jul', 'ago', 'sep']
+  const puntos = meses.map((t, k) => ({ t, v: n * (0.82 + k * 0.05) }))
+  switch (forma) {
+    case 'scalar':
+      return { shape: 'scalar', v: n }
+    case 'scalar_with_interval':
+      return { shape: 'scalar_with_interval', v: n, low: n * 0.9, high: n * 1.1 }
+    case 'time_series':
+      return { shape: 'time_series', points: puntos }
+    case 'multi_series':
+      return {
+        shape: 'multi_series',
+        series: [
+          { label: 'Busqueda', points: puntos },
+          { label: 'Social', points: puntos.map((p) => ({ ...p, v: p.v * 0.6 })) },
+        ],
+      }
+    case 'categorical':
+      return {
+        shape: 'categorical',
+        items: [
+          { label: 'Calzado', v: n * 0.42 },
+          { label: 'Ropa', v: n * 0.33 },
+          { label: 'Accesorios', v: n * 0.25 },
+        ],
+      }
+    case 'ranking':
+      return {
+        shape: 'ranking',
+        items: [
+          { label: 'Polo Pique M', v: 412, position: 1 },
+          { label: 'Short Tech L', v: 388, position: 2 },
+          { label: 'Gorra Curry', v: 291, position: 3 },
+        ],
+      }
+    case 'tabular':
+      return {
+        shape: 'tabular',
+        columns: [
+          { key: 'tienda', title: 'Tienda', numeric: false },
+          { key: 'venta', title: 'Venta', numeric: true },
+        ],
+        rows: [
+          { tienda: 'Perisur', venta: n * 0.2 },
+          { tienda: 'Antara', venta: n * 0.17 },
+        ],
+      }
+    case 'prose':
+      return {
+        shape: 'prose',
+        headline: 'La venta crecio por medios pagos, y el inventario no acompano.',
+        pillars: [
+          { label: 'Venta', value: 'USD 4.28M', note: '+6.4% vs ago' },
+          { label: 'Cobertura', value: '31 d' },
+        ],
+      }
+    case 'composition':
+      return {
+        shape: 'composition',
+        parts: [
+          { label: 'Organico', v: n * 0.55 },
+          { label: 'Pago', v: n * 0.31 },
+          { label: 'Directo', v: n * 0.14 },
+        ],
+      }
+    default:
+      return { shape: 'scalar', v: n }
+  }
+}
+
 export const worker = setupWorker(
   /* ── Acceso ─────────────────────────────────────────────────────────────── */
   http.post(`${API}/auth/login`, async () => {
@@ -105,7 +192,14 @@ export const worker = setupWorker(
                   freshness: new Date().toISOString(),
                   catalog_version: 4,
                 },
-                value: { valor: 128_400 + i * 1_000, delta: 0.12 },
+                // **El valor tiene que corresponder a la FORMA de su métrica.**
+                // Hasta el 2026-09-16 esto emitía `{ valor, delta }` para todos:
+                // ni la forma del cable ni la del contrato. El adaptador lo
+                // rechazaba con razón —«El valor no declara su forma»— y **la
+                // consola del modo mock se veía rota**, que es justo lo que este
+                // modo existe para evitar. Se descubrió abriéndolo en el
+                // navegador por primera vez.
+                value: valorPara(formaDe(id), i),
                 ...(i % 4 === 2 ? { reason: 'Stale data: last materialization is older than 3 days' } : {}),
               },
         ]),
