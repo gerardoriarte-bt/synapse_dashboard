@@ -189,6 +189,19 @@ export function Canvas({
       <div className="flex items-center gap-6">
         <Label as="div">Grilla 12 · columna 80 · gap 16 · fila base 80</Label>
         <Label as="div">El alto se declara en rowSpan · nunca en píxeles</Label>
+        {/* **El gesto de mover, dicho.** Reportado el 2026-09-17: «no veo la
+            capacidad de mover un bloque». La capacidad estaba y funcionaba —el
+            panel es `draggable` desde F4.9— y **no había nada que la anunciara**:
+            `cursor: grab` solo aparece al pasar por encima, y el `.pen` dibuja
+            «ARRASTRAR AL LIENZO» para la biblioteca y nada para el lienzo.
+
+            Va acá y no en el panel por lo que la propuesta del canvas ya
+            resolvió en su punto 1: se descartó una manija de arrastre dedicada
+            porque «§4 ya gastó el espacio de cabecera» —título, BASE y
+            procedencia son shell que nunca se reemplaza—. La regla es donde el
+            lienzo ya declara sus reglas, y queda simétrico con la biblioteca,
+            que sí anuncia el suyo. */}
+        <Label as="div">Arrastrá un panel para moverlo · los handles redimensionan</Label>
       </div>
 
       <div

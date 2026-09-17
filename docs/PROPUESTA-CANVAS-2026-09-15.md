@@ -130,6 +130,18 @@ que es normativo.
 - **La biblioteca queda pegada al scroll**, con su propio tope de alto — los
   cinco grupos con quince tipos son más altos que la ventana, así que pegarla sin
   eso esconde los últimos.
+- **El lienzo anuncia su gesto.** «No veo la capacidad de mover un bloque»,
+  reportado el 2026-09-17 — y la capacidad **estaba y funcionaba**: el panel es
+  `draggable` desde F4.9, y se verificó en el navegador que mover reposiciona.
+  Lo que faltaba era que algo lo dijera: `cursor: grab` solo aparece al pasar por
+  encima, y el `.pen` dibuja «ARRASTRAR AL LIENZO» para la biblioteca y **nada**
+  para el lienzo. La biblioteca anunciaba su gesto y el lienzo no.
+
+  Va en la regla del lienzo y no en el panel, por lo que el punto 1 ya resolvió:
+  se descartó la manija de arrastre dedicada porque §4 ya gastó el espacio de
+  cabecera. **Una función que no se descubre no existe**, y el costo de
+  descubrirla no puede ser leer el código.
+
 - **Los huecos dicen en cuáles ENTRA** mientras se arrastra. El rectángulo ya
   contestaba «¿entra ACÁ?»; esto contesta «¿DÓNDE entra?» antes de mover el
   cursor. **No mueve nada de nadie**: resaltar destinos no es reacomodar.

@@ -129,6 +129,34 @@ describe('§7.2 · la grilla de 12 es visible, con guías', () => {
   })
 })
 
+describe('el lienzo anuncia sus gestos · 2026-09-17', () => {
+  it('dice que se arrastra para mover · la capacidad estaba y no se veía', async () => {
+    // **El defecto no era la capacidad: era que nada la anunciaba.** El panel es
+    // `draggable` desde F4.9 y mover funciona —verificado en el navegador—, pero
+    // `cursor: grab` solo aparece al pasar por encima y el `.pen` dibuja
+    // «ARRASTRAR AL LIENZO» para la biblioteca y nada para el lienzo. Quien
+    // compone concluye que no se puede.
+    base()
+    montar()
+    await abrirCanvas()
+
+    expect(screen.getByText(/Arrastrá un panel para moverlo/)).toBeInTheDocument()
+    // La otra mitad del gesto, y son distintas: el cuerpo mueve, los handles
+    // redimensionan · propuesta del canvas, punto 1.
+    expect(screen.getByText(/los handles redimensionan/)).toBeInTheDocument()
+  })
+
+  it('y el panel sigue siendo arrastrable · el rótulo no reemplaza al gesto', async () => {
+    // Un rótulo que anuncia algo que no funciona es peor que no anunciarlo.
+    base()
+    montar()
+    await abrirCanvas()
+
+    const panel = screen.getByRole('gridcell', { name: /Ventas/ })
+    expect(panel).toHaveAttribute('draggable', 'true')
+  })
+})
+
 describe('§7.2 · la biblioteca, agrupada', () => {
   it('lista los cinco grupos con sus tipos y sus rangos', async () => {
     base()
