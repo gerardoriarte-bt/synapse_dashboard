@@ -142,6 +142,26 @@ describe('§7.2 · la biblioteca, agrupada', () => {
     // «bars · categorica · ranking · 4–8 ×4–5» en el `.pen`: el rango va con el tipo.
     expect(biblioteca.getByText('3–8 × 3–6')).toBeInTheDocument()
   })
+
+  it('queda PEGADA al scroll · y no se le esconden los últimos grupos', async () => {
+    // **Es de uso, no de estética.** El lienzo crece hacia abajo con cada fila;
+    // al bajar a buscar un hueco la biblioteca salía de pantalla y había que
+    // volver arriba, tomar el tipo y bajar arrastrando a ciegas. Reportado el
+    // 2026-09-17 al usarlo.
+    //
+    // Las dos mitades juntas a propósito: `sticky` sin altura máxima esconde los
+    // últimos de los cinco grupos, que es cambiar un problema por otro. Una
+    // prueba que solo mirara `sticky` daría por buena esa mitad.
+    base()
+    montar()
+    await abrirCanvas()
+
+    const aside = screen.getByRole('complementary', { name: 'Biblioteca de tipos' })
+    expect(aside.className).toContain('sticky')
+    expect(aside.className).toContain('self-start')
+    expect(aside.className).toContain('overflow-y-auto')
+    expect(aside.className).toMatch(/max-h-/)
+  })
 })
 
 describe('§7.2 · al soltar, los tres casos', () => {

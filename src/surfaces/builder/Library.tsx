@@ -68,7 +68,24 @@ export function Library({ bloques, arrastrando, onArrastrar }: Props) {
   const { grupos, sinGrupo } = agrupar(bloques)
 
   return (
-    <aside className="w-[300px] shrink-0 flex flex-col gap-4" aria-label="Biblioteca de tipos">
+    // **Pegada al scroll, y la razón es de uso, no de estética.**
+    //
+    // El lienzo mide 1200 y crece hacia abajo con cada fila; la biblioteca son
+    // los 300 de al lado —§4—. Al bajar a buscar un hueco libre, la biblioteca
+    // salía de pantalla y había que volver arriba, tomar el tipo, y bajar otra
+    // vez arrastrando a ciegas. Reportado el 2026-09-17 al usarlo.
+    //
+    // `sticky` y no `fixed`: `fixed` la saca del flujo y deja de respetar el
+    // ancho de la columna y el chrome de arriba. Con `sticky` sigue siendo la
+    // columna izquierda y solo deja de subir.
+    //
+    // `max-h` + `overflow-y-auto` porque los cinco grupos con quince tipos son
+    // más altos que la ventana: sin eso, pegarla esconde los últimos grupos, que
+    // es cambiar un problema por otro.
+    <aside
+      className="w-[300px] shrink-0 flex flex-col gap-4 sticky top-6 self-start max-h-[calc(100vh-6rem)] overflow-y-auto"
+      aria-label="Biblioteca de tipos"
+    >
       <div className="flex flex-col gap-1">
         <Label as="div">Biblioteca de tipos</Label>
         <Label as="div">Arrastrar al lienzo · el span se ajusta al rango del tipo</Label>
