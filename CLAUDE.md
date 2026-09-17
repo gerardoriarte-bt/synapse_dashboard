@@ -359,6 +359,18 @@ verde sin demostrar nada: el arnés corría toda la carpeta y ahí adentro habí
 prueba rota por otra razón. El arnés corre la base primero, sale 1 si el texto a
 mutar no está, y sale 2 si la base no está verde.
 
+**LO QUE EXISTE PARA MIRARSE, SE ABRE.** Es la otra mitad de la regla de abajo,
+y no se automatiza. El 2026-09-16 y 17 aparecieron **ocho defectos y los ocho
+salieron de usar la aplicación**: el modo mock nunca se había abierto —pantalla
+en negro, React Router avisando por consola—, sus payloads estaban inventados, y
+el dashboard publicado se veía apilado **con doce paneles bien compuestos
+detrás**, porque `readingOrder` reordenaba el DOM y CSS grid coloca en ese orden.
+
+**Ninguno lo encontró una prueba, ninguno la puerta, y ninguno `afirmaciones`**
+—que mira prosa, no pantallas—. Las pruebas cubren lo que se les pide; lo que no
+se les ocurre pedirles aparece al abrirlo. Antes de dar por construida una
+pantalla, **hay que verla**. Ver `docs/BITACORA-2026-09-17.md`.
+
 **NADA SE ESCRIBE DE MEMORIA — y eso ya no es solo para los fixtures.**
 
 La regla de abajo estaba acotada a las pruebas y se cumplía ahí. El 2026-09-16
