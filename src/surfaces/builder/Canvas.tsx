@@ -250,19 +250,48 @@ export function Canvas({
           )
         })()}
 
-        {/* Los huecos · derivados, con su medida como en el `.pen`. */}
-        {libres.map((h) => (
-          <div
-            key={`hueco-${String(h.filaInicio)}-${String(h.colStart)}`}
-            style={{
-              gridColumn: `${String(h.colStart)} / span ${String(h.colSpan)}`,
-              gridRow: `${String(h.filaInicio)} / span ${String(h.rowSpan)}`,
-            }}
-            className="pointer-events-none flex items-center justify-center rounded-sm border border-dashed border-w4"
-          >
-            <Label>{`Slot vacío · ${String(h.colSpan)} × ${String(h.rowSpan)}`}</Label>
-          </div>
-        ))}
+        {/* Los huecos · derivados, con su medida como en el `.pen`.
+         *
+         *  **Y mientras se arrastra, dicen en cuáles ENTRA** · 2026-09-17.
+         *
+         *  El rectángulo de «span al soltar» ya contestaba «¿entra ACÁ?», pero
+         *  hay que pasar por encima de cada celda para preguntarlo. Con el
+         *  lienzo largo eso es buscar a ojo, que es lo que se reportó al usarlo.
+         *
+         *  Esto contesta la otra pregunta —«¿DÓNDE entra?»— antes de mover el
+         *  cursor. **No mueve nada de nadie**: §7.2 dice «no se permite soltar
+         *  encima», no «se reacomoda», y resaltar destinos no es reacomodar.
+         *
+         *  El hueco admite el tipo si su rectángulo lo contiene. No alcanza con
+         *  comparar áreas: un hueco de 12 × 1 no admite un panel de 3 × 4 aunque
+         *  tenga doce celdas libres. */}
+        {libres.map((h) => {
+          const cabe =
+            arrastrando !== null &&
+            (() => {
+              const { colSpan, rowSpan } = spanDe(null, arrastrando)
+              return h.colSpan >= colSpan && h.rowSpan >= rowSpan
+            })()
+          return (
+            <div
+              key={`hueco-${String(h.filaInicio)}-${String(h.colStart)}`}
+              style={{
+                gridColumn: `${String(h.colStart)} / span ${String(h.colSpan)}`,
+                gridRow: `${String(h.filaInicio)} / span ${String(h.rowSpan)}`,
+              }}
+              className={
+                'pointer-events-none flex items-center justify-center rounded-sm border border-dashed ' +
+                (cabe ? 'border-acc bg-w2' : 'border-w4')
+              }
+            >
+              <Label>
+                {cabe
+                  ? `Entra acá · ${String(h.colSpan)} × ${String(h.rowSpan)}`
+                  : `Slot vacío · ${String(h.colSpan)} × ${String(h.rowSpan)}`}
+              </Label>
+            </div>
+          )
+        })}
 
         {colocaciones.map((c) => {
           const p = panels[c.indice]

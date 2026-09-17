@@ -365,6 +365,75 @@ describe('«Span al soltar» · lo que va a ocupar, antes de soltar', () => {
     )
   }
 
+  it('los huecos dicen en cuáles ENTRA, antes de mover el cursor', async () => {
+    // **Dos preguntas distintas.** El rectángulo de «span al soltar» contesta
+    // «¿entra ACÁ?», y para eso hay que pasar por encima de cada celda. Con el
+    // lienzo largo eso es buscar a ojo — reportado el 2026-09-17 al usarlo.
+    //
+    // Esto contesta «¿DÓNDE entra?». **No mueve nada de nadie**: §7.2 dice «no
+    // se permite soltar encima», no «se reacomoda», y resaltar destinos no es
+    // reacomodar.
+    // Con UN panel de 6 · deja 7–12 libre en las cuatro filas. El fixture por
+    // defecto llena las doce columnas y no tiene huecos que marcar.
+    base([
+      http.get(`${API}/admin/layouts/:id`, () =>
+        ok({
+          layout: layouts[0],
+          tabs: [
+            {
+              tab: { ID: 'tab-a', LayoutVersionID: 'l-2', Name: 'Resumen', OperationalQuestion: '¿?', SortOrder: 1, RoleIDs: [] },
+              panels: [panel('p-1', 'm-1', 1, 6)],
+            },
+          ],
+        }),
+      ),
+    ])
+    montar()
+    await abrirCanvas()
+
+    // Antes de arrastrar, un hueco es un hueco.
+    expect(screen.getAllByText(/Slot vacío/).length).toBeGreaterThan(0)
+    expect(screen.queryByText(/Entra acá/)).not.toBeInTheDocument()
+
+    await arrastrarTipoHasta('kpi', 1, 5)
+    expect(screen.getAllByText(/Entra acá/).length).toBeGreaterThan(0)
+  })
+
+  it('un hueco ANCHO y BAJO no se marca · el rectángulo tiene que caber entero', async () => {
+    // **El caso que separa «cabe» de «hay lugar».** Un panel de 6 de ancho y 4
+    // de alto, y otro de 6 × 2 al lado, dejan un hueco de **6 × 2** — doce
+    // celdas libres, igual que las doce que un `kpi` de 3 × 4 necesita.
+    //
+    // Comparar áreas lo daría por bueno. Mirar solo el ancho, también. Las dos
+    // marcarían un destino donde al soltar sale el aviso de colisión, que es
+    // peor que no marcarlo: prometer un lugar y negarlo al llegar.
+    base([
+      http.get(`${API}/admin/layouts/:id`, () =>
+        ok({
+          layout: layouts[0],
+          tabs: [
+            {
+              tab: { ID: 'tab-a', LayoutVersionID: 'l-2', Name: 'Resumen', OperationalQuestion: '¿?', SortOrder: 1, RoleIDs: [] },
+              panels: [
+                panel('p-1', 'm-1', 1, 6),
+                { ...panel('p-2', 'm-2', 7, 6), RowSpan: 2 },
+              ],
+            },
+          ],
+        }),
+      ),
+    ])
+    montar()
+    await abrirCanvas()
+
+    // El hueco existe y mide 6 × 2.
+    expect(screen.getByText('Slot vacío · 6 × 2')).toBeInTheDocument()
+
+    await arrastrarTipoHasta('kpi', 1, 5)
+    // Un `kpi` mide 3 × 4: entra en ancho, no en alto. No se marca.
+    expect(screen.queryByText(/Entra acá/)).not.toBeInTheDocument()
+  })
+
   it('dibuja el rectángulo con el tipo y su medida', async () => {
     // Sin esto hay que soltar para saber si entraba, que es lo contrario de
     // «fácil y clara».

@@ -112,6 +112,35 @@ colocación que ya había decidido.
 panel», que F4.10 ya tiene—. Un gesto impreciso no puede destruir trabajo;
 es la misma razón por la que el guardado es explícito.
 
+#### Revisado al usarlo · 2026-09-17
+
+**La decisión de no reacomodar se sostiene, y apareció lo que le faltaba.** Al
+componer de verdad, el problema no fue el choque: fue **encontrar dónde entra**.
+El lienzo crece hacia abajo con cada fila y buscar un hueco libre obligaba a
+bajar —perdiendo la biblioteca de vista— y a pasar el cursor por cada celda para
+que el rectángulo de «span al soltar» contestara si entraba ahí.
+
+Se propuso reacomodar los paneles al soltar. **No se hizo, por lo escrito arriba:**
+§7.2 dice «no se permite soltar encima», no «se reacomoda», y el `.pen` dibuja
+*colisión* como uno de los cuatro estados del panel. Cambiar eso es cambiar §7.2,
+que es normativo.
+
+**Lo que sí se hizo, y no toca la regla:**
+
+- **La biblioteca queda pegada al scroll**, con su propio tope de alto — los
+  cinco grupos con quince tipos son más altos que la ventana, así que pegarla sin
+  eso esconde los últimos.
+- **Los huecos dicen en cuáles ENTRA** mientras se arrastra. El rectángulo ya
+  contestaba «¿entra ACÁ?»; esto contesta «¿DÓNDE entra?» antes de mover el
+  cursor. **No mueve nada de nadie**: resaltar destinos no es reacomodar.
+
+**El hueco admite el tipo si su rectángulo lo contiene**, y no alcanza con
+comparar áreas: un hueco de 6 × 2 tiene las mismas doce celdas que un `kpi` de
+3 × 4 necesita, y no lo admite. Marcarlo prometería un lugar y lo negaría al
+llegar — peor que no marcarlo. Lo fijan dos pruebas y seis mutaciones; las tres
+variantes plausibles —marcar todo, comparar áreas, mirar solo el ancho—
+sobrevivían a la primera versión de la prueba.
+
 ### 4 · El teclado, que no es accesorio
 
 **Propuesta.** Con un panel seleccionado: **flechas** lo mueven una celda,
