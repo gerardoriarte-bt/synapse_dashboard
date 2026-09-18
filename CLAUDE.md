@@ -426,6 +426,66 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-09-17 · el backend se movió y hay plan escrito
+
+**El plan de este tramo es `docs/PLAN-INTEGRACION-2026-09-17.md`.** Lo que sigue
+es el resumen para no tener que abrirlo antes de saber si hace falta.
+
+`feature/dynamic-dashboard-backend` pasó de `733c13c` a **`82da946`** con **diez
+rutas nuevas** —el chat contextual desde un panel y la materialización— y un
+cambio de modelo: **los paneles ya no consultan Snowflake al renderizar**, leen
+`dd_panel_data` que un scheduler refresca una vez al día, con
+`DD_MATERIALIZE_ENABLED` en `false` por default. La línea `commit` del cable
+sigue declarando `733c13c`, así que `backend-drift` sale ✗ a propósito.
+
+**Tres decisiones humanas del 2026-09-17, tomadas y no ejecutadas:**
+
+1. **El contexto de panel es la forma del backend** — `panel_id` + `period`, y
+   el servicio arma el resto. Esto **reescribe el criterio de F3.2**, que pedía
+   doce campos. Con eso **T4 se cierra**, y detrás se destraban F3.3 y F3.7.
+2. **F4.4 se construye** con el CRUD que llegó, mostrando activo/inactivo y
+   **declarando pendiente el estado del acceso** —vigente, cuándo se verificó—,
+   que es lo que §7.3 pedía y no llegó. `is_active` es un soft delete manual, no
+   una verificación.
+3. **El fork se rebasa.**
+
+**Por dónde se empieza, y no es ninguna de las tres: hay un defecto.** El
+discriminador del SSE del chat pasó a la **línea `event:`** de la trama, y
+`src/api/chat.ts` la descarta a propósito —está documentado ahí—, así que
+`src/api/useChat.ts` conmuta sobre `undefined` y **el chat no pinta una sola
+palabra**. Los mocks de MSW no lo delatan porque hablan el idioma de nuestra
+capa interna: es el mismo modo de falla que el `panels:batch`. **No reabre F3.4**
+—su criterio se cumplió, lo que cambió es el cable—: corresponde una tarea de
+integración nueva, hermana de F1.38.
+
+**El rebase está probado y verde, y sin empujar.** Vive en la rama local
+`rebase-prueba` de `~/Documents/GitHub/synapse-api-go-fork`. Son **dos hunks de
+adyacencia pura** —`router.go` y `app.go`, los dos lados agregan en el mismo
+lugar— más un rompimiento que el conflicto no muestra: su commit agregó
+`FindByID` a `ports.DDPanelRepository` y nuestro mock de
+`dd_preview_service_test.go` no lo implementaba. **`go build` pasaba; lo encontró
+`go vet`.** Churn en su código: 18 borrados, uno menos que antes. La receta
+completa está en el plan, paso por paso.
+
+**LO QUE HAY QUE PREGUNTARLES ANTES DE ESCRIBIR UNA LÍNEA.** Su commit trae seis
+migraciones manuales nuevas y corren **solo con `DB_AUTO_MIGRATE=true`**, el flag
+que no tocamos sobre la RDS compartida. Si el servicio desplegado no las corrió,
+las rutas nuevas fallan contra columnas que no existen — y eso se ve como un
+**500, no como un 404**. Si el esquema no está, no hay contra qué verificar nada.
+
+**Lo que NO se movió todavía:** `plan-de-trabajo.md`. Las tres decisiones están
+escritas en el plan y **no** en la fuente, así que el estado de F3.2, F3.3, F3.7,
+F4.4 y T4 sigue diciendo lo de antes. Ejecutar esos cambios es el paso cero
+cuando se retome — la tabla de qué cambiar está al final del plan.
+
+**F3.6 quedó bloqueada a propósito**, y está más cerca de lo que parecía: el
+evento `data` manda `{shape, data, provenance}`, que es literalmente lo que el
+criterio pide, pero `shape` es la forma y no el tipo de panel, y `provenance`
+**no trae la BASE ni la capa Medallion**. Hay un argumento para desbloquearla y
+**no se resolvió**: queda como pregunta, que es la regla.
+
+---
+
 **La consola corre contra el servicio real desde el 2026-09-14.** Doce paneles
 con datos del negocio, cero en `ERROR`. Para levantarla hacen falta los dos
 lados: `npm run dev` acá y, en `~/Documents/GitHub/synapse-api-go` (rama
@@ -517,8 +577,11 @@ es nuestra. Las cinco son aditivas y con default.
 
 **Sí hay un PR, y vive en NUESTRO fork** · 2026-09-16 ·
 <https://github.com/gerardoriarte-bt/synapse-api-go/pull/1>. Va de
-`feature/roles-y-preview` contra nuestra copia de su rama en `733c13c`, así que
-el diff que muestra es exactamente lo que se agregaría. **Existe para que lo
+`feature/roles-y-preview` contra nuestra copia de su rama, y **desde el
+2026-09-17 esa base está vieja**: la rama quedó en `733c13c` y ellos se movieron
+a `82da946`, así que el diff **muestra de menos** hasta que se rebase. Es
+exactamente el trabajo que la regla de abajo nos obliga a hacer, y por eso está
+probado y esperando en `rebase-prueba`. **Existe para que lo
 lean y comenten, no para mergear**, y no escribe una línea en
 `AntPack-dev/synapse-api-go`. Es la forma de darles una revisión cómoda sin
 romper la regla. Eso nos obliga a mantener
