@@ -5,17 +5,17 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**95 de 196 tareas cerradas.** 18 parciales · 78 pendientes · 5 diferidas.
+**97 de 197 tareas cerradas.** 18 parciales · 77 pendientes · 5 diferidas.
 
 
-## Front · 88 de 113
+## Front · 90 de 114
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██████████████████████` | 16/16 | 0 | 0 |
 | 1 · Consola y render/ | `████████████████████··` | 40/44 | 1 | 3 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
-| 3 · Chat contextual | `████████··············` | 4/11 | 1 | 3 |
+| 3 · Chat contextual | `███████████···········` | 6/12 | 1 | 2 |
 | 4 · Admin y Builder | `██████████████········` | 15/23 | 2 | 6 |
 | 5 · Pruebas y pulido | `██████████████········` | 8/13 | 1 | 3 |
 
@@ -44,14 +44,15 @@
 
 ---
 
-## Se puede tomar hoy · 0 del front
+## Se puede tomar hoy · 3 del front
 
-Nada del front está libre: todo lo pendiente espera algo.
-
+- **F3.3** · «Ver detalle» y «Preguntar» en el shell del panel · destrabada el 2026-09-17
+- **F3.7** · Historial de hilos · destrabada el 2026-09-17
+- **F4.4** · Configuración de agente Snowflake por tenant · destrabada con alcance recortado el 2026-09-17
 
 ---
 
-## Bloqueadas · 44
+## Bloqueadas · 40
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -64,10 +65,7 @@ Lo que el front espera del backend está detallado en
 - **F1.31** · Registro de gráficos y verificación de mínimos
 - **F1.42** · El mes en curso está incompleto y el selector no lo dice
 - **F2.3** · SIN_PERMISO · B0.9 (línea 1171) contestada
-- **F3.2** · Construir ContextoDePanel al abrir
-- **F3.3** · «Ver detalle» y «Preguntar» en el shell del panel
 - **F3.6** · Reutilizar cuerpos de panel para respuestas estructuradas
-- **F3.7** · Historial de hilos
 - **F4.12** · Preview por rol
 - **F4.17** · ComparisonBody + ComparePlot
 - **F4.18** · MatrixBody + HeatmapPlot
@@ -75,7 +73,6 @@ Lo que el front espera del backend está detallado en
 - **F4.20** · Registrar los tres con carga diferida
 - **F4.21** · Selector de gráfico en el builder
 - **F4.3** · Gestión de usuarios y roles por tenant
-- **F4.4** · Configuración de agente Snowflake por tenant
 - **F5.1** · Selector de layout cuando hay más de uno
 - **F5.10** · Checklist de conformidad §17 por tipo de bloque integrado
 - **F5.13** · Períodos libres en el selector

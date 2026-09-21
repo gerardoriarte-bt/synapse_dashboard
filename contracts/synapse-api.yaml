@@ -1484,8 +1484,20 @@ components:
         tipo: { type: string, enum: [fin] }
         hiloId:
           type: string
-          format: uuid
-          description: Con qué id continuar la conversación.
+          description: |
+            Con qué id continuar la conversación.
+
+            **Sin `format`, y es una corrección del 2026-09-21.** Decía
+            `uuid` y el servicio manda un ENTERO: el `thread_id` de la trama
+            `thread_info`. Se comprobó leyendo `pump` en `82da946`, no
+            deduciéndolo. Queda `string` porque el id viaja como texto hasta
+            el borde, donde `api/chat.ts` lo convierte a número para el
+            binding de Gin.
+
+            **El otro id del cable, `user_thread_id`, no tiene dónde viajar
+            acá** — es el uuid que identifica el hilo para pedir sus
+            mensajes, y lo va a necesitar F3.7. Cuando esa tarea se tome, el
+            evento necesita un segundo campo.
 
     EventoErrorChat:
       type: object

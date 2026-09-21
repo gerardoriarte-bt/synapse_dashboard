@@ -3228,21 +3228,26 @@ Lo de «una sola hoja» es estructural: la consola sostiene un único estado. El
 contador del componente es la red por si alguien monta una segunda desde otro
 lado, y **avisa en vez de fallar en silencio**.
 
-### F3.2 ⬜ Construir `ContextoDePanel` al abrir · 🔒 **bloqueada por T4**
-**Criterio de aceptación.** Manda `panelId`, `metricId`, `metricKey`, `nombre`,
-`base`, `fuente`, `capa`, `familia`, `periodo`, `tipo`, y opcionalmente
-`valorActual` y `dimensionesDisponibles`. **Nunca SQL.**
+### F3.2 ✅ Construir el contexto de panel al abrir
+**Criterio de aceptación.** Manda `panelId` y `periodo`. **Nunca SQL.**
 
-**Bloqueada, y se descubrió el 2026-09-03 al abrir la Fase 3.** `ContextoDePanel`
-**no existe en el contrato**: `POST /config/chat` acepta `pregunta`, `tabId` y
-`hiloId`, y nada más. No hay campo por donde mandar el panel desde el que se
-pregunta.
+**El criterio se REESCRIBIÓ el 2026-09-17**, por decisión humana sobre el
+informe de `82da946`. Pedía doce campos —`metricId`, `metricKey`, `nombre`,
+`base`, `fuente`, `capa`, `familia`, `tipo`, `valorActual`,
+`dimensionesDisponibles`— porque cuando se escribió no había ningún campo por
+donde mandar el panel y se asumió que habría que transcribirlo entero.
 
-Es exactamente T4 —«Acordar `ContextoDePanel` · declarado en el yaml, no en un
-documento aparte»— que sigue abierta. Construir el objeto en el front sin que el
-contrato lo declare sería inventar una forma que el backend no va a leer.
+**El backend lo resolvió al revés y mejor:** `panel_context: {panel_id, period}`,
+y el servicio arma el resto leyendo el panel por su id. Transcribir doce campos
+desde el front habría sido mandarle al backend datos que él ya tiene, con la
+posibilidad de que difirieran.
 
-### F3.3 ⬜ «Ver detalle» y «Preguntar» en el shell del panel · 🔒 la mitad que queda espera a T4
+**Construida el 2026-09-21** en `src/api/chat.ts` —`alCable()`— y
+`src/api/useChat.ts` —`PanelContext`—. Lo prueba
+`tests/api/chat.test.ts`, contra el cable transcripto y no contra nuestro
+vocabulario interno.
+
+### F3.3 ⬜ «Ver detalle» y «Preguntar» en el shell del panel · **destrabada el 2026-09-17**
 **Criterio de aceptación.**
 - Los dos son CALLBACKS del shell, no navegación escrita adentro: `render/` no
   sabe a dónde llevan y la superficie es dueña del viaje.
@@ -3251,9 +3256,14 @@ contrato lo declare sería inventar una forma que el backend no va a leer.
   ninguno de los dos y eso es correcto.
 - «Preguntar» abre la hoja con el panel desde el que se preguntó.
 
-**La última mitad espera a T4**, igual que F3.2: abrir la hoja con el `tabId` se
-puede hacer hoy, mandar el contexto del panel no, porque el contrato no declara
-por dónde viaja.
+**Ya no espera a T4**, que se cerró el 2026-09-17: el contexto del panel viaja
+como `panel_context: {panel_id, period}` y `useChat` ya lo recibe. Lo que falta
+es puramente de este lado — el callback en el shell y la superficie que abre la
+hoja con el panel desde el que se preguntó.
+
+**Es la tarea que hace falta para poder MIRAR el chat.** Hoy `useChat` no tiene
+consumidor en ninguna ruta, así que el cliente SSE está probado y no está visto,
+que es la mitad que las pruebas no cubren.
 
 ### F3.4 ✅ Cliente SSE
 **Criterio de aceptación.** Lee los seis eventos que declara el contrato.
@@ -3325,7 +3335,29 @@ existiera.
 Mientras tanto la UI **declara cuántas cifras trajo la respuesta** en vez de
 pintar una con un cuerpo elegido a dedo. Es la pregunta 11 de B0.9.
 
-### F3.7 ⚠️ Historial de hilos · 🔒 `HiloResumen` no trae panel ni período
+**Sigue bloqueada, y desde el 2026-09-21 se sabe por qué con precisión.** El
+backend ya manda el evento `data` con `{shape, data, provenance}`, que de lejos
+parece lo que el criterio pide. Medido contra `82da946`, no alcanza:
+
+`EventoDato` exige `familia` más los cinco campos de `Gobierno`. **Cuatro se
+podrían cruzar del catálogo por `metric_key`** —`familia`, `capa`, `fuente` y
+`catalogVersion`—, y **dos no**, y son los que sostienen la garantía:
+
+- **`base`.** El catálogo trae la BASE de la MÉTRICA. La cifra que compuso el
+  agente puede tener otro denominador: si filtró a una tienda, «48 tiendas sobre
+  52» es falso. Copiarla es declarar un denominador que nadie calculó.
+- **`frescura`.** La cifra del chat no se materializó — la calculó el agente al
+  vuelo—, y el catálogo no tiene fecha que sirva.
+
+Y cuando el agente compone una métrica que no está en el catálogo —caso que el
+contrato contempla con `metricId: null`— no hay ni fila contra la cual cruzar.
+
+Pedido concreto al backend en
+[`MENSAJE-2026-09-21-dos-tareas-del-chat.md`](docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md).
+Mientras tanto `src/api/chat.ts` **descarta** las tramas `data`, con una prueba
+que lo atestigua: el chat contesta en prosa y con el SQL a la vista.
+
+### F3.7 ⚠️ Historial de hilos · **destrabada el 2026-09-17**
 **Descripción.** Listado de conversaciones previas del usuario, desde
 `GET /config/chat/hilos`.
 **Criterio de aceptación.**
@@ -3337,11 +3369,24 @@ entero, badge de decisión, hilo activo marcado y selección que dispara con su
 `id`. Retomar funciona —`useChat` ya manda `hiloId`, así que continúa la
 conversación en vez de arrancar una nueva.
 
-**La primera mitad del criterio está bloqueada por el contrato.**
-`HiloResumen` trae `id`, `titulo`, `creadoEn`, `actualizadoEn`, `esDecision` y
-`decisionId`. **Ni panel ni período.** Y `Hilo` es `HiloResumen` + `mensajes`,
-así que tampoco. Es el mismo hueco que T4 por el otro lado: si el contexto del
-panel no viaja al abrir, tampoco vuelve al listar.
+**La primera mitad del criterio se DESTRABÓ el 2026-09-17.** Estaba bloqueada
+porque `HiloResumen` trae `id`, `titulo`, `creadoEn`, `actualizadoEn`,
+`esDecision` y `decisionId` — **ni panel ni período**—, que era el mismo hueco
+que T4 por el otro lado: si el contexto del panel no viajaba al abrir, tampoco
+volvía al listar.
+
+`82da946` lo cierra: `GET /config/chat/threads` devuelve `thread_name`,
+`tab_name`, `metric_name`, `metric_key` y `period`. Lo que queda es trabajo de
+este lado — transcribir esa ruta al cable y adaptarla, que hoy **no está
+transcrita** a propósito: una ruta transcrita que nadie llama envejece sin que
+nadie lo note.
+
+**Y hay un detalle que se descubrió el 2026-09-21 y conviene saber ANTES de
+tomarla.** La trama `thread_info` del stream trae **dos** ids: `thread_id`
+entero, que es el que continúa la conversación, y `user_thread_id` uuid, que es
+el `:id` de `GET /config/chat/threads/{id}/messages`. `EventoFin` tiene un solo
+campo y ahí va el primero, así que **hoy el segundo se pierde**. Retomar un hilo
+funciona; pedir sus mensajes va a necesitar un campo más en el evento.
 
 **El agrupado por tiempo es la excepción a que el front no calcule**, y el
 contrato la concede explícitamente: «el agrupado por tiempo —HOY, ESTA SEMANA,
@@ -3417,6 +3462,39 @@ propio, o es configuración de layout.
 **Criterio de aceptación.** Cero ramas por `metricId` en la superficie. Y **Synapse no ejecuta** (§1.3.16): promueve un accionable con su
 autor y su fecha, no aplica un reparto.
 
+### ➕ F3.12 ✅ El cliente SSE habla el cable, no nuestro vocabulario
+**Descripción.** Traducir las tramas de `POST /config/chat` al `EventoDeChat`
+del contrato, y mandar el cuerpo con los nombres que el servicio declara.
+
+**No reabre F3.4.** Su criterio —«lee los seis eventos que declara el
+contrato»— se cumplió y sigue cumpliéndose. Lo que cambió es el cable. Es la
+hermana de F1.38 para el chat, y por eso es una tarea nueva y no una
+corrección de aquélla.
+
+**Criterio de aceptación.**
+- El discriminador se lee de la línea `event:` de la trama, no de adentro del
+  JSON. **Es el defecto concreto**: hasta el 2026-09-21 la línea se descartaba
+  a propósito y `useChat` conmutaba sobre `undefined` — el chat no pintaba una
+  sola palabra.
+- El cuerpo viaja como `question` + `panel_context: {panel_id, period}`, que es
+  lo que pide el binding. El anterior habría dado 400 aunque el parseo
+  estuviera bien.
+- **Las pruebas emiten tramas del CABLE**, no del vocabulario interno. Una
+  prueba que emite el dialecto propio pasa en verde con el chat roto: es el
+  mismo modo de falla que F1.38 encontró en `panels:batch`.
+- Lo que el cable no permite traducir se descarta **con una prueba que lo
+  atestigua**, no en silencio: `data` por F3.6 y `thinking` por no tener
+  equivalente.
+
+**Hecha el 2026-09-21.** `src/api/chat.ts` y `tests/api/chat.test.ts`, con
+`/config/chat` transcrito en `contracts/synapse-console-wire.yaml`. Verificada
+rompiendo el código: cuatro mutaciones, las cuatro muertas.
+
+**Lo que NO demuestra, y está dicho a propósito:** no se abrió contra el
+servicio. Para eso hacen falta F3.3 —que no hay por dónde entrar al chat— y las
+migraciones de la tarea 1 de
+[`MENSAJE-2026-09-21-dos-tareas-del-chat.md`](docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md).
+
 ---
 
 ## Fase 4 — Admin y Builder
@@ -3428,7 +3506,7 @@ estimación que no bajaría.
 ### F4.1 ✅ `surfaces/admin/` — layout base y navegación
 ### F4.2 ✅ Lista de tenants
 ### F4.3 ⚠️ Gestión de usuarios y roles por tenant · 🔒 `/admin/users` y `/admin/roles` dan 404
-### F4.4 ⬜ Configuración de agente Snowflake por tenant · 🔒 depende de B3.9
+### F4.4 ⬜ Configuración de agente Snowflake por tenant · **destrabada con alcance recortado el 2026-09-17**
 ### F4.5 ✅ Vista del catálogo de métricas del tenant
 **Criterio de aceptación (los cinco).**
 - **No se muestra vocabulario de infraestructura** (§7.3 de `design.md`): ni
@@ -3449,6 +3527,24 @@ llevan selector; A2, A4 y A5 operan dentro de un tenant y sí. A3 es la que pare
 incoherente y §7.3 explica por qué no lo es: «cruza clientes porque su regla dura
 —el tenant de un usuario no se edita— solo es visible cuando el tenant es una
 columna que se compara».
+
+**F4.4 se destrabó con alcance recortado el 2026-09-17**, por decisión humana
+sobre el informe de `82da946`. Estaba esperando a B3.9, de la que solo existía
+`POST /admin/agents`; ahora hay CRUD completo por tenant —listar, crear, leer,
+actualizar y un `DELETE` que es baja lógica— más `semantic_views` y
+`system_prompt_base`.
+
+**Se construye con eso, mostrando activo/inactivo. Lo que NO se construye es el
+estado del acceso** —si está vigente y cuándo se verificó—, que es justo lo que
+§7.3 pide con «se declara la consecuencia, no la plomería». Eso se declara
+**pendiente en la pantalla**, no se deduce: `is_active` es una baja lógica que
+alguien apretó, no una verificación de que la credencial funcione, y leer uno
+como el otro sería decir «acceso vigente» porque nadie apagó el interruptor.
+
+**Ojo antes de tomarla:** las tres columnas que ese CRUD escribe no existen en
+la base compartida, medido el 2026-09-21. Se puede construir contra MSW;
+verificarla contra el servicio, no todavía. Ver la tarea 1 de
+[`MENSAJE-2026-09-21-dos-tareas-del-chat.md`](docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md).
 
 **El ancho mínimo es 1280 y no hay colapso**, que es la corrección de §4 del
 `.pen`: «las tablas no son grillas» y perdían contenido en silencio (PS-5). Hay
@@ -5247,7 +5343,7 @@ pasar. Corre **después** del build en la puerta, que ahora son diez chequeos.
 | **T1** | `contracts/synapse-api.yaml` es la fuente de verdad | Backend escribe · front consume | Un cambio en el yaml que el backend no implemente rompe CI de alguno de los dos |
 | **T2** | Documentar las reglas de los 15 bloques | Backend valida · front muestra | La tabla vive en un solo lugar y se sirve por `/config/blocks` |
 | **T3** | Acordar el formato de eventos SSE | Backend | Los seis eventos con su forma, en el yaml |
-| **T4** | Acordar `ContextoDePanel` · **bloquea F3.2 y la mitad de F3.3** | Ambos | Declarado en el yaml, no en un documento aparte. Hoy `POST /config/chat` acepta `pregunta`, `tabId` y `hiloId`: no hay campo por donde mandar el panel |
+| ✅ **T4** | Acordar `ContextoDePanel` · **CERRADA el 2026-09-17** | Ambos | Declarado en el cable del backend: `panel_context: {panel_id, period}`. Lo resolvieron ellos en `82da946` y la decisión humana del 2026-09-17 fue adoptar **su** forma en vez de los doce campos que pedía F3.2 — el servicio arma el resto leyendo el panel por su id. Transcrito en `contracts/synapse-console-wire.yaml` |
 | **T5** | Seed de demo | Backend | Ver B1.16 y B1.20 |
 | **T6** | Ambiente de desarrollo: backend + front + Postgres | Ambos | Un comando levanta los tres. El front apunta a `VITE_API_URL` |
 | **T7** | Revisión de conformidad con `design.md` y `parametros-front.md` | Front | Automatizada en F0.11, no manual |

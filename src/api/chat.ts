@@ -38,13 +38,22 @@
  *  `thinking` no tiene equivalente en el contrato: es el estado interno del
  *  agente, no parte de la respuesta.
  *
- *  `data` trae `{shape, data, provenance}` y **`EventoDato` exige `familia`**,
- *  que el cable no manda. Componerla sería elegir el color de una cifra en el
- *  componente, que es exactamente el defecto por el que `familia` entró al
- *  contrato el 2026-08-19. **F3.6 está bloqueada por esto y no se razona por
- *  encima**: las tramas `data` se descartan hasta que el cable traiga familia,
- *  BASE y capa. Hay una prueba que lo atestigua, para que el día que lleguen no
- *  haya que acordarse.
+ *  `data` trae `{shape, data, provenance}`, y `EventoDato` exige `familia` más
+ *  los cinco campos de `Gobierno`. **Tres de esos seis se podrían cruzar del
+ *  catálogo por `metric_key` —`familia`, `capa`, `fuente` y `catalogVersion`—,
+ *  y dos NO, y esos dos son los que sostienen la garantía:**
+ *
+ *   · **`base`.** El catálogo trae la BASE de la MÉTRICA. La cifra que compuso
+ *     el agente puede tener otro denominador —si filtró a una tienda, «48
+ *     tiendas sobre 52» es falso—. Copiarla sería declarar un denominador que
+ *     nadie calculó, que es peor que no declarar ninguno.
+ *   · **`frescura`.** La cifra del chat no se materializó: la calculó el agente
+ *     al vuelo. El catálogo no tiene fecha que sirva.
+ *
+ *  Y cuando el agente compone una métrica que no está en el catálogo —caso que
+ *  el contrato contempla con `metricId: null`— no hay ni fila contra la cual
+ *  cruzar. **F3.6 está bloqueada por esto y no se razona por encima**: las
+ *  tramas `data` se descartan. Medido el 2026-09-21 contra `82da946`.
  *
  *  `user_thread_id` de `thread_info` se pierde: el contrato tiene un solo campo
  *  de id en `EventoFin` y ahí va el que continúa la conversación. El uuid que
