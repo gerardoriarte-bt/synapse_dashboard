@@ -22,6 +22,8 @@ export const keys = {
   panels: (tabId: string, period: string) => ['panels', tabId, period] as const,
   threads: (panelId?: string, periodo?: string) =>
     ['chat', 'hilos', panelId ?? null, periodo ?? null] as const,
+  sugerencias: (panelId: string, periodo: string) =>
+    ['chat', 'sugerencias', panelId, periodo] as const,
 
   /* ── Builder · F4.23 ─────────────────────────────────────────────────────
    *
@@ -84,6 +86,18 @@ export function usePanelsBatch(tabId: string | null, panelIds: string[], period:
  *
  *  **Y el filtro lo aplica el SERVICIO.** Pedir todos y filtrar acá traería los
  *  hilos de los otros once paneles por la red para tirarlos. */
+/** Qué preguntar sobre un panel · §PEN:C3.
+ *
+ *  **Son deterministas del lado del servicio**, así que no hay razón para
+ *  refrescarlas mientras la hoja está abierta: cambian con el estado del panel,
+ *  no con el tiempo. */
+export function useSuggestions(panelId: string, periodo: string) {
+  return useQuery({
+    queryKey: keys.sugerencias(panelId, periodo),
+    queryFn: () => api.suggestions(panelId, periodo),
+  })
+}
+
 export function useThreads(panelId?: string, periodo?: string) {
   return useQuery({
     queryKey: keys.threads(panelId, periodo),

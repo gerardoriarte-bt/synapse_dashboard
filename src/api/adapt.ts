@@ -854,6 +854,7 @@ function adaptPresentation(raw: unknown): Presentation | undefined {
 /* ── F3.7 · los hilos del chat ─────────────────────────────────────────────── */
 
 export type WireChatThread = W['ChatThread']
+export type WireChatSuggestion = W['ChatSuggestion']
 
 /** Un hilo del cable a `HiloResumen`.
  *
@@ -892,4 +893,19 @@ export function adaptThread(w: WireChatThread): ThreadSummary {
     metricKey: texto(w.metric_key),
     pestanaNombre: texto(w.tab_name),
   }
+}
+
+/** Una pregunta sugerida del cable a su texto.
+ *
+ *  **`intent` se descarta, y hay una prueba que lo atestigua.** §PEN:C3 dibuja
+ *  las sugeridas como chips con su texto y nada más; conservar un campo que
+ *  ninguna pantalla lee es exactamente cómo `BodyProps.presentation` estuvo
+ *  meses declarada sin un solo consumidor. El día que una pantalla lo necesite,
+ *  la prueba dice dónde estaba.
+ *
+ *  **El texto llega ya redactado en español** —«¿Por qué Ventas está en USD
+ *  4.28M en septiembre?»— así que acá no se compone nada: el front no escribe
+ *  copy de producto. */
+export function adaptSuggestion(w: W['ChatSuggestion']): string {
+  return w.question
 }

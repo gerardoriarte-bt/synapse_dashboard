@@ -92,15 +92,6 @@ export function ChatThread({ turns }: { turns: readonly ChatTurn[] }) {
             </details>
           )}
 
-          {turn.respuesta.sugerencias.length === 0 ? null : (
-            <ul className="flex list-none flex-col gap-1 p-0 m-0">
-              {turn.respuesta.sugerencias.map((s) => (
-                <li key={s} className="font-body text-cuerpo leading-cuerpo text-dim">
-                  {s}
-                </li>
-              ))}
-            </ul>
-          )}
         </li>
       ))}
     </ol>

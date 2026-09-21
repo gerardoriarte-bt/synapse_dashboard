@@ -264,3 +264,86 @@ describe('§PEN:C3 · los literales que el `.pen` manda', () => {
     expect(within(hoja).getByRole('button', { name: 'Cerrar' })).toHaveTextContent('Esc')
   })
 })
+
+describe('§PEN:C3 · las sugeridas son chips que preguntan', () => {
+  /** Las sugeridas del panel, con la forma del cable. */
+  function conSugeridas(preguntas: string[]) {
+    server.use(
+      http.get(`${API}/config/panels/:panelId/chat-suggestions`, () =>
+        ok(preguntas.map((question) => ({ question, intent: 'explain' }))),
+      ),
+    )
+  }
+
+  it('apretar una sugerida MANDA esa pregunta · no solo la escribe', async () => {
+    // **Es la aserción de la tarea.** Hasta el 2026-09-21 eran una lista de
+    // texto: se leían y no se podían usar, que es la mitad de lo que una
+    // sugerencia es para.
+    const { preguntas } = laConsola([])
+    conSugeridas(['¿Por qué cayó en septiembre?'])
+    montar()
+    const { usuario, hoja } = await abrirLaHoja()
+
+    await usuario.click(
+      await within(hoja).findByRole('button', { name: '¿Por qué cayó en septiembre?' }),
+    )
+
+    await waitFor(() => expect(preguntas).toHaveLength(1))
+    expect(preguntas[0]?.['question']).toBe('¿Por qué cayó en septiembre?')
+  })
+
+  it('se piden para ESTE panel y ESTE período', async () => {
+    // Sin `period` el servicio usa el mes actual en UTC, que no es el del
+    // tenant ni el que se está mirando. Una sugerencia sobre otro mes es peor
+    // que ninguna.
+    const pedidos: string[] = []
+    laConsola([])
+    server.use(
+      http.get(`${API}/config/panels/:panelId/chat-suggestions`, ({ request, params }) => {
+        pedidos.push(`${String(params['panelId'])}?${new URL(request.url).searchParams.get('period')}`)
+        return ok([])
+      }),
+    )
+    montar()
+    await abrirLaHoja()
+
+    await waitFor(() => expect(pedidos).toContain('p-kpi?2026-07'))
+  })
+
+  it('después de responder manda las DEL AGENTE, no las del panel', async () => {
+    // Mostrar las del panel debajo de una respuesta sería ofrecer lo que ya se
+    // contestó.
+    // **El orden importa y ya costó una vez.** `server.use` antepone, así que
+    // el ÚLTIMO en registrarse gana: con `laConsola` después, su handler de
+    // `/config/chat` pisaba este override y la respuesta nunca llegaba. Está
+    // anotado igual en `roles.test.tsx`.
+    laConsola([])
+    conSugeridas(['La del panel'])
+    server.use(
+      http.post(`${API}/config/chat`, () => {
+        const encoder = new TextEncoder()
+        return new HttpResponse(
+          new ReadableStream({
+            start(c) {
+              c.enqueue(encoder.encode(trama('thread_info', { thread_id: 1, parent_message_id: 0, user_thread_id: 'u' })))
+              c.enqueue(encoder.encode(trama('delta', { text: 'listo' })))
+              c.enqueue(encoder.encode(trama('done', {})))
+              c.close()
+            },
+          }),
+          { headers: { 'content-type': 'text/event-stream' } },
+        )
+      }),
+    )
+    montar()
+    const { usuario, hoja } = await abrirLaHoja()
+
+    expect(await within(hoja).findByRole('button', { name: 'La del panel' })).toBeInTheDocument()
+    await usuario.click(within(hoja).getByRole('button', { name: 'La del panel' }))
+    await within(hoja).findByText('listo')
+
+    // El agente no mandó `sugerencias`, así que no hay del agente — y las del
+    // panel NO vuelven a aparecer debajo de la respuesta.
+    expect(within(hoja).queryByRole('button', { name: 'La del panel' })).not.toBeInTheDocument()
+  })
+})

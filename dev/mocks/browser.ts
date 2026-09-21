@@ -251,6 +251,14 @@ export const worker = setupWorker(
     ])
   }),
 
+  /** Qué preguntar sobre un panel · §PEN:C3. Deterministas del lado del
+   *  servicio: acá se devuelven tres fijas, que es lo que hay que poder mirar. */
+  http.get(`${API}/config/panels/:panelId/chat-suggestions`, () => ok([
+    { question: '¿Por qué cayó contra el mes anterior?', intent: 'explain' },
+    { question: '¿Qué está impulsando esta cifra?', intent: 'drivers' },
+    { question: '¿Cómo se reparte por canal?', intent: 'breakdown' },
+  ])),
+
   http.post(`${API}/config/chat`, async ({ request }) => {
     const { question } = (await request.json()) as { question: string }
 

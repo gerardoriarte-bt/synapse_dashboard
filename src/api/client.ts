@@ -5,10 +5,19 @@
  *  backend, se hace con MSW a nivel HTTP, no con un fixture importado.
  */
 import { ApiError, SIN_CODIGO } from './types'
-import { adaptBlocks, adaptCatalog, adaptContext, adaptPayload, adaptTab, adaptThread } from './adapt'
+import {
+  adaptBlocks,
+  adaptCatalog,
+  adaptContext,
+  adaptPayload,
+  adaptSuggestion,
+  adaptTab,
+  adaptThread,
+} from './adapt'
 import type {
   AdaptedCatalog,
   WireBlock,
+  WireChatSuggestion,
   WireChatThread,
   WireContext,
   WireMetric,
@@ -148,6 +157,18 @@ export const api = {
       `/config/chat/threads${cola === '' ? '' : `?${cola}`}`,
     ).then((hilos) => hilos.map(adaptThread))
   },
+
+  /** Qué preguntar sobre un panel · B3.2 · §PEN:C3.
+   *
+   *  **El `period` va SIEMPRE**, aunque el parámetro sea opcional: sin él el
+   *  servicio usa el mes actual en UTC, que no es el del tenant ni el que el
+   *  usuario está mirando. Una sugerencia sobre otro mes es peor que ninguna. */
+  suggestions: async (panelId: string, periodo: string): Promise<string[]> =>
+    (
+      await request<WireChatSuggestion[]>(
+        `/config/panels/${encodeURIComponent(panelId)}/chat-suggestions?period=${encodeURIComponent(periodo)}`,
+      )
+    ).map(adaptSuggestion),
 
   /** El tema es preferencia de USUARIO, no de tenant · §2.4.
    *

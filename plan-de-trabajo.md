@@ -3667,6 +3667,50 @@ servicio. Para eso hacen falta F3.3 —que no hay por dónde entrar al chat— y
 migraciones de B3.11, pedidas en la tarea 1 de
 [`MENSAJE-2026-09-21-dos-tareas-del-chat.md`](docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md).
 
+### ➕ F3.14 ✅ Preguntas sugeridas por panel, y como chips
+**Descripción.** Consumir `GET /config/panels/{panelId}/chat-suggestions` y
+pintar las sugeridas como el `.pen` las dibuja.
+
+**Es la tarea sin número que el plan del 2026-09-17 dejó anotada** al final de
+la Fase 3, más la §7 de la auditoría del 21.
+
+**Criterio de aceptación.**
+- Las sugeridas **se aprietan y preguntan**. Sin manejador no se pintan.
+- Se piden para ESE panel y ESE período. Sin `period` el servicio usa el mes
+  actual en UTC, que no es el del tenant ni el que se está mirando.
+- El texto llega redactado del servicio: **el front no escribe copy**.
+
+**Hecha el 2026-09-21.** La ruta transcrita al cable con `x-origen: 82da946`,
+`adaptSuggestion`, `useSuggestions` y `Suggestions`.
+
+**Eran una lista de texto**: se leían y no se podían usar, que es la mitad de lo
+que una sugerencia es para. §PEN:C3 las dibuja como chips bajo `SUGERIDAS`, y
+**pegadas al campo** — no al pie de cada respuesta, que es donde estaban.
+
+**Son DOS fuentes y no una.** Antes de preguntar, las del panel: el servicio las
+arma con su contexto, **determinista y sin Cortex**, así que cambian con el
+estado —un panel sin datos sugiere «¿qué falta para que tenga datos?» en vez de
+«¿por qué está en ese nivel?»—. Después, las del agente, por el evento
+`sugerencias`.
+
+**Y las del panel NO vuelven cuando el agente no manda ninguna.** Lo descubrió
+una prueba: la primera versión caía a las del panel y **reaparecía la que el
+usuario acababa de apretar**. Son un abridor; una vez que se preguntó, o sugiere
+el agente o no sugiere nadie.
+
+**`intent` se descarta**, con una prueba que lo atestigua. El cable manda
+`explain`, `compare`, `drivers`, `breakdown`, `forecast` o `data`, y ninguna
+pantalla lo lee: conservarlo es cómo `BodyProps.presentation` estuvo meses
+declarada sin un solo consumidor.
+
+Verificada rompiendo el código: tres mutaciones, las tres muertas. Y al escribir
+las pruebas volvió a morder el orden de `server.use` —el último registrado gana,
+así que la base pisaba el override— que es la trampa que `roles.test.tsx` ya
+tenía anotada.
+
+**Abierta en el navegador**: tres chips, apretar uno pregunta, y el bloque
+desaparece al responder.
+
 ### ➕ F3.13 ✅ La respuesta del agente es MARKDOWN y se pinta literal
 **Descripción.** Renderizar el markdown que el agente devuelve, en vez de
 volcarlo como texto plano.

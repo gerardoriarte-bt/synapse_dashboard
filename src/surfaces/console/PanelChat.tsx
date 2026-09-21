@@ -23,9 +23,10 @@
  */
 import { useState } from 'react'
 import { useChat } from '../../api/useChat'
-import { useThreads } from '../../api/hooks'
+import { useSuggestions, useThreads } from '../../api/hooks'
 import { ChatOverlay } from './ChatOverlay'
 import { ChatThread } from './ChatThread'
+import { Suggestions } from './Suggestions'
 import { ThreadRail } from './ThreadRail'
 import { groupByRecency } from './threads'
 import type { Formatter } from '../../render/format'
@@ -58,6 +59,10 @@ export function PanelChat({ panelId, periodo, titulo, format, onClose }: Props) 
    *  conversaciones de los otros once paneles para tirarlas. */
   const hilos = useThreads(panelId, periodo)
 
+  /** Qué preguntar sobre este panel · §PEN:C3. Deterministas del lado del
+   *  servicio, así que no se refrescan mientras la hoja está abierta. */
+  const sugeridas = useSuggestions(panelId, periodo)
+
   /** El agrupado por tiempo **es la excepción a que el front no calcule**, y el
    *  contrato la concede explícitamente: «HOY, ESTA SEMANA, JULIO lo hace el
    *  front: es presentación y depende del huso del usuario». Es la otra zona
@@ -72,7 +77,8 @@ export function PanelChat({ panelId, periodo, titulo, format, onClose }: Props) 
   // Mientras el último turno transmite, preguntar de nuevo ABORTARÍA ese stream
   // —`ask` cancela el anterior— y la respuesta a medias se perdería sin decir
   // por qué. Se espera, y el botón dice que se está esperando.
-  const enVuelo = turns.at(-1)?.streaming === true
+  const ultimo = turns.at(-1)
+  const enVuelo = ultimo?.streaming === true
 
   return (
     // **El encabezado es el literal del `.pen`, el contexto es NUESTRO** ·
@@ -116,6 +122,23 @@ export function PanelChat({ panelId, periodo, titulo, format, onClose }: Props) 
           />
         </div>
       )}
+
+      {/* **Las sugeridas van pegadas al campo** · §PEN:C3 las dibuja ahí, no al
+          pie de cada respuesta.
+
+          **Y son dos fuentes, no una**: mientras no se preguntó nada, las del
+          panel —que el servicio arma con su estado—; después, las que devolvió
+          el agente.
+
+          **Las del panel NO vuelven cuando el agente no manda ninguna**, y lo
+          descubrió una prueba: la primera versión caía a las del panel y
+          reaparecía la que el usuario acababa de apretar. Son un ABRIDOR; una
+          vez que se preguntó, o sugiere el agente o no sugiere nadie. */}
+      <Suggestions
+        preguntas={turns.length === 0 ? (sugeridas.data ?? []) : (ultimo?.respuesta.sugerencias ?? [])}
+        onPreguntar={(pregunta) => void ask(pregunta)}
+        esperando={enVuelo}
+      />
 
       <form
         className="mt-auto flex items-end gap-2"

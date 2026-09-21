@@ -354,6 +354,61 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
+  # ── B3.2 · las preguntas sugeridas · TRANSCRITO DE 82da946 ───────────────
+  /config/panels/{panelId}/chat-suggestions:
+    get:
+      tags: [config]
+      operationId: panelChatSuggestions
+      summary: Qué preguntar sobre este panel
+      x-origen: 82da946
+      description: |
+        **Transcrita el 2026-09-21 desde `82da946`**, leyendo
+        `internal/core/services/dd_chat_suggestions.go` y el handler
+        `DDChatHandler.Suggestions`.
+
+        **Determinista y sin Cortex**: las arma `SuggestQuestions` con el
+        contexto del panel —su forma, su estado y su valor—, así que **no
+        gasta la cuota del agente** y no puede tardar.
+
+        **Cambian con el ESTADO del panel.** Un panel sin datos sugiere «¿Qué
+        falta para que … tenga datos?»; uno con cifra sugiere por qué está en
+        ese nivel, cómo se compara y qué la impulsa. Son entre 1 y 4.
+
+        **Sin `period` el servicio usa el mes actual en UTC**, que no es el del
+        tenant. El front lo manda siempre: es el período que se está mirando.
+      parameters:
+        - name: panelId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: period
+          in: query
+          required: false
+          schema: { type: string, examples: ['2026-09'] }
+          description: '`YYYY-MM`. Otro formato devuelve 400.'
+      responses:
+        '200':
+          description: Entre una y cuatro preguntas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        maxItems: 4
+                        items: { $ref: '#/components/schemas/ChatSuggestion' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: El rol no ve el tab o la métrica del panel
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
 components:
   securitySchemes:
     bearer:
@@ -868,3 +923,26 @@ components:
         metric_name: { type: string }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+
+    ChatSuggestion:
+      type: object
+      description: |
+        `ports.DDChatSuggestion`. Una pregunta que el servicio propone para este
+        panel.
+      required: [question, intent]
+      properties:
+        question:
+          type: string
+          description: La pregunta, ya redactada en español y lista para mandar.
+        intent:
+          type: string
+          description: |
+            `explain`, `compare`, `drivers`, `breakdown`, `forecast` o `data`.
+
+            **El front no lo usa y por eso el adaptador lo descarta.** §PEN:C3
+            dibuja las sugeridas como chips con su texto y nada más; conservar
+            un campo que ninguna pantalla lee es cómo `BodyProps.presentation`
+            estuvo meses declarada sin un solo consumidor.
+      examples:
+        - question: '¿Por qué Ventas está en USD 4.28M en septiembre?'
+          intent: explain

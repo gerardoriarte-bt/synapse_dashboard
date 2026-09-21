@@ -195,6 +195,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/config/panels/{panelId}/chat-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Qué preguntar sobre este panel
+         * @description **Transcrita el 2026-09-21 desde `82da946`**, leyendo
+         *     `internal/core/services/dd_chat_suggestions.go` y el handler
+         *     `DDChatHandler.Suggestions`.
+         *
+         *     **Determinista y sin Cortex**: las arma `SuggestQuestions` con el
+         *     contexto del panel —su forma, su estado y su valor—, así que **no
+         *     gasta la cuota del agente** y no puede tardar.
+         *
+         *     **Cambian con el ESTADO del panel.** Un panel sin datos sugiere «¿Qué
+         *     falta para que … tenga datos?»; uno con cifra sugiere por qué está en
+         *     ese nivel, cómo se compara y qué la impulsa. Son entre 1 y 4.
+         *
+         *     **Sin `period` el servicio usa el mes actual en UTC**, que no es el del
+         *     tenant. El front lo manda siempre: es el período que se está mirando.
+         */
+        get: operations["panelChatSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -656,6 +689,27 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
+        /**
+         * @description `ports.DDChatSuggestion`. Una pregunta que el servicio propone para este
+         *     panel.
+         * @example {
+         *       "question": "¿Por qué Ventas está en USD 4.28M en septiembre?",
+         *       "intent": "explain"
+         *     }
+         */
+        ChatSuggestion: {
+            /** @description La pregunta, ya redactada en español y lista para mandar. */
+            question: string;
+            /**
+             * @description `explain`, `compare`, `drivers`, `breakdown`, `forecast` o `data`.
+             *
+             *     **El front no lo usa y por eso el adaptador lo descarta.** §PEN:C3
+             *     dibuja las sugeridas como chips con su texto y nada más; conservar
+             *     un campo que ninguna pantalla lee es cómo `BodyProps.presentation`
+             *     estuvo meses declarada sin un solo consumidor.
+             */
+            intent: string;
+        };
     };
     responses: {
         /** @description Request mal formado */
@@ -961,6 +1015,45 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    panelChatSuggestions: {
+        parameters: {
+            query?: {
+                /** @description `YYYY-MM`. Otro formato devuelve 400. */
+                period?: string;
+            };
+            header?: never;
+            path: {
+                panelId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Entre una y cuatro preguntas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["ChatSuggestion"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description El rol no ve el tab o la métrica del panel */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
         };
     };
 }
