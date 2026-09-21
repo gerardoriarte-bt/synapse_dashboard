@@ -5,17 +5,17 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**98 de 199 tareas cerradas.** 18 parciales · 78 pendientes · 5 diferidas.
+**99 de 199 tareas cerradas.** 18 parciales · 77 pendientes · 5 diferidas.
 
 
-## Front · 91 de 115
+## Front · 92 de 115
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██████████████████████` | 16/16 | 0 | 0 |
 | 1 · Consola y render/ | `████████████████████··` | 40/44 | 1 | 3 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
-| 3 · Chat contextual | `████████████··········` | 7/13 | 1 | 2 |
+| 3 · Chat contextual | `██████████████········` | 8/13 | 1 | 1 |
 | 4 · Admin y Builder | `██████████████········` | 15/23 | 2 | 6 |
 | 5 · Pruebas y pulido | `██████████████········` | 8/13 | 1 | 3 |
 
@@ -44,9 +44,8 @@
 
 ---
 
-## Se puede tomar hoy · 4 del front
+## Se puede tomar hoy · 3 del front
 
-- **F3.13** · La respuesta del agente es MARKDOWN y se pinta literal
 - **F3.7** · Historial de hilos
 - **F4.4** · Configuración de agente Snowflake por tenant
 - **F5.10** · Checklist de conformidad §17 por tipo de bloque integrado

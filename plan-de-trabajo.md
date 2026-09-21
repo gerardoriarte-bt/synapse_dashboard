@@ -3580,7 +3580,7 @@ servicio. Para eso hacen falta F3.3 —que no hay por dónde entrar al chat— y
 migraciones de B3.11, pedidas en la tarea 1 de
 [`MENSAJE-2026-09-21-dos-tareas-del-chat.md`](docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md).
 
-### ➕ F3.13 ⬜ La respuesta del agente es MARKDOWN y se pinta literal
+### ➕ F3.13 ✅ La respuesta del agente es MARKDOWN y se pinta literal
 **Descripción.** Renderizar el markdown que el agente devuelve, en vez de
 volcarlo como texto plano.
 
@@ -3604,6 +3604,45 @@ distinción que F3.12 con F3.4 — lo que cambió es el cable.
   línea más de prosa. §7.1 pide el límite declarado **al lado** del SQL.
 - `[SIN_COMPETENCIA]` en la primera línea no se muestra crudo: el backend lo usa
   para decir que no puede responder con las fuentes que tiene.
+
+**Hecha el 2026-09-21.** `parseMarkdown.ts` —puro, probado sin React— y
+`Markdown.tsx`, que decide con qué token se pinta cada bloque.
+
+**Un parser propio y mínimo, y la razón no es el peso.** Un renderizador general
+emite HTML: encabezados con tamaños que no son los nuestros, enlaces que el
+agente podría inventar, imágenes. El parser devuelve una estructura cerrada
+—sección, párrafo, lista— y **no existe ruta por la que llegue marcado del
+agente a la pantalla**. Hay una prueba que le da `<img onerror>` y comprueba que
+no haya ni un `<img>` en el DOM.
+
+**Los `###` se pintan con el rótulo de la casa**, no con un encabezado grande:
+la escala tipográfica tiene nueve tamaños y ninguno es «subtítulo dentro de una
+respuesta de chat». Es el mismo rótulo que llevan «Preguntaste» y «Cómo se
+calculó» en esa hoja.
+
+**La mitad de las pruebas son de texto A MEDIO LLEGAR**, que es la mitad que
+importa: la prosa entra por fragmentos, así que el parser corre sobre cada
+estado intermedio. Un marcador sin cerrar se pinta literal en vez de tragarse el
+resto — esperar el cierre haría que media frase desapareciera y volviera
+mientras se escribe. Una prueba recorre **todos los prefijos** del mismo texto.
+
+**Y esa prueba encontró un defecto antes de que lo hiciera una pantalla:** `###`
+a secas, recién tecleado por el stream, caía a párrafo y los tres numerales se
+veían — el defecto de esta misma tarea en chico.
+
+Verificada rompiendo el código: cinco mutaciones, las cinco muertas. **Dos no
+contaron la primera vez** y hubo que rehacerlas: una rompía el JSX —o sea que el
+archivo no compilaba y la prueba no corría, que se lee igual que una prueba
+débil— y la otra dejaba el índice retrocediendo, así que colgaba en vez de
+fallar.
+
+**Se abrió en el navegador**: `### Límite declarado` se lee «LÍMITE DECLARADO».
+
+**Lo que NO hace, y es una decisión:** no extrae la sección «Límite declarado»
+del markdown para moverla al lado del SQL, que es donde §7.1 la quiere. Hacerlo
+sería reconocer un encabezado por su texto, y el día que el agente lo escriba
+distinto la sección **desaparecería en silencio**. El lugar del contrato para eso
+es `auditoria.limiteDeclarado`, que el cable todavía no manda y ya está pedido.
 
 ---
 

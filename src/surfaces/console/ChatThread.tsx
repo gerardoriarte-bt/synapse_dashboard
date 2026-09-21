@@ -10,6 +10,11 @@
  *  ANTES del primer fragmento, que es cuando el agente está consultando Gold y
  *  la pantalla no tiene nada que mostrar.
  *
+ *  **La prosa es MARKDOWN y se dibuja · F3.13.** Hasta el 2026-09-21 se volcaba
+ *  tal cual y en pantalla se leía `### Límite declarado` con los tres numerales.
+ *  Lo encontró abrir la aplicación, no una prueba. Quien lo dibuja es
+ *  `Markdown`, sin inyectar HTML del agente en ningún caso.
+ *
  *  **Las cifras del agente todavía no se pintan · F3.6 está bloqueada.** El
  *  evento `dato` trae `valor`, `familia` y su procedencia, pero NO declara con
  *  qué tipo de panel se dibuja, y varios tipos aceptan la misma forma. Elegir
@@ -18,6 +23,7 @@
  */
 import type { ChatTurn } from '../../api/useChat'
 import { Label } from '../../render/primitives/Label'
+import { Markdown } from './Markdown'
 
 export function ChatThread({ turns }: { turns: readonly ChatTurn[] }) {
   if (turns.length === 0) {
@@ -47,11 +53,7 @@ export function ChatThread({ turns }: { turns: readonly ChatTurn[] }) {
               </p>
             ) : null}
 
-            {turn.respuesta.texto === '' ? null : (
-              <p className="font-body text-cuerpo leading-cuerpo text-ink m-0 whitespace-pre-wrap">
-                {turn.respuesta.texto}
-              </p>
-            )}
+            {turn.respuesta.texto === '' ? null : <Markdown texto={turn.respuesta.texto} />}
 
             {turn.respuesta.datos.length === 0 ? null : (
               <p className="font-body text-cuerpo leading-cuerpo text-dim m-0">
