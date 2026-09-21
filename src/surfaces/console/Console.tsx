@@ -91,8 +91,12 @@ export function Console({
     measureLayoutPainted()
   }, [layoutKey])
 
+  // **El padding NO envuelve la cabecera** · §PEN:C1 la dibuja como bandas a
+  // ancho completo, con su propio fondo y su borde. Con `p-6` en el `main` la
+  // banda del navbar quedaba flotando con aire a los costados, que es lo
+  // contrario de una banda. Cada zona pone el suyo.
   return (
-    <main className="min-h-screen bg-bg p-6">
+    <main className="min-h-screen bg-bg">
       <Topbar
         context={context}
         activeTab={activeTab}
@@ -103,7 +107,8 @@ export function Console({
         {...(onChangeTheme === undefined ? {} : { onChangeTheme })}
       />
 
-      <div style={gridStyle(columns)}>
+      {/* El cuerpo sí lleva el padding de la grilla · §4. */}
+      <div className="p-6" style={gridStyle(columns)}>
         {/* **Se reordena SOLO con la grilla colapsada** · §ANCLA:RESP-3, que lo
             pide «por debajo de 768px a 1 columna». Ahí el orden visual ES el
             orden del DOM y hay que ordenar de verdad.

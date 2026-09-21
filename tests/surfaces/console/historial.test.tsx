@@ -347,3 +347,29 @@ describe('§PEN:C3 · las sugeridas son chips que preguntan', () => {
     expect(within(hoja).queryByRole('button', { name: 'La del panel' })).not.toBeInTheDocument()
   })
 })
+
+describe('§PEN:C1 · el chrome son tres bandas, no un bloque', () => {
+  it('el tema y el usuario viven en el NAVBAR, con el logotipo', async () => {
+    // **Son de la PLATAFORMA**: no cambian con la pestaña ni con el período.
+    // Al lado del título parecían parte de la pantalla.
+    laConsola([])
+    montar()
+    await screen.findByRole('heading', { name: 'Venta diaria' })
+
+    const navbar = screen.getByRole('img', { name: 'Synapse' }).closest('div')
+    expect(navbar).not.toBeNull()
+    expect(within(navbar!).getByRole('button', { name: /Prueba Uno/ })).toBeInTheDocument()
+    expect(within(navbar!).getByRole('button', { name: /tema/i })).toBeInTheDocument()
+  })
+
+  it('el título de la pantalla NO está en el navbar', async () => {
+    // Es la otra mitad: el navbar es de la plataforma y el título es de la
+    // pestaña. Si conviven, se leen como una sola cosa.
+    laConsola([])
+    montar()
+    await screen.findByRole('heading', { name: 'Venta diaria' })
+
+    const navbar = screen.getByRole('img', { name: 'Synapse' }).closest('div')
+    expect(within(navbar!).queryByRole('heading', { level: 1 })).not.toBeInTheDocument()
+  })
+})

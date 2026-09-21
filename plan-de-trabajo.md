@@ -5511,6 +5511,45 @@ sea seis columnas, así que la grilla colapsaba —F1.30 funcionando— y el alt
 es un `height` sino `gridRow: span N` sobre `gridAutoRows`. Y la celda se busca
 por su panel y no por índice, porque `readingOrder` ordena el DOM.
 
+### ➕ F5.16 ✅ El chrome de la consola son tres bandas, no un bloque
+**Descripción.** Separar el navbar del título y el título del contenido, como
+el `.pen` los dibuja.
+
+**Criterio de aceptación.**
+- El tema y la identificación del usuario viven en el **navbar**, no al lado
+  del título de la pantalla.
+- El navbar es una banda propia, con su fondo y su borde.
+- Entre las pestañas y los paneles hay una separación declarada, no aire.
+
+**Pedido por el humano el 2026-09-21** —«separá el header más del contenido, el
+título está muy cerca, la identificación del usuario y el tema van en el
+header»—, y **§PEN:C1 lo confirma campo por campo**: el frame de C1 tiene seis
+hijos y los cuatro de arriba son `Navbar` (60), `Header` (96), `Chapter Tabs`
+(52) y `Regla` (1). Dentro del `Navbar` están `Tema` y `Usuario`.
+
+**Estaba todo en un bloque.** El logotipo en una línea, y el nombre del cliente,
+el título, el usuario y el tema en la siguiente — así que la identidad de la
+plataforma y el título de la pantalla se leían como una sola cosa.
+
+**El navbar lleva fondo `dock` y borde `w2`**, que es lo que el dibujo usa para
+separarlo: no es aire, es una banda. `dock` no se usaba en ninguna parte hasta
+hoy. Y `h-15` son exactamente los 60 del dibujo, porque `--spacing` es 4px.
+
+**El tema y el usuario son de la PLATAFORMA**: no cambian con la pestaña ni con
+el período. Al lado del título parecían parte de la pantalla.
+
+**El padding dejó de envolver la cabecera.** Con `p-6` en el `main`, la banda
+quedaba flotando con aire a los costados, que es lo contrario de una banda. Cada
+zona pone el suyo.
+
+**Lo que NO se movió, y el dibujo sí lo pone en el navbar:** el selector de
+período, las notificaciones y el `CTA Synapse`. No estaba pedido y son tres
+piezas con su propia decisión. Queda como divergencia abierta de
+`docs/AUDITORIA-2026-09-21-pen-vs-chat-y-ficha.md`.
+
+Verificado con una mutación: devolver el tema y el usuario al bloque del título
+mata la prueba.
+
 ### ➕ F5.15 ✅ El logotipo de la plataforma, que no estaba en ninguna pantalla
 **Descripción.** Portar el wordmark de Synapse desde el repositorio archivado y
 montarlo en los tres chromes.
