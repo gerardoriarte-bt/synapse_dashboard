@@ -13,6 +13,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { ChatOverlay } from '@/surfaces/console/ChatOverlay'
 import { ChatThread } from '@/surfaces/console/ChatThread'
 import { ThreadRail } from '@/surfaces/console/ThreadRail'
+import { Wordmark } from '@/surfaces/console/Wordmark'
 import { createFormat } from '@/render/format'
 import type { ChatTurn } from '@/api/useChat'
 
@@ -263,5 +264,22 @@ describe('F3.7 · el riel de hilos', () => {
   it('el grupo es un encabezado · un lector de pantalla lo puede saltar', () => {
     render(<ThreadRail format={format} groups={grupos} onSelect={() => {}} />)
     expect(screen.getByRole('heading', { name: 'Hoy' })).toBeInTheDocument()
+  })
+})
+
+describe('§PEN · la identidad de la plataforma', () => {
+  it('el wordmark tiene nombre accesible · el glifo vive en una máscara', () => {
+    // Sin `role="img"` y su nombre es una caja vacía en el árbol de
+    // accesibilidad: no hay texto que leer, porque el glifo es una máscara.
+    render(<Wordmark />)
+    expect(screen.getByRole('img', { name: 'Synapse' })).toBeInTheDocument()
+  })
+
+  it('el color sale de un token, para invertirse con el tema', () => {
+    // El arte es blanco sobre transparente: como `<img>` desaparecería sobre
+    // fondo claro. La máscara pintada con `bg-ink` sirve en los dos temas sin
+    // un segundo archivo.
+    render(<Wordmark />)
+    expect(screen.getByRole('img', { name: 'Synapse' }).className).toContain('bg-ink')
   })
 })

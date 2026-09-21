@@ -30,6 +30,7 @@
  *  SE PUBLICA». Su única banda es volver a editar, y la pinta ella.
  */
 import { Label } from '../../render/primitives/Label'
+import { Wordmark } from '../console/Wordmark'
 import { PANTALLAS } from './pantallas'
 import type { FormaDeChrome, PantallaId } from './pantallas'
 
@@ -106,10 +107,11 @@ export function BuilderChrome({
         {sinChrome(forma) ? null : (
           <header className="flex flex-col gap-4 px-6 pt-6 pb-4 border-b border-w4">
             <div className="flex items-baseline justify-between gap-6">
-              <div className="flex items-baseline gap-3">
-                <h1 className="font-display text-titulo tracking-titulo leading-titulo text-ink m-0">
-                  Synapse
-                </h1>
+              {/* **Era la palabra en `font-display`, y ésa es la invención que
+                  el capítulo `Identidad` corrige**: el logotipo tiene su propia
+                  tipografía, no la del producto. Ahora es el arte. */}
+              <div className="flex items-center gap-3">
+                <Wordmark />
                 <Label>Builder</Label>
               </div>
 

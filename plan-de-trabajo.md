@@ -5467,6 +5467,47 @@ sea seis columnas, así que la grilla colapsaba —F1.30 funcionando— y el alt
 es un `height` sino `gridRow: span N` sobre `gridAutoRows`. Y la celda se busca
 por su panel y no por índice, porque `readingOrder` ordena el DOM.
 
+### ➕ F5.15 ✅ El logotipo de la plataforma, que no estaba en ninguna pantalla
+**Descripción.** Portar el wordmark de Synapse desde el repositorio archivado y
+montarlo en los tres chromes.
+
+**Criterio de aceptación.**
+- El logotipo es el ARTE, no la palabra en `font-display`. **No tiene símbolo:**
+  es solo la palabra · decidido por el humano el 2026-08-20.
+- Se invierte con el tema **sin un segundo archivo**.
+- Tiene nombre accesible: el glifo vive en una máscara y no en el texto.
+
+**Reportado por el humano el 2026-09-21** —«el header de la plataforma no se
+ve»— y la causa resultó ser más grande que la consola: **el `.pen` empieza las
+tres pantallas de chrome con «Synapse»** —C1, A1 y B2— y no estaba en ninguna.
+El arte y el componente existían en `synapse_v2` y **nunca se portaron**: es un
+hueco del traslado, no una decisión.
+
+**En el builder estaba la invención que v2 ya había corregido**: la palabra
+escrita en `font-display`. El capítulo `Identidad` del `.pen` dice que el
+logotipo tiene su propia tipografía, no la del producto.
+
+**Es una máscara y no una imagen, y eso resuelve dos cosas de una.** El arte es
+blanco puro sobre transparente, así que como `<img>` desaparece sobre fondo
+claro. Usando su alfa como máscara y pintando el fondo con `ink`, el color sale
+del token: **se invierte con el tema sin un segundo archivo**, y el SVG deja de
+importar porque la máscara viene a 4x sobre 20px de alto. Verificado en los dos
+temas.
+
+**El ancho va en píxeles y el alto en token.** Una máscara con `contain` sobre
+una caja de ancho automático **colapsa a cero**: no hay contenido que la estire.
+Los 90 salen de la relación real del arte contra los 20 de alto que declara la
+anatomía del navbar, y el alto es `h-5`.
+
+**La URL va en un `style` y no en una utilidad de Tailwind**: escrita como valor
+arbitrario, Vite no la reescribe y el archivo no se encuentra en producción. El
+color, que es lo que la regla de tokens gobierna, sigue saliendo de la utilidad.
+
+**Queda como propuesta de spec**, igual que en v2: el capítulo `Identidad` manda
+la versión en degradado para superficie clara, y ese degradado **está prohibido
+sobre superficies con datos** porque su azul y su violeta chocan con las
+familias `demanda` e `inventario`. La monocroma sirve en los dos temas.
+
 ### ➕ F5.14 ✅ Los literales de C3 y A2, del `.pen`
 **Descripción.** Los cuatro ajustes chicos de la auditoría
 `docs/AUDITORIA-2026-09-21-pen-vs-chat-y-ficha.md` · §3, §4, §6 y §8.

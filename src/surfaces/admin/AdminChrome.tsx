@@ -27,6 +27,7 @@
  *  (PS-5). Por eso acá no hay colapso: hay scroll horizontal, que es visible.
  */
 import { Label } from '../../render/primitives/Label'
+import { Wordmark } from '../console/Wordmark'
 import { PANTALLAS } from './pantallas'
 import type { PantallaId } from './pantallas'
 
@@ -55,6 +56,13 @@ export function AdminChrome({ activa, onIr, onVolver, tenants, tenantActivo, onT
     <div className="min-h-screen bg-bg">
       <div className="min-w-[1280px]">
         <header className="flex flex-col gap-4 px-6 pt-6 pb-4 border-b border-w4">
+          {/* §PEN:A1 y §PEN:A2 encabezan con «Synapse · ADMINISTRACIÓN», y
+              recién debajo va la pantalla. Faltaban las dos cosas. */}
+          <div className="flex items-center gap-3">
+            <Wordmark />
+            <Label>Administración</Label>
+          </div>
+
           <div className="flex items-baseline justify-between gap-6">
             <h1 className="font-display text-titulo tracking-titulo leading-titulo text-ink m-0">
               {pantalla.nombre}

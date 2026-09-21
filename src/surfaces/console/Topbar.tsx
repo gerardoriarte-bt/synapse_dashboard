@@ -7,6 +7,7 @@
  *  sola opción sería una elección falsa.
  */
 import { Label } from '../../render/primitives/Label'
+import { Wordmark } from './Wordmark'
 import { PeriodPicker } from './PeriodPicker'
 import { Tabs } from './Tabs'
 import { UserMenu } from './UserMenu'
@@ -42,6 +43,10 @@ export function Topbar({
 
   return (
     <header className="flex flex-col gap-4 mb-6">
+      {/* **La identidad de la plataforma va primero** · el `.pen` empieza las
+          tres pantallas de chrome con «Synapse», y no estaba en ninguna. */}
+      <Wordmark />
+
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1 min-w-0">
           {platform && tenants.length > 0 ? (

@@ -575,6 +575,9 @@ F5.8,"Front · Fase 5 — Multi-dashboard, pruebas y pulido",Front,5,"Multi-dash
 F5.9,"Front · Fase 5 — Multi-dashboard, pruebas y pulido",Front,5,"Multi-dashboard, pruebas y pulido",E2E de una pestaña completa con fixtures HTTP,,"• Las pruebas se escriben desde el contrato y desde la cita de la spec, no mirando la implementación. Una prueba escrita desde el código fija lo que el código hace y no puede fallar nunca, ni cuando el código está mal. Es lo que pasó el 2026-08-20 con 184 pruebas en verde.
 • F5.6 es un chequeo de paridad, no una lista escrita a mano: recorre el enumerado del contrato.
 • F5.8 y F5.9 usan HTTP mockeado, nunca fixtures JS importados.",hecho,no,,equipo:front fase:5 estado:hecho
+F5.15,"Front · Fase 5 — Multi-dashboard, pruebas y pulido",Front,5,"Multi-dashboard, pruebas y pulido","El logotipo de la plataforma, que no estaba en ninguna pantalla",Portar el wordmark de Synapse desde el repositorio archivado y montarlo en los tres chromes.,"• El logotipo es el ARTE, no la palabra en font-display. No tiene símbolo: es solo la palabra · decidido por el humano el 2026-08-20.
+• Se invierte con el tema sin un segundo archivo.
+• Tiene nombre accesible: el glifo vive en una máscara y no en el texto.",hecho,si,,equipo:front fase:5 estado:hecho nueva
 F5.14,"Front · Fase 5 — Multi-dashboard, pruebas y pulido",Front,5,"Multi-dashboard, pruebas y pulido","Los literales de C3 y A2, del .pen","Los cuatro ajustes chicos de la auditoría docs/AUDITORIA-2026-09-21-pen-vs-chat-y-ficha.md · §3, §4, §6 y §8.","• Los literales de UI son los del .pen, que es su autoridad. Donde el dibujo nombra algo que acá no es lo mismo, se adapta y se dice por qué — no se copia una etiqueta que miente.
 • Cada archivo que implementa una pantalla dibujada lleva su §PEN:<id>.
 • La regla del CTA muerto sigue: un botón del dibujo sin manejador no se pinta.",hecho,si,,equipo:front fase:5 estado:hecho nueva
