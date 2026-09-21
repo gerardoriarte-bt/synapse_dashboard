@@ -76,7 +76,7 @@ el agente no modifica `design.md`.
 src/
 ├── app/         Router, providers, auth guard
 ├── api/         client · hooks (TanStack) · types · generated.ts
-├── tokens/      los 57 tokens del .pen, tema, fuentes
+├── tokens/      los tokens del .pen, tema, fuentes
 ├── catalog/     SOLO tipos y validadores. La tabla llega por API
 ├── render/      PURO · Panel, bodies, plots, states, primitives, grid
 └── surfaces/    console · admin · builder
@@ -121,7 +121,7 @@ tests/           TODAS las pruebas, espejando src/. Los mocks de MSW viven acá
 
 ## Tokens bajo Tailwind v4
 
-Los 57 tokens viven en `src/tokens/tokens.css` con el espacio de nombres que
+Los tokens viven en `src/tokens/tokens.css` con el espacio de nombres que
 Tailwind exige: `--color-panel` genera `bg-panel`, `--radius-xl` genera
 `rounded-xl`, `--spacing: 4px` hace que `p-6` sean los 24px de padding de panel.
 
@@ -306,7 +306,7 @@ habría dicho «conforme». Está registrada como pendiente de diseño —pregun
 de B0.9— y el chequeo **falla si el número se mueve**.
 
 **Desde el 2026-09-02 la puerta sale verde sin bloqueados**: `design-lint` corre
-las 15 reglas y `spec-anclas` ancla las 9. Si vuelve a aparecer un ⊘, es que una
+las 15 reglas y `spec-anclas` ancla las suyas. Si vuelve a aparecer un ⊘, es que una
 regla se quedó sin ámbito o una cita de `design.md` dejó de tener quien la
 verifique — no es ruido.
 

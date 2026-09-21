@@ -5,7 +5,9 @@
 
 ── POR QUÉ EXISTE ───────────────────────────────────────────────────────────
 
-La puerta tiene diecisiete chequeos y **ninguno mira la prosa**. Verifican el
+La puerta tiene dieciocho chequeos y **ninguno mira la prosa** — incluido éste,
+que mira las tres clases de abajo y no los números sueltos. Este mismo conteo
+decía «diecisiete» hasta el 2026-09-21, que es el chiste y también la lección. Verifican el
 código, los tokens, los cuatro contratos y la estructura del plan; un documento,
 en cambio, puede decir cualquier cosa y la puerta sale verde igual.
 

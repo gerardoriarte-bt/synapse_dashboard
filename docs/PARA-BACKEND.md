@@ -272,7 +272,7 @@ if status == Available && isDegraded(data, now) {
 *Estado de la tarea: pendiente.*
 
 
-**`POST /config/chat` con `ContextoDePanel`.** Es la transversal T4 y bloquea F3.2, F3.3, F3.6 y la mitad de F3.7. El chat que el servicio sí tiene es **otro producto** —decidido el 2026-09-08—: el nuestro es el chat contextual del panel, se abre desde un panel y lleva su métrica.
+**La ruta ya está escrita** — `82da946` la trae con `panel_context: {panel_id, period}`, y con eso se cerró la transversal T4. Lo que falta es **poder verificarla**: sin las migraciones de B3.11 el handler escribe contra columnas que no existen. Lo pendiente del chat son los dos campos del evento `data` que pide F3.6 — la BASE de la cifra y su frescura—, detallados en `docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md`. El chat que el servicio ya tenía antes es **otro producto** —decidido el 2026-09-08—: el nuestro se abre desde un panel y lleva su métrica.
 
 
 ### B3.9 · CRUD /admin/tenants/{id}/agents

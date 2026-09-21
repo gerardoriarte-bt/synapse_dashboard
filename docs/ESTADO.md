@@ -44,15 +44,16 @@
 
 ---
 
-## Se puede tomar hoy · 3 del front
+## Se puede tomar hoy · 4 del front
 
 - **F3.13** · La respuesta del agente es MARKDOWN y se pinta literal
-- **F3.7** · Historial de hilos · destrabada el 2026-09-17
-- **F4.4** · Configuración de agente Snowflake por tenant · destrabada con alcance recortado el 2026-09-17
+- **F3.7** · Historial de hilos
+- **F4.4** · Configuración de agente Snowflake por tenant
+- **F5.10** · Checklist de conformidad §17 por tipo de bloque integrado
 
 ---
 
-## Bloqueadas · 41
+## Bloqueadas · 40
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -74,7 +75,6 @@ Lo que el front espera del backend está detallado en
 - **F4.21** · Selector de gráfico en el builder
 - **F4.3** · Gestión de usuarios y roles por tenant
 - **F5.1** · Selector de layout cuando hay más de uno
-- **F5.10** · Checklist de conformidad §17 por tipo de bloque integrado
 - **F5.13** · Períodos libres en el selector
 - **F5.3** · Completar los plots que falten
 

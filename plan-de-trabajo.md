@@ -1084,7 +1084,7 @@ sale por ninguna ruta.
 ## Fase 3 — Chat contextual
 
 ### B3.1 ⬜ `POST /config/chat` con SSE
-**Espera del backend.** **`POST /config/chat` con `ContextoDePanel`.** Es la transversal T4 y bloquea F3.2, F3.3, F3.6 y la mitad de F3.7. El chat que el servicio sí tiene es **otro producto** —decidido el 2026-09-08—: el nuestro es el chat contextual del panel, se abre desde un panel y lleva su métrica.
+**Espera del backend.** **La ruta ya está escrita** — `82da946` la trae con `panel_context: {panel_id, period}`, y con eso se cerró la transversal T4. Lo que falta es **poder verificarla**: sin las migraciones de B3.11 el handler escribe contra columnas que no existen. Lo pendiente del chat son los dos campos del evento `data` que pide F3.6 — la BASE de la cifra y su frescura—, detallados en `docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md`. El chat que el servicio ya tenía antes es **otro producto** —decidido el 2026-09-08—: el nuestro se abre desde un panel y lleva su métrica.
 **Descripción.** Body `{ pregunta, contextoPanel, periodo, hiloId? }`, respuesta
 por Server-Sent Events.
 **Criterio de aceptación.**
@@ -1785,7 +1785,7 @@ cambiar el yaml sin regenerar.
 
 ### F0.7 ✅ Reutilizar los tokens del v2
 **Criterio de aceptación.** ✅ Cumplido.
-- Los 57 tokens en `@theme static`, con el espacio de nombres de Tailwind:
+- Los tokens en `@theme static`, con el espacio de nombres de Tailwind:
   `--color-panel` → `bg-panel`, `--radius-xl` → `rounded-xl`, `--spacing: 4px`
   para que `p-6` sean los 24px de padding de panel.
 - **`static` no es opcional.** Sin él Tailwind poda toda variable que ninguna
@@ -3270,7 +3270,7 @@ Lo de «una sola hoja» es estructural: la consola sostiene un único estado. El
 contador del componente es la red por si alguien monta una segunda desde otro
 lado, y **avisa en vez de fallar en silencio**.
 
-### F3.2 ✅ Construir el contexto de panel al abrir
+### F3.2 ✅ Construir `ContextoDePanel` al abrir
 **Criterio de aceptación.** Manda `panelId` y `periodo`. **Nunca SQL.**
 
 **El criterio se REESCRIBIÓ el 2026-09-17**, por decisión humana sobre el
@@ -3375,7 +3375,12 @@ mutaciones lo confirman.
 - **Ningún spinner** · la casa usa esqueleto o nada.
 - §7.1: toda respuesta muestra su SQL en un desplegable, cerrado por defecto, y
   con el límite declarado al lado.
-- Un corte dice si lo recibido sigue valiendo, leyendo `parcial` del backend.
+- Un corte dice si lo recibido sigue valiendo. **El criterio decía «leyendo
+  `parcial` del backend» y desde el 2026-09-21 eso es falso**: el frame `error`
+  del cable manda `{code, message}` y no declara nada. Lo deriva `api/chat.ts`
+  de si ya se entregó contenido, apoyado en que el servicio persiste la
+  respuesta acumulada antes de cerrar. Pedido como campo en
+  `docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md`.
 
 **Cerrada el 2026-09-03.** El indicador de streaming resultó ser menos de lo que
 parecía: **la prosa que aparece ES el indicador**, así que lo único que hace
@@ -3428,7 +3433,7 @@ Pedido concreto al backend en
 Mientras tanto `src/api/chat.ts` **descarta** las tramas `data`, con una prueba
 que lo atestigua: el chat contesta en prosa y con el SQL a la vista.
 
-### F3.7 ⚠️ Historial de hilos · **destrabada el 2026-09-17**
+### F3.7 ⚠️ Historial de hilos
 **Descripción.** Listado de conversaciones previas del usuario, desde
 `GET /config/chat/hilos`.
 **Criterio de aceptación.**
@@ -3483,8 +3488,13 @@ stream, separada del componente que la pinta.
 - El componente de mensajes recibe una lista y un estado; no conoce SSE.
 - Desmontar la hoja aborta el stream y no deja el `EventSource` abierto.
 
-**Cerrada el 2026-09-03**, sin el `contextoPanel` del nombre: ese parámetro es
-F3.2 y espera a T4. El hook toma `tabId`, que es lo que el contrato acepta hoy.
+**Cerrada el 2026-09-03**, sin el `contextoPanel` del nombre: ese parámetro era
+F3.2 y esperaba a T4, así que el hook tomaba `tabId`.
+
+**Desde el 2026-09-21 el nombre de la tarea es literal.** T4 se cerró y F3.2 se
+construyó: `useChat` toma `PanelContext` —`panelId` + `periodo`— y `tabId`
+desapareció del cuerpo, porque el cable no lo acepta. Lo que la tarea cerró
+—dónde vive el envío y la acumulación— no cambió.
 
 `apply` —toda la acumulación— quedó **pura y exportada**, y por eso sus nueve
 pruebas no montan nada ni abren una conexión. Si probarla necesitara React, la
@@ -3502,8 +3512,12 @@ Tres decisiones que la acumulación tuvo que tomar:
 
 Y una del hook: **abortar no es un error del agente.** Si la señal está abortada
 se sale en silencio — pintarle «algo salió mal» a quien acaba de cerrar la hoja
-sería mentir. Qué se conserva de lo recibido lo decide `parcial`, que viene del
-backend: con SSE reintentar no es volver a llamar, así que el front no adivina.
+sería mentir.
+
+Qué se conserva de lo recibido lo decide `parcial`, y **acá decía que venía del
+backend, que era cierto del contrato y dejó de serlo del cable**: el frame
+`error` de `82da946` manda `{code, message}`. Hoy lo deriva `api/chat.ts` y está
+pedido como campo. Ver F3.5.
 
 ### ➕ F3.9 🕓 Drill-down C2
 **Estado: diferida** (D3). No se descarta ni se planifica todavía; entra cuando el backend llegue a ese tramo. El contrato ya la cubre, así que lo que falta es el servicio, no el diseño.
@@ -3602,7 +3616,7 @@ estimación que no bajaría.
 ### F4.1 ✅ `surfaces/admin/` — layout base y navegación
 ### F4.2 ✅ Lista de tenants
 ### F4.3 ⚠️ Gestión de usuarios y roles por tenant · 🔒 `/admin/users` y `/admin/roles` dan 404
-### F4.4 ⬜ Configuración de agente Snowflake por tenant · **destrabada con alcance recortado el 2026-09-17**
+### F4.4 ⬜ Configuración de agente Snowflake por tenant
 ### F4.5 ✅ Vista del catálogo de métricas del tenant
 **Criterio de aceptación (los cinco).**
 - **No se muestra vocabulario de infraestructura** (§7.3 de `design.md`): ni
@@ -4703,7 +4717,7 @@ compila, anda, y deja el bundle a merced del tree-shaking.
 **Y ahora hay una máquina que lo sostiene.** `mocks-fuera` recorre `src/**` y
 falla si algún import —relativo o por alias, **incluido `import type`**— cae en
 `tests/` o en `dev/`. Verificado rompiéndolo: con la ruta puesta sale 1 y la
-nombra. La puerta pasa a **diecisiete chequeos**.
+nombra. La puerta suma un chequeo más · el conteo sale de `npm run verify`.
 
 **Una garantía que depende de que nadie escriba una línea es una convención, no
 una garantía** — y este repositorio ya había pagado por esa diferencia con
@@ -4865,6 +4879,12 @@ servicio corriendo el 2026-09-15 con un token válido; las que dicen «el yaml»
 leyeron del contrato.
 
 #### Y eso deja el front sin trabajo tomable · 2026-09-15
+
+> **Corte con fecha · vencido.** Se conserva porque explica cómo se midió, no
+> porque siga siendo cierto: el 2026-09-17 el backend cerró T4 y el 2026-09-21 se
+> ejecutaron las decisiones. **El número de hoy sale de `docs/ESTADO.md`**, que
+> se genera. Las tres palancas de abajo se movieron: T4 está cerrada, el fork
+> sigue sin desplegar y `/config/plots` sigue sin existir.
 
 **Cero no es un error del conteo: es el estado.** Lo que queda del front son
 veintiocho tareas y **ninguna depende de nosotros**. Tres cosas las desbloquean,
@@ -5319,7 +5339,7 @@ contradice con la descripción de `grano`, que dice que el front deduce
 hoy son snapshots materializados —`estado: 'MTD CERRADO'`, `'CERRADO'`— y un
 rango arbitrario hay que calcularlo a demanda.
 
-### F5.10 ⚠️ Checklist de conformidad §17 por tipo de bloque integrado · 🔒 la casilla 13 espera a T4
+### F5.10 ⚠️ Checklist de conformidad §17 por tipo de bloque integrado
 ### F5.11 ✅ Verificar tema oscuro y claro en todo componente
 ### F5.12 ✅ Verificar la carga diferida
 **Criterio de aceptación.**

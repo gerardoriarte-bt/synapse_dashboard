@@ -7,8 +7,10 @@
  *
  *  **Este archivo es el único lugar donde esa diferencia existe.** Por debajo de
  *  `api/` todo habla el vocabulario del contrato, así que `render/`, `catalog/` y
- *  las superficies no se enteran — y las 15 reglas de `design-lint`, las 9
- *  anclas y las 354 pruebas siguen valiendo sin tocar una línea.
+ *  las superficies no se enteran — y `design-lint`, `spec-anclas` y la suite
+ *  entera siguen valiendo sin tocar una línea. **Sin contarlas acá**: un número
+ *  escrito en prosa se vence sin que nadie lo note, y éste ya decía «9 anclas» y
+ *  «354 pruebas» cuando eran 10 y 740. Los conteos salen de las herramientas.
  *
  *  ── LA REGLA ────────────────────────────────────────────────────────────────
  *
