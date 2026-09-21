@@ -45,6 +45,8 @@
  *
  *  Nada de infraestructura · §7.3. `fuente` es procedencia legible por una
  *  persona —«ERP + Analítica de sitio»— y no nombra base, rol ni warehouse.
+ *
+ *  **§PEN:A4** · A4 · «Catálogo de métricas».
  */
 import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'

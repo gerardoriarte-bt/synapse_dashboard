@@ -7,6 +7,8 @@
  *  **Sin un solo hook de datos** · F1.6. Todo llega por props, así que este
  *  componente se puede montar con datos fijos en el builder y en la vista previa
  *  por rol sin tocar la red. Quien hace fetch es `ConsoleContainer`.
+ *
+ *  **§PEN:C1** · C1 · las cuatro pestañas del `.pen` son la misma pantalla: la composición la manda el layout.
  */
 import { useLayoutEffect } from 'react'
 import { Label } from '../../render/primitives/Label'

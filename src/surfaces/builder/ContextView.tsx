@@ -31,6 +31,8 @@
  *  está ni en `TenantOption` ni en la ficha—, que exista una **plantilla** por
  *  vertical, y que una pestaña sepa si es **propia o heredada**. Sin las tres, la
  *  distinción no se puede pintar; con dos de tres, se pintaría mal.
+ *
+ *  **§PEN:B1** · B1 · «Selector de contexto».
  */
 import { Label } from '../../render/primitives/Label'
 import type { LayoutVersion, Tenant } from '../../api/admin'

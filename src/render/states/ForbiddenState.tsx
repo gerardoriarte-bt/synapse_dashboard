@@ -7,6 +7,8 @@
  *  que no lleva a ningún lado — es la misma regla que `RecoBody` aplica con
  *  `puedeResponder`: «un botón que se aprieta y devuelve 403 es peor que un
  *  botón ausente, porque promete una acción que no existe para vos».
+ *
+ *  **§PEN:C5** · C5 · «Sin permiso», con y sin alternativas que ofrecer.
  */
 import { Icon } from './Icon'
 import { StateBody } from './StateBody'

@@ -28,6 +28,8 @@
  *  §7.3 le pide a A2 cuatro cosas más —datos del tenant, estado del acceso a
  *  datos, última verificación y subprocesadores— y ninguna llega por el cable.
  *  Se declaran.
+ *
+ *  **§PEN:A2** · A2 · «Ficha de cliente» · DIVERGE · ver docs/AUDITORIA-2026-09-21-pen-vs-chat-y-ficha.md §9.
  */
 import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'

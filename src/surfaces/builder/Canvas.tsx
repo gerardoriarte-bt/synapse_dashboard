@@ -45,6 +45,8 @@
  *  termina redondeando a la celda no agrega ninguna posición alcanzable: agrega
  *  la sensación del gesto. Queda anotado como lo que es — una mejora de
  *  interacción, no una capacidad que falte.
+ *
+ *  **§PEN:B2** · B2 · «Canvas de composición».
  */
 import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'

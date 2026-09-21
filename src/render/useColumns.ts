@@ -8,6 +8,8 @@
  *
  *  Es estado de LAYOUT, no de negocio: la misma categoría que `useSize`, y por
  *  eso puede vivir en `render/`.
+ *
+ *  **§PEN:C1** · C1 · los dos escalones dibujados —768 a seis columnas, 360 a una— y el mínimo es 360, no 768.
  */
 import { useEffect, useState } from 'react'
 import { COLUMNS, columnsFor } from './grid'

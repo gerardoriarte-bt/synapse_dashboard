@@ -24,6 +24,7 @@
     "plan:ancestro": "python3 tools/plan-ancestro.py",
     "para-backend": "python3 tools/para-backend.py",
     "estado": "python3 tools/estado.py",
+    "pen-pantallas": "python3 tools/pen-pantallas.py",
     "docs-registro": "python3 tools/docs-registro.py",
     "afirmaciones": "python3 tools/afirmaciones.py",
     "mocks-fuera": "python3 tools/mocks-fuera.py",

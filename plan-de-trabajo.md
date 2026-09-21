@@ -79,6 +79,62 @@ este bloque existe para curar. Se corre al cerrar un tramo o antes de informar
 avances. **Reporta; no corrige**: cambiar el estado de una tarea es una decisión
 de quien la pidió.
 
+### Registro de pantallas del `.pen`
+
+**Esta tabla es la que impide volver a construir sin abrir el dibujo, y una
+máquina la hace cumplir.** `npm run pen-pantallas` lista las pantallas `A*`,
+`B*` y `C*` de `design/Synapse_v2.pen` y **falla con cualquiera que no esté
+acá**. Donde la fila nombra archivos, exige que lleven el ancla `§PEN:<id>`.
+
+**Existe porque la regla escrita falló dos veces con la corrección puesta.** La
+primera fue hasta el 2026-09-15 —diez pantallas de admin y builder construidas
+con `CLAUDE.md` diciendo que el `.pen` eran «los tokens»—. La segunda, el
+2026-09-21: `C3` y `A2` estaban dibujadas, se construyó encima de las tres y no
+se abrió ninguna. **Una advertencia que no se puede comprobar no es una regla.**
+
+**Lo que el chequeo NO hace es comparar el dibujo con la pantalla.** Eso no se
+automatiza — que la hoja del chat mida 480 donde el `.pen` dibuja 940 lo
+encontró un humano. Lo que garantiza es que la comparación **se haya hecho** y
+que su resultado esté escrito.
+
+| Pantalla del `.pen` | Quién la implementa, o por qué no |
+|---|---|
+| `Consola · C1 · eCommerce Overview` | `src/surfaces/console/Console.tsx` |
+| `Consola · C1 · Brand Momentum` | La misma `Console`: la pestaña la manda el layout, no el código |
+| `Consola · C1 · Product Sales` | ídem |
+| `Consola · C1 · Inventory & Shopping` | ídem |
+| `Consola · C1 · Media Mix` | ídem · el módulo MMM propio es F3.11, diferida por D3 |
+| `C1 · 768 · seis columnas` | `src/render/useColumns.ts` · el colapso se resuelve en JS · F1.30 |
+| `C1 · 360 · una columna` | ídem · el mínimo son 360 y no 768 · PS-12 |
+| `Consola · C2 · Drill-down de panel` | **No construida** · F3.9, diferida por D3 |
+| `Consola · C3 · Chat expandido` | `src/surfaces/console/PanelChat.tsx` · **diverge** · ver `docs/AUDITORIA-2026-09-21-pen-vs-chat-y-ficha.md` |
+| `Consola · C3 · Chat · historial colapsado` | **No construida** · el riel no colapsa · misma auditoría, §1 |
+| `Consola · C4 · Detalle de hallazgo` | **No construida** · F3.10, diferida por D3 |
+| `Consola · C4 · Hallazgo fuera de banda` | **No construida** · ídem |
+| `Consola · C5 · Sin permiso` | `src/render/states/ForbiddenState.tsx` |
+| `C5 · Sin permiso · sin alternativas que ofrecer` | La misma: sin manejador no se pinta el CTA · la regla del CTA muerto |
+| `A1 · Clientes y plataforma` | `src/surfaces/admin/TenantList.tsx` |
+| `A1 · Clientes · sin ningún cliente` | `src/surfaces/admin/EmptyRow.tsx` |
+| `A1 · Clientes · cargando` | `src/surfaces/admin/SkeletonRows.tsx` |
+| `A2 · Ficha de cliente` | `src/surfaces/admin/RoleEditor.tsx` y `src/surfaces/admin/AgentConfig.tsx` · **diverge** · misma auditoría, §8 y §9 |
+| `A2 · Ficha · tenant en alta` | **No construida** · no hay alta de tenant en el front |
+| `A3 · Usuarios` | **No construida** · ninguna ruta lista usuarios · solo existe `POST /admin/users` |
+| `A3 · Usuarios · filtro sin resultados` | **No construida** · ídem |
+| `A4 · Catálogo de métricas` | `src/surfaces/admin/CatalogView.tsx` |
+| `A4 · Métricas · filtro sin resultados` | `src/surfaces/admin/EmptyRow.tsx` |
+| `A5 · Salud de feeds` | **No construida** · ninguna ruta declara la frescura por feed · B2.13 |
+| `A5 · Feeds · tenant sin fuentes` | **No construida** · ídem |
+| `A6 · Cola de accionables` | **No construida** · F3.10, diferida por D3 |
+| `B1 · Selector de contexto` | `src/surfaces/builder/ContextView.tsx` |
+| `B2 · Canvas de composición` | `src/surfaces/builder/Canvas.tsx` |
+| `B3 · Selector de gráfico` | **No construida** · F4.21 · espera `/config/plots` |
+| `B3 · Selector · gráfico deshabilitado por tope` | **No construida** · ídem · el tope sale de B1.21 |
+| `B4 · Binder de métrica` | `src/surfaces/builder/PanelConfigurator.tsx` |
+| `B5 · Vista previa · rol Planner sin componer` | `src/surfaces/builder/RolePreview.tsx` |
+| `B6 · Historial de versiones` | **No construida** · ninguna ruta lista versiones con su autor y fecha |
+
+---
+
 ### Registro de documentos · lo que `docs/` puede contener
 
 **Esta tabla es la lista blanca, y una máquina la hace cumplir.**

@@ -37,6 +37,7 @@ CHEQUEOS = [
     ("admin-drift", [sys.executable, "tools/contract-drift.py", "--admin-wire"], True),
     ("plan-ancestro", [sys.executable, "tools/plan-ancestro.py"], True),
     ("para-backend", [sys.executable, "tools/para-backend.py"], True),
+    ("pen-pantallas", [sys.executable, "tools/pen-pantallas.py"], True),
     ("docs-registro", [sys.executable, "tools/docs-registro.py"], True),
     ("afirmaciones", [sys.executable, "tools/afirmaciones.py"], True),
     ("mocks-fuera", [sys.executable, "tools/mocks-fuera.py"], True),

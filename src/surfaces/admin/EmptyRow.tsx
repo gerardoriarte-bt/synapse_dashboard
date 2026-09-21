@@ -25,6 +25,11 @@
  *  «0 MÉTRICAS CON ESTE FILTRO · 28 EN TOTAL». El total es la mitad que evita
  *  creer que se perdieron: sin él, cero con filtro y cero sin nada se leen igual.
  *  Lo pinta cada pantalla en su conteo; acá va la salida.
+ *
+ *  **§PEN:A1** y **§PEN:A4** · los dos vacíos dibujados, y son el mismo
+ *  componente a propósito: «A1 · Clientes · sin ningún cliente» y
+ *  «A4 · Métricas · filtro sin resultados». El `.pen` los dibuja con la misma
+ *  anatomía y distinto texto, que es exactamente lo que este componente hace.
  */
 import { Label } from '../../render/primitives/Label'
 

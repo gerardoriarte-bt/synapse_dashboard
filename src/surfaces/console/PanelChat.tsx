@@ -18,6 +18,8 @@
  *  tres es el lugar donde se escribe**, y se descubrió al construir F3.3: sin
  *  esto, «Preguntar» abre una hoja que dice «preguntá» y no deja preguntar, que
  *  es un CTA muerto con un paso más.
+ *
+ *  **§PEN:C3** · C3 · «Chat expandido» · DIVERGE de fondo · misma auditoría, §1 a §7.
  */
 import { useState } from 'react'
 import { useChat } from '../../api/useChat'

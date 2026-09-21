@@ -32,6 +32,8 @@
  *  La grilla sale de `render/grid.ts` —`gridStyle`, `panelStyle`,
  *  `readingOrder`—, así que la colocación es la misma que la consola aplica y no
  *  una copia.
+ *
+ *  **§PEN:B5** · B5 · «Vista previa · rol Planner sin componer».
  */
 import { Label } from '../../render/primitives/Label'
 import { gridStyle, panelStyle, readingOrder } from '../../render/grid'

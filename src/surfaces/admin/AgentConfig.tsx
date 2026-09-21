@@ -26,6 +26,8 @@
  *  Leer cualquiera de los dos como «acceso vigente» es exactamente lo que §7.3
  *  prohíbe: declarar una consecuencia que nadie verificó. Está pedido en
  *  `docs/PARA-BACKEND.md`.
+ *
+ *  **§PEN:A2** · A2 · el bloque «ACCESO A DATOS» · DIVERGE en forma · misma auditoría, §8.
  */
 import { Label } from '../../render/primitives/Label'
 import type { Agente } from '../../api/admin'

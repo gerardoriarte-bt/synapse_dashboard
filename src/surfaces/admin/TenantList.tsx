@@ -23,6 +23,8 @@
  *  Nada de infraestructura · §7.3. El tenant tiene en la base su cuenta de
  *  Snowflake, su rol técnico y su llave privada, y **ninguna de las tres aparece
  *  acá ni va a aparecer**: esa capa la opera el equipo interno.
+ *
+ *  **§PEN:A1** · A1 · «Clientes y plataforma».
  */
 import { Label } from '../../render/primitives/Label'
 import { EmptyRow } from './EmptyRow'

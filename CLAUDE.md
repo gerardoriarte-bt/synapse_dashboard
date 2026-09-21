@@ -53,6 +53,9 @@ la originó. Los `frame` llevan el texto literal de la UI, que es más específi
 que `design.md` — ahí está «SE SOLAPA CON "DOCE MESES"» donde la spec solo decía
 «el panel en conflicto se marca».
 
+**Y `pen-pantallas` lo hace cumplir desde el 2026-09-21**: no se construye una
+pantalla dibujada sin declarar que se miró el dibujo.
+
 **Donde el `.pen` y `design.md` difieran, gana el `.pen` para lo visual y el
 literal de la UI**; `design.md` sigue mandando en las reglas duras. Y el agente
 no modifica ninguno de los dos.
@@ -207,6 +210,7 @@ equivocado.
 | `npm run lint` | oxlint |
 | `npm test` | vitest · las pruebas viven en `tests/`, agrupadas |
 | `npm run verify` | **la puerta** · `tools/gate.py` · typecheck, lint, los cuatro chequeos de diseño, test y build |
+| `npm run pen-pantallas` | cada pantalla dibujada en el `.pen` tiene quien la declare |
 | `npm run design-lint` | las 15 reglas duras sobre `src/`, en utilidades de Tailwind |
 | `npm run spec-anclas` | cada regla de `design.md` atada a su código y su aserción |
 | `npm run contract-drift` | `src/api/generated.ts` == `contracts/synapse-api.yaml` |
@@ -358,6 +362,33 @@ algo que ya estaba muerto. El 2026-09-15 las ocho mutaciones de F4.7 salieron en
 verde sin demostrar nada: el arnés corría toda la carpeta y ahí adentro había una
 prueba rota por otra razón. El arnés corre la base primero, sale 1 si el texto a
 mutar no está, y sale 2 si la base no está verde.
+
+**ANTES DE CONSTRUIR UNA PANTALLA SE ABRE EL `.pen`. ES CONDICIONANTE.**
+
+No es una recomendación y no se decide por caso: **si la pantalla está dibujada,
+se mira el dibujo antes de escribir la primera línea.** Y si no se sabe si está
+dibujada, se comprueba — son tres líneas de Python y están más arriba.
+
+**La regla estaba escrita y falló dos veces.** La primera hasta el 2026-09-15:
+`CLAUDE.md` decía que el `.pen` eran «los tokens» y se construyeron diez
+pantallas de admin y builder sin abrirlo. Se corrigió la línea. **La segunda fue
+el 2026-09-21, con la corrección puesta**: `C3 · Chat expandido`,
+`C3 · Chat · historial colapsado` y `A2 · Ficha de cliente` estaban dibujadas, se
+construyeron F3.3, F3.7, F3.13 y F4.4 encima, y no se abrió ninguna. La hoja del
+chat mide 480 donde el `.pen` dibuja 940, con riel lateral y estado colapsado.
+
+**Una advertencia que no se puede comprobar no es una regla**, así que desde el
+2026-09-21 hay un chequeo: `npm run pen-pantallas`, en la puerta. Lista las 33
+pantallas del `.pen` y **falla con cualquiera que no esté declarada** en el
+registro del plan, con el archivo que la implementa o la razón por la que
+todavía no. El archivo lleva el ancla `§PEN:<id>`, que se escribe mirando el
+dibujo — ese es el punto.
+
+**Lo que el chequeo NO hace es comparar el dibujo con la pantalla.** Eso no se
+automatiza: que la hoja midiera 480 lo encontró un humano. Lo que garantiza es
+que la comparación se haya hecho y que su resultado esté escrito. El inventario
+de lo que quedó distinto está en
+`docs/AUDITORIA-2026-09-21-pen-vs-chat-y-ficha.md`.
 
 **LO QUE EXISTE PARA MIRARSE, SE ABRE.** Es la otra mitad de la regla de abajo,
 y no se automatiza. El 2026-09-16 y 17 aparecieron **ocho defectos y los ocho

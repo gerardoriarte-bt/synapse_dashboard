@@ -46,6 +46,8 @@
  *
  *  `colStart` no se edita. §7.2 lo pone en B2 —el canvas, F4.9— y un número
  *  elegido en un formulario es una columna que nadie eligió mirando.
+ *
+ *  **§PEN:B4** · B4 · «Binder de métrica».
  */
 import { Label } from '../../render/primitives/Label'
 import { invalidReason } from '../../catalog/blocks'

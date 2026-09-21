@@ -28,6 +28,8 @@
  *
  *  **Sin animación**, igual que el de la consola. Un pulso sincronizado en
  *  cuatro tablas es ruido, y no dice nada que la forma no diga ya.
+ *
+ *  **§PEN:A1** · A1 · el estado de carga dibujado.
  */
 
 /** Cuatro, como el `.pen`: «4 filas de esqueleto». Suficiente para que la tabla
