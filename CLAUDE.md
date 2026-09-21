@@ -457,76 +457,62 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-09-17 · el backend se movió y hay plan escrito
+### ⇩ ACÁ SE PARÓ · 2026-09-21 · la Fase 3 casi cerrada, esperando migraciones
 
-**El plan de este tramo es `docs/PLAN-INTEGRACION-2026-09-17.md`.** Lo que sigue
-es el resumen para no tener que abrirlo antes de saber si hace falta.
+**Lo que costó descubrir está en `docs/BITACORA-2026-09-21.md`.** Esto es dónde
+retomar.
 
-`feature/dynamic-dashboard-backend` pasó de `733c13c` a **`82da946`** con **diez
-rutas nuevas** —el chat contextual desde un panel y la materialización— y un
-cambio de modelo: **los paneles ya no consultan Snowflake al renderizar**, leen
-`dd_panel_data` que un scheduler refresca una vez al día, con
-`DD_MATERIALIZE_ENABLED` en `false` por default. La línea `commit` del cable
-sigue declarando `733c13c`, así que `backend-drift` sale ✗ a propósito.
+**LO ÚNICO QUE FRENA HOY ES B3.11**, y no es código: que **corran las cinco
+migraciones manuales de `82da946`** sobre la base compartida. Está medido, no
+supuesto — el 2026-09-21, con el servicio corriendo y una consulta de sólo
+lectura sobre `information_schema`: **faltan las nueve columnas y el índice**.
 
-**Tres decisiones humanas del 2026-09-17, EJECUTADAS el 2026-09-21:**
+Sin eso `POST /config/chat` escribe contra columnas que no existen, y eso se ve
+como un **500, no como un 404**. Todo el chat construido este mes está probado
+contra mocks que hablan el cable y **no verificado contra el servicio**.
 
-1. **El contexto de panel es la forma del backend** — `panel_id` + `period`, y
-   el servicio arma el resto. Esto **reescribe el criterio de F3.2**, que pedía
-   doce campos. Con eso **T4 se cierra**, y detrás se destraban F3.3 y F3.7.
-2. **F4.4 se construye** con el CRUD que llegó, mostrando activo/inactivo y
-   **declarando pendiente el estado del acceso** —vigente, cuándo se verificó—,
-   que es lo que §7.3 pedía y no llegó. `is_active` es un soft delete manual, no
-   una verificación.
-3. **El fork se rebasa.**
+El pedido está escrito y listo para mandar:
+`docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md`. La segunda tarea son los dos
+campos que le faltan al evento `data` —la BASE de la cifra y su frescura—, que
+es lo único que separa a **F3.6** de construirse.
 
-**El defecto del SSE está ARREGLADO** · F3.12, tarea nueva, no reabre F3.4. El
-discriminador pasó a la línea `event:` de la trama y `src/api/chat.ts` la
-descartaba a propósito, así que `useChat` conmutaba sobre `undefined` y el chat
-no pintaba una palabra. De paso apareció que **la petición también estaba mal**:
-el cable pide `question` + `panel_context`. `/config/chat` quedó transcrita en
-el cable con `x-origen: 82da946`.
+**El servicio «real» lo levantamos nosotros** · el proxy de Vite apunta a
+`localhost:4010`. Por eso esa clase de pregunta no se manda: se corre. Descubrirlo
+convirtió cuatro preguntas al backend en dos tareas.
 
-**Y F3.3 está construida**: «Preguntar» abre la hoja con el panel desde el que
-se preguntó, y se abrió en el navegador. Ahí salió **F3.13**, que ninguna prueba
-vio: la respuesta del agente es markdown y se pinta literal — en pantalla se lee
-`### Límite declarado` con los numerales.
+**Lo que se cerró el 2026-09-21** · dieciséis commits, y el detalle por tarea
+está en el plan: el defecto del SSE (F3.12), F3.3, F3.7, F3.13, F3.14, F4.4,
+F5.10, y los cuatro de forma que salieron de la auditoría del `.pen` —F5.14 a
+F5.17—. **Los conteos salen de `docs/ESTADO.md`, que se genera.**
 
-**El rebase está probado y verde, y sin empujar.** Vive en la rama local
-`rebase-prueba` de `~/Documents/GitHub/synapse-api-go-fork`. Son **dos hunks de
-adyacencia pura** —`router.go` y `app.go`, los dos lados agregan en el mismo
-lugar— más un rompimiento que el conflicto no muestra: su commit agregó
-`FindByID` a `ports.DDPanelRepository` y nuestro mock de
-`dd_preview_service_test.go` no lo implementaba. **`go build` pasaba; lo encontró
-`go vet`.** Churn en su código: 18 borrados, uno menos que antes. La receta
-completa está en el plan, paso por paso.
+**Y el `.pen` volvió a cobrar.** `C3` y `A2` estaban dibujadas, se construyeron
+cuatro tareas encima y no se abrió ninguna — con la corrección de septiembre ya
+escrita. De ahí salió **`pen-pantallas`**, en la puerta: ninguna pantalla
+dibujada puede quedar sin declarar quién la implementa o por qué todavía no. El
+inventario de lo que quedó distinto está en
+`docs/AUDITORIA-2026-09-21-pen-vs-chat-y-ficha.md`.
 
-**LO QUE HAY QUE PREGUNTARLES ANTES DE ESCRIBIR UNA LÍNEA.** Su commit trae cinco
-migraciones manuales nuevas —contadas en `manual_migrations.go`, no de memoria:
-eran «seis» hasta el 2026-09-21— y corren **solo con `DB_AUTO_MIGRATE=true`**, el flag
-que no tocamos sobre la RDS compartida. Si el servicio desplegado no las corrió,
-las rutas nuevas fallan contra columnas que no existen — y eso se ve como un
-**500, no como un 404**. Si el esquema no está, no hay contra qué verificar nada.
+**Lo que queda de esa auditoría es UN punto mediano** —`ROLES Y COMPOSICIÓN` en
+A2, su §9— más dos que no son ajustes sino propuestas de spec: el contexto
+pestaña-contra-panel (§2) y las fuentes con capa y frescura en el evento
+`auditoria` (§5).
 
-**El paso cero ya se ejecutó** · 2026-09-21. `plan-de-trabajo.md` tiene T4
-cerrada, F3.2 reescrita y hecha, F3.3 hecha, F3.7 y F4.4 destrabadas, y tres
-tareas nuevas: **F3.12** (el SSE), **F3.13** (el markdown) y **B3.11** (que
-corran las migraciones). `Se puede tomar hoy` pasó de 0 a 3.
+**Al leer el `.pen`, el frame antes que la nota.** Las notas cuentan el porqué;
+los frames tienen los números y a veces lo que la nota no dice — el velo de la
+hoja del chat y las tres superficies aparecieron así.
 
-**Y las migraciones NO se corrieron: está medido, no supuesto.** El 2026-09-21,
-con `82da946` corriendo contra la base compartida y una consulta de sólo lectura
-sobre `information_schema`: **faltan las nueve columnas y el índice**. Por eso el
-chat no se puede verificar contra el servicio, y por eso existe B3.11.
+**El rebase del fork sigue probado, verde y sin empujar**, en la rama local
+`rebase-prueba` de `~/Documents/GitHub/synapse-api-go-fork`. Son dos hunks de
+adyacencia pura más un rompimiento que el conflicto no muestra: su commit agregó
+`FindByID` a `ports.DDPanelRepository` y nuestro mock no lo implementaba —
+**`go build` pasaba; lo encontró `go vet`**. La receta está en
+`docs/PLAN-INTEGRACION-2026-09-17.md`.
 
-**El servicio «real» lo levantamos NOSOTROS** —el proxy de Vite apunta a
-`localhost:4010`—, así que esta clase de pregunta no hace falta mandarla: se
-corre. Descubrirlo convirtió cuatro preguntas al backend en dos tareas.
-
-**F3.6 quedó bloqueada a propósito**, y está más cerca de lo que parecía: el
-evento `data` manda `{shape, data, provenance}`, que es literalmente lo que el
-criterio pide, pero `shape` es la forma y no el tipo de panel, y `provenance`
-**no trae la BASE ni la capa Medallion**. Hay un argumento para desbloquearla y
-**no se resolvió**: queda como pregunta, que es la regla.
+**`backend-drift` sale ✗ a propósito.** La línea `commit` del cable declara
+`733c13c` y ellos están en `82da946`. Se transcribieron **tres rutas** de ese
+commit —`/config/chat`, `/config/chat/threads` y `chat-suggestions`— marcadas
+`x-origen: 82da946`; las otras seis del cable no se reverificaron, así que mover
+la línea diría que sí. La herramienta no sabe expresar «reverificado en parte».
 
 ---
 
