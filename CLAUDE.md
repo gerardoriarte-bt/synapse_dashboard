@@ -438,7 +438,7 @@ cambio de modelo: **los paneles ya no consultan Snowflake al renderizar**, leen
 `DD_MATERIALIZE_ENABLED` en `false` por default. La línea `commit` del cable
 sigue declarando `733c13c`, así que `backend-drift` sale ✗ a propósito.
 
-**Tres decisiones humanas del 2026-09-17, tomadas y no ejecutadas:**
+**Tres decisiones humanas del 2026-09-17, EJECUTADAS el 2026-09-21:**
 
 1. **El contexto de panel es la forma del backend** — `panel_id` + `period`, y
    el servicio arma el resto. Esto **reescribe el criterio de F3.2**, que pedía
@@ -449,14 +449,17 @@ sigue declarando `733c13c`, así que `backend-drift` sale ✗ a propósito.
    una verificación.
 3. **El fork se rebasa.**
 
-**Por dónde se empieza, y no es ninguna de las tres: hay un defecto.** El
-discriminador del SSE del chat pasó a la **línea `event:`** de la trama, y
-`src/api/chat.ts` la descarta a propósito —está documentado ahí—, así que
-`src/api/useChat.ts` conmuta sobre `undefined` y **el chat no pinta una sola
-palabra**. Los mocks de MSW no lo delatan porque hablan el idioma de nuestra
-capa interna: es el mismo modo de falla que el `panels:batch`. **No reabre F3.4**
-—su criterio se cumplió, lo que cambió es el cable—: corresponde una tarea de
-integración nueva, hermana de F1.38.
+**El defecto del SSE está ARREGLADO** · F3.12, tarea nueva, no reabre F3.4. El
+discriminador pasó a la línea `event:` de la trama y `src/api/chat.ts` la
+descartaba a propósito, así que `useChat` conmutaba sobre `undefined` y el chat
+no pintaba una palabra. De paso apareció que **la petición también estaba mal**:
+el cable pide `question` + `panel_context`. `/config/chat` quedó transcrita en
+el cable con `x-origen: 82da946`.
+
+**Y F3.3 está construida**: «Preguntar» abre la hoja con el panel desde el que
+se preguntó, y se abrió en el navegador. Ahí salió **F3.13**, que ninguna prueba
+vio: la respuesta del agente es markdown y se pinta literal — en pantalla se lee
+`### Límite declarado` con los numerales.
 
 **El rebase está probado y verde, y sin empujar.** Vive en la rama local
 `rebase-prueba` de `~/Documents/GitHub/synapse-api-go-fork`. Son **dos hunks de
@@ -467,16 +470,26 @@ lugar— más un rompimiento que el conflicto no muestra: su commit agregó
 `go vet`.** Churn en su código: 18 borrados, uno menos que antes. La receta
 completa está en el plan, paso por paso.
 
-**LO QUE HAY QUE PREGUNTARLES ANTES DE ESCRIBIR UNA LÍNEA.** Su commit trae seis
-migraciones manuales nuevas y corren **solo con `DB_AUTO_MIGRATE=true`**, el flag
+**LO QUE HAY QUE PREGUNTARLES ANTES DE ESCRIBIR UNA LÍNEA.** Su commit trae cinco
+migraciones manuales nuevas —contadas en `manual_migrations.go`, no de memoria:
+eran «seis» hasta el 2026-09-21— y corren **solo con `DB_AUTO_MIGRATE=true`**, el flag
 que no tocamos sobre la RDS compartida. Si el servicio desplegado no las corrió,
 las rutas nuevas fallan contra columnas que no existen — y eso se ve como un
 **500, no como un 404**. Si el esquema no está, no hay contra qué verificar nada.
 
-**Lo que NO se movió todavía:** `plan-de-trabajo.md`. Las tres decisiones están
-escritas en el plan y **no** en la fuente, así que el estado de F3.2, F3.3, F3.7,
-F4.4 y T4 sigue diciendo lo de antes. Ejecutar esos cambios es el paso cero
-cuando se retome — la tabla de qué cambiar está al final del plan.
+**El paso cero ya se ejecutó** · 2026-09-21. `plan-de-trabajo.md` tiene T4
+cerrada, F3.2 reescrita y hecha, F3.3 hecha, F3.7 y F4.4 destrabadas, y tres
+tareas nuevas: **F3.12** (el SSE), **F3.13** (el markdown) y **B3.11** (que
+corran las migraciones). `Se puede tomar hoy` pasó de 0 a 3.
+
+**Y las migraciones NO se corrieron: está medido, no supuesto.** El 2026-09-21,
+con `82da946` corriendo contra la base compartida y una consulta de sólo lectura
+sobre `information_schema`: **faltan las nueve columnas y el índice**. Por eso el
+chat no se puede verificar contra el servicio, y por eso existe B3.11.
+
+**El servicio «real» lo levantamos NOSOTROS** —el proxy de Vite apunta a
+`localhost:4010`—, así que esta clase de pregunta no hace falta mandarla: se
+corre. Descubrirlo convirtió cuatro preguntas al backend en dos tareas.
 
 **F3.6 quedó bloqueada a propósito**, y está más cerca de lo que parecía: el
 evento `data` manda `{shape, data, provenance}`, que es literalmente lo que el

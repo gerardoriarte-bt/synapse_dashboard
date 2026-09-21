@@ -1148,13 +1148,11 @@ warehouse, vistas semánticas permitidas y prompt base.
   reiniciar el servicio.
 
 ### ➕ B3.11 ⬜ Aplicar las migraciones de `82da946` sobre la base compartida
-**Espera del backend.** **Que corran las migraciones manuales de `82da946`** — pedido el 2026-09-21 en [`MENSAJE-2026-09-21-dos-tareas-del-chat.md`](docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md), tarea 1.
+**Espera del backend.** **Que corran las migraciones manuales de `82da946`** — pedido el 2026-09-21 en `docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md`, tarea 1.
 
 Medido ese día contra la base compartida, con una consulta de sólo lectura sobre `information_schema`: **faltan las nueve columnas y el índice.** Las agrega `internal/adapters/repository/manual_migrations.go` y corren sólo con `DB_AUTO_MIGRATE=true`, que no activamos sobre esa base: es un cambio de esquema en una base compartida y la decisión no es nuestra.
 
 Sin ellas `POST /config/chat` no puede guardar el hilo, y eso se ve como un **500, no como un 404**: la ruta existe, lo que falta es la columna.
-
-**Descripción.** Aplicar las columnas que el commit escribe, y el índice.
 
 | Tabla | Columnas | De qué tarea son |
 |---|---|---|
@@ -1162,15 +1160,29 @@ Sin ellas `POST /config/chat` no puede guardar el hilo, y eso se ve como un **50
 | `agents` | `is_active`, `semantic_views`, `system_prompt_base` | B3.3 y B3.9 |
 | `dd_panel_data` | `last_error`, `last_error_at`, `last_success_at` + índice `idx_dd_panel_data_tenant_metric_period` | Materialización · B2.12 |
 
+**Descripción.** Aplicar las columnas que el commit escribe, y el índice.
+
+**La tabla va ARRIBA de `Descripción` a propósito.** `para-backend.py` corta el
+bloque en `**Descripción` o `**Criterio`, así que lo que quede debajo **no llega
+a `docs/PARA-BACKEND.md`**, que es el documento que ellos leen. Abajo, las nueve
+columnas se quedaban acá.
+
+**Y el nombre del mensaje va sin enlace, también a propósito.** El generador
+copia el texto verbatim, sin reescribir rutas: `](docs/…)` es correcto desde la
+raíz y apunta a `docs/docs/…` una vez dentro de `docs/PARA-BACKEND.md`. El mismo
+texto vive a dos profundidades, así que no hay ruta relativa que sirva en las
+dos.
+
 **Qué frena en el front.** No frena la construcción: frena la **verificación
 contra el servicio**. F3.12 y F3.3 no se pueden abrir contra el chat real, F3.7
 no puede mostrar con qué panel se abrió un hilo, y F4.4 se construye contra MSW
 pero no se verifica.
 
 **Criterio de aceptación.**
-- La consulta del mensaje sobre `information_schema` devuelve las nueve
-  columnas. **La corremos nosotros**, contra la base compartida y con fecha: el
-  aviso de que se corrieron no alcanza para cerrarla.
+- La consulta del mensaje sobre `information_schema` devuelve **las nueve**
+  columnas, las tres tablas incluidas. **La corremos nosotros**, contra la base
+  compartida y con fecha: el aviso de que se corrieron no alcanza para
+  cerrarla.
 - El índice único existe, o hay una razón escrita de por qué no. El código de
   ellos **no lo crea si encuentra duplicados** y lo avisa por log, así que su
   ausencia no es necesariamente un error.

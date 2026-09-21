@@ -294,11 +294,17 @@ Con esos tres, F4.4 y la mitad que le falta a la ficha de cliente se cierran. El
 *Estado de la tarea: pendiente.*
 
 
-**Que corran las migraciones manuales de `82da946`** — pedido el 2026-09-21 en [`MENSAJE-2026-09-21-dos-tareas-del-chat.md`](docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md), tarea 1.
+**Que corran las migraciones manuales de `82da946`** — pedido el 2026-09-21 en `docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md`, tarea 1.
 
 Medido ese día contra la base compartida, con una consulta de sólo lectura sobre `information_schema`: **faltan las nueve columnas y el índice.** Las agrega `internal/adapters/repository/manual_migrations.go` y corren sólo con `DB_AUTO_MIGRATE=true`, que no activamos sobre esa base: es un cambio de esquema en una base compartida y la decisión no es nuestra.
 
 Sin ellas `POST /config/chat` no puede guardar el hilo, y eso se ve como un **500, no como un 404**: la ruta existe, lo que falta es la columna.
+
+| Tabla | Columnas | De qué tarea son |
+|---|---|---|
+| `user_threads` | `panel_id`, `period`, `deleted_at` | B3.1 y B3.10 |
+| `agents` | `is_active`, `semantic_views`, `system_prompt_base` | B3.3 y B3.9 |
+| `dd_panel_data` | `last_error`, `last_error_at`, `last_success_at` + índice `idx_dd_panel_data_tenant_metric_period` | Materialización · B2.12 |
 
 
 ### B4.1 · GET /admin/tenants

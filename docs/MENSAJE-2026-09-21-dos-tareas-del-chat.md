@@ -12,7 +12,7 @@ su lado**, pero ninguna les pide investigar nada: las dos vienen medidas.
 
 | | Tarea | Bloquea | Esfuerzo estimado |
 |---|---|---|---|
-| **1** | Correr las seis migraciones manuales sobre la base compartida | **Todo el chat.** Hoy no responde | Una corrida |
+| **1** | Correr las cinco migraciones manuales sobre la base compartida | **Todo el chat.** Hoy no responde | Una corrida |
 | **2** | Que el evento `data` traiga la BASE y la frescura de la cifra | Que el chat muestre cifras, no sólo prosa | Dos campos |
 
 **Lo que encontramos de nuestro lado ya lo arreglamos** y está al final, para
@@ -73,14 +73,19 @@ por log en vez de borrar datos**, que nos pareció la decisión correcta.
 ### Cómo nos sirve la respuesta
 
 **Un aviso de que corrieron, con la fecha.** Nada más: la comprobación la
-volvemos a correr nosotros. Si prefieren, la consulta es ésta:
+volvemos a correr nosotros. Si prefieren, la consulta es ésta — **nueve filas
+quiere decir que están todas**, y el índice va aparte:
 
 ```sql
 SELECT table_name, column_name
 FROM information_schema.columns
-WHERE (table_name = 'user_threads' AND column_name IN ('panel_id','period','deleted_at'))
-   OR (table_name = 'agents'       AND column_name IN ('is_active','semantic_views','system_prompt_base'))
+WHERE (table_name = 'user_threads'  AND column_name IN ('panel_id','period','deleted_at'))
+   OR (table_name = 'agents'        AND column_name IN ('is_active','semantic_views','system_prompt_base'))
+   OR (table_name = 'dd_panel_data' AND column_name IN ('last_error','last_error_at','last_success_at'))
 ORDER BY table_name, column_name;
+
+SELECT indexname FROM pg_indexes
+WHERE indexname = 'idx_dd_panel_data_tenant_metric_period';
 ```
 
 Y si decidieran **no** correrlas todavía, también sirve saberlo: dejamos el chat
