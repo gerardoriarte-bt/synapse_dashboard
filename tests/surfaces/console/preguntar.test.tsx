@@ -163,8 +163,12 @@ describe('F3.3 · «Preguntar» abre la hoja con el panel desde el que se pregun
     montar()
     await preguntarEn('Detalle por tienda')
 
+    // **El nombre accesible lleva el encabezado del `.pen` MÁS el contexto** ·
+    // §PEN:C3. Con el encabezado solo, las hojas de dos paneles se llamarían
+    // igual para quien navega con lector de pantalla — que es justo lo que
+    // esta prueba existe para impedir.
     const hoja = await screen.findByRole('dialog')
-    expect(hoja).toHaveAttribute('aria-label', 'Detalle por tienda')
+    expect(hoja.getAttribute('aria-label')).toContain('Detalle por tienda')
   })
 
   it('la pregunta viaja con el panel y el período que se está mirando', async () => {
@@ -243,7 +247,7 @@ describe('F3.3 · «Preguntar» abre la hoja con el panel desde el que se pregun
     await preguntarEn('Detalle por tienda')
 
     const hoja = await screen.findByRole('dialog')
-    expect(hoja).toHaveAttribute('aria-label', 'Detalle por tienda')
+    expect(hoja.getAttribute('aria-label')).toContain('Detalle por tienda')
     expect(within(hoja).queryByText(/quiebre de stock/)).not.toBeInTheDocument()
   })
 
@@ -258,7 +262,7 @@ describe('F3.3 · «Preguntar» abre la hoja con el panel desde el que se pregun
     await preguntarEn('Detalle por tienda')
 
     const hoja = await screen.findByRole('dialog')
-    expect(hoja).toHaveAttribute('aria-label', 'Detalle por tienda')
+    expect(hoja.getAttribute('aria-label')).toContain('Detalle por tienda')
     expect(screen.queryByText(/quiebre de stock/)).not.toBeInTheDocument()
   })
 })
@@ -288,7 +292,9 @@ describe('§17 · casilla 13 · el chat queda anclado a la métrica del panel', 
     const usuario = await preguntarEn('Detalle por tienda')
 
     const hoja = await screen.findByRole('dialog')
-    const tituloDeLaHoja = hoja.getAttribute('aria-label')
+    // El nombre accesible es «Preguntar a Synapse · <métrica> · <período>»:
+    // la métrica es la parte del medio.
+    const tituloDeLaHoja = (hoja.getAttribute('aria-label') ?? '').split(' · ')[1]
     await enviar(usuario, 'x')
     await waitFor(() => expect(preguntas).toHaveLength(1))
 

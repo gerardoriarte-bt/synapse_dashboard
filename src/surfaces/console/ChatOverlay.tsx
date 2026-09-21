@@ -13,20 +13,25 @@
  *  segunda desde otro lado, y avisa en vez de fallar en silencio.
  */
 import { useEffect, useRef } from 'react'
+import { Label } from '../../render/primitives/Label'
 import type { ReactNode } from 'react'
 
 let abiertas = 0
 
 type Props = {
   open: boolean
-  /** Nombra la hoja para el lector de pantalla. Es el panel desde el que se
-   *  preguntó, o la pestaña si se abrió desde el chrome. */
+  /** El encabezado. §PEN:C3 lo fija en «PREGUNTAR A SYNAPSE». */
   title: string
+  /** De qué se está hablando · §PEN:C3 lo pone debajo del encabezado, como
+   *  `CONTEXTO · … · JUL 2026`. **Va también al nombre accesible**: con el
+   *  encabezado solo, las hojas de dos paneles se llamarían igual para quien
+   *  navega con lector de pantalla. */
+  contexto?: string
   onClose: () => void
   children: ReactNode
 }
 
-export function ChatOverlay({ open, title, onClose, children }: Props) {
+export function ChatOverlay({ open, title, contexto, onClose, children }: Props) {
   const hoja = useRef<HTMLDivElement>(null)
   // Quién tenía el foco antes de abrir. Se guarda en el momento de abrir y no
   // al montar: la hoja se monta con la consola y se abre mucho después.
@@ -71,20 +76,28 @@ export function ChatOverlay({ open, title, onClose, children }: Props) {
       ref={hoja}
       role="dialog"
       aria-modal="true"
-      aria-label={title}
+      aria-label={contexto === undefined ? title : `${title} · ${contexto}`}
       tabIndex={-1}
       className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[480px] flex-col gap-4 overflow-y-auto border-l border-w3 bg-elev p-6 shadow-[0_0_40px_var(--color-shad)] outline-none"
     >
       <div className="flex items-start justify-between gap-4">
-        <h2 className="font-display text-titulo tracking-titulo leading-titulo text-ink m-0 min-w-0 truncate">
-          {title}
-        </h2>
+        <div className="flex min-w-0 flex-col gap-1">
+          <h2 className="font-display text-titulo tracking-titulo leading-titulo text-ink m-0 min-w-0 truncate">
+            {title}
+          </h2>
+          {contexto === undefined ? null : <Label as="div">Contexto · {contexto}</Label>}
+        </div>
+        {/* **Dice `ESC` y no «Cerrar»** · §PEN:C3. Es la tecla que además
+            funciona, así que el rótulo enseña el atajo en vez de repetir lo
+            que el botón ya hace. El nombre accesible sigue siendo «Cerrar»:
+            `ESC` no se lee en voz alta como una acción. */}
         <button
           type="button"
           onClick={onClose}
+          aria-label="Cerrar"
           className="font-mono text-label tracking-rotulo uppercase text-dim hover:text-ink cursor-pointer bg-transparent border-0 p-0"
         >
-          Cerrar
+          Esc
         </button>
       </div>
       {children}

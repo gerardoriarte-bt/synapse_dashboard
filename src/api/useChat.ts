@@ -94,6 +94,18 @@ export function useChat(contexto: PanelContext) {
     setTurns([])
   }, [])
 
+  /** «Nueva consulta» · §PEN:C3 lo pone en la cabecera del riel.
+   *
+   *  **Suelta el hilo además de limpiar los turnos.** Con el `hiloId` puesto, lo
+   *  que parece una conversación nueva seguiría colgando de la anterior del
+   *  lado del servidor — y el riel mostraría una sola fila donde el usuario ve
+   *  dos consultas. */
+  const reset = useCallback(() => {
+    abort.current?.abort()
+    setThreadId(null)
+    setTurns([])
+  }, [])
+
   // Una sola limpieza, al desmontar. El `ref` sostiene el controlador del turno
   // en curso, sea cual sea.
   useEffect(() => () => abort.current?.abort(), [])
@@ -162,5 +174,5 @@ export function useChat(contexto: PanelContext) {
     [contexto.panelId, contexto.periodo, threadId, turns.length],
   )
 
-  return { turns, threadId, ask, resume }
+  return { turns, threadId, ask, resume, reset }
 }

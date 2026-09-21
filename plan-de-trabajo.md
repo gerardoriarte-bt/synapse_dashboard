@@ -5467,6 +5467,62 @@ sea seis columnas, así que la grilla colapsaba —F1.30 funcionando— y el alt
 es un `height` sino `gridRow: span N` sobre `gridAutoRows`. Y la celda se busca
 por su panel y no por índice, porque `readingOrder` ordena el DOM.
 
+### ➕ F5.14 ✅ Los literales de C3 y A2, del `.pen`
+**Descripción.** Los cuatro ajustes chicos de la auditoría
+`docs/AUDITORIA-2026-09-21-pen-vs-chat-y-ficha.md` · §3, §4, §6 y §8.
+
+**Criterio de aceptación.**
+- Los literales de UI son los del `.pen`, que es su autoridad. Donde el dibujo
+  nombra algo que acá no es lo mismo, **se adapta y se dice por qué** — no se
+  copia una etiqueta que miente.
+- Cada archivo que implementa una pantalla dibujada lleva su `§PEN:<id>`.
+- La regla del CTA muerto sigue: un botón del dibujo sin manejador no se pinta.
+
+**Hecha el 2026-09-21.**
+
+**C3** · la cabecera pasa a `PREGUNTAR A SYNAPSE` con su línea de `CONTEXTO`
+debajo; el botón de cerrar dice `ESC` —y conserva «Cerrar» como nombre
+accesible, porque `ESC` no se lee en voz alta como una acción—; el desplegable
+del SQL dice `VER LA CONSULTA QUE PRODUJO ESTA RESPUESTA`; el riel gana su
+cabecera `HISTORIAL` + `NUEVA CONSULTA`, **la marca de tiempo en cada fila** y el
+pie `LAS CONSULTAS QUEDAN EN EL TENANT · VISIBLES SOLO PARA TU ROL`; y
+`SIN COMPETENCIA` pasa de una línea a su bloque con `NO ES UNA NEGATIVA
+GENÉRICA`.
+
+**Dos literales se ADAPTARON, y está dicho en el código.** El `.pen` dice
+«Preguntá sobre esta pestaña» y nombra cada hilo `DESDE <PESTAÑA>` porque ahí el
+chat es de la pestaña; acá es del panel —decisión del 2026-09-17—, así que el
+campo dice «Preguntá sobre este panel» y el contexto nombra la métrica. Copiar el
+literal sin su decisión dejaría una etiqueta que miente.
+
+**La marca de tiempo tiene dos formas y las dos son del dibujo**: la hora cuando
+el hilo es de hoy, el día y el mes cuando no. Con la hora sola, dos hilos de días
+distintos se leen como del mismo rato; con la fecha sola, los seis de hoy dicen
+lo mismo. Sale de `format.threadStamp`, que es donde vive todo `Intl`.
+
+**`NUEVA CONSULTA` suelta el hilo, no solo limpia la pantalla.** Con el `hiloId`
+puesto, lo que parece una consulta nueva seguiría colgando de la anterior del
+lado del servidor: el riel mostraría una fila donde el usuario ve dos.
+
+**A2** · el bloque se llama `ACCESO A DATOS` —«Agente de datos» era nuestro y
+describía la plomería—, el **rol va primero** porque la pregunta que contesta la
+ficha es «¿qué ve cada rol?», y se escribe la nota dura del `.pen`: *el permiso
+se aplica en el backend, no en la composición · un rol sin acceso no ve el dato
+aunque el panel exista*.
+
+**Lo que NO se pintó, y es la regla del CTA muerto:** `VERIFICAR AHORA` de A2 y
+los dos CTAs de `SIN COMPETENCIA` —`PROYECTAR 4 SEMANAS`, `SOLICITAR LA FUENTE`—
+no tienen manejador.
+
+**Abierto en el navegador**: la hoja con sus literales y las dos formas de la
+marca —`14:27`, `14 AGO`, `2 JUL`—, y la ficha con `ACCESO A DATOS` y su nota.
+
+**Lo que queda de esa auditoría** son los tres grandes: la hoja de 940 con riel
+lateral y su colapso (§1), `ROLES Y COMPOSICIÓN` en A2 (§9) y las sugerencias
+como chips contra `chat-suggestions` (§7). Más dos que no son ajustes: el
+contexto pestaña-contra-panel (§2) y las fuentes con capa y frescura en el
+evento `auditoria` (§5).
+
 ### ➕ F5.13 ⬜ Períodos libres en el selector · 🔒 espera el patrón de `PeriodoId`
 **Descripción.** Decisión del 2026-09-04 (humano): **se va con manejo de períodos
 libres.** El usuario elige un rango y la consola lo contesta, en vez de elegir de

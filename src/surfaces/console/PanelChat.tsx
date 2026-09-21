@@ -50,7 +50,7 @@ type Props = {
 }
 
 export function PanelChat({ panelId, periodo, titulo, format, onClose }: Props) {
-  const { turns, threadId, ask, resume } = useChat({ panelId, periodo })
+  const { turns, threadId, ask, resume, reset } = useChat({ panelId, periodo })
   const [texto, setTexto] = useState('')
 
   /** Los hilos de ESTE panel y ESTE período · F3.7. El filtro lo aplica el
@@ -75,7 +75,18 @@ export function PanelChat({ panelId, periodo, titulo, format, onClose }: Props) 
   const enVuelo = turns.at(-1)?.streaming === true
 
   return (
-    <ChatOverlay open title={titulo} onClose={onClose}>
+    // **El encabezado es el literal del `.pen`, el contexto es NUESTRO** ·
+    // §PEN:C3 encabeza «PREGUNTAR A SYNAPSE» y pone debajo
+    // `CONTEXTO · … · JUL 2026 · 12 PANELES`. El dibujo cuenta la pestaña
+    // porque ahí el chat es de la pestaña; acá es del panel, que es la decisión
+    // del 2026-09-17, así que el contexto nombra la métrica y el período. Poner
+    // el literal del dibujo sin su decisión dejaría una etiqueta que miente.
+    <ChatOverlay
+      open
+      title="Preguntar a Synapse"
+      contexto={`${titulo} · ${periodo}`}
+      onClose={onClose}
+    >
       <ChatThread turns={turns} />
 
       {/* **El riel va DEBAJO de la conversación en curso, no arriba.** Lo que
@@ -95,6 +106,8 @@ export function PanelChat({ panelId, periodo, titulo, format, onClose }: Props) 
             // que el binding de Gin pide en `thread_id`. Pasar `resume` directo
             // como `onSelect` compilaba y mandaba el uuid: 400 en cada intento
             // de retomar.
+            format={format}
+            onNueva={reset}
             onSelect={(uuid) => {
               const elegido = (hilos.data ?? []).find((h) => h.id === uuid)
               if (elegido?.hiloId != null) resume(elegido.hiloId)
@@ -119,6 +132,9 @@ export function PanelChat({ panelId, periodo, titulo, format, onClose }: Props) 
         <label htmlFor="panel-chat-pregunta" className="sr-only">
           Tu pregunta sobre {titulo}
         </label>
+        {/* §PEN:C3 dice «Preguntá sobre esta pestaña». Acá el contexto es el
+            PANEL, así que el literal se adapta — copiarlo tal cual nombraría
+            algo que no es lo que viaja en la petición. */}
         <input
           id="panel-chat-pregunta"
           name="pregunta"
@@ -126,7 +142,7 @@ export function PanelChat({ panelId, periodo, titulo, format, onClose }: Props) 
           autoComplete="off"
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
-          placeholder="¿Por qué cambió?"
+          placeholder="Preguntá sobre este panel"
           className={CAMPO}
         />
         <button

@@ -78,7 +78,7 @@ export function ChatThread({ turns }: { turns: readonly ChatTurn[] }) {
           {turn.respuesta.auditoria === null ? null : (
             <details className="border-t border-w2 pt-2">
               <summary className="font-mono text-label tracking-rotulo uppercase text-dim cursor-pointer">
-                Cómo se calculó
+                Ver la consulta que produjo esta respuesta
               </summary>
               <pre className="font-mono text-celda text-ink overflow-x-auto m-0 mt-2">
                 {turn.respuesta.auditoria.sql}

@@ -37,7 +37,11 @@ const CELDA = 'font-body text-cuerpo leading-cuerpo text-ink px-3 py-2 align-top
 export function AgentConfig({ agentes }: { agentes: readonly Agente[] }) {
   return (
     <section className="flex flex-col gap-2">
-      <Label as="div">Agente de datos</Label>
+      {/* **Se llama `ACCESO A DATOS`** · §PEN:A2, que es como el dibujo nombra
+          este bloque. «Agente de datos» era nuestro y describía la plomería:
+          al super-admin no le importa que haya un agente, le importa si el rol
+          ve el dato. */}
+      <Label as="div">Acceso a datos</Label>
 
       {agentes.length === 0 ? (
         <p className="font-body text-cuerpo leading-cuerpo text-dim m-0">
@@ -51,11 +55,15 @@ export function AgentConfig({ agentes }: { agentes: readonly Agente[] }) {
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b border-w3 text-left">
+              {/* **El rol va PRIMERO** · §PEN:A2 organiza el bloque por rol —
+                  `ROL · CEO`, `ROL · PLANNER`—, no por agente. La pregunta que
+                  contesta la pantalla es «¿qué ve cada rol?», que es la misma
+                  que encabeza la ficha. */}
               <th className="px-3 py-2">
-                <Label as="span">Agente</Label>
+                <Label as="span">Rol</Label>
               </th>
               <th className="px-3 py-2">
-                <Label as="span">Rol que atiende</Label>
+                <Label as="span">Lo atiende</Label>
               </th>
               <th className="px-3 py-2">
                 <Label as="span">Estado</Label>
@@ -68,6 +76,7 @@ export function AgentConfig({ agentes }: { agentes: readonly Agente[] }) {
           <tbody>
             {agentes.map((a) => (
               <tr key={a.id} className="border-b border-w2">
+                <td className={CELDA}>{a.rol}</td>
                 <td className={CELDA}>
                   {a.nombre}
                   <span className="block">
@@ -76,7 +85,6 @@ export function AgentConfig({ agentes }: { agentes: readonly Agente[] }) {
                     </Label>
                   </span>
                 </td>
-                <td className={CELDA}>{a.rol}</td>
                 <td className={CELDA}>
                   {/* «Activo» y «Inactivo», no «vigente». Es lo que el campo
                       dice: si alguien lo dio de baja. */}
@@ -103,6 +111,16 @@ export function AgentConfig({ agentes }: { agentes: readonly Agente[] }) {
         </p>
         <Label as="div">Se desbloquea con · una verificación de acceso en el cable</Label>
       </div>
+
+      {/* **La nota dura del permiso** · §PEN:A2 la escribe al pie del bloque, y
+          es la que más enseña de esta pantalla: se puede componer un panel que
+          un rol no va a poder ver, y eso no es un error de composición. Es la
+          misma regla que `RoleEditor` ya declara para las métricas ocultas,
+          dicha para el acceso. */}
+      <Label as="div">
+        El permiso se aplica en el backend, no en la composición · un rol sin
+        acceso no ve el dato aunque el panel exista
+      </Label>
     </section>
   )
 }

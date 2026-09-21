@@ -67,6 +67,17 @@ export type Formatter = {
    *  «reabrir la consulta del mismo mes del año previo». Sin el año, dos grupos
    *  distintos se llamarían «JULIO» y el usuario no sabría cuál es cuál. */
   monthLabel: (iso: string, now: Date) => string
+  /** La marca de tiempo de una fila del riel · F3.7 · §PEN:C3.
+   *
+   *  **El `.pen` la dibuja en todas las filas**, y con dos formas: la hora
+   *  —`09:52`— cuando el hilo es de hoy, y el día y el mes —`13 AGO`, `28 JUL`—
+   *  cuando no. Con la hora sola, dos hilos de días distintos se leerían como
+   *  del mismo rato; con la fecha sola, los seis de hoy dirían lo mismo.
+   *
+   *  **Es del huso del NAVEGADOR**, como el agrupado: las dos son la misma
+   *  decisión de presentación y el contrato la concede. La zona del tenant es
+   *  la del corte del día del negocio, que es otra cosa. */
+  threadStamp: (iso: string, now: Date) => string
 }
 
 export function createFormat(locale: string): Formatter {
@@ -159,6 +170,30 @@ export function createFormat(locale: string): Formatter {
       const fecha = new Date(iso)
       const mes = new Intl.DateTimeFormat(locale, { month: 'long' }).format(fecha)
       return fecha.getFullYear() === now.getFullYear() ? mes : `${mes} ${fecha.getFullYear()}`
+    },
+
+    threadStamp(iso, now) {
+      const fecha = new Date(iso)
+      const mismoDia =
+        fecha.getFullYear() === now.getFullYear() &&
+        fecha.getMonth() === now.getMonth() &&
+        fecha.getDate() === now.getDate()
+
+      if (mismoDia) {
+        // 24 horas y no 12: el `.pen` dibuja `09:52`, y en el producto el corte
+        // del día importa más que la costumbre local.
+        return new Intl.DateTimeFormat(locale, {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        }).format(fecha)
+      }
+
+      const dia = new Intl.DateTimeFormat(locale, { day: 'numeric' }).format(fecha)
+      const mes = new Intl.DateTimeFormat(locale, { month: 'short' }).format(fecha)
+      // El mes en mayúsculas y sin el punto que `es-MX` le pone a «ago.»: el
+      // rótulo de la casa es mono y en mayúsculas, y el punto es ruido ahí.
+      return `${dia} ${mes.replace('.', '').toUpperCase()}`
     },
 
     freshness(iso, now) {

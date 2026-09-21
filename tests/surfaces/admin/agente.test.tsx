@@ -115,3 +115,27 @@ describe('F4.4 · el estado del acceso se DECLARA pendiente, no se deduce', () =
     expect(screen.getByText(/Pendiente · el estado del acceso/)).toBeVisible()
   })
 })
+
+describe('§PEN:A2 · los literales del bloque de acceso', () => {
+  it('el bloque se llama «Acceso a datos», no «Agente de datos»', () => {
+    // Al super-admin no le importa que haya un agente: le importa si el rol ve
+    // el dato. El nombre viejo describía la plomería.
+    render(<AgentConfig agentes={[agente()]} />)
+    expect(screen.getByText('Acceso a datos')).toBeVisible()
+  })
+
+  it('el ROL va primero · la pantalla contesta «qué ve cada rol»', () => {
+    // Es la misma pregunta que encabeza la ficha de cliente.
+    const { container } = render(<AgentConfig agentes={[agente()]} />)
+    const encabezados = Array.from(container.querySelectorAll('th')).map((t) => t.textContent)
+    expect(encabezados[0]).toBe('Rol')
+  })
+
+  it('la nota dura del permiso está escrita', () => {
+    // Se puede componer un panel que un rol no va a poder ver, y eso no es un
+    // error de composición. Es lo que más enseña de esta pantalla.
+    const { container } = render(<AgentConfig agentes={[agente()]} />)
+    expect(container.textContent).toMatch(/El permiso se aplica en el backend, no en la composición/)
+    expect(container.textContent).toMatch(/un rol sin\s+acceso no ve el dato aunque el panel exista/)
+  })
+})

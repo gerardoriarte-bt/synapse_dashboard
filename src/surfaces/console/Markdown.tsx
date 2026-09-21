@@ -34,8 +34,19 @@ export function Markdown({ texto }: { texto: string }) {
 
   return (
     <div className="flex flex-col gap-2">
+      {/* §PEN:C3 le dedica un bloque, no una línea: el rótulo, la aclaración de
+          que no es una negativa genérica, el motivo —que llega abajo, en la
+          prosa— y dos CTAs.
+
+          **Los dos CTAs no se pintan**: `PROYECTAR 4 SEMANAS` y `SOLICITAR LA
+          FUENTE` no tienen manejador, y un botón que se aprieta y no hace nada
+          es peor que uno ausente. El rótulo y la aclaración sí, y son lo que
+          cambia cómo se lee la respuesta. */}
       {sinCompetencia ? (
-        <Label as="div">No puedo responder esto con las fuentes que tengo</Label>
+        <div className="flex flex-col gap-1">
+          <Label as="div">Sin competencia</Label>
+          <Label as="div">No es una negativa genérica</Label>
+        </div>
       ) : null}
 
       {bloques.map((bloque, i) => {

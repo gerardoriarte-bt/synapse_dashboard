@@ -148,8 +148,12 @@ describe('F3.7 · cada hilo muestra con qué panel y período se abrió', () => 
     montar()
     const { hoja } = await abrirLaHoja()
 
-    expect(await within(hoja).findByText('¿Por qué cayó la venta?')).toBeInTheDocument()
-    expect(hoja.textContent).not.toContain('·')
+    const fila = (await within(hoja).findByText('¿Por qué cayó la venta?')).closest('button')
+    expect(fila).not.toBeNull()
+    // **La aserción va sobre la FILA.** Desde que la hoja lleva su línea de
+    // contexto y el riel su pie —§PEN:C3—, `·` aparece con razón en los dos.
+    // Lo que no puede pasar es que la fila de un hilo sin contexto lo tenga.
+    expect(fila!.textContent).not.toContain('·')
   })
 
   it('el listado se pide filtrado por ESTE panel y ESTE período', async () => {
@@ -204,5 +208,59 @@ describe('F3.7 · retomar reenvía el contexto, y NO arranca uno nuevo', () => {
 
     await usuario.click(within(hoja).getByText('La conversación vieja'))
     await waitFor(() => expect(within(hoja).queryByText(/Preguntaste/)).not.toBeInTheDocument())
+  })
+})
+
+describe('§PEN:C3 · los literales que el `.pen` manda', () => {
+  it('la fila lleva su marca de tiempo · el dibujo la pone en todas', async () => {
+    // `28 JUL` para un hilo viejo, la hora para uno de hoy. Con la hora sola,
+    // dos hilos de días distintos se leerían como del mismo rato.
+    laConsola([hilo({ updated_at: '2026-07-28T12:00:00Z' })])
+    montar()
+    const { hoja } = await abrirLaHoja()
+
+    const fila = (await within(hoja).findByText('¿Por qué cayó la venta?')).closest('button')
+    expect(fila!.textContent).toMatch(/28 JUL/)
+  })
+
+  it('el riel dice quién puede leer lo que se preguntó', async () => {
+    // No es decorativo: es la clase de cosa que se pregunta una vez y se
+    // contesta mal si no está escrita.
+    laConsola([hilo()])
+    montar()
+    const { hoja } = await abrirLaHoja()
+
+    expect(await within(hoja).findByText('Las consultas quedan en el tenant')).toBeVisible()
+    expect(within(hoja).getByText('Visibles solo para tu rol')).toBeVisible()
+  })
+
+  it('«Nueva consulta» SUELTA el hilo, no solo limpia la pantalla', async () => {
+    // Con el `hiloId` puesto, lo que parece una consulta nueva seguiría
+    // colgando de la anterior del lado del servidor: el riel mostraría una
+    // fila donde el usuario ve dos.
+    const { preguntas } = laConsola([hilo({ thread_id: 41 })])
+    montar()
+    const { usuario, hoja } = await abrirLaHoja()
+
+    // Retomar un hilo, después pedir una consulta nueva, y preguntar.
+    await usuario.click(await within(hoja).findByText('¿Por qué cayó la venta?'))
+    await usuario.click(within(hoja).getByRole('button', { name: 'Nueva consulta' }))
+    await usuario.type(within(hoja).getByRole('textbox'), 'otra cosa')
+    await usuario.click(within(hoja).getByRole('button', { name: 'Preguntar' }))
+
+    await waitFor(() => expect(preguntas).toHaveLength(1))
+    expect(preguntas[0]).not.toHaveProperty('thread_id')
+  })
+
+  it('la cabecera es la del dibujo, con el contexto debajo', async () => {
+    laConsola([hilo()])
+    montar()
+    const { hoja } = await abrirLaHoja()
+
+    expect(within(hoja).getByRole('heading', { name: 'Preguntar a Synapse' })).toBeVisible()
+    expect(within(hoja).getByText(/Contexto · Venta diaria · 2026-07/)).toBeVisible()
+    // `ESC` es el rótulo; el nombre accesible sigue siendo «Cerrar», porque
+    // `ESC` no se lee en voz alta como una acción.
+    expect(within(hoja).getByRole('button', { name: 'Cerrar' })).toHaveTextContent('Esc')
   })
 })

@@ -64,7 +64,11 @@ describe('F3.13 · el markdown se dibuja, no se vuelca', () => {
       <Markdown texto={'[SIN_COMPETENCIA]\nNo tengo la fuente de devoluciones.'} />,
     )
     expect(container.textContent).not.toContain('SIN_COMPETENCIA')
-    expect(screen.getByText(/No puedo responder esto/)).toBeInTheDocument()
+    // §PEN:C3 le dedica un bloque: el rótulo y la aclaración de que no es una
+    // negativa genérica. Los dos CTAs del dibujo no se pintan — no hay
+    // manejador, y la regla del CTA muerto lo prohíbe.
+    expect(screen.getByText('Sin competencia')).toBeInTheDocument()
+    expect(screen.getByText('No es una negativa genérica')).toBeInTheDocument()
     // Y el motivo sigue visible: es lo que el usuario necesita leer.
     expect(container.textContent).toContain('No tengo la fuente de devoluciones.')
   })

@@ -13,7 +13,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { ChatOverlay } from '@/surfaces/console/ChatOverlay'
 import { ChatThread } from '@/surfaces/console/ChatThread'
 import { ThreadRail } from '@/surfaces/console/ThreadRail'
+import { createFormat } from '@/render/format'
 import type { ChatTurn } from '@/api/useChat'
+
+const format = createFormat('es-MX')
 
 const VACIA = { texto: '', datos: [], auditoria: null, sugerencias: [] }
 
@@ -225,7 +228,7 @@ describe('F3.7 · el riel de hilos', () => {
   ]
 
   it('sin hilos lo dice · no deja un hueco', () => {
-    render(<ThreadRail groups={[]} onSelect={() => {}} />)
+    render(<ThreadRail format={format} groups={[]} onSelect={() => {}} />)
     expect(screen.getByText(/Todavía no preguntaste nada/)).toBeInTheDocument()
   })
 
@@ -233,32 +236,32 @@ describe('F3.7 · el riel de hilos', () => {
     // El contrato: «el riel la muestra tal cual, así que no se resume ni se
     // recorta acá». Cortar la cadena la rompe también para un lector de
     // pantalla, que no tiene ancho.
-    render(<ThreadRail groups={grupos} onSelect={() => {}} />)
+    render(<ThreadRail format={format} groups={grupos} onSelect={() => {}} />)
     const boton = screen.getByRole('button', { name: /Por qué subió el ROAS/ })
     expect(boton.textContent).toContain('Por qué subió el ROAS si la inversión está plana')
   })
 
   it('elegir un hilo DISPARA con su id', async () => {
     const elegir = vi.fn()
-    render(<ThreadRail groups={grupos} onSelect={elegir} />)
+    render(<ThreadRail format={format} groups={grupos} onSelect={elegir} />)
     await userEvent.click(screen.getByRole('button', { name: /Quiebre de stock/ }))
     expect(elegir).toHaveBeenCalledWith('h-2')
   })
 
   it('el hilo de una decisión lleva su badge · es la traza de por qué se decidió', () => {
-    render(<ThreadRail groups={grupos} onSelect={() => {}} />)
+    render(<ThreadRail format={format} groups={grupos} onSelect={() => {}} />)
     expect(screen.getByRole('button', { name: /Quiebre de stock/ })).toHaveTextContent('Decisión')
     expect(screen.getByRole('button', { name: /ROAS/ })).not.toHaveTextContent('Decisión')
   })
 
   it('el hilo activo se marca para el lector de pantalla, no solo con color', () => {
-    render(<ThreadRail groups={grupos} activeId="h-1" onSelect={() => {}} />)
+    render(<ThreadRail format={format} groups={grupos} activeId="h-1" onSelect={() => {}} />)
     expect(screen.getByRole('button', { name: /ROAS/ })).toHaveAttribute('aria-current', 'true')
     expect(screen.getByRole('button', { name: /Quiebre/ })).not.toHaveAttribute('aria-current')
   })
 
   it('el grupo es un encabezado · un lector de pantalla lo puede saltar', () => {
-    render(<ThreadRail groups={grupos} onSelect={() => {}} />)
+    render(<ThreadRail format={format} groups={grupos} onSelect={() => {}} />)
     expect(screen.getByRole('heading', { name: 'Hoy' })).toBeInTheDocument()
   })
 })

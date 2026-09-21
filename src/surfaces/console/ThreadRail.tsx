@@ -24,15 +24,25 @@
  */
 import { Label } from '../../render/primitives/Label'
 import type { ThreadGroup } from './threads'
+import type { Formatter } from '../../render/format'
 import type { ThreadSummary } from '../../api/types'
 
 type Props = {
   groups: readonly ThreadGroup[]
   activeId?: string
   onSelect: (threadId: string) => void
+  /** Para la marca de tiempo de cada fila · §PEN:C3 la dibuja en todas. */
+  format: Formatter
+  /** «Nueva consulta» · §PEN:C3 lo pone en la cabecera del riel. **Sin
+   *  manejador no se pinta**, que es la regla del CTA muerto. */
+  onNueva?: () => void
 }
 
-export function ThreadRail({ groups, activeId, onSelect }: Props) {
+export function ThreadRail({ groups, activeId, onSelect, format, onNueva }: Props) {
+  // Un solo `now` para todas las filas: dos llamadas distintas podrían caer a
+  // los dos lados de la medianoche y dejar dos formatos en la misma lista.
+  const ahora = new Date()
+
   if (groups.length === 0) {
     return (
       <p className="font-body text-cuerpo leading-cuerpo text-dim m-0">
@@ -43,6 +53,21 @@ export function ThreadRail({ groups, activeId, onSelect }: Props) {
 
   return (
     <nav aria-label="Conversaciones anteriores" className="flex flex-col gap-4">
+      {/* **`HISTORIAL` y `NUEVA CONSULTA`** · §PEN:C3 los pone en la cabecera
+          del riel, y su estado colapsado dice que los dos sobreviven. */}
+      <div className="flex items-baseline justify-between gap-2">
+        <Label as="div">Historial</Label>
+        {onNueva === undefined ? null : (
+          <button
+            type="button"
+            onClick={onNueva}
+            className="font-mono text-label tracking-rotulo uppercase text-acc hover:text-acc-hover cursor-pointer bg-transparent border-0 p-0"
+          >
+            Nueva consulta
+          </button>
+        )}
+      </div>
+
       {groups.map((group) => (
         <section key={group.label} className="flex flex-col gap-1">
           {/* Encabezado y no `<Label>`: el primitivo acepta span, div y dt
@@ -80,12 +105,21 @@ export function ThreadRail({ groups, activeId, onSelect }: Props) {
                       además prohíbe borrar estos hilos; el riel no ofrece
                       borrar ninguno todavía, así que acá solo se declara. */}
                   {thread.esDecision ? <Label as="span">Decisión</Label> : null}
+                  {/* La hora si es de hoy, el día y el mes si no · §PEN:C3. */}
+                  <Label as="span">{format.threadStamp(thread.actualizadoEn, ahora)}</Label>
                 </button>
               </li>
             ))}
           </ul>
         </section>
       ))}
+      {/* **El pie dice quién puede leer lo que se preguntó** · §PEN:C3, con
+          este literal. No es decorativo: es la clase de cosa que se pregunta
+          una vez y se contesta mal si no está escrita. */}
+      <div className="flex flex-col gap-1 border-t border-w2 pt-2">
+        <Label as="div">Las consultas quedan en el tenant</Label>
+        <Label as="div">Visibles solo para tu rol</Label>
+      </div>
     </nav>
   )
 }
