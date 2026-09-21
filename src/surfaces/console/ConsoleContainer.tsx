@@ -22,6 +22,7 @@ import { preloadBodies } from '../../render/bodies/registry'
 import { createFormat } from '../../render/format'
 import { markTabConfig } from '../../render/budget'
 import { Console } from './Console'
+import { PanelChat } from './PanelChat'
 import { SurfaceMessage } from './SurfaceMessage'
 import type { Metric, PanelType, Payload } from '../../api/types'
 
@@ -40,6 +41,10 @@ const format = createFormat('es-MX')
 export function ConsoleContainer() {
   const [tabId, setTabId] = useState<string | null>(null)
   const [periodId, setPeriodId] = useState<string | null>(null)
+  /** Desde qué panel se preguntó · F3.3. **Un solo estado**, que es lo que hace
+   *  estructuralmente imposible tener dos hojas abiertas — la red del contador
+   *  de `ChatOverlay` es para quien monte una desde otro lado. */
+  const [askingPanelId, setAskingPanelId] = useState<string | null>(null)
 
   const context = useMe()
   const catalog = useCatalog()
@@ -168,7 +173,21 @@ export function ConsoleContainer() {
     return payloadOf(panelId)
   }
 
+  /* ── F3.3 · «Preguntar» ──────────────────────────────────────────────────
+   *
+   *  **La hoja se monta sólo cuando hay panel**, y con él se resuelve su métrica
+   *  para titularla. Si el panel dejó de existir —cambió la pestaña con la hoja
+   *  abierta— no se monta: titular «Preguntar» sobre un panel que ya no está en
+   *  pantalla es peor que cerrarla.
+   *
+   *  **El período sale del mismo lugar que el batch**, así que la pregunta habla
+   *  del mismo período que la cifra que se está mirando. Si salieran de dos
+   *  lados, alguien preguntaría por septiembre mirando agosto. */
+  const askingPanel = panels.find((p) => p.id === askingPanelId)
+  const askingMetric = askingPanel === undefined ? undefined : byId.get(askingPanel.metricId)
+
   return (
+    <>
     <Console
       context={context.data}
       activeTab={activeTab}
@@ -183,6 +202,21 @@ export function ConsoleContainer() {
       onSelectPeriod={setPeriodId}
       onChangeTheme={(theme) => saveTheme.mutate(theme)}
       onRetryPanel={(panelId) => retryPanel.mutate(panelId)}
+      onAskPanel={setAskingPanelId}
     />
+
+    {askingPanel !== undefined && askingMetric !== undefined && activePeriod !== undefined ? (
+      <PanelChat
+        // **La `key` es el panel, y no es decorativa.** Sin ella, abrir el chat
+        // de otro panel reutilizaría el mismo `useChat` y los turnos de la
+        // conversación anterior quedarían debajo de un título nuevo.
+        key={askingPanel.id}
+        panelId={askingPanel.id}
+        periodo={activePeriod.id}
+        titulo={askingMetric.nombre}
+        onClose={() => setAskingPanelId(null)}
+      />
+    ) : null}
+    </>
   )
 }

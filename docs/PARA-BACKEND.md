@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 22 pedido(s)
+## Lo que esperamos · 23 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -287,6 +287,18 @@ Existe `POST /admin/agents` y **nada más**: no hay forma de leer la configuraci
 **Y lo que el front necesita no es la configuración, es su CONSECUENCIA.** §7.3 prohíbe mostrar vocabulario de infraestructura —ni base, ni rol técnico, ni warehouse, ni grant— y pide en su lugar: **si el acceso a datos está vigente, cuándo se verificó por última vez, y qué hacer si no lo está.** Tres campos, no un CRUD.
 
 Con esos tres, F4.4 y la mitad que le falta a la ficha de cliente se cierran. El CRUD completo de B3.9 es otra cosa y puede esperar: **lo que bloquea es el estado, no la edición.**
+
+
+### B3.11 · Aplicar las migraciones de 82da946 sobre la base compartida
+
+*Estado de la tarea: pendiente.*
+
+
+**Que corran las migraciones manuales de `82da946`** — pedido el 2026-09-21 en [`MENSAJE-2026-09-21-dos-tareas-del-chat.md`](docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md), tarea 1.
+
+Medido ese día contra la base compartida, con una consulta de sólo lectura sobre `information_schema`: **faltan las nueve columnas y el índice.** Las agrega `internal/adapters/repository/manual_migrations.go` y corren sólo con `DB_AUTO_MIGRATE=true`, que no activamos sobre esa base: es un cambio de esquema en una base compartida y la decisión no es nuestra.
+
+Sin ellas `POST /config/chat` no puede guardar el hilo, y eso se ve como un **500, no como un 404**: la ruta existe, lo que falta es la columna.
 
 
 ### B4.1 · GET /admin/tenants

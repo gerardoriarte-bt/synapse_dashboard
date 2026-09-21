@@ -12,7 +12,7 @@
  *  construcción y no demuestra nada.
  */
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { Panel } from '@/render/Panel/Panel'
 import { createFormat } from '@/render/format'
 import type { Metric, Payload, Value } from '@/api/types'
@@ -184,5 +184,38 @@ describe('la altura sale del rowSpan y nunca del contenido', () => {
     const section = container.querySelector('section')
     expect(section?.style.gridRow).toBe('span 4')
     expect(section?.style.gridColumn).toBe('1 / span 4')
+  })
+})
+
+describe('F3.3 · los CTA del shell son callbacks, y sin manejador no se pintan', () => {
+  it('sin `onChat` NO hay botón «Preguntar»', () => {
+    // La regla del CTA muerto, en el lado de `render/`. Es lo que permite que
+    // el builder y la vista previa por rol monten el MISMO panel sin ofrecer
+    // una acción que ahí no existe: «un botón que se aprieta y devuelve 403 es
+    // peor que un botón ausente».
+    montar(conCifra)
+    expect(screen.queryByRole('button', { name: 'Preguntar' })).not.toBeInTheDocument()
+  })
+
+  it('con `onChat` el botón DISPARA · no alcanza con que exista', () => {
+    // La aserción es la llamada, no la presencia. `Console → PanelInGrid →
+    // Panel → PanelShell` son cuatro saltos y cada uno usa el spread
+    // condicional, que deja compilar una prop mal nombrada: el síntoma es
+    // siempre un botón que se ve bien y no llama a nada.
+    const preguntado = vi.fn()
+    render(
+      <Panel
+        metric={metric}
+        payload={conCifra}
+        placement={placement}
+        format={format}
+        now={now}
+        onChat={preguntado}
+      >
+        <p>EL CUERPO</p>
+      </Panel>,
+    )
+    screen.getByRole('button', { name: 'Preguntar' }).click()
+    expect(preguntado).toHaveBeenCalledTimes(1)
   })
 })

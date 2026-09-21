@@ -41,6 +41,14 @@ type Props = {
   /** Reintento de UN panel · F2.4. Lleva el `panelId` porque el reintento es
    *  de ese panel y no del batch: los otros ya cargaron bien. */
   onRetryPanel?: (panelId: string) => void
+  /** «Preguntar» · F3.3. Lleva el `panelId` porque el contexto del chat es el
+   *  panel desde el que se preguntó: `panel_context: {panel_id, period}`.
+   *
+   *  **Es un callback y no una navegación escrita acá**, igual que `onRetry`.
+   *  `Console` no sabe si abre una hoja, una ruta o nada — quien decide el
+   *  viaje es quien monta la consola, que en el builder y en la vista previa
+   *  por rol no es el mismo. */
+  onAskPanel?: (panelId: string) => void
 }
 
 export function Console({
@@ -57,6 +65,7 @@ export function Console({
   onSelectPeriod,
   onChangeTheme,
   onRetryPanel,
+  onAskPanel,
 }: Props) {
   // El colapso · F1.30. No lo puede hacer solo el CSS: el `colSpan` viaja en un
   // estilo en línea y una media query no lo alcanza.
@@ -136,6 +145,10 @@ export function Console({
             )
           }
 
+          // **Sin manejador NO se pinta el botón** · la regla del CTA muerto. El
+          // shell ya la aplica sobre `onChat`, y acá se sostiene hacia arriba:
+          // el builder monta esta misma consola sin `onAskPanel`, y ahí
+          // «Preguntar» no aparece en vez de aparecer y no hacer nada.
           return (
             <PanelInGrid
               key={panel.id}
@@ -147,6 +160,7 @@ export function Console({
               format={format}
               now={now}
               {...(onRetryPanel === undefined ? {} : { onRetry: () => onRetryPanel(panel.id) })}
+              {...(onAskPanel === undefined ? {} : { onChat: () => onAskPanel(panel.id) })}
             />
           )
         })}

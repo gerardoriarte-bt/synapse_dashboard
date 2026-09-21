@@ -1147,6 +1147,36 @@ warehouse, vistas semánticas permitidas y prompt base.
 - Cambiar las vistas permitidas surte efecto en la siguiente pregunta, sin
   reiniciar el servicio.
 
+### ➕ B3.11 ⬜ Aplicar las migraciones de `82da946` sobre la base compartida
+**Espera del backend.** **Que corran las migraciones manuales de `82da946`** — pedido el 2026-09-21 en [`MENSAJE-2026-09-21-dos-tareas-del-chat.md`](docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md), tarea 1.
+
+Medido ese día contra la base compartida, con una consulta de sólo lectura sobre `information_schema`: **faltan las nueve columnas y el índice.** Las agrega `internal/adapters/repository/manual_migrations.go` y corren sólo con `DB_AUTO_MIGRATE=true`, que no activamos sobre esa base: es un cambio de esquema en una base compartida y la decisión no es nuestra.
+
+Sin ellas `POST /config/chat` no puede guardar el hilo, y eso se ve como un **500, no como un 404**: la ruta existe, lo que falta es la columna.
+
+**Descripción.** Aplicar las columnas que el commit escribe, y el índice.
+
+| Tabla | Columnas | De qué tarea son |
+|---|---|---|
+| `user_threads` | `panel_id`, `period`, `deleted_at` | B3.1 y B3.10 |
+| `agents` | `is_active`, `semantic_views`, `system_prompt_base` | B3.3 y B3.9 |
+| `dd_panel_data` | `last_error`, `last_error_at`, `last_success_at` + índice `idx_dd_panel_data_tenant_metric_period` | Materialización · B2.12 |
+
+**Qué frena en el front.** No frena la construcción: frena la **verificación
+contra el servicio**. F3.12 y F3.3 no se pueden abrir contra el chat real, F3.7
+no puede mostrar con qué panel se abrió un hilo, y F4.4 se construye contra MSW
+pero no se verifica.
+
+**Criterio de aceptación.**
+- La consulta del mensaje sobre `information_schema` devuelve las nueve
+  columnas. **La corremos nosotros**, contra la base compartida y con fecha: el
+  aviso de que se corrieron no alcanza para cerrarla.
+- El índice único existe, o hay una razón escrita de por qué no. El código de
+  ellos **no lo crea si encuentra duplicados** y lo avisa por log, así que su
+  ausencia no es necesariamente un error.
+- `POST /config/chat` contra el servicio con `panel_context` guarda el hilo, y
+  `GET /config/chat/threads` lo devuelve con su panel y su período.
+
 ---
 
 ## Fase 4 — Admin y Builder
@@ -3247,7 +3277,7 @@ posibilidad de que difirieran.
 `tests/api/chat.test.ts`, contra el cable transcripto y no contra nuestro
 vocabulario interno.
 
-### F3.3 ⬜ «Ver detalle» y «Preguntar» en el shell del panel · **destrabada el 2026-09-17**
+### F3.3 ✅ «Ver detalle» y «Preguntar» en el shell del panel
 **Criterio de aceptación.**
 - Los dos son CALLBACKS del shell, no navegación escrita adentro: `render/` no
   sabe a dónde llevan y la superficie es dueña del viaje.
@@ -3261,9 +3291,38 @@ como `panel_context: {panel_id, period}` y `useChat` ya lo recibe. Lo que falta
 es puramente de este lado — el callback en el shell y la superficie que abre la
 hoja con el panel desde el que se preguntó.
 
-**Es la tarea que hace falta para poder MIRAR el chat.** Hoy `useChat` no tiene
-consumidor en ninguna ruta, así que el cliente SSE está probado y no está visto,
-que es la mitad que las pruebas no cubren.
+**Hecha el 2026-09-21.** `Console` recibe `onAskPanel` y lo baja como `onChat`;
+`ConsoleContainer` sostiene **un solo** `askingPanelId` y monta `PanelChat`, la
+hoja atada a un panel. El lado de `render/` ya estaba: el shell pinta
+«Preguntar» sólo si hay manejador —la regla del CTA muerto— y sigue sin saber a
+dónde lleva.
+
+**«Ver detalle» sigue sin pintarse, y es correcto**: D3 lo difirió, así que no
+hay manejador que pasarle. El criterio decía «hoy no se pinta ninguno de los
+dos»; pasó a ser «hoy se pinta uno».
+
+**El campo donde se escribe la pregunta no tenía tarea.** F3.1 es la hoja, F3.5
+son los mensajes, F3.8 es el hook: ninguna es el compositor. Se descubrió acá,
+porque sin él «Preguntar» abre una hoja que invita a preguntar y no deja. Vive
+en `PanelChat`.
+
+**La prueba es que la pregunta LLEGUE con el panel correcto**, no que el botón
+exista: son cinco saltos con spread condicional —`ConsoleContainer → Console →
+PanelInGrid → Panel → PanelShell`— y ahí una prop mal nombrada compila.
+Verificada rompiendo el código: cinco mutaciones, las cinco muertas. **Una
+sobrevivió primero** y mostró que la prueba del arrastre de turnos cerraba la
+hoja antes de saltar de panel, con lo cual React desmontaba igual y la `key` no
+se estaba verificando. La hoja NO tapa la pantalla: se puede saltar de panel sin
+cerrarla, y ése es el caso que la `key` defiende.
+
+**Y se abrió en el navegador**, que es la mitad que no se automatiza. Modo mock,
+apretando «Preguntar» en el SEGUNDO panel: la hoja se tituló con su métrica, el
+texto llegó de a fragmentos, el botón dijo «Esperando» mientras transmitía y
+«Cómo se calculó» quedó al pie. **Ahí apareció F3.13**, que ninguna prueba vio.
+
+El modo mock tiene handler de chat desde hoy, y **responde el cable** —`event:`
++ `data:`— porque uno que hablara nuestro dialecto volvería a esconder la
+frontera.
 
 ### F3.4 ✅ Cliente SSE
 **Criterio de aceptación.** Lee los seis eventos que declara el contrato.
@@ -3492,8 +3551,33 @@ rompiendo el código: cuatro mutaciones, las cuatro muertas.
 
 **Lo que NO demuestra, y está dicho a propósito:** no se abrió contra el
 servicio. Para eso hacen falta F3.3 —que no hay por dónde entrar al chat— y las
-migraciones de la tarea 1 de
+migraciones de B3.11, pedidas en la tarea 1 de
 [`MENSAJE-2026-09-21-dos-tareas-del-chat.md`](docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md).
+
+### ➕ F3.13 ⬜ La respuesta del agente es MARKDOWN y se pinta literal
+**Descripción.** Renderizar el markdown que el agente devuelve, en vez de
+volcarlo como texto plano.
+
+**Encontrado el 2026-09-21 al ABRIR el chat**, no por una prueba. En pantalla se
+lee `### Límite declarado` con los tres numerales incluidos. El `openapi.yaml`
+de `82da946` lo declara: la respuesta es «markdown en español que abre con una
+conclusión de 1-2 frases y, cuando aplica, las secciones `### Puntos de
+lectura`, `### Fuentes consultadas` y `### Límite declarado`».
+
+**No reabre F3.5**, cuyo criterio se cumplió: se escribió antes de saber que el
+agente contesta markdown, y ninguna de sus aserciones es falsa hoy. Es la misma
+distinción que F3.12 con F3.4 — lo que cambió es el cable.
+
+**Criterio de aceptación.**
+- Encabezados, listas y énfasis se pintan con los tokens de la escala
+  tipográfica. **Ni `text-[13px]` ni `text-sm`**: las dos se saltan el sistema.
+- **No se inyecta HTML del agente.** El texto lo compone un modelo que consulta
+  datos del tenant; pintarlo con `dangerouslySetInnerHTML` convierte una
+  respuesta en un vector.
+- Las tres secciones que el backend declara se ven como secciones y no como una
+  línea más de prosa. §7.1 pide el límite declarado **al lado** del SQL.
+- `[SIN_COMPETENCIA]` en la primera línea no se muestra crudo: el backend lo usa
+  para decir que no puede responder con las fuentes que tiene.
 
 ---
 
@@ -3543,7 +3627,7 @@ como el otro sería decir «acceso vigente» porque nadie apagó el interruptor.
 
 **Ojo antes de tomarla:** las tres columnas que ese CRUD escribe no existen en
 la base compartida, medido el 2026-09-21. Se puede construir contra MSW;
-verificarla contra el servicio, no todavía. Ver la tarea 1 de
+verificarla contra el servicio, no todavía. Espera B3.11, pedida en la tarea 1 de
 [`MENSAJE-2026-09-21-dos-tareas-del-chat.md`](docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md).
 
 **El ancho mínimo es 1280 y no hay colapso**, que es la corrección de §4 del

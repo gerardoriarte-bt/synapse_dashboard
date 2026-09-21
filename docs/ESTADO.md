@@ -5,21 +5,21 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**97 de 197 tareas cerradas.** 18 parciales · 77 pendientes · 5 diferidas.
+**98 de 199 tareas cerradas.** 18 parciales · 78 pendientes · 5 diferidas.
 
 
-## Front · 90 de 114
+## Front · 91 de 115
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██████████████████████` | 16/16 | 0 | 0 |
 | 1 · Consola y render/ | `████████████████████··` | 40/44 | 1 | 3 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
-| 3 · Chat contextual | `███████████···········` | 6/12 | 1 | 2 |
+| 3 · Chat contextual | `████████████··········` | 7/13 | 1 | 2 |
 | 4 · Admin y Builder | `██████████████········` | 15/23 | 2 | 6 |
 | 5 · Pruebas y pulido | `██████████████········` | 8/13 | 1 | 3 |
 
-## Backend · 7 de 83
+## Backend · 7 de 84
 
 > ⚠️ **Este número está bajo y no refleja al backend.** El plan de acá
 > es la fuente del FRONT; el estado de las tareas `B*` solo se mueve
@@ -38,7 +38,7 @@
 | 0 · Fundamentos | `██····················` | 1/10 | 1 | 8 |
 | 1 · API de consola | `████··················` | 5/27 | 6 | 16 |
 | 2 · Materialización | `██····················` | 1/13 | 0 | 12 |
-| 3 · Chat contextual | `······················` | 0/10 | 0 | 10 |
+| 3 · Chat contextual | `······················` | 0/11 | 0 | 11 |
 | 4 · Admin y Builder | `······················` | 0/16 | 5 | 11 |
 | 5 · Multi-dashboard y pulido | `······················` | 0/7 | 0 | 6 |
 
@@ -46,13 +46,13 @@
 
 ## Se puede tomar hoy · 3 del front
 
-- **F3.3** · «Ver detalle» y «Preguntar» en el shell del panel · destrabada el 2026-09-17
+- **F3.13** · La respuesta del agente es MARKDOWN y se pinta literal
 - **F3.7** · Historial de hilos · destrabada el 2026-09-17
 - **F4.4** · Configuración de agente Snowflake por tenant · destrabada con alcance recortado el 2026-09-17
 
 ---
 
-## Bloqueadas · 40
+## Bloqueadas · 41
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -97,6 +97,7 @@ Lo que el front espera del backend está detallado en
 - **B2.13** · Salud de feeds por fuente · de acá sale el ESTADO de cada métrica
 - **B2.7** · Estado SIN_PERMISO en el batch
 - **B3.1** · POST /config/chat con SSE
+- **B3.11** · Aplicar las migraciones de 82da946 sobre la base compartida
 - **B3.9** · CRUD /admin/tenants/{id}/agents
 - **B4.1** · GET /admin/tenants
 - **B4.10** · Asignación de layout publicado a roles

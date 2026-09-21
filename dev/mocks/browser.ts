@@ -208,6 +208,67 @@ export const worker = setupWorker(
   }),
   http.put(`${API}/config/me/preferences`, () => ok({ theme: 'dark' })),
 
+  /** El chat contextual · F3.3.
+   *
+   *  **Responde el CABLE, no nuestro vocabulario interno**: `event:` en una
+   *  línea y `data:` con las claves del servicio en otra. Es la única forma de
+   *  que este modo sirva para mirar el chat — un mock que hablara el dialecto
+   *  de `api/types` volvería a esconder exactamente la frontera que dejó pasar
+   *  que el chat no pintara una sola palabra.
+   *
+   *  No manda `event: data`: el traductor lo descarta mientras F3.6 siga
+   *  bloqueada, y emitirlo daría la impresión contraria. */
+  http.post(`${API}/config/chat`, async ({ request }) => {
+    const { question } = (await request.json()) as { question: string }
+
+    const trama = (evento: string, datos: unknown) =>
+      `event: ${evento}\ndata: ${JSON.stringify(datos)}\n\n`
+
+    const fragmentos = [
+      'Cayó 12% contra el mes anterior. ',
+      'El quiebre se concentra en 312 SKU de la familia de inventario, ',
+      'todos con cobertura menor a siete días.\n\n',
+      '### Límite declarado\n',
+      'No cubre las tiendas sin lectura de inventario en el período.',
+    ]
+
+    const encoder = new TextEncoder()
+    return new HttpResponse(
+      new ReadableStream({
+        async start(controller) {
+          controller.enqueue(
+            encoder.encode(
+              trama('thread_info', {
+                thread_id: 41,
+                parent_message_id: 7,
+                user_thread_id: '3f1d0a6e-0000-4000-8000-000000000001',
+              }),
+            ),
+          )
+          controller.enqueue(encoder.encode(trama('thinking', { status: 'running', message: question })))
+          // De a fragmentos y con pausa: sin esto el texto aparece entero y el
+          // estado de streaming no se ve nunca, que es la mitad de lo que hay
+          // que poder mirar.
+          for (const text of fragmentos) {
+            await delay(220)
+            controller.enqueue(encoder.encode(trama('delta', { text })))
+          }
+          controller.enqueue(
+            encoder.encode(
+              trama('sql', {
+                sql: 'select sku, cobertura_dias\n  from gold.inventario\n where periodo = :periodo\n   and cobertura_dias < 7',
+                tool: 'cortex_analyst',
+              }),
+            ),
+          )
+          controller.enqueue(encoder.encode(trama('done', {})))
+          controller.close()
+        },
+      }),
+      { headers: { 'content-type': 'text/event-stream' } },
+    )
+  }),
+
   /* ── Admin y builder ────────────────────────────────────────────────────── */
   http.get(`${API}/admin/tenants`, () => ok(tenants)),
   http.get(`${API}/admin/tenants/:id/catalog`, () => ok(catalogo)),
