@@ -42,12 +42,30 @@ describe('F3.1 · la hoja', () => {
     expect(cerrar).toHaveBeenCalledTimes(1)
   })
 
-  it('el botón de cerrar DISPARA · no alcanza con que exista', async () => {
-    // Un botón muerto se ve igual que uno que funciona.
+  it('apretar el VELO cierra · es la salida que la hoja misma ofrece', async () => {
+    // **El botón de cerrar dejó de ser de la hoja el 2026-09-21.** §PEN:C3 lo
+    // pone en la cabecera de la columna de conversación, así que lo monta
+    // `PanelChat` y lo verifica `historial.test.tsx`. Lo que la hoja ofrece por
+    // sí sola son dos salidas: el Escape y el velo.
     const cerrar = vi.fn()
-    render(<ChatOverlay open title="Venta diaria" onClose={cerrar}>x</ChatOverlay>)
-    await userEvent.click(screen.getByRole('button', { name: /cerrar/i }))
+    const { container } = render(
+      <ChatOverlay open title="Venta diaria" onClose={cerrar}>x</ChatOverlay>,
+    )
+    const velo = container.querySelector('[aria-hidden].fixed.inset-0')
+    expect(velo).not.toBeNull()
+    await userEvent.click(velo as Element)
     expect(cerrar).toHaveBeenCalledTimes(1)
+  })
+
+  it('el velo existe · es lo que vuelve CIERTO el `aria-modal`', () => {
+    // Estaba declarado desde el principio y era mentira: sin velo, todo lo de
+    // atrás seguía siendo clickeable, así que a un lector de pantalla se le
+    // decía que el resto estaba inerte cuando no lo estaba.
+    const { container } = render(
+      <ChatOverlay open title="Venta diaria" onClose={() => {}}>x</ChatOverlay>,
+    )
+    expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true')
+    expect(container.querySelector('[aria-hidden].fixed.inset-0')).not.toBeNull()
   })
 
   it('el foco ENTRA al abrir', () => {

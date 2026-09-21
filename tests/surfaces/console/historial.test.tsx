@@ -373,3 +373,59 @@ describe('§PEN:C1 · el chrome son tres bandas, no un bloque', () => {
     expect(within(navbar!).queryByRole('heading', { level: 1 })).not.toBeInTheDocument()
   })
 })
+
+describe('§PEN:C3 · la hoja son dos columnas, y el riel colapsa', () => {
+  it('el historial es una COLUMNA, no un bloque debajo de la conversación', async () => {
+    // El dibujo lo pone a la izquierda, en `$dock`, al lado del hilo. Hasta el
+    // 2026-09-21 iba debajo, y la hoja medía 480 en vez de 940.
+    laConsola([hilo()])
+    montar()
+    const { hoja } = await abrirLaHoja()
+
+    const riel = await within(hoja).findByRole('complementary')
+    expect(riel.className).toContain('bg-dock')
+    // Y la conversación es su hermana, no su contenedor.
+    expect(riel.contains(within(hoja).getByRole('heading', { name: 'Preguntar a Synapse' }))).toBe(
+      false,
+    )
+  })
+
+  it('colapsar deja la CUENTA · un riel que no dice cuánto esconde no invita', async () => {
+    // Es literal de la nota del `.pen`. Sin la cuenta es una flecha que no
+    // promete nada.
+    laConsola([hilo(), hilo({ id: 'otro', thread_id: 42 })])
+    montar()
+    const { usuario, hoja } = await abrirLaHoja()
+
+    await usuario.click(await within(hoja).findByRole('button', { name: 'Colapsar el historial' }))
+
+    const control = within(hoja).getByRole('button', { name: 'Abrir el historial' })
+    expect(control).toHaveTextContent('2')
+    expect(control).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('colapsado sobreviven el control para reabrir y el «+»', async () => {
+    // Los tres que la nota nombra: reabrir, nueva consulta y la cuenta.
+    laConsola([hilo()])
+    montar()
+    const { usuario, hoja } = await abrirLaHoja()
+
+    await usuario.click(await within(hoja).findByRole('button', { name: 'Colapsar el historial' }))
+
+    expect(within(hoja).getByRole('button', { name: 'Abrir el historial' })).toBeVisible()
+    expect(within(hoja).getByRole('button', { name: 'Nueva consulta' })).toBeVisible()
+    // Y las filas NO: para eso se colapsó.
+    expect(within(hoja).queryByText('¿Por qué cayó la venta?')).not.toBeInTheDocument()
+  })
+
+  it('reabrir devuelve las filas', async () => {
+    laConsola([hilo()])
+    montar()
+    const { usuario, hoja } = await abrirLaHoja()
+
+    await usuario.click(await within(hoja).findByRole('button', { name: 'Colapsar el historial' }))
+    await usuario.click(within(hoja).getByRole('button', { name: 'Abrir el historial' }))
+
+    expect(within(hoja).getByText('¿Por qué cayó la venta?')).toBeVisible()
+  })
+})

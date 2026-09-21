@@ -228,11 +228,15 @@ describe('F3.3 · «Preguntar» abre la hoja con el panel desde el que se pregun
   })
 
   it('saltar a otro panel SIN cerrar la hoja no arrastra los turnos', async () => {
-    // **La hoja no tapa la pantalla** —es un panel lateral de 480px— así que
-    // los paneles de atrás siguen siendo clickeables y se puede saltar de uno a
-    // otro sin cerrar. Ahí `PanelChat` NO se desmonta, y sin la `key` por panel
-    // React reutiliza el mismo `useChat`: la respuesta sobre «Venta diaria»
-    // queda debajo del título «Detalle por tienda».
+    // **Esto dejó de ser alcanzable para un usuario el 2026-09-21**, y se
+    // conserva a propósito. La hoja pasó a tener velo —§PEN:C3 lo dibuja— así
+    // que los paneles de atrás ya no se pueden apretar; en jsdom no hay
+    // hit-testing, así que esta prueba los alcanza igual.
+    //
+    // Lo que sigue verificando es que **`PanelChat` no arrastre turnos cuando
+    // cambia de panel sin desmontarse**, que es lo que sostiene la `key`. Hoy
+    // es un cinturón sobre tirantes; el día que el velo se saque, o que la hoja
+    // se abra desde otro lado, vuelve a ser la única defensa.
     //
     // La primera versión de esta prueba cerraba la hoja antes de abrir la otra,
     // y así pasaba con la `key` y sin ella — el cierre desmonta igual. Lo

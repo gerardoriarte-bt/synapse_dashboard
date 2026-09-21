@@ -107,8 +107,8 @@ que su resultado esté escrito.
 | `C1 · 768 · seis columnas` | `src/render/useColumns.ts` · el colapso se resuelve en JS · F1.30 |
 | `C1 · 360 · una columna` | ídem · el mínimo son 360 y no 768 · PS-12 |
 | `Consola · C2 · Drill-down de panel` | **No construida** · F3.9, diferida por D3 |
-| `Consola · C3 · Chat expandido` | `src/surfaces/console/PanelChat.tsx` · **diverge** · ver `docs/AUDITORIA-2026-09-21-pen-vs-chat-y-ficha.md` |
-| `Consola · C3 · Chat · historial colapsado` | **No construida** · el riel no colapsa · misma auditoría, §1 |
+| `Consola · C3 · Chat expandido` | `src/surfaces/console/PanelChat.tsx` · la forma se cerró en F5.17; lo que queda diverge por decisión, ver `docs/AUDITORIA-2026-09-21-pen-vs-chat-y-ficha.md` §2 |
+| `Consola · C3 · Chat · historial colapsado` | `src/surfaces/console/PanelChat.tsx` |
 | `Consola · C4 · Detalle de hallazgo` | **No construida** · F3.10, diferida por D3 |
 | `Consola · C4 · Hallazgo fuera de banda` | **No construida** · ídem |
 | `Consola · C5 · Sin permiso` | `src/render/states/ForbiddenState.tsx` |
@@ -5510,6 +5510,52 @@ Dos cosas del entorno que parecían fallos y no lo eran: jsdom abre en 1024px, o
 sea seis columnas, así que la grilla colapsaba —F1.30 funcionando— y el alto no
 es un `height` sino `gridRow: span N` sobre `gridAutoRows`. Y la celda se busca
 por su panel y no por índice, porque `readingOrder` ordena el DOM.
+
+### ➕ F5.17 ✅ La hoja del chat mide 940, con riel lateral y colapso
+**Descripción.** Rehacer `ChatOverlay` y `PanelChat` con la forma que §PEN:C3
+dibuja, y construir la pantalla del historial colapsado.
+
+**Criterio de aceptación.**
+- Dos columnas: historial 220 y conversación 720, dentro de una hoja de 940.
+- El riel colapsa a 52 conservando **el control para reabrir, el «+» y la
+  cuenta**.
+- La hoja tiene velo, filo y radio sólo del lado que entra.
+
+**Hecha el 2026-09-21.** Medía 480 y el riel iba debajo de la conversación.
+
+**La estructura salió del frame, no de la nota**, y ahí aparecieron dos cosas
+que la nota no decía:
+
+- **Un `Velo`** a pantalla completa por detrás. **Es lo que vuelve cierto el
+  `aria-modal`**, que estaba declarado desde el principio y era mentira: sin
+  velo, todo lo de atrás seguía siendo clickeable y alcanzable por teclado, así
+  que a un lector de pantalla se le decía que el resto estaba inerte cuando no
+  lo estaba.
+- **La cabecera y el campo van en `$elev` sobre una conversación en `$panel`**,
+  y el riel en `$dock`. Son tres superficies, no una.
+
+**Los tres anchos del dibujo son tokens exactos**: `w-55` son 220, `w-13` son
+52 y `h-0.5` son los 2 del filo, porque `--spacing` es 4px.
+
+**Dos valores del `.pen` NO se copiaron, y es porque el `.pen` se contradice.**
+El frame lleva `radius [16, 0, 0, 16]` y un velo `#0B0B0CCC`, los dos **como
+literales** —los otros nodos de esa pantalla usan tokens, `$r-lg` en el botón—,
+y la escala que el propio `.pen` emite termina en `--radius-xl: 10px` y no tiene
+color de velo. Se usan `rounded-l-xl` y `shad`, que además **se invierte con el
+tema** cosa que un hex fijo no hace. Quedan como propuesta de spec.
+
+**Y al abrirlo apareció un defecto que ninguna prueba veía:** «HISTORIAL» salía
+dos veces, una arriba de la otra — el control de colapso y la cabecera del riel
+decían la misma palabra. El control pasó a ser una flecha con su `aria-label`.
+
+Verificada rompiendo el código: cuatro mutaciones, las cuatro muertas —la
+cuenta, el «+», el velo y la columna—.
+
+**Una consecuencia anotada en su prueba:** saltar de panel sin cerrar la hoja
+**dejó de ser alcanzable para un usuario**, porque el velo tapa los paneles. En
+jsdom no hay hit-testing, así que la prueba los alcanza igual; lo que sigue
+verificando es que `PanelChat` no arrastre turnos, que es lo que sostiene la
+`key`. Hoy es un cinturón sobre tirantes.
 
 ### ➕ F5.16 ✅ El chrome de la consola son tres bandas, no un bloque
 **Descripción.** Separar el navbar del título y el título del contenido, como

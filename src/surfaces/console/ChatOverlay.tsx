@@ -1,4 +1,4 @@
-/** La hoja lateral del chat · F3.1
+/** La hoja lateral del chat · F3.1 · §PEN:C3
  *
  *  **Sin `<dialog>` nativo, y con la razón escrita.** `showModal()` daría el
  *  Escape, la trampa de foco y la devolución del foco al disparador de arriba,
@@ -11,21 +11,48 @@
  *  cierra el Escape. La consola sostiene un solo estado, así que estructuralmente
  *  no puede haber dos; el contador de abajo es la red por si alguien monta una
  *  segunda desde otro lado, y avisa en vez de fallar en silencio.
+ *
+ *  ── LA FORMA SALE DEL DIBUJO · 2026-09-21 ───────────────────────────────────
+ *
+ *  Hasta hoy medía 480 y no tenía velo. El frame `Chat` de §PEN:C3 dice otra
+ *  cosa, campo por campo:
+ *
+ *   · **940 de ancho**, pegada a la derecha — `x=500` sobre un lienzo de 1440.
+ *   · **`radius [16, 0, 0, 16]`**: redondeada **solo del lado que entra**.
+ *   · **`Filo`**, 940 × 2 en `$acc`, arriba de todo.
+ *   · **`Velo`** a pantalla completa por detrás.
+ *   · fondo `$dock`, no `$elev`.
+ *
+ *  **El velo es lo que hace honesto el `aria-modal`.** Estaba declarado desde el
+ *  principio y era mentira: sin velo, todo lo de atrás seguía siendo clickeable
+ *  y alcanzable por teclado, así que a un lector de pantalla se le decía que el
+ *  resto estaba inerte cuando no lo estaba.
+ *
+ *  ── DOS VALORES QUE EL `.pen` ESCRIBE COMO LITERAL ──────────────────────────
+ *
+ *  Y acá el `.pen` se contradice consigo mismo, así que no se copia:
+ *
+ *   · **El radio 16.** Los otros nodos de esa misma pantalla usan tokens
+ *     —`$r-lg` en el botón—, pero la hoja lleva un 16 crudo, y **la escala que
+ *     el propio `.pen` emite termina en `--radius-xl: 10px`**. Se usa el token.
+ *   · **El velo `#0B0B0CCC`.** No hay token con ese valor, y «un hex literal es
+ *     un bug» es regla dura. Se usa `shad`, que es el único negro translúcido
+ *     del sistema y **se invierte con el tema**, que un hex fijo no hace.
+ *
+ *  Las dos quedan como propuesta de spec: o la escala gana un radio de 16 y un
+ *  color de velo, o el dibujo usa los que ya hay.
  */
 import { useEffect, useRef } from 'react'
-import { Label } from '../../render/primitives/Label'
 import type { ReactNode } from 'react'
 
 let abiertas = 0
 
 type Props = {
   open: boolean
-  /** El encabezado. §PEN:C3 lo fija en «PREGUNTAR A SYNAPSE». */
+  /** Nombra la hoja para el lector de pantalla. */
   title: string
-  /** De qué se está hablando · §PEN:C3 lo pone debajo del encabezado, como
-   *  `CONTEXTO · … · JUL 2026`. **Va también al nombre accesible**: con el
-   *  encabezado solo, las hojas de dos paneles se llamarían igual para quien
-   *  navega con lector de pantalla. */
+  /** De qué se está hablando · se suma al nombre accesible, para que las hojas
+   *  de dos paneles no se llamen igual. */
   contexto?: string
   onClose: () => void
   children: ReactNode
@@ -72,35 +99,34 @@ export function ChatOverlay({ open, title, contexto, onClose, children }: Props)
   if (!open) return null
 
   return (
-    <div
-      ref={hoja}
-      role="dialog"
-      aria-modal="true"
-      aria-label={contexto === undefined ? title : `${title} · ${contexto}`}
-      tabIndex={-1}
-      className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[480px] flex-col gap-4 overflow-y-auto border-l border-w3 bg-elev p-6 shadow-[0_0_40px_var(--color-shad)] outline-none"
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex min-w-0 flex-col gap-1">
-          <h2 className="font-display text-titulo tracking-titulo leading-titulo text-ink m-0 min-w-0 truncate">
-            {title}
-          </h2>
-          {contexto === undefined ? null : <Label as="div">Contexto · {contexto}</Label>}
-        </div>
-        {/* **Dice `ESC` y no «Cerrar»** · §PEN:C3. Es la tecla que además
-            funciona, así que el rótulo enseña el atajo en vez de repetir lo
-            que el botón ya hace. El nombre accesible sigue siendo «Cerrar»:
-            `ESC` no se lee en voz alta como una acción. */}
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Cerrar"
-          className="font-mono text-label tracking-rotulo uppercase text-dim hover:text-ink cursor-pointer bg-transparent border-0 p-0"
-        >
-          Esc
-        </button>
+    <>
+      {/* **El velo** · §PEN:C3 lo dibuja a pantalla completa por detrás de la
+          hoja. Cierra al apretarlo, que es lo que espera cualquiera que haya
+          usado una hoja lateral, y **es lo que vuelve cierto el `aria-modal`**.
+
+          `aria-hidden` porque no aporta nada a quien no lo ve: el Escape y el
+          botón de cerrar son las salidas que sí se anuncian. */}
+      <div
+        aria-hidden
+        onClick={onClose}
+        className="fixed inset-0 z-40 bg-shad"
+      />
+
+      <div
+        ref={hoja}
+        role="dialog"
+        aria-modal="true"
+        aria-label={contexto === undefined ? title : `${title} · ${contexto}`}
+        tabIndex={-1}
+        // 940 del dibujo, pegada a la derecha, y redondeada **solo a la
+        // izquierda** — el lado por el que entra. `overflow-hidden` para que
+        // las dos columnas respeten ese radio.
+        className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[940px] overflow-hidden rounded-l-xl bg-dock shadow-[0_0_40px_var(--color-shad)] outline-none"
+      >
+        {/* El `Filo`: 2px de `$acc` arriba de todo, a lo ancho de la hoja. */}
+        <span aria-hidden className="absolute inset-x-0 top-0 z-10 h-0.5 bg-acc" />
+        {children}
       </div>
-      {children}
-    </div>
+    </>
   )
 }
