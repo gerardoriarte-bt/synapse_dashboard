@@ -41,10 +41,16 @@ openapi: 3.1.0
 #
 # ── LO QUE NO ESTÁ ───────────────────────────────────────────────────────────
 #
-# `/config/chat`, `/config/chat/hilos`, `/config/decisiones`,
-# `/config/accionables` y `/config/solicitudes` NO existen en el servicio. No se
-# transcriben: declarar una ruta que nadie sirve es el mismo problema que un
-# chequeo que pasa porque no encontró nada.
+# `/config/decisiones`, `/config/accionables` y `/config/solicitudes` NO existen
+# en el servicio. No se transcriben: declarar una ruta que nadie sirve es el
+# mismo problema que un chequeo que pasa porque no encontró nada.
+#
+# `/config/chat` SÍ existe desde `82da946` y está transcrita abajo, marcada con
+# `x-origen: 82da946` porque el resto del archivo sigue leído de `733c13c`. Sus
+# hermanas del mismo commit —`/config/chat/threads`, `.../messages` y
+# `/config/panels/{panelId}/chat-suggestions`— no se transcriben todavía: son
+# F3.7 y una tarea que aún no tiene número, y una ruta transcrita que nadie
+# llama envejece sin que nadie lo note.
 # ─────────────────────────────────────────────────────────────────────────────
 
 info:
@@ -237,6 +243,63 @@ paths:
                         properties:
                           theme: { type: string, enum: [dark, light] }
         '400': { $ref: '#/components/responses/BadRequest' }
+
+  # ── B3.1 · el chat contextual · TRANSCRITO DE 82da946 ────────────────────
+  /config/chat:
+    post:
+      tags: [config]
+      operationId: askChat
+      summary: Preguntar desde un panel · stream SSE
+      x-origen: 82da946
+      description: |
+        **Transcrita el 2026-09-21 desde `82da946`**, no desde `733c13c` como el
+        resto de este archivo: la ruta no existía cuando se transcribió lo demás.
+        Leído `internal/adapters/handler/dd_chat_handler.go` (el handler),
+        `internal/core/services/dd_chat_service.go` (`pump`, que arma los frames)
+        y `internal/core/services/cortex_sse.go` (los siete nombres de evento).
+
+        **La respuesta NO es JSON: es `text/event-stream`**, y cada trama lleva
+        DOS líneas — `event: <nombre>` y `data: <json>`. **El discriminador está
+        en la línea `event:`**, no adentro del JSON, que es lo contrario de lo
+        que declara `EventoDeChat` del contrato. Por eso hay traducción en
+        `src/api/chat.ts` y no un `JSON.parse` a secas.
+
+        `panel_context` es `binding:"required"` con `panel_id` `uuid`: sin
+        contexto de panel la llamada devuelve 400. No hay chat sin panel.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChatAskRequest' }
+      responses:
+        '200':
+          description: |
+            El stream. El esquema es `string` porque OpenAPI no describe tramas
+            SSE; las formas de cada `data:` están en los `ChatFrame*` de
+            `components/schemas`, que existen para que el traductor tipe contra
+            algo y no contra structs de Go leídos a mano.
+          content:
+            text/event-stream:
+              schema: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: El rol no ve el tab o la métrica del panel
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: No hay agente activo para el tenant y el rol
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '429':
+          description: |
+            Rate limit por usuario, compartido con `/chat/*`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
 
 components:
   securitySchemes:
@@ -579,3 +642,136 @@ components:
             `materialized_at` en RFC 3339. **Cadena vacía** cuando el registro no
             tiene fecha de materialización, no `null`.
         catalog_version: { type: integer }
+
+    # ── /config/chat · B3.1 · TRANSCRITO DE 82da946 ──────────────────────────
+
+    ChatAskRequest:
+      type: object
+      description: |
+        `ddChatRequest` de `dd_chat_handler.go`. Los tres nombres del cable son
+        `question`, `panel_context` y `thread_id`, y los dos primeros son
+        `binding:"required"`.
+      required: [question, panel_context]
+      properties:
+        question: { type: string }
+        panel_context:
+          type: object
+          required: [panel_id, period]
+          properties:
+            panel_id: { type: string, format: uuid }
+            period:
+              type: string
+              description: |
+                `YYYY-MM`, validado con `^\d{4}-(0[1-9]|1[0-2])$` en
+                `dd_chat_service.go`. Otro formato devuelve 400 con
+                «período inválido, formato esperado YYYY-MM».
+              examples: ['2026-09']
+        thread_id:
+          type: [integer, 'null']
+          format: int64
+          description: |
+            **Es un ENTERO, no un uuid.** Sale del frame `thread_info` y es lo
+            que continúa la conversación. Ausente en la primera pregunta.
+
+    ChatFrameThreadInfo:
+      type: object
+      description: |
+        `event: thread_info`. **Siempre es la primera trama**, la emite `pump`
+        antes de abrir el stream del agente.
+      required: [thread_id, parent_message_id, user_thread_id]
+      properties:
+        thread_id:
+          type: integer
+          format: int64
+          description: El que se manda de vuelta en `ChatAskRequest.thread_id`.
+        parent_message_id: { type: integer, format: int64 }
+        user_thread_id:
+          type: string
+          format: uuid
+          description: |
+            El `:id` de `GET /config/chat/threads/{id}/messages`. **No sirve
+            para continuar la conversación** — para eso va `thread_id`.
+
+    ChatFrameThinking:
+      type: object
+      description: |
+        `event: thinking`. **Tres formas distintas bajo un mismo nombre**, según
+        de qué evento de Cortex salga: `{text}`, `{status, message}` o
+        `{tool, status}`. Ninguna propiedad es obligatoria.
+      properties:
+        text: { type: string }
+        status: { type: string }
+        message: { type: string }
+        tool: { type: string }
+
+    ChatFrameDelta:
+      type: object
+      description: |
+        `event: delta`. Un fragmento de la respuesta. Se concatenan en orden.
+        **La clave es `text`**, no `delta` como en el contrato.
+      required: [text]
+      properties:
+        text: { type: string }
+
+    ChatFrameSQL:
+      type: object
+      description: |
+        `event: sql`. El SQL que corrió el agente. **No trae fuentes
+        consultadas ni límite declarado**: el agente los escribe dentro del
+        markdown, como secciones `### Fuentes consultadas` y
+        `### Límite declarado`.
+      required: [sql]
+      properties:
+        sql: { type: string }
+        tool: { type: string }
+
+    ChatFrameData:
+      type: object
+      description: |
+        `event: data`. Lo que `StructuredDataFromCortex` produjo.
+
+        **`shape` es la FORMA del valor, no el tipo de panel**, y `provenance`
+        **no trae la BASE ni la capa Medallion** — los dos huecos por los que
+        F3.6 sigue bloqueada. Se transcribe igual: describir el cable no es
+        usarlo.
+      required: [shape, data, provenance]
+      properties:
+        shape:
+          type: string
+          description: |
+            La forma de la métrica, o `tabular` si esa falló, o `raw` si no se
+            pudo transformar nada.
+        data: {}
+        provenance:
+          type: object
+          required: [source, metric_key, period, sql_available]
+          properties:
+            source: { type: string, examples: ['cortex_agent'] }
+            tool: { type: string }
+            metric_key: { type: string }
+            period: { type: string }
+            sql_available: { type: boolean }
+
+    ChatFrameError:
+      type: object
+      description: |
+        `event: error`. Terminal: siempre lo sigue un `done`.
+
+        **No declara si lo ya recibido sigue valiendo**, que es el `parcial` del
+        contrato. Lo que sí hace el servicio es persistir la respuesta
+        acumulada —`defer s.persistAssistant(st)` en `pump`— antes de cerrar.
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: |
+            `upstream_error` cuando el agente falla sin código propio, y
+            `empty_stream` cuando el stream cerró sin texto, sin dato y sin
+            error.
+        message: { type: string }
+
+    ChatFrameDone:
+      type: object
+      description: |
+        `event: done`. **El objeto vacío `{}`**: no trae el id del hilo. El id
+        llegó en `thread_info`, al principio.

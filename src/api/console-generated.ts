@@ -135,6 +135,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/config/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preguntar desde un panel · stream SSE
+         * @description **Transcrita el 2026-09-21 desde `82da946`**, no desde `733c13c` como el
+         *     resto de este archivo: la ruta no existía cuando se transcribió lo demás.
+         *     Leído `internal/adapters/handler/dd_chat_handler.go` (el handler),
+         *     `internal/core/services/dd_chat_service.go` (`pump`, que arma los frames)
+         *     y `internal/core/services/cortex_sse.go` (los siete nombres de evento).
+         *
+         *     **La respuesta NO es JSON: es `text/event-stream`**, y cada trama lleva
+         *     DOS líneas — `event: <nombre>` y `data: <json>`. **El discriminador está
+         *     en la línea `event:`**, no adentro del JSON, que es lo contrario de lo
+         *     que declara `EventoDeChat` del contrato. Por eso hay traducción en
+         *     `src/api/chat.ts` y no un `JSON.parse` a secas.
+         *
+         *     `panel_context` es `binding:"required"` con `panel_id` `uuid`: sin
+         *     contexto de panel la llamada devuelve 400. No hay chat sin panel.
+         */
+        post: operations["askChat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -433,6 +466,123 @@ export interface components {
             freshness: string;
             catalog_version: number;
         };
+        /**
+         * @description `ddChatRequest` de `dd_chat_handler.go`. Los tres nombres del cable son
+         *     `question`, `panel_context` y `thread_id`, y los dos primeros son
+         *     `binding:"required"`.
+         */
+        ChatAskRequest: {
+            question: string;
+            panel_context: {
+                /** Format: uuid */
+                panel_id: string;
+                /**
+                 * @description `YYYY-MM`, validado con `^\d{4}-(0[1-9]|1[0-2])$` en
+                 *     `dd_chat_service.go`. Otro formato devuelve 400 con
+                 *     «período inválido, formato esperado YYYY-MM».
+                 * @example 2026-09
+                 */
+                period: string;
+            };
+            /**
+             * Format: int64
+             * @description **Es un ENTERO, no un uuid.** Sale del frame `thread_info` y es lo
+             *     que continúa la conversación. Ausente en la primera pregunta.
+             */
+            thread_id?: number | null;
+        };
+        /**
+         * @description `event: thread_info`. **Siempre es la primera trama**, la emite `pump`
+         *     antes de abrir el stream del agente.
+         */
+        ChatFrameThreadInfo: {
+            /**
+             * Format: int64
+             * @description El que se manda de vuelta en `ChatAskRequest.thread_id`.
+             */
+            thread_id: number;
+            /** Format: int64 */
+            parent_message_id: number;
+            /**
+             * Format: uuid
+             * @description El `:id` de `GET /config/chat/threads/{id}/messages`. **No sirve
+             *     para continuar la conversación** — para eso va `thread_id`.
+             */
+            user_thread_id: string;
+        };
+        /**
+         * @description `event: thinking`. **Tres formas distintas bajo un mismo nombre**, según
+         *     de qué evento de Cortex salga: `{text}`, `{status, message}` o
+         *     `{tool, status}`. Ninguna propiedad es obligatoria.
+         */
+        ChatFrameThinking: {
+            text?: string;
+            status?: string;
+            message?: string;
+            tool?: string;
+        };
+        /**
+         * @description `event: delta`. Un fragmento de la respuesta. Se concatenan en orden.
+         *     **La clave es `text`**, no `delta` como en el contrato.
+         */
+        ChatFrameDelta: {
+            text: string;
+        };
+        /**
+         * @description `event: sql`. El SQL que corrió el agente. **No trae fuentes
+         *     consultadas ni límite declarado**: el agente los escribe dentro del
+         *     markdown, como secciones `### Fuentes consultadas` y
+         *     `### Límite declarado`.
+         */
+        ChatFrameSQL: {
+            sql: string;
+            tool?: string;
+        };
+        /**
+         * @description `event: data`. Lo que `StructuredDataFromCortex` produjo.
+         *
+         *     **`shape` es la FORMA del valor, no el tipo de panel**, y `provenance`
+         *     **no trae la BASE ni la capa Medallion** — los dos huecos por los que
+         *     F3.6 sigue bloqueada. Se transcribe igual: describir el cable no es
+         *     usarlo.
+         */
+        ChatFrameData: {
+            /**
+             * @description La forma de la métrica, o `tabular` si esa falló, o `raw` si no se
+             *     pudo transformar nada.
+             */
+            shape: string;
+            data: unknown;
+            provenance: {
+                /** @example cortex_agent */
+                source: string;
+                tool?: string;
+                metric_key: string;
+                period: string;
+                sql_available: boolean;
+            };
+        };
+        /**
+         * @description `event: error`. Terminal: siempre lo sigue un `done`.
+         *
+         *     **No declara si lo ya recibido sigue valiendo**, que es el `parcial` del
+         *     contrato. Lo que sí hace el servicio es persistir la respuesta
+         *     acumulada —`defer s.persistAssistant(st)` en `pump`— antes de cerrar.
+         */
+        ChatFrameError: {
+            /**
+             * @description `upstream_error` cuando el agente falla sin código propio, y
+             *     `empty_stream` cuando el stream cerró sin texto, sin dato y sin
+             *     error.
+             */
+            code: string;
+            message: string;
+        };
+        /**
+         * @description `event: done`. **El objeto vacío `{}`**: no trae el id del hilo. El id
+         *     llegó en `thread_info`, al principio.
+         */
+        ChatFrameDone: Record<string, never>;
     };
     responses: {
         /** @description Request mal formado */
@@ -642,6 +792,65 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+        };
+    };
+    askChat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatAskRequest"];
+            };
+        };
+        responses: {
+            /**
+             * @description El stream. El esquema es `string` porque OpenAPI no describe tramas
+             *     SSE; las formas de cada `data:` están en los `ChatFrame*` de
+             *     `components/schemas`, que existen para que el traductor tipe contra
+             *     algo y no contra structs de Go leídos a mano.
+             */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description El rol no ve el tab o la métrica del panel */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description No hay agente activo para el tenant y el rol */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limit por usuario, compartido con `/chat/*`. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
 }

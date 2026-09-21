@@ -60,7 +60,18 @@ export function apply(previa: Answer, evento: ChatEvent): Answer {
   }
 }
 
-export function useChat(tabId?: string) {
+/** El contexto que el cable exige para poder preguntar.
+ *
+ *  **Son los dos campos que manda el backend y nada más** · decisión del
+ *  2026-09-17. El servicio arma el resto —el tab, la métrica, el valor del
+ *  panel— leyendo el panel por su id, así que el front no los transcribe. */
+export type PanelContext = {
+  panelId: string
+  /** `YYYY-MM`. */
+  periodo: string
+}
+
+export function useChat(contexto: PanelContext) {
   const [turns, setTurns] = useState<ChatTurn[]>([])
   const [threadId, setThreadId] = useState<string | null>(null)
   const abort = useRef<AbortController | null>(null)
@@ -86,7 +97,8 @@ export function useChat(tabId?: string) {
 
       const cuerpo: ChatRequest = {
         pregunta,
-        ...(tabId === undefined ? {} : { tabId }),
+        panelId: contexto.panelId,
+        periodo: contexto.periodo,
         ...(threadId === null ? {} : { hiloId: threadId }),
       }
 
@@ -129,7 +141,7 @@ export function useChat(tabId?: string) {
         parche((t) => (t.streaming ? { ...t, streaming: false } : t))
       }
     },
-    [tabId, threadId, turns.length],
+    [contexto.panelId, contexto.periodo, threadId, turns.length],
   )
 
   return { turns, threadId, ask }
