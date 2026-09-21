@@ -168,6 +168,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/config/chat/threads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Los hilos del usuario, con el panel del que salieron
+         * @description **Transcrita el 2026-09-21 desde `82da946`**, leyendo
+         *     `internal/core/ports/dd_chat_service.go` —`DDChatThreadDTO`— y
+         *     `internal/adapters/handler/dd_chat_handler.go` —`ListThreads`—.
+         *
+         *     **Devuelve un ARREGLO DESNUDO dentro del envelope**, no un objeto con
+         *     una clave: `SendSuccess(c, http.StatusOK, threads)`.
+         *
+         *     **Trae los DOS ids, y no son intercambiables** — ver `ChatThread`.
+         */
+        get: operations["listChatThreads"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -583,6 +610,52 @@ export interface components {
          *     llegó en `thread_info`, al principio.
          */
         ChatFrameDone: Record<string, never>;
+        /**
+         * @description `ports.DDChatThreadDTO`. Un hilo del chat contextual, ya cruzado con el
+         *     tab y la métrica de donde salió.
+         *
+         *     **Los dos ids no son intercambiables, y confundirlos es el bug.**
+         *     `id` es el uuid de `user_threads` y es el `:id` de
+         *     `GET /config/chat/threads/{id}/messages`; `thread_id` es el entero que
+         *     se manda de vuelta en `ChatAskRequest.thread_id` para continuar la
+         *     conversación. Mandar el uuid donde va el entero da 400.
+         *
+         *     **Casi todo lo del panel es opcional**: los hilos abiertos antes de que
+         *     existiera el contexto de panel no lo tienen.
+         */
+        ChatThread: {
+            /** Format: uuid */
+            id: string;
+            /** Format: int64 */
+            thread_id: number;
+            thread_name: string;
+            /** Format: uuid */
+            agent_id: string;
+            agent_name: string;
+            role: string;
+            /** @description La primera pregunta del hilo, tal como se escribió. */
+            first_message_preview: string;
+            /** Format: int64 */
+            last_message_id?: number | null;
+            /** Format: uuid */
+            panel_id?: string | null;
+            /**
+             * @description `YYYY-MM`. **Cadena vacía cuando el hilo no tiene panel**, no
+             *     `null`: el struct lo declara `string` con `omitempty`.
+             */
+            period?: string;
+            /** Format: uuid */
+            tab_id?: string | null;
+            tab_name?: string;
+            /** Format: uuid */
+            metric_id?: string | null;
+            metric_key?: string;
+            metric_name?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
     };
     responses: {
         /** @description Request mal formado */
@@ -851,6 +924,43 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+        };
+    };
+    listChatThreads: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filtra a los hilos abiertos desde ese panel. Es lo que permite que
+                 *     la hoja de un panel muestre sus propias conversaciones.
+                 */
+                panel_id?: string;
+                /** @description `YYYY-MM`. Otro formato devuelve **400**, no una lista vacía. */
+                period?: string;
+                /**
+                 * @description Sin valor, o `<= 0`, el servicio usa **50**; por encima de **200**
+                 *     lo recorta. Lo hace `clampLimit`.
+                 */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los hilos, del más reciente al más viejo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["ChatThread"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
         };
     };
 }

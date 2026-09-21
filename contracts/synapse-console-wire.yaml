@@ -301,6 +301,59 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
+  # ── F3.7 · el historial de hilos · TRANSCRITO DE 82da946 ─────────────────
+  /config/chat/threads:
+    get:
+      tags: [config]
+      operationId: listChatThreads
+      summary: Los hilos del usuario, con el panel del que salieron
+      x-origen: 82da946
+      description: |
+        **Transcrita el 2026-09-21 desde `82da946`**, leyendo
+        `internal/core/ports/dd_chat_service.go` —`DDChatThreadDTO`— y
+        `internal/adapters/handler/dd_chat_handler.go` —`ListThreads`—.
+
+        **Devuelve un ARREGLO DESNUDO dentro del envelope**, no un objeto con
+        una clave: `SendSuccess(c, http.StatusOK, threads)`.
+
+        **Trae los DOS ids, y no son intercambiables** — ver `ChatThread`.
+      parameters:
+        - name: panel_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+          description: |
+            Filtra a los hilos abiertos desde ese panel. Es lo que permite que
+            la hoja de un panel muestre sus propias conversaciones.
+        - name: period
+          in: query
+          required: false
+          schema: { type: string, examples: ['2026-09'] }
+          description: |
+            `YYYY-MM`. Otro formato devuelve **400**, no una lista vacía.
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer }
+          description: |
+            Sin valor, o `<= 0`, el servicio usa **50**; por encima de **200**
+            lo recorta. Lo hace `clampLimit`.
+      responses:
+        '200':
+          description: Los hilos, del más reciente al más viejo
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/ChatThread' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
 components:
   securitySchemes:
     bearer:
@@ -775,3 +828,43 @@ components:
       description: |
         `event: done`. **El objeto vacío `{}`**: no trae el id del hilo. El id
         llegó en `thread_info`, al principio.
+
+    ChatThread:
+      type: object
+      description: |
+        `ports.DDChatThreadDTO`. Un hilo del chat contextual, ya cruzado con el
+        tab y la métrica de donde salió.
+
+        **Los dos ids no son intercambiables, y confundirlos es el bug.**
+        `id` es el uuid de `user_threads` y es el `:id` de
+        `GET /config/chat/threads/{id}/messages`; `thread_id` es el entero que
+        se manda de vuelta en `ChatAskRequest.thread_id` para continuar la
+        conversación. Mandar el uuid donde va el entero da 400.
+
+        **Casi todo lo del panel es opcional**: los hilos abiertos antes de que
+        existiera el contexto de panel no lo tienen.
+      required: [id, thread_id, thread_name, agent_id, agent_name, role, first_message_preview, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        thread_id: { type: integer, format: int64 }
+        thread_name: { type: string }
+        agent_id: { type: string, format: uuid }
+        agent_name: { type: string }
+        role: { type: string }
+        first_message_preview:
+          type: string
+          description: La primera pregunta del hilo, tal como se escribió.
+        last_message_id: { type: [integer, 'null'], format: int64 }
+        panel_id: { type: [string, 'null'], format: uuid }
+        period:
+          type: string
+          description: |
+            `YYYY-MM`. **Cadena vacía cuando el hilo no tiene panel**, no
+            `null`: el struct lo declara `string` con `omitempty`.
+        tab_id: { type: [string, 'null'], format: uuid }
+        tab_name: { type: string }
+        metric_id: { type: [string, 'null'], format: uuid }
+        metric_key: { type: string }
+        metric_name: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }

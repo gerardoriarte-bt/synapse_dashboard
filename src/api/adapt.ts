@@ -58,6 +58,7 @@ import type {
   Tab,
   TabWithPanels,
   Value,
+  ThreadSummary,
 } from './types'
 
 type W = wire['schemas']
@@ -848,4 +849,47 @@ function adaptPresentation(raw: unknown): Presentation | undefined {
   }
 
   return Object.keys(out).length === 0 ? undefined : out
+}
+
+/* ── F3.7 · los hilos del chat ─────────────────────────────────────────────── */
+
+export type WireChatThread = W['ChatThread']
+
+/** Un hilo del cable a `HiloResumen`.
+ *
+ *  **Los dos ids se conservan por separado y con nombres distintos**, que es
+ *  toda la gracia: `id` es el uuid con el que se piden los mensajes del hilo y
+ *  `hiloId` es el entero con el que se continúa la conversación. Fundirlos en
+ *  uno daría un 400 la mitad de las veces y un 404 la otra.
+ *
+ *  **`titulo` sale de `first_message_preview`**, que es la primera pregunta tal
+ *  como se escribió — exactamente lo que el contrato pide para el riel: «no se
+ *  resume ni se recorta acá». `thread_name` no sirve: es el nombre del hilo del
+ *  lado del agente, no lo que el usuario preguntó.
+ *
+ *  **Lo que el cable NO trae queda ausente, y hay una prueba que lo atestigua:**
+ *  `esDecision` y `decisionId` son de C4 —`/config/decisiones`, que no existe—,
+ *  así que `esDecision` cae a `false`. **Es el valor a prueba de fallo, no uno
+ *  plausible**: marcar un hilo como decisión sin serlo lo volvería imborrable
+ *  en una pantalla que todavía no existe.
+ */
+export function adaptThread(w: WireChatThread): ThreadSummary {
+  // El cable manda cadena vacía donde no hay dato —`omitempty` sobre `string`—
+  // y el contrato declara `null`. Traducir uno al otro es el trabajo de acá:
+  // una cadena vacía se pinta como un rótulo sin texto.
+  const texto = (v: string | undefined): string | null => (v == null || v === '' ? null : v)
+
+  return {
+    id: w.id,
+    titulo: w.first_message_preview,
+    creadoEn: w.created_at,
+    actualizadoEn: w.updated_at,
+    esDecision: false,
+    hiloId: String(w.thread_id),
+    panelId: w.panel_id ?? null,
+    periodo: texto(w.period),
+    metricaNombre: texto(w.metric_name),
+    metricKey: texto(w.metric_key),
+    pestanaNombre: texto(w.tab_name),
+  }
 }

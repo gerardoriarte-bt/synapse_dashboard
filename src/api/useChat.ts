@@ -74,7 +74,25 @@ export type PanelContext = {
 export function useChat(contexto: PanelContext) {
   const [turns, setTurns] = useState<ChatTurn[]>([])
   const [threadId, setThreadId] = useState<string | null>(null)
+
   const abort = useRef<AbortController | null>(null)
+
+  /** Retomar un hilo del riel · F3.7.
+   *
+   *  **Apunta el próximo envío al hilo elegido, y limpia los turnos de este.**
+   *  Dejarlos arriba mostraría la conversación de un hilo bajo el id de otro:
+   *  lo que se ve y lo que se continúa serían cosas distintas, que es la forma
+   *  exacta de «arranca uno nuevo en silencio» pero al revés.
+   *
+   *  **Lo que NO hace es traer los mensajes de ese hilo.** Eso es
+   *  `GET /config/chat/threads/{id}/messages`, otra ruta, y el criterio de F3.7
+   *  no la pide: pide que retomar reenvíe el contexto. El riel muestra de qué
+   *  se hablaba; la hoja arranca vacía y sigue la misma conversación. */
+  const resume = useCallback((hiloId: string) => {
+    abort.current?.abort()
+    setThreadId(hiloId)
+    setTurns([])
+  }, [])
 
   // Una sola limpieza, al desmontar. El `ref` sostiene el controlador del turno
   // en curso, sea cual sea.
@@ -144,5 +162,5 @@ export function useChat(contexto: PanelContext) {
     [contexto.panelId, contexto.periodo, threadId, turns.length],
   )
 
-  return { turns, threadId, ask }
+  return { turns, threadId, ask, resume }
 }

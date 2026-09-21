@@ -9,9 +9,10 @@
  *  del CONTRATO haría que el adaptador no traduzca nada y la prueba pasara.
  */
 import { describe, expect, it } from 'vitest'
-import { adaptBlocks, adaptCatalog, adaptContext, adaptPayload, adaptTab } from '@/api/adapt'
+import { adaptBlocks, adaptCatalog, adaptContext, adaptPayload, adaptTab, adaptThread } from '@/api/adapt'
 import type {
   WireBlock,
+  WireChatThread,
   WireContext,
   WireMetric,
   WirePayload,
@@ -562,5 +563,55 @@ describe('los nombres de los params · F1.41', () => {
       },
     ])
     expect(b?.paramsDisponibles).toEqual(['banda', 'components', 'maximo'])
+  })
+})
+
+/* ── F3.7 · los hilos del chat ─────────────────────────────────────────────── */
+
+describe('adaptThread · los dos ids y las cadenas vacías', () => {
+  const crudo = {
+    id: 'uuid-del-hilo',
+    thread_id: 41,
+    thread_name: 'hilo del agente',
+    agent_id: 'a-1',
+    agent_name: 'UA MX',
+    role: 'Planner',
+    first_message_preview: '¿Por qué cayó la venta?',
+    panel_id: 'p-kpi',
+    period: '2026-07',
+    metric_name: 'Venta diaria',
+    metric_key: 'k_kpi',
+    tab_name: 'Inventory & Shopping',
+    created_at: '2026-07-10T12:00:00Z',
+    updated_at: '2026-07-10T12:00:00Z',
+  } as unknown as WireChatThread
+
+  it('los DOS ids se conservan por separado', () => {
+    // Fundirlos daría un 400 la mitad de las veces y un 404 la otra: `id` pide
+    // los mensajes del hilo, `hiloId` continúa la conversación.
+    const h = adaptThread(crudo)
+    expect(h.id).toBe('uuid-del-hilo')
+    expect(h.hiloId).toBe('41')
+  })
+
+  it('`titulo` sale de la primera pregunta, NO del nombre del hilo', () => {
+    // `thread_name` es el nombre del lado del agente. El contrato pide para el
+    // riel «la primera pregunta, tal cual».
+    expect(adaptThread(crudo).titulo).toBe('¿Por qué cayó la venta?')
+  })
+
+  it('la CADENA VACÍA del cable se traduce a `null`', () => {
+    // El cable declara `omitempty` sobre `string`, así que manda `''` donde el
+    // contrato declara `null`. Sin traducir, el riel pinta un rótulo sin texto.
+    const h = adaptThread({ ...crudo, period: '', metric_name: '', tab_name: '' } as WireChatThread)
+    expect(h.periodo).toBeNull()
+    expect(h.metricaNombre).toBeNull()
+    expect(h.pestanaNombre).toBeNull()
+  })
+
+  it('`esDecision` cae a `false` · el valor A PRUEBA DE FALLO', () => {
+    // C4 no existe en este servicio. Marcarlo como decisión sin serlo lo
+    // volvería imborrable en una pantalla que todavía no está escrita.
+    expect(adaptThread(crudo).esDecision).toBe(false)
   })
 })

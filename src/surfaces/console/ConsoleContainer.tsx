@@ -214,6 +214,7 @@ export function ConsoleContainer() {
         panelId={askingPanel.id}
         periodo={activePeriod.id}
         titulo={askingMetric.nombre}
+        format={format}
         onClose={() => setAskingPanelId(null)}
       />
     ) : null}

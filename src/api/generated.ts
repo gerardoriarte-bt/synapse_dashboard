@@ -1196,6 +1196,32 @@ export interface components {
             esDecision: boolean;
             /** Format: uuid */
             decisionId?: string | null;
+            /**
+             * Format: uuid
+             * @description Desde qué panel se abrió la conversación.
+             */
+            panelId?: string | null;
+            /**
+             * @description El período que se estaba mirando. `YYYY-MM`.
+             *
+             *     **Es el del hilo, no el de hoy.** Reabrir en octubre una consulta de
+             *     septiembre tiene que decir «septiembre», o la respuesta guardada se
+             *     lee contra el período equivocado.
+             */
+            periodo?: string | null;
+            /**
+             * @description El nombre de la métrica, para que la fila diga de qué se habló sin
+             *     que el riel tenga que resolver el catálogo.
+             */
+            metricaNombre?: string | null;
+            metricKey?: string | null;
+            pestanaNombre?: string | null;
+            /**
+             * @description Con qué id continuar esta conversación · el mismo valor que
+             *     `EventoFin.hiloId`. Sin `format`: el servicio manda un entero y
+             *     viaja como texto hasta el borde de `api/`.
+             */
+            hiloId?: string | null;
         };
         Hilo: components["schemas"]["HiloResumen"] & {
             mensajes: components["schemas"]["MensajeDeChat"][];

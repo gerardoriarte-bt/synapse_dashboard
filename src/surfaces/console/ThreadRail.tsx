@@ -8,13 +8,23 @@
  *  es lo que deja «Por qué subió el R…» en el árbol de accesibilidad además de
  *  en la pantalla.
  *
- *  **Con qué panel y período se abrió el hilo NO se muestra, y el criterio lo
- *  pide.** `HiloResumen` trae `id`, `titulo`, `creadoEn`, `actualizadoEn`,
- *  `esDecision` y `decisionId`, y ninguno dice de qué panel salió. Inventarlo
- *  no se puede y deducirlo tampoco. Queda anotado en el plan.
+ *  **Con qué panel y período se abrió el hilo SÍ se muestra desde el
+ *  2026-09-21**, que es la mitad del criterio que estuvo bloqueada desde el
+ *  2026-09-03. `HiloResumen` no tenía dónde ponerlo hasta que `82da946` empezó
+ *  a mandarlo y el contrato ganó los campos.
+ *
+ *  **El período es el DEL HILO, no el de hoy.** Reabrir en octubre una consulta
+ *  de septiembre tiene que decir septiembre, o la respuesta guardada se lee
+ *  contra el período equivocado.
+ *
+ *  **Y una fila sin contexto se dibuja igual.** Los hilos abiertos antes de que
+ *  existiera el contexto de panel no lo traen, y el servicio declara esos
+ *  campos `omitempty`: la línea desaparece en vez de quedar con un separador
+ *  colgando, que es el defecto que la línea de BASE tuvo con `ventana`.
  */
 import { Label } from '../../render/primitives/Label'
 import type { ThreadGroup } from './threads'
+import type { ThreadSummary } from '../../api/types'
 
 type Props = {
   groups: readonly ThreadGroup[]
@@ -56,7 +66,16 @@ export function ThreadRail({ groups, activeId, onSelect }: Props) {
                     (thread.id === activeId ? 'bg-w2 text-ink' : 'bg-transparent text-dim hover:text-ink')
                   }
                 >
-                  <span className="min-w-0 flex-1 truncate">{thread.titulo}</span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate">{thread.titulo}</span>
+                    {/* La procedencia del hilo, en el rótulo de la casa. Solo
+                        las partes que llegaron: un hilo viejo no tiene
+                        ninguna, y un separador sin nada a la derecha es peor
+                        que no escribir la línea. */}
+                    {contexto(thread) === null ? null : (
+                      <Label as="span">{contexto(thread)}</Label>
+                    )}
+                  </span>
                   {/* El badge marca la traza de una decisión de C4. El contrato
                       además prohíbe borrar estos hilos; el riel no ofrece
                       borrar ninguno todavía, así que acá solo se declara. */}
@@ -69,4 +88,12 @@ export function ThreadRail({ groups, activeId, onSelect }: Props) {
       ))}
     </nav>
   )
+}
+
+/** «VENTA DIARIA · 2026-09», con lo que haya. `null` si no llegó nada. */
+function contexto(thread: ThreadSummary): string | null {
+  const partes = [thread.metricaNombre, thread.periodo].filter(
+    (p): p is string => p != null && p !== '',
+  )
+  return partes.length === 0 ? null : partes.join(' · ')
 }

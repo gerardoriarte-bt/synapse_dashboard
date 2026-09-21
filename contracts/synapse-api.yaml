@@ -1736,6 +1736,55 @@ components:
             badge y **no se puede borrar**: es la traza de por qué se decidió.
         decisionId: { type: [string, 'null'], format: uuid }
 
+        # ── El contexto del hilo · agregado el 2026-09-21 ──────────────────
+        #
+        # PROPUESTA DE SPEC, no una corrección: el criterio de F3.7 pide que
+        # «cada hilo muestre con qué panel y período se abrió» y `HiloResumen`
+        # no tenía dónde. Era el mismo hueco que T4 por el otro lado — si el
+        # contexto no viajaba al preguntar, tampoco volvía al listar.
+        #
+        # T4 se cerró el 2026-09-17 y el servicio ya los manda: `panel_id`,
+        # `period`, `tab_name`, `metric_name` y `metric_key` salen de
+        # `GET /config/chat/threads`. Esto es el lugar interno donde aterrizan.
+        #
+        # **Los cinco son opcionales y NO por comodidad**: un hilo abierto
+        # antes de que existiera el contexto de panel no lo tiene, y el
+        # servicio los declara `omitempty`. El riel tiene que poder dibujar una
+        # fila sin ellos.
+        panelId:
+          type: [string, 'null']
+          format: uuid
+          description: Desde qué panel se abrió la conversación.
+        periodo:
+          type: [string, 'null']
+          description: |
+            El período que se estaba mirando. `YYYY-MM`.
+
+            **Es el del hilo, no el de hoy.** Reabrir en octubre una consulta de
+            septiembre tiene que decir «septiembre», o la respuesta guardada se
+            lee contra el período equivocado.
+        metricaNombre:
+          type: [string, 'null']
+          description: |
+            El nombre de la métrica, para que la fila diga de qué se habló sin
+            que el riel tenga que resolver el catálogo.
+        metricKey: { type: [string, 'null'] }
+        pestanaNombre: { type: [string, 'null'] }
+
+        # ── El segundo id · 2026-09-21 ────────────────────────────────────
+        #
+        # **`id` y `hiloId` NO son el mismo número, y confundirlos es el bug.**
+        # `id` es el uuid del hilo —con el que se piden sus mensajes— y `hiloId`
+        # es el entero que se manda en `POST /config/chat` para continuar la
+        # conversación. El cable los declara por separado desde `82da946`;
+        # `EventoFin` solo puede devolver uno y devuelve el segundo.
+        hiloId:
+          type: [string, 'null']
+          description: |
+            Con qué id continuar esta conversación · el mismo valor que
+            `EventoFin.hiloId`. Sin `format`: el servicio manda un entero y
+            viaja como texto hasta el borde de `api/`.
+
     Hilo:
       allOf:
         - $ref: '#/components/schemas/HiloResumen'

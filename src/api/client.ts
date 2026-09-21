@@ -5,10 +5,11 @@
  *  backend, se hace con MSW a nivel HTTP, no con un fixture importado.
  */
 import { ApiError, SIN_CODIGO } from './types'
-import { adaptBlocks, adaptCatalog, adaptContext, adaptPayload, adaptTab } from './adapt'
+import { adaptBlocks, adaptCatalog, adaptContext, adaptPayload, adaptTab, adaptThread } from './adapt'
 import type {
   AdaptedCatalog,
   WireBlock,
+  WireChatThread,
   WireContext,
   WireMetric,
   WirePayload,
@@ -20,7 +21,6 @@ import type {
   Envelope,
   Payload,
   TabWithPanels,
-  ThreadSummary,
 } from './types'
 import { currentToken } from '../app/auth/session'
 
@@ -129,17 +129,25 @@ export const api = {
     return Object.fromEntries(Object.entries(crudo).map(([id, p]) => [id, adaptPayload(p)]))
   },
 
-  /** Los hilos del usuario del token. El backend ya los ordena.
+  /** Los hilos del usuario del token. El backend ya los ordena · F3.7.
    *
-   *  **`/config/chat/hilos` NO EXISTE en este servicio** · verificado en su
-   *  `router.go`, que monta seis rutas bajo `/config` y ninguna es de chat. Las
-   *  tareas del backend que lo crearían —B3.1 y B3.2— están sin marcar.
+   *  **La ruta era `/config/chat/hilos` y no existía.** Desde `82da946` el
+   *  servicio sirve `GET /config/chat/threads`, y la diferencia no es solo el
+   *  nombre: **devuelve un arreglo desnudo**, no `{ hilos: [...] }`. Leerlo con
+   *  la forma vieja daba `undefined` y un riel vacío sin decir por qué.
    *
-   *  Se conserva y **no lo llama nadie**: `useThreads` no tiene consumidor en
-   *  `src/`. Borrarlo sería tirar el trabajo de F3.7, que está escrito y
-   *  bloqueado, no equivocado. Lo que no se hace es montarlo en la consola: un
-   *  riel que pide un 404 al abrir es peor que un riel ausente. */
-  threads: () => request<{ hilos: ThreadSummary[] }>('/config/chat/hilos'),
+   *  **El filtro por panel es lo que hace útil al riel dentro de la hoja**: la
+   *  conversación de un panel se lista sola, sin mezclarse con las de los otros
+   *  once. Lo resuelve el servicio, no el front. */
+  threads: (panelId?: string, periodo?: string) => {
+    const q = new URLSearchParams()
+    if (panelId !== undefined) q.set('panel_id', panelId)
+    if (periodo !== undefined) q.set('period', periodo)
+    const cola = q.toString()
+    return request<WireChatThread[]>(
+      `/config/chat/threads${cola === '' ? '' : `?${cola}`}`,
+    ).then((hilos) => hilos.map(adaptThread))
+  },
 
   /** El tema es preferencia de USUARIO, no de tenant · §2.4.
    *

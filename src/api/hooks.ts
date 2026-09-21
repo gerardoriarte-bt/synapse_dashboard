@@ -20,7 +20,8 @@ export const keys = {
   blocks: ['config', 'blocks'] as const,
   tab: (tabId: string, layoutId?: string) => ['config', 'tab', tabId, layoutId ?? null] as const,
   panels: (tabId: string, period: string) => ['panels', tabId, period] as const,
-  threads: ['chat', 'hilos'] as const,
+  threads: (panelId?: string, periodo?: string) =>
+    ['chat', 'hilos', panelId ?? null, periodo ?? null] as const,
 
   /* ── Builder · F4.23 ─────────────────────────────────────────────────────
    *
@@ -73,9 +74,20 @@ export function usePanelsBatch(tabId: string | null, panelIds: string[], period:
 
 /** El riel de hilos · F3.7. Solo los del usuario del token, y el orden lo
  *  decide el backend: llegan por `actualizadoEn`, del más reciente al más
- *  viejo. El front los agrupa por tiempo pero no los reordena. */
-export function useThreads() {
-  return useQuery({ queryKey: keys.threads, queryFn: api.threads })
+ *  viejo. El front los agrupa por tiempo pero no los reordena.
+ *
+ *  **El panel y el período van en la CLAVE y no solo en la petición.** Sin
+ *  ellos ahí, abrir el chat de otro panel devolvería la lista cacheada del
+ *  primero hasta que la red conteste — un riel que muestra las conversaciones
+ *  del panel de al lado y se corrige solo un segundo después.
+ *
+ *  **Y el filtro lo aplica el SERVICIO.** Pedir todos y filtrar acá traería los
+ *  hilos de los otros once paneles por la red para tirarlos. */
+export function useThreads(panelId?: string, periodo?: string) {
+  return useQuery({
+    queryKey: keys.threads(panelId, periodo),
+    queryFn: () => api.threads(panelId, periodo),
+  })
 }
 
 /** Reintento de UN panel · F2.4.

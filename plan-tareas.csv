@@ -462,7 +462,7 @@ F3.6,Front · Fase 3 — Chat contextual,Front,3,Chat contextual,Reutilizar cuer
 F3.7,Front · Fase 3 — Chat contextual,Front,3,Chat contextual,Historial de hilos,"Listado de conversaciones previas del usuario, desde GET /config/chat/hilos.","• Cada hilo muestra con qué panel y período se abrió.
 • Retomar un hilo reenvía su contexto; no arranca uno nuevo en silencio.
 • «Hoy» se mide contra medianoche LOCAL, no contra «hace 24 horas». A las 15:00, un hilo de las 02:00 de hoy es de hoy y uno de las 23:00 de ayer no lo es. Con una ventana de 24 horas los dos caerían mal.
-• El mes lleva el año cuando no es el corriente. La retención es de 12 meses y el contrato nombra «reabrir la consulta del mismo mes del año previo»: sin el año, dos grupos se llamarían «julio» y no habría cómo distinguirlos.",parcial,no,,equipo:front fase:3 estado:parcial
+• El mes lleva el año cuando no es el corriente. La retención es de 12 meses y el contrato nombra «reabrir la consulta del mismo mes del año previo»: sin el año, dos grupos se llamarían «julio» y no habría cómo distinguirlos.",hecho,no,,equipo:front fase:3 estado:hecho
 F3.8,Front · Fase 3 — Chat contextual,Front,3,Chat contextual,useChat(contextoPanel) — envío y stream fuera de la UI,"La lógica de envío, acumulación de fragmentos y cierre del stream, separada del componente que la pinta.","• El componente de mensajes recibe una lista y un estado; no conoce SSE.
 • Desmontar la hoja aborta el stream y no deja el EventSource abierto.
 • Las cifras van aparte de la prosa, no intercaladas, porque cada una se pinta con el cuerpo de panel que le toca · F3.6. Y se guarda el evento entero, no solo valor: es lo que conserva la procedencia pegada a la cifra.

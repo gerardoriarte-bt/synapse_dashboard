@@ -3433,7 +3433,7 @@ Pedido concreto al backend en
 Mientras tanto `src/api/chat.ts` **descarta** las tramas `data`, con una prueba
 que lo atestigua: el chat contesta en prosa y con el SQL a la vista.
 
-### F3.7 ⚠️ Historial de hilos
+### F3.7 ✅ Historial de hilos
 **Descripción.** Listado de conversaciones previas del usuario, desde
 `GET /config/chat/hilos`.
 **Criterio de aceptación.**
@@ -3457,12 +3457,43 @@ este lado — transcribir esa ruta al cable y adaptarla, que hoy **no está
 transcrita** a propósito: una ruta transcrita que nadie llama envejece sin que
 nadie lo note.
 
-**Y hay un detalle que se descubrió el 2026-09-21 y conviene saber ANTES de
-tomarla.** La trama `thread_info` del stream trae **dos** ids: `thread_id`
-entero, que es el que continúa la conversación, y `user_thread_id` uuid, que es
-el `:id` de `GET /config/chat/threads/{id}/messages`. `EventoFin` tiene un solo
-campo y ahí va el primero, así que **hoy el segundo se pierde**. Retomar un hilo
-funciona; pedir sus mensajes va a necesitar un campo más en el evento.
+**Cerrada el 2026-09-21.** `/config/chat/threads` transcrita al cable con
+`x-origen: 82da946`, `adaptThread` en el adaptador, el riel montado dentro de la
+hoja del panel y `useChat.resume`.
+
+**Los DOS IDS eran el riesgo, no el listado.** El cable manda `id` —uuid, con el
+que se piden los mensajes de un hilo— y `thread_id` —entero, con el que se
+continúa la conversación—. Después del adaptador los dos son `string`, así que
+**el compilador no los distingue**: pasar `resume` directo como `onSelect` del
+riel compila y manda el uuid donde va el entero. Da 400, y el síntoma es
+«retomar no hace nada». Hay una prueba que mira **qué número sale por la red**.
+
+`HiloResumen` ganó cinco campos y el segundo id · **propuesta de spec ejecutada,
+anotada en el yaml**: el criterio pedía mostrar el panel y el período y no había
+dónde ponerlos. Era el mismo hueco que T4 por el otro lado.
+
+**El filtro por panel lo aplica el SERVICIO**, y va en la clave de caché además
+de en la petición: sin eso, abrir el chat de otro panel muestra la lista del
+anterior hasta que conteste la red.
+
+**Una fila sin contexto se dibuja igual.** Los hilos abiertos antes de que
+existiera el contexto de panel no lo traen, y el servicio los declara
+`omitempty`: la línea desaparece en vez de quedar con un separador colgando, que
+es el defecto que la línea de BASE tuvo con `ventana`.
+
+Verificada rompiendo el código: seis mutaciones, las seis muertas. **Una
+sobrevivió primero** —la cadena vacía del cable— y mostró que la prueba de
+superficie no la podía ver, porque el riel filtra las vacías igual: se probó
+donde vive, en `adaptThread`.
+
+**Se abrió en el navegador:** tres hilos agrupados en HOY, AGOSTO y JULIO, cada
+uno con su métrica y **su** período, y el viejo sin línea de contexto.
+
+**Lo que NO hace, y es del criterio:** retomar no trae los mensajes del hilo.
+Eso es `GET /config/chat/threads/{id}/messages`, otra ruta, y el criterio pide
+que retomar **reenvíe el contexto** — no que muestre la conversación. El riel
+dice de qué se hablaba; la hoja arranca vacía y sigue el mismo hilo. Esa ruta no
+se transcribe hasta que alguien la llame.
 
 **El agrupado por tiempo es la excepción a que el front no calcule**, y el
 contrato la concede explícitamente: «el agrupado por tiempo —HOY, ESTA SEMANA,

@@ -218,6 +218,39 @@ export const worker = setupWorker(
    *
    *  No manda `event: data`: el traductor lo descarta mientras F3.6 siga
    *  bloqueada, y emitirlo daría la impresión contraria. */
+  /** El historial de hilos · F3.7. **Con los DOS ids**, que es lo que hay que
+   *  poder mirar: el uuid nombra la fila y el entero continúa la conversación.
+   *  Uno de los tres va sin contexto de panel, como los hilos viejos. */
+  http.get(`${API}/config/chat/threads`, ({ request }) => {
+    const panel = new URL(request.url).searchParams.get('panel_id') ?? 'p-1'
+    const base = {
+      agent_id: 'a-1', agent_name: 'UA MX', role: 'Planner',
+      tab_id: 'tab-1', tab_name: 'Ecommerce Overview',
+      metric_id: 'm-1', metric_key: 'ventas_dia',
+    }
+    return ok([
+      {
+        ...base, id: '3f1d0a6e-0000-4000-8000-000000000001', thread_id: 41,
+        thread_name: 'hilo 41', first_message_preview: '¿Por qué cayó la venta la semana pasada?',
+        panel_id: panel, period: '2026-09', metric_name: 'Ventas 1',
+        created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+      },
+      {
+        ...base, id: '3f1d0a6e-0000-4000-8000-000000000002', thread_id: 39,
+        thread_name: 'hilo 39', first_message_preview: '¿Qué tiendas quedaron sin cobertura?',
+        panel_id: panel, period: '2026-08', metric_name: 'Ventas 1',
+        created_at: '2026-08-14T10:00:00Z', updated_at: '2026-08-14T10:00:00Z',
+      },
+      {
+        // Sin contexto: abierto antes de que existiera. La fila se dibuja igual.
+        ...base, id: '3f1d0a6e-0000-4000-8000-000000000003', thread_id: 12,
+        thread_name: 'hilo 12', first_message_preview: 'Una pregunta vieja, sin panel',
+        period: '', metric_name: '', metric_key: '', tab_name: '',
+        created_at: '2026-07-02T10:00:00Z', updated_at: '2026-07-02T10:00:00Z',
+      },
+    ])
+  }),
+
   http.post(`${API}/config/chat`, async ({ request }) => {
     const { question } = (await request.json()) as { question: string }
 
