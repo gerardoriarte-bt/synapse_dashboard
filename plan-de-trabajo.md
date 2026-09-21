@@ -3686,7 +3686,7 @@ estimación que no bajaría.
 ### F4.1 ✅ `surfaces/admin/` — layout base y navegación
 ### F4.2 ✅ Lista de tenants
 ### F4.3 ⚠️ Gestión de usuarios y roles por tenant · 🔒 `/admin/users` y `/admin/roles` dan 404
-### F4.4 ⬜ Configuración de agente Snowflake por tenant
+### F4.4 ✅ Configuración de agente Snowflake por tenant
 ### F4.5 ✅ Vista del catálogo de métricas del tenant
 **Criterio de aceptación (los cinco).**
 - **No se muestra vocabulario de infraestructura** (§7.3 de `design.md`): ni
@@ -3721,10 +3721,44 @@ estado del acceso** —si está vigente y cuándo se verificó—, que es justo 
 alguien apretó, no una verificación de que la credencial funcione, y leer uno
 como el otro sería decir «acceso vigente» porque nadie apagó el interruptor.
 
-**Ojo antes de tomarla:** las tres columnas que ese CRUD escribe no existen en
-la base compartida, medido el 2026-09-21. Se puede construir contra MSW;
-verificarla contra el servicio, no todavía. Espera B3.11, pedida en la tarea 1 de
-[`MENSAJE-2026-09-21-dos-tareas-del-chat.md`](docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md).
+**Hecha el 2026-09-21**, contra MSW. `/admin/tenants/{tenantId}/agents`
+transcrita al cable con `x-origen: 82da946`, `adaptAgent` y `AgentConfig` dentro
+de A2.
+
+**Lo que la pantalla NO muestra es la decisión, no lo que muestra.** El cable
+manda `snowflake_db`, `snowflake_schema`, `warehouse` y los nombres de las
+vistas semánticas; §7.3 prohíbe los cuatro. **Se recortan en el ADAPTADOR**, no
+en el componente: si llegaran al render, taparlos sería una decisión de cada
+pantalla que los use y alcanza con que una se olvide. De las vistas sobrevive
+**cuántas son**, que contesta «¿tiene datos asignados?» sin nombrar ninguna.
+
+**El estado del acceso se declara pendiente, y ahí está el cuidado.** Dos campos
+se parecen y no lo son: `is_active` es una baja lógica que alguien apretó y
+`updated_at` dice cuándo se editó la fila. Leer cualquiera como «acceso vigente»
+es afirmar algo que nadie verificó — la columna dice **«Sin verificar»**, y
+debajo se declara qué falta y qué lo desbloquea. Es lo que §7.3 pide con «se
+declara la consecuencia, no la plomería».
+
+Verificada rompiendo el código: cuatro mutaciones, las cuatro muertas. **Una
+sobrevivió primero** —esconder la declaración con `hidden`— porque la aserción
+miraba `textContent`, que incluye lo oculto: la prueba leía un texto que nadie
+ve. Ahora usa `toBeVisible`.
+
+**Y al abrirla apareció una duplicación que ninguna prueba veía:** la lista de
+«lo que §7.3 pide y no llega» de `RoleEditor` ya declaraba el estado del acceso,
+así que la ficha lo decía **dos veces**, y la versión vieja era la más vaga. Sale
+de esa lista —que pasó de tres a dos, con el conteo derivado de `.length`— y
+queda solo en el bloque del agente. Hay una prueba que cuenta las apariciones.
+
+**Lo que NO se construyó, y es alcance:** no se edita ni se da de baja un agente
+desde acá. El criterio de las cinco pantallas no lo pide, y un `DELETE` que es
+baja lógica merece su propia decisión de producto.
+
+**Contra el servicio no se puede verificar todavía**: las tres columnas que ese
+CRUD escribe no existen en la base compartida, medido el 2026-09-21, así que da
+**500 y no 404**. Espera **B3.11**. La pantalla lo contempla: si la petición
+falla, el bloque del agente se pinta igual con la razón, porque un bloque que
+desaparece haría parecer que el cliente no tiene agente.
 
 **El ancho mínimo es 1280 y no hay colapso**, que es la corrección de §4 del
 `.pen`: «las tablas no son grillas» y perdían contenido en silencio (PS-5). Hay

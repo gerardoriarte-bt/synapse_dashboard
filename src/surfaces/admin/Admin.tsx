@@ -23,6 +23,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import {
+  useAgents,
   useAdminCatalog,
   useDeleteRole,
   useLayoutDetail,
@@ -37,6 +38,7 @@ import { RoleEditor } from './RoleEditor'
 import { usoPorMetrica } from './uso'
 import { TenantList } from './TenantList'
 import { SurfaceMessage } from '../console/SurfaceMessage'
+import { AgentConfig } from './AgentConfig'
 import { Label } from '../../render/primitives/Label'
 import { ApiError } from '../../api/types'
 import type { PantallaId } from './pantallas'
@@ -76,6 +78,11 @@ export function Admin() {
    * marcar una que la consola no sirve, y el rol quedaría apuntando a un id que
    * nadie ve. Son dos viajes y no hay forma de hacerlo en uno. */
   const roles = useRoles(activo)
+
+  /** El agente del cliente · F4.4. Va en A2 porque §7.3 la declara de alcance
+   *  tenant, igual que los roles: las dos contestan «qué hay configurado para
+   *  este cliente». */
+  const agentes = useAgents(activo)
   const versiones = useLayouts(activo)
   const publicado = versiones.data?.find((v) => v.estado === 'publicado') ?? null
   const detalle = useLayoutDetail(publicado?.id ?? null)
@@ -120,6 +127,7 @@ export function Admin() {
         </div>
       ) : pantalla === 'cliente' ? (
         <Cliente
+          agentes={agentes}
           roles={roles}
           pestanas={detalle.data?.tabs.map((t) => ({ id: t.tab.id, nombre: t.tab.nombre })) ?? []}
           metricas={catalogo.data?.metrics ?? []}
@@ -205,6 +213,7 @@ function mensajeDeRol(e: Error | null): string | null {
 /** A2 dentro del chrome · los tres estados, sin `SurfaceMessage`: aquel pinta su
  *  propio `<main>` y acá el chrome sigue en pie. */
 function Cliente({
+  agentes,
   roles,
   pestanas,
   metricas,
@@ -213,6 +222,7 @@ function Cliente({
   guardando,
   error,
 }: {
+  agentes: ReturnType<typeof useAgents>
   roles: ReturnType<typeof useRoles>
 } & Omit<Parameters<typeof RoleEditor>[0], 'roles'>) {
   if (roles.isError) {
@@ -224,15 +234,33 @@ function Cliente({
     )
   }
   return (
-    <RoleEditor
-      roles={roles.data ?? []}
-      cargando={roles.data === undefined}
-      pestanas={pestanas}
-      metricas={metricas}
-      onGuardar={onGuardar}
-      onBorrar={onBorrar}
-      guardando={guardando}
-      error={error}
-    />
+    <div className="flex flex-col gap-6">
+      <RoleEditor
+        roles={roles.data ?? []}
+        cargando={roles.data === undefined}
+        pestanas={pestanas}
+        metricas={metricas}
+        onGuardar={onGuardar}
+        onBorrar={onBorrar}
+        guardando={guardando}
+        error={error}
+      />
+
+      {/* **El agente se pinta aunque su petición falle, y con la razón.** Hoy
+          esa ruta da 500 contra el servicio —las columnas del CRUD no están en
+          la base compartida, B3.11— y un bloque que desaparece haría parecer
+          que el cliente no tiene agente, que es una afirmación distinta. */}
+      {agentes.isError ? (
+        <section className="flex flex-col gap-2">
+          <Label as="div">Agente de datos</Label>
+          <Label as="div">No se pudo cargar la configuración del agente</Label>
+          <Label as="div">
+            {agentes.error instanceof Error ? agentes.error.message : 'Sin detalle del servidor'}
+          </Label>
+        </section>
+      ) : (
+        <AgentConfig agentes={agentes.data ?? []} />
+      )}
+    </div>
   )
 }

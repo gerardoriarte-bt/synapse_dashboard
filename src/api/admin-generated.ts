@@ -231,6 +231,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/tenants/{tenantId}/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Los agentes configurados para el cliente
+         * @description **Transcrita el 2026-09-21 desde `82da946`**, leyendo
+         *     `internal/core/ports/agent.go` —`AgentAdminDTO`— y
+         *     `internal/adapters/handler/agent_handler.go`.
+         *
+         *     **`AgentAdminDTO` SÍ tiene etiquetas `json:` y sale en snake_case**, a
+         *     diferencia del resto de admin, que serializa structs de dominio en
+         *     PascalCase. No se deduce del patrón: se leyó.
+         *
+         *     **Nunca incluye credenciales** — lo dice el comentario del DTO y lo
+         *     confirma la lista de campos. Lo que sí trae y **§7.3 prohíbe mostrar**
+         *     es `snowflake_db`, `snowflake_schema` y `warehouse`: «ni base, ni rol
+         *     técnico, ni grants, ni warehouse». Se transcriben porque describir el
+         *     cable no es pintarlo.
+         *
+         *     **Devuelve también los inactivos.** `is_active` es una baja lógica que
+         *     alguien apretó, no una verificación de que el acceso funcione.
+         */
+        get: operations["listAgents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -496,6 +531,52 @@ export interface components {
              *     dibujar un cuerpo vacío creyendo que el panel está en blanco.
              */
             without_payloads: boolean;
+        };
+        /**
+         * @description `ports.AgentAdminDTO` · el agente visto desde administración.
+         *
+         *     **Tres de estos campos no se pintan nunca**, y no es un olvido:
+         *     `snowflake_db`, `snowflake_schema` y `warehouse` son vocabulario de
+         *     infraestructura, que §7.3 de `design.md` prohíbe en esta superficie —
+         *     «se declara la consecuencia, no la plomería».
+         *
+         *     **Y el campo que §7.3 SÍ pide no existe:** «acceso vigente, última
+         *     verificación». `is_active` no lo es y `updated_at` tampoco: uno es un
+         *     interruptor y el otro dice cuándo se editó la fila.
+         */
+        AgentAdmin: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            name: string;
+            /**
+             * @description El rol de PRODUCTO que atiende este agente —«Planner», «CEO»—, no un
+             *     rol técnico de Snowflake. Sale de `roles.name`.
+             */
+            target_role: string;
+            /** @description No se pinta · §7.3. */
+            snowflake_db: string;
+            /** @description No se pinta · §7.3. */
+            snowflake_schema: string;
+            snowflake_cortex_agent_name: string;
+            /** @description No se pinta · §7.3. */
+            warehouse: string;
+            /**
+             * @description Las vistas que el agente puede consultar. **Nombres de objeto de
+             *     Snowflake**, así que tampoco se pintan crudos.
+             */
+            semantic_views: string[];
+            system_prompt_base: string;
+            /**
+             * @description **Baja lógica, no verificación de acceso.** Un agente activo puede
+             *     tener la credencial vencida y este campo seguiría en `true`.
+             */
+            is_active: boolean;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
         };
     };
     responses: {
@@ -915,6 +996,32 @@ export interface operations {
                 };
             };
             422: components["responses"]["Unprocessable"];
+        };
+    };
+    listAgents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los agentes del cliente */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["AgentAdmin"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
 }

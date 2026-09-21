@@ -34,9 +34,18 @@ import { Label } from '../../render/primitives/Label'
 import type { Rol, RolParaGuardar } from '../../api/admin'
 import type { Metric, Tab } from '../../api/types'
 
+/** Lo que §7.3 pide de esta ficha y el cable no da.
+ *
+ *  **El estado del acceso salió de esta lista el 2026-09-21**, y no porque
+ *  llegara: lo declara `AgentConfig`, al lado de los agentes y diciendo con
+ *  precisión qué significa «Activo» y qué no. Tenerlo en los dos lados era la
+ *  misma carencia contada dos veces en la misma pantalla, y la versión de acá
+ *  era la más vaga. Se vio al abrirla.
+ *
+ *  El conteo del rótulo sale de `.length`, así que no hay un número que se
+ *  venza cuando esta lista cambie. */
 const FALTANTES = [
   'Datos del cliente · GET /admin/tenants devuelve id y nombre · B4.1',
-  'Estado del acceso a datos y su última verificación · ninguna ruta lo expone',
   'Subprocesadores · es obligación legal declararlos y no hay de dónde leerlos',
 ] as const
 

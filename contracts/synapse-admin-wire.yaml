@@ -441,6 +441,47 @@ paths:
                       data: { $ref: '#/components/schemas/LayoutVersion' }
         '422': { $ref: '#/components/responses/Unprocessable' }
 
+  # ── B3.9 · el agente por tenant · TRANSCRITO DE 82da946 ──────────────────
+  /admin/tenants/{tenantId}/agents:
+    get:
+      tags: [admin]
+      operationId: listAgents
+      summary: Los agentes configurados para el cliente
+      x-origen: 82da946
+      description: |
+        **Transcrita el 2026-09-21 desde `82da946`**, leyendo
+        `internal/core/ports/agent.go` —`AgentAdminDTO`— y
+        `internal/adapters/handler/agent_handler.go`.
+
+        **`AgentAdminDTO` SÍ tiene etiquetas `json:` y sale en snake_case**, a
+        diferencia del resto de admin, que serializa structs de dominio en
+        PascalCase. No se deduce del patrón: se leyó.
+
+        **Nunca incluye credenciales** — lo dice el comentario del DTO y lo
+        confirma la lista de campos. Lo que sí trae y **§7.3 prohíbe mostrar**
+        es `snowflake_db`, `snowflake_schema` y `warehouse`: «ni base, ni rol
+        técnico, ni grants, ni warehouse». Se transcriben porque describir el
+        cable no es pintarlo.
+
+        **Devuelve también los inactivos.** `is_active` es una baja lógica que
+        alguien apretó, no una verificación de que el acceso funcione.
+      parameters: [{ $ref: '#/components/parameters/tenantId' }]
+      responses:
+        '200':
+          description: Los agentes del cliente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/AgentAdmin' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
 components:
   securitySchemes:
     bearer: { type: http, scheme: bearer, bearerFormat: JWT }
@@ -798,3 +839,45 @@ components:
             Siempre `true` hoy. **Es una declaración, no un flag**: quien la
             consuma tiene que saber que los paneles vienen sin datos, para no
             dibujar un cuerpo vacío creyendo que el panel está en blanco.
+
+    AgentAdmin:
+      type: object
+      description: |
+        `ports.AgentAdminDTO` · el agente visto desde administración.
+
+        **Tres de estos campos no se pintan nunca**, y no es un olvido:
+        `snowflake_db`, `snowflake_schema` y `warehouse` son vocabulario de
+        infraestructura, que §7.3 de `design.md` prohíbe en esta superficie —
+        «se declara la consecuencia, no la plomería».
+
+        **Y el campo que §7.3 SÍ pide no existe:** «acceso vigente, última
+        verificación». `is_active` no lo es y `updated_at` tampoco: uno es un
+        interruptor y el otro dice cuándo se editó la fila.
+      required: [id, tenant_id, name, target_role, snowflake_db, snowflake_schema, snowflake_cortex_agent_name, warehouse, semantic_views, system_prompt_base, is_active, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        name: { type: string }
+        target_role:
+          type: string
+          description: |
+            El rol de PRODUCTO que atiende este agente —«Planner», «CEO»—, no un
+            rol técnico de Snowflake. Sale de `roles.name`.
+        snowflake_db: { type: string, description: 'No se pinta · §7.3.' }
+        snowflake_schema: { type: string, description: 'No se pinta · §7.3.' }
+        snowflake_cortex_agent_name: { type: string }
+        warehouse: { type: string, description: 'No se pinta · §7.3.' }
+        semantic_views:
+          type: array
+          items: { type: string }
+          description: |
+            Las vistas que el agente puede consultar. **Nombres de objeto de
+            Snowflake**, así que tampoco se pintan crudos.
+        system_prompt_base: { type: string }
+        is_active:
+          type: boolean
+          description: |
+            **Baja lógica, no verificación de acceso.** Un agente activo puede
+            tener la credencial vencida y este campo seguiría en `true`.
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }

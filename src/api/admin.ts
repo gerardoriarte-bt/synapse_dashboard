@@ -342,6 +342,17 @@ export const adminApi = {
 
   /* ── B4.8 y B4.9 · del FORK · el servicio desplegado devuelve 404 ──────── */
 
+  /** Los agentes del cliente · B3.9, del commit `82da946` del upstream.
+   *
+   *  **No es del fork**, a diferencia de `roles` y `preview`: esta ruta la
+   *  escribieron ellos. Lo que sí falta es el esquema — las tres columnas que
+   *  el CRUD escribe no existen en la base compartida, medido el 2026-09-21—,
+   *  así que contra el servicio esto da **500, no 404**. Ver B3.11. */
+  agentes: async (tenantId: string): Promise<Agente[]> =>
+    (await pedir<WireAgent[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/agents`)).map(
+      adaptAgent,
+    ),
+
   roles: async (tenantId: string): Promise<Rol[]> =>
     (await pedir<WireRole[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/roles`)).map(
       adaptarRol,
@@ -434,4 +445,48 @@ export const adminApi = {
         body: JSON.stringify({ version_id: versionId ?? '' }),
       }),
     ),
+}
+
+/* ── B3.9 · el agente por tenant · F4.4 ─────────────────────────────────────
+ *
+ *  **Acá se decide qué NO cruza la frontera, y es la mitad de la tarea.**
+ *  `AgentAdminDTO` trae `snowflake_db`, `snowflake_schema` y `warehouse`, y
+ *  §7.3 de `design.md` los prohíbe en esta superficie: «no se muestra
+ *  vocabulario de infraestructura — ni base, ni rol técnico, ni grants, ni
+ *  warehouse. Se declara la consecuencia, no la plomería».
+ *
+ *  **Se recortan en el adaptador y no en el componente.** Si llegaran hasta el
+ *  render, taparlos sería una decisión de cada pantalla que los use, y alcanza
+ *  con que una se olvide. Acá no existen: el tipo no los tiene.
+ *
+ *  `semantic_views` tampoco pasa — son nombres de objeto de Snowflake, o sea la
+ *  misma plomería con otro nombre. Lo que sí pasa es **cuántas son**, que
+ *  responde «¿tiene datos asignados?» sin nombrar ninguno.
+ */
+
+export type WireAgent = A['AgentAdmin']
+
+/** El agente, en el vocabulario del producto. */
+export type Agente = {
+  id: string
+  nombre: string
+  /** El rol de PRODUCTO que atiende — «Planner», «CEO»—, no un rol técnico. */
+  rol: string
+  /** Baja lógica. **No es «el acceso funciona»**, ver `EstadoDeAcceso`. */
+  activo: boolean
+  /** Cuántas vistas tiene asignadas. Sin los nombres · §7.3. */
+  vistas: number
+  /** Cuándo se editó la fila. **No es «cuándo se verificó el acceso»**. */
+  editadoEn: string
+}
+
+export function adaptAgent(w: WireAgent): Agente {
+  return {
+    id: w.id,
+    nombre: w.name,
+    rol: w.target_role,
+    activo: w.is_active,
+    vistas: w.semantic_views.length,
+    editadoEn: w.updated_at,
+  }
 }

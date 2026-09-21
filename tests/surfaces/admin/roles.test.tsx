@@ -94,6 +94,10 @@ function base(extra: Parameters<typeof server.use> = []) {
     http.get(`${API}/admin/tenants/:id/layouts`, () => ok(layouts)),
     http.get(`${API}/admin/layouts/:id`, () => ok(detalle)),
     http.get(`${API}/admin/tenants/:id/catalog`, () => ok(metricas)),
+    // El agente del cliente · F4.4. Sin esto la ficha pinta la rama de error
+    // del bloque de agente, que es correcta pero no es lo que estas pruebas
+    // miran. Lo descubrió una aserción que dio cero.
+    http.get(`${API}/admin/tenants/:id/agents`, () => ok([])),
   )
 }
 
@@ -330,15 +334,31 @@ describe('el 404 mientras el fork no esté desplegado', () => {
 })
 
 describe('lo que A2 y A3 todavía no pueden mostrar', () => {
-  it('declara las tres de la ficha y la lista de usuarios', async () => {
+  it('declara las dos de la ficha y la lista de usuarios', async () => {
+    // **Eran tres hasta el 2026-09-21.** El estado del acceso salió de esta
+    // lista y no porque llegara: lo declara `AgentConfig`, al lado de los
+    // agentes y diciendo con precisión qué significa «Activo». Tenerlo en los
+    // dos lados era la misma carencia contada dos veces en la misma pantalla.
     base()
     const { container } = montar()
     await abrirFicha()
 
     const texto = container.textContent ?? ''
-    expect(texto).toContain('Faltan 3 cosas')
+    expect(texto).toContain('Faltan 2 cosas')
     expect(texto).toContain('Subprocesadores')
     expect(texto).toContain('POST /admin/users')
+  })
+
+  it('el estado del acceso se declara UNA vez, y en el bloque del agente', async () => {
+    // La prueba de que no se duplicó: la ficha lo dice una sola vez.
+    base()
+    const { container } = montar()
+    await abrirFicha()
+
+    const texto = container.textContent ?? ''
+    const veces = texto.split('estado del acceso').length - 1
+    expect(veces).toBe(1)
+    expect(texto).toContain('Pendiente · el estado del acceso')
   })
 })
 

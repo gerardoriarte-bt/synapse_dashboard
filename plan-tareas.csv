@@ -490,7 +490,7 @@ F4.3,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Gestión de usu
 • Un usuario ve su propia fila marcada «sin acción sobre tu cuenta».",parcial,no,,equipo:front fase:4 estado:parcial bloqueada
 F4.4,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Configuración de agente Snowflake por tenant,,"• No se muestra vocabulario de infraestructura (§7.3 de design.md): ni base, ni rol técnico, ni grants, ni warehouse. Se declara la consecuencia —acceso vigente, última verificación— no la plomería. Única excepción: la lista de subprocesadores, que es obligación legal.
 • La credencial de Snowflake no se muestra ni se edita desde acá: se referencia por identificador del gestor de secretos.
-• Un usuario ve su propia fila marcada «sin acción sobre tu cuenta».",pendiente,no,,equipo:front fase:4 estado:pendiente
+• Un usuario ve su propia fila marcada «sin acción sobre tu cuenta».",hecho,no,,equipo:front fase:4 estado:hecho
 F4.5,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Vista del catálogo de métricas del tenant,,"• No se muestra vocabulario de infraestructura (§7.3 de design.md): ni base, ni rol técnico, ni grants, ni warehouse. Se declara la consecuencia —acceso vigente, última verificación— no la plomería. Única excepción: la lista de subprocesadores, que es obligación legal.
 • La credencial de Snowflake no se muestra ni se edita desde acá: se referencia por identificador del gestor de secretos.
 • Un usuario ve su propia fila marcada «sin acción sobre tu cuenta».",hecho,no,,equipo:front fase:4 estado:hecho

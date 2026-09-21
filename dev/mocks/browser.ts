@@ -396,6 +396,28 @@ export const worker = setupWorker(
   }),
 
   /* ── B4.8 y B4.9 · del fork ─────────────────────────────────────────────── */
+  /** El agente del cliente · F4.4. **Con toda la plomería**, que es lo que hay
+   *  que poder mirar: si `snowflake_db` o el warehouse aparecen en la pantalla,
+   *  se ven acá. Uno inactivo, para que los dos estados se vean. */
+  http.get(`${API}/admin/tenants/:id/agents`, () => ok([
+    {
+      id: 'ag-1', tenant_id: 't-1', name: 'Agente UA MX', target_role: 'Planner',
+      snowflake_db: 'DB_BT_UA', snowflake_schema: 'BT_UA_MART_ANALYTICS',
+      snowflake_cortex_agent_name: 'SYNAPSE_AGENT', warehouse: 'WH_SYNAPSE',
+      semantic_views: ['SYNAPSE_METRIC_CATALOG', 'SYNAPSE_SALES'],
+      system_prompt_base: 'Sos el analista de UA MX.', is_active: true,
+      created_at: '2026-09-01T10:00:00Z', updated_at: '2026-09-15T10:00:00Z',
+    },
+    {
+      id: 'ag-2', tenant_id: 't-1', name: 'Agente de dirección', target_role: 'CEO',
+      snowflake_db: 'DB_BT_UA', snowflake_schema: 'BT_UA_MART_ANALYTICS',
+      snowflake_cortex_agent_name: 'SYNAPSE_AGENT_CEO', warehouse: 'WH_SYNAPSE',
+      semantic_views: ['SYNAPSE_METRIC_CATALOG'],
+      system_prompt_base: '', is_active: false,
+      created_at: '2026-08-01T10:00:00Z', updated_at: '2026-09-02T10:00:00Z',
+    },
+  ])),
+
   http.get(`${API}/admin/tenants/:id/roles`, async () => {
     await delay(200)
     return ok(estado.roles)

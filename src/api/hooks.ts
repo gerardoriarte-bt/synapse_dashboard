@@ -34,6 +34,7 @@ export const keys = {
   layouts: (tenantId: string) => ['admin', 'layouts', tenantId] as const,
   adminCatalog: (tenantId: string) => ['admin', 'catalog', tenantId] as const,
   roles: (tenantId: string) => ['admin', 'roles', tenantId] as const,
+  agentes: (tenantId: string) => ['admin', 'agentes', tenantId] as const,
   preview: (layoutId: string, rolId: string) => ['admin', 'preview', layoutId, rolId] as const,
   layout: (layoutId: string) => ['admin', 'layout', layoutId] as const,
 }
@@ -159,6 +160,15 @@ export function useAdminCatalog(tenantId: string | null) {
  * entera antes de que existiera el servicio. El día que el fork se despliegue —o
  * que el código vuelva a su rama— dejan de dar 404 y no cambia una línea de acá.
  */
+
+/** Los agentes del cliente · F4.4. */
+export function useAgents(tenantId: string | null) {
+  return useQuery({
+    queryKey: keys.agentes(tenantId ?? ''),
+    queryFn: () => adminApi.agentes(tenantId as string),
+    enabled: tenantId !== null && tenantId !== '',
+  })
+}
 
 export function useRoles(tenantId: string | null) {
   return useQuery({

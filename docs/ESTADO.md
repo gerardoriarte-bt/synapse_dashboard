@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**100 de 199 tareas cerradas.** 17 parciales · 77 pendientes · 5 diferidas.
+**101 de 199 tareas cerradas.** 17 parciales · 76 pendientes · 5 diferidas.
 
 
-## Front · 93 de 115
+## Front · 94 de 115
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -16,7 +16,7 @@
 | 1 · Consola y render/ | `████████████████████··` | 40/44 | 1 | 3 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `███████████████·······` | 9/13 | 0 | 1 |
-| 4 · Admin y Builder | `██████████████········` | 15/23 | 2 | 6 |
+| 4 · Admin y Builder | `███████████████·······` | 16/23 | 2 | 5 |
 | 5 · Pruebas y pulido | `██████████████········` | 8/13 | 1 | 3 |
 
 ## Backend · 7 de 84
@@ -44,9 +44,8 @@
 
 ---
 
-## Se puede tomar hoy · 2 del front
+## Se puede tomar hoy · 1 del front
 
-- **F4.4** · Configuración de agente Snowflake por tenant
 - **F5.10** · Checklist de conformidad §17 por tipo de bloque integrado
 
 ---
