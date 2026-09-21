@@ -262,3 +262,56 @@ describe('F3.3 · «Preguntar» abre la hoja con el panel desde el que se pregun
     expect(screen.queryByText(/quiebre de stock/)).not.toBeInTheDocument()
   })
 })
+
+/** §17 · casilla 13 · «Clic abre chat con `metricId` + contexto» · F5.10
+ *
+ *  **La casilla dice `metricId` y el cable pide `panel_id`.** No es una
+ *  divergencia que se resuelva acá: `nuevo-desarrollo.md` §17 se escribió antes
+ *  de que existiera `POST /config/chat`, y el 2026-09-17 se decidió —decisión
+ *  humana— adoptar la forma del backend, que es `panel_context: {panel_id,
+ *  period}`. El servicio resuelve la métrica leyendo el panel por su id.
+ *
+ *  **Lo que la casilla protege sigue en pie, y es lo que se verifica:** que el
+ *  chat quede anclado a la métrica del panel que se apretó. Un front que
+ *  mandara el panel equivocado cumpliría «manda un panel_id» y abriría una
+ *  conversación sobre otra cifra.
+ *
+ *  Queda anotado como propuesta de spec en el plan · F5.10.
+ */
+describe('§17 · casilla 13 · el chat queda anclado a la métrica del panel', () => {
+  it('el `panel_id` que viaja es el del panel cuya MÉTRICA titula la hoja', async () => {
+    // **El ancla se verifica de punta a punta**, no por partes: se lee el
+    // título —que es el nombre de la métrica—, se busca qué panel la lleva en
+    // el catálogo, y se exige que sea ese el que viajó.
+    const { preguntas } = laConsola()
+    montar()
+    const usuario = await preguntarEn('Detalle por tienda')
+
+    const hoja = await screen.findByRole('dialog')
+    const tituloDeLaHoja = hoja.getAttribute('aria-label')
+    await enviar(usuario, 'x')
+    await waitFor(() => expect(preguntas).toHaveLength(1))
+
+    const metrica = metrics.find((m) => m.name === tituloDeLaHoja)
+    expect(metrica).toBeDefined()
+    const panelDeEsaMetrica = panels.find((p) => p.metric_id === metrica!.id)
+    expect(panelDeEsaMetrica).toBeDefined()
+
+    const contexto = preguntas[0]?.['panel_context'] as { panel_id: string; period: string }
+    expect(contexto.panel_id).toBe(panelDeEsaMetrica!.id)
+    // Y el contexto: el período que se estaba mirando.
+    expect(contexto.period).toBe('2026-07')
+  })
+
+  it('el panel NO navega solo · el viaje lo decide la superficie', async () => {
+    // La otra mitad de la casilla, que §17 pide en su propia línea: «eventos
+    // suben por callbacks — el componente no navega solo». Si `render/`
+    // abriera la hoja, montar la consola sin `onAskPanel` la abriría igual.
+    laConsola()
+    montar()
+    await screen.findByRole('heading', { name: 'Venta diaria' })
+
+    // Sin apretar nada no hay hoja: nadie la abre por su cuenta al montar.
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})

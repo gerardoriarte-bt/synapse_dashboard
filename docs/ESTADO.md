@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**101 de 199 tareas cerradas.** 17 parciales · 76 pendientes · 5 diferidas.
+**102 de 199 tareas cerradas.** 16 parciales · 76 pendientes · 5 diferidas.
 
 
-## Front · 94 de 115
+## Front · 95 de 115
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -17,7 +17,7 @@
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `███████████████·······` | 9/13 | 0 | 1 |
 | 4 · Admin y Builder | `███████████████·······` | 16/23 | 2 | 5 |
-| 5 · Pruebas y pulido | `██████████████········` | 8/13 | 1 | 3 |
+| 5 · Pruebas y pulido | `███████████████·······` | 9/13 | 0 | 3 |
 
 ## Backend · 7 de 84
 
@@ -44,9 +44,10 @@
 
 ---
 
-## Se puede tomar hoy · 1 del front
+## Se puede tomar hoy · 0 del front
 
-- **F5.10** · Checklist de conformidad §17 por tipo de bloque integrado
+Nada del front está libre: todo lo pendiente espera algo.
+
 
 ---
 

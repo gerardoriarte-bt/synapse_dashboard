@@ -4976,7 +4976,7 @@ La lista quedó en **cero**, que es el número real.
 | F4.3 | Ninguna ruta lista usuarios | `/admin/users` **404**, `/admin/roles` **404** |
 | F4.12 | La ruta es del fork, sin desplegar | `/admin/roles` **404** |
 | F5.1 | `Contexto` no declara `layouts` | El yaml, y `/config/layouts` **404** |
-| F5.10 | La casilla 13 espera a T4 | `POST /config/chat` no tiene campo para el panel |
+| F5.10 | La casilla 13 espera a T4 | `POST /config/chat` no tiene campo para el panel · **vencido: T4 cerró el 2026-09-17 y la casilla el 21** |
 
 **No se marcó ninguna sin medirla.** Las que dicen 404 se probaron contra el
 servicio corriendo el 2026-09-15 con un token válido; las que dicen «el yaml» se
@@ -4996,7 +4996,8 @@ y en este orden de rendimiento:
 
 1. **T4 · el contexto del panel en `POST /config/chat`.** Desbloquea F3.2, la
    mitad de F3.3, la casilla 13 de §17 —y con ella F5.10— y la primera mitad de
-   F3.7. Es **un campo en el cuerpo del endpoint**.
+   F3.7. Es **un campo en el cuerpo del endpoint**. *(Cerrada el 2026-09-17: el
+   campo llegó, y las cuatro se cerraron entre el 17 y el 21.)*
 2. **Que tomen el fork.** Desbloquea F4.12 entera y la mitad de roles de F4.3.
    El código está escrito y probado; falta desplegarlo.
 3. **`/config/plots`** · desbloquea F1.31, F4.21 y F5.3.
@@ -5443,7 +5444,7 @@ contradice con la descripción de `grano`, que dice que el front deduce
 hoy son snapshots materializados —`estado: 'MTD CERRADO'`, `'CERRADO'`— y un
 rango arbitrario hay que calcularlo a demanda.
 
-### F5.10 ⚠️ Checklist de conformidad §17 por tipo de bloque integrado
+### F5.10 ✅ Checklist de conformidad §17 por tipo de bloque integrado
 ### F5.11 ✅ Verificar tema oscuro y claro en todo componente
 ### F5.12 ✅ Verificar la carga diferida
 **Criterio de aceptación.**
@@ -5469,11 +5470,11 @@ Verificadas hoy, y por quién:
 | Cuerpos y plots puros | L14 + las pruebas de cuerpo |
 | Eventos suben por callbacks | `states.test.tsx`, `Panel.test.tsx` |
 
-**Faltan dos, y ninguna depende de nosotros**:
+**Faltaban dos, y ninguna dependía de nosotros. Las dos se cerraron:**
 
-- **«Clic abre chat con `metricId` + contexto»** · 🔒 F3.2, que espera a T4.
-- **«Cambiar tenant/rol recomponen sin deploy»** · 🔒 necesita el contrato de
-  admin y builder, que no existe.
+- **«Cambiar tenant/rol recomponen sin deploy»** · el 2026-09-15, abajo.
+- **«Clic abre chat con `metricId` + contexto»** · el 2026-09-21, abajo del
+  todo. Esperaba a F3.2, que esperaba a T4.
 
 ##### Doce de trece desde el 2026-09-15 · la casilla del tenant y el rol
 
@@ -5496,6 +5497,35 @@ contra uno, porque `hidden_metric_ids` ya se aplicó del lado del servidor— y 
 tercera fija que **el front no reimplementa el filtro**: un panel cuya métrica
 este rol no ve se dice, no se esconde. Esconderlo sería lo mismo que
 `RolePreview` explica que no hay que simular.
+
+##### Trece de trece desde el 2026-09-21 · la casilla del chat
+
+**Lo que la destrabó fueron F3.2 y F3.3**, no un cambio en esta tarea: T4 se
+cerró el 2026-09-17, el contexto del panel viaja y «Preguntar» existe en el
+shell.
+
+**La casilla dice `metricId` y el cable pide `panel_id`, y eso NO se resolvió en
+silencio.** §17 de `nuevo-desarrollo.md` se escribió antes de que existiera
+`POST /config/chat`; el 2026-09-17 se decidió —decisión humana sobre el informe
+de `82da946`— adoptar la forma del backend, que es
+`panel_context: {panel_id, period}`, y el servicio resuelve la métrica leyendo
+el panel por su id. **Queda como propuesta de spec sobre §17**, que es un
+documento normativo y no se edita desde acá.
+
+**Lo que la casilla protege sigue en pie, y es lo que se verifica**: que el chat
+quede anclado a la métrica del panel que se apretó. Un front que mandara el
+panel equivocado cumpliría «manda un panel_id» y abriría una conversación sobre
+otra cifra — y eso no lo ve ninguna prueba que solo mire que el botón existe.
+
+`tests/surfaces/console/preguntar.test.tsx` lo verifica **de punta a punta y no
+por partes**: lee el título de la hoja, busca en el catálogo qué métrica se
+llama así, busca qué panel la lleva, y exige que sea **ese** el `panel_id` que
+salió por la red. Más el período. La segunda prueba cubre la otra línea de §17
+—«el componente no navega solo»—: montada la consola y sin apretar nada, no hay
+hoja.
+
+**Verificada por mutación**: anclar el chat al primer panel del catálogo en vez
+de al apretado mata cuatro de las nueve.
 
 **Verificada por mutación, seis casos sobre línea de base verde.** La pregunta
 operativa escrita en el front, el nombre de la métrica escrito en el adaptador,
