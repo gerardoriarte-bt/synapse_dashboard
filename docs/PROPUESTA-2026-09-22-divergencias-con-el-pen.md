@@ -40,9 +40,14 @@ de esa misma pantalla usan tokens:
 El segundo tiene un argumento extra: **«un hex literal es un bug» es regla
 dura**, y `shad` se invierte con el tema, que un hex fijo no hace.
 
-**La pregunta:** ¿la escala gana un radio de 16 y un color de velo, o el dibujo
-usa los que ya hay? No se puede tener las dos: hoy el `.pen` se pide a sí mismo
-algo que no puede producir.
+### ✅ DECIDIDA · 2026-09-22 · se usan los que ya hay
+
+«Usá los que hay.» **Sin cambio de código**: es lo que la hoja ya hace desde
+F5.17, y lo que cambia es que deja de ser un apaño y pasa a ser la forma
+correcta.
+
+Queda anotado para el día que alguien mire el dibujo y vea un 16: **el `.pen`
+ahí se pide a sí mismo algo que no puede emitir**, y quien manda es la escala.
 
 ## 2 · Dos tamaños más, del mismo modo de falla · A2 §9
 
@@ -108,11 +113,37 @@ no se confunden ni de lejos.
 contra 81–95%**: es mucho más apagado que cualquier dato, que es justamente lo
 que lo hace leer como marca y no como serie.
 
-**La pregunta, corregida:** con eso medido, ¿va la marca a color en el chrome de
-producto? El único cuidado es no poner el violeta **adyacente** a una serie de
-`inventario`; el wordmark vive en el navbar y no comparte espacio con ningún
-plot. Hoy está la monocroma por una objeción que resultó valer sólo para la
-mitad.
+### ✅ DECIDIDA · 2026-09-22 · va el color, y el `.pen` dice DÓNDE
+
+«Va el color.» Al ir a ejecutarlo apareció que **la regla no era mía**: el
+capítulo `Identidad` del `.pen` declara **tres** versiones y para qué superficie
+es cada una, y es normativo.
+
+| Versión | Para | Arte |
+|---|---|---|
+| **Lockup completo** · wordmark blanco con Lo.Bueno en naranja | «Oscura sin datos» · superficies de marca. «No introduce azul ni violeta» | `synapse-logo-dark.png` |
+| **Monocromo, sin bajada** | «La del **navbar y el pie**, en los DOS temas» | `wordmark.png` + máscara |
+| **Degradado** · «naranja a violeta a azul» | «Reservado a superficies **sin datos**: portada de export, **login**, materiales» | `synapse-logo-light.png` |
+
+Y la regla dura, textual:
+
+> **NO · NUNCA EN DATOS NI EN CHROME DE PANEL.** «El azul #4842FA y el violeta
+> #846DC5 caen sobre las familias demanda e inventario. Usarlos como chrome
+> rompería la **persistencia cromática**, que es el mecanismo de asociación
+> entre vistas.»
+
+**Mi medición no alcanza para mover eso, y conviene decirlo.** Es cierto que el
+azul de marca está a 42–44° de `demanda` y que no se confunden a la vista. Pero
+el argumento del `.pen` **no es de matiz sino de sistema**: en Synapse un color
+significa una familia, y meter un cuarto azul en el chrome enseña que a veces no
+significa nada. Una regla de sistema no se refuta con una distancia de matiz.
+
+**Ejecutado así:** el degradado entra donde el `.pen` lo manda y **el login era
+el caso más flagrante** — ahí había texto plano, ni siquiera el monocromo. El
+chrome de la consola conserva el monocromo.
+
+**Si la intención era el chrome**, eso sí es una decisión de marca que cambia el
+capítulo `Identidad`, y el agente no lo edita: se dice y se decide.
 
 ## 4 · El punto decimal, que el `.pen` usa para las dos cosas
 
@@ -123,14 +154,43 @@ consigo mismo**: usa el punto como decimal en **85** lugares —«USD 4.28M»,
 «6.4%»— y como separador de miles en **12** —«1.284.500»—, a veces en la misma
 pantalla. Un punto no puede significar las dos cosas.
 
-Se resolvió con `es-MX`, que es lo que hacen los 85 mayoritarios y lo que
-corresponde al primer cliente. **Los 12 restantes quedan como propuesta**: o son
-un descuido del dibujo, o son una intención que el front está pisando.
+Se resolvió con `es-MX`, que es lo que corresponde al primer cliente.
+
+### ✅ DECIDIDA · 2026-09-22 · es un descuido y se unifica
+
+«Descuido, debemos unificarlos de manera correcta.» Antes de pasarlo a diseño se
+recontó, porque **el número que teníamos escrito estaba mal y la forma también**:
+
+| | Nodos | Pantallas |
+|---|---|---|
+| Punto como **decimal** · la convención que gana | **151** | 33 |
+| Punto como **miles** | **10** | 3 |
+| Coma como **decimal** | **13** | 5 |
+
+`format.ts` decía «12 lugares». Son **10**, y —lo que importa más— **no están
+desparramados: se agrupan en tres pantallas**, y dentro de cada una la otra
+convención se aplica de forma **coherente**:
+
+| Pantalla | Qué usa |
+|---|---|
+| **C2 · Drill-down de panel** | `1.284.500 FILAS`, `18.380 filas… 1,4% del lote` · es-ES entero |
+| **A6 · Cola de accionables** | `+9,4%`, `ESTIMADO +8,0%`, `-1,1%` · coma decimal en las nueve |
+| **A5 · Salud de feeds** | `48.210` y `VS 47,9 K` |
+
+No es un descuido repetido: **son tres pantallas dibujadas con la otra
+convención**, cada una consistente consigo misma. Eso cambia el arreglo — no es
+corregir diez caracteres sino retipear tres pantallas.
+
+**Y sale barato: ninguna de las tres está construida.** C2 es F3.9, diferida;
+A6 no tiene tarea; A5 espera a B2.13, que da 404. Arreglar el dibujo hoy no
+toca una línea de código.
+
+**Del lado del front no hay nada que hacer**: `createFormat('es-MX')` ya emite la
+convención que gana. Lo que queda es el retipeo en el `.pen`, que es de diseño.
 
 Ojo con no confundirla con la 3 de B0.9, que es otra cosa: **de dónde sale el
-locale** —hoy `createFormat('es-MX')` está clavado porque `Contexto` no lo
-declara—. Ésta es **cuál es el formato correcto**, una vez que se sepa de dónde
-sale.
+locale** —hoy está clavado porque `Contexto` no lo declara—. Ésta era **cuál es
+el formato correcto**.
 
 ## 5 · El contexto del chat · la pestaña o el panel
 

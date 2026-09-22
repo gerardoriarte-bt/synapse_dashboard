@@ -10,12 +10,15 @@
  *  familia cromática.
  *
  *  SUPUESTO DECLARADO · ninguna fuente normativa fija el formato numérico, y el
- *  `.pen` se contradice: usa el punto como decimal en 85 lugares («USD 4.28M»,
- *  «6.4%») y como separador de miles en 12 («1.284.500»), a veces en la misma
- *  pantalla. Un punto no puede significar las dos cosas. Se resuelve con `es-MX`
- *  porque el primer cliente es UA MX y en México el separador de miles es la
- *  coma y el decimal el punto — que es lo que ya hacen los 85 mayoritarios. Los
- *  12 restantes quedan como propuesta de spec; no se corrigen desde acá.
+ *  `.pen` se contradice: usa el punto como decimal en **151** nodos de 33
+ *  pantallas («USD 4.28M», «6.4%») y como separador de miles en **10** de tres.
+ *  Un punto no puede significar las dos cosas. Se resuelve con `es-MX` porque el
+ *  primer cliente es UA MX y es lo que hace la mayoría del dibujo.
+ *
+ *  **DECIDIDO el 2026-09-22 (humano): las otras tres pantallas son un descuido y
+ *  se retipean.** No se corrigen desde acá —el agente no edita el `.pen`— y no
+ *  hace falta: ninguna de las tres está construida. Recontado ese día, porque
+ *  acá decía «85» y «12» y ninguno de los dos era el número.
  *  `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` · §4 — y ojo con no confundirla con la 3 de B0.9, que pregunta de
  *  dónde sale el locale y no cuál es el formato correcto.
  */

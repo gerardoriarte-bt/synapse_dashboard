@@ -3912,6 +3912,55 @@ tenía anotada.
 **Abierta en el navegador**: tres chips, apretar uno pregunta, y el bloque
 desaparece al responder.
 
+#### ➕ F3.15 ⬜ El chat tiene presencia en la consola · 🔒 el cable exige un panel
+**Descripción.** Decisión humana del **2026-09-22**: *«el chat debe tener
+presencia, es una funcionalidad importante para el uso de Synapse, no un
+complemento — algo flotante o una persiana que abre sobre el dashboard»*.
+
+**El `.pen` ya lo dibuja, en las dos formas, y en TODAS las pantallas de
+consola** —C1 ×5, C2, C3 ×2, C4 ×2, C5 y los dos responsive—. No se construyó
+ninguna de las dos, y es la tercera vez que algo estaba dibujado y no se abrió:
+
+| Dónde | Qué dibuja |
+|---|---|
+| `Navbar/CTA Synapse` | Botón `PREGUNTAR` · alto 32 · fondo `$acc` · icono `sparkles` 14 en `$on-acc` · mono 10 w500 |
+| `Barra inferior` | Banda de **56 de alto**, ancho completo, `$dock` con borde superior `$w2`, padding 0/24. Izquierda: `PREGUNTAR A SYNAPSE` —alto 32, `$r-lg`, borde `$w3`, `sparkles` en `$dim`—. Derecha: punto de 7 en `$fam-medios-1` y la línea de contexto |
+
+**La persiana ya existe** —`ChatOverlay`, la hoja de 940 con velo de F5.17—. Lo
+que falta es la presencia, que es exactamente lo que se pidió.
+
+**Y el contexto pasa a ser de PESTAÑA** · decisión humana del 2026-09-22, opción
+(a) de `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` §5. Eso **cierra**
+esa propuesta y **reemplaza la decisión del 2026-09-17**, que se había tomado
+sobre la forma que el backend ya tenía y no sobre cuál era mejor. El razonamiento
+que la sostiene: **un chat «del panel» no puede tener presencia permanente**,
+porque el panel es quien da el contexto; uno «de la pestaña» sí.
+
+**El `PREGUNTAR` de cada panel no se va**: sigue existiendo y es más específico.
+Son dos entradas con dos alcances, que es lo que el `.pen` dibuja.
+
+**Espera del backend.** **Que `POST /config/chat` acepte contexto de PESTAÑA.**
+Hoy `panel_context: {panel_id, period}` está declarado `binding:"required"`, así
+que un chat abierto desde la barra inferior —que no tiene panel— no se puede
+pedir. La línea que el `.pen` dibuja en esa barra es, literal:
+`CONTEXTO · UA MX · ECOMMERCE OVERVIEW · JUL 2026 · 12 PANELES`.
+
+Alcanza con que el contexto admita una de las dos formas —`{tab_id, period}` o
+`{panel_id, period}`— y que el servicio arme el resto, igual que ya hace con el
+panel. **No pedimos los doce campos**: esa parte del criterio de F3.2 ya se
+retiró el 2026-09-17 y esto no la reabre. · Bloquea **F3.15**.
+
+**Criterio de aceptación.**
+- La barra inferior y el CTA del navbar salen del **frame**, no de la nota, y con
+  las medidas de arriba.
+- La barra declara el contexto que va a viajar, y **lo que declara es lo que
+  viaja**: si dice «12 paneles», la pregunta alcanza a esa pestaña.
+- **El botón no se pinta hasta que el cable lo acepte.** Regla del CTA muerto: un
+  `PREGUNTAR A SYNAPSE` que devuelve 400 es peor que su ausencia.
+- El `PREGUNTAR` de panel sigue funcionando y sigue mandando `panel_id`.
+- Se abre la pantalla antes de darla por construida.
+
+
 ### ➕ F3.13 ✅ La respuesta del agente es MARKDOWN y se pinta literal
 **Descripción.** Renderizar el markdown que el agente devuelve, en vez de
 volcarlo como texto plano.

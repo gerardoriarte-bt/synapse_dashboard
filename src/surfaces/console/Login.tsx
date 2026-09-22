@@ -10,6 +10,7 @@
  *  verdad que se desincroniza en silencio en cuanto alguien cambie de rol —el
  *  mismo anti-patrón que §4 prohíbe con `useState` sobre datos de servidor.
  */
+import { Wordmark } from './Wordmark'
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { login } from '../../api/auth'
@@ -74,8 +75,12 @@ export function Login() {
         onSubmit={(e) => void enviar(e)}
         className="flex w-full max-w-[360px] flex-col gap-4 rounded-xl border border-w2 bg-panel p-6"
       >
-        <h1 className="font-display text-titulo-lg tracking-titulo leading-titulo text-ink m-0">
-          Synapse
+        {/* **El login es superficie de marca y el `.pen` lo nombra** · el
+            capítulo `Identidad` lista «Login y pantallas de sesión» entre las
+            superficies sin datos, y les reserva el wordmark en degradado.
+            Hasta hoy acá había texto: ni siquiera el monocromo. */}
+        <h1 className="m-0 flex">
+          <Wordmark variante="marca" alto={8} />
         </h1>
 
         <div className="flex flex-col gap-1">

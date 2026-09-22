@@ -5,17 +5,17 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**110 de 207 tareas cerradas.** 18 parciales · 74 pendientes · 5 diferidas.
+**110 de 208 tareas cerradas.** 18 parciales · 75 pendientes · 5 diferidas.
 
 
-## Front · 103 de 123
+## Front · 103 de 124
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██████████████████████` | 16/16 | 0 | 0 |
 | 1 · Consola y render/ | `████████████████████··` | 41/46 | 2 | 3 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
-| 3 · Chat contextual | `█████████████████·····` | 11/14 | 0 | 0 |
+| 3 · Chat contextual | `████████████████······` | 11/15 | 0 | 1 |
 | 4 · Admin y Builder | `███████████████·······` | 16/23 | 2 | 5 |
 | 5 · Pruebas y pulido | `█████████████████·····` | 14/18 | 0 | 3 |
 
@@ -51,7 +51,7 @@ Nada del front está libre: todo lo pendiente espera algo.
 
 ---
 
-## Bloqueadas · 40
+## Bloqueadas · 41
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -65,6 +65,7 @@ Lo que el front espera del backend está detallado en
 - **F1.42** · El mes en curso está incompleto y el selector no lo dice
 - **F1.44** · El orden de una tabla se anuncia, no se aplica
 - **F2.3** · SIN_PERMISO · B0.9 (línea 1171) contestada
+- **F3.15** · El chat tiene presencia en la consola
 - **F4.12** · Preview por rol
 - **F4.17** · ComparisonBody + ComparePlot
 - **F4.18** · MatrixBody + HeatmapPlot

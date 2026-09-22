@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 24 pedido(s)
+## Lo que esperamos · 25 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -421,6 +421,23 @@ ocho estampas mensuales —`jan`, `feb`, `mar`…— sin importar el `cut`, así
 que declara `31 DAYS` en su BASE **dibuja ocho puntos mensuales**. Eso es una
 segunda cosa que revisar, y hasta que alguna de las dos se aclare el param se
 descarta con aviso en vez de leerse mal. · Bloquea **F1.44**.
+
+
+### F3.15 · El chat tiene presencia en la consola
+
+*Estado de la tarea: pendiente.*
+
+
+**Que `POST /config/chat` acepte contexto de PESTAÑA.**
+Hoy `panel_context: {panel_id, period}` está declarado `binding:"required"`, así
+que un chat abierto desde la barra inferior —que no tiene panel— no se puede
+pedir. La línea que el `.pen` dibuja en esa barra es, literal:
+`CONTEXTO · UA MX · ECOMMERCE OVERVIEW · JUL 2026 · 12 PANELES`.
+
+Alcanza con que el contexto admita una de las dos formas —`{tab_id, period}` o
+`{panel_id, period}`— y que el servicio arme el resto, igual que ya hace con el
+panel. **No pedimos los doce campos**: esa parte del criterio de F3.2 ya se
+retiró el 2026-09-17 y esto no la reabre. · Bloquea **F3.15**.
 
 
 ---

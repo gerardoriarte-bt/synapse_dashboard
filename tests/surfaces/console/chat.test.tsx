@@ -323,4 +323,33 @@ describe('§PEN · la identidad de la plataforma', () => {
     render(<Wordmark />)
     expect(screen.getByRole('img', { name: 'Synapse' }).className).toContain('bg-ink')
   })
+
+  /** **La regla de qué versión va dónde es del `.pen`, no nuestra** · su
+   *  capítulo `Identidad` reserva el degradado para superficies SIN datos y lo
+   *  prohíbe en el chrome: «el azul y el violeta caen sobre las familias
+   *  demanda e inventario · usarlos como chrome rompería la persistencia
+   *  cromática». Estas dos la fijan por los dos lados. */
+  it('el defecto es `mono` · quien se olvide se equivoca del lado permitido', () => {
+    render(<Wordmark />)
+    const marca = screen.getByRole('img', { name: 'Synapse' })
+    expect(marca.className).toContain('bg-ink')
+    expect(marca.style.backgroundImage).toBe('')
+  })
+
+  it('la variante de marca es degradado de TOKENS, sin hex ni `bg-ink`', () => {
+    // «Naranja a violeta a azul» · el orden lo declara el `.pen`. Que salga de
+    // tokens es lo que impide que entre un hex literal, que es regla dura.
+    render(<Wordmark variante="marca" />)
+    const marca = screen.getByRole('img', { name: 'Synapse' })
+
+    expect(marca.className).not.toContain('bg-ink')
+    const fondo = marca.style.backgroundImage
+    expect(fondo).toContain('--color-brand-naranja')
+    expect(fondo).toContain('--color-brand-violeta')
+    expect(fondo).toContain('--color-brand-azul')
+    expect(fondo).not.toMatch(/#[0-9a-f]{3,8}/i)
+    // Y en ese orden: invertirlo daría otra marca.
+    expect(fondo.indexOf('naranja')).toBeLessThan(fondo.indexOf('violeta'))
+    expect(fondo.indexOf('violeta')).toBeLessThan(fondo.indexOf('azul'))
+  })
 })
