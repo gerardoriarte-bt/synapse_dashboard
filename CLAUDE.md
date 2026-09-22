@@ -458,10 +458,35 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-09-21 · la Fase 3 casi cerrada, esperando migraciones
+### ⇩ ACÁ SE PARÓ · 2026-09-22 · el backend medido, y dos mensajes sin mandar
 
-**Lo que costó descubrir está en `docs/BITACORA-2026-09-21.md`.** Esto es dónde
-retomar.
+**Lo que costó descubrir está en `docs/BITACORA-2026-09-22.md`** —y el día
+anterior en `docs/BITACORA-2026-09-21.md`—. Esto es dónde retomar.
+
+**LO PRIMERO, Y NO ES CÓDIGO: mandar los dos mensajes.** Son la puerta de casi
+todo lo que queda.
+
+| Para | Qué pide | Dónde |
+|---|---|---|
+| **Datos** | El par de claves RSA para `SYNAPSE_SERVICE_USER` y dos grants que `SYNAPSE_APP_ROLE` no tiene | `docs/MENSAJE-2026-09-22-datos-agente-cortex.md` |
+| **Backend** | Cargar el agente, la colisión de `/admin/tenants/{tenantId}/roles`, el hallazgo del `Tenant` embebido, y que `POST /config/chat` acepte contexto de pestaña | `docs/MENSAJE-2026-09-22-backend-roles-y-hallazgo.md` · el último va por F3.15 |
+
+**Y lo que sigue cuando contesten:** con la clave, verificar la Fase 3 entera
+contra Cortex —hoy son once tareas cerradas contra mocks nuestros—; con la
+colisión resuelta, el rebase y el PR; con el contexto de pestaña, **F3.15**, que
+es la presencia del chat que el `.pen` ya dibuja en todas las pantallas de
+consola y que nunca construimos.
+
+**Cuatro decisiones humanas del 2026-09-22, ya ejecutadas**: el contexto del chat
+pasa a ser de pestaña —cierra §5 y reemplaza la del 17—, el logotipo a color va
+**donde el `.pen` lo manda** y no en el chrome, los radios y el velo son los que
+la escala ya tiene, y el punto de miles del `.pen` es un descuido que diseño
+retipea. Las abiertas están juntas en
+`docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md`.
+
+**Antes de medir al backend, mirá qué binario está corriendo.** El de `:4010` es
+el fork, y sus campos se ven como avance de ellos. La medición sólo cuenta
+contra upstream limpio — el corte está en `docs/ESTADO-backend-2026-09-22.md`.
 
 **LO QUE FRENA EL CHAT YA NO SON LAS MIGRACIONES · corregido el 2026-09-22.**
 Hasta acá decía que lo único que frenaba era B3.11. **Venció**: la base local de
