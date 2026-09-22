@@ -1,4 +1,4 @@
-# Para el equipo de backend · 2026-09-22
+   # Para el equipo de backend · 2026-09-22
 
 > **Histórico.** Un mensaje mandado, con fecha: qué se pidió y con qué
 > evidencia. No se actualiza.

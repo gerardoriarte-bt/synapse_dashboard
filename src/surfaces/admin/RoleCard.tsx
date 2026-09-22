@@ -44,7 +44,8 @@
  *  —`text-titulo`— a 20, y de 12 —`text-celda`— a 13. Se usan los tokens
  *  vecinos. Es el mismo caso que el radio 16 de la hoja del chat: **la autoridad
  *  del `.pen` no obliga a copiar un valor que el propio `.pen` no puede
- *  emitir**, y queda como propuesta de spec.
+ *  emitir**. Queda como propuesta de spec — `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` · §2, que es evidencia para
+ *  la pregunta 9 de B0.9 y no una pregunta nueva.
  */
 import { Label } from '../../render/primitives/Label'
 import type { Rol } from '../../api/admin'

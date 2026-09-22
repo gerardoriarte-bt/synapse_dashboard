@@ -40,7 +40,8 @@
  *     del sistema y **se invierte con el tema**, que un hex fijo no hace.
  *
  *  Las dos quedan como propuesta de spec: o la escala gana un radio de 16 y un
- *  color de velo, o el dibujo usa los que ya hay.
+ *  color de velo, o el dibujo usa los que ya hay. Escritas y juntas con las
+ *  otras en `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` · §1.
  */
 import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'

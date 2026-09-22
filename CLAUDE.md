@@ -525,10 +525,17 @@ dibujada puede quedar sin declarar quién la implementa o por qué todavía no. 
 inventario de lo que quedó distinto está en
 `docs/AUDITORIA-2026-09-21-pen-vs-chat-y-ficha.md`.
 
-**Lo que queda de esa auditoría es UN punto mediano** —`ROLES Y COMPOSICIÓN` en
-A2, su §9— más dos que no son ajustes sino propuestas de spec: el contexto
-pestaña-contra-panel (§2) y las fuentes con capa y frescura en el evento
-`auditoria` (§5).
+**La auditoría quedó cerrada el 2026-09-22** con F5.18 —`ROLES Y COMPOSICIÓN`
+en A2, su §9—, salvo dos que no son ajustes sino propuestas de spec.
+
+**Y las propuestas de spec abiertas ya no viven sueltas en comentarios.** Las
+del `.pen` están juntas en `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md`
+—el radio y el velo de la hoja, los dos tamaños que la escala no emite, el
+logotipo a color, el punto decimal, el contexto pestaña-contra-panel y las
+fuentes del evento `auditoria`—, con un índice de dónde vive cada una de las
+demás. **Las del contrato NO se copiaron ahí**: siguen en
+`docs/B0.9-preguntas-abiertas.md`, que es su casa, y duplicarlas era el error
+del 2026-09-14.
 
 **Al leer el `.pen`, el frame antes que la nota.** Las notas cuentan el porqué;
 los frames tienen los números y a veces lo que la nota no dice — el velo de la

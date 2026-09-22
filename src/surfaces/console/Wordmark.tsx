@@ -21,7 +21,7 @@
  *  que esa misma regla pide para superficie clara **está prohibida sobre
  *  superficies con datos**: su azul y su violeta chocan con las familias
  *  `demanda` e `inventario`. La monocroma sirve en los dos temas y es la que va
- *  acá. Queda como propuesta de spec, igual que en v2.
+ *  acá. Queda como propuesta de spec, igual que en v2 · `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` · §3.
  *
  *  ── POR QUÉ EL ANCHO EN PÍXELES ─────────────────────────────────────────────
  *

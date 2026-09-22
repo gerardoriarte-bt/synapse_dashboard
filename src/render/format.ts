@@ -16,6 +16,8 @@
  *  porque el primer cliente es UA MX y en México el separador de miles es la
  *  coma y el decimal el punto — que es lo que ya hacen los 85 mayoritarios. Los
  *  12 restantes quedan como propuesta de spec; no se corrigen desde acá.
+ *  `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` · §4 — y ojo con no confundirla con la 3 de B0.9, que pregunta de
+ *  dónde sale el locale y no cuál es el formato correcto.
  */
 
 /** Cuántas cifras significativas conserva una abreviatura. Tres reproduce lo que
