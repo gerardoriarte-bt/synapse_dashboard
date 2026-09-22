@@ -278,6 +278,24 @@ export interface components {
              *     grano.
              */
             periods: string[];
+            /**
+             * @description **Cuál de los doce está EN CURSO**, o sea incompleto. El resto están
+             *     cerrados.
+             *
+             *     **Es del fork** —lo escribimos nosotros en `2fafe82`, B1.27— y
+             *     `82da946` no lo trae: contra el servicio desplegado este campo **no
+             *     llega**, y el selector se comporta como antes. Medido el 2026-09-22
+             *     levantando upstream limpio al lado.
+             *
+             *     Sin él, el mes en curso se ofrece igual que los cerrados y alguien
+             *     compara septiembre con nueve días contra agosto entero y lee una
+             *     caída que es «el mes todavía no terminó» · F1.42.
+             *
+             *     **No se deduce contra `new Date()`**: el corte del día es del tenant
+             *     y su huso, no del navegador · la regla de las dos zonas horarias.
+             * @example 2026-09
+             */
+            open_period?: string;
             catalog_version: number;
         };
         /** @description El nombre llega partido; el contrato lo pide junto. */

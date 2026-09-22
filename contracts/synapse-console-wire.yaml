@@ -493,6 +493,25 @@ components:
             o no tenga materialización. No traen etiqueta, rango, estado ni
             grano.
           items: { type: string, examples: ['2026-09'] }
+        open_period:
+          type: string
+          x-origen: fork
+          description: |
+            **Cuál de los doce está EN CURSO**, o sea incompleto. El resto están
+            cerrados.
+
+            **Es del fork** —lo escribimos nosotros en `2fafe82`, B1.27— y
+            `82da946` no lo trae: contra el servicio desplegado este campo **no
+            llega**, y el selector se comporta como antes. Medido el 2026-09-22
+            levantando upstream limpio al lado.
+
+            Sin él, el mes en curso se ofrece igual que los cerrados y alguien
+            compara septiembre con nueve días contra agosto entero y lee una
+            caída que es «el mes todavía no terminó» · F1.42.
+
+            **No se deduce contra `new Date()`**: el corte del día es del tenant
+            y su huso, no del navegador · la regla de las dos zonas horarias.
+          examples: ['2026-09']
         catalog_version: { type: integer }
 
     UserInfo:

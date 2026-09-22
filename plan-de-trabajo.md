@@ -3261,7 +3261,7 @@ nadie abriera el archivo.
 
 ---
 
-#### ➕ F1.42 ⬜ El mes en curso está incompleto y el selector no lo dice · 🔒 el período llega como cadena suelta
+#### ➕ F1.42 ⚠️ El mes en curso está incompleto y el selector no lo dice
 **Descripción.** El equipo de datos avisó el 2026-09-15 que
 `GLD_ECOMM_DAILY_PERFORMANCE` tiene filas hasta **dic-2028 con valores en 0**
 —metas de planeación— y que **el mes en curso está incompleto**.
@@ -3287,6 +3287,39 @@ El `.pen` ya lo dibuja en B5: «PERÍODO · 1 – 31 JUL 2026 · **MTD CERRADO**
   navegador · la regla de las dos zonas horarias.
 - **Eso lo hace esperar un campo**: hoy `Periodo` no declara si está cerrado. Va
   pedido a backend.
+
+**Parcial el 2026-09-22.** Se hizo la mitad que se podía, y la otra mitad está
+declarada en vez de inventada.
+
+**El bloqueo se movió y por eso se pudo tomar.** Decía «el período llega como
+cadena suelta», y eso dejó de ser cierto: `open_period` existe **en el fork**
+—lo escribimos nosotros en `2fafe82`, B1.27— aunque `82da946` no lo traiga. Se
+construye contra el fork y queda en ⚠️ hasta que se despliegue, que es
+exactamente el camino de F4.3 y F4.12.
+
+**Lo hecho**, de punta a punta:
+
+| | |
+|---|---|
+| El cable | `open_period` transcripto en `/config/me`, marcado `x-origen: fork` |
+| El contrato | `Periodo` gana **`enCurso`**, que es un HECHO y no el texto de `estado` — con texto libre el front no puede decidir sin parsearlo |
+| El adaptador | Marca el que el cable declara. **Sin el campo no marca ninguno**: es el comportamiento de antes, y es la respuesta correcta — no sabemos cuál está abierto |
+| El selector | `2026-09 · EN CURSO` en el chip, y la razón debajo **cuando está elegido**, que es cuando la lectura puede salir falsa |
+
+**No se deshabilita**, que el criterio lo pide con todas las letras: mirar el mes
+en curso es legítimo. Y **se marca con una palabra, no con un color** — un chip
+teñido diría «atención» sin decir de qué, y el `.pen` lo resuelve con una
+palabra al lado del rango: «1 – 31 JUL 2026 · MTD CERRADO».
+
+**Lo que falta para ✅ es «con qué parte del mes cubre».** El criterio lo pide y
+el cable no manda ni `rango` ni `estado` —los dos están en el contrato interno,
+con los literales del `.pen`—, así que el chip dice que está en curso y no dice
+«1 – 9 SEP». Inventarlo obligaría a contar días contra `new Date()`, que es el
+bug de las dos zonas horarias que el propio criterio prohíbe.
+
+Ocho pruebas, cinco mutaciones cazadas —marcar el primero, marcar sin el campo,
+perder la palabra, deshabilitarlo y pintar la razón siempre—. Verificado
+abriéndolo contra el servicio local.
 
 #### ➕ F1.43 ✅ Los TIPOS de los params, no sólo sus nombres
 **Descripción.** F1.41 tradujo los NOMBRES de los params del cable al contrato y

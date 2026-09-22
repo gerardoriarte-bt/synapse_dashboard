@@ -286,7 +286,23 @@ export function adaptContext(w: WireContext): AppContext {
     // deduce: se usa el id crudo. Escribir «JUL 2026» necesita un locale, y
     // `Contexto.locale` es otro campo que el cable no trae —la mitad de F1.13b—;
     // inventarlo sería elegir el idioma del tenant por nuestra cuenta.
-    periodos: w.periods.map((id) => ({ id, etiqueta: id, grano: granoDelId(id) })),
+    //
+    // **`enCurso` sale de `open_period`, y es un renombre, no un cálculo** ·
+    // F1.42. El cable declara cuál de los doce está abierto; acá se marca ese y
+    // ningún otro. Deducirlo contra `new Date()` sería el bug de las dos zonas
+    // horarias: el corte del día es del tenant, no del navegador.
+    //
+    // **Si `open_period` no llega, NINGUNO se marca**, que es el comportamiento
+    // de antes. Es lo que pasa contra el servicio desplegado —el campo es del
+    // fork—, y es la respuesta correcta: no sabemos cuál está abierto, así que
+    // no afirmamos nada de ninguno. Marcar el primero «porque suele ser el mes
+    // en curso» sería adivinar, y se vería bien.
+    periodos: w.periods.map((id) => ({
+      id,
+      etiqueta: id,
+      grano: granoDelId(id),
+      ...(w.open_period === undefined ? {} : { enCurso: id === w.open_period }),
+    })),
 
     catalogVersion: w.catalog_version,
   }

@@ -51,9 +51,11 @@ export function PeriodPicker({ periods, activeId, metrics, onSelect }: Props) {
                   onClick={() => onSelect(p.id)}
                   aria-current={active ? 'true' : undefined}
                   title={
-                    usable
-                      ? (p.rango ?? p.etiqueta)
-                      : `Esta pestaña no se puede leer por ${GRAIN_LABEL[grain].toLowerCase()}: alguna de sus métricas se mide por ${required}`
+                    !usable
+                      ? `Esta pestaña no se puede leer por ${GRAIN_LABEL[grain].toLowerCase()}: alguna de sus métricas se mide por ${required}`
+                      : p.enCurso === true
+                        ? `${p.rango ?? p.etiqueta} · todavía no terminó, así que compararlo con un período cerrado lee de menos`
+                        : (p.rango ?? p.etiqueta)
                   }
                   className={[
                     'font-mono text-label tracking-rotulo uppercase rounded-md px-2 py-1',
@@ -62,11 +64,22 @@ export function PeriodPicker({ periods, activeId, metrics, onSelect }: Props) {
                     active ? 'text-acc' : 'text-dim hover:text-ink',
                   ].join(' ')}
                 >
-                  {p.etiqueta}
+                  {/* **Se marca, no se deshabilita** · F1.42. Mirar el mes en
+                      curso es legítimo; lo que no lo es es que se vea igual que
+                      uno cerrado. El `.pen` lo dice con una palabra al lado del
+                      rango —«1 – 31 JUL 2026 · MTD CERRADO»— y no con un color:
+                      un chip teñido diría «atención» sin decir de qué. */}
+                  {p.enCurso === true ? `${p.etiqueta} · en curso` : p.etiqueta}
                 </button>
               )
             })}
           </div>
+          {/* La razón, abajo y una sola vez · el mismo lugar donde ya se
+              declara por qué un grano no aplica. Va cuando el período en curso
+              está ELEGIDO, que es cuando la lectura puede salir falsa. */}
+          {usable && items.some((p) => p.enCurso === true && p.id === activeId) && (
+            <Label>Período en curso · incompleto, no compara contra uno cerrado</Label>
+          )}
           {!usable && (
             // §8: se declara la razón. Un control deshabilitado sin explicación
             // es peor que uno ausente — el usuario no sabe si es un permiso, un

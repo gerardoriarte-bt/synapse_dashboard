@@ -618,10 +618,28 @@ export interface components {
             /** @example 1 – 31 JUL 2026 */
             rango?: string;
             /**
+             * @description **Texto ya redactado por el backend**, para pintarlo tal cual. Es lo
+             *     que el `.pen` dibuja en el header: «1 – 31 JUL 2026 · MTD CERRADO».
              * @example MTD CERRADO
              * @example CERRADO
              */
             estado?: string;
+            /**
+             * @description Si el período **todavía no terminó**, o sea si está incompleto.
+             *
+             *     **No es lo mismo que `estado`, y la diferencia es la que hace falta.**
+             *     `estado` es texto redactado para mostrar; esto es un HECHO sobre el
+             *     que el front puede decidir —marcar el chip, advertir en una
+             *     comparación—. Con texto libre no se puede decidir nada sin parsearlo,
+             *     que es la clase de acoplamiento que una comparación de cadenas
+             *     esconde hasta que alguien cambia una palabra.
+             *
+             *     **No se deduce contra `new Date()`.** El corte del día es del tenant
+             *     y su huso, no del navegador: «ventas de hoy» tiene que dar el mismo
+             *     número en Ciudad de México y en Baltimore · la regla de las dos zonas
+             *     horarias. Lo declara quien construye el período · F1.42, B1.27.
+             */
+            enCurso?: boolean;
             /**
              * @description Qué tan fino es este período. Es la otra mitad de `granoMinimo`: sin
              *     él, el front sabe que una métrica de marca es mensual pero no sabe si

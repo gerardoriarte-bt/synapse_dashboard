@@ -5,7 +5,7 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**110 de 208 tareas cerradas.** 18 parciales · 75 pendientes · 5 diferidas.
+**110 de 208 tareas cerradas.** 19 parciales · 74 pendientes · 5 diferidas.
 
 
 ## Front · 103 de 124
@@ -13,7 +13,7 @@
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██████████████████████` | 16/16 | 0 | 0 |
-| 1 · Consola y render/ | `████████████████████··` | 41/46 | 2 | 3 |
+| 1 · Consola y render/ | `████████████████████··` | 41/46 | 3 | 2 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `████████████████······` | 11/15 | 0 | 1 |
 | 4 · Admin y Builder | `███████████████·······` | 16/23 | 2 | 5 |
@@ -44,14 +44,13 @@
 
 ---
 
-## Se puede tomar hoy · 0 del front
+## Se puede tomar hoy · 1 del front
 
-Nada del front está libre: todo lo pendiente espera algo.
-
+- **F1.42** · El mes en curso está incompleto y el selector no lo dice
 
 ---
 
-## Bloqueadas · 41
+## Bloqueadas · 40
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -62,7 +61,6 @@ Lo que el front espera del backend está detallado en
 - **F1.13b** · Portar format.ts e inyectar el locale
 - **F1.25** · Conectar a la API real
 - **F1.31** · Registro de gráficos y verificación de mínimos
-- **F1.42** · El mes en curso está incompleto y el selector no lo dice
 - **F1.44** · El orden de una tabla se anuncia, no se aplica
 - **F2.3** · SIN_PERMISO · B0.9 (línea 1171) contestada
 - **F3.15** · El chat tiene presencia en la consola
