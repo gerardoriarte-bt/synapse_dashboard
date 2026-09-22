@@ -61,21 +61,58 @@ anotado que `--text-lead` y `--text-titulo-lg` se apoyan en **dos nodos cada
 uno** y que con dos no se distingue una decisión de un descuido.
 
 Estos dos tamaños son el otro lado de la misma moneda: nodos del `.pen` que
-**no** llegaron a ser token. Si §2.3 gana su tabla, decide qué pasa con ellos.
+**no** llegaron a ser token.
+
+### ✅ DECIDIDA · 2026-09-22 · se usan los tokens vecinos
+
+Delegada al front —«usá lo que consideres mejor para no perder estructura»— y
+resuelta así, con dos razones:
+
+**La primera es material.** La escala la emite `tools/gen-tokens.py` desde
+variables declaradas **dentro del `.pen`** (prefijo `ts-`). Sumar un 17 o un
+12.5 exige editar el dibujo, y el agente no lo edita. Con los tokens que hay, la
+elección es entre el vecino de arriba y el de abajo.
+
+**La segunda es de estructura, que es lo que se pidió no perder.** Lo que
+sostiene una jerarquía es el **escalón**, no el valor absoluto:
+
+| | El dibujo | Elegido | Efecto sobre el escalón |
+|---|---|---|---|
+| Nombre del rol contra su cifra | 17 contra 20 | **15** contra 20 | El escalón **crece**: la cifra domina más, que es lo que la tarjeta quiere decir |
+| Nombre de pestaña contra su pregunta | 12.5 contra 9 | **12** contra 9 | Medio píxel · el escalón no se mueve |
+
+Ninguna de las dos invierte una relación ni acerca dos niveles que el dibujo
+separa. **Si algún día §2.3 gana su tabla y la escala suma el 17**, esto se
+revierte cambiando un token y nada más.
 
 ## 3 · El logotipo a color no entra en una superficie con datos
 
 **Quién decide** · diseño · **Bloquea** · nada
 
-El `.pen` empieza los tres chromes con la marca. La versión a color **choca con
-las familias cromáticas**: su azul y su violeta son los de `demanda` e
-`inventario`, y en una pantalla que pinta datos eso lee como una serie más.
+El `.pen` empieza los tres chromes con la marca, y hasta hoy acá decía que la
+versión a color «choca con las familias cromáticas: su azul y su violeta son los
+de `demanda` e `inventario`».
 
-Va la monocroma, que sirve en los dos temas. Igual que en v2.
+**Se midió el 2026-09-22 y la afirmación era demasiado fuerte.** Los matices, en
+grados:
 
-**La pregunta:** ¿la marca a color queda reservada para superficies sin datos
-—login, correos, documentos— y la monocroma es la de producto? Hoy está resuelto
-así por omisión y conviene que esté dicho.
+| | Matiz | Saturación | Distancia a la familia |
+|---|---|---|---|
+| `brand-azul` `#4842fa` | 242° | 95% | **42–44° de `demanda`** (198–200°) · no chocan |
+| `brand-violeta` `#846dc5` | 256° | **43%** | **14–16° de `inventario`** (270–271°) · mismo matiz |
+
+**El azul no choca: son colores distintos.** Un índigo saturado contra un celeste
+no se confunden ni de lejos.
+
+**El violeta sí comparte matiz** con `inventario`, pero a **43% de saturación
+contra 81–95%**: es mucho más apagado que cualquier dato, que es justamente lo
+que lo hace leer como marca y no como serie.
+
+**La pregunta, corregida:** con eso medido, ¿va la marca a color en el chrome de
+producto? El único cuidado es no poner el violeta **adyacente** a una serie de
+`inventario`; el wordmark vive en el navbar y no comparte espacio con ningún
+plot. Hoy está la monocroma por una objeción que resultó valer sólo para la
+mitad.
 
 ## 4 · El punto decimal, que el `.pen` usa para las dos cosas
 
@@ -97,7 +134,8 @@ sale.
 
 ## 5 · El contexto del chat · la pestaña o el panel
 
-**Quién decide** · producto · **Bloquea** · nada, pero deja literales sin adoptar
+**Quién decide** · producto · **Bloquea** · **la presencia del chat en la
+consola** · ver abajo
 
 La única de esta lista donde **el `.pen` no gana**, y por eso está escrita.
 
@@ -116,9 +154,47 @@ riel del dibujo es coherente con su propia lectura —si el contexto es la pesta
 el hilo se nombra por pestaña—, así que **adoptar el literal sin la decisión
 dejaría una etiqueta que miente**.
 
-**La pregunta:** ¿la decisión del 17 reemplaza al dibujo, y entonces C3 se
-redibuja con el contexto de panel? ¿O el chat vuelve a ser de la pestaña y hay
-que pedirle otra forma al backend?
+### Y desde el 2026-09-22 esto BLOQUEA, que antes no
+
+Pedido humano: *«el chat debe tener presencia, es una funcionalidad importante,
+no un complemento — algo flotante o una persiana que abre sobre el dashboard»*.
+
+**El `.pen` ya lo dibuja, en las dos formas, y en TODAS las pantallas de
+consola** —C1 ×5, C2, C3 ×2, C4 ×2, C5 y los dos responsive—. No se construyó
+ninguna de las dos:
+
+| Dónde | Qué |
+|---|---|
+| `Navbar/CTA Synapse` | Botón `PREGUNTAR` · alto 32 · fondo `$acc` · icono `sparkles` 14 en `$on-acc` · mono 10 w500 |
+| `Barra inferior` | Banda de **56 de alto**, ancho completo, `$dock` con borde superior `$w2`. A la izquierda `PREGUNTAR A SYNAPSE` —alto 32, borde `$w3`, `sparkles` en `$dim`—; a la derecha un punto de 7 en `$fam-medios-1` y el contexto |
+
+O sea: **la persiana ya existe** —`ChatOverlay`, la hoja de 940 con velo que
+cierra F5.17— y lo que falta es **la presencia**, que es exactamente lo que se
+pidió.
+
+**Pero no se puede construir sin resolver esta pregunta.** La línea de contexto
+de la barra inferior dice, literal:
+
+> `CONTEXTO · UA MX · ECOMMERCE OVERVIEW · JUL 2026 · 12 PANELES`
+
+Eso es **de pestaña**. Y el cable exige `panel_context: {panel_id, period}` con
+`binding:"required"`. **Un chat abierto desde la barra inferior no tiene
+panel.** Las salidas son tres y ninguna es gratis:
+
+| | Qué implica |
+|---|---|
+| **a · El contexto pasa a ser de pestaña** | Pedirle al backend que acepte contexto de pestaña. Adopta el dibujo entero, literales incluidos, y **reabre** lo que se decidió el 2026-09-17 |
+| **b · La barra pide elegir panel** | No hace falta backend. Contradice el dibujo —que ya declara el contexto— y mete un paso antes de preguntar |
+| **c · La barra usa un panel representativo** | Anda hoy, y **el front elegiría por el usuario**: es inventar una decisión que nadie tomó, que es lo que el adaptador tiene prohibido |
+
+**La recomendación del front es (a)**, y no por el dibujo: un chat que es «de la
+pestaña» es el que tiene presencia permanente, y uno que es «del panel» no puede
+tenerla — el panel es el que da el contexto. La decisión del 17 se tomó
+*sobre la forma que el backend ya tenía*, no sobre qué era mejor.
+
+**Y (a) no borra lo del panel:** el `PREGUNTAR` de cada panel sigue existiendo y
+es más específico. Serían dos entradas con dos alcances, que es lo que el `.pen`
+dibuja.
 
 ## 6 · Las fuentes del evento `auditoria` · acá el que difiere es el cable
 
