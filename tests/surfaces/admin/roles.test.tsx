@@ -344,7 +344,11 @@ describe('lo que A2 y A3 todavía no pueden mostrar', () => {
     await abrirFicha()
 
     const texto = container.textContent ?? ''
-    expect(texto).toContain('Faltan 2 cosas')
+    // **Sin el número.** La pantalla lo saca de `FALTANTES.length`, así que no
+    // se puede vencer; escribirlo acá sí — y se venció el 2026-09-22, cuando
+    // §9 sumó dos carencias más. Lo que la prueba fija es que cada carencia
+    // esté nombrada, que es lo que vale.
+    expect(texto).toMatch(/Faltan \d+ cosas/)
     expect(texto).toContain('Subprocesadores')
     expect(texto).toContain('POST /admin/users')
   })
@@ -436,5 +440,71 @@ describe('A4 · la columna USO · divergencia 6', () => {
 
     expect(container.textContent).toContain('Faltan 3 datos')
     expect(container.textContent).not.toContain('en cuántos paneles se usa')
+  })
+})
+
+describe('el desglose de §9, desde la superficie · A2 §9', () => {
+  /** **Estas dos van acá y no en `composicion.test.tsx`**, que monta `RoleCard`
+   *  suelto. La cadena es `Admin → Cliente → RoleEditor → RoleCard`, cuatro
+   *  saltos, y el 2026-09-22 `onVerCatalogo` se perdía en el segundo: `Cliente`
+   *  desestructuraba prop por prop y esa, por ser opcional, **compilaba y no
+   *  llegaba**. El enlace no se pintaba y nada lo dijo — lo encontró abrir la
+   *  pantalla.
+   *
+   *  La regla es la del spread condicional: **verificar que el callback dispare
+   *  desde donde vive el estado**, no que el botón exista en la hoja. */
+  /** El `detalle` compartido tiene `OperationalQuestion: '¿?'` y cero paneles,
+   *  que alcanzaba para «nombra las pestañas y no sus UUID». Para §9 no: el
+   *  desglose es la pregunta y el conteo. Va como override —**primero**, que es
+   *  como `base` los aplica— en vez de cambiar el fixture de todos. */
+  const conComposicion = () =>
+    base([
+      http.get(`${API}/admin/layouts/:id`, () =>
+        ok({
+          layout: layouts[1],
+          tabs: [
+            {
+              tab: {
+                ID: 'tab-a', LayoutVersionID: 'l-1', Name: 'Resumen',
+                OperationalQuestion: '¿Cómo va el negocio?', SortOrder: 1, RoleIDs: [],
+              },
+              panels: [{ ID: 'p-1' }, { ID: 'p-2' }, { ID: 'p-3' }],
+            },
+          ],
+        }),
+      ),
+    ])
+
+  it('el enlace al catálogo LLEGA hasta la tarjeta y navega', async () => {
+    conComposicion()
+    montar()
+    await abrirFicha()
+
+    // La tarjeta de Planner es la que oculta una métrica.
+    await userEvent.click(await screen.findByRole('button', { name: /ver en el catálogo/i }))
+
+    // **Navegó de verdad**, y se asserta por lo que CAMBIÓ: «Catálogo de
+    // métricas» está siempre —es un botón del chrome—, así que mirarlo no
+    // distingue haber navegado de no haberlo hecho. Lo que distingue es que la
+    // sección de roles ya no esté.
+    await waitFor(() => {
+      expect(screen.queryByText('Roles y composición')).toBeNull()
+    })
+    expect(await screen.findByRole('table')).toBeInTheDocument()
+  })
+
+  it('la pregunta operativa de cada pestaña llega al desglose', async () => {
+    // Es lo que §9 agrega sobre la lista de nombres que había antes, y viaja
+    // por el mismo camino que se rompió.
+    conComposicion()
+    montar()
+    await abrirFicha()
+    // Una vez por tarjeta: son tres roles y los tres ven esa pestaña. Se
+    // asserta dentro de UNA, que es el ámbito que la afirma.
+    await screen.findAllByText('¿Cómo va el negocio?')
+    const planner = screen.getByText('Planner').closest('li') as HTMLElement
+    expect(within(planner).getByText('¿Cómo va el negocio?')).toBeInTheDocument()
+    // Y su conteo, que es la otra mitad del desglose.
+    expect(within(planner).getByText('3 paneles')).toBeInTheDocument()
   })
 })

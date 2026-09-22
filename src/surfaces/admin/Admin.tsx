@@ -129,12 +129,25 @@ export function Admin() {
         <Cliente
           agentes={agentes}
           roles={roles}
-          pestanas={detalle.data?.tabs.map((t) => ({ id: t.tab.id, nombre: t.tab.nombre })) ?? []}
+          // **La pregunta operativa y el conteo, no sólo el nombre** · A2 §9.
+          // El desglose por rol los necesita, y los dos ya vienen en el layout
+          // publicado: no cuesta un viaje más.
+          pestanas={
+            detalle.data?.tabs.map((t) => ({
+              id: t.tab.id,
+              nombre: t.tab.nombre,
+              pregunta: t.tab.pregunta,
+              paneles: t.panels.length,
+            })) ?? []
+          }
           metricas={catalogo.data?.metrics ?? []}
           onGuardar={(id, rol) => guardarRol.mutate({ ...(id === undefined ? {} : { id }), rol })}
           onBorrar={(id) => borrarRol.mutate(id)}
           guardando={guardarRol.isPending}
           error={mensajeDeRol(guardarRol.error) ?? mensajeDeRol(borrarRol.error)}
+          // El viaje a A4 existe desde acá, así que el enlace del `.pen` se
+          // pinta. Sin este manejador `RoleCard` no lo dibuja.
+          onVerCatalogo={() => setPantalla('catalogo')}
         />
       ) : pantalla === 'catalogo' ? (
         // **El uso sale del layout publicado y de los roles, que A2 ya pide.**
@@ -215,12 +228,13 @@ function mensajeDeRol(e: Error | null): string | null {
 function Cliente({
   agentes,
   roles,
-  pestanas,
-  metricas,
-  onGuardar,
-  onBorrar,
-  guardando,
-  error,
+  // **`...paraRoles` y no una prop más en la lista** · 2026-09-22. Estaba
+  // escrito prop por prop, y al sumar `onVerCatalogo` —opcional— el compilador
+  // no dijo nada: la prop llegaba a `Cliente`, se perdía acá, y el enlace del
+  // `.pen` no se pintaba. Es la familia del spread condicional, con cuatro
+  // saltos —`Admin → Cliente → RoleEditor → RoleCard`—, y **lo encontró abrir
+  // la pantalla, no el compilador ni las pruebas**.
+  ...paraRoles
 }: {
   agentes: ReturnType<typeof useAgents>
   roles: ReturnType<typeof useRoles>
@@ -235,16 +249,7 @@ function Cliente({
   }
   return (
     <div className="flex flex-col gap-6">
-      <RoleEditor
-        roles={roles.data ?? []}
-        cargando={roles.data === undefined}
-        pestanas={pestanas}
-        metricas={metricas}
-        onGuardar={onGuardar}
-        onBorrar={onBorrar}
-        guardando={guardando}
-        error={error}
-      />
+      <RoleEditor {...paraRoles} roles={roles.data ?? []} cargando={roles.data === undefined} />
 
       {/* **El agente se pinta aunque su petición falle, y con la razón.** Hoy
           esa ruta da 500 contra el servicio —las columnas del CRUD no están en

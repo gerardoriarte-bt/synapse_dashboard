@@ -182,7 +182,17 @@ describe('A2 · los roles mientras cargan', () => {
     await screen.findByText('Under Armour México')
     await userEvent.click(screen.getByRole('button', { name: 'Ficha de cliente' }))
 
-    expect(await screen.findByText('Roles · cargando')).toBeInTheDocument()
+    // El rótulo de la sección no depende de los datos y está desde el
+    // principio; el resumen sí, y mientras carga dice CARGANDO.
+    expect(await screen.findByText('Roles y composición')).toBeInTheDocument()
+    expect(screen.getByText('Cargando')).toBeInTheDocument()
+    // **Y ninguna cifra del desglose** · A2 §9. «2 rol(es) · 4 pestaña(s) ·
+    // 28 paneles» mientras carga afirma tres cosas que no llegaron.
+    //
+    // El ámbito es **la forma del resumen**, no la pantalla: la palabra
+    // «paneles» aparece con razón en la lista de carencias, y prohibirla entera
+    // hacía fallar esta prueba por el lugar equivocado.
+    expect(screen.queryByText(/\d+ rol\(es\) ·/)).toBeNull()
     expect(screen.queryByText(/no tiene roles definidos todavía/i)).toBeNull()
     // El CTA no depende de los datos y sigue ahí.
     expect(screen.getByRole('button', { name: 'Nuevo rol' })).toBeInTheDocument()

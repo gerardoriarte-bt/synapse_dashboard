@@ -5712,6 +5712,55 @@ sea seis columnas, así que la grilla colapsaba —F1.30 funcionando— y el alt
 es un `height` sino `gridRow: span N` sobre `gridAutoRows`. Y la celda se busca
 por su panel y no por índice, porque `readingOrder` ordena el DOM.
 
+### ➕ F5.18 ✅ `ROLES Y COMPOSICIÓN` en A2 · el desglose por rol
+**Descripción.** El séptimo y último punto mediano de la auditoría
+`docs/AUDITORIA-2026-09-21-pen-vs-chat-y-ficha.md` · §9, y **el hueco más
+grande** que había quedado: `Sección · Roles` del `.pen` no es una lista de
+nombres sino **una tarjeta por rol con cuántos paneles ve y en qué pestañas**, y
+debajo una fila por pestaña con su **pregunta operativa**. La pantalla decía
+«Pestañas · A · B · C» — el mismo dato sin lo que lo vuelve legible.
+
+Casi todo llegaba ya: las pestañas, sus paneles y la pregunta están en el layout
+publicado, que A2 pide para el editor de roles. `Admin.tsx` los tiraba al
+adaptar —`{ id, nombre }`— y nadie los echaba de menos.
+
+**Criterio de aceptación.**
+- La tarjeta sale del **frame**, no de la nota: `$panel`, `$r-xl`, borde `$w3`,
+  padding 24; cifra a la derecha con su rótulo debajo; una línea `$w2` antes del
+  desglose; una fila por pestaña con nombre, pregunta y conteo.
+- **«Vacío = todas» se resuelve en aritmética, no en una nota.** Un rol sin
+  pestañas elegidas suma los paneles de **todas**; leerlo como «ninguna» pintaría
+  «0 paneles» y se vería perfecto.
+- Lo que el cable no manda **no se inventa y su ausencia se prueba**: los
+  heredados de plantilla y la descripción del rol. El resumen se corta antes,
+  **sin separador colgando** — que es el defecto que le señalamos al backend en
+  la línea de BASE.
+- El enlace al catálogo **dispara**, verificado desde la superficie y no desde la
+  hoja.
+- Se abre la pantalla antes de darla por construida.
+
+**Cerrada el 2026-09-22.** Trece pruebas sobre `RoleCard` con seis mutaciones
+cazadas, dos más de punta a punta con tres mutaciones.
+
+**Y apareció un defecto que sólo vio abrirla.** `Cliente`, en `Admin.tsx`,
+desestructuraba las props de roles una por una; al sumar `onVerCatalogo`
+—opcional— **el compilador no dijo nada**: la prop llegaba a `Cliente` y se
+perdía ahí, así que el enlace del `.pen` nunca se pintaba. Es la familia del
+spread condicional con cuatro saltos —`Admin → Cliente → RoleEditor →
+RoleCard`—, y ni el typecheck, ni el lint, ni las 826 pruebas lo vieron. Se pasó
+a reenviar por spread, y la prueba que lo fija **mira desde la superficie**.
+
+**Dos carencias nuevas, declaradas en la pantalla**: la descripción del rol —el
+contrato declara `descripcion` y el cable no la trae— y los heredados de
+plantilla, que no existen como noción en el cable.
+
+**Propuesta de spec.** El `.pen` pone el nombre del rol en 17 y el de la pestaña
+en 12.5, y **la escala que el propio `.pen` emite no tiene ninguno de los dos**:
+va de 15 a 20 y de 12 a 13. Se usan los tokens vecinos, igual que con el radio 16
+de la hoja del chat: la autoridad del `.pen` no obliga a copiar un valor que el
+propio `.pen` no puede emitir.
+
+
 ### ➕ F5.17 ✅ La hoja del chat mide 940, con riel lateral y colapso
 **Descripción.** Rehacer `ChatOverlay` y `PanelChat` con la forma que §PEN:C3
 dibuja, y construir la pantalla del historial colapsado.

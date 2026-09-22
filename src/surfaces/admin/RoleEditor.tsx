@@ -33,8 +33,10 @@
  */
 import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
+import { RoleCard } from './RoleCard'
+import type { PestanaDeRol } from './RoleCard'
 import type { Rol, RolParaGuardar } from '../../api/admin'
-import type { Metric, Tab } from '../../api/types'
+import type { Metric } from '../../api/types'
 
 /** Lo que §7.3 pide de esta ficha y el cable no da.
  *
@@ -49,18 +51,26 @@ import type { Metric, Tab } from '../../api/types'
 const FALTANTES = [
   'Datos del cliente · GET /admin/tenants devuelve id y nombre · B4.1',
   'Subprocesadores · es obligación legal declararlos y no hay de dónde leerlos',
+  // Las dos que se vieron al construir el desglose de §9, el 2026-09-22.
+  'Descripción del rol · el .pen la dibuja bajo el nombre · el contrato declara «descripcion» y el cable no la trae',
+  'Heredados de plantilla · el .pen desglosa cuántos paneles hereda cada pestaña · no hay noción de plantilla en el cable',
 ] as const
 
 type Props = {
   roles: readonly Rol[]
-  /** Para nombrar una pestaña en vez de pintar su UUID. */
-  pestanas: readonly Pick<Tab, 'id' | 'nombre'>[]
+  /** Las del layout publicado, con su pregunta operativa y su conteo de
+   *  paneles: es lo que el desglose de §9 necesita, y **todas** y no las del
+   *  rol, porque «vacío = todas» se resuelve por tarjeta. */
+  pestanas: readonly PestanaDeRol[]
   /** Para nombrar una métrica oculta. Sin filtrar por rol · es el inventario. */
   metricas: readonly Pick<Metric, 'id' | 'nombre'>[]
   onGuardar: (id: string | undefined, rol: RolParaGuardar) => void
   onBorrar: (id: string) => void
   guardando: boolean
   error: string | null
+  /** Para ir al catálogo desde una métrica que un rol no recibe · §PEN:A2.
+   *  Sin él el enlace no se pinta. */
+  onVerCatalogo?: () => void
   /** Mientras los roles vuelan. **No es una tabla**, así que su esqueleto son
    *  tarjetas con la forma de una ficha de rol — la misma idea que
    *  `SkeletonRows`: prometer la forma que va a llegar, no decir «esperá». */
@@ -73,6 +83,7 @@ export function RoleEditor({
   metricas,
   onGuardar,
   onBorrar,
+  onVerCatalogo,
   guardando,
   error,
   cargando = false,
@@ -93,15 +104,27 @@ export function RoleEditor({
     set(lista.includes(id) ? lista.filter((x) => x !== id) : [...lista, id])
   }
 
-  const nombreDePestana = (id: string) => pestanas.find((t) => t.id === id)?.nombre ?? id
   const nombreDeMetrica = (id: string) => metricas.find((m) => m.id === id)?.nombre ?? id
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
-        {/* CARGANDO y no una cifra: «2 roles» mientras carga afirma algo que
+        <Label as="div">Roles y composición</Label>
+        {/* **El resumen del `.pen`, cortado donde el dato se termina.**
+            Dibuja «2 ROLES · 4 PESTAÑAS · 28 PANELES · 11 HEREDADOS DE
+            PLANTILLA» y los heredados no llegan, así que el segmento no está
+            —ni su separador colgando, que es justo lo que le señalamos al
+            backend en la línea de BASE—.
+
+            CARGANDO y no una cifra: «2 roles» mientras carga afirma algo que
             todavía no llegó. */}
-        <Label as="div">{cargando ? 'Roles · cargando' : `${String(roles.length)} rol(es)`}</Label>
+        <Label as="div">
+          {cargando
+            ? 'Cargando'
+            : `${String(roles.length)} rol(es) · ${String(pestanas.length)} pestaña(s) · ${String(
+                pestanas.reduce((n, t) => n + t.paneles, 0),
+              )} paneles`}
+        </Label>
         <button
           type="button"
           onClick={() => abrir(null)}
@@ -139,51 +162,17 @@ export function RoleEditor({
         </ul>
       )}
 
-      <ul className="flex flex-col gap-2 m-0 p-0 list-none">
+      <ul className="flex flex-col gap-6 m-0 p-0 list-none">
         {roles.map((r) => (
-          <li key={r.id} className="flex flex-col gap-2 rounded-sm bg-w2 p-3">
-            <div className="flex items-center gap-3">
-              <span className="text-ink text-celda">{r.nombre}</span>
-              {/* **El conteo antes del botón.** Con uno o más, borrar da 409. */}
-              <Label>{r.usuarios === 0 ? 'sin usuarios' : `${String(r.usuarios)} usuario(s)`}</Label>
-              <button
-                type="button"
-                onClick={() => abrir(r)}
-                className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-dim hover:bg-w3 ml-auto"
-              >
-                Editar
-              </button>
-              {r.usuarios === 0 ? (
-                <button
-                  type="button"
-                  onClick={() => onBorrar(r.id)}
-                  aria-label={`Borrar ${r.nombre}`}
-                  className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-acc hover:bg-w3"
-                >
-                  Borrar
-                </button>
-              ) : (
-                // **Ausente, no deshabilitado con silencio.** Se dice qué lo
-                // impide y qué desbloquea: reasignar a los usuarios.
-                <Label>No se borra con usuarios asignados · reasignalos primero</Label>
-              )}
-            </div>
-
-            <Label as="div">
-              {r.pestanas.length === 0
-                ? // La mitad del dato, y la que se lee al revés si falta.
-                  'Ve TODAS las pestañas · vacío no es «ninguna»'
-                : `Pestañas · ${r.pestanas.map(nombreDePestana).join(' · ')}`}
-            </Label>
-
-            {r.metricasOcultas.length > 0 && (
-              <Label as="div">
-                {`Oculta ${String(r.metricasOcultas.length)} métrica(s) · ${r.metricasOcultas
-                  .map(nombreDeMetrica)
-                  .join(' · ')}`}
-              </Label>
-            )}
-          </li>
+          <RoleCard
+            key={r.id}
+            rol={r}
+            pestanas={pestanas}
+            nombreDeMetrica={nombreDeMetrica}
+            onEditar={() => abrir(r)}
+            onBorrar={() => onBorrar(r.id)}
+            {...(onVerCatalogo === undefined ? {} : { onVerCatalogo })}
+          />
         ))}
       </ul>
 
