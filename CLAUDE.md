@@ -228,6 +228,7 @@ equivocado.
 | `npm run mocks-fuera` | ningún archivo de `src/` importa un mock · F0.8 |
 | `npm run afirmaciones` | lo citable de `docs/` se verifica · método+ruta, commits y tareas |
 | `SYNAPSE_EMAIL=… SYNAPSE_PASSWORD=… npm run humo` | el servicio real == los dos yaml transcriptos |
+| `docker compose -f dev/postgres/docker-compose.yml up -d` | **la base local** · desde el 2026-09-22 · ver `dev/postgres/README.md` |
 
 ## El plan de trabajo
 
@@ -516,11 +517,21 @@ la línea diría que sí. La herramienta no sabe expresar «reverificado en part
 
 ---
 
-**La consola corre contra el servicio real desde el 2026-09-14.** Doce paneles
-con datos del negocio, cero en `ERROR`. Para levantarla hacen falta los dos
-lados: `npm run dev` acá y, en `~/Documents/GitHub/synapse-api-go` (rama
-`feature/dynamic-dashboard-backend`), `make run` — **nunca con
-`DB_AUTO_MIGRATE=true`**, que la base es una RDS compartida y no una local.
+**Desde el 2026-09-22 la base es LOCAL, en Docker.** La RDS compartida dejó de
+responder desde acá y el equipo de backend recomendó el cambio. La receta entera
+está en `dev/postgres/README.md`; en corto son cuatro pasos y **no hace falta
+bajar ningún dump**: con `DB_AUTO_MIGRATE=true` el binario crea el esquema, corre
+las migraciones y siembra los doce paneles.
+
+**Y ahí `DB_AUTO_MIGRATE=true` deja de estar prohibido.** La regla decía «nunca»
+y su razón era la RDS compartida —correr migraciones ahí es un cambio de esquema
+en producción—. **En un contenedor descartable esa razón no existe**, y es lo que
+destrabó un mes de trabajo sin verificar. Contra la RDS la prohibición sigue en
+pie; lo que cambió es contra qué base se corre.
+
+**La consola se verificó contra el servicio el 2026-09-14** —doce paneles, cero
+en `ERROR`— y de nuevo el 22 contra el local, con `npm run humo` pasando las
+cinco rutas de consola y las de admin campo por campo.
 
 **Es UN servicio, no dos.** `/auth/*`, `/config/*` y `/admin/*` cuelgan del mismo
 `/api/v1` del mismo binario, y el proxy de Vite manda `/api/v1` entero a `:4010`.

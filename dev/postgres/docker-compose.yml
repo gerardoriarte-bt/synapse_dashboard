@@ -1,0 +1,39 @@
+# La base local · 2026-09-22
+#
+# **Vive en NUESTRO repositorio y no en el de ellos**, que es la misma regla que
+# el fork: no se toca su `docker-compose.yml`. El suyo levanta sólo la app y
+# apunta a la RDS; esto agrega la base que falta, del lado nuestro.
+#
+# **Por qué existe.** Hasta el 2026-09-21 se trabajaba contra la RDS compartida,
+# y de ahí salían las dos reglas que nos frenaban: no correr migraciones y no
+# tocar el esquema. El 22 la RDS dejó de responder desde acá y el equipo de
+# backend recomendó pasar a local.
+#
+# **Y no hace falta bajar ningún dump.** Con `DB_AUTO_MIGRATE=true` el binario
+# crea el esquema, corre las migraciones manuales y SIEMBRA: `seedDDDefault
+# Dashboard` deja un tenant con su layout y sus pestañas, y `seedDDPanelData`
+# puebla los doce paneles de la consola. Una base vacía se construye sola.
+#
+#   docker compose -f dev/postgres/docker-compose.yml up -d
+#
+# `gen_random_uuid()` es nativo desde PostgreSQL 13; 16 es la que usa la RDS.
+services:
+  db:
+    image: postgres:16
+    container_name: synapse-db-local
+    environment:
+      POSTGRES_USER: synapse
+      POSTGRES_PASSWORD: synapse
+      POSTGRES_DB: synapse
+    ports:
+      - "5433:5432"
+    volumes:
+      - synapse-db-local:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U synapse"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  synapse-db-local:
