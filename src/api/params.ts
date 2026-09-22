@@ -71,10 +71,14 @@ const SCHEMAS = {
     orden: { kind: 'enum', values: ['desc', 'asc', 'natural'] },
     tope: { kind: 'number', min: 1, integer: true },
   },
-  table: {
-    columnas: { kind: 'array' },
-    orden: { kind: 'object' },
-  },
+  // **`orden` NO está** · F1.44, 2026-09-22. El cable lo declara en
+  // `layout_params` y lo manda —`{"order": "investment"}`—, pero ningún cuerpo
+  // lo lee: `TableBody` dejó de ordenar cuando se vio que el payload ya llega
+  // ordenado y que el `.pen` anuncia el orden en la línea de BASE en vez de
+  // aplicarlo. Declararlo acá lo haría pasar por válido sin que haga nada; sin
+  // declararlo se descarta como desconocido, con aviso en desarrollo, que es la
+  // regla de este archivo y acá además es cierto.
+  table: { columnas: { kind: 'array' } },
   gauge: {
     maximo: { kind: 'number', min: 0 },
     banda: { kind: 'object' },

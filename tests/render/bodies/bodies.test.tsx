@@ -165,19 +165,30 @@ describe('TableBody · la columna se formatea entera, no celda por celda', () =>
     expect(screen.getAllByText('ROAS')).toHaveLength(1)
   })
 
-  it('no muta el arreglo del payload al ordenar', () => {
-    // El payload vive en la cache de TanStack Query: ordenarlo en el lugar
-    // cambia lo que ve el próximo lector de esa entrada.
-    const original = [...value.filas]
-    render(
-      <TableBody
-        {...base}
-        value={value}
-        params={{ orden: { columna: 'roas', direccion: 'desc' } }}
-        metric="ROAS"
-      />,
+  it('las filas se dibujan en el ORDEN EN QUE LLEGAN · F1.44', () => {
+    // **Reemplaza a la prueba de ordenamiento**, que verificaba una capacidad
+    // que se quitó el 2026-09-22 con su razón escrita en `TableBody`: el
+    // payload ya llega ordenado, el `.pen` anuncia el orden en la BASE en vez
+    // de aplicarlo, y el cable no manda dirección.
+    //
+    // El fixture llega **desordenado a propósito** —3.0 antes que 4.2—: con
+    // cualquier orden que el cuerpo aplicara por su cuenta, «Social» dejaría de
+    // ser la primera fila. Es lo que hace que esta aserción pueda fallar.
+    const desordenado = {
+      ...value,
+      filas: [
+        { canal: 'Social', roas: 3 },
+        { canal: 'Search', roas: 4.2 },
+      ],
+    } as unknown as Extract<Value, { forma: 'tabular' }>
+
+    const { container } = render(
+      <TableBody {...base} value={desordenado} params={{}} metric="ROAS" />,
     )
-    expect(value.filas).toEqual(original)
+    const filas = Array.from(container.querySelectorAll('tbody tr')).map(
+      (tr) => tr.querySelector('td')?.textContent,
+    )
+    expect(filas).toEqual(['Social', 'Search'])
   })
 })
 

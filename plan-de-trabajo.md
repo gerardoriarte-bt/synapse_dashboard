@@ -3257,42 +3257,67 @@ pruebas de runtime, todas cazadas — **la primera versión del cruce eximía
 acotó la exención al contenido. El conteo «siete paneles kpi» se escribió de
 memoria y **lo corrigió una aserción antes del commit**: son seis.
 
-#### ➕ F1.44 ⬜ `orden` de `table` llega como texto y el panel degrada · 🔒 falta la dirección
-**Descripción.** El layout sembrado manda `{"order": "investment"}` en el panel
-`table` —capturado el 2026-09-22 de `GET /config/tabs/{id}` contra el binario
-local—. `TableBody` ordena con `{ columna, direccion }`, así que el validador lo
-rechaza y **el panel «Investment and return by platform» sale BLOQUEADO**: es el
-único de los doce que sigue degradado después de F1.43.
+#### ➕ F1.44 ⚠️ El orden de una tabla se anuncia, no se aplica · 🔒 falta qué es `cut` en `series`
+**Descripción.** Después de F1.43 quedaba **un solo panel de los doce en
+BLOQUEADO**: «Investment and return by platform», porque el cable manda
+`{"order": "investment"}` —el nombre de una columna— y `TableBody` ordenaba con
+`{ columna, direccion }`. La lectura inicial fue que faltaba la dirección y que
+era pregunta para el backend.
 
-**Se deja degradando a propósito, y esa es la decisión que hay que sostener.**
-Aceptar el texto suelto obligaría a elegir una dirección que nadie declaró, y la
-regla del adaptador es que renombra y reformatea pero no inventa. Un panel
-ordenado al revés se ve perfecto y miente; uno degradado dice qué pasa.
+**Era nuestra, y las tres fuentes lo decían.** Se miraron el 2026-09-22:
 
-**Espera del backend.** Qué forma tiene `options.order` de un panel `table`. Hoy
-llega como el nombre de la columna —`"investment"`— y al front le falta la
-dirección: sin ella, ordenar es adivinar. Dos salidas, y la elección es de
-ustedes: que `order` pase a ser `{"column": "investment", "direction": "desc"}`,
-o que se declare en `layout_params` cuál es la dirección por defecto y quede
-escrito en el cable. Mientras tanto el panel muestra su razón en vez de un orden
-inventado. · Bloquea **F1.44**.
+| Fuente | Qué dice |
+|---|---|
+| El cable | `{"order": "investment"}` · el nombre de la columna, sin dirección |
+| El `.pen` · `§6 · Sec · table armado` | La BASE dice «ORDENADO POR INVERSIÓN» y la nota al pie lo repite. **El encabezado no marca la columna**: los seis rótulos llevan el mismo `$dim` y ninguno tiene flecha |
+| El payload | Llega **ya ordenado** · 412K · 318K · 148K · 96K · 41K · 25K, el mismo orden y los mismos números que el `.pen` dibuja. Y su `governance.base` dice «MONTH · SORTED BY INVESTMENT» |
+
+Así que el orden de una tabla **se declara en la BASE, no se ejecuta en el
+front**. Ordenar acá era reordenar lo que ya venía ordenado, con una dirección
+que habría que elegir — y elegirla es la invención que el adaptador tiene
+prohibida: una tabla ordenada al revés se ve perfecta y miente.
+
+**Lo que enseñó, que es la mitad que vale.** El bloqueo lo habíamos escrito
+nosotros esa misma mañana, con la conclusión razonada y sin abrir el `.pen`. El
+dibujo estaba a tres líneas de Python. **Es la regla de septiembre otra vez**, y
+esta vez costó un panel y media hora en vez de cuatro tareas.
+
+**Dos diferencias más contra el `.pen`, anotadas y no corregidas** —son del dato,
+no del render—: el dibujo tiene **seis columnas** y el servicio manda cinco,
+falta **CPA**; y la participación se dibuja «39.6%» donde la celda sale «39.6»,
+porque la columna no declara unidad.
 
 **Espera del backend.** Qué significa `cut` en un panel `series`. El cable lo
 declara en `layout_params` de `series` y de `forecast`, y el layout sembrado
 manda `{"cut": "day"}` y `{"cut": "month"}`. En `forecast` es el punto donde
-termina lo observado y empieza la proyección —un índice—, y así lo lee
-`ForecastBody`. En `series` parece **granularidad**, que es otra cosa con el
-mismo nombre. Hoy se descarta como desconocido, que es lo correcto mientras la
-pregunta siga abierta, pero el panel ignora en silencio algo que alguien
-configuró. · Bloquea **F1.44**.
+termina lo observado y empieza la proyección —un índice— y así lo lee
+`ForecastBody`; en `series` parece granularidad, que es otra cosa con el mismo
+nombre. **Y el dato no permite deducirlo**: los dos paneles traen las mismas
+ocho estampas mensuales —`jan`, `feb`, `mar`…— sin importar el `cut`, así que el
+que declara `31 DAYS` en su BASE **dibuja ocho puntos mensuales**. Eso es una
+segunda cosa que revisar, y hasta que alguna de las dos se aclare el param se
+descarta con aviso en vez de leerse mal. · Bloquea **F1.44**.
 
 **Criterio de aceptación.**
-- El panel `table` del layout sembrado dibuja su tabla ordenada como el layout
-  pide, **con la dirección declarada** y no con una elegida por el front.
-- `cut` de `series` o se lee —con el nombre que le corresponda y su propio
-  `ParamSpec`— o se saca de `layout_params` de `series`. Un nombre declarado que
-  nadie lee es una opción que no hace nada.
-- El cruce de tipos de F1.43 cubre los params nuevos sin excepciones.
+- Ninguno de los doce paneles del layout sembrado queda en BLOQUEADO, y el de
+  tabla dibuja sus seis filas en el orden en que llegan. **Verificado abriéndolo**,
+  no sólo con pruebas.
+- `TableBody` no ordena y `orden` sale de `TableParams` y de `PARAM_SCHEMAS`: un
+  param que nadie lee se descarta como desconocido, que es la regla de
+  `api/params.ts` y acá además es cierto. El cruce de tipos de F1.43 obliga a que
+  las dos mitades se muevan juntas — y lo hizo: quitar una sin la otra rompió
+  `typecheck`.
+- La prueba que verificaba el ordenamiento **se reemplaza, no se borra**: la
+  nueva afirma la garantía nueva —las filas se dibujan en el orden en que
+  llegan— con un fixture desordenado a propósito, para que pueda fallar.
+- `cut` de `series` o se lee —con su nombre y su `ParamSpec`— o sale de
+  `layout_params` de `series`. **Queda pendiente**: es lo único de esta tarea que
+  no depende de nosotros, y por eso la tarea está en ⚠️ y no en ✅.
+
+**Parcial el 2026-09-22.** La mitad de la tabla está cerrada y verificada en
+pantalla: doce de doce paneles dibujando, cero en BLOQUEADO. La de `series`
+espera respuesta.
+
 
 ## Fase 2 — Los estados de materialización en pantalla
 

@@ -3,6 +3,33 @@
  *  **El cuerpo NO decide cuántas filas caben**: la tabla scrollea dentro del alto
  *  que le da el `rowSpan`. Un panel que crece con sus datos rompe la fila de la
  *  grilla, que es lo que §3 impide.
+ *
+ *  ── Y TAMPOCO DECIDE EL ORDEN · F1.44, 2026-09-22 ───────────────────────────
+ *
+ *  Hasta hoy este cuerpo ordenaba las filas con un param
+ *  `{ columna, direccion }`. **Nadie manda esa forma**, y las tres fuentes dicen
+ *  lo mismo cuando se las mira:
+ *
+ *   · **El cable** manda `{"order": "investment"}` — el nombre de la columna, sin
+ *     dirección. Capturado el 2026-09-22 de `GET /config/tabs/{id}`.
+ *   · **El `.pen`** dibuja ese mismo panel en `§6 · Sec · table armado`, y el
+ *     orden es algo que se ANUNCIA, no un control: la línea de BASE dice
+ *     «BASE · MES · ORDENADO POR INVERSIÓN» y la nota al pie repite «ORDENADA
+ *     POR INVERSIÓN». **El encabezado no marca la columna** — los seis rótulos
+ *     llevan el mismo `$dim` y no hay flecha en ninguno.
+ *   · **El payload llega ordenado.** Las seis filas del servicio vienen
+ *     412K · 318K · 148K · 96K · 41K · 25K, que es exactamente el orden y los
+ *     números que el `.pen` dibuja. Y su `governance.base` ya dice
+ *     «MONTH · SORTED BY INVESTMENT».
+ *
+ *  Así que ordenar acá era **reordenar lo que ya venía ordenado**, con una
+ *  dirección que habría que elegir. Elegirla es la clase de invención que el
+ *  adaptador tiene prohibida, y la falla es de las caras: una tabla ordenada al
+ *  revés se ve perfecta y miente.
+ *
+ *  **Las filas se dibujan en el orden en que llegan.** Si alguna vez el front
+ *  tiene que ordenar de verdad —un encabezado que se aprieta—, el cable va a
+ *  tener que traer la dirección; queda anotado en F1.44 y no se resuelve acá.
  */
 import { Label } from '../primitives/Label'
 import { Value } from '../primitives/Value'
@@ -13,14 +40,13 @@ import type { BodyProps } from '../types'
 export type TableParams = {
   /** Qué columnas mostrar, en orden. Sin esto se muestran todas. */
   columnas?: string[]
-  orden?: { columna: string; direccion: 'desc' | 'asc' }
 }
 
 const ABBREVIATE_FROM = 1000
 const MAX_DECIMALS = 2
 
 export function TableBody({ value, params, family, format }: BodyProps<'tabular', TableParams>) {
-  const { columnas: requested, orden } = params
+  const { columnas: requested } = params
 
   const columns =
     requested === undefined
@@ -29,15 +55,7 @@ export function TableBody({ value, params, family, format }: BodyProps<'tabular'
           .map((c) => value.columnas.find((col) => col.clave === c))
           .filter((c): c is (typeof value.columnas)[number] => c !== undefined)
 
-  const rows =
-    orden === undefined
-      ? value.filas
-      : [...value.filas].sort((a, b) => {
-          const x = a[orden.columna]
-          const y = b[orden.columna]
-          const n = typeof x === 'number' && typeof y === 'number' ? x - y : 0
-          return orden.direccion === 'desc' ? -n : n
-        })
+  const rows = value.filas
 
   const first = columns[0]
 

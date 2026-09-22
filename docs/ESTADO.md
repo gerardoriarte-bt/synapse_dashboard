@@ -5,7 +5,7 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**109 de 206 tareas cerradas.** 16 parciales · 76 pendientes · 5 diferidas.
+**109 de 206 tareas cerradas.** 17 parciales · 75 pendientes · 5 diferidas.
 
 
 ## Front · 102 de 122
@@ -13,7 +13,7 @@
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██████████████████████` | 16/16 | 0 | 0 |
-| 1 · Consola y render/ | `████████████████████··` | 41/46 | 1 | 4 |
+| 1 · Consola y render/ | `████████████████████··` | 41/46 | 2 | 3 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `█████████████████·····` | 11/14 | 0 | 0 |
 | 4 · Admin y Builder | `███████████████·······` | 16/23 | 2 | 5 |
@@ -63,7 +63,7 @@ Lo que el front espera del backend está detallado en
 - **F1.25** · Conectar a la API real
 - **F1.31** · Registro de gráficos y verificación de mínimos
 - **F1.42** · El mes en curso está incompleto y el selector no lo dice
-- **F1.44** · orden de table llega como texto y el panel degrada
+- **F1.44** · El orden de una tabla se anuncia, no se aplica
 - **F2.3** · SIN_PERMISO · B0.9 (línea 1171) contestada
 - **F4.12** · Preview por rol
 - **F4.17** · ComparisonBody + ComparePlot

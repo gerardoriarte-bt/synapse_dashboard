@@ -192,15 +192,18 @@ describe('los interruptores del layout sembrado · capturado el 2026-09-22', () 
     expect(r.params).toEqual({})
   })
 
-  it('`orden` de `table` llega como texto y SÍ degrada · es del backend', () => {
-    // **Se deja degradando a propósito.** `TableBody` ordena con
-    // `{ columna, direccion }` y el servicio manda el nombre de la columna
-    // solo. Aceptarlo obligaría a elegir una dirección que nadie declaró, y el
-    // adaptador no inventa: el panel muestra la razón y la pregunta va escrita
-    // en `docs/PARA-BACKEND.md`.
+  it('`orden` de `table` se descarta y el panel YA NO degrada · F1.44', () => {
+    // El 2026-09-22 este panel era el último de los doce en BLOQUEADO, y la
+    // pregunta parecía ser del backend: «falta la dirección». Las tres fuentes
+    // dijeron otra cosa —el `.pen` anuncia el orden en la BASE en vez de
+    // aplicarlo, y el payload ya llega ordenado—, así que `TableBody` dejó de
+    // ordenar y `orden` salió del esquema.
+    //
+    // **Descartado no es lo mismo que inválido**, y acá esa diferencia es la
+    // tarea entera: un param que nadie lee no impide dibujar el panel.
     const r = validateParams('table', traducir({ order: 'investment' }))
-    expect(r.invalid[0]?.param).toBe('orden')
-    expect(r.invalid[0]?.reason).toContain('"investment"')
+    expect(r.invalid).toEqual([])
+    expect(r.unknown).toEqual(['orden'])
   })
 
   it('`cut` de `series` se descarta · ningún cuerpo de series lo lee', () => {
