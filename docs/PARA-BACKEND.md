@@ -287,7 +287,7 @@ if status == Available && isDegraded(data, now) {
 *Estado de la tarea: pendiente.*
 
 
-**La ruta ya está escrita** — `82da946` la trae con `panel_context: {panel_id, period}`, y con eso se cerró la transversal T4. Lo que falta es **poder verificarla**: sin las migraciones de B3.11 el handler escribe contra columnas que no existen. Lo pendiente del chat son los dos campos del evento `data` que pide F3.6 — la BASE de la cifra y su frescura—, detallados en `docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md`. El chat que el servicio ya tenía antes es **otro producto** —decidido el 2026-09-08—: el nuestro se abre desde un panel y lleva su métrica.
+**La ruta ya está escrita** — `82da946` la trae con `panel_context: {panel_id, period}`, y con eso se cerró la transversal T4. Lo que falta es **poder verificarla**: sin las migraciones de B3.11 el handler escribe contra columnas que no existen. **Lo pendiente del chat cambió el 2026-09-22 y el pedido vigente es otro**: con las migraciones corridas en la base local, `POST /config/chat` devuelve **409 · «no hay agente activo disponible para este tenant y rol»**. Hace falta un agente con credenciales de Snowflake, o un modo que no llame a Cortex — pedido en `docs/MENSAJE-2026-09-22-agente-roles-y-un-hallazgo.md`, punto 1. El pedido del 21 —los dos campos del evento `data`— quedó cubierto: F3.6 se cerró con el tipo del panel. El chat que el servicio ya tenía antes es **otro producto** —decidido el 2026-09-08—: el nuestro se abre desde un panel y lleva su métrica.
 
 
 ### B3.9 · CRUD /admin/tenants/{id}/agents
@@ -309,7 +309,7 @@ Con esos tres, F4.4 y la mitad que le falta a la ficha de cliente se cierran. El
 *Estado de la tarea: pendiente.*
 
 
-**Que corran las migraciones manuales de `82da946`** — pedido el 2026-09-21 en `docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md`, tarea 1.
+**Que corran las migraciones manuales de `82da946` sobre la base compartida** — pedido el 2026-09-21 en `docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md`, tarea 1. **Sigue en pie para la compartida**, pero ya no es lo que frena el chat: eso pasó a ser el agente, y va en `docs/MENSAJE-2026-09-22-agente-roles-y-un-hallazgo.md`.
 
 Medido ese día contra la base compartida, con una consulta de sólo lectura sobre `information_schema`: **faltan las nueve columnas y el índice.** Las agrega `internal/adapters/repository/manual_migrations.go` y corren sólo con `DB_AUTO_MIGRATE=true`, que no activamos sobre esa base: es un cambio de esquema en una base compartida y la decisión no es nuestra.
 

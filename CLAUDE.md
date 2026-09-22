@@ -487,10 +487,10 @@ llegando, y **las seis las escribimos nosotros** en `2fafe82`. La medición sól
 cuenta contra **upstream limpio**, en un worktree aparte. El corte con la tabla
 completa está en `docs/ESTADO-backend-2026-09-22.md`.
 
-El pedido está escrito y listo para mandar:
-`docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md`. La segunda tarea son los dos
-campos que le faltan al evento `data` —la BASE de la cifra y su frescura—, que
-es lo único que separa a **F3.6** de construirse.
+**El pedido vigente es `docs/MENSAJE-2026-09-22-agente-roles-y-un-hallazgo.md`**
+—agente, colisión de `/roles` y el hallazgo del `Tenant` embebido—. El del 21
+quedó como registro: su tarea 1 sigue en pie sólo para la base compartida, y su
+tarea 2 la cerró F3.6 con el tipo del panel.
 
 **ANOTADO Y NO TOMADO · `168a761` · la Fase 5 del backend.** Llegó el 22 junto
 con `55e8419` y **se decidió no trabajarlo hasta cerrar las fases previas**.
