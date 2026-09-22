@@ -3436,7 +3436,20 @@ ofrecer el CTA como si nada.
 probada: el estado llega del batch y nombra el rol que decide. **Falta el CTA**,
 y falta entero: `/config/solicitudes` ya existe en el contrato —línea 591,
 `operationId: solicitarAcceso`—, así que lo que queda es cablearlo y leer del
-servidor las solicitudes ya hechas. Hay una prueba que fija el estado actual:
+servidor las solicitudes ya hechas.
+
+**Medido el 2026-09-22, y el bloqueo es más preciso de lo que decía.** El
+servicio **sí** tiene una ruta de solicitud —`POST /access-requests`,
+`accessRequestHandler.Submit`— pero es la del **login**: «no tengo cuenta», ya
+transcrita en `synapse-auth.yaml` y usada por `RequestAccess`. **No es la de
+esta tarea**, que es un usuario con cuenta pidiendo acceso a una métrica que su
+rol no recibe.
+
+**Y falta la mitad que importa en las dos**: la única ruta que LISTA solicitudes
+es `GET /admin/access-requests`, que es sólo para administradores. Un usuario de
+consola **no puede leer si ya pidió**, y ése es exactamente el motivo por el que
+el criterio dice «no de estado local» — con estado local, recargar borraba el
+pedido y la consola volvía a ofrecer el CTA como si nada. Hay una prueba que fija el estado actual:
 verifica que el botón **no** esté, para que aparezca el día que se cablee y no
 antes.
 
