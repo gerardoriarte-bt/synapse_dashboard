@@ -1172,7 +1172,7 @@ Pasa de «no verificado» a **medido y ausente**.
 ## Fase 3 — Chat contextual
 
 ### B3.1 ⬜ `POST /config/chat` con SSE
-**Espera del backend.** **La ruta ya está escrita** — `82da946` la trae con `panel_context: {panel_id, period}`, y con eso se cerró la transversal T4. Lo que falta es **poder verificarla**: sin las migraciones de B3.11 el handler escribe contra columnas que no existen. **Lo pendiente del chat cambió el 2026-09-22 y el pedido vigente es otro**: con las migraciones corridas en la base local, `POST /config/chat` devuelve **409 · «no hay agente activo disponible para este tenant y rol»**. Hace falta un agente con credenciales de Snowflake, o un modo que no llame a Cortex — pedido en `docs/MENSAJE-2026-09-22-agente-roles-y-un-hallazgo.md`, punto 1. El pedido del 21 —los dos campos del evento `data`— quedó cubierto: F3.6 se cerró con el tipo del panel. El chat que el servicio ya tenía antes es **otro producto** —decidido el 2026-09-08—: el nuestro se abre desde un panel y lleva su métrica.
+**Espera del backend.** **La ruta ya está escrita** — `82da946` la trae con `panel_context: {panel_id, period}`, y con eso se cerró la transversal T4. Lo que falta es **poder verificarla**: sin las migraciones de B3.11 el handler escribe contra columnas que no existen. **Lo pendiente del chat cambió el 2026-09-22 y el pedido vigente es otro**: con las migraciones corridas en la base local, `POST /config/chat` devuelve **409 · «no hay agente activo disponible para este tenant y rol»**. Hace falta un agente de Cortex con credenciales. **Ese pedido es del equipo de DATOS, no del backend** —corregido el 2026-09-22—: el agente `SYNAPSE_UA` y el usuario `SYNAPSE_SERVICE_USER` existen en la cuenta `MAA16864`, y lo único que falta es el par de claves RSA. Va en `docs/MENSAJE-2026-09-22-datos-agente-cortex.md`. Lo que sí le toca al backend es cargar el tenant y el agente una vez que llegue — `docs/MENSAJE-2026-09-22-backend-roles-y-hallazgo.md`, punto 1. El pedido del 21 —los dos campos del evento `data`— quedó cubierto: F3.6 se cerró con el tipo del panel. El chat que el servicio ya tenía antes es **otro producto** —decidido el 2026-09-08—: el nuestro se abre desde un panel y lleva su métrica.
 **Descripción.** Body `{ pregunta, contextoPanel, periodo, hiloId? }`, respuesta
 por Server-Sent Events.
 **Criterio de aceptación.**
@@ -1236,7 +1236,7 @@ warehouse, vistas semánticas permitidas y prompt base.
   reiniciar el servicio.
 
 ### ➕ B3.11 ⬜ Aplicar las migraciones de `82da946` sobre la base compartida
-**Espera del backend.** **Que corran las migraciones manuales de `82da946` sobre la base compartida** — pedido el 2026-09-21 en `docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md`, tarea 1. **Sigue en pie para la compartida**, pero ya no es lo que frena el chat: eso pasó a ser el agente, y va en `docs/MENSAJE-2026-09-22-agente-roles-y-un-hallazgo.md`.
+**Espera del backend.** **Que corran las migraciones manuales de `82da946` sobre la base compartida** — pedido el 2026-09-21 en `docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md`, tarea 1. **Sigue en pie para la compartida**, pero ya no es lo que frena el chat: eso pasó a ser el agente, y va en `docs/MENSAJE-2026-09-22-backend-roles-y-hallazgo.md`.
 
 Medido ese día contra la base compartida, con una consulta de sólo lectura sobre `information_schema`: **faltan las nueve columnas y el índice.** Las agrega `internal/adapters/repository/manual_migrations.go` y corren sólo con `DB_AUTO_MIGRATE=true`, que no activamos sobre esa base: es un cambio de esquema en una base compartida y la decisión no es nuestra.
 
@@ -1609,7 +1609,7 @@ distintas con la misma URL**:
 
 **Es lo que frena el rebase**, y no se resuelve solo: elegir por ellos sería
 decidir la forma de su API. Propuesto el 2026-09-22 en
-`docs/MENSAJE-2026-09-22-agente-roles-y-un-hallazgo.md`, punto 2: **nos movemos
+`docs/MENSAJE-2026-09-22-backend-roles-y-hallazgo.md`, punto 2: **nos movemos
 nosotros** —cero churn en su código, que es la regla— y la unión de campos queda
 como alternativa si la prefieren.
 

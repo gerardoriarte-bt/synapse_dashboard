@@ -6,49 +6,59 @@
 > **Reemplaza a `docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md`**, que pedía
 > correr las migraciones. Eso quedó viejo en un día: las corrimos nosotros
 > contra una base local y el chat avanzó hasta el siguiente obstáculo.
+>
+> **Va junto con `docs/MENSAJE-2026-09-22-datos-agente-cortex.md`**, que es la
+> mitad que le toca al equipo de datos: el agente de Cortex y sus credenciales
+> son de ellos, no de backend.
 
 Levantamos `82da946` limpio contra una base Postgres local —en Docker, con
 `DB_AUTO_MIGRATE=true`, que ahí sí se puede— y medimos ruta por ruta. Todo lo de
 abajo está medido hoy, no supuesto.
 
-Son tres cosas: **una que nos frena**, **una decisión que necesitamos** y **un
-hallazgo en el código que conviene que miren**.
+Son tres cosas: **una que arranca cuando datos entregue la clave**, **una
+decisión que necesitamos** y **un hallazgo en el código que conviene que miren**.
 
 ---
 
-## 1 · El chat necesita un agente · nos frena
+## 1 · El chat · lo que les toca a ustedes, cuando datos entregue la clave
 
-Las migraciones ya no son el problema. Con las tablas creadas, el chat responde:
+**Corrección respecto de cómo se lo planteamos primero:** el agente de Cortex lo
+maneja el **equipo de datos**, no ustedes. El pedido de credenciales va por ahí —
+`docs/MENSAJE-2026-09-22-datos-agente-cortex.md`.
+
+Lo que sí es de ustedes es el final del camino. Hoy:
 
 ```
 POST /api/v1/config/chat
 409 · {"success":false,"error":"no hay agente activo disponible para este tenant y rol"}
 ```
 
-`GET /api/v1/admin/tenants/{tenantId}/agents` devuelve `[]`. Un agente pide
-cuenta, usuario, rol y clave privada de Snowflake, y el servicio no tiene un modo
-que no llame a Cortex —`internal/core/services/cortex_chat.go` habla contra
-Cortex de verdad—. **Nosotros no corremos nada en Snowflake.**
+`GET /api/v1/admin/tenants/{tenantId}/agents` devuelve `[]`. Cuando datos nos dé
+el par de claves, hay que **cargar el tenant y el agente** con las rutas de alta
+que su router ya registra —`tenantHandler.Create` y `agentHandler.CreateForTenant`,
+en `internal/adapters/handler/router.go`—. Nosotros **no las tenemos transcritas
+al cable** porque no las llamamos desde el front, y una ruta transcrita que nadie
+llama envejece sin que nadie lo note.
 
-**Por qué importa:** todo el chat del front está construido y probado contra
-mocks nuestros, y los mocks responden lo que *nosotros creemos* del cable. Ya nos
-pasó una vez: el discriminador del SSE se había movido a la línea `event:`, las
-pruebas pasaban en verde y el chat no pintaba una sola palabra. **Hasta que no
-haya un agente de verdad, no sabemos si vuelve a pasar.**
+Verificamos contra la cuenta `MAA16864` que todo lo demás está:
 
-**Lo que pedimos, cualquiera de las dos:**
+| Campo | Valor verificado el 2026-09-22 |
+|---|---|
+| `snowflake_account` | `MAA16864` |
+| `snowflake_user` | `SYNAPSE_SERVICE_USER` |
+| `snowflake_role` | `SYNAPSE_APP_ROLE` |
+| `snowflake_db` · `snowflake_schema` | `DB_BT_UA` · `BT_UA_MART_ANALYTICS` |
+| `snowflake_cortex_agent_name` | `SYNAPSE_UA` |
+| `warehouse` | `SYNAPSE_UA` |
+| `semantic_views` | `["SYNAPSE_UA"]` |
 
-- **Un agente de prueba** cargado para un tenant, con credenciales que podamos
-  usar desde acá. Nos alcanza con uno y con vistas de solo lectura.
-- **O un modo sin Cortex** —un flag— que emita la misma trama SSE con respuestas
-  fijas. Con eso verificamos la frontera sin tocar Snowflake, y a ustedes les
-  sirve para sus propias pruebas.
+**Lo único que falta es `private_key_pem`.** Si prefieren cargarlo ustedes en vez
+de que lo hagamos nosotros, mejor — ver el punto 3, que es la razón.
 
-**Cómo nos lo mandan:** con el agente cargado alcanza que nos digan el tenant y
-el usuario; lo comprobamos nosotros y les devolvemos el resultado. Si es un flag,
-el nombre de la variable y qué emite.
-
----
+**Por qué esto no puede esperar mucho:** todo el chat del front está probado
+contra mocks nuestros, y un mock responde lo que *nosotros creemos* del cable. Ya
+nos pasó: el discriminador del SSE se había movido a la línea `event:`, las
+pruebas pasaban en verde y el chat no pintaba una palabra.
 
 ## 2 · La misma ruta, dos respuestas distintas · necesitamos que decidan
 
@@ -115,6 +125,12 @@ respuesta**, y esas rutas las consume un navegador.
 `Tenant` **con `json:"-"`**. Faltaría aplicarlo parejo, o devolver un DTO en las
 rutas que preloadean. No lo tocamos nosotros: es de ustedes y no queremos meter
 ruido en un archivo suyo.
+
+**Esto es lo que vuelve urgente al punto 1.** Al equipo de datos le pedimos hoy
+una clave privada de Snowflake, y **se lo contamos en el mismo pedido**: no nos
+parece correcto pedir un secreto sabiendo que hay un camino por el que puede
+salir. Les recomendamos a ellos entregar primero una clave revocable. Si esto se
+corrige antes, mejor para todos.
 
 ---
 

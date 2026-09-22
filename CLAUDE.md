@@ -487,8 +487,11 @@ llegando, y **las seis las escribimos nosotros** en `2fafe82`. La medición sól
 cuenta contra **upstream limpio**, en un worktree aparte. El corte con la tabla
 completa está en `docs/ESTADO-backend-2026-09-22.md`.
 
-**El pedido vigente es `docs/MENSAJE-2026-09-22-agente-roles-y-un-hallazgo.md`**
-—agente, colisión de `/roles` y el hallazgo del `Tenant` embebido—. El del 21
+**Los pedidos vigentes son dos, y van a equipos distintos** · corregido el
+2026-09-22 · **el agente de Cortex lo maneja DATOS, no backend**:
+`docs/MENSAJE-2026-09-22-datos-agente-cortex.md` —el par de claves RSA para
+`SYNAPSE_SERVICE_USER` y dos grants— y `docs/MENSAJE-2026-09-22-backend-roles-y-hallazgo.md`
+—cargar el agente, la colisión de `/roles` y el hallazgo del `Tenant` embebido—. El del 21
 quedó como registro: su tarea 1 sigue en pie sólo para la base compartida, y su
 tarea 2 la cerró F3.6 con el tipo del panel.
 
