@@ -463,14 +463,29 @@ nunca, ni cuando el código está mal.
 **Lo que costó descubrir está en `docs/BITACORA-2026-09-21.md`.** Esto es dónde
 retomar.
 
-**LO ÚNICO QUE FRENA HOY ES B3.11**, y no es código: que **corran las cinco
-migraciones manuales de `82da946`** sobre la base compartida. Está medido, no
-supuesto — el 2026-09-21, con el servicio corriendo y una consulta de sólo
-lectura sobre `information_schema`: **faltan las nueve columnas y el índice**.
+**LO QUE FRENA EL CHAT YA NO SON LAS MIGRACIONES · corregido el 2026-09-22.**
+Hasta acá decía que lo único que frenaba era B3.11. **Venció**: la base local de
+`dev/postgres` las corre con `DB_AUTO_MIGRATE=true`, y con las tablas creadas
+`POST /config/chat` deja de dar 500 y devuelve **409 · «no hay agente activo
+disponible para este tenant y rol»**.
 
-Sin eso `POST /config/chat` escribe contra columnas que no existen, y eso se ve
-como un **500, no como un 404**. Todo el chat construido este mes está probado
-contra mocks que hablan el cable y **no verificado contra el servicio**.
+**Lo que frena ahora es un agente con credenciales de Snowflake**, y es más duro:
+`GET /admin/tenants/{tenantId}/agents` devuelve `[]`, un agente necesita cuenta,
+usuario, rol y clave privada, y **el servicio no tiene modo sin Cortex** —
+`cortex_chat.go` habla contra Cortex de verdad—. Nosotros no corremos nada en
+Snowflake. Así que las once tareas cerradas de Fase 3 siguen verificadas **sólo
+contra mocks**, y no hay forma de cambiarlo desde acá.
+
+B3.11 **sigue abierta igual**: su criterio pide las nueve columnas en la base
+**compartida**, y esa no responde desde acá.
+
+**Y una trampa que casi nos cuesta caro · 2026-09-22.** Medir el backend con el
+**fork corriendo** hace que nuestro propio código se vea como avance de ellos:
+`measurement_window`, `open_period`, `user_count`, `last_published_at`,
+`PublishedBy` y la ruta `/diff` parecían ser B1.17, B1.25, B1.27, B4.1 y B4.2
+llegando, y **las seis las escribimos nosotros** en `2fafe82`. La medición sólo
+cuenta contra **upstream limpio**, en un worktree aparte. El corte con la tabla
+completa está en `docs/ESTADO-backend-2026-09-22.md`.
 
 El pedido está escrito y listo para mandar:
 `docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md`. La segunda tarea son los dos

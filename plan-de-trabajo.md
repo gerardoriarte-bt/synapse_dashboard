@@ -683,7 +683,7 @@ intersectados en los dos estados que muestran número.
   se recuerde poner.
 - `frescura` es ISO 8601 y refleja **cuándo se materializó**, no «ahora» (B2.10).
 
-### B1.13 ⬜ `Presentacion` opcional
+### B1.13 ⚠️ `Presentacion` opcional
 **Espera del backend.** **Solo la `nota` de panel.** El pedido grande que había acá —«`presentation` para las siete formas que no son escalares»— **se retira: estaba mal**, y lo corrigió leer nuestro propio código el 2026-09-15.
 
 **`presentation` la lee UN solo cuerpo: `KpiBody`.** Ningún otro la toca — verificado con un grep sobre `src/render/bodies/`. Y no es un olvido: los demás sacan sus rótulos **del propio valor**. `BarsBody` hace `value.items.map(i => i.etiqueta)`; cada ítem viaja con su etiqueta. **«Ningún número desnudo» lo cumple la estructura del dato, no `presentation`.**
@@ -698,6 +698,12 @@ layout**, porque dependen del período.
 - El backend devuelve los rótulos **ya redactados**; el front no los compone.
 - `label` lleva la unidad («USD · TOTAL»), y por eso la cifra grande no la lleva
   pegada: a 44px «USD 4.28M» no entra en un panel de colSpan 3.
+
+**Medido el 2026-09-22 contra `82da946` limpio** · `docs/ESTADO-backend-2026-09-22.md`.
+Los dos puntos del criterio **se cumplen**: `presentation` llega en los seis paneles `kpi` con
+`label`, `meter` y `comparative` **ya redactados**, y los dos monetarios dicen «USD · TOTAL»
+mientras que ROAS y los conteos dicen «TOTAL», que es correcto —no llevan unidad—.
+**Queda en ⚠️ y no en ✅ por la `nota` de panel**, que sigue siendo un pedido vivo.
 
 ### B1.14 ⬜ Transformar a las formas de `Valor`
 **Espera del backend.** **`decimals` y `unit` por columna en `tabular`**, y las siete formas que `TransformValue` no produce.
@@ -786,6 +792,9 @@ tipo: hoy `bars` puede recibir un ítem y dibujar una barra sola.
 - La tabla vive **en un solo lugar** y la consumen los tres que validan: el
   builder, `layouts/{id}/validate` y el adaptador del front.
 
+**Medido el 2026-09-22 · `GET /config/plots` devuelve 404.** La ruta no existe en
+`82da946`. Pasa de «no verificado» a **medido y ausente**.
+
 ### B1.17 ⬜ Modelo `Metrica`
 **Espera del backend.** **`window` en el catálogo** — el único de esta lista que se ve en pantalla. El shell pinta `Base · {base} · {window}` en los doce paneles y en los siete estados, y sin él la línea queda `Base · COMPLETED · MONTH ·` con el separador colgando.
 
@@ -807,6 +816,12 @@ La nota de A4 lo dice con un ejemplo: «feed_vs_sales figura DISPONIBLE en el ca
 **Pedir el campo habría sido peor que no pedirlo**: dos fuentes para el mismo hecho —el estado guardado y la frescura real— que se separan en el primer feed atrasado. Es el mismo error que este plan persigue en los documentos, aplicado a un dato.
 
 `reading_note` sigue sin pedirse: ahí sí no lo lee nadie todavía.
+
+**Medido el 2026-09-22 · el campo NO llegó.** `measurement_window` aparece en
+`/config/catalog` **sólo cuando corre el fork**: lo agregamos nosotros en `2fafe82` y no existe
+en `82da946`. Medir contra el fork lo hacía ver como avance de ellos — ver
+`docs/ESTADO-backend-2026-09-22.md`. Lo que sí trae upstream: `min_grain`, `layer`,
+`catalog_version`, `semantic_direction`, `base`, `dimensions` y `source`.
 ### B1.18 ⬜ Sincronizar el catálogo con las semantic views de Snowflake
 **Espera del backend.** **La vista `SYNAPSE_METRIC_CATALOG`.** No existe en ninguna base de la cuenta —verificado con `SHOW OBJECTS`, cero filas—, así que `make sync-catalog` falla y el catálogo sale del seed de Postgres.
 
@@ -823,6 +838,10 @@ La nota de A4 lo dice con un ejemplo: «feed_vs_sales figura DISPONIBLE en el ca
 **El paso que se rompe en silencio es la clave.** `METRIC_KEY` tiene que caer en `MetricRegistry` o en el alias de `keys.go`: una clave que no está **sincroniza bien y después todos los paneles salen `BLOCKED`** sin que nada lo explique. Nos pasó al escribir la primera versión de ese SQL.
 
 Los pasos completos están en `docs/snowflake/INSTRUCCION-ALTA-TENANT.md`. **Nosotros no corremos nada en Snowflake.**
+
+**Medido el 2026-09-22 · `sync-catalog` sigue sin correr.** `/config/catalog` devuelve las
+**doce claves de la semilla de Postgres** —`sales`, `investment`, `executive_summary`…— y no las
+diez de Snowflake. Pasa de «no verificado» a **medido y ausente**.
 ### B1.19 ⬜ Filtrar el catálogo por permisos de rol
 **Espera del backend.** **Un usuario de prueba con un rol restringido.** El mecanismo está en el código, pero con el usuario que tenemos —rol `Planner`— el catálogo devuelve las doce métricas, incluidas `executive_summary`, `roas` y `decisions`, que su propio documento dice que `planner` oculta. No decimos que esté roto: no se puede comprobar. Con un usuario así se cierran las dos mitades en un minuto — el catálogo recortado y un panel en `FORBIDDEN`.
 **Criterio de aceptación (los tres).**
@@ -970,6 +989,11 @@ literal imprime la cadena `undefined`, no un hueco.
 - El front lo consume por el adaptador de F1.33 sin lógica nueva: es un renombre,
   no un cálculo.
 
+**Medido el 2026-09-22 · sigue faltando, y casi lo damos por llegado.** El campo se ve en
+`/config/catalog` **porque lo escribimos nosotros** en `2fafe82`; en `82da946` no está. Y aun en
+el fork llega **vacío en las doce métricas**, que es lo que deja la línea de BASE con el
+separador colgando. Ver `docs/ESTADO-backend-2026-09-22.md`.
+
 #### ➕ B1.27 ⚠️ El período declara si está cerrado
 **Espera del backend.** **Un campo en `Periodo`** que diga si el período está cerrado o en curso — pedido el 2026-09-15.
 
@@ -978,6 +1002,11 @@ literal imprime la cadena `undefined`, no un hueco.
 **Es barato de los dos lados**: el backend ya sabe cuál es el mes en curso al generarlos. Y con eso el front lo marca —el `.pen` lo dibuja en B5: «1 – 31 JUL 2026 · **MTD CERRADO**»— sin comparar contra el reloj del navegador, que sería el error: el corte del día es **del tenant y su huso**, no de quien mira.
 
 **Lo pidió el equipo de datos sin saberlo.** Su aviso decía «si la consola deja elegir meses futuros, mostrará 0 y roas 0x». Los futuros no se ofrecen —verificado en `availablePeriods()`—, pero el mes en curso sí, y es el mismo problema en chico.
+
+**Medido el 2026-09-22 · sigue faltando.** `open_period` en `/config/me` es **nuestro**
+—`2fafe82`—; `82da946` devuelve `periods` como doce cadenas sueltas y nada más. La forma que
+propusimos en el fork es un campo al lado de `periods`, no uno dentro de cada `Periodo`: si
+prefieren la otra, se decide antes de que alguien la consuma.
 
 #### ➕ B1.26 ⬜ Decidir cómo escala el registro, antes del segundo tenant
 **Descripción.** El catálogo vive en Snowflake y el registro de queries en Go:
@@ -1137,6 +1166,9 @@ sale por ninguna ruta.
 
 ---
 
+**Medido el 2026-09-22 · no hay ruta.** `GET /config/feeds` devuelve 404 en `82da946`.
+Pasa de «no verificado» a **medido y ausente**.
+
 ## Fase 3 — Chat contextual
 
 ### B3.1 ⬜ `POST /config/chat` con SSE
@@ -1247,6 +1279,16 @@ pero no se verifica.
 
 ---
 
+**Medido el 2026-09-22 · el criterio sigue sin cumplirse, y la razón cambió de lugar.**
+Las migraciones **corrieron en la base local** de `dev/postgres`, porque ahí `DB_AUTO_MIGRATE=true`
+está permitido. La **compartida** no responde desde acá, así que las nueve columnas siguen sin
+verificarse donde el criterio las pide.
+
+**Y lo que frena el chat ya no es esto.** `POST /config/chat` contra el servicio local devuelve
+**409 · «no hay agente activo disponible para este tenant y rol»**, con la tabla `dd_*` creada y
+`GET /admin/tenants/{tenantId}/agents` en `[]`. Lo que falta es un agente con credenciales de
+Snowflake, o un modo que no llame a Cortex — ver `docs/ESTADO-backend-2026-09-22.md`.
+
 ## Fase 4 — Admin y Builder
 
 ### B4.1 ⚠️ `GET /admin/tenants`
@@ -1260,6 +1302,10 @@ No bloquea: la lista funciona y el builder puede elegir tenant. Lo que falta es
 lo que convierte una lista en una pantalla de administración — saber de un
 vistazo qué cliente tiene el feed más atrasado es la mitad de para qué existe.
 
+**Medido el 2026-09-22 · los cinco campos siguen faltando.** `82da946` devuelve `{id, name}`.
+`user_count` y `last_published_at` se ven **sólo con el fork corriendo**: los escribimos nosotros
+en `2fafe82`. Ver `docs/ESTADO-backend-2026-09-22.md`.
+
 ### B4.2 ⚠️ `GET /admin/tenants/{id}/layouts`
 **Espera del backend.** **Autor, diferencia y reversión en `LayoutVersion`** — pedido el 2026-09-15, cuando F4.6 declaró B6.
 
@@ -1270,6 +1316,10 @@ vistazo qué cliente tiene el feed más atrasado es la mitad de para qué existe
 - **Revertir.** No hay ruta. `POST /admin/tenants/{id}/layouts` acepta un `version_id` de origen, así que puede que ya alcance con documentar que duplicar una versión vieja **es** revertir — si es así, es una línea de documentación y no código.
 
 **No bloquea el builder**, bloquea B6. Y B6 es la pantalla que hace reversible un error de composición en producción: sin ella, la única salida es recomponer a mano.
+
+**Medido el 2026-09-22 · autor y diff siguen faltando.** `82da946` devuelve
+`{ID, TenantID, Status, VersionID, PublishedAt, CreatedAt, UpdatedAt}`. `PublishedBy`,
+`PublishedByEmail` y la ruta `/admin/layouts/{layoutId}/diff` son **nuestras**, de `2fafe82`.
 
 ### B4.3 ⬜ `POST /admin/tenants/{id}/layouts` — crear borrador
 ### B4.4 ⚠️ `PUT /admin/layouts/{id}` — editar pestañas y paneles
@@ -1542,6 +1592,10 @@ cable: no están bloqueando nada. Es higiene, y de la barata.
 - Un rol declara `tabIds[]`, `hiddenMetricIds[]` y `layoutOverrides` opcionales.
 - El preview devuelve **exactamente** lo que ese rol vería, resuelto por el
   mismo código que sirve `/config/me`. No una simulación aparte.
+
+**Medido el 2026-09-22 · 404 en upstream.** `GET /admin/tenants/{tenantId}/roles` responde
+sólo con el fork corriendo. **Y hay una colisión**: `168a761` registra esa misma ruta contra
+`ddDashboardHandler.ListRoles`, con otra respuesta. Es lo que frena el rebase.
 
 ### ➕ B4.16 ⬜ Declarar el gráfico en el layout
 **Descripción.** D2 lo resolvió a favor. `PanelConfigurado` gana `plot?: PlotId`.

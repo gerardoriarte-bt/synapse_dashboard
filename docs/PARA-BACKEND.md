@@ -70,7 +70,7 @@ verde.
 
 ### B1.13 · Presentacion opcional
 
-*Estado de la tarea: pendiente.*
+*Estado de la tarea: parcial.*
 
 
 **Solo la `nota` de panel.** El pedido grande que había acá —«`presentation` para las siete formas que no son escalares»— **se retira: estaba mal**, y lo corrigió leer nuestro propio código el 2026-09-15.
@@ -171,6 +171,12 @@ La nota de A4 lo dice con un ejemplo: «feed_vs_sales figura DISPONIBLE en el ca
 
 `reading_note` sigue sin pedirse: ahí sí no lo lee nadie todavía.
 
+**Medido el 2026-09-22 · el campo NO llegó.** `measurement_window` aparece en
+`/config/catalog` **sólo cuando corre el fork**: lo agregamos nosotros en `2fafe82` y no existe
+en `82da946`. Medir contra el fork lo hacía ver como avance de ellos — ver
+`docs/ESTADO-backend-2026-09-22.md`. Lo que sí trae upstream: `min_grain`, `layer`,
+`catalog_version`, `semantic_direction`, `base`, `dimensions` y `source`.
+
 
 ### B1.18 · Sincronizar el catálogo con las semantic views de Snowflake
 
@@ -192,6 +198,10 @@ La nota de A4 lo dice con un ejemplo: «feed_vs_sales figura DISPONIBLE en el ca
 **El paso que se rompe en silencio es la clave.** `METRIC_KEY` tiene que caer en `MetricRegistry` o en el alias de `keys.go`: una clave que no está **sincroniza bien y después todos los paneles salen `BLOCKED`** sin que nada lo explique. Nos pasó al escribir la primera versión de ese SQL.
 
 Los pasos completos están en `docs/snowflake/INSTRUCCION-ALTA-TENANT.md`. **Nosotros no corremos nada en Snowflake.**
+
+**Medido el 2026-09-22 · `sync-catalog` sigue sin correr.** `/config/catalog` devuelve las
+**doce claves de la semilla de Postgres** —`sales`, `investment`, `executive_summary`…— y no las
+diez de Snowflake. Pasa de «no verificado» a **medido y ausente**.
 
 
 ### B1.19 · Filtrar el catálogo por permisos de rol
@@ -228,6 +238,11 @@ Los pasos completos están en `docs/snowflake/INSTRUCCION-ALTA-TENANT.md`. **Nos
 **Es barato de los dos lados**: el backend ya sabe cuál es el mes en curso al generarlos. Y con eso el front lo marca —el `.pen` lo dibuja en B5: «1 – 31 JUL 2026 · **MTD CERRADO**»— sin comparar contra el reloj del navegador, que sería el error: el corte del día es **del tenant y su huso**, no de quien mira.
 
 **Lo pidió el equipo de datos sin saberlo.** Su aviso decía «si la consola deja elegir meses futuros, mostrará 0 y roas 0x». Los futuros no se ofrecen —verificado en `availablePeriods()`—, pero el mes en curso sí, y es el mismo problema en chico.
+
+**Medido el 2026-09-22 · sigue faltando.** `open_period` en `/config/me` es **nuestro**
+—`2fafe82`—; `82da946` devuelve `periods` como doce cadenas sueltas y nada más. La forma que
+propusimos en el fork es un campo al lado de `periods`, no uno dentro de cada `Periodo`: si
+prefieren la otra, se decide antes de que alguien la consuma.
 
 
 ### B2.13 · Salud de feeds por fuente · de acá sale el ESTADO de cada métrica
@@ -322,6 +337,10 @@ No bloquea: la lista funciona y el builder puede elegir tenant. Lo que falta es
 lo que convierte una lista en una pantalla de administración — saber de un
 vistazo qué cliente tiene el feed más atrasado es la mitad de para qué existe.
 
+**Medido el 2026-09-22 · los cinco campos siguen faltando.** `82da946` devuelve `{id, name}`.
+`user_count` y `last_published_at` se ven **sólo con el fork corriendo**: los escribimos nosotros
+en `2fafe82`. Ver `docs/ESTADO-backend-2026-09-22.md`.
+
 
 ### B4.2 · GET /admin/tenants/{id}/layouts
 
@@ -337,6 +356,10 @@ vistazo qué cliente tiene el feed más atrasado es la mitad de para qué existe
 - **Revertir.** No hay ruta. `POST /admin/tenants/{id}/layouts` acepta un `version_id` de origen, así que puede que ya alcance con documentar que duplicar una versión vieja **es** revertir — si es así, es una línea de documentación y no código.
 
 **No bloquea el builder**, bloquea B6. Y B6 es la pantalla que hace reversible un error de composición en producción: sin ella, la única salida es recomponer a mano.
+
+**Medido el 2026-09-22 · autor y diff siguen faltando.** `82da946` devuelve
+`{ID, TenantID, Status, VersionID, PublishedAt, CreatedAt, UpdatedAt}`. `PublishedBy`,
+`PublishedByEmail` y la ruta `/admin/layouts/{layoutId}/diff` son **nuestras**, de `2fafe82`.
 
 
 ### B4.4 · PUT /admin/layouts/{id} — editar pestañas y paneles

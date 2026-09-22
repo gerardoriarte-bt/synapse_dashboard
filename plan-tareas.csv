@@ -62,7 +62,7 @@ B1.11,Backend · Fase 1 — API de consola,Backend,1,API de consola,Unión discr
 B1.12,Backend · Fase 1 — API de consola,Backend,1,API de consola,Gobierno obligatorio en DISPONIBLE y DEGRADADO,"base, capa, fuente, frescura, catalogVersion intersectados en los dos estados que muestran número.","• Un valor sin procedencia es imposible de construir en el tipo, no algo que se recuerde poner.
 • frescura es ISO 8601 y refleja cuándo se materializó, no «ahora» (B2.10).",hecho,no,,equipo:backend fase:1 estado:hecho
 B1.13,Backend · Fase 1 — API de consola,Backend,1,API de consola,Presentacion opcional,"Los rótulos y cifras de apoyo que el panel pinta alrededor del valor: label, medidor, comparativo, nota. Viajan con el dato, no con el layout, porque dependen del período.","• El backend devuelve los rótulos ya redactados; el front no los compone.
-• label lleva la unidad («USD · TOTAL»), y por eso la cifra grande no la lleva pegada: a 44px «USD 4.28M» no entra en un panel de colSpan 3.",pendiente,no,,equipo:backend fase:1 estado:pendiente bloqueada
+• label lleva la unidad («USD · TOTAL»), y por eso la cifra grande no la lleva pegada: a 44px «USD 4.28M» no entra en un panel de colSpan 3.",parcial,no,,equipo:backend fase:1 estado:parcial bloqueada
 B1.14,Backend · Fase 1 — API de consola,Backend,1,API de consola,Transformar a las formas de Valor,"Las 11 formas que el contrato ya declara, con las reglas mínimas de §8 del documento.","• escalarConIntervalo y serieConBanda traen lo, hi y nivel obligatorios: prohibida la estimación puntual sin intervalo.
 • composicion trae porcentaje calculado por el backend, y suma 100.
 • ranking trae posicion ≥ 1.
