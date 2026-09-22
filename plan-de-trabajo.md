@@ -3218,6 +3218,82 @@ El `.pen` ya lo dibuja en B5: «PERÍODO · 1 – 31 JUL 2026 · **MTD CERRADO**
 - **Eso lo hace esperar un campo**: hoy `Periodo` no declara si está cerrado. Va
   pedido a backend.
 
+#### ➕ F1.43 ✅ Los TIPOS de los params, no sólo sus nombres
+**Descripción.** F1.41 tradujo los NOMBRES de los params del cable al contrato y
+dejó abierta la otra mitad: que el tipo que `PARAM_SCHEMAS` declara sea el que el
+cuerpo lee.
+
+**No lo era, y costó seis de doce paneles.** F1.40 mudó el rótulo, el medidor y
+los comparativos de `opciones` a `presentacion` — los escribe el backend, no
+quien compone el layout. `KpiParams` pasó ese día a declarar dos **interruptores
+booleanos**, y `PARAM_SCHEMAS` se quedó diciendo `array` y `object`, que era la
+forma anterior. El servicio manda `{"meter": true, "comparative": true}` en seis
+de los doce paneles del layout sembrado, el validador los rechazaba, y los seis
+salían BLOQUEADO diciendo «"medidor" tiene el valor true y espera un objeto».
+
+**Nada lo vio.** No el compilador —las dos mitades no se tocan—, no el lint, no
+las pruebas, y **no MSW**, cuyos mocks nunca mandaron `meter`. Es el modo de
+falla de F1.38 otra vez: un mock que habla el idioma de nuestra capa interna no
+prueba la frontera, la esconde. Se midió abriendo la consola contra el binario
+local.
+
+**Criterio de aceptación.**
+- `ParamSpec` gana el `kind` que faltaba —`boolean`— y `kpi` declara sus dos
+  params como los interruptores que son. `label` sale: `KpiBody` lo lee de
+  `presentacion` desde F1.40 y `/config/blocks` tampoco lo declara.
+- La deriva **deja de ser verificable y pasa a ser imposible**: un cruce de tipos
+  en `tests/api/params-esquema.ts` compara la tabla contra los `*Params` de los
+  doce cuerpos en `npm run typecheck`, en los dos sentidos —nombres exactos, y el
+  tipo que cada `kind` deja pasar—. Lo único que no comprueba es el contenido de
+  `array` y `object`, y está escrito por qué.
+- La prueba usa el payload **capturado**, no uno inventado: los doce paneles con
+  sus `options` tal como los devuelve `GET /config/tabs/{id}`, con fecha.
+- Se verifica **abriendo la consola**, que es donde el defecto vivía.
+
+**Cerrada el 2026-09-22.** Los seis `kpi` dibujan medidor y comparativos contra
+el servicio local. Siete mutaciones sobre el cruce de tipos y tres sobre las
+pruebas de runtime, todas cazadas — **la primera versión del cruce eximía
+`array` y `object` enteros y dejaba pasar justo la deriva que lo motivó**; se
+acotó la exención al contenido. El conteo «siete paneles kpi» se escribió de
+memoria y **lo corrigió una aserción antes del commit**: son seis.
+
+#### ➕ F1.44 ⬜ `orden` de `table` llega como texto y el panel degrada · 🔒 falta la dirección
+**Descripción.** El layout sembrado manda `{"order": "investment"}` en el panel
+`table` —capturado el 2026-09-22 de `GET /config/tabs/{id}` contra el binario
+local—. `TableBody` ordena con `{ columna, direccion }`, así que el validador lo
+rechaza y **el panel «Investment and return by platform» sale BLOQUEADO**: es el
+único de los doce que sigue degradado después de F1.43.
+
+**Se deja degradando a propósito, y esa es la decisión que hay que sostener.**
+Aceptar el texto suelto obligaría a elegir una dirección que nadie declaró, y la
+regla del adaptador es que renombra y reformatea pero no inventa. Un panel
+ordenado al revés se ve perfecto y miente; uno degradado dice qué pasa.
+
+**Espera del backend.** Qué forma tiene `options.order` de un panel `table`. Hoy
+llega como el nombre de la columna —`"investment"`— y al front le falta la
+dirección: sin ella, ordenar es adivinar. Dos salidas, y la elección es de
+ustedes: que `order` pase a ser `{"column": "investment", "direction": "desc"}`,
+o que se declare en `layout_params` cuál es la dirección por defecto y quede
+escrito en el cable. Mientras tanto el panel muestra su razón en vez de un orden
+inventado. · Bloquea **F1.44**.
+
+**Espera del backend.** Qué significa `cut` en un panel `series`. El cable lo
+declara en `layout_params` de `series` y de `forecast`, y el layout sembrado
+manda `{"cut": "day"}` y `{"cut": "month"}`. En `forecast` es el punto donde
+termina lo observado y empieza la proyección —un índice—, y así lo lee
+`ForecastBody`. En `series` parece **granularidad**, que es otra cosa con el
+mismo nombre. Hoy se descarta como desconocido, que es lo correcto mientras la
+pregunta siga abierta, pero el panel ignora en silencio algo que alguien
+configuró. · Bloquea **F1.44**.
+
+**Criterio de aceptación.**
+- El panel `table` del layout sembrado dibuja su tabla ordenada como el layout
+  pide, **con la dirección declarada** y no con una elegida por el front.
+- `cut` de `series` o se lee —con el nombre que le corresponda y su propio
+  `ParamSpec`— o se saca de `layout_params` de `series`. Un nombre declarado que
+  nadie lee es una opción que no hace nada.
+- El cruce de tipos de F1.43 cubre los params nuevos sin excepciones.
+
 ## Fase 2 — Los estados de materialización en pantalla
 
 Depende de B2.5–B2.7 para los estados REALES: hasta que el backend los emita,

@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 23 pedido(s)
+## Lo que esperamos · 24 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -381,6 +381,29 @@ cable: no están bloqueando nada. Es higiene, y de la barata.
 
 
 **La lista de layouts que el usuario puede ver, en `/config/me`.** `GET /config/tabs/:tabId?layoutId=` ya funciona, pero no hay forma de saber qué layouts le tocan a alguien, así que el selector de F5.1 no se puede construir: no se ofrece una elección que no se sabe si existe.
+
+
+### F1.44 · orden de table llega como texto y el panel degrada
+
+*Estado de la tarea: pendiente.*
+
+
+Qué forma tiene `options.order` de un panel `table`. Hoy
+llega como el nombre de la columna —`"investment"`— y al front le falta la
+dirección: sin ella, ordenar es adivinar. Dos salidas, y la elección es de
+ustedes: que `order` pase a ser `{"column": "investment", "direction": "desc"}`,
+o que se declare en `layout_params` cuál es la dirección por defecto y quede
+escrito en el cable. Mientras tanto el panel muestra su razón en vez de un orden
+inventado. · Bloquea **F1.44**.
+
+**Espera del backend.** Qué significa `cut` en un panel `series`. El cable lo
+declara en `layout_params` de `series` y de `forecast`, y el layout sembrado
+manda `{"cut": "day"}` y `{"cut": "month"}`. En `forecast` es el punto donde
+termina lo observado y empieza la proyección —un índice—, y así lo lee
+`ForecastBody`. En `series` parece **granularidad**, que es otra cosa con el
+mismo nombre. Hoy se descarta como desconocido, que es lo correcto mientras la
+pregunta siga abierta, pero el panel ignora en silencio algo que alguien
+configuró. · Bloquea **F1.44**.
 
 
 ---

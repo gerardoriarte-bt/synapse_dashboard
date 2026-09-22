@@ -5,15 +5,15 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**108 de 204 tareas cerradas.** 16 parciales · 75 pendientes · 5 diferidas.
+**109 de 206 tareas cerradas.** 16 parciales · 76 pendientes · 5 diferidas.
 
 
-## Front · 101 de 120
+## Front · 102 de 122
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██████████████████████` | 16/16 | 0 | 0 |
-| 1 · Consola y render/ | `████████████████████··` | 40/44 | 1 | 3 |
+| 1 · Consola y render/ | `████████████████████··` | 41/46 | 1 | 4 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `█████████████████·····` | 11/14 | 0 | 0 |
 | 4 · Admin y Builder | `███████████████·······` | 16/23 | 2 | 5 |
@@ -51,7 +51,7 @@ Nada del front está libre: todo lo pendiente espera algo.
 
 ---
 
-## Bloqueadas · 39
+## Bloqueadas · 40
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -63,6 +63,7 @@ Lo que el front espera del backend está detallado en
 - **F1.25** · Conectar a la API real
 - **F1.31** · Registro de gráficos y verificación de mínimos
 - **F1.42** · El mes en curso está incompleto y el selector no lo dice
+- **F1.44** · orden de table llega como texto y el panel degrada
 - **F2.3** · SIN_PERMISO · B0.9 (línea 1171) contestada
 - **F4.12** · Preview por rol
 - **F4.17** · ComparisonBody + ComparePlot

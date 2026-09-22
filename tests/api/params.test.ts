@@ -74,12 +74,14 @@ describe('los tipos de valor', () => {
   it('un objeto no es una lista y una lista no es un objeto', () => {
     expect(validateParams('table', { columnas: ['a', 'b'] }).invalid).toEqual([])
     expect(validateParams('table', { columnas: { a: 1 } }).invalid).toHaveLength(1)
-    expect(validateParams('kpi', { medidor: { label: 'x', porcentaje: 50 } }).invalid).toEqual([])
-    expect(validateParams('kpi', { medidor: [1, 2] }).invalid).toHaveLength(1)
+    // Con `gauge.banda` y no con `kpi.medidor`: el 2026-09-22 `medidor` pasó a
+    // ser un interruptor booleano y dejó de ser ejemplo de objeto.
+    expect(validateParams('gauge', { banda: { lo: 0, hi: 1, etiqueta: 'x' } }).invalid).toEqual([])
+    expect(validateParams('gauge', { banda: [1, 2] }).invalid).toHaveLength(1)
   })
 
   it('`null` no pasa por objeto · `typeof null` es "object"', () => {
-    expect(validateParams('kpi', { medidor: null }).invalid).toHaveLength(1)
+    expect(validateParams('gauge', { banda: null }).invalid).toHaveLength(1)
   })
 
   it('`maximo: 0` de gauge es válido como número y el cuerpo lo rechaza aparte', () => {
@@ -120,5 +122,94 @@ describe('la tabla local cubre lo que los cuerpos leen', () => {
     // Es lo que permitiría un chequeo de deriva contra `paramsDisponibles`.
     expect(knownParams('list').sort()).toEqual(['orden', 'tope'])
     expect(knownParams('matrix')).toEqual([])
+  })
+})
+
+describe('los interruptores del layout sembrado · capturado el 2026-09-22', () => {
+  /** **Lo que el servicio manda de verdad**, campo por campo, leído de
+   *  `GET /config/tabs/5b5e27ae…` contra el binario local en `82da946` con la
+   *  base de `dev/postgres` recién migrada. **No se escribió de memoria**: los
+   *  doce paneles de la pestaña sembrada, con sus `options` tal cual llegan, en
+   *  inglés y antes de `traducirParams`.
+   *
+   *  Está acá y no en un `.json` aparte porque son doce líneas y porque el que
+   *  lea la prueba tiene que ver el payload sin abrir otro archivo. */
+  const SEMBRADO = [
+    ['prose', {}],
+    ['kpi', { meter: true, comparative: true }],
+    ['kpi', { meter: true, comparative: true }],
+    ['kpi', { comparative: true }],
+    ['kpi', { meter: true, comparative: true }],
+    ['bars', { order: 'desc' }],
+    ['kpi', { meter: true }],
+    ['kpi', { meter: true }],
+    ['series', { cut: 'day' }],
+    ['series', { cut: 'month' }],
+    ['table', { order: 'investment' }],
+    ['reco', { cap: 6 }],
+  ] as const
+
+  /** El mismo renombre que hace `adaptTab`. Se repite acá —tres pares— en vez
+   *  de importar `traducirParams`, que es privada: exportarla para una prueba
+   *  ensancharía la superficie del adaptador. */
+  const traducir = (o: Record<string, unknown>) => {
+    const N: Record<string, string> = {
+      meter: 'medidor',
+      comparative: 'comparativo',
+      order: 'orden',
+      cut: 'corte',
+      cap: 'tope',
+    }
+    return Object.fromEntries(Object.entries(o).map(([k, v]) => [N[k] ?? k, v]))
+  }
+
+  it('los SEIS paneles `kpi` del layout ya no degradan', () => {
+    // **El defecto, en una línea.** Hasta hoy el esquema pedía un objeto para
+    // `medidor` y una lista para `comparativo` —la forma que tenían antes de
+    // F1.40—, así que todo `meter: true` degradaba: **seis de doce paneles** en
+    // BLOQUEADO diciendo «"medidor" tiene el valor true y espera un objeto».
+    //
+    // Seis y no siete: el conteo se escribió de memoria y esta misma aserción
+    // lo corrigió antes de que llegara a un commit.
+    const kpis = SEMBRADO.filter(([tipo]) => tipo === 'kpi')
+    expect(kpis).toHaveLength(6)
+
+    for (const [tipo, options] of kpis) {
+      const r = validateParams(tipo, traducir(options))
+      expect(r.invalid).toEqual([])
+      expect(r.unknown).toEqual([])
+      // Y llegan al cuerpo: descartarlos en silencio apagaría el medidor, que
+      // es lo mismo que el layout pidió encender.
+      expect(r.params).toEqual(traducir(options))
+    }
+  })
+
+  it('`medidor` es un interruptor · un objeto ya NO pasa', () => {
+    // La otra mitad. Sin esta aserción, `{ kind: 'boolean' }` podría relajarse
+    // a algo que acepte las dos formas y la prueba de arriba seguiría verde.
+    const r = validateParams('kpi', { medidor: { label: 'Avance', porcentaje: 61 } })
+    expect(r.invalid[0]?.reason).toContain('«true» o «false»')
+    expect(r.params).toEqual({})
+  })
+
+  it('`orden` de `table` llega como texto y SÍ degrada · es del backend', () => {
+    // **Se deja degradando a propósito.** `TableBody` ordena con
+    // `{ columna, direccion }` y el servicio manda el nombre de la columna
+    // solo. Aceptarlo obligaría a elegir una dirección que nadie declaró, y el
+    // adaptador no inventa: el panel muestra la razón y la pregunta va escrita
+    // en `docs/PARA-BACKEND.md`.
+    const r = validateParams('table', traducir({ order: 'investment' }))
+    expect(r.invalid[0]?.param).toBe('orden')
+    expect(r.invalid[0]?.reason).toContain('"investment"')
+  })
+
+  it('`cut` de `series` se descarta · ningún cuerpo de series lo lee', () => {
+    // `/config/blocks` lo declara para `series` y para `forecast`, y sólo
+    // `ForecastBody` lo usa —ahí es el punto donde termina lo observado—. En
+    // `series` parece granularidad, que es otra cosa con el mismo nombre. Se
+    // descarta con aviso, que es lo correcto mientras la pregunta esté abierta.
+    const r = validateParams('series', traducir({ cut: 'day' }))
+    expect(r.unknown).toEqual(['corte'])
+    expect(r.invalid).toEqual([])
   })
 })

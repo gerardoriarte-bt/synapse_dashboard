@@ -38,6 +38,7 @@ export type ParamSpec =
   | { kind: 'enum'; values: readonly string[] }
   | { kind: 'number'; min?: number; integer?: boolean }
   | { kind: 'string' }
+  | { kind: 'boolean' }
   | { kind: 'array' }
   | { kind: 'object' }
 
@@ -47,11 +48,22 @@ export type ParamSpec =
  *  distribution—, y declararlos acá haría pasar como válido algo que ningún
  *  componente mira. Lo que no se lee, no se valida: se descarta como
  *  desconocido, que es información. */
-export const PARAM_SCHEMAS: Partial<Record<PanelType, Record<string, ParamSpec>>> = {
+const SCHEMAS = {
+  // **Los dos son INTERRUPTORES, no contenido** · corregido el 2026-09-22.
+  // Hasta hoy decían `array` y `object`, que era cierto antes de F1.40: el
+  // rótulo, el medidor y los comparativos venían en `opciones`. F1.40 los mudó
+  // a `presentacion` —los escribe el backend, no quien compone el layout— y el
+  // param quedó siendo lo único que el layout sigue decidiendo: si se muestran.
+  // Así los declara `KpiParams` desde entonces; esta tabla no se actualizó.
+  //
+  // El servicio manda `{"meter": true, "comparative": true}` —capturado el
+  // 2026-09-22 de `/config/tabs/{id}` contra el binario local— y con el esquema
+  // viejo los SEIS paneles `kpi` del layout sembrado salían BLOQUEADO.
+  //
+  // **MSW no lo delataba**: nuestros mocks nunca mandaron `meter`.
   kpi: {
-    label: { kind: 'string' },
-    comparativo: { kind: 'array' },
-    medidor: { kind: 'object' },
+    comparativo: { kind: 'boolean' },
+    medidor: { kind: 'boolean' },
   },
   prose: { pilares: { kind: 'number', min: 1, integer: true } },
   series: { normalizacion: { kind: 'enum', values: ['ninguna', 'base100'] } },
@@ -85,7 +97,23 @@ export const PARAM_SCHEMAS: Partial<Record<PanelType, Record<string, ParamSpec>>
     razon: { kind: 'string' },
     desbloqueaCon: { kind: 'string' },
   },
-}
+  // **`as const satisfies` y no una anotación** · 2026-09-22. Con la anotación,
+  // `medidor` era `ParamSpec` a secas y el `kind` se perdía: ningún tipo podía
+  // enterarse de que el esquema decía `object` donde `KpiParams` dice `boolean`.
+  // Conservando el literal, `tests/api/params-esquema.ts` cruza esta tabla
+  // contra los `*Params` de cada cuerpo **en tiempo de compilación**, y la
+  // deriva que hubo que medir a mano hoy pasa a romper `typecheck`.
+} as const satisfies Partial<Record<PanelType, Record<string, ParamSpec>>>
+
+/** La tabla con los `kind` SIN ensanchar. **Es un tipo y no un valor**: lo
+ *  consume el cruce de `tests/api/params-esquema.ts` contra los `*Params` de
+ *  cada cuerpo, y nadie más. */
+export type ParamSchemas = typeof SCHEMAS
+
+/** La tabla como la usa el código: ensanchada, indexable por cualquier
+ *  `PanelType`. El literal no lo es —sólo declara los tipos que tienen params—
+ *  y todo consumidor indexa con la unión entera. */
+export const PARAM_SCHEMAS: Partial<Record<PanelType, Record<string, ParamSpec>>> = SCHEMAS
 
 /** Qué valores acepta un param, en la lengua del producto.
  *
@@ -101,6 +129,8 @@ export function describirParam(spec: ParamSpec): string {
       return `un número${spec.integer === true ? ' entero' : ''}${spec.min === undefined ? '' : ` de ${spec.min} en adelante`}`
     case 'string':
       return 'un texto'
+    case 'boolean':
+      return '«true» o «false»'
     case 'array':
       return 'una lista'
     case 'object':
@@ -118,6 +148,8 @@ function isValid(spec: ParamSpec, value: unknown): boolean {
       return spec.min === undefined || value >= spec.min
     case 'string':
       return typeof value === 'string'
+    case 'boolean':
+      return typeof value === 'boolean'
     case 'array':
       return Array.isArray(value)
     case 'object':
