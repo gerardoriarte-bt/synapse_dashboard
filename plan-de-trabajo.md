@@ -3443,7 +3443,7 @@ parecía: **la prosa que aparece ES el indicador**, así que lo único que hace
 falta cubrir es el hueco ANTES del primer fragmento, cuando el agente está
 consultando Gold y no hay nada que mostrar.
 
-### F3.6 ⬜ Reutilizar cuerpos de panel para respuestas estructuradas · 🔒 **bloqueada**
+### F3.6 ✅ Reutilizar cuerpos de panel para respuestas estructuradas
 **Criterio de aceptación.** Si llega `{ forma, datos, procedencia }`, se renderiza
 con el **mismo** cuerpo que un panel — un solo modelo de datos. Y con la misma
 anatomía: una cifra en el chat también declara BASE y procedencia.
@@ -3484,10 +3484,40 @@ podrían cruzar del catálogo por `metric_key`** —`familia`, `capa`, `fuente` 
 Y cuando el agente compone una métrica que no está en el catálogo —caso que el
 contrato contempla con `metricId: null`— no hay ni fila contra la cual cruzar.
 
-Pedido concreto al backend en
-[`MENSAJE-2026-09-21-dos-tareas-del-chat.md`](docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md).
-Mientras tanto `src/api/chat.ts` **descarta** las tramas `data`, con una prueba
-que lo atestigua: el chat contesta en prosa y con el SQL a la vista.
+**Cerrada el 2026-09-22, y la destrabó el backend.** Se pidió el 21 en
+`docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md` y `55e8419` lo entregó entero:
+`provenance` ganó `base`, `base_source`, `family`, `layer`, `source_system`,
+`catalog_version`, `freshness` y `queried_at`. Con eso `EventoDato` se puede
+armar completo.
+
+**`frescura` sale de `queried_at`, no de `freshness`, y es una decisión.** Los
+dos vienen y significan cosas distintas: `freshness` es cuándo se materializó la
+MÉTRICA y `queried_at` cuándo el agente produjo ESTA cifra. Una cifra calculada
+al vuelo es tan fresca como su consulta. Sin `queried_at` —el agente no
+consultó— cae a `freshness`, que es lo único que queda.
+
+**Con qué cuerpo se dibuja era la otra mitad, y la respuesta no fue un campo
+nuevo.** `EventoDato` trae la forma del valor, no un `TipoPanel`, y
+`formasAceptadas` va de muchos a muchos. **El chat se abre DESDE un panel, y ese
+panel tiene tipo**: la cifra se dibuja con el cuerpo de ese panel, y sólo si
+`acceptsShape` dice que acepta la forma que llegó. Cuando no, se declara en vez
+de adivinar — el agente puede devolver un desglose donde el panel es un KPI, y
+dibujarlo con `KpiBody` se vería bien y sería otra cifra.
+
+**Eso contesta la pregunta 11 de B0.9 sin agregar nada al contrato**, y queda
+como propuesta de spec: si algún día el evento declara su tipo, la regla
+desaparece.
+
+**Y NO se reusó `Panel`, aunque el lint lo pedía.** `Metrica` exige `ventana` y
+`key`, que `EventoDato` no trae; componer una métrica falsa para satisfacer al
+shell sería inventar justo el campo cuya ausencia deja la línea de BASE con el
+separador colgando. **La regla L5 pasó a verificar su intención** —o el shell, o
+que el archivo escriba la BASE y monte `Provenance`—: un cuerpo pelado sigue
+marcado, verificado rompiéndolo.
+
+Verificada rompiendo el código: cuatro mutaciones, las cuatro muertas. Y abierta
+en el navegador: la cifra con su `TOTAL`, su BASE y `GOLD · ERP · RECIÉN` —
+«recién» porque la frescura es la de la consulta.
 
 ### F3.7 ✅ Historial de hilos
 **Descripción.** Listado de conversaciones previas del usuario, desde

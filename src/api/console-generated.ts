@@ -613,6 +613,11 @@ export interface components {
              */
             shape: string;
             data: unknown;
+            /**
+             * @description **Creció el 2026-09-22 con `55e8419`**, que es lo que destrabó F3.6.
+             *     Antes traía sólo las cinco primeras y no alcanzaba: `EventoDato`
+             *     exige `familia` y los cinco campos de `Gobierno`.
+             */
             provenance: {
                 /** @example cortex_agent */
                 source: string;
@@ -620,6 +625,35 @@ export interface components {
                 metric_key: string;
                 period: string;
                 sql_available: boolean;
+                /** @description El denominador y la ventana de la métrica. */
+                base: string;
+                /**
+                 * @description `catalog` cuando la BASE salió del catálogo, vacío si no hay
+                 *     base. **Es la declaración de que la BASE es la de la MÉTRICA**,
+                 *     no una calculada para esta cifra en particular.
+                 */
+                base_source: string;
+                /** @description Con qué familia se pinta. */
+                family: string;
+                /** @description La capa Medallion. */
+                layer: string;
+                source_system: string;
+                catalog_version: number;
+                /**
+                 * @description RFC 3339 de la **última materialización de la métrica**. Cadena
+                 *     vacía si nunca se materializó.
+                 */
+                freshness: string;
+                /**
+                 * @description RFC 3339 del momento en que **el agente produjo esta cifra**.
+                 *     Lo pone el servicio al recibir el `tool_result`, así que sólo
+                 *     viene cuando el agente consultó de verdad.
+                 *
+                 *     **No es lo mismo que `freshness` y confundirlos es el bug**: una
+                 *     describe cuándo se materializó el panel y la otra cuándo se
+                 *     calculó este número.
+                 */
+                queried_at: string;
             };
         };
         /**

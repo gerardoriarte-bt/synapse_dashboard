@@ -477,6 +477,20 @@ El pedido está escrito y listo para mandar:
 campos que le faltan al evento `data` —la BASE de la cifra y su frescura—, que
 es lo único que separa a **F3.6** de construirse.
 
+**ANOTADO Y NO TOMADO · `168a761` · la Fase 5 del backend.** Llegó el 22 junto
+con `55e8419` y **se decidió no trabajarlo hasta cerrar las fases previas**.
+Trae nueve rutas nuevas y 62 archivos:
+
+| Ruta | Qué abre |
+|---|---|
+| `POST /config/panels/{panelId}/drilldown` y `.../dimensions` | **C2 · el drill-down** · hoy F3.9, diferida por D3 |
+| `/admin/tenants/{tenantId}/dashboards` · GET y POST, más `PUT /admin/dashboards/{id}` | **Multi-dashboard** · F5.1 espera justo esto |
+| `GET /admin/tenants/{tenantId}/roles` y `PUT /admin/roles/{roleId}/dashboards` | Asignar dashboards por rol · B4.10 |
+| `GET /admin/layouts/{layoutId}/publications` y `/admin/dashboards/{id}/publications` | **B6 · historial de versiones**, que el `.pen` dibuja y está sin construir |
+
+**Ninguna se transcribió al cable todavía**, que es la regla: una ruta
+transcrita que nadie llama envejece sin que nadie lo note.
+
 **El servicio «real» lo levantamos nosotros** · el proxy de Vite apunta a
 `localhost:4010`. Por eso esa clase de pregunta no se manda: se corre. Descubrirlo
 convirtió cuatro preguntas al backend en dos tareas.

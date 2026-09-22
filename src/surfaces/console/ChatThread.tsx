@@ -21,11 +21,25 @@
  *  uno acá sería inventar una decisión que el contrato no tomó. Hasta que la
  *  tome, se declara cuántas cifras trajo la respuesta en vez de pintar una mal.
  */
+import { ChatFigure } from './ChatFigure'
 import type { ChatTurn } from '../../api/useChat'
+import type { BlockTable } from '../../catalog/blocks'
+import type { PanelType } from '../../catalog/types'
+import type { Formatter } from '../../render/format'
 import { Label } from '../../render/primitives/Label'
 import { Markdown } from './Markdown'
 
-export function ChatThread({ turns }: { turns: readonly ChatTurn[] }) {
+type Props = {
+  turns: readonly ChatTurn[]
+  /** Con qué cuerpo se dibujan las cifras · F3.6. Es el tipo del panel desde
+   *  el que se preguntó: la cifra se dibuja como se dibuja ese panel. */
+  panelTipo: PanelType
+  bloques: BlockTable
+  format: Formatter
+  now: Date
+}
+
+export function ChatThread({ turns, panelTipo, bloques, format, now }: Props) {
   if (turns.length === 0) {
     return (
       <p className="font-body text-cuerpo leading-cuerpo text-dim m-0">
@@ -55,13 +69,19 @@ export function ChatThread({ turns }: { turns: readonly ChatTurn[] }) {
 
             {turn.respuesta.texto === '' ? null : <Markdown texto={turn.respuesta.texto} />}
 
-            {turn.respuesta.datos.length === 0 ? null : (
-              <p className="font-body text-cuerpo leading-cuerpo text-dim m-0">
-                {turn.respuesta.datos.length === 1
-                  ? 'La respuesta trae una cifra que todavía no se dibuja.'
-                  : `La respuesta trae ${turn.respuesta.datos.length} cifras que todavía no se dibujan.`}
-              </p>
-            )}
+            {/* **Las cifras se DIBUJAN desde el 2026-09-22** · F3.6. Hasta el
+                21 sólo se declaraba cuántas traía la respuesta, porque el cable
+                no mandaba con qué familia ni con qué BASE pintarlas. */}
+            {turn.respuesta.datos.map((dato, j) => (
+              <ChatFigure
+                key={j}
+                dato={dato}
+                panelTipo={panelTipo}
+                bloques={bloques}
+                format={format}
+                now={now}
+              />
+            ))}
 
             {turn.error === null ? null : (
               <p className="font-body text-cuerpo leading-cuerpo text-ink m-0">

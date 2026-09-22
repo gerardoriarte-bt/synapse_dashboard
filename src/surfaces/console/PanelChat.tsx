@@ -31,6 +31,8 @@ import { Suggestions } from './Suggestions'
 import { ThreadRail } from './ThreadRail'
 import { groupByRecency } from './threads'
 import type { Formatter } from '../../render/format'
+import type { BlockTable } from '../../catalog/blocks'
+import type { PanelType } from '../../catalog/types'
 
 const ROTULO = 'font-mono text-label tracking-rotulo leading-rotulo uppercase text-dim'
 
@@ -46,17 +48,23 @@ type Props = {
   periodo: string
   /** El nombre de la métrica, para que la hoja diga de qué se está hablando. */
   titulo: string
+  /** Con qué cuerpo se dibujan las cifras del agente · F3.6. */
+  panelTipo: PanelType
+  bloques: BlockTable
   /** Para el agrupado del riel · «HOY», «ESTA SEMANA», «JULIO». */
   format: Formatter
   onClose: () => void
 }
 
-export function PanelChat({ panelId, periodo, titulo, format, onClose }: Props) {
+export function PanelChat({ panelId, periodo, titulo, panelTipo, bloques, format, onClose }: Props) {
   const { turns, threadId, ask, resume, reset } = useChat({ panelId, periodo })
   const [texto, setTexto] = useState('')
   /** El riel colapsado es una pantalla propia del `.pen`. Vive acá y no en el
    *  contenedor: es preferencia de lectura de esta hoja, no estado de la app. */
   const [colapsado, setColapsado] = useState(false)
+  // Un solo `now` para la hoja: dos llamadas distintas darían dos frescuras
+  // para la misma respuesta.
+  const ahora = new Date()
 
   /** Los hilos de ESTE panel y ESTE período · F3.7. El filtro lo aplica el
    *  servicio: pedir todos y descartar acá traería por la red las
@@ -197,7 +205,13 @@ export function PanelChat({ panelId, periodo, titulo, format, onClose }: Props) 
         </div>
 
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
-          <ChatThread turns={turns} />
+          <ChatThread
+            turns={turns}
+            panelTipo={panelTipo}
+            bloques={bloques}
+            format={format}
+            now={ahora}
+          />
         </div>
 
         <div className="flex flex-col gap-3 bg-elev px-6 py-4">

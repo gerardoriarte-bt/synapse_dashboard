@@ -17,6 +17,7 @@ import {
   useTab,
 } from '../../api/hooks'
 import { adaptPanelParams } from '../../api/params'
+import { blockTable } from '../../catalog/blocks'
 import { applyTheme } from '../../tokens/theme'
 import { preloadBodies } from '../../render/bodies/registry'
 import { createFormat } from '../../render/format'
@@ -214,6 +215,11 @@ export function ConsoleContainer() {
         panelId={askingPanel.id}
         periodo={activePeriod.id}
         titulo={askingMetric.nombre}
+        // **El tipo del panel es lo que decide con qué cuerpo se dibuja la
+        // cifra del agente** · F3.6. Sale del panel desde el que se preguntó,
+        // no de una elección: ver `ChatFigure`.
+        panelTipo={askingPanel.tipo}
+        bloques={blockTable(blocks.data?.blocks ?? [])}
         format={format}
         onClose={() => setAskingPanelId(null)}
       />

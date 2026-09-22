@@ -132,7 +132,7 @@ const FORMAS: Readonly<Record<string, Shape>> = Object.fromEntries(
 /** **De acá sale el color de cada serie.** Los nombres del contrato son los que
  *  nombran los tokens: `--color-fam-demanda-1`. Una familia fuera de estas cinco
  *  no tiene rampa. */
-const FAMILIAS: Readonly<Record<string, Family>> = {
+export const FAMILIAS: Readonly<Record<string, Family>> = {
   demand: 'demanda',
   media: 'medios',
   inventory: 'inventario',
@@ -140,7 +140,7 @@ const FAMILIAS: Readonly<Record<string, Family>> = {
   external: 'externo',
 }
 
-const CAPAS: Readonly<Record<string, Layer>> = {
+export const CAPAS: Readonly<Record<string, Layer>> = {
   BRONZE: 'BRONZE',
   SILVER: 'SILVER',
   GOLD: 'GOLD',

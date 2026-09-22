@@ -15,9 +15,16 @@ import { ChatThread } from '@/surfaces/console/ChatThread'
 import { ThreadRail } from '@/surfaces/console/ThreadRail'
 import { Wordmark } from '@/surfaces/console/Wordmark'
 import { createFormat } from '@/render/format'
+import { blockTable } from '@/catalog/blocks'
 import type { ChatTurn } from '@/api/useChat'
 
 const format = createFormat('es-MX')
+const ahora = new Date('2026-09-02T12:00:00Z')
+
+/** `ChatThread` pide con qué dibujar las cifras desde F3.6. Estas pruebas son
+ *  de los MENSAJES, no de las cifras —ésas viven en `figura.test.tsx`—, así que
+ *  el tipo y la tabla van fijos y no afectan lo que miran. */
+const conChrome = { panelTipo: 'kpi' as const, bloques: new Map(), format, now: ahora }
 
 const VACIA = { texto: '', datos: [], auditoria: null, sugerencias: [] }
 
@@ -109,12 +116,12 @@ describe('F3.1 · la hoja', () => {
 
 describe('F3.5 · los mensajes', () => {
   it('sin turnos invita a preguntar · no muestra un hueco', () => {
-    render(<ChatThread turns={[]} />)
+    render(<ChatThread turns={[]} {...conChrome} />)
     expect(screen.getByText(/Preguntá sobre lo que estás viendo/)).toBeInTheDocument()
   })
 
   it('mientras no llegó el primer fragmento dice que está consultando', () => {
-    render(<ChatThread turns={[turno({ streaming: true })]} />)
+    render(<ChatThread turns={[turno({ streaming: true })]} {...conChrome} />)
     expect(screen.getByText('Consultando')).toBeInTheDocument()
   })
 
@@ -122,6 +129,7 @@ describe('F3.5 · los mensajes', () => {
     render(
       <ChatThread
         turns={[turno({ streaming: true, respuesta: { ...VACIA, texto: 'Las ventas ' } })]}
+        {...conChrome}
       />,
     )
     expect(screen.queryByText('Consultando')).toBeNull()
@@ -131,7 +139,7 @@ describe('F3.5 · los mensajes', () => {
   it('la región viva es la RESPUESTA, no la hoja entera', () => {
     // Si envolviera todo, un lector de pantalla releería la pregunta con cada
     // fragmento que llega.
-    const { container } = render(<ChatThread turns={[turno({ streaming: true })]} />)
+    const { container } = render(<ChatThread turns={[turno({ streaming: true })]} {...conChrome} />)
     const viva = container.querySelector('[aria-live]')
     expect(viva).not.toBeNull()
     expect(viva?.textContent).not.toContain('¿Por qué cayeron las ventas?')
@@ -139,7 +147,7 @@ describe('F3.5 · los mensajes', () => {
   })
 
   it('NO dibuja un spinner · la casa usa esqueleto o nada', () => {
-    const { container } = render(<ChatThread turns={[turno({ streaming: true })]} />)
+    const { container } = render(<ChatThread turns={[turno({ streaming: true })]} {...conChrome} />)
     expect(container.querySelector('svg')).toBeNull()
     expect(container.innerHTML).not.toMatch(/animate-spin|spinner/i)
   })
@@ -159,7 +167,7 @@ describe('F3.5 · §7.1 · toda respuesta muestra su SQL', () => {
   })
 
   it('el SQL está, en un desplegable CERRADO · es auditabilidad, no lectura', () => {
-    const { container } = render(<ChatThread turns={[conSql]} />)
+    const { container } = render(<ChatThread turns={[conSql]} {...conChrome} />)
     const detalle = container.querySelector('details')
     expect(detalle).not.toBeNull()
     expect(detalle?.open).toBe(false)
@@ -168,7 +176,7 @@ describe('F3.5 · §7.1 · toda respuesta muestra su SQL', () => {
 
   it('el límite declarado va con el SQL · §7.1 lo pide junto', () => {
     // «Una respuesta sin límite declarado se lee como si abarcara todo.»
-    render(<ChatThread turns={[conSql]} />)
+    render(<ChatThread turns={[conSql]} {...conChrome} />)
     expect(screen.getByText(/No cubre tiendas sin feed/)).toBeInTheDocument()
   })
 })
@@ -183,6 +191,7 @@ describe('F3.5 · el corte dice si lo recibido sigue valiendo', () => {
             error: { mensaje: 'Se cortó la conexión.', parcial: true },
           }),
         ]}
+        {...conChrome}
       />,
     )
     expect(screen.getByText(/Las ventas/)).toBeInTheDocument()
@@ -193,17 +202,21 @@ describe('F3.5 · el corte dice si lo recibido sigue valiendo', () => {
     render(
       <ChatThread
         turns={[turno({ error: { mensaje: 'Se cortó.', parcial: false } })]}
+        {...conChrome}
       />,
     )
     expect(screen.getByText(/no se pudo conservar/)).toBeInTheDocument()
   })
 })
 
-describe('F3.6 está bloqueada, y la UI lo declara en vez de inventar', () => {
-  it('una cifra del agente se cuenta, no se dibuja con un cuerpo elegido a dedo', () => {
-    // `DatoDeRespuesta` trae `valor`, `familia` y su procedencia, pero NO
-    // declara con qué tipo de panel se dibuja, y varios tipos aceptan la misma
-    // forma. Elegir uno acá sería inventar una decisión del contrato.
+describe('F3.6 · las cifras del agente SE DIBUJAN desde el 2026-09-22', () => {
+  it('el hilo monta una figura por cada cifra · no las cuenta', async () => {
+    // **Estuvo bloqueada desde el 2026-09-03 y se declaraba cuántas traía la
+    // respuesta.** El cable no mandaba con qué familia ni con qué BASE
+    // pintarlas; `55e8419` agregó las dos y las otras cuatro.
+    //
+    // Lo que se dibuja con cada una vive en `figura.test.tsx`. Acá sólo se
+    // verifica que el hilo las monte en vez de contarlas.
     const dato = {
       tipo: 'dato',
       valor: { forma: 'escalar', v: 12 },
@@ -214,12 +227,22 @@ describe('F3.6 está bloqueada, y la UI lo declara en vez de inventar', () => {
       frescura: '2026-09-02T08:00:00Z',
       catalogVersion: 1,
     }
-    render(
+    const { container } = render(
       <ChatThread
         turns={[turno({ respuesta: { ...VACIA, datos: [dato] } as ChatTurn['respuesta'] })]}
+        {...conChrome}
+        bloques={blockTable([
+          {
+            tipo: 'kpi', formasAceptadas: ['escalar'],
+            colSpanMin: 2, colSpanMax: 6, rowSpanMin: 2, rowSpanMax: 4,
+            paramsDisponibles: [],
+          },
+        ] as never)}
       />,
     )
-    expect(screen.getByText(/una cifra que todavía no se dibuja/)).toBeInTheDocument()
+    expect(container.textContent).not.toMatch(/todavía no se dibuja/)
+    // La BASE va pegada a la cifra · la otra mitad del criterio.
+    expect(await screen.findByText(/48 tiendas/)).toBeInTheDocument()
   })
 })
 

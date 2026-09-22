@@ -852,13 +852,46 @@ components:
         data: {}
         provenance:
           type: object
-          required: [source, metric_key, period, sql_available]
+          description: |
+            **Creció el 2026-09-22 con `55e8419`**, que es lo que destrabó F3.6.
+            Antes traía sólo las cinco primeras y no alcanzaba: `EventoDato`
+            exige `familia` y los cinco campos de `Gobierno`.
+          required: [source, metric_key, period, sql_available, base, base_source, family, layer, source_system, catalog_version, freshness, queried_at]
           properties:
             source: { type: string, examples: ['cortex_agent'] }
             tool: { type: string }
             metric_key: { type: string }
             period: { type: string }
             sql_available: { type: boolean }
+
+            base:
+              type: string
+              description: El denominador y la ventana de la métrica.
+            base_source:
+              type: string
+              description: |
+                `catalog` cuando la BASE salió del catálogo, vacío si no hay
+                base. **Es la declaración de que la BASE es la de la MÉTRICA**,
+                no una calculada para esta cifra en particular.
+            family: { type: string, description: 'Con qué familia se pinta.' }
+            layer: { type: string, description: 'La capa Medallion.' }
+            source_system: { type: string }
+            catalog_version: { type: integer }
+            freshness:
+              type: string
+              description: |
+                RFC 3339 de la **última materialización de la métrica**. Cadena
+                vacía si nunca se materializó.
+            queried_at:
+              type: string
+              description: |
+                RFC 3339 del momento en que **el agente produjo esta cifra**.
+                Lo pone el servicio al recibir el `tool_result`, así que sólo
+                viene cuando el agente consultó de verdad.
+
+                **No es lo mismo que `freshness` y confundirlos es el bug**: una
+                describe cuándo se materializó el panel y la otra cuándo se
+                calculó este número.
 
     ChatFrameError:
       type: object

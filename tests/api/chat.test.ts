@@ -328,3 +328,86 @@ describe('cortes y errores', () => {
     expect(cancelado).toHaveBeenCalled()
   })
 })
+
+describe('§F3.6 · el evento `data` se traduce · desde `55e8419`', () => {
+  /** El frame como lo manda el servicio, con la procedencia completa. Copiado
+   *  de `ChatFrameData` en el cable transcripto. */
+  const conProvenance = (parche: Record<string, unknown> = {}) =>
+    trama('data', {
+      shape: 'scalar',
+      data: { shape: 'scalar', v: 4280000 },
+      provenance: {
+        source: 'cortex_agent',
+        tool: 'cortex_analyst',
+        metric_key: 'sales',
+        period: '2026-09',
+        sql_available: true,
+        base: '48 tiendas sobre 52',
+        base_source: 'catalog',
+        family: 'demand',
+        layer: 'GOLD',
+        source_system: 'Snowflake',
+        catalog_version: 4,
+        freshness: '2026-09-01T08:00:00Z',
+        queried_at: '2026-09-02T10:00:00Z',
+        ...parche,
+      },
+    })
+
+  it('llega como `dato` con su valor y su gobierno completo', async () => {
+    // Estuvo descartado un día entero: `EventoDato` exige `familia` más los
+    // cinco de `Gobierno` y el cable mandaba cinco campos que no incluían
+    // ninguno. `55e8419` los agregó todos.
+    responde([INFO, conProvenance(), DONE])
+
+    const [evento] = await recolectar(askSynapse(PREGUNTA))
+    expect(evento).toMatchObject({
+      tipo: 'dato',
+      valor: { forma: 'escalar', v: 4280000 },
+      familia: 'demanda',
+      base: '48 tiendas sobre 52',
+      capa: 'GOLD',
+      fuente: 'Snowflake',
+      catalogVersion: 4,
+    })
+  })
+
+  it('`frescura` sale de `queried_at`, NO de `freshness`', async () => {
+    // **Los dos vienen y significan cosas distintas.** `freshness` es cuándo se
+    // materializó la MÉTRICA; `queried_at`, cuándo el agente produjo ESTA
+    // cifra. Una cifra calculada al vuelo es tan fresca como su consulta.
+    responde([INFO, conProvenance(), DONE])
+
+    const [evento] = await recolectar(askSynapse(PREGUNTA))
+    expect(evento).toMatchObject({ frescura: '2026-09-02T10:00:00Z' })
+  })
+
+  it('sin `queried_at` cae a `freshness` · es lo único que queda', async () => {
+    // Pasa cuando el agente no consultó: el servicio sólo lo pone al recibir
+    // un `tool_result`.
+    responde([INFO, conProvenance({ queried_at: '' }), DONE])
+
+    const [evento] = await recolectar(askSynapse(PREGUNTA))
+    expect(evento).toMatchObject({ frescura: '2026-09-01T08:00:00Z' })
+  })
+
+  it('una FAMILIA que el contrato no declara se descarta · no cae a una', async () => {
+    // El color de una cifra del chat ya se inventó una vez —estaba cableado a
+    // `demanda`— y por eso `familia` entró al contrato el 2026-08-19.
+    responde([INFO, conProvenance({ family: 'inventada' }), DONE])
+
+    const eventos = await recolectar(askSynapse(PREGUNTA))
+    expect(eventos.map((e) => e.tipo)).toEqual(['fin'])
+  })
+
+  it('un valor que no se puede adaptar tampoco se pinta a medias', async () => {
+    responde([
+      INFO,
+      trama('data', { shape: 'raw', data: { sin: 'forma' }, provenance: {} }),
+      DONE,
+    ])
+
+    const eventos = await recolectar(askSynapse(PREGUNTA))
+    expect(eventos.map((e) => e.tipo)).toEqual(['fin'])
+  })
+})

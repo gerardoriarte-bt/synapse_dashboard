@@ -216,8 +216,9 @@ export const worker = setupWorker(
    *  de `api/types` volvería a esconder exactamente la frontera que dejó pasar
    *  que el chat no pintara una sola palabra.
    *
-   *  No manda `event: data`: el traductor lo descarta mientras F3.6 siga
-   *  bloqueada, y emitirlo daría la impresión contraria. */
+   *  **Manda `event: data` desde el 2026-09-22** · F3.6 se destrabó con
+   *  `55e8419`, que agregó la BASE, la familia, la capa, la fuente, la versión
+   *  del catálogo y las dos frescuras. */
   /** El historial de hilos · F3.7. **Con los DOS ids**, que es lo que hay que
    *  poder mirar: el uuid nombra la fila y el entero continúa la conversación.
    *  Uno de los tres va sin contexto de panel, como los hilos viejos. */
@@ -294,6 +295,24 @@ export const worker = setupWorker(
             await delay(220)
             controller.enqueue(encoder.encode(trama('delta', { text })))
           }
+          // La cifra, con su procedencia completa · F3.6.
+          controller.enqueue(
+            encoder.encode(
+              trama('data', {
+                shape: 'scalar',
+                data: { shape: 'scalar', v: 128400 },
+                provenance: {
+                  source: 'cortex_agent', tool: 'cortex_analyst',
+                  metric_key: 'ventas_dia', period: '2026-09', sql_available: true,
+                  base: '312 SKU críticos sobre 18.240 activos', base_source: 'catalog',
+                  family: 'demand', layer: 'GOLD', source_system: 'ERP',
+                  catalog_version: 4,
+                  freshness: '2026-09-21T08:00:00Z',
+                  queried_at: new Date().toISOString(),
+                },
+              }),
+            ),
+          )
           controller.enqueue(
             encoder.encode(
               trama('sql', {

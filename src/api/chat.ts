@@ -38,32 +38,31 @@
  *  `thinking` no tiene equivalente en el contrato: es el estado interno del
  *  agente, no parte de la respuesta.
  *
- *  `data` trae `{shape, data, provenance}`, y `EventoDato` exige `familia` más
- *  los cinco campos de `Gobierno`. **Tres de esos seis se podrían cruzar del
- *  catálogo por `metric_key` —`familia`, `capa`, `fuente` y `catalogVersion`—,
- *  y dos NO, y esos dos son los que sostienen la garantía:**
+ *  `data` **SE TRADUCE desde el 2026-09-22** · F3.6. Estuvo descartada un día,
+ *  porque `EventoDato` exige `familia` más los cinco campos de `Gobierno` y el
+ *  cable mandaba cinco campos que no incluían ninguno. Se pidió, y `55e8419`
+ *  los agregó todos: `base`, `family`, `layer`, `source_system`,
+ *  `catalog_version`, `freshness` y `queried_at`.
  *
- *   · **`base`.** El catálogo trae la BASE de la MÉTRICA. La cifra que compuso
- *     el agente puede tener otro denominador —si filtró a una tienda, «48
- *     tiendas sobre 52» es falso—. Copiarla sería declarar un denominador que
- *     nadie calculó, que es peor que no declarar ninguno.
- *   · **`frescura`.** La cifra del chat no se materializó: la calculó el agente
- *     al vuelo. El catálogo no tiene fecha que sirva.
- *
- *  Y cuando el agente compone una métrica que no está en el catálogo —caso que
- *  el contrato contempla con `metricId: null`— no hay ni fila contra la cual
- *  cruzar. **F3.6 está bloqueada por esto y no se razona por encima**: las
- *  tramas `data` se descartan. Medido el 2026-09-21 contra `82da946`.
+ *  **`frescura` sale de `queried_at`, no de `freshness`, y es una decisión.**
+ *  Los dos vienen y significan cosas distintas: `freshness` es cuándo se
+ *  materializó la MÉTRICA y `queried_at` cuándo el agente produjo ESTA cifra.
+ *  Una cifra que el agente calculó al vuelo es tan fresca como su consulta, no
+ *  como el último refresco del panel. Cuando el agente no consultó —no hay
+ *  `tool_result`— `queried_at` viene vacío y se cae a `freshness`, que es lo
+ *  único que queda.
  *
  *  `user_thread_id` de `thread_info` se pierde: el contrato tiene un solo campo
  *  de id en `EventoFin` y ahí va el que continúa la conversación. El uuid que
  *  pide `GET /config/chat/threads/{id}/messages` lo va a necesitar F3.7, y ese
  *  día el contrato necesita un campo donde viaje.
  */
+import { CAPAS, FAMILIAS, adaptValue } from './adapt'
 import type { components as wire } from './console-generated'
 import type { ChatEvent } from './types'
 
 type WireSchemas = wire['schemas']
+type WireChatFrameData = WireSchemas['ChatFrameData']
 
 const BASE = import.meta.env['VITE_API_URL'] ?? '/api/v1'
 
@@ -249,9 +248,38 @@ function traducir(
       return { tipo: 'fin', hiloId: hilo.id }
     }
 
-    // `thinking` y `data`: ver la cabecera. Un evento que el servicio agregue
-    // mañana cae acá también, y callarlo es correcto — el contrato declara seis
-    // tipos y `useChat` los agota.
+    case 'data': {
+      const d = datos as WireChatFrameData
+      const valor = adaptValue(d.data)
+      // **Un valor que no se puede adaptar NO se pinta a medias.** `adaptValue`
+      // devuelve la razón —«el valor no declara su forma»— y descartarlo es lo
+      // mismo que hace `adapt.ts` con un payload de panel que no cierra.
+      if (!valor.ok) return null
+
+      const p = d.provenance
+      const familia = FAMILIAS[p.family]
+      // **Sin familia no se dibuja**, y no se cae a una por defecto: el color de
+      // una cifra del chat ya se inventó una vez —estaba cableado a `demanda`—
+      // y por eso `familia` entró al contrato el 2026-08-19.
+      if (familia === undefined) return null
+
+      return {
+        tipo: 'dato',
+        valor: valor.valor,
+        familia,
+        base: p.base,
+        capa: CAPAS[p.layer] ?? 'GOLD',
+        fuente: p.source_system,
+        // Ver la cabecera: la cifra es tan fresca como la consulta que la
+        // produjo, no como el último refresco del panel.
+        frescura: p.queried_at === '' ? p.freshness : p.queried_at,
+        catalogVersion: p.catalog_version,
+      }
+    }
+
+    // `thinking`: es estado interno del agente, no parte de la respuesta. Un
+    // evento que el servicio agregue mañana cae acá también, y callarlo es
+    // correcto — el contrato declara seis tipos y `useChat` los agota.
     default:
       return null
   }

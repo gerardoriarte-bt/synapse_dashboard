@@ -270,8 +270,22 @@ def l5_surfaces(ruta, texto):
         monta = re.search(r"\bbodyFor\b|\b[A-Z]\w*Body\b", linea)
         if monta is None:
             continue
-        if "PanelShell" not in texto and "<Panel" not in texto:
-            yield n, "monta un cuerpo sin envolverlo en el shell"
+        # **O el shell, O la anatomía escrita a mano.** La regla protege que un
+        # cuerpo no pierda título, BASE y procedencia — no que se use un
+        # componente en particular.
+        #
+        # `ChatFigure` es el caso que obligó a distinguirlo, el 2026-09-22:
+        # dibuja la cifra del agente y **no puede reusar `Panel`**, porque
+        # `Metrica` exige `ventana` y `key` que `EventoDato` no trae. Componer
+        # una métrica falsa para satisfacer al shell sería inventar justo el
+        # campo cuya ausencia deja la línea de BASE con el separador colgando.
+        #
+        # Así que la condición es la intención: o el shell, o que el archivo
+        # nombre la BASE y monte `Provenance`. Un cuerpo suelto sigue marcado.
+        conShell = "PanelShell" in texto or "<Panel" in texto
+        conAnatomia = "dato.base" in texto or ("base" in texto and "<Provenance" in texto)
+        if not conShell and not conAnatomia:
+            yield n, "monta un cuerpo sin shell y sin escribir BASE y procedencia"
         return
 
 
