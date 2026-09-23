@@ -64,3 +64,39 @@ demuestra es que la ruta ya no falla contra columnas que no existen.
 
 **Y las credenciales del tenant van vacías a propósito**: una base local no debe
 poder pegarle a Snowflake por accidente.
+
+
+## Fijá `DATA_ENCRYPTION_KEY`, y que sea siempre la misma
+
+El servicio **cifra las credenciales de Snowflake al guardarlas** —los siete
+campos del tenant pasan por `atrest.EncryptString`—, y usa esta variable para
+hacerlo. **El valor con el que se escribe tiene que ser el mismo con el que se
+lee.** Si mañana levantás con otro, lo guardado no descifra y el error no va a
+decir eso: va a parecer una credencial mal cargada.
+
+En local alcanza con fijarla y no volver a tocarla:
+
+```
+DATA_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef
+```
+
+**No es un secreto real** —es una base descartable— pero anotarla acá evita
+perder media hora persiguiendo un fantasma.
+
+## Cargar el agente de Cortex · `dev/agente/cargar.sh`
+
+Cuando haya una clave privada para `SYNAPSE_SERVICE_USER`:
+
+```
+SYNAPSE_PEM=~/.synapse/synapse_service_user.pem ./dev/agente/cargar.sh
+```
+
+**La clave no entra al repositorio ni a un chat.** El script lee la RUTA de una
+variable y manda el contenido directo al servicio; no lo imprime ni lo deja en
+el historial del shell. `*.pem` y `*.key` están ignorados desde el 2026-09-14,
+pero conviene que el archivo viva **fuera** del repositorio igual.
+
+**Corré el servicio desde `a643cfe` o posterior.** Ese commit le puso `json:"-"`
+a `PrivateKeyPEM` y `PrivateKeyPassphrase`; antes de él
+`GET /admin/tenants/{id}/layouts` serializaba el `Tenant` embebido entero. El
+fork —`rebase-prueba`— cuelga de `82da946` y **no lo tiene**.
