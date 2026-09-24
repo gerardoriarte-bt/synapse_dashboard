@@ -250,7 +250,21 @@ prefieren la otra, se decide antes de que alguien la consuma.
 *Estado de la tarea: parcial.*
 
 
-**Una fila que NUNCA se materializó no puede servirse
+**El materializador no produce `presentation`, y al
+correr PISA la que había.** Antes de materializar, seis paneles `kpi` traían su
+`label`, su `medidor` y sus `comparativo` —de la semilla— y en pantalla se veían
+la barra de avance y el «VS MES ANTERIOR». Después de materializar, **ninguna de
+las 18 filas tiene `presentation`**: los KPI quedaron como una cifra sola.
+
+Es la segunda mitad de B1.13, y se dio por cerrada el 2026-09-14 **contra la
+semilla**. Es el mismo modo de falla que `semantic_direction` el mismo día, y
+que el catálogo: lo que la semilla traía, el camino real no lo trae.
+
+Sin esto un KPI pierde el medidor y los comparativos, que es lo que el `.pen`
+dibuja y lo que hace que una cifra se lea contra algo en vez de sola. · Bloquea
+**B2.12**.
+
+**Espera del backend.** **Una fila que NUNCA se materializó no puede servirse
 como `AVAILABLE`.** `sync-catalog` trae diez métricas de Snowflake y la semilla
 tiene doce, así que **dos quedan sin fuente** —`executive_summary` y
 `decisions`—. El materializador lo sabe: informa `preserved=2`. Pero esas dos

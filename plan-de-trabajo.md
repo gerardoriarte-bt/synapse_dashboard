@@ -1136,8 +1136,26 @@ que el camino completo se ejercita: vista → `sync-catalog` → `materialize` �
 fixture, y la gobernanza es la firmada por datos —«ROAS bruto: venta total del
 mes sobre inversión bruta del mismo mes. No es incremental»—.
 
+**Los doce períodos están materializados** y el selector navega entre ellos con
+dato real: `2026-09` da ventas 639.078 y `2026-08` da 918.978, ROAS 9,88x contra
+12,79x. Cada mes son `available=16 · blocked=2 · errors=0`.
+
 **Queda en ⚠️ porque faltan dos puntos**: sólo se vieron `AVAILABLE` y `BLOCKED`
 de los seis estados, y no se comprobó que las nueve formas aparezcan en pantalla.
+
+**Espera del backend.** **El materializador no produce `presentation`, y al
+correr PISA la que había.** Antes de materializar, seis paneles `kpi` traían su
+`label`, su `medidor` y sus `comparativo` —de la semilla— y en pantalla se veían
+la barra de avance y el «VS MES ANTERIOR». Después de materializar, **ninguna de
+las 18 filas tiene `presentation`**: los KPI quedaron como una cifra sola.
+
+Es la segunda mitad de B1.13, y se dio por cerrada el 2026-09-14 **contra la
+semilla**. Es el mismo modo de falla que `semantic_direction` el mismo día, y
+que el catálogo: lo que la semilla traía, el camino real no lo trae.
+
+Sin esto un KPI pierde el medidor y los comparativos, que es lo que el `.pen`
+dibuja y lo que hace que una cifra se lea contra algo en vez de sola. · Bloquea
+**B2.12**.
 
 **Espera del backend.** **Una fila que NUNCA se materializó no puede servirse
 como `AVAILABLE`.** `sync-catalog` trae diez métricas de Snowflake y la semilla
