@@ -60,6 +60,14 @@ apliquen ustedes.
 cuentas antiguas de AWS us-west-2; cualquier cuenta en Azure, GCP o en otra
 región de AWS falla igual.
 
+**Y no afecta sólo al chat.** `SnowflakeConfigFromTenantAgent` lo consumen
+también `dd_catalog_sync_service` y `dd_drilldown_service`, así que **el sync del
+catálogo falla por lo mismo** — puede ser la razón por la que nunca vimos las
+métricas de Snowflake llegar. Además `snowflake_jwt.go` usa `cfg.BaseURL()` como
+claim **`aud`** del JWT, o sea que el host equivocado también firma una audiencia
+equivocada. La línea de arriba arregla las dos cosas porque las dos pasan por
+`BaseURL()`.
+
 ## 2 · `GET /api/v1/agents/ping` dice «ping snowflake ok» sin llamar a Snowflake
 
 Fui a buscar ese endpoint justamente para verificar lo de arriba, y por el
@@ -80,6 +88,51 @@ No es urgente, pero mientras exista así conviene saber que **un `ok` de acá no
 significa que la conexión funcione**. Si les sirve, el ping que a nosotros nos
 resolvería el problema es uno que firme el JWT y haga una llamada barata contra
 la cuenta: con eso, configurar un tenant nuevo deja de ser a ciegas.
+
+## 3 · Al cliente de Cortex le falta la cabecera de JWT por par de claves
+
+Menor, y **la reporto con una salvedad honesta: no es lo que nos está fallando
+hoy**, así que no puedo afirmar que arreglarla cambie algo.
+
+`snowflake_sql_client.go` manda, en sus dos peticiones:
+
+```go
+req.Header.Set("X-Snowflake-Authorization-Token-Type", "KEYPAIR_JWT")
+```
+
+`cortex_client.go` **no la manda en ninguna de sus cuatro**. Sin ella, Snowflake
+interpreta el `Bearer` como un token OAuth y no como un JWT de par de claves.
+
+La agregué en una copia local y el error no cambió —seguimos frenados por el
+punto 4—, así que puede ser inocua o puede aparecer en cuanto pasemos ese
+bloqueo. La dejo dicha porque **los dos clientes del mismo repositorio hacen
+cosas distintas con la misma autenticación**, y esa diferencia no parece
+deliberada.
+
+## 4 · El cuerpo del error se lee y se descarta · nos costó dos horas
+
+En `CreateThread`, la respuesta se lee entera en `respBody` y el error devuelve
+sólo el código:
+
+```go
+respBody, _ := io.ReadAll(resp.Body)
+if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+    return 0, fmt.Errorf("crear thread: status inesperado %d", resp.StatusCode)
+}
+```
+
+Con eso, un `401` es indistinguible de otro `401`. Agregué `%s` con el cuerpo en
+una copia local y apareció al instante lo que en realidad pasaba:
+
+```
+390422 · Incoming request with IP/Token 201.244.209.190 is not allowed
+         to access Snowflake. Contact your account administrator.
+```
+
+Es una **política de red del usuario de servicio**, no un problema de
+credenciales. Sin el cuerpo estuvimos persiguiendo la clave.
+
+**El cuerpo ya está leído en la variable**; incluirlo es agregar `: %s`.
 
 ---
 

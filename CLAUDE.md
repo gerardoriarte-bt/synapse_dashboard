@@ -597,6 +597,31 @@ pie; lo que cambió es contra qué base se corre.
 en `ERROR`— y de nuevo el 22 contra el local, con `npm run humo` pasando las
 cinco rutas de consola y las de admin campo por campo.
 
+**PERO EL DATO NO ES DEL NEGOCIO, Y ESO NO SE HABÍA DICHO** · medido el
+2026-09-24. Los doce paneles pintan **la maqueta del `.pen` sembrada en
+Postgres**, no datos de Snowflake:
+
+| Medición | |
+|---|---|
+| Corridas de materialización | **cero** · `/admin/materialize/runs` devuelve `[]` |
+| Scheduler | apagado · `DD_MATERIALIZE_ENABLED != true` |
+| Filas de `dd_panel_data` con `last_success_at` | **0 de 72** · ninguna consulta a Snowflake tuvo éxito nunca |
+| Claves del catálogo | las 12 de la semilla, no las 10 de `SYNAPSE_METRIC_CATALOG` |
+
+Y el remate: las cifras de la base —Meta 412000, Google Shopping 318000, Criteo
+148000…— **son exactamente las que el `.pen` dibuja**, comprobado al cerrar
+F1.44 usando el dibujo para resolver el orden de la tabla.
+
+**Lo que está verificado es la CADENA, no el dato**: layout, catálogo, doce
+paneles, siete formas de valor, estados, presentación, adaptador y cable. Es la
+diferencia entre «el motor anda» y «el motor anda con combustible del cliente».
+
+Para que el dato sea real faltan dos cosas, y ninguna es la clave RSA: correr
+`make sync-catalog` (B1.18) y encender la materialización. **Y las dos chocan
+con el mismo defecto del backend**: `SnowflakeConfigFromTenantAgent` no asigna
+`OverrideBaseURL`, así que `BaseURL()` arma el host sin región y el sync del
+catálogo falla igual que el chat · `docs/MENSAJE-2026-09-24-backend-region-y-ping.md`.
+
 **Es UN servicio, no dos.** `/auth/*`, `/config/*` y `/admin/*` cuelgan del mismo
 `/api/v1` del mismo binario, y el proxy de Vite manda `/api/v1` entero a `:4010`.
 
