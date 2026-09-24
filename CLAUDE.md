@@ -489,7 +489,28 @@ retipea. Las abiertas están juntas en
 el fork, y sus campos se ven como avance de ellos. La medición sólo cuenta
 contra upstream limpio — el corte está en `docs/ESTADO-backend-2026-09-22.md`.
 
-**LO QUE FRENA EL CHAT YA NO SON LAS MIGRACIONES · corregido el 2026-09-22.**
+**EL CHAT FUNCIONA · 2026-09-24.** Contra Cortex de verdad, desde la consola:
+el agente `SYNAPSE_UA` contesta, el markdown se pinta, el riel guarda el hilo y
+la respuesta cita el panel de origen. Datos habilitó la IP y registró la clave;
+backend corrigió el host en `61d16da` —con validación, mejor que el parche que
+habíamos probado— y de paso el ping real y el cuerpo de los errores de Cortex.
+
+**Y al abrirlo apareció que el chat NUNCA había autenticado.** `askSynapse` usa
+`fetch` crudo —lo único que deja leer el cuerpo como stream— y al escribirlo
+aparte de `client.ts` se copiaron las dos cabeceras del SSE y **no la
+`Authorization`**. El servicio contestaba **401 en 170 µs** —el middleware, no
+Snowflake— y el mensaje lo atribuía al agente. **MSW no podía verlo**: sus
+handlers no exigen el token, así que responden igual con credencial y sin ella.
+Es la familia de F1.38 con otra cara, y **lo encontró abrir la aplicación**, no
+la puerta.
+
+**Lo que el chat todavía NO hace es dibujar la cifra.** Ver §7 de
+`docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md`: el agente contesta con la
+forma que la pregunta necesita —`tabular`, `raw`— y F3.6 dibuja con el cuerpo del
+panel de origen, que casi nunca la acepta. La rama de excepción resultó ser el
+caso común.
+
+**LO QUE FRENABA EL CHAT YA NO SON LAS MIGRACIONES · corregido el 2026-09-22.**
 Hasta acá decía que lo único que frenaba era B3.11. **Venció**: la base local de
 `dev/postgres` las corre con `DB_AUTO_MIGRATE=true`, y con las tablas creadas
 `POST /config/chat` deja de dar 500 y devuelve **409 · «no hay agente activo

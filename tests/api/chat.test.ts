@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 /** El cliente SSE y su traducción · F3.4 y la integración de 2026-09-21
  *
  *  **Estas pruebas hablan el CABLE, no nuestro dialecto, y esa es la
@@ -19,6 +21,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ChatStreamError, askSynapse } from '@/api/chat'
+import { saveToken, signOut } from '@/app/auth/session'
 import type { ChatEvent } from '@/api/types'
 
 /** Un cuerpo de respuesta que emite exactamente estos trozos, en este orden.
@@ -409,5 +412,60 @@ describe('§F3.6 · el evento `data` se traduce · desde `55e8419`', () => {
 
     const eventos = await recolectar(askSynapse(PREGUNTA))
     expect(eventos.map((e) => e.tipo)).toEqual(['fin'])
+  })
+})
+
+describe('la petición lleva credencial · el defecto del 2026-09-24', () => {
+  /** **El chat nunca autenticó, ni una vez.** `askSynapse` usa `fetch` crudo
+   *  —es lo único que deja leer el cuerpo como stream— y al escribirlo aparte
+   *  de `client.ts` se copiaron las dos cabeceras que el SSE necesita y no la
+   *  que la ruta exige. El servicio contestaba **401 en 170 microsegundos**, o
+   *  sea el middleware y no Snowflake, y el mensaje lo atribuía al agente.
+   *
+   *  **Ninguna de las 23 pruebas de este archivo lo vio**, porque todas miran
+   *  la RESPUESTA. Ésta mira lo que se MANDA, que es donde estaba el hueco — y
+   *  es lo mismo que MSW no podía ver: un handler que no exige el token
+   *  responde igual con credencial y sin ella. */
+  it('manda `Authorization: Bearer` con el token de la sesión', async () => {
+    saveToken('un-token-de-prueba')
+    responde([trama('done', {})])
+
+    await recolectar(askSynapse(PREGUNTA))
+
+    const [, init] = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      RequestInit,
+    ]
+    expect((init.headers as Record<string, string>).Authorization).toBe(
+      'Bearer un-token-de-prueba',
+    )
+  })
+
+  it('sin sesión NO manda una cabecera vacía · se omite', async () => {
+    // `Authorization: Bearer null` sería peor que no mandarla: el servicio
+    // devolvería el mismo 401 y el log diría que llegó una credencial.
+    signOut()
+    responde([trama('done', {})])
+
+    await recolectar(askSynapse(PREGUNTA))
+
+    const [, init] = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      RequestInit,
+    ]
+    expect((init.headers as Record<string, string>).Authorization).toBeUndefined()
+  })
+
+  it('y las dos que el SSE necesita siguen ahí', async () => {
+    saveToken('t')
+    responde([trama('done', {})])
+    await recolectar(askSynapse(PREGUNTA))
+    const [, init] = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      RequestInit,
+    ]
+    const h = init.headers as Record<string, string>
+    expect(h.accept).toBe('text/event-stream')
+    expect(h['content-type']).toBe('application/json')
   })
 })

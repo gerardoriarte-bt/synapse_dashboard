@@ -60,6 +60,7 @@
 import { CAPAS, FAMILIAS, adaptValue } from './adapt'
 import type { components as wire } from './console-generated'
 import type { ChatEvent } from './types'
+import { currentToken } from '../app/auth/session'
 
 type WireSchemas = wire['schemas']
 type WireChatFrameData = WireSchemas['ChatFrameData']
@@ -106,9 +107,29 @@ export async function* askSynapse(
   body: ChatRequest,
   signal?: AbortSignal,
 ): AsyncGenerator<ChatEvent> {
+  // **El token va acá a mano, y por eso se olvidó** · corregido el 2026-09-24.
+  //
+  // El resto de las llamadas pasan por `client.ts`, que lo agrega solo. El chat
+  // NO puede usar ese camino: `fetch` crudo es lo único que deja leer el cuerpo
+  // como stream, y al escribirlo aparte se copiaron las dos cabeceras que el
+  // SSE necesita y no la que la ruta exige.
+  //
+  // **El servicio contestaba 401 en 170 microsegundos** —el middleware, no
+  // Snowflake— y el mensaje de abajo lo atribuía al agente: «El agente no pudo
+  // abrir la conversación». El chat nunca autenticó, ni una vez.
+  //
+  // **MSW no podía verlo**: los handlers no verifican el token, así que una
+  // petición sin credencial les responde igual que una con. Es la familia de
+  // F1.38 —un mock que habla tu idioma no prueba la frontera— con otra cara: un
+  // mock que no exige lo que el servicio exige tampoco la prueba.
+  const token = currentToken()
   const res = await fetch(`${BASE}/config/chat`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', accept: 'text/event-stream' },
+    headers: {
+      'content-type': 'application/json',
+      accept: 'text/event-stream',
+      ...(token === null ? {} : { Authorization: `Bearer ${token}` }),
+    },
     body: JSON.stringify(alCable(body)),
     ...(signal === undefined ? {} : { signal }),
   })
