@@ -142,9 +142,14 @@ describe('el selector de período respeta el granoMinimo · F1.7', () => {
 
     // Ofrecer un período que la métrica no puede contestar es el mismo problema
     // que un panel sin BASE: promete algo que no puede cumplir.
-    await waitFor(() => expect(screen.getByRole('button', { name: '2026-W32' })).toBeDisabled())
-    expect(screen.getByRole('button', { name: '2026-07' })).toBeEnabled()
-    expect(screen.getByText(/No aplica · alguna métrica se mide por mes/)).toBeInTheDocument()
+    //
+    // Desde el 2026-09-24 el desplegable agrupa por grano y apaga el GRUPO, que
+    // es lo que deja apagar los doce períodos de un grano con una sola marca.
+    // Lo que se verifica sigue siendo lo mismo: no se ofrece, y se dice por qué.
+    await waitFor(() => expect(screen.getByRole('group', { name: /semanas/i })).toBeDisabled())
+    expect(screen.getByRole('group', { name: /^meses$/i })).toBeEnabled()
+    expect(screen.getByRole('option', { name: '2026-07' })).toBeInTheDocument()
+    expect(screen.getByText(/Algún grano no aplica · alguna métrica se mide por mes/)).toBeVisible()
   })
 })
 

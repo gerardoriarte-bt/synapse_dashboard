@@ -13,6 +13,7 @@
  *  deshabilitarlo —que el criterio prohíbe: mirar el mes en curso es legítimo—.
  */
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { PeriodPicker } from '@/surfaces/console/PeriodPicker'
 import { adaptContext } from '@/api/adapt'
@@ -37,9 +38,9 @@ describe('se marca el que el CABLE declara, no el primero', () => {
   it('el período en curso lleva la palabra y los cerrados no', () => {
     montar([periodo('2026-09', true), periodo('2026-08', false), periodo('2026-07', false)])
 
-    expect(screen.getByRole('button', { name: /2026-09 · en curso/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '2026-08' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '2026-07' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /2026-09 · en curso/i })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '2026-08' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '2026-07' })).toBeInTheDocument()
   })
 
   it('si el abierto NO es el primero, se marca el abierto', () => {
@@ -48,8 +49,8 @@ describe('se marca el que el CABLE declara, no el primero', () => {
     // adivinar en vez de leer lo que el cable declaró.
     montar([periodo('2026-09', false), periodo('2026-08', true)], '2026-08')
 
-    expect(screen.getByRole('button', { name: /2026-08 · en curso/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '2026-09' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /2026-08 · en curso/i })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '2026-09' })).toBeInTheDocument()
   })
 })
 
@@ -93,11 +94,11 @@ describe('sin el campo, no se afirma nada de ninguno', () => {
 })
 
 describe('se marca, NO se deshabilita', () => {
-  it('el chip en curso se puede apretar · mirarlo es legítimo', () => {
-    // El criterio lo dice con todas las letras. Deshabilitarlo convertiría una
+  it('la opción en curso se puede elegir · mirarlo es legítimo', () => {
+    // El criterio lo dice con todas las letras. Deshabilitarla convertiría una
     // advertencia en una prohibición, que es otra cosa.
     montar([periodo('2026-09', true)])
-    expect(screen.getByRole('button', { name: /en curso/i })).toBeEnabled()
+    expect(screen.getByRole('option', { name: /en curso/i })).toBeEnabled()
   })
 
   it('con el período en curso ELEGIDO, se declara por qué importa', () => {
@@ -110,5 +111,34 @@ describe('se marca, NO se deshabilita', () => {
     // decoración, que es como se deja de leer una advertencia.
     const { container } = montar([periodo('2026-09', true), periodo('2026-08', false)], '2026-08')
     expect(container.textContent).not.toMatch(/incompleto, no compara/i)
+  })
+})
+
+describe('el desplegable · 2026-09-24', () => {
+  /** El riel de doce chips era **invención nuestra**: §PEN:C1 dibuja el
+   *  `Rango` de sólo lectura —`PERÍODO` arriba, el valor debajo— y ningún
+   *  control. Se notó cuando el dato se volvió real y los doce chips
+   *  apretaron la cabecera. El desplegable conserva esa anatomía y suma lo
+   *  que el dibujo no resuelve: cómo se cambia. */
+  it('elegir un período DISPARA el callback · no alcanza con que la opción exista', async () => {
+    const elegir = vi.fn()
+    render(
+      <PeriodPicker
+        periods={[periodo('2026-09', true), periodo('2026-08', false)]}
+        activeId="2026-09"
+        metrics={[]}
+        onSelect={elegir}
+      />,
+    )
+
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Período' }), '2026-08')
+    expect(elegir).toHaveBeenCalledWith('2026-08')
+  })
+
+  it('los períodos se agrupan por grano, y el grupo lleva su rótulo', () => {
+    montar([periodo('2026-09', false), periodo('2026-08', false)])
+    // `optgroup` es lo que agrupa; sin él los doce salen en una lista plana y
+    // se pierde de qué grano es cada uno.
+    expect(screen.getByRole('group', { name: /meses/i })).toBeInTheDocument()
   })
 })

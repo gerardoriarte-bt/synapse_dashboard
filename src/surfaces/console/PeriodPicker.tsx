@@ -1,4 +1,4 @@
-/** El selector de período · F1.7
+/** El selector de período · F1.7 · §PEN:C1
  *
  *  **Agrupa por `grano` y deshabilita lo que la pestaña no puede contestar.**
  *  Verificado contra Snowflake: las métricas de marca son mensuales
@@ -9,6 +9,31 @@
  *  que no aplica, con la razón visible.** Ofrecer un período que la métrica no
  *  puede contestar es el mismo problema que un panel sin BASE: promete algo que
  *  no puede cumplir.
+ *
+ *  ── POR QUÉ UN DESPLEGABLE Y NO UN RIEL · 2026-09-24 ────────────────────────
+ *
+ *  Hasta hoy eran doce chips en fila. **Y el riel era invención nuestra**: el
+ *  frame de §PEN:C1 tiene un `Header` con `Titles` a la izquierda y un `Rango` a
+ *  la derecha —`PERÍODO` arriba y `1 – 31 JUL 2026 · MTD CERRADO` debajo—, **de
+ *  sólo lectura**. No dibuja ningún control: el único «CAMBIAR PERÍODO» del
+ *  archivo es el CTA de un estado vacío.
+ *
+ *  El riel se notó cuando el dato se volvió real. Doce chips aprietan la
+ *  cabecera, y con el mes en curso marcado —F1.42— uno de ellos creció y el
+ *  problema se vio.
+ *
+ *  **El desplegable conserva la anatomía del dibujo** —el rótulo arriba, el
+ *  valor debajo— y suma lo que el dibujo no resuelve: cómo se cambia. Es
+ *  decisión de producto del 2026-09-24, y queda anotada acá porque el `.pen` no
+ *  la declara.
+ *
+ *  ── POR QUÉ `select` NATIVO ────────────────────────────────────────────────
+ *
+ *  Porque los tres comportamientos que hay que sostener ya vienen puestos:
+ *  `optgroup` agrupa por grano, `disabled` sobre el grupo apaga el grano entero,
+ *  y el teclado —abrir, recorrer, elegir, Escape— funciona sin una línea. Un
+ *  menú a mano sería más control sobre el aspecto y una trampa de accesibilidad
+ *  que hay que mantener.
  */
 import { Label } from '../../render/primitives/Label'
 import { GRAINS, GRAIN_LABEL, coarsestRequired, grainOf } from './periodGrain'
@@ -35,59 +60,59 @@ export function PeriodPicker({ periods, activeId, metrics, onSelect }: Props) {
 
   if (byGrain.length === 0) return null
 
+  const activo = periods.find((p) => p.id === activeId)
+  const hayApagados = byGrain.some((g) => !g.usable)
+
   return (
-    <div className="flex items-start gap-4">
-      {byGrain.map(({ grain, usable, items }) => (
-        <div key={grain} className="flex flex-col gap-1">
-          <Label>{GRAIN_LABEL[grain]}</Label>
-          <div className="flex items-center gap-1">
-            {items.map((p) => {
-              const active = p.id === activeId
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  disabled={!usable}
-                  onClick={() => onSelect(p.id)}
-                  aria-current={active ? 'true' : undefined}
-                  title={
-                    !usable
-                      ? `Esta pestaña no se puede leer por ${GRAIN_LABEL[grain].toLowerCase()}: alguna de sus métricas se mide por ${required}`
-                      : p.enCurso === true
-                        ? `${p.rango ?? p.etiqueta} · todavía no terminó, así que compararlo con un período cerrado lee de menos`
-                        : (p.rango ?? p.etiqueta)
-                  }
-                  className={[
-                    'font-mono text-label tracking-rotulo uppercase rounded-md px-2 py-1',
-                    'bg-transparent border-0',
-                    usable ? 'cursor-pointer' : 'cursor-not-allowed opacity-40',
-                    active ? 'text-acc' : 'text-dim hover:text-ink',
-                  ].join(' ')}
-                >
-                  {/* **Se marca, no se deshabilita** · F1.42. Mirar el mes en
-                      curso es legítimo; lo que no lo es es que se vea igual que
-                      uno cerrado. El `.pen` lo dice con una palabra al lado del
-                      rango —«1 – 31 JUL 2026 · MTD CERRADO»— y no con un color:
-                      un chip teñido diría «atención» sin decir de qué. */}
-                  {p.enCurso === true ? `${p.etiqueta} · en curso` : p.etiqueta}
-                </button>
-              )
-            })}
-          </div>
-          {/* La razón, abajo y una sola vez · el mismo lugar donde ya se
-              declara por qué un grano no aplica. Va cuando el período en curso
-              está ELEGIDO, que es cuando la lectura puede salir falsa. */}
-          {usable && items.some((p) => p.enCurso === true && p.id === activeId) && (
-            <Label>Período en curso · incompleto, no compara contra uno cerrado</Label>
-          )}
-          {!usable && (
-            // §8: se declara la razón. Un control deshabilitado sin explicación
-            // es peor que uno ausente — el usuario no sabe si es un permiso, un
-            // error o una limitación del dato.
-            <Label>{`No aplica · alguna métrica se mide por ${required}`}</Label>
-          )}
-        </div>
-      ))}
+    <div className="flex flex-col items-end gap-1">
+      <Label as="div">Período</Label>
+
+      <select
+        value={activeId ?? ''}
+        onChange={(e) => onSelect(e.target.value)}
+        aria-label="Período"
+        className={
+          'font-mono text-label leading-rotulo tracking-rotulo uppercase text-ink ' +
+          'bg-transparent border border-w3 rounded-md px-2 py-1 cursor-pointer hover:border-w4'
+        }
+      >
+        {byGrain.map(({ grain, usable, items }) => (
+          <optgroup
+            key={grain}
+            label={
+              usable
+                ? GRAIN_LABEL[grain]
+                : // §8: la razón va en el propio grupo apagado. Un control
+                  // deshabilitado sin explicación es peor que uno ausente — no
+                  // se sabe si es un permiso, un error o el dato.
+                  `${GRAIN_LABEL[grain]} · no aplica, alguna métrica se mide por ${required}`
+            }
+            disabled={!usable}
+          >
+            {items.map((p) => (
+              <option key={p.id} value={p.id}>
+                {/* El mes en curso se marca acá también · F1.42. Elegirlo es
+                    legítimo; verlo igual que uno cerrado, no. */}
+                {p.enCurso === true ? `${p.etiqueta} · en curso` : p.etiqueta}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+
+      {/* El rango, debajo del control, que es donde el dibujo lo pone. Sale del
+          período y no se compone acá: sin `rango` no se inventa uno. */}
+      {activo?.rango !== undefined && <Label as="div">{activo.rango}</Label>}
+
+      {activo?.enCurso === true && (
+        <Label as="div">Período en curso · incompleto, no compara contra uno cerrado</Label>
+      )}
+
+      {hayApagados && (
+        // La razón también afuera: dentro del desplegable sólo se ve al
+        // abrirlo, y quien no lo abre no se entera de que hay granos apagados.
+        <Label as="div">{`Algún grano no aplica · alguna métrica se mide por ${required}`}</Label>
+      )}
     </div>
   )
 }

@@ -359,7 +359,12 @@ describe('§7 · cambiar de período NO vuelve a pedir el layout', () => {
     await screen.findByText('USD 4.28M')
     expect(layouts).toHaveLength(1)
 
-    await userEvent.click(screen.getByRole('button', { name: '2026-06' }))
+    // Desde el 2026-09-24 el selector es un desplegable, no un riel de chips.
+    // Lo que la prueba sostiene no cambia: cambiar de período es un `onSelect`.
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: 'Período' }),
+      '2026-06',
+    )
 
     // El batch SÍ se vuelve a pedir —los datos dependen del período— y el
     // layout NO: la composición de la pestaña es la misma en junio y en julio.
