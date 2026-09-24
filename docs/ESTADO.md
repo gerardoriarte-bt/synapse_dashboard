@@ -5,7 +5,7 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**110 de 208 tareas cerradas.** 19 parciales · 74 pendientes · 5 diferidas.
+**110 de 208 tareas cerradas.** 20 parciales · 73 pendientes · 5 diferidas.
 
 
 ## Front · 103 de 124
@@ -37,7 +37,7 @@
 |---|---|---|---|---|
 | 0 · Fundamentos | `██····················` | 1/10 | 1 | 8 |
 | 1 · API de consola | `████··················` | 5/27 | 7 | 15 |
-| 2 · Materialización | `██····················` | 1/13 | 0 | 12 |
+| 2 · Materialización | `██····················` | 1/13 | 1 | 11 |
 | 3 · Chat contextual | `······················` | 0/11 | 0 | 11 |
 | 4 · Admin y Builder | `······················` | 0/16 | 5 | 11 |
 | 5 · Multi-dashboard y pulido | `······················` | 0/7 | 0 | 6 |
@@ -50,7 +50,7 @@
 
 ---
 
-## Bloqueadas · 40
+## Bloqueadas · 41
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -91,6 +91,7 @@ Lo que el front espera del backend está detallado en
 - **B1.25** · ventana de punta a punta · de la vista al payload
 - **B1.27** · El período declara si está cerrado
 - **B1.6** · POST /config/panels:batch
+- **B2.12** · Correr el materializador contra datos reales y verificar los seis estados
 - **B2.13** · Salud de feeds por fuente · de acá sale el ESTADO de cada métrica
 - **B2.7** · Estado SIN_PERMISO en el batch
 - **B3.1** · POST /config/chat con SSE

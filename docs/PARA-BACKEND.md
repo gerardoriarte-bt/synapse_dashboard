@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 25 pedido(s)
+## Lo que esperamos · 26 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -243,6 +243,30 @@ diez de Snowflake. Pasa de «no verificado» a **medido y ausente**.
 —`2fafe82`—; `82da946` devuelve `periods` como doce cadenas sueltas y nada más. La forma que
 propusimos en el fork es un campo al lado de `periods`, no uno dentro de cada `Periodo`: si
 prefieren la otra, se decide antes de que alguien la consuma.
+
+
+### B2.12 · Correr el materializador contra datos reales y verificar los seis estados
+
+*Estado de la tarea: parcial.*
+
+
+**Una fila que NUNCA se materializó no puede servirse
+como `AVAILABLE`.** `sync-catalog` trae diez métricas de Snowflake y la semilla
+tiene doce, así que **dos quedan sin fuente** —`executive_summary` y
+`decisions`—. El materializador lo sabe: informa `preserved=2`. Pero esas dos
+filas siguen saliendo `AVAILABLE` con el valor viejo, y el resultado es que **la
+consola se contradice a sí misma**: el panel de prosa dice «Sales closed the
+month at USD 4.28M» al lado de un KPI que dice 639.078.
+
+`isDegraded` mide **antigüedad** —«older than 3 days», verificado en B2.5— y
+estas dos tienen cuatro horas, así que pasan el umbral. La señal que las separa
+no es la edad sino que **`last_success_at` es nulo**: nunca hubo una
+materialización exitosa. «Vieja» y «nunca» son dos estados distintos.
+
+Alcanza con que `preserved` —o `last_success_at IS NULL`— también degrade, con
+su razón. El front ya pinta `DEGRADED` con su badge, su razón y su
+`desbloqueaCon`: está cubierto por las pruebas de F2.1 y no hace falta nada de
+nuestro lado. · Bloquea **B2.12**.
 
 
 ### B2.13 · Salud de feeds por fuente · de acá sale el ESTADO de cada métrica

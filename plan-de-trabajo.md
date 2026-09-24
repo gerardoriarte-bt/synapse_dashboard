@@ -1097,7 +1097,7 @@ degradado con `razon` y `desbloqueaCon`.
 - Un rol sin permiso sobre una métrica no recibe su payload aunque conozca el
   `panelId`.
 
-#### ➕ B2.12 ⬜ Correr el materializador contra datos reales y verificar los seis estados
+#### ➕ B2.12 ⚠️ Correr el materializador contra datos reales y verificar los seis estados
 **Descripción.** Con el catálogo ya en Snowflake (B1.22–B1.24), correr
 `make materialize TENANT_ID=<uuid> PERIOD=<YYYY-MM>` y comprobar que la consola
 pinta datos del negocio y no los del fixture del seed.
@@ -1121,6 +1121,42 @@ Es la primera vez que el camino completo se ejercita de punta a punta: vista →
   razón: no es un panel roto, es una forma que el backend no materializa.
 - Queda registrado contra qué commit del backend y con qué período se verificó.
   Un «funcionó» sin eso no se puede repetir.
+
+**Corrido el 2026-09-24, y la consola muestra datos del negocio.** Primera vez
+que el camino completo se ejercita: vista → `sync-catalog` → `materialize` →
+`panels:batch` → panel.
+
+| | |
+|---|---|
+| `make sync-catalog` | `created=6 updated=4 · catalog_version=2` desde `SYNAPSE_METRIC_CATALOG` |
+| `make materialize` | `available=16 · blocked=2 · errors=0 · preserved=2` |
+| En pantalla | ventas **639.078** donde el fixture decía 4.28M · inversión 64.708 · ROAS 9,88x · visitas 2.280.855 |
+
+**El primer punto del criterio se cumple**: los valores son distintos a los del
+fixture, y la gobernanza es la firmada por datos —«ROAS bruto: venta total del
+mes sobre inversión bruta del mismo mes. No es incremental»—.
+
+**Queda en ⚠️ porque faltan dos puntos**: sólo se vieron `AVAILABLE` y `BLOCKED`
+de los seis estados, y no se comprobó que las nueve formas aparezcan en pantalla.
+
+**Espera del backend.** **Una fila que NUNCA se materializó no puede servirse
+como `AVAILABLE`.** `sync-catalog` trae diez métricas de Snowflake y la semilla
+tiene doce, así que **dos quedan sin fuente** —`executive_summary` y
+`decisions`—. El materializador lo sabe: informa `preserved=2`. Pero esas dos
+filas siguen saliendo `AVAILABLE` con el valor viejo, y el resultado es que **la
+consola se contradice a sí misma**: el panel de prosa dice «Sales closed the
+month at USD 4.28M» al lado de un KPI que dice 639.078.
+
+`isDegraded` mide **antigüedad** —«older than 3 days», verificado en B2.5— y
+estas dos tienen cuatro horas, así que pasan el umbral. La señal que las separa
+no es la edad sino que **`last_success_at` es nulo**: nunca hubo una
+materialización exitosa. «Vieja» y «nunca» son dos estados distintos.
+
+Alcanza con que `preserved` —o `last_success_at IS NULL`— también degrade, con
+su razón. El front ya pinta `DEGRADED` con su badge, su razón y su
+`desbloqueaCon`: está cubierto por las pruebas de F2.1 y no hace falta nada de
+nuestro lado. · Bloquea **B2.12**.
+
 
 #### ➕ B2.13 ⬜ Salud de feeds por fuente · de acá sale el ESTADO de cada métrica
 **Espera del backend.** **Una ruta que liste, por fuente del tenant: última carga, frescura, cadencia y tolerancia.** Más, si existen, filas procesadas y filas que fallaron la validación Silver→Gold.

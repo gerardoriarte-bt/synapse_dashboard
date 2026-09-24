@@ -151,7 +151,7 @@ B2.12,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización 
 • Si llegan todos en BLOCKED, es B1.24 —las claves no caen en el registro— y no un problema de datos. Queda escrito, porque el síntoma no lo dice.
 • Los seis estados se verifican contra el servicio real y no contra MSW: DEGRADED envejeciendo materialized_at en la base, BLOCKED pidiendo un período sin materializar, FORBIDDEN con el rol planner, ERROR con un gauge sin maximum.
 • Las nueve formas que el transformador produce se ven en pantalla al menos una vez. Las siete que no produce quedan anotadas como no alcanzables, con la razón: no es un panel roto, es una forma que el backend no materializa.
-• Queda registrado contra qué commit del backend y con qué período se verificó. Un «funcionó» sin eso no se puede repetir.",pendiente,si,,equipo:backend fase:2 estado:pendiente nueva
+• Queda registrado contra qué commit del backend y con qué período se verificó. Un «funcionó» sin eso no se puede repetir.",parcial,si,,equipo:backend fase:2 estado:parcial nueva bloqueada
 B2.13,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y cache,Salud de feeds por fuente · de acá sale el ESTADO de cada métrica,"Exponer la salud de las fuentes de datos del tenant, que hoy no sale por ninguna ruta.","• Por fuente: identificador legible, última carga, frescura, cadencia y tolerancia. Sin vocabulario de infraestructura · §7.3.
 • La frescura es el instante de materialización, nunca «ahora» · misma regla que B2.10.
 • El front deriva el estado y el backend no lo manda: un estado guardado y una frescura real son dos fuentes del mismo hecho.",pendiente,si,,equipo:backend fase:2 estado:pendiente nueva bloqueada
