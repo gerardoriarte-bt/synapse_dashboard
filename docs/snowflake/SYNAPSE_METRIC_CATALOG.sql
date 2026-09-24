@@ -68,9 +68,19 @@
 --    `table` y `prose`, que necesitan otras formas. Esas salen de los 285 facts
 --    de `SYNAPSE_UA` agrupados, no de `SEMANTIC_METRICS`.
 --
--- 3. **`executive_summary` y `decisions` no son métricas de Snowflake.** El seed
---    las usa con forma `prose`, y eso es contenido generado, no una agregación.
---    O salen de otra tabla, o no entran al catálogo por acá.
+-- 3. **`executive_summary` y `decisions` NO se curan acá** · decidido el
+--    2026-09-24 por producto. Antes esta línea era una duda —«o salen de otra
+--    tabla, o no entran al catálogo por acá»—; ya no lo es.
+--
+--    Son **interpretación del agente**: el resumen y las propuestas que elabora
+--    a partir de los datos del período. No son una agregación, así que no hay
+--    expresión que curar ni `SEMANTIC_OBJECT` al que apuntar, y meterlas al
+--    catálogo obligaría a inventarle una a cada una.
+--
+--    **No son paneles accesorios**: el resumen es el primero de la pantalla.
+--    Que hoy salga con el texto del fixture es lo que hace que la consola se
+--    contradiga consigo misma, y va pedido al backend en
+--    `docs/MENSAJE-2026-09-24-materializador.md` §3.
 -- ═══════════════════════════════════════════════════════════════════════════
 
 USE DATABASE DB_BT_UA;
