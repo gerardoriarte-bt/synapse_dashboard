@@ -574,8 +574,25 @@ código.
 
 **Y el fork se achicó solo, que era el objetivo.** Upstream absorbió dos de las
 cinco partes del segundo commit: B4.2 —`168a761` trae auditoría de publicaciones
-con acción, actor y rol, **y su propio `diff.go`**— y B4.4. Así que ese commit
-**no se rebasa, se reescribe** con las tres que quedan: B1.25, B1.27 y B4.1.
+con acción, actor y rol, **y su propio `diff.go`**— y B4.4. Ese commit **se
+reescribió** el 2026-09-24 con las tres que quedan —B1.25, B1.27 y B4.1— y son
+dos commits sobre `a643cfe`:
+
+| | |
+|---|---|
+| Churn total | **1400 inserciones, 13 borrados** |
+| En archivos de ELLOS | **+283, −13** · los 13 son los cambios de firma que B4.1 obliga |
+| `go build` y `go vet` | limpios |
+| `go test` | **una** falla, y es la colisión de diseño de abajo |
+
+**`ListForAdmin` va en `TenantRepository` y no en un repo nuevo**, para no
+tocarles la firma del constructor. El costo es que la interfaz se propaga a
+cuatro de sus mocks: se les agregó el método devolviendo vacío y nada más.
+
+**Y `gofmt -w` sobre una carpeta suya volvió a morder** —tercera vez—: reformateó
+`access_request_mailer_test.go`, 7 líneas que nadie había tocado. Se revirtió. La
+regla sigue siendo **no formatear archivos de ellos**, y el modo de falla es
+correr el formateador sobre un directorio en vez de sobre los archivos propios.
 
 **La colisión de `/roles` se resolvió como propusimos**: nuestro listado se corrió
 a `GET /admin/tenants/{tenantId}/roles/composition` y el suyo no se tocó.
