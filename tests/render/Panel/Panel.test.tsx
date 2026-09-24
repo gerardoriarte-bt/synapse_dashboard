@@ -219,3 +219,86 @@ describe('F3.3 · los CTA del shell son callbacks, y sin manejador no se pintan'
     expect(preguntado).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('el título no desaparece cuando la gobernanza es larga · 2026-09-24', () => {
+  /** **El defecto que esto cierra, y sólo se vio con datos del negocio.**
+   *  §PEN:§6 dibuja el `Título` llenando el ancho y la `Meta` abrazando su
+   *  contenido, y así estaba: `min-w-0` a la izquierda, `shrink-0` a la
+   *  derecha. Con el texto del dibujo —«BASE · TODOS LOS CANALES · MES»—
+   *  funciona.
+   *
+   *  El día que el catálogo salió de Snowflake, una BASE pasó a medir tres
+   *  veces más y, como la meta no cedía, **el título se encogió a cero**:
+   *  `truncate` sobre una caja sin ancho no pinta una letra. El panel se quedó
+   *  sin nombre.
+   *
+   *  **Las pruebas no podían verlo**: el fixture traía una BASE corta, igual
+   *  que el dibujo. Ésta trae una larga de verdad —copiada del catálogo real—
+   *  y fija la REGLA: el nombre es la identidad del panel y no cede. */
+  const baseLarga =
+    'Venta, visitas e inversión de cada día, sin agregar · medido por Adobe ' +
+    'Analytics sobre el reporte diario de ecommerce del cliente, inversión bruta'
+
+  const conBaseLarga = { ...conCifra, base: baseLarga } as unknown as Payload
+
+  /** **Ancho a propósito.** Por debajo del corte el shell apila la cabecera en
+   *  vertical y el título no puede encogerse, así que el defecto no existe
+   *  ahí. Vive en el panel ancho, que es donde se vio: `daily_trend` ocupa
+   *  media grilla. */
+  const ancho = { colStart: 1, colSpan: 8, rowSpan: 4 }
+
+  it('el nombre del panel se pinta aunque la BASE sea enorme', () => {
+    render(
+      <Panel
+        metric={metric}
+        payload={conBaseLarga}
+        placement={ancho}
+        format={format}
+        now={now}
+      >
+        <p>EL CUERPO</p>
+      </Panel>,
+    )
+    expect(screen.getByRole('heading', { name: 'Venta diaria en riesgo' })).toBeVisible()
+  })
+
+  it('el título tiene un PISO de ancho, que es lo que impide que se encoja a cero', () => {
+    // La aserción es sobre la regla, no sobre el píxel: lo que importa es que
+    // la caja del título declare un mínimo y que la meta pueda ceder. Sin el
+    // mínimo, flexbox achica el título hasta cero antes de tocar la meta.
+    const { container } = render(
+      <Panel
+        metric={metric}
+        payload={conBaseLarga}
+        placement={ancho}
+        format={format}
+        now={now}
+      >
+        <p>EL CUERPO</p>
+      </Panel>,
+    )
+    const titulo = screen.getByRole('heading', { name: 'Venta diaria en riesgo' })
+      .parentElement as HTMLElement
+    expect(titulo.className).toContain('min-w-32')
+
+    const meta = container.querySelector('header > div:last-child') as HTMLElement
+    expect(meta.className).not.toContain('shrink-0')
+  })
+
+  it('y la BASE sigue ENTERA · no se trunca, se acomoda', () => {
+    // «Toda métrica declara su BASE» es regla dura. Resolver el apretón
+    // recortándola habría escondido gobierno para salvar el título.
+    const { container } = render(
+      <Panel
+        metric={metric}
+        payload={conBaseLarga}
+        placement={ancho}
+        format={format}
+        now={now}
+      >
+        <p>EL CUERPO</p>
+      </Panel>,
+    )
+    expect(container.textContent).toContain(baseLarga)
+  })
+})

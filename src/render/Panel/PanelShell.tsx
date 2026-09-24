@@ -72,8 +72,26 @@ export function PanelShell({
       style={panelStyle(placement, columns)}
       aria-label={metric.nombre}
     >
+      {/* **El título tiene PISO y la meta cede** · corregido el 2026-09-24.
+          §PEN:§6 dibuja el `Título` con `width: fill_container` y la `Meta`
+          abrazando su contenido, y así estaba escrito: `min-w-0` a la izquierda
+          y `shrink-0` a la derecha. Con el texto del dibujo funciona.
+
+          **Con la gobernanza real no.** El día que el catálogo salió de
+          Snowflake, la BASE de un panel pasó a medir tres veces más —«Venta,
+          visitas e inversión de cada día, sin agregar · GOLD · Reporte diario
+          de ecommerce del cliente · …»— y como la meta no cedía, el título se
+          encogió a cero: `truncate` sobre una caja de ancho cero no pinta ni
+          una letra. **El panel se quedó sin nombre y nadie lo vio hasta
+          abrirlo con datos del negocio.**
+
+          El dibujo no puede expresar «abrazá, pero no más de esto», así que la
+          regla la pone el producto: **el nombre del panel es su identidad y la
+          BASE es contexto**. El título no baja de `min-w-32` —128px, de la
+          escala de espaciado— y la meta se achica y envuelve. La BASE sigue
+          entera, que es regla dura: no se trunca, se acomoda. */}
       <header className={compact ? 'flex flex-col gap-2' : 'flex items-start justify-between gap-4'}>
-        <div className="flex items-center gap-2 min-w-0">
+        <div className={compact ? 'flex items-center gap-2 min-w-0' : 'flex items-center gap-2 min-w-32 flex-1'}>
           {/* La familia se LEE del catálogo, nunca se elige acá · regla dura 1.
               Va como estilo en línea y no como utilidad porque el nombre de la
               familia llega en runtime desde el catálogo: Tailwind no puede
@@ -87,12 +105,25 @@ export function PanelShell({
           {/* h2 y no h3: el único nivel por encima es el h1 de la pregunta de la
               pestaña, y saltarse un nivel rompe la navegación por encabezados,
               que es como se recorre una pantalla de doce paneles con un lector. */}
-          <h2 className="font-display text-titulo tracking-titulo leading-titulo text-ink m-0 truncate">
+          {/* `title` porque con nombres reales truncar pasó a ser lo normal, no
+              la excepción: «Tendencia diaria» no entra en el piso de 128px
+              cuando la BASE ocupa el resto. El nombre completo ya viaja en el
+              `aria-label` del panel —así que un lector de pantalla nunca lo
+              pierde—, y esto lo alcanza también con el mouse.
+
+              **El piso de 128px es una elección, no una medida del dibujo**, y
+              queda por ajustar: más ancho muestra más nombre y empuja la BASE a
+              una línea más, que come alto del cuerpo. Con doce paneles reales
+              delante conviene mirarlo antes de moverlo. */}
+          <h2
+            title={metric.nombre}
+            className="font-display text-titulo tracking-titulo leading-titulo text-ink m-0 truncate"
+          >
             {metric.nombre}
           </h2>
         </div>
 
-        <div className={compact ? 'flex flex-col gap-1' : 'flex flex-col items-end gap-1 shrink-0'}>
+        <div className={compact ? 'flex flex-col gap-1' : 'flex flex-col items-end gap-1 min-w-0 text-right'}>
           {/* BASE = denominador + ventana. Los dos, siempre: el denominador del
               payload cuando hay cifra y del catálogo cuando no. */}
           <Label>{`Base · ${governance.base} · ${governance.ventana}`}</Label>
