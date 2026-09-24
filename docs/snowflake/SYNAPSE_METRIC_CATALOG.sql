@@ -68,18 +68,24 @@
 --    `table` y `prose`, que necesitan otras formas. Esas salen de los 285 facts
 --    de `SYNAPSE_UA` agrupados, no de `SEMANTIC_METRICS`.
 --
--- 3. **`executive_summary` y `decisions` NO se curan acá** · decidido el
---    2026-09-24 por producto. Antes esta línea era una duda —«o salen de otra
---    tabla, o no entran al catálogo por acá»—; ya no lo es.
+-- 3. **`executive_summary` y `decisions` SÍ necesitan fila, pero SIN expresión**
+--    · decidido el 2026-09-24 por producto. Antes esta línea era una duda —«o
+--    salen de otra tabla, o no entran al catálogo por acá»—; ya no lo es.
 --
---    Son **interpretación del agente**: el resumen y las propuestas que elabora
---    a partir de los datos del período. No son una agregación, así que no hay
---    expresión que curar ni `SEMANTIC_OBJECT` al que apuntar, y meterlas al
---    catálogo obligaría a inventarle una a cada una.
+--    Son **interpretación del agente**: el resumen y las recomendaciones que
+--    elabora consultando **los datos que ese dashboard proyecta** en el período.
+--    No son una agregación, así que **no hay `SEMANTIC_OBJECT` ni expresión que
+--    curar** — buscarles una es perder el tiempo.
 --
---    **No son paneles accesorios**: el resumen es el primero de la pantalla.
---    Que hoy salga con el texto del fixture es lo que hace que la consola se
---    contradiga consigo misma, y va pedido al backend en
+--    **Pero la fila hace falta igual**, y esto es fácil de leer al revés: un
+--    panel se ancla a un `metricId` —regla dura, y `dd_panels.metric_id` es NOT
+--    NULL—, así que sin fila en el catálogo el admin no puede poner el panel de
+--    resumen en su dashboard. Lo que cambia no es que exista: es CÓMO se
+--    materializa, que pasa a ser una llamada al agente y no una consulta.
+--
+--    Curalas con su `NAME`, `SHAPE = 'prose'`, `FAMILY` y `LAYER`, y dejá el
+--    objeto semántico en NULL. **El resumen es el primer panel de la pantalla**,
+--    así que no es accesorio. Va pedido al backend en
 --    `docs/MENSAJE-2026-09-24-materializador.md` §3.
 -- ═══════════════════════════════════════════════════════════════════════════
 

@@ -1165,9 +1165,20 @@ quien llama al agente**. Las otras dos opciones se pesaron y se descartaron: una
 tabla que alguien llena desacopla el texto del período, y pedirlo desde el front
 hace que cada usuario espere segundos y pague la misma llamada.
 
+**El dashboard lo compone el ADMIN**, y el resumen se hace sobre **lo que ese
+dashboard proyecta** — no sobre el negocio en abstracto. De ahí salen tres
+propiedades que condicionan el diseño: es **por dashboard y por período**, corre
+**después** del resto de los paneles de su pestaña —porque los consume—, y
+**escala sin curaduría**: el admin agrega o saca una métrica y el resumen la
+sigue solo. Eso último es lo que lo vuelve viable con muchos tenants.
+
 Hoy `transform.go` sabe armar `{shape, headline, pillars}` pero **leyendo filas
 de una consulta SQL**, y el agente sólo está cableado al chat. Queda de su lado
 el prompt, el costo por corrida y el reintento —para eso ya encaja `DEGRADED`—.
+
+**Lo que NO cambia:** esas dos siguen necesitando fila en el catálogo, porque un
+panel se ancla a un `metricId` y `dd_panels.metric_id` es `NOT NULL`. Sin fila el
+admin no puede poner el panel. Lo que cambia es **cómo se materializa**.
 
 **Y arrastra una pregunta que conviene contestar antes**: qué procedencia declara
 un texto generado. Hoy ese panel dice `SILVER · ACTIONABLE FRAMEWORK`, que viene

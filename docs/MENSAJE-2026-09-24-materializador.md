@@ -68,17 +68,36 @@ pruebas.
 Esto lo aclaró producto hoy y **cambia lo que hay que construir**, así que lo
 escribimos antes de que alguien intente curarlas en Snowflake.
 
-`executive_summary` y `decisions` **no son agregaciones y no deberían estar en
-el catálogo de métricas**. Son **el resumen y las propuestas que el agente
-elabora a partir de los datos del período** — interpretación, no medición. Y no
-son un accesorio: el resumen es el primer panel de la pantalla y lo primero que
-alguien lee.
+`executive_summary` y `decisions` **no son agregaciones**. Son **el resumen y las
+recomendaciones que el agente elabora consultando los datos que ese dashboard
+proyecta en el período** — interpretación, no medición. Y no son un accesorio: el
+resumen es el primer panel de la pantalla y lo primero que alguien lee.
+
+**La parte que más condiciona el diseño, y que conviene tener presente desde el
+principio:** el dashboard lo compone el **admin** —él elige qué métricas
+muestra—, y el resumen se hace sobre **lo que ese dashboard proyecta**, no sobre
+el negocio en abstracto.
+
+De ahí salen tres propiedades que no son opcionales:
+
+| | |
+|---|---|
+| **Es por dashboard y por período** | No por tenant. Dos dashboards del mismo cliente con métricas distintas tienen resúmenes distintos |
+| **Corre DESPUÉS del resto** | Consume los paneles ya materializados de su propia pestaña. Si corre antes, resume el período anterior |
+| **Escala sin curaduría** | El admin agrega o saca una métrica y el resumen la incluye o la deja de incluir **solo**. No hay nada que mantener por métrica, que es justamente lo que lo hace viable con muchos tenants |
 
 **Hoy no hay camino para eso.** El materializador sabe producir `prose`
 —`transform.go` arma `{shape, headline, pillars}`— pero **leyendo filas de una
 consulta SQL** con columnas `headline`, `label`, `value` y `note`. Espera que la
 prosa esté en una tabla. El agente de Cortex, en cambio, sólo está cableado al
 chat.
+
+**Lo que NO cambia, y es fácil de leer al revés:** esas dos siguen necesitando
+su fila en el catálogo. Un panel se ancla a un `metricId` —`dd_panels.metric_id`
+es `NOT NULL`— así que sin fila el admin no puede poner el panel de resumen en
+su dashboard. Lo que cambia no es que existan: es **cómo se materializan**. La
+fila se cura con su nombre, su forma y su familia, y **sin expresión ni
+`SEMANTIC_OBJECT`** — ya lo dejamos anotado en el SQL que le pasamos a datos.
 
 ### El camino ya está decidido · **lo llama el materializador**
 
@@ -109,10 +128,19 @@ seed. **Para un texto que escribe el agente eso sería mentira**, y poner
 `GOLD · ERP` sería peor: diría que la frase salió de un feed.
 
 Lo levantamos ahora porque es barato decidirlo antes y caro después. Lo que nos
-parece coherente con el resto: la fuente dice que es interpretación del agente
-—con su nombre—, la capa es la **peor de las métricas que usó** —una compuesta
-hereda la peor, que es lo que el catálogo ya hace— y la frescura es el instante
-en que se generó, no «ahora». Pero es su llamada.
+parece coherente con el resto, y ahora que el insumo está claro se puede escribir
+con precisión:
+
+| Campo | Qué diría |
+|---|---|
+| **fuente** | Que es interpretación del agente, con su nombre — `SYNAPSE_UA` |
+| **capa** | La **peor de los paneles que resumió**. Una compuesta hereda la peor, que es lo que el catálogo ya hace: si uno de los doce es `SILVER`, el resumen es `SILVER` |
+| **frescura** | El instante en que se generó, nunca «ahora» — la misma regla que B2.10 |
+| **BASE** | Los paneles sobre los que se hizo. «Los 12 paneles de esta pestaña · 2026-09» dice exactamente de dónde salió la lectura, y es lo que permite auditarla |
+
+Esa última es la que más nos importa: **un resumen sin decir qué resumió es una
+opinión**, y §1.3 hace obligatorio que toda cifra se pueda rastrear. Pero es su
+llamada.
 
 **Mientras tanto vale el punto 2**: si esas dos filas salen degradadas en vez de
 `AVAILABLE`, la pantalla deja de contradecirse aunque el panel todavía no tenga
