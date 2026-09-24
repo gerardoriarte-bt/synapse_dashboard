@@ -2,6 +2,12 @@
 
 > **Histórico.** Un mensaje mandado, con fecha: qué se pidió y con qué
 > evidencia. No se actualiza.
+>
+> **Se mandó en dos tandas el mismo día, y por eso lleva la marca de abajo.**
+> Los puntos **1 y 2** son lo que se compartió primero. Los puntos **3 y 4**, y
+> un párrafo dentro del 1, salieron de seguir investigando después de mandarlo:
+> están agrupados bajo «Añadido después de mandarlo» para que se pueda mandar
+> sólo esa parte, y para que dentro de seis meses se sepa qué leyó cada uno.
 
 Hola. Cargué por primera vez un tenant con credenciales reales de Snowflake y un
 agente de Cortex, y me topé con dos cosas del cliente. La primera impide
@@ -60,7 +66,8 @@ apliquen ustedes.
 cuentas antiguas de AWS us-west-2; cualquier cuenta en Azure, GCP o en otra
 región de AWS falla igual.
 
-**Y no afecta sólo al chat.** `SnowflakeConfigFromTenantAgent` lo consumen
+**Y no afecta sólo al chat** · *añadido después de mandarlo*.
+`SnowflakeConfigFromTenantAgent` lo consumen
 también `dd_catalog_sync_service` y `dd_drilldown_service`, así que **el sync del
 catálogo falla por lo mismo** — puede ser la razón por la que nunca vimos las
 métricas de Snowflake llegar. Además `snowflake_jwt.go` usa `cfg.BaseURL()` como
@@ -88,6 +95,13 @@ No es urgente, pero mientras exista así conviene saber que **un `ok` de acá no
 significa que la conexión funcione**. Si les sirve, el ping que a nosotros nos
 resolvería el problema es uno que firme el JWT y haga una llamada barata contra
 la cuenta: con eso, configurar un tenant nuevo deja de ser a ciegas.
+
+---
+
+# Añadido después de mandarlo
+
+Lo que sigue salió de seguir tirando del hilo el mismo día. **El punto 4 es el
+que más les va a servir**: es el que nos dijo qué estaba pasando en realidad.
 
 ## 3 · Al cliente de Cortex le falta la cabecera de JWT por par de claves
 
