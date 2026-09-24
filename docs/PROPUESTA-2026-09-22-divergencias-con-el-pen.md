@@ -274,6 +274,43 @@ dentro del texto, y por eso F3.13 las pinta como rótulos de sección.
 frescura de la cifra, **las fuentes con su capa y su frescura deberían viajar en
 el evento `auditoria`, no dentro de la prosa**. Va con el pedido del chat.
 
+## 7 · Con qué cuerpo se dibuja una cifra del agente · lo que la realidad dijo
+
+**Quién decide** · producto · **Bloquea** · nada, pero deja F3.6 casi sin efecto
+
+**Abierta el 2026-09-24, la primera vez que el chat habló contra Cortex de
+verdad.** No es una divergencia con el `.pen`: es una decisión nuestra que la
+realidad puso a prueba y no pasó.
+
+F3.6 resolvió «¿con qué cuerpo se dibuja una cifra del agente?» usando **el tipo
+del panel desde el que se preguntó**, y sólo si ese tipo acepta la forma que
+llegó —`acceptsShape`—. Con mocks se veía bien: el mock mandaba un escalar y el
+panel era un `kpi`.
+
+**Contra el agente real, una pregunta desde un panel `kpi` devolvió tres eventos
+`data` con formas `tabular`, `tabular` y `raw`.** Ninguna de las tres la acepta
+un `kpi`, así que las tres caen en la rama de «este panel no puede dibujar».
+
+**Y tiene sentido que sea así**, que es lo que lo vuelve un problema de diseño y
+no un bug: el agente contesta con **la forma que la pregunta necesita**, no con
+la del panel de origen. Preguntar «cuánto vendimos» desde un KPI puede devolver
+un escalar; preguntar «dame las ventas por plataforma» devuelve una tabla —y es
+legítimo preguntarlo desde cualquier panel.
+
+**La rama de «no puedo dibujarlo» dejó de ser el caso raro y pasó a ser el
+común.**
+
+Tres salidas, y la decisión es de producto:
+
+| | |
+|---|---|
+| **a** · El chat dibuja por la **forma** y no por el panel | Un `tabular` se dibuja con `TableBody`, venga de donde venga. Es lo que el dato pide; deja sin usar el contexto del panel |
+| **b** · El evento declara su tipo de panel | Es la pregunta 11 de B0.9, que se cerró usando el panel de origen. Vuelve a abrirse, ahora con evidencia |
+| **c** · Queda como está | La cifra casi nunca se dibuja y el chat contesta sólo en prosa, que es lo que hace hoy |
+
+**Lo medido, para que la decisión no sea a ojo:** una pregunta, tres eventos
+`data`, cero dibujables. Capturado el 2026-09-24 contra `SYNAPSE_UA`.
+
 ---
 
 ## Dónde vive cada una de las demás
