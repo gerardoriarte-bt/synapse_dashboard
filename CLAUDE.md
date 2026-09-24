@@ -460,7 +460,8 @@ nunca, ni cuando el código está mal.
 
 ### ⇩ ACÁ SE PARÓ · 2026-09-22 · el backend medido, y dos mensajes sin mandar
 
-**Lo que costó descubrir está en `docs/BITACORA-2026-09-22.md`** —y el día
+**Lo que costó descubrir está en `docs/BITACORA-2026-09-24.md`** —y los días
+anteriores en `docs/BITACORA-2026-09-22.md` —y el día
 anterior en `docs/BITACORA-2026-09-21.md`—. Esto es dónde retomar.
 
 **LO PRIMERO, Y NO ES CÓDIGO: mandar los dos mensajes.** Son la puerta de casi
@@ -566,8 +567,28 @@ del 2026-09-14.
 los frames tienen los números y a veces lo que la nota no dice — el velo de la
 hoja del chat y las tres superficies aparecieron así.
 
-**El rebase del fork sigue probado, verde y sin empujar**, en la rama local
-`rebase-prueba` de `~/Documents/GitHub/synapse-api-go-fork`. Son dos hunks de
+**El rebase se rehízo sobre `a643cfe` el 2026-09-24**, en la rama local
+`rebase-a643cfe` de `~/Documents/GitHub/synapse-api-go-fork` —`rebase-prueba`
+queda intacta—. Compila, `go vet` limpio, **1222 inserciones y 1 borrado** en su
+código.
+
+**Y el fork se achicó solo, que era el objetivo.** Upstream absorbió dos de las
+cinco partes del segundo commit: B4.2 —`168a761` trae auditoría de publicaciones
+con acción, actor y rol, **y su propio `diff.go`**— y B4.4. Así que ese commit
+**no se rebasa, se reescribe** con las tres que quedan: B1.25, B1.27 y B4.1.
+
+**La colisión de `/roles` se resolvió como propusimos**: nuestro listado se corrió
+a `GET /admin/tenants/{tenantId}/roles/composition` y el suyo no se tocó.
+
+**Pero apareció una segunda colisión, y es de diseño.** `168a761` agregó en
+`resolveLayout` una compuerta —`if layout.Status != published &&
+!isAdminRoleName(role.Name) { return nil, nil }`— que **rompe el preview por
+rol**: el preview pasa el rol SIMULADO, que no es admin, así que un borrador se
+rechaza. Confunde quién pregunta con a quién se simula. No lo muestra el
+conflicto ni el compilador: lo encontró una prueba nuestra. **Es una decisión
+pendiente**, no un arreglo.
+
+**El rebase viejo sigue en `rebase-prueba`**, sobre `82da946`. Son dos hunks de
 adyacencia pura más un rompimiento que el conflicto no muestra: su commit agregó
 `FindByID` a `ports.DDPanelRepository` y nuestro mock no lo implementaba —
 **`go build` pasaba; lo encontró `go vet`**. La receta está en
