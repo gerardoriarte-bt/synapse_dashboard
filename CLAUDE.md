@@ -458,25 +458,40 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-09-22 · el backend medido, y dos mensajes sin mandar
+### ⇩ ACÁ SE PARÓ · 2026-09-24 · el dashboard con dato real, esperando al materializador
 
-**Lo que costó descubrir está en `docs/BITACORA-2026-09-24.md`** —y los días
-anteriores en `docs/BITACORA-2026-09-22.md` —y el día
-anterior en `docs/BITACORA-2026-09-21.md`—. Esto es dónde retomar.
+**Lo que costó descubrir está en `docs/BITACORA-2026-09-24-tarde.md`** —la tarde,
+que es donde el dato se volvió real y contradijo cuatro cierres— y en
+`docs/BITACORA-2026-09-24.md`, la mañana. Los días anteriores en
+`docs/BITACORA-2026-09-22.md` y `docs/BITACORA-2026-09-21.md`. Esto es dónde
+retomar.
 
-**LO PRIMERO, Y NO ES CÓDIGO: mandar los dos mensajes.** Son la puerta de casi
-todo lo que queda.
+**EL DASHBOARD MUESTRA EL NEGOCIO, y el chat contesta.** Las dos cosas que
+llevaban un mes sin verificarse contra su fuente. El camino completo corre:
+vista de Snowflake → `sync-catalog` → `materialize` → `panels:batch` → pantalla,
+en los doce períodos, y el selector navega entre ellos con dato distinto en cada
+uno. Ver `docs/BITACORA-2026-09-24-tarde.md`.
+
+**LO PRIMERO, Y NO ES CÓDIGO: mandar el mensaje al materializador.** Es lo único
+que frena, y frena dos cosas visibles en pantalla.
 
 | Para | Qué pide | Dónde |
 |---|---|---|
-| **Datos** | El par de claves RSA para `SYNAPSE_SERVICE_USER` y dos grants que `SYNAPSE_APP_ROLE` no tiene | `docs/MENSAJE-2026-09-22-datos-agente-cortex.md` |
-| **Backend** | Cargar el agente, la colisión de `/admin/tenants/{tenantId}/roles`, el hallazgo del `Tenant` embebido, y que `POST /config/chat` acepte contexto de pestaña | `docs/MENSAJE-2026-09-22-backend-roles-y-hallazgo.md` · el último va por F3.15 |
+| **Backend** | Que el materializador emita `presentation`; que `preserved` / `last_success_at IS NULL` degrade en vez de servirse `AVAILABLE`; y acordar el camino de los paneles de prosa | `docs/MENSAJE-2026-09-24-materializador.md` |
+| **Datos** | Recurar las seis filas de `SEMANTIC_DIRECTION` que traen el código en vez del texto | El SQL ya lleva la decisión y la vista de issues las detecta sola |
 
-**Y lo que sigue cuando contesten:** con la clave, verificar la Fase 3 entera
-contra Cortex —hoy son once tareas cerradas contra mocks nuestros—; con la
-colisión resuelta, el rebase y el PR; con el contexto de pestaña, **F3.15**, que
-es la presencia del chat que el `.pen` ya dibuja en todas las pantallas de
-consola y que nunca construimos.
+**Lo que cada uno destraba:** con `presentation`, los seis KPI recuperan su
+medidor y sus comparativos —hoy son una cifra sola—; con el degradado, la consola
+deja de contradecirse; y con el camino de prosa acordado, se puede construir el
+resumen, que es el primer panel de la pantalla.
+
+**Los dos mensajes del 22 ya se mandaron y se resolvieron** · datos habilitó la
+IP y registró la clave, backend corrigió el host en `61d16da`. Quedan como
+histórico.
+
+**Lo que sigue sin verificarse contra Cortex es lo de más abajo del chat**:
+F3.15 —la presencia del chat en todas las pantallas, que el `.pen` dibuja y nunca
+construimos— espera que `POST /config/chat` acepte contexto de pestaña.
 
 **Cuatro decisiones humanas del 2026-09-22, ya ejecutadas**: el contexto del chat
 pasa a ser de pestaña —cierra §5 y reemplaza la del 17—, el logotipo a color va
@@ -656,30 +671,33 @@ pie; lo que cambió es contra qué base se corre.
 en `ERROR`— y de nuevo el 22 contra el local, con `npm run humo` pasando las
 cinco rutas de consola y las de admin campo por campo.
 
-**PERO EL DATO NO ES DEL NEGOCIO, Y ESO NO SE HABÍA DICHO** · medido el
-2026-09-24. Los doce paneles pintan **la maqueta del `.pen` sembrada en
-Postgres**, no datos de Snowflake:
+**Y DESDE LA TARDE DEL 2026-09-24 EL DATO ES DEL NEGOCIO.** Hasta esa mañana los
+doce paneles pintaban **la maqueta del `.pen` sembrada en Postgres** —cero
+corridas de materialización, `0 de 72` filas con `last_success_at`, las doce
+claves de la semilla y no las diez de la vista— y llevaba diez días sin decirse.
+Con el host corregido en `61d16da`, `sync-catalog` corrió —`created=6 updated=4
+catalog_version=2`— y detrás los doce períodos, todos `available=16 blocked=2
+errors=0`.
 
-| Medición | |
-|---|---|
-| Corridas de materialización | **cero** · `/admin/materialize/runs` devuelve `[]` |
-| Scheduler | apagado · `DD_MATERIALIZE_ENABLED != true` |
-| Filas de `dd_panel_data` con `last_success_at` | **0 de 72** · ninguna consulta a Snowflake tuvo éxito nunca |
-| Claves del catálogo | las 12 de la semilla, no las 10 de `SYNAPSE_METRIC_CATALOG` |
+**Lo que enseñó, y es lo que conviene no perder:** «verificado contra el servicio
+real» y «verificado con datos reales» son dos afirmaciones distintas, **y la
+primera se dice sola**. En una tarde el camino real contradijo **cuatro** cosas
+dadas por cerradas —`semantic_direction`, `presentation`, las claves del catálogo
+y la cabecera del panel—, y dos de esos cierres llevaban la misma fecha: el
+2026-09-14, el día en que apareció el backend y todo se verificó contra lo que
+ese backend traía puesto.
 
-Y el remate: las cifras de la base —Meta 412000, Google Shopping 318000, Criteo
-148000…— **son exactamente las que el `.pen` dibuja**, comprobado al cerrar
-F1.44 usando el dibujo para resolver el orden de la tabla.
+**De ahí sale una regla de cierre:** una tarea cerrada dice **contra qué** se
+cerró. «CERRADA contra el servicio real» se lee como definitivo y era una foto de
+la semilla.
 
-**Lo que está verificado es la CADENA, no el dato**: layout, catálogo, doce
-paneles, siete formas de valor, estados, presentación, adaptador y cable. Es la
-diferencia entre «el motor anda» y «el motor anda con combustible del cliente».
-
-Para que el dato sea real faltan dos cosas, y ninguna es la clave RSA: correr
-`make sync-catalog` (B1.18) y encender la materialización. **Y las dos chocan
-con el mismo defecto del backend**: `SnowflakeConfigFromTenantAgent` no asigna
-`OverrideBaseURL`, así que `BaseURL()` arma el host sin región y el sync del
-catálogo falla igual que el chat · `docs/MENSAJE-2026-09-24-backend-region-y-ping.md`.
+**Lo que el dato real todavía no trae** está pedido en
+`docs/MENSAJE-2026-09-24-materializador.md`: el materializador no emite
+`presentation` **y al correr pisa la que traía la semilla**, así que los seis
+paneles `kpi` quedaron como una cifra sola; y las dos filas que Snowflake no
+tiene —`executive_summary` y `decisions`— siguen sirviéndose `AVAILABLE` con el
+valor viejo, así que el resumen dice «4.28M» en los doce meses mientras las
+cifras de al lado cambian todas.
 
 **Es UN servicio, no dos.** `/auth/*`, `/config/*` y `/admin/*` cuelgan del mismo
 `/api/v1` del mismo binario, y el proxy de Vite manda `/api/v1` entero a `:4010`.
@@ -802,17 +820,24 @@ numeración contra la de ellos, que **no coincide**.
 
 ### Del lado de datos
 
-**Snowflake ya está hecho, y lo que falta es correr el sync.** El equipo de datos
+**Snowflake está hecho y el sync YA CORRIÓ** · 2026-09-24. El equipo de datos
 entregó B1.22–B1.24 el 2026-09-15 —`docs/snowflake/synapse-catalogo-metricas.md`—:
 la vista `SYNAPSE_METRIC_CATALOG` existe en `DB_BT_UA.BT_UA_MART_ANALYTICS`, con
 sus textos de gobierno firmados, la vista de validación en cero filas y el grant
 para `SYNAPSE_APP_ROLE`.
 
-**Y `make sync-catalog` no se corrió**, lo cual se ve desde acá: `/config/catalog`
-devuelve las **doce** claves de la semilla de Postgres —`sales`, `investment`,
-`executive_summary`…— y no las **diez** de Snowflake —`revenue`, `spend`,
-`platform_return`…—. Dos de las doce de hoy **no están** en Snowflake:
-`executive_summary` y `decisions`, que son los paneles de prosa y recomendación.
+**`/config/catalog` devuelve las diez de Snowflake** —`revenue`, `spend`,
+`platform_return`…— y ya no las doce de la semilla. Las dos que no están en la
+vista son `executive_summary` y `decisions`, y **eso no es un hueco de datos**:
+no son métricas sino interpretación del agente, y su fila se cura **sin
+expresión** porque un panel se ancla a un `metricId` y `dd_panels.metric_id` es
+`NOT NULL`. Está escrito en el SQL que datos corre.
+
+**Lo único que queda del lado de datos son seis filas**: las que traen
+`SEMANTIC_DIRECTION` como código —`HIGHER_IS_BETTER`— donde va el texto
+redactado. Sale en pantalla con guiones bajos. La séptima regla de
+`SYNAPSE_METRIC_CATALOG_ISSUES` las detecta sola, así que no depende de que
+alguien mire la consola.
 
 **`MEASUREMENT_WINDOW` existe en la vista con valor en las diez**, así que B1.25
 ya no espera a Snowflake: espera dos líneas de Go. Y el nombre del campo JSON lo
