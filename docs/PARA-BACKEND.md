@@ -264,6 +264,23 @@ Sin esto un KPI pierde el medidor y los comparativos, que es lo que el `.pen`
 dibuja y lo que hace que una cifra se lea contra algo en vez de sola. · Bloquea
 **B2.12**.
 
+**Espera del backend.** **Los paneles de prosa los genera el AGENTE, y hoy no hay
+camino.** Decidido el 2026-09-24 por producto: `executive_summary` y `decisions`
+no son métricas sino **interpretación** —el resumen y las propuestas sobre los
+datos del período—, así que no se curan en Snowflake, y **es el materializador
+quien llama al agente**. Las otras dos opciones se pesaron y se descartaron: una
+tabla que alguien llena desacopla el texto del período, y pedirlo desde el front
+hace que cada usuario espere segundos y pague la misma llamada.
+
+Hoy `transform.go` sabe armar `{shape, headline, pillars}` pero **leyendo filas
+de una consulta SQL**, y el agente sólo está cableado al chat. Queda de su lado
+el prompt, el costo por corrida y el reintento —para eso ya encaja `DEGRADED`—.
+
+**Y arrastra una pregunta que conviene contestar antes**: qué procedencia declara
+un texto generado. Hoy ese panel dice `SILVER · ACTIONABLE FRAMEWORK`, que viene
+del seed; para un texto del agente sería mentira, y `GOLD · ERP` sería peor.
+Todo en `docs/MENSAJE-2026-09-24-materializador.md` §3. · Bloquea **B2.12**.
+
 **Espera del backend.** **Una fila que NUNCA se materializó no puede servirse
 como `AVAILABLE`.** `sync-catalog` trae diez métricas de Snowflake y la semilla
 tiene doce, así que **dos quedan sin fuente** —`executive_summary` y

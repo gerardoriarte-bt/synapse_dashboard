@@ -80,18 +80,39 @@ consulta SQL** con columnas `headline`, `label`, `value` y `note`. Espera que la
 prosa esté en una tabla. El agente de Cortex, en cambio, sólo está cableado al
 chat.
 
-**No les pedimos una solución todavía**: queremos acordar el camino, porque
-condiciona de qué lado se construye. Las que vemos:
+### El camino ya está decidido · **lo llama el materializador**
 
-| | Qué implicaría |
-|---|---|
-| **a** · El materializador llama al agente para los paneles de forma `prose` | Es el mismo agente que ya funciona. Hay que decidir el prompt, el costo por corrida y qué pasa si el agente falla o tarda |
-| **b** · Una tabla en Snowflake que alguien —o un job— llena con el resumen | El materializador ya la leería sin cambios. Mueve el problema al lado de datos |
-| **c** · El front lo pide al abrir el panel | Lo descartamos: el resumen tardaría segundos en aparecer y cada usuario pagaría una llamada al agente por el mismo texto |
-
-**Nuestra lectura es (a)**, porque el texto depende del período y de los datos ya
+Producto lo resolvió el 2026-09-24: **el materializador llama al agente** para
+los paneles de forma `prose`. El texto depende del período y de los datos ya
 materializados, que es exactamente lo que el materializador tiene delante cuando
-corre. Pero la decisión del costo y del reintento es de ustedes.
+corre — y es el mismo agente que ya funciona.
+
+Las otras dos que se pesaron, para que se entienda por qué no:
+
+| | Por qué no |
+|---|---|
+| Una tabla en Snowflake que alguien llena | El materializador la leería sin cambios, pero mueve el problema a datos y el texto dejaría de depender del período automáticamente |
+| Que el front lo pida al abrir el panel | El resumen tardaría segundos en aparecer y **cada usuario pagaría una llamada al agente por el mismo texto** |
+
+**Lo que queda por decidir es de ustedes, y son tres cosas concretas:** el prompt
+—o de dónde sale—, el costo por corrida, y qué pasa si el agente falla o tarda.
+Para lo último ya hay un estado que encaja: un panel de prosa que no se pudo
+generar es `DEGRADED` con su razón, igual que el punto 2.
+
+### Y una que (a) arrastra · qué PROCEDENCIA declara un texto generado
+
+«Toda métrica declara su procedencia —capa, fuente, frescura—» es regla dura de
+`design.md`, y el panel la pinta siempre.
+
+Hoy el panel de resumen dice **`SILVER · ACTIONABLE FRAMEWORK`**, que viene del
+seed. **Para un texto que escribe el agente eso sería mentira**, y poner
+`GOLD · ERP` sería peor: diría que la frase salió de un feed.
+
+Lo levantamos ahora porque es barato decidirlo antes y caro después. Lo que nos
+parece coherente con el resto: la fuente dice que es interpretación del agente
+—con su nombre—, la capa es la **peor de las métricas que usó** —una compuesta
+hereda la peor, que es lo que el catálogo ya hace— y la frescura es el instante
+en que se generó, no «ahora». Pero es su llamada.
 
 **Mientras tanto vale el punto 2**: si esas dos filas salen degradadas en vez de
 `AVAILABLE`, la pantalla deja de contradecirse aunque el panel todavía no tenga
