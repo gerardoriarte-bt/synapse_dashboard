@@ -311,6 +311,59 @@ Tres salidas, y la decisión es de producto:
 **Lo medido, para que la decisión no sea a ojo:** una pregunta, tres eventos
 `data`, cero dibujables. Capturado el 2026-09-24 contra `SYNAPSE_UA`.
 
+## 8 · `semantic_direction` · una pregunta que se cerró contra el fixture
+
+**Quién decide** · producto · **RESUELTA el 2026-09-24**
+
+Va acá porque enseña algo, no porque siga abierta.
+
+**Qué hace el campo.** Es la regla 10 de `design.md`: «Toda métrica compuesta
+declara su dirección semántica ("MÁS ALTO = MEJOR"). **El usuario nunca adivina
+si subir es bueno.**» Se pinta al pie del panel. En ROAS más alto es mejor; en
+CPA más alto es **peor**. Sin la declaración, un «+14%» se lee al revés.
+
+**Por qué es texto y no un enumerado** · decisión humana del 2026-08-19: «un
+enumerado de dos valores habría deformado dos de los cinco casos que el catálogo
+ya declara». Hay métricas donde lo mejor no es «alto» sino «cerca de la meta» o
+«estable». Y la consecuencia buscada era **no tener tabla de traducción que
+mantener**.
+
+### Lo que enseña, que es por lo que está escrito
+
+La pregunta existió —ask 7 del plan de integración— y **se cerró el 2026-09-14**:
+
+> ~~«`semantic_direction`: ¿código o texto?»~~ **CERRADA contra el servicio
+> real.** Es texto ya redactado: las doce métricas del tenant mandan
+> `HIGHER = BETTER`. **Nada que pedir.**
+
+**Se cerró contra la SEMILLA de Postgres, no contra Snowflake.** El 2026-09-24,
+la primera vez que `sync-catalog` trajo el catálogo real, seis métricas llegaron
+con `HIGHER_IS_BETTER` — y salieron en pantalla con guiones bajos.
+
+«Verificado contra el servicio real» y «verificado contra la fuente real» son
+dos afirmaciones distintas, y la primera se dice sola. **Es la misma lección que
+la sección 5 de la bitácora del 22**, en otro campo y diez días después.
+
+### Resuelto
+
+**La vista manda el texto**, que es lo que el contrato ya declaraba. No se
+traduce en el front: hacerlo reintroduce la tabla que la decisión del 19-08
+quiso evitar, y se rompe con el primer caso que no sea alto/bajo.
+
+Ejecutado en `docs/snowflake/SYNAPSE_METRIC_CATALOG.sql`, que es el archivo que
+datos corre: el comentario de la columna pasó de «PENDIENTE DE DECISIÓN» a la
+decisión, y las seis filas de la semilla dejaron de cargar el código.
+
+**Y la vista de issues aprendió a detectarlo**, para que no dependa de que
+alguien mire la pantalla: una `SEMANTIC_DIRECTION` toda en mayúsculas y sin
+espacios es un código, y aparece en `SYNAPSE_METRIC_CATALOG_ISSUES` con su
+razón. Es el mismo mecanismo que ya tenían `SHAPE`, `FAMILY` y `LAYER`.
+
+**Queda un pedido a datos**: recurar las seis filas que ya están en
+`DD_METRIC_CURATION`. Hasta que lo hagan, el panel sigue mostrando el código —
+**a propósito**: el front no escribe copy de producto, y un campo sin curar que
+se ve es lo que la instrucción de alta pide con sus marcadores `⟨REVISAR⟩`.
+
 ---
 
 ## Dónde vive cada una de las demás

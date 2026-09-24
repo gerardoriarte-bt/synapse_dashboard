@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS DD_METRIC_CURATION (
         COMMENT 'USD | % | x | un nombre como «órdenes». NULL si no tiene.',
 
     SEMANTIC_DIRECTION  VARCHAR
-        COMMENT 'PENDIENTE DE DECISION: el front lo pinta tal cual («MÁS ALTO = MEJOR») pero el backend hoy manda códigos («HIGHER_IS_BETTER»). Ver §4 ask 7 del plan de integración.',
+        COMMENT 'TEXTO REDACTADO, NO UN CÓDIGO · decidido 2026-09-24. Se pinta tal cual al pie del panel: «MÁS ALTO = MEJOR». NULL cuando la métrica no es compuesta. NO pongas HIGHER_IS_BETTER: el panel lo muestra con guiones bajos. Es texto y no un enumerado porque hay métricas donde lo mejor no es «alto» sino «cerca de la meta» o «estable» — decisión humana del 2026-08-19.',
 
     MIN_GRAIN           VARCHAR       NOT NULL
         COMMENT 'day | week | month. El período más fino que esta métrica puede contestar. El selector deshabilita lo que no aplica.',
@@ -232,6 +232,25 @@ WHERE IS_ACTIVE
 
 UNION ALL
 
+-- ── dirección semántica escrita como código ────────────────────────────────
+-- **El front la pinta TAL CUAL al pie del panel**, así que un `HIGHER_IS_BETTER`
+-- sale en pantalla con guiones bajos. Es texto redactado y no un enumerado por
+-- decisión humana del 2026-08-19: hay métricas donde lo mejor no es «alto» sino
+-- «cerca de la meta» o «estable», y un enumerado de dos valores las deforma.
+--
+-- Esta regla existe porque la deriva ya pasó: el 2026-09-14 se dio por cerrado
+-- que la vista mandaba texto, verificándolo contra la SEMILLA de Postgres. La
+-- fuente real mandaba códigos, y se vio en pantalla diez días después.
+SELECT METRIC_KEY, 'SEMANTIC_DIRECTION', SEMANTIC_DIRECTION,
+       'Se pinta tal cual: un código sale con guiones bajos. Escribilo redactado — «MÁS ALTO = MEJOR»'
+FROM DD_METRIC_CURATION
+WHERE IS_ACTIVE
+  AND SEMANTIC_DIRECTION IS NOT NULL
+  AND SEMANTIC_DIRECTION = UPPER(SEMANTIC_DIRECTION)
+  AND SEMANTIC_DIRECTION NOT LIKE '% %'
+
+UNION ALL
+
 -- ── curada contra una métrica semántica que ya no existe ────────────────────
 SELECT c.METRIC_KEY, 'SEMANTIC_OBJECT', c.SEMANTIC_OBJECT,
        'Referencia a SEMANTIC_METRICS que no resuelve: la definición técnica se movió o se borró'
@@ -315,13 +334,13 @@ INSERT INTO DD_METRIC_CURATION
 SELECT column1, NULL, column2, column3, column4, 'GOLD', column5, column6,
        column7, column8, column9, 'month', ARRAY_CONSTRUCT()
 FROM VALUES
- ('revenue',              'Ingresos',                  'scalar',       'demand', '⟨REVISAR⟩ fuente', '⟨REVISAR⟩ denominador', '⟨REVISAR⟩ ventana', 'USD',  'HIGHER_IS_BETTER'),
+ ('revenue',              'Ingresos',                  'scalar',       'demand', '⟨REVISAR⟩ fuente', '⟨REVISAR⟩ denominador', '⟨REVISAR⟩ ventana', 'USD',  'MÁS ALTO = MEJOR'),
  ('spend',                'Inversión',                 'scalar',       'media',  '⟨REVISAR⟩ fuente', '⟨REVISAR⟩ denominador', '⟨REVISAR⟩ ventana', 'USD',  NULL),
- ('roas',                 'ROAS',                      'scalar',       'media',  '⟨REVISAR⟩ fuente', '⟨REVISAR⟩ denominador', '⟨REVISAR⟩ ventana', 'x',    'HIGHER_IS_BETTER'),
- ('orders',               'Órdenes',                   'scalar',       'demand', '⟨REVISAR⟩ fuente', '⟨REVISAR⟩ denominador', '⟨REVISAR⟩ ventana', 'órdenes',  'HIGHER_IS_BETTER'),
- ('sessions',             'Visitas',                   'scalar',       'demand', '⟨REVISAR⟩ fuente', '⟨REVISAR⟩ denominador', '⟨REVISAR⟩ ventana', 'visitas',  'HIGHER_IS_BETTER'),
- ('units',                'Unidades',                  'scalar',       'demand', '⟨REVISAR⟩ fuente', '⟨REVISAR⟩ denominador', '⟨REVISAR⟩ ventana', 'unidades', 'HIGHER_IS_BETTER'),
- ('goal_attainment',      'Cumplimiento de objetivo',  'categorical',  'demand', '⟨REVISAR⟩ fuente', '⟨REVISAR⟩ denominador', '⟨REVISAR⟩ ventana', '%',    'HIGHER_IS_BETTER'),
+ ('roas',                 'ROAS',                      'scalar',       'media',  '⟨REVISAR⟩ fuente', '⟨REVISAR⟩ denominador', '⟨REVISAR⟩ ventana', 'x',    'MÁS ALTO = MEJOR'),
+ ('orders',               'Órdenes',                   'scalar',       'demand', '⟨REVISAR⟩ fuente', '⟨REVISAR⟩ denominador', '⟨REVISAR⟩ ventana', 'órdenes',  'MÁS ALTO = MEJOR'),
+ ('sessions',             'Visitas',                   'scalar',       'demand', '⟨REVISAR⟩ fuente', '⟨REVISAR⟩ denominador', '⟨REVISAR⟩ ventana', 'visitas',  'MÁS ALTO = MEJOR'),
+ ('units',                'Unidades',                  'scalar',       'demand', '⟨REVISAR⟩ fuente', '⟨REVISAR⟩ denominador', '⟨REVISAR⟩ ventana', 'unidades', 'MÁS ALTO = MEJOR'),
+ ('goal_attainment',      'Cumplimiento de objetivo',  'categorical',  'demand', '⟨REVISAR⟩ fuente', '⟨REVISAR⟩ denominador', '⟨REVISAR⟩ ventana', '%',    'MÁS ALTO = MEJOR'),
  ('daily_trend',          'Tendencia diaria',          'multi_series', 'demand', '⟨REVISAR⟩ fuente', '⟨REVISAR⟩ denominador', '⟨REVISAR⟩ ventana', NULL,   NULL),
  ('media_efficiency_12m', 'Eficiencia de medios · 12m','multi_series', 'media',  '⟨REVISAR⟩ fuente', '⟨REVISAR⟩ denominador', '⟨REVISAR⟩ ventana', NULL,   NULL),
  ('platform_return',      'Retorno por plataforma',    'tabular',      'media',  '⟨REVISAR⟩ fuente', '⟨REVISAR⟩ denominador', '⟨REVISAR⟩ ventana', NULL,   NULL);
