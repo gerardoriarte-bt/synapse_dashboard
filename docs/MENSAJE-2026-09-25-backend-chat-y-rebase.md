@@ -28,15 +28,15 @@ unlocks_with : Register a Snowflake source for this metric
 La consola dejó de contradecirse. Y nos gustó que lo decidan **al servir** y no
 al materializar: una fila vieja no necesita una corrida para dejar de mentir.
 
-**Punto 1 · `presentation`: no lo pudimos verificar de punta a punta**, y la
-razón no es de ustedes. Snowflake rechaza nuestra IP —`390422`— así que la
-corrida sale `available=0 errors=16 preserved=18`. Lo pedimos a datos.
+**Punto 1 · `presentation`: hecho, y también verificado contra el servicio
+corriendo.** Datos habilitó nuestra IP a media mañana y la corrida salió
+`available=16 blocked=2 errors=0 preserved=2`. Los seis escalares traen su
+`presentation`, el front la pinta sin tocar una línea, y **es la primera vez que
+el dashboard muestra la anatomía completa de un KPI con dato del negocio**: la
+cifra, la barra de avance con su `% OF TARGET`, la nota —«706.8K OF 1.27M»— y
+los dos comparativos.
 
-Lo que sí revisamos es la forma: `ScalarRowsFromKPI` emite las mismas claves que
-ya usaban los fixtures del seed —`presentation_label`, `meter_*`, `comp_*`— y
-`materialize/presentation.go` las traduce igual, así que el front debería
-pintarlas sin cambios. **Pero es lectura de código, no una medición**, y lo
-decimos así a propósito.
+`roas` sale sin medidor, que es lo que su commit anticipaba.
 
 **Punto 3 · la prosa:** leímos la Fase 6 del doc de diseño. Nos quedó claro y
 coincide con lo que propusimos, incluida la procedencia — `source` con el agente,
@@ -58,10 +58,27 @@ snapshot». Hoy el panel muestra, literal:
 Dos cosas ahí: está en inglés y la UI del producto es en español, y nombra una
 tabla del warehouse, que es exactamente el «obtener snapshot» de nuestra regla.
 
+**Y con `presentation` andando son varios más**, todos rótulos fijos de
+`queries.go`, ahora visibles en los seis KPI:
+
+| Constante | Sale en pantalla |
+|---|---|
+| `meterLabelTarget` | `% OF TARGET` |
+| `compLabelPreviousMonth` | `VS PREVIOUS MONTH` |
+| `compLabelPriorYear` | `VS PRIOR YEAR` |
+| `MetricSpec.Label` | `TOTAL`, `USD · TOTAL` |
+
 **No lo podemos arreglar de este lado**, y no por falta de ganas: la regla del
 adaptador es que renombra y reformatea pero **no escribe copy de producto**. Si
 tradujéramos acá, el día que ustedes cambien el texto tendríamos una tabla de
 traducción que nadie mantiene.
+
+**Y lo decidimos formalmente ayer, así que es una postura y no una preferencia:
+el producto habla español.** Lo medimos antes de decidirlo — el `.pen`, que es
+nuestra fuente de diseño, y el catálogo que datos curó en Snowflake están los dos
+en español; el inglés que queda viene de la semilla y de estos rótulos. El
+multi-idioma será una fase posterior y su forma ya está decidida: el idioma es
+del tenant y viaja en el catálogo.
 
 Lo mismo vale para `unlocks_with`.
 
@@ -89,13 +106,17 @@ no el simulado.
 
 ## 3 · El pedido: que `POST /config/chat` acepte contexto de PESTAÑA
 
-Hoy el chat se abre desde un panel y manda el contexto de ese panel. El `.pen`
-dibuja el chat **presente en todas las pantallas de consola**, no sólo colgando
-de un panel, y para eso la pregunta necesita poder venir con el contexto de la
-pestaña entera —sus paneles y su período— en vez de uno solo.
+Hoy el chat se abre desde un panel, y el cable **exige** uno: `panel_context` es
+`binding:"required"` con su `panel_id`. Sin panel no hay pregunta.
 
-Es lo único que separa a F3.15 de construirse, y está sin construir desde que
-existe el chat.
+El `.pen` dibuja el chat **en todas las pantallas de consola** —C1 ×5, C2, C3 ×2,
+C4 ×2, C5 y los dos responsive—, y en las dos formas. No es un complemento que
+cuelga de un panel: es presencia. Para eso la pregunta tiene que poder venir con
+el contexto de la **pestaña** —sus paneles y su período— en vez de uno solo.
+
+Concretamente: que `panel_context` deje de ser obligatorio y se acepte un
+contexto de pestaña como alternativa. **Es lo único que traba F3.15**, que hoy
+está en el plan con el candado puesto y esa razón escrita.
 
 **No lo escribimos nosotros a propósito.** Podríamos, pero ya tenemos cinco
 tareas suyas escritas en un fork esperando que las tomen, y sumar una sexta
