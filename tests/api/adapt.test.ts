@@ -130,13 +130,35 @@ describe('catálogo', () => {
     expect(rejected[0]?.razon).toContain('vendors')
   })
 
-  it('una forma que el backend no materializa tampoco pasa', () => {
-    // `distribution` está en el enum del contrato y NO en el `switch` del
-    // materializador: llegaría al catálogo y fallaría dos pasos después.
+  it('`distribution` SÍ pasa desde el 2026-09-25 · se dibuja', () => {
+    // **Esta prueba decía lo contrario y tenía razón hasta el 2026-09-21**,
+    // cuando `168a761` llevó el `switch` del materializador de nueve casos a
+    // quince. Ahora el backend la emite, el contrato declara su esquema y
+    // `DistributionBody` existe: las tres condiciones para dibujarla.
     const { metrics, rejected } = adaptCatalog([{ ...metrica, shape: 'distribution' }])
 
+    expect(metrics).toHaveLength(1)
+    expect(rejected).toHaveLength(0)
+  })
+
+  it('y `series_with_band` también · el nivel llegó con `75b8ecc`', () => {
+    const { metrics, rejected } = adaptCatalog([{ ...metrica, shape: 'series_with_band' }])
+    expect(metrics).toHaveLength(1)
+    expect(rejected).toHaveLength(0)
+  })
+
+  it('una forma que el front todavía NO DIBUJA no pasa · y la razón lo dice', () => {
+    // **Las cinco que quedan cumplen una de las tres condiciones y no las otras
+    // dos**: el backend las emite, nuestro contrato no declara su esquema y no
+    // hay cuerpo. Son F4.17–F4.19, y su candado dice exactamente eso.
+    //
+    // La razón dejó de decir «el backend no materializa», que era falso desde
+    // el 21 y estaba escrito en tres lugares a la vez.
+    const { metrics, rejected } = adaptCatalog([{ ...metrica, shape: 'matrix' }])
+
     expect(metrics).toHaveLength(0)
-    expect(rejected[0]?.razon).toContain('distribution')
+    expect(rejected[0]?.razon).toContain('matrix')
+    expect(rejected[0]?.razon).toMatch(/no dibuja/i)
   })
 
   it('lo que sí se puede adaptar no se cae con lo que no', () => {
@@ -173,10 +195,18 @@ describe('bloques', () => {
 
   it('expande el comodín de `blocked`, que el contrato no tiene', () => {
     const [b] = adaptBlocks([{ ...bars, type: 'blocked', accepted_shapes: ['*'] }])
-    // A las nueve que el backend materializa y no a las dieciséis del enum:
-    // ofrecer una forma que ningún payload trae es una promesa vacía.
-    expect(b?.formasAceptadas).toHaveLength(9)
+    // **A las que el front DIBUJA**, no a las dieciséis del enum: ofrecer una
+    // forma que ningún cuerpo puede pintar es una promesa vacía.
+    //
+    // Eran nueve y son once desde el 2026-09-25, cuando `distribucion` y
+    // `serieConBanda` pasaron a tener las tres cosas —el backend las emite, el
+    // contrato declara su esquema y hay cuerpo—.
     expect(b?.formasAceptadas).toContain('escalar')
+    expect(b?.formasAceptadas).toContain('distribucion')
+    expect(b?.formasAceptadas).toContain('serieConBanda')
+    // Y NO las cinco que no se dibujan · F4.17–F4.19.
+    expect(b?.formasAceptadas).not.toContain('matriz')
+    expect(b?.formasAceptadas).not.toContain('grafo')
   })
 
   /** ── LO QUE `/config/blocks` MANDA DE VERDAD · 2026-09-15 ────────────────
@@ -200,20 +230,21 @@ describe('bloques', () => {
     expect(b?.formasAceptadas).toEqual(contrato)
   })
 
-  it('que el BLOQUE nombre una forma no la hace materializable · son dos puertas', () => {
-    // El servicio dice que `distribution` acepta la forma `distribution`, y el
-    // bloque la nombra. Pero una MÉTRICA con esa forma sigue sin entrar al
-    // catálogo, porque `transform.go` no la escribe en `panel_data`.
+  it('que el BLOQUE nombre una forma no la hace dibujable · son dos puertas', () => {
+    // Las dos afirmaciones van juntas a propósito: hasta el 2026-09-15 eran una
+    // sola tabla, y la tentación de volver a juntarlas es lo que esta prueba
+    // impide.
     //
-    // Las dos afirmaciones van juntas a propósito. Hasta el 2026-09-15 eran una
-    // sola tabla —la forma se rechazaba por no tener nombre de cable—, y la
-    // tentación de volver a juntarlas es exactamente lo que esta prueba impide.
-    const [b] = adaptBlocks([{ ...bars, type: 'distribution', accepted_shapes: ['distribution'] }])
-    expect(b?.formasAceptadas).toEqual(['distribucion'])
+    // **El ejemplo cambió de forma el 2026-09-25**, y eso es el punto: la que
+    // servía —`distribution`— pasó a dibujarse, así que ahora ilustra con
+    // `matrix`, que el bloque `matrix` nombra y el catálogo sigue rechazando
+    // porque nuestro contrato no declara su esquema.
+    const [b] = adaptBlocks([{ ...bars, type: 'matrix', accepted_shapes: ['matrix'] }])
+    expect(b?.formasAceptadas).toEqual(['matriz'])
 
-    const { metrics, rejected } = adaptCatalog([{ ...metrica, shape: 'distribution' }])
+    const { metrics, rejected } = adaptCatalog([{ ...metrica, shape: 'matrix' }])
     expect(metrics).toHaveLength(0)
-    expect(rejected[0]?.razon).toContain('todavía no materializa')
+    expect(rejected[0]?.razon).toMatch(/no dibuja/i)
   })
 })
 

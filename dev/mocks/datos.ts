@@ -45,8 +45,17 @@ export const usuario = {
   password_updated: true,
 }
 
-/** Las nueve formas que el materializador sabe transformar, repartidas para que
- *  la biblioteca del builder tenga con qué en los cinco grupos. */
+/** Las formas que el materializador sabe transformar, repartidas para que la
+ *  biblioteca del builder tenga con qué en los cinco grupos.
+ *
+ *  **Decía «las nueve» y eran quince desde `168a761`**, del 2026-09-21. El
+ *  conteo se saca a propósito: un número en prosa se vence sin que nadie lo
+ *  note, y éste ya lo hizo —y de paso ayudó a que le mandáramos al backend un
+ *  mensaje equivocado el 2026-09-25 diciendo que no emitían dos de ellas—.
+ *
+ *  Las cinco que faltan acá —`compared_categorical`, `multi_attribute_profile`,
+ *  `matrix`, `graph`, `flow`— **no tienen esquema en nuestro contrato**: son
+ *  F4.17–F4.19, bloqueadas por eso y no porque el backend no las mande. */
 const FORMAS = [
   ['scalar', 'demand'],
   ['scalar', 'inventory'],
@@ -58,6 +67,12 @@ const FORMAS = [
   ['tabular', 'external'],
   ['prose', 'customer'],
   ['composition', 'demand'],
+  // Las dos que se adaptaron el 2026-09-25 y **no se podían mirar en ningún
+  // lado**: el servicio real no tiene métricas de estas formas y los mocks no
+  // las tenían. `series_with_band` es la que sostiene «un pronóstico sin banda
+  // no se publica», que sin esto no se ejercitaba nunca.
+  ['series_with_band', 'demand'],
+  ['distribution', 'inventory'],
 ] as const
 
 export const catalogo = FORMAS.flatMap(([shape, family], i) =>
@@ -65,7 +80,7 @@ export const catalogo = FORMAS.flatMap(([shape, family], i) =>
     id: M(i * 2 + k),
     tenant_id: TENANT,
     key: `${shape}_${String(i)}_${String(k)}`,
-    name: `${['Ventas', 'Margen', 'Tráfico', 'Inversión', 'Retorno', 'Stock', 'Quiebres', 'Órdenes', 'Ticket medio', 'Recompra'][i] ?? 'Métrica'} ${String(k + 1)}`,
+    name: `${['Ventas', 'Margen', 'Tráfico', 'Inversión', 'Retorno', 'Stock', 'Quiebres', 'Órdenes', 'Ticket medio', 'Recompra', 'Pronóstico de venta', 'Días de cobertura'][i] ?? 'Métrica'} ${String(k + 1)}`,
     shape,
     family,
     layer: ['GOLD', 'SILVER', 'BRONZE'][(i + k) % 3],
@@ -155,6 +170,11 @@ const tabsDe = (layout: string) => [
       panel(2, 1, TAB_A, 4, 3, 'kpi'),
       panel(3, 6, TAB_A, 7, 6, 'series'),
       panel(4, 12, TAB_A, 1, 4, 'bars'),
+      // **El pronóstico, con su banda** · el bloque `forecast` acepta
+      // `series_with_band`, y su `colSpan` va de 4 a 6.
+      panel(6, 20, TAB_A, 5, 4, 'forecast'),
+      // Y la distribución · su `colSpan` va de 5 a 8.
+      panel(7, 22, TAB_A, 9, 5, 'distribution'),
     ],
   },
   {

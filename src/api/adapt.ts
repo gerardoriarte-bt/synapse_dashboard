@@ -369,8 +369,8 @@ export function adaptCatalog(rows: readonly WireMetric[]): AdaptedCatalog {
           //
           // Lo agarró `adapt.test.ts`, que afirmaba el rechazo con su razón
           // escrita. La prueba estaba bien y la lectura era mía.
-          !MATERIALIZABLES.includes(forma)
-          ? `forma que el backend todavía no materializa: «${m.shape}»`
+          !DIBUJABLES.includes(forma)
+          ? `forma que el front todavía no dibuja: «${m.shape}»`
           : familia === undefined
           ? `familia desconocida: «${m.family}»`
           : capa === undefined
@@ -420,18 +420,30 @@ export function adaptCatalog(rows: readonly WireMetric[]): AdaptedCatalog {
 
 /* ── Bloques ──────────────────────────────────────────────────────────────── */
 
-/** **Lo que el comodín de `blocked` significa, y NO son las dieciséis.**
+/** **Las formas que este front puede DIBUJAR**, que es lo que la puerta del
+ *  catálogo y el comodín de `blocked` necesitan saber.
  *
- *  Antes salía de `Object.values(FORMAS)`, que daba lo mismo mientras el mapa de
- *  nombres estuviera incompleto —nueve— y dejó de darlo al completarlo. La
- *  coincidencia escondía que son dos preguntas distintas: **cómo se llama cada
- *  forma en el cable** es una tabla de nombres, y **cuáles sabe materializar el
- *  backend** es un hecho sobre su `transform.go`, que tiene nueve casos.
+ *  ── SE LLAMABA `MATERIALIZABLES`, Y EL NOMBRE ERA EL PROBLEMA · 2026-09-25 ──
  *
- *  Expandir el `*` a las dieciséis ofrecería formas que ningún payload trae, que
- *  es la misma promesa vacía que un período sin datos. Las siete que faltan
- *  entran con B5.3, junto con los cuerpos de F4.17–F4.19. */
-const MATERIALIZABLES: readonly Shape[] = [
+ *  Decía «cuáles sabe materializar el backend · su `transform.go` tiene nueve
+ *  casos», y **dejó de ser cierto el 2026-09-21**: `168a761` lo llevó a quince.
+ *  Cuatro días después el nombre seguía justificando la lista, así que agregar
+ *  `distribucion` y `serieConBanda` al adaptador de VALORES no alcanzó — las
+ *  métricas seguían rechazándose acá, en la puerta del catálogo, y el panel
+ *  decía «forma que el backend todavía no materializa» sobre una que sí.
+ *
+ *  **Lo encontró abrir el modo mock**, después de agregarles un panel: la
+ *  pantalla lo dijo con todas las letras. Ninguna prueba lo vio, porque las
+ *  pruebas afirmaban el rechazo con esa misma razón escrita.
+ *
+ *  Con el nombre correcto la lista se lee sola: una forma se dibuja cuando el
+ *  backend la emite **y** nuestro contrato declara su esquema **y** hay un
+ *  cuerpo. Las cinco que faltan cumplen la primera y no las otras dos — son
+ *  F4.17–F4.19, y su candado dice exactamente eso.
+ *
+ *  Expandir el `*` a las dieciséis ofrecería formas que ningún cuerpo puede
+ *  pintar, que es la misma promesa vacía que un período sin datos. */
+const DIBUJABLES: readonly Shape[] = [
   'escalar',
   'escalarConIntervalo',
   'serieTemporal',
@@ -441,6 +453,10 @@ const MATERIALIZABLES: readonly Shape[] = [
   'tabular',
   'prosa',
   'composicion',
+  // Las dos del 2026-09-25 · el backend las emite desde `168a761`, el contrato
+  // declara su esquema y `DistributionBody` y `ForecastBody` existen.
+  'distribucion',
+  'serieConBanda',
 ]
 
 /** Un bloque cuyo `type` no es uno de los quince **no entra a la tabla**, y sale
@@ -473,7 +489,7 @@ function unBloque(b: WireBlock, tipo: Block['tipo']): Block {
     // dieciséis del enumerado: ofrecer una forma que ningún payload trae es la
     // misma promesa vacía que un período sin datos.
     formasAceptadas: b.accepted_shapes.includes('*')
-      ? [...MATERIALIZABLES]
+      ? [...DIBUJABLES]
       : b.accepted_shapes.flatMap((s) => {
           const forma = FORMAS[s]
           return forma === undefined ? [] : [forma]

@@ -81,6 +81,33 @@ function valorPara(forma: string, i: number): Record<string, unknown> {
           { label: 'Social', points: puntos.map((p) => ({ ...p, v: p.v * 0.6 })) },
         ],
       }
+    case 'series_with_band':
+      // **La forma del CABLE, leída de `transform_v11.go` en `75b8ecc`**, no
+      // inventada: `level` de nivel superior y `lo`/`hi` en cada punto, los tres
+      // obligatorios. Su transformer falla con `ErrMissingField` si falta uno.
+      return {
+        shape: 'series_with_band',
+        level: 80,
+        points: puntos.map((p, k) => ({
+          ...p,
+          lo: p.v * (0.92 - k * 0.01),
+          hi: p.v * (1.08 + k * 0.01),
+        })),
+      }
+    case 'distribution':
+      // `bins` con `label` y `v`; `lo` y `hi` son opcionales en el cable y el
+      // adaptador no los trae, porque el contrato interno declara los cortes con
+      // etiqueta y valor y nada más.
+      return {
+        shape: 'distribution',
+        bins: [
+          { label: '0 – 2', v: n * 0.08 },
+          { label: '2 – 5', v: n * 0.21 },
+          { label: '5 – 10', v: n * 0.34 },
+          { label: '10 – 20', v: n * 0.25 },
+          { label: '20 +', v: n * 0.12 },
+        ],
+      }
     case 'categorical':
       return {
         shape: 'categorical',
