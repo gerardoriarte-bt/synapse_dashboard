@@ -530,6 +530,12 @@ Con eso `presentation` quedó **verificada de punta a punta** —la IP se habili
 los seis KPI traen su medidor y sus comparativos— y `distribucion` y
 `serieConBanda` se adaptaron y se pueden mirar en `dev:mock`.
 
+**EL CONSOLIDADO YA SE MANDÓ** · 2026-09-25, junto con `docs/PARA-BACKEND.md`:
+`docs/MENSAJE-2026-09-25-backend-estado-de-pedidos.md`. Dice todo lo que
+esperamos ordenado por lo que destraba, y admite lo nuestro —que el cable
+envejeció ocho días sin que lo leyéramos—. **Lo que sigue es esperar respuesta**,
+no volver a pedirlo.
+
 ## LO QUE FRENA HOY, y es poco
 
 | | Qué falta | De quién |
