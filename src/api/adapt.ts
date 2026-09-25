@@ -681,6 +681,40 @@ export function adaptValue(raw: unknown): ValorOk | ValorMal {
         : { ok: true, valor: { forma: 'serieTemporal', puntos: puntos(ps) } }
     }
 
+    case 'series_with_band': {
+      // **Adaptable desde `75b8ecc` (2026-09-25).** Hasta ese commit el cable
+      // mandaba los puntos sin `level` y con `lo`/`hi` opcionales, así que esta
+      // forma caía en el `default`: nuestro contrato declara `nivel` obligatorio
+      // y **una banda sin su nivel de confianza no se puede leer** —80% y 95%
+      // son afirmaciones distintas sobre el mismo pronóstico—.
+      //
+      // Lo pedimos y lo hicieron el mismo día. Ahora su transformer falla con
+      // `ErrMissingField` si falta cualquiera de los tres, así que lo que llega
+      // acá está completo o no llega.
+      const nivel = numero(v, 'level')
+      const ps = lista(v, 'points')
+      if (nivel === null) return { ok: false, razon: 'Un pronóstico sin nivel de intervalo.' }
+      if (ps === null) return { ok: false, razon: 'Un pronóstico sin puntos.' }
+
+      const pts: { t: string; v: number; lo: number; hi: number }[] = []
+      for (const p of ps) {
+        const marca = cadena(p, 't')
+        const n = numero(p, 'v')
+        const lo = numero(p, 'lo')
+        const hi = numero(p, 'hi')
+        // **Un punto sin banda no se deja pasar a medias.** `design.md`:
+        // «prohibida la estimación puntual sin intervalo; un pronóstico sin
+        // banda no se publica». Aceptar el punto y dibujarlo sin banda sería
+        // publicar justo lo que la regla prohíbe.
+        if (marca === null || n === null || lo === null || hi === null) {
+          return { ok: false, razon: 'Un punto del pronóstico llegó sin su intervalo.' }
+        }
+        pts.push({ t: marca, v: n, lo, hi })
+      }
+      if (pts.length === 0) return { ok: false, razon: 'Un pronóstico sin puntos válidos.' }
+      return { ok: true, valor: { forma: 'serieConBanda', nivel, puntos: pts } }
+    }
+
     case 'multi_series': {
       const ss = lista(v, 'series')
       if (ss === null) return { ok: false, razon: 'Un multiserie sin series.' }
@@ -843,13 +877,6 @@ export function adaptValue(raw: unknown): ValorOk | ValorMal {
       // lado —esquema en `Valor` y cuerpo—, y son F4.17–F4.19, que siguen
       // bloqueadas con esa razón escrita y verificada el 2026-09-25.
       //
-      // **`series_with_band` también cae acá, y por una razón distinta**: el
-      // contrato declara `nivel` obligatorio en `ValorSerieConBanda` y el cable
-      // no lo manda. Una banda sin su nivel de confianza no se puede leer —80%
-      // y 95% son afirmaciones distintas—, así que adaptarla hoy sería inventar
-      // el número. Está preguntado en
-      // `docs/RESPUESTA-2026-09-25-dos-formas.md` §3, y ellos ya ofrecieron
-      // agregarlo.
       return { ok: false, razon: `Forma desconocida: «${shape}».` }
   }
 }

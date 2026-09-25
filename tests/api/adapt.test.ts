@@ -498,12 +498,44 @@ describe('las formas de v1.1 · el día que llegaron', () => {
     expect(conValor({ shape: 'distribution', bins: [] })).toMatchObject({ estado: 'ERROR' })
   })
 
-  it('series_with_band NO se adapta todavía · y la razón NO es que no llegue', () => {
-    // El contrato declara `nivel` obligatorio en `ValorSerieConBanda` y el cable
-    // no lo manda. Una banda sin su nivel de confianza no se puede leer: 80% y
-    // 95% son afirmaciones distintas. Adaptarla hoy sería inventar el número.
-    const p = conValor({ shape: 'series_with_band', points: [{ t: '2026-09', v: 10, lo: 8, hi: 12 }] })
+  it('series_with_band SÍ se adapta · desde `75b8ecc`, con su nivel', () => {
+    // **Lo pedimos el 2026-09-25 y lo hicieron el mismo día.** Antes el cable
+    // mandaba los puntos sin `level`, y nuestro contrato lo declara obligatorio:
+    // una banda sin su nivel de confianza no se puede leer, 80% y 95% son
+    // afirmaciones distintas sobre el mismo pronóstico.
+    expect(
+      conValor({
+        shape: 'series_with_band',
+        level: 80,
+        points: [{ t: '2026-09', v: 10, lo: 8, hi: 12 }],
+      }),
+    ).toMatchObject({
+      valor: { forma: 'serieConBanda', nivel: 80, puntos: [{ t: '2026-09', v: 10, lo: 8, hi: 12 }] },
+    })
+  })
+
+  it('sin `level` NO se adapta · no se inventa el nivel del intervalo', () => {
+    const p = conValor({
+      shape: 'series_with_band',
+      points: [{ t: '2026-09', v: 10, lo: 8, hi: 12 }],
+    })
     expect(p).toMatchObject({ estado: 'ERROR' })
+  })
+
+  it('y un punto SIN banda tumba el pronóstico entero · regla dura', () => {
+    // «Prohibida la estimación puntual sin intervalo. Un pronóstico sin banda no
+    // se publica.» Dibujar el punto sin su banda sería publicar exactamente lo
+    // que la regla prohíbe, así que el panel entra en ERROR con su razón.
+    const p = conValor({
+      shape: 'series_with_band',
+      level: 80,
+      points: [
+        { t: '2026-09', v: 10, lo: 8, hi: 12 },
+        { t: '2026-10', v: 11 },
+      ],
+    })
+    expect(p).toMatchObject({ estado: 'ERROR' })
+    expect((p as { mensaje: string }).mensaje).toMatch(/intervalo/i)
   })
 
   it.each([

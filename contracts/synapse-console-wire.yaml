@@ -200,7 +200,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   /config/panels:batch:
-    x-verificado-en: 1e080ee
+    x-verificado-en: 75b8ecc
     post:
       tags: [config]
       operationId: batchPanels
@@ -610,10 +610,17 @@ components:
             2026-09-25: se citó esta línea como si confirmara una medición
             nuestra, y era la misma lectura vieja escrita dos veces.
 
-            `distribution` emite `{bins:[{label, v, lo?, hi?}]}` y
-            `series_with_band` `{points:[{t, v, lo?, hi?}]}` **sin `level`** —
-            pedido, porque el contrato interno lo exige. Reverificado contra
-            `1e080ee` el 2026-09-25.
+            `distribution` emite `{bins:[{label, v, lo?, hi?}]}`.
+
+            **`series_with_band` es ESTRICTA desde `75b8ecc`**, el mismo día que
+            se pidió: `{level, points:[{t, v, lo, hi}]}`, con `level` de nivel
+            superior y `lo`/`hi` obligatorios por punto. Su transformer falla con
+            `ErrMissingField` si falta cualquiera de los tres, así que lo que
+            llega está completo o no llega — que es lo que deja al front aplicar
+            «un pronóstico sin banda no se publica» sin tener que adivinar si es
+            un intervalo faltante o una serie mal etiquetada.
+
+            Reverificado contra `75b8ecc` el 2026-09-25.
           examples:
             - scalar
             - scalar_with_interval
