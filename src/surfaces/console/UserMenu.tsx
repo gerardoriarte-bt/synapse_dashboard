@@ -34,14 +34,14 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Label } from '../../render/primitives/Label'
 import { esAdmin } from '../../api/rol'
+/** **El registro, no una lista propia** · 2026-09-25. Acá vivían dos entradas
+ *  escritas a mano —«son dos y agregar una tercera es una decisión»— y esa
+ *  decisión ya estaba tomada en `app/router/routes.tsx`, que monta las mismas
+ *  rutas. Dos fuentes del mismo hecho: la que se olvidara dejaba una superficie
+ *  montada y sin forma de llegar. */
+import { salidasDesde } from '../superficies'
 import type { AppContext } from '../../api/types'
 
-/** Las dos superficies que cuelgan de acá, con su ruta. Escritas, no derivadas:
- *  son dos y agregar una tercera es una decisión, no un descubrimiento. */
-const SUPERFICIES = [
-  { ruta: '/admin', nombre: 'Administración' },
-  { ruta: '/builder', nombre: 'Builder' },
-] as const
 
 type Props = { context: AppContext }
 
@@ -101,7 +101,7 @@ export function UserMenu({ context }: Props) {
           {admin && (
             <div className="flex flex-col gap-1 pt-3 border-t border-w4">
               <Label as="div">Ir a</Label>
-              {SUPERFICIES.map((s) => (
+              {salidasDesde('consola', admin).map((s) => (
                 <button
                   key={s.ruta}
                   type="button"

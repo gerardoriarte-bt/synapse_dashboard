@@ -30,6 +30,7 @@ import {
   useLayouts,
   useRoles,
   useSaveRole,
+  useMe,
   useTenants,
 } from '../../api/hooks'
 import { AdminChrome } from './AdminChrome'
@@ -60,6 +61,9 @@ export function Admin() {
   const navegar = useNavigate()
   const [pantalla, setPantalla] = useState<PantallaId>('clientes')
   const [tenant, setTenant] = useState<string | null>(null)
+  // La identidad del navbar · §PEN:A1. Sale del mismo `/config/me` que la
+  // consola: no hay una fuente de identidad por superficie.
+  const contexto = useMe()
   const tenants = useTenants()
 
   const lista = tenants.data ?? []
@@ -118,6 +122,9 @@ export function Admin() {
       tenants={lista}
       tenantActivo={activo}
       onTenant={setTenant}
+      {...(contexto.data === undefined
+        ? {}
+        : { identidad: { rol: contexto.data.role.nombre, nombre: contexto.data.user.nombre } })}
     >
       {pendiente !== undefined ? (
         <div className="flex flex-col gap-2">

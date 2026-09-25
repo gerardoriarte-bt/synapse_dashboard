@@ -142,7 +142,9 @@ describe('§7.3 · el vocabulario de los dos campos', () => {
     const { container } = montar()
     await abrirFicha()
 
-    const planner = screen.getByText('Planner').closest('li')
+    // Acotado a la lista: desde el 2026-09-25 el navbar pinta la identidad
+    // —§PEN:A1— y el nombre del rol activo puede aparecer también ahí.
+    const planner = screen.getAllByText('Planner').map((e) => e.closest('li')).find(Boolean)
     expect(within(planner as HTMLElement).getByText(/Resumen/)).toBeInTheDocument()
     expect(container.textContent ?? '').not.toContain('tab-a')
   })
@@ -164,7 +166,9 @@ describe('§7.3 · el vocabulario de los dos campos', () => {
     const { container } = montar()
     await abrirFicha()
 
-    const planner = screen.getByText('Planner').closest('li')
+    // Acotado a la lista: desde el 2026-09-25 el navbar pinta la identidad
+    // —§PEN:A1— y el nombre del rol activo puede aparecer también ahí.
+    const planner = screen.getAllByText('Planner').map((e) => e.closest('li')).find(Boolean)
     expect(within(planner as HTMLElement).getByText(/Margen/)).toBeInTheDocument()
     expect(container.textContent ?? '').not.toContain('m-2')
   })
@@ -208,7 +212,11 @@ describe('borrar · el conteo va ANTES del botón', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Borrar Planner' }))
 
-    await waitFor(() => expect(screen.queryByText('Planner')).toBeNull())
+    // Lo que desaparece es la FILA, no toda mención: la identidad del navbar
+    // sigue nombrando el rol de quien está mirando.
+    await waitFor(() =>
+      expect(screen.queryAllByText('Planner').some((e) => e.closest('li') !== null)).toBe(false),
+    )
     expect(screen.getByText('CEO')).toBeInTheDocument()
     expect(container.textContent ?? '').not.toContain('sin cuerpo')
   })
@@ -251,7 +259,9 @@ describe('crear y editar', () => {
     montar()
     await abrirFicha()
 
-    const planner = screen.getByText('Planner').closest('li')
+    // Acotado a la lista: desde el 2026-09-25 el navbar pinta la identidad
+    // —§PEN:A1— y el nombre del rol activo puede aparecer también ahí.
+    const planner = screen.getAllByText('Planner').map((e) => e.closest('li')).find(Boolean)
     await userEvent.click(within(planner as HTMLElement).getByRole('button', { name: 'Editar' }))
 
     // Precargado: «Resumen» marcado y «Margen» marcado.
@@ -502,7 +512,9 @@ describe('el desglose de §9, desde la superficie · A2 §9', () => {
     // Una vez por tarjeta: son tres roles y los tres ven esa pestaña. Se
     // asserta dentro de UNA, que es el ámbito que la afirma.
     await screen.findAllByText('¿Cómo va el negocio?')
-    const planner = screen.getByText('Planner').closest('li') as HTMLElement
+    // Acotado a la lista: desde el 2026-09-25 el navbar pinta la identidad
+    // —§PEN:A1— y el nombre del rol activo puede aparecer también ahí.
+    const planner = screen.getAllByText('Planner').map((e) => e.closest('li')).find(Boolean) as HTMLElement
     expect(within(planner).getByText('¿Cómo va el negocio?')).toBeInTheDocument()
     // Y su conteo, que es la otra mitad del desglose.
     expect(within(planner).getByText('3 paneles')).toBeInTheDocument()

@@ -312,3 +312,52 @@ describe('§ANCLA:ANCHO-1 · admin declara ancho mínimo, no colapso', () => {
     }
   })
 })
+
+describe('§PEN:A1 · el navbar de admin pinta la identidad', () => {
+  /** **El hueco que cierra.** El navbar de `A1 · Clientes y plataforma` lleva un
+   *  bloque `Identidad` con el ROL en `$dim` y el NOMBRE en `$ink`, mono de 9.
+   *  No se pintaba, y **nada en el código decía que fuera a propósito**: lo
+   *  encontró mirar las tres superficies juntas el 2026-09-25, cuando apareció
+   *  que admin y builder no dicen quién sos ni con qué rol estás operando.
+   *
+   *  **No es el menú de la consola.** El dibujo pone identidad, no un control.
+   *  Dónde vive la salida hacia otra superficie **el `.pen` no lo dibuja en
+   *  ninguna de sus quince pantallas**, y está preguntado en
+   *  `docs/PROPUESTA-2026-09-25-navegacion-entre-superficies.md` en vez de
+   *  inventarse — que es como nacieron el riel de doce chips y el «← Consola».
+   */
+  it('dice el rol y el nombre de quien está mirando', async () => {
+    server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
+    montar()
+    await screen.findByText('Under Armour México')
+
+    const cabecera = document.querySelector('header') as HTMLElement
+    // Los valores salen del contexto por defecto de los mocks, leídos de ahí.
+    expect(within(cabecera).getByText('Planner')).toBeVisible()
+    expect(within(cabecera).getByText('Prueba Uno')).toBeVisible()
+  })
+
+  it('y sale del contexto, no de una constante', async () => {
+    // El ámbito: con otro usuario tiene que cambiar. Un rótulo quemado pasaría
+    // la prueba de arriba y diría «admin» para todo el mundo.
+    server.use(
+      http.get(`${API}/admin/tenants`, () => ok(tenants)),
+      http.get(`${API}/config/me`, () =>
+        ok({
+          user: { id: 'u-9', first_name: 'Otra', last_name: 'Persona', email: 'o@p' },
+          tenant: { id: 't-1', name: 'Under Armour México' },
+          role: { id: 'r-9', name: 'planner' },
+          tabs: [],
+          periods: ['2026-09'],
+          catalog_version: 1,
+        }),
+      ),
+    )
+    montar()
+    await screen.findByText('Under Armour México')
+
+    const cabecera = document.querySelector('header') as HTMLElement
+    expect(within(cabecera).getByText('planner')).toBeVisible()
+    expect(within(cabecera).getByText('Otra Persona')).toBeVisible()
+  })
+})

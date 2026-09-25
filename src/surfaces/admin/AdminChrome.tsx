@@ -42,6 +42,17 @@ type Props = {
   /** Volver a la consola · `undefined` no pinta el control, que es la regla del
    *  CTA sin manejador. */
   onVolver?: () => void
+  /** Quién está mirando · **§PEN:A1 lo dibuja**: el navbar de `A1 · Clientes y
+   *  plataforma` lleva un bloque `Identidad` con el ROL en `$dim` y el NOMBRE en
+   *  `$ink`, los dos en mono de 9. Hasta el 2026-09-25 no se pintaba, y nada en
+   *  este archivo decía que fuera a propósito: era un hueco.
+   *
+   *  **No es el menú de la consola.** El dibujo pone identidad, no un control:
+   *  quién sos y con qué rol estás operando, que en administración es la
+   *  pregunta que importa antes de tocar algo. Dónde vive la salida a otra
+   *  superficie es otra decisión, y está preguntada al `.pen` en
+   *  `docs/PROPUESTA-2026-09-25-navegacion-entre-superficies.md`. */
+  identidad?: { rol: string; nombre: string }
   /** El tenant en contexto, para las pantallas de alcance `tenant`. */
   tenants: readonly { id: string; nombre: string }[]
   tenantActivo: string | null
@@ -49,7 +60,11 @@ type Props = {
   children: React.ReactNode
 }
 
-export function AdminChrome({ activa, onIr, onVolver, tenants, tenantActivo, onTenant, children }: Props) {
+/** Mono 9 · el tamaño `nota` de §2.3, que es el que el dibujo usa acá. Mismo
+ *  literal que `RoleCard`, que ya lo necesitaba. */
+const NOTA = 'font-mono text-nota leading-rotulo tracking-rotulo uppercase m-0'
+
+export function AdminChrome({ activa, onIr, onVolver, identidad, tenants, tenantActivo, onTenant, children }: Props) {
   const pantalla = PANTALLAS.find((p) => p.id === activa) ?? PANTALLAS[0]
   const porTenant = pantalla.alcance === 'tenant'
 
@@ -84,6 +99,15 @@ export function AdminChrome({ activa, onIr, onVolver, tenants, tenantActivo, onT
                   del contenedor, no del chrome». Escrito con el hook, además,
                   rompía doce pruebas que montan el chrome sin router — y tenían
                   razón en romperse. */}
+              {/* La identidad va PRIMERO en la fila, como en el dibujo: el
+                  navbar de A1 la pone antes que nada a la derecha. Y con
+                  `gap-2` entre rol y nombre, que son los 7 del `.pen`. */}
+              {identidad !== undefined && (
+                <span className="flex items-baseline gap-2">
+                  <span className={`${NOTA} text-dim`}>{identidad.rol}</span>
+                  <span className={`${NOTA} text-ink`}>{identidad.nombre}</span>
+                </span>
+              )}
               {onVolver !== undefined && (
                 <button
                   type="button"
