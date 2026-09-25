@@ -4,6 +4,9 @@
  *
  *  ── EL ANCHO ───────────────────────────────────────────────────────────────
  *
+ *  §ANCLA:ANCHO-1 · principio 4: «Ancho mínimo por superficie: 1280 en
+ *  administración, 1600 en el builder». La excepción de B5 a 1440 está abajo.
+ *
  *  §4 da dos números con dos razones: **1600** en B1–B4 y B6 —1200 de lienzo 1:1
  *  más 300 de biblioteca, «a otra escala las unidades de arrastre mentirían»— y
  *  **1440 en B5**, que muestra la consola del cliente a su ancho real.

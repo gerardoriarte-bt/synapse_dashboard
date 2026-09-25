@@ -21,6 +21,9 @@
  *
  *  ── EL ANCHO MÍNIMO ES 1280 Y NO 360 ────────────────────────────────────────
  *
+ *  §ANCLA:ANCHO-1 · principio 4: «Ancho mínimo por superficie: 1280 en
+ *  administración, 1600 en el builder».
+ *
  *  La corrección de §4 del `.pen`: «Ancho mínimo por superficie: 1280 en
  *  administración, 1600 en el builder». El responsive de §4 describe la grilla
  *  de paneles; **las tablas no son grillas** y perdían contenido en silencio

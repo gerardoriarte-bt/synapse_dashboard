@@ -124,6 +124,20 @@ ANCLAS = [
         ),
     ),
     dict(
+        id="ANCHO-1",
+        seccion="§4 · principio 4",
+        cita="Ancho mínimo por superficie: 1280 en administración, 1600 en el builder",
+        # Agregada el 2026-09-25 al barrer el responsive: el comportamiento era
+        # correcto en las dos superficies y el builder tenía su prueba, pero
+        # admin no. Un `min-w-[1280px]` interpolado compila y no pinta nada
+        # —Tailwind poda lo que su escáner no ve escrito—, así que la regla se
+        # podía perder sin que nada fallara.
+        implementa=[
+            "src/surfaces/admin/AdminChrome.tsx",
+            "src/surfaces/builder/BuilderChrome.tsx",
+        ],
+    ),
+    dict(
         id="DEGRAD-1",
         seccion="§8",
         cita="El panel muestra el dato con un badge que declara la limitación y su alcance",

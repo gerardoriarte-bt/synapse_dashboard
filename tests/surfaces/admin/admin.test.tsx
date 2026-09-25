@@ -6,6 +6,7 @@
  *  lección del 2026-08-20: 184 pruebas en verde sobre un colapso responsive que
  *  violaba §3.1 de tres formas, porque estaban escritas desde el código.
  */
+import { readFileSync } from 'node:fs'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
@@ -248,5 +249,66 @@ describe('«Ver ficha» abre el cliente que se cliqueó · 2026-09-25', () => {
     // **y navega**. Sin esto, dejar de navegar sobrevivía a la mutación —el
     // catálogo se pide igual, porque su hook precalienta el cache a propósito.
     expect(await screen.findByRole('heading', { name: /ficha de cliente/i })).toBeVisible()
+  })
+})
+
+describe('§ANCLA:ANCHO-1 · admin declara ancho mínimo, no colapso', () => {
+  /** **La regla citada**, principio 4 de `design.md`: «Ancho mínimo por
+   *  superficie: 1280 en administración, 1600 en el builder». Y su razón, que es
+   *  lo que la vuelve una regla y no una preferencia: «las tablas y el lienzo de
+   *  composición no son grids y **perdían contenido en silencio** (PS-5)».
+   *
+   *  **El builder tenía su prueba desde siempre y admin no**, encontrado al
+   *  barrer el responsive el 2026-09-25. El comportamiento era correcto —medido
+   *  en el navegador: abajo de 1280 se queda en 1280 y aparece scroll, sin
+   *  perder columnas— pero **nada lo sostenía**.
+   *
+   *  Y el modo de falla lo describe el propio comentario del builder: un
+   *  `min-w-[1280px]` interpolado **compila y no pinta nada**, porque Tailwind
+   *  poda lo que su escáner no ve escrito. Es el silencio de `text-labell`: se
+   *  vería como una pantalla que simplemente se achica.
+   */
+  it('el chrome pinta `min-w-[1280px]`, escrito y no interpolado', async () => {
+    server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
+    const { container } = montar()
+    await screen.findByText('Under Armour México')
+
+    expect(container.querySelector('.min-w-\\[1280px\\]')).not.toBeNull()
+  })
+
+  it('el mínimo está ESCRITO, no interpolado · en las dos superficies', () => {
+    /** **Lo que jsdom no puede ver**, y por eso va estático. Una clase
+     *  interpolada —`min-w-[${ancho}px]`— produce el mismo atributo en el DOM,
+     *  así que la aserción de arriba pasa igual; lo que no produce es el CSS,
+     *  porque **Tailwind poda lo que su escáner no ve escrito**. En una prueba
+     *  no hay Tailwind, así que el efecto no existe y no se puede medir.
+     *
+     *  Lo encontró una mutación: interpolar la clase sobrevivía. Y el mismo
+     *  punto ciego tiene la prueba del builder, cuyo comentario afirma cazarlo
+     *  — por eso esta mira los dos archivos y no sólo el de admin.
+     */
+    const fuentes: [string, string][] = [
+      ['src/surfaces/admin/AdminChrome.tsx', 'min-w-[1280px]'],
+      ['src/surfaces/builder/BuilderChrome.tsx', 'min-w-[1600px]'],
+    ]
+    for (const [ruta, clase] of fuentes) {
+      const codigo = readFileSync(ruta, 'utf-8')
+      expect(codigo).toContain(clase)
+      // Ninguna forma interpolada de la utilidad: es la que compila y no pinta.
+      expect(codigo).not.toMatch(/min-w-\[\$\{/)
+    }
+  })
+
+  it('NO colapsa · §4 pide ancho mínimo, no menos columnas', async () => {
+    // El ámbito, igual que en el builder: si alguien «arregla» el scroll
+    // agregando un colapso, la tabla vuelve a perder columnas en silencio, que
+    // es exactamente lo que PS-5 registró.
+    server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
+    const { container } = montar()
+    await screen.findByText('Under Armour México')
+
+    for (const clase of ['grid-cols-6', 'grid-cols-1', 'max-w-full']) {
+      expect(container.querySelector(`.${clase}`)).toBeNull()
+    }
   })
 })
