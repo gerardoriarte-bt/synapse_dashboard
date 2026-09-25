@@ -4218,7 +4218,7 @@ estimación que no bajaría.
 
 ### F4.1 ✅ `surfaces/admin/` — layout base y navegación
 ### F4.2 ✅ Lista de tenants
-### F4.3 ⚠️ Gestión de usuarios y roles por tenant · ABIERTA el 2026-09-25
+### F4.3 ⚠️ Gestión de usuarios y roles por tenant · A3 construida · 🔒 el alcance de plataforma no tiene ruta
 ### F4.4 ✅ Configuración de agente Snowflake por tenant
 ### F4.5 ✅ Vista del catálogo de métricas del tenant
 **Criterio de aceptación (los cinco).**
@@ -4302,6 +4302,16 @@ con qué la desbloquea. Una pantalla que dice qué le falta no es lo mismo que u
 en blanco.
 
 #### F4.3 · abierta el 2026-09-25
+
+**Las dos mitades existen desde el 2026-09-25**: la de roles se veía desde que
+`/roles/composition` respondió, y A3 se construyó ese día —`§PEN:A3` en
+`src/surfaces/admin/UserList.tsx`—. Vista contra el servicio real.
+
+**Queda en ⚠️ y no en ✅ por el alcance**, que no es un detalle: el dibujo declara
+A3 de PLATAFORMA —«17 usuarios · 2 clientes con usuarios»— y la única ruta que
+existe es por tenant; `/admin/users` da 404. La pantalla lo declara y **no lo
+compensa sumando N llamadas**. Faltan además el estado de invitación pendiente,
+quién dio el alta y reenviar la invitación, los tres sin campo ni ruta.
 
 **DESBLOQUEADA el 2026-09-25 (humano)**, con la medición delante.
 El candado decía «`/admin/users` y `/admin/roles` dan 404» y **seguía siendo
@@ -5671,7 +5681,11 @@ demuestra que es un descuido y no una convención.
 cambiado sin regenerar— y comprobando que los otros tres contratos siguen
 conformes.
 
-#### ➕ F4.24 ⬜ A5 · Salud de feeds · la pantalla que explica por qué una métrica está degradada
+#### ➕ F4.24 ✅ A5 · Salud de feeds · la pantalla que explica por qué una métrica está degradada
+**Construida el 2026-09-25**, el mismo día que llegó su ruta. `§PEN:A5` en
+`src/surfaces/admin/FeedHealth.tsx`, con el estado derivado y no leído, los tres
+huecos del cable declarados en la pantalla, y los dos vacíos. Vista contra el
+servicio real —cuatro fuentes sin carga— y en el modo mock con los tres estados.
 **Descripción.** La quinta pantalla de §7.3, dibujada en `§PEN:A5` y sin
 construir. **Su ruta llegó el 2026-09-25**: `GET /admin/tenants/{tenantId}/feeds`
 · B2.13 · verificada contra `1e080ee`.

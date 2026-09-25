@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**110 de 210 tareas cerradas.** 22 parciales · 73 pendientes · 5 diferidas.
+**111 de 210 tareas cerradas.** 22 parciales · 72 pendientes · 5 diferidas.
 
 
-## Front · 103 de 125
+## Front · 104 de 125
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -16,7 +16,7 @@
 | 1 · Consola y render/ | `████████████████████··` | 41/46 | 3 | 2 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `████████████████······` | 11/15 | 0 | 1 |
-| 4 · Admin y Builder | `███████████████·······` | 16/24 | 2 | 6 |
+| 4 · Admin y Builder | `████████████████······` | 17/24 | 2 | 5 |
 | 5 · Pruebas y pulido | `█████████████████·····` | 14/18 | 0 | 3 |
 
 ## Backend · 7 de 85
@@ -44,14 +44,14 @@
 
 ---
 
-## Se puede tomar hoy · 2 del front
+## Se puede tomar hoy · 0 del front
 
-- **F4.24** · A5 · Salud de feeds · la pantalla que explica por qué una métrica está degradada
-- **F4.3** · Gestión de usuarios y roles por tenant · ABIERTA el 2026-09-25
+Nada del front está libre: todo lo pendiente espera algo.
+
 
 ---
 
-## Bloqueadas · 42
+## Bloqueadas · 43
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -72,6 +72,7 @@ Lo que el front espera del backend está detallado en
 - **F4.19** · GraphBody + GraphPlot
 - **F4.20** · Registrar los tres con carga diferida
 - **F4.21** · Selector de gráfico en el builder
+- **F4.3** · Gestión de usuarios y roles por tenant · A3 construida
 - **F5.1** · Selector de layout cuando hay más de uno
 - **F5.13** · Períodos libres en el selector
 - **F5.3** · Completar los plots que falten

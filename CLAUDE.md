@@ -362,9 +362,12 @@ el **2026-09-16**: `gerardo.riarte@buentipo.com` pasó a rol `Admin` —lo hizo 
 backend, no nosotros— y `/admin/*` dejó de dar 403. El claim se compara contra
 `roles.name` **normalizando la mayúscula**, así que `Admin` entra.
 
-**Lo que sigue sin verse contra el servicio son las rutas del fork** —B4.8 y
-B4.9—, que no está desplegado: 404. Para esas dos pantallas el modo mock sigue
-siendo la única forma de recorrerlas.
+**De las dos rutas del fork ya queda una** · medido el 2026-09-25 contra
+`1e080ee`. **B4.8 la tomaron**, y en la ruta que propusimos:
+`GET /admin/tenants/{tenantId}/roles/composition` → 200, así que A2 y A3 se ven
+contra el servicio real. **B4.9 sigue en 404** —`/admin/layouts/{id}/preview`—,
+así que para la vista previa por rol el modo mock sigue siendo la única forma de
+recorrerla.
 
 **Y el humo de `/admin/*` ya corrió** · 2026-09-16, las ocho rutas contra
 `synapse-admin-wire.yaml`, campo por campo. **El PascalCase quedó confirmado y no
@@ -498,40 +501,92 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-09-24 · el dashboard con dato real, esperando al materializador
+### ⇩ ACÁ SE PARÓ · 2026-09-25 · el backend contestó todo el mismo día
 
-**Lo que costó descubrir está en `docs/BITACORA-2026-09-24-tarde.md`** —la tarde,
-que es donde el dato se volvió real y contradijo cuatro cierres— y en
-`docs/BITACORA-2026-09-24.md`, la mañana. Los días anteriores en
-`docs/BITACORA-2026-09-22.md` y `docs/BITACORA-2026-09-21.md`. Esto es dónde
-retomar.
+**Lo que costó descubrir está en las bitácoras**: `docs/BITACORA-2026-09-24-tarde.md`
+—el día que el dato se volvió real y contradijo cuatro cierres—, su mañana en
+`docs/BITACORA-2026-09-24.md`, y antes `docs/BITACORA-2026-09-22.md` y
+`docs/BITACORA-2026-09-21.md`. Esto es dónde retomar.
 
-**EL DASHBOARD MUESTRA EL NEGOCIO, y el chat contesta.** Las dos cosas que
-llevaban un mes sin verificarse contra su fuente. El camino completo corre:
-vista de Snowflake → `sync-catalog` → `materialize` → `panels:batch` → pantalla,
-en los doce períodos, y el selector navega entre ellos con dato distinto en cada
-uno. Ver `docs/BITACORA-2026-09-24-tarde.md`.
+**EL CONTEO NO SE ESCRIBE ACÁ**: sale de `docs/ESTADO.md`, que se genera. Hoy dice
+**0 del front tomables** — no porque no haya trabajo, sino porque todo lo
+pendiente espera algo, y cada candado tiene su razón escrita.
 
-**LO PRIMERO, Y NO ES CÓDIGO: mandar el mensaje al materializador.** Es lo único
-que frena, y frena dos cosas visibles en pantalla.
+**LAS CINCO PANTALLAS DE §7.3 ESTÁN CONSTRUIDAS.** A5 · Salud de feeds (F4.24) y
+A3 · Usuarios (F4.3) se construyeron el 2026-09-25, el mismo día que llegaron sus
+rutas. `PENDIENTES` de `Admin.tsx` quedó vacío por primera vez.
 
-| Para | Qué pide | Dónde |
+**Y el backend contestó tres pedidos en el día**, con código:
+
+| Commit | Qué trajo |
+|---|---|
+| `6e595e3` | `presentation` en los KPI escalares y `DEGRADED` para filas nunca materializadas |
+| `1e080ee` | **Salud de feeds por fuente, usuarios por tenant y B4.8** — y tomaron `/roles/composition`, la ruta que propusimos |
+| `75b8ecc` | `series_with_band` estricta: `level` por valor y `lo`/`hi` obligatorios |
+
+Con eso `presentation` quedó **verificada de punta a punta** —la IP se habilitó y
+los seis KPI traen su medidor y sus comparativos— y `distribucion` y
+`serieConBanda` se adaptaron y se pueden mirar en `dev:mock`.
+
+## LO QUE FRENA HOY, y es poco
+
+| | Qué falta | De quién |
 |---|---|---|
-| **Backend** | Que el materializador emita `presentation`; que `preserved` / `last_success_at IS NULL` degrade en vez de servirse `AVAILABLE`; y acordar el camino de los paneles de prosa | `docs/MENSAJE-2026-09-24-materializador.md` |
-| **Datos** | Recurar las seis filas de `SEMANTIC_DIRECTION` que traen el código en vez del texto | El SQL ya lleva la decisión y la vista de issues las detecta sola |
+| **A1 · las cinco columnas** | `GET /admin/tenants` devuelve `id` y `name` · B4.1, **escrita en nuestro fork** | Que la tomen |
+| **A3 · alcance de plataforma** | No hay ruta que liste usuarios de todos los clientes; `/admin/users` da 404 | Backend |
+| **F3.15 · el chat presente** | Que `POST /config/chat` acepte contexto de pestaña | Backend · pedido |
+| **F4.17–F4.19** | `Valor` no declara `matriz`, `grafo`, `flujo` ni las otras dos · **y B5.3 pide que el dato exista**, que no existe | Las dos condiciones, verificadas el 2026-09-25 |
+| **Seis filas de `SEMANTIC_DIRECTION`** | Traen el código en vez del texto | Datos |
 
-**Lo que cada uno destraba:** con `presentation`, los seis KPI recuperan su
-medidor y sus comparativos —hoy son una cifra sola—; con el degradado, la consola
-deja de contradecirse; y con el camino de prosa acordado, se puede construir el
-resumen, que es el primer panel de la pantalla.
+**Y tres decisiones esperando a diseño**, todas con propuesta escrita:
+`docs/PROPUESTA-2026-09-25-navegacion-entre-superficies.md` —el `.pen` no dibuja
+navegación entre superficies en ninguna de sus quince pantallas—,
+`docs/PROPUESTA-2026-09-25-degradado.md` y las del `.pen` en
+`docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md`.
 
-**Los dos mensajes del 22 ya se mandaron y se resolvieron** · datos habilitó la
-IP y registró la clave, backend corrigió el host en `61d16da`. Quedan como
-histórico.
+## LA LECCIÓN DEL 2026-09-25, QUE VALE MÁS QUE LO CONSTRUIDO
 
-**Lo que sigue sin verificarse contra Cortex es lo de más abajo del chat**:
-F3.15 —la presencia del chat en todas las pantallas, que el `.pen` dibuja y nunca
-construimos— espera que `POST /config/chat` acepte contexto de pestaña.
+**Le mandamos un mensaje equivocado al backend.** Dijimos que no emitían dos
+formas de valor y las emitían desde hacía cuatro días. El error fue de medición:
+
+```
+grep -n "case \"" transform.go     # ← sólo ve los casos con literal
+```
+
+Su `switch` tiene quince casos y **siete usan constantes** —`case
+ShapeDistribution:`—, que ese patrón no ve. Y hubo una señal que se leyó al
+revés: el mismo grep mostró `ErrUnknownShape` diecisiete líneas después del
+último `case`, y ese hueco no se preguntó.
+
+**Peor: la corroboración era falsa.** Se citó nuestro propio cable —«las nueve
+que `TransformValue` sabe transformar»— como si confirmara la medición. Era una
+transcripción NUESTRA, anterior, hecha con la misma lectura vieja. **Una
+transcripción que coincide con una medición no es una segunda fuente: es la misma
+fuente dos veces.**
+
+Y el supuesto viejo estaba en **cuatro** lugares —el adaptador de valores, su
+prueba, el plan y `MATERIALIZABLES`—, escritos cuando era cierto. Los tres
+primeros se arreglaron leyéndolos; **el cuarto lo encontró abrir el modo mock**,
+porque las pruebas afirmaban el rechazo con esa misma razón escrita.
+
+**De ahí salieron dos arreglos que valen para adelante:**
+
+- **`backend-drift` es por ruta**, no binario. Llevaba **ocho días en rojo** y
+  había dejado de leerse: no sabía decir «reverificado en parte», así que la
+  única forma de ponerlo en verde era mentir. Ahora dice «8 de 9 rutas sin
+  reverificar», las lista, y **el número baja de a una**.
+- **`MATERIALIZABLES` pasó a `DIBUJABLES`**, porque el nombre era el problema:
+  seguía justificando una lista que ya no describía. Con el nombre correcto se
+  lee sola — una forma se dibuja cuando el backend la emite **y** el contrato
+  declara su esquema **y** hay cuerpo.
+
+## Y UNA COSA QUE SE REPITIÓ TRES VECES HOY
+
+**La mutación encontró que ninguna prueba tocaba el adaptador**, en A5 y en A3.
+Las pruebas de pantalla construyen el tipo a mano, así que la frontera queda sin
+cubrir — y ahí vive siempre la misma distinción: `null` es «nunca» y `0` es
+«recién». Si se construye otra pantalla con su adaptador, la prueba del
+adaptador va de entrada.
 
 **Cuatro decisiones humanas del 2026-09-22, ya ejecutadas**: el contexto del chat
 pasa a ser de pestaña —cierra §5 y reemplaza la del 17—, el logotipo a color va
@@ -571,12 +626,16 @@ Hasta acá decía que lo único que frenaba era B3.11. **Venció**: la base loca
 `POST /config/chat` deja de dar 500 y devuelve **409 · «no hay agente activo
 disponible para este tenant y rol»**.
 
-**Lo que frena ahora es un agente con credenciales de Snowflake**, y es más duro:
-`GET /admin/tenants/{tenantId}/agents` devuelve `[]`, un agente necesita cuenta,
-usuario, rol y clave privada, y **el servicio no tiene modo sin Cortex** —
-`cortex_chat.go` habla contra Cortex de verdad—. Nosotros no corremos nada en
-Snowflake. Así que las once tareas cerradas de Fase 3 siguen verificadas **sólo
-contra mocks**, y no hay forma de cambiarlo desde acá.
+**Y eso también venció · el 2026-09-24 el chat contestó contra Cortex de
+verdad.** Decía que frenaba un agente con credenciales de Snowflake y que las
+once tareas de Fase 3 seguían verificadas **sólo contra mocks**. Datos habilitó
+la IP y registró la clave, backend corrigió el host en `61d16da`, y el agente
+`SYNAPSE_UA` contesta desde la consola.
+
+**Lo que apareció al abrirlo fue nuestro**: el chat **nunca había autenticado**.
+`askSynapse` usa `fetch` crudo —lo único que deja leer el cuerpo como stream— y
+al escribirlo aparte de `client.ts` se copiaron las dos cabeceras del SSE y no la
+`Authorization`. **MSW no podía verlo**: sus handlers no exigen el token.
 
 B3.11 **sigue abierta igual**: su criterio pide las nueve columnas en la base
 **compartida**, y esa no responde desde acá.
