@@ -122,6 +122,46 @@ tests/           TODAS las pruebas, espejando src/. Los mocks de MSW viven acá
   compartido con el backend. Se lee `metric.familia` y `panel.colSpan` en la
   misma línea: el lado izquierdo es nuestro, el derecho es del contrato.
 
+**EL PRODUCTO HABLA ESPAÑOL · decidido el 2026-09-25 (humano).** Se levantó la
+pregunta al ver la pantalla mezclando los dos idiomas, y **la premisa era al
+revés de lo que parecía**. Medido ese día contra las cuatro fuentes:
+
+| Fuente | Idioma | Quién la controla |
+|---|---|---|
+| **El `.pen`** · normativo para el literal de UI | **Español** · `Resumen ejecutivo`, `TODOS LOS CANALES`, `PERÍODO` | Diseño · no lo modificamos |
+| **El catálogo de Snowflake** · el real, firmado | **Español** · `Ingresos`, «Venta total del sitio medida por Adobe Analytics…» | Datos |
+| Nuestro chrome | Español | Nosotros |
+| La semilla del backend | **Inglés** · `Executive summary`, `ALL CHANNELS` | Backend |
+| El copy de estados · `reason`, `unlocks_with` | **Inglés** | Backend |
+
+**El inglés que se ve en pantalla no es el producto: es la semilla, y está
+derivada del dibujo.** El `.pen` dice `Resumen ejecutivo` donde la semilla dice
+`Executive summary`, y `TODOS LOS CANALES` donde dice `ALL CHANNELS` — alguien
+tradujo el mockup al escribirla. Cuando los dos paneles de prosa dejen de
+servirse desde la semilla, el inglés se va casi solo.
+
+Pasar todo a inglés costaría que **datos recure las diez métricas que acaba de
+firmar**, que **el `.pen` se retraduzca** —y es normativo, no lo tocamos—, ~189
+cadenas en 63 archivos nuestros con sus pruebas, y 43 documentos. A cambio
+arreglaría **dos cosas que son del backend** y que ya están pedidas en
+`docs/MENSAJE-2026-09-25-backend-chat-y-rebase.md`.
+
+**El dueño del copy que describe datos es el CATÁLOGO**, y por eso el adaptador
+no escribe copy de producto: si tradujéramos acá, el día que cambie el texto de
+origen tendríamos una tabla de traducción que nadie mantiene. Un texto en inglés
+en pantalla es un pedido a quien lo emite, no un arreglo nuestro.
+
+**Lo que queda en inglés pase lo que pase**, y está bien: los identificadores,
+las claves del cable —`status`, `value`, `reason`— y las capas Medallion
+—`GOLD`, `SILVER`—, que son nombres propios de la arquitectura.
+
+**El multi-idioma es una fase posterior, y su forma ya está decidida: el idioma
+es del TENANT y viaja en el catálogo**, que es de donde sale todo el copy que
+describe datos. Cablear inglés «por si acaso» no resuelve eso y tira el trabajo
+de datos. Lo que faltaría es una capa de i18n para nuestro chrome, que hoy no
+existe — ese sí sería trabajo nuestro, y no se toma hasta que haya un tenant que
+lo pida.
+
 ## Tokens bajo Tailwind v4
 
 Los tokens viven en `src/tokens/tokens.css` con el espacio de nombres que
