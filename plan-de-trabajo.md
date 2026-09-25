@@ -1126,6 +1126,21 @@ Es la primera vez que el camino completo se ejercita de punta a punta: vista →
 que el camino completo se ejercita: vista → `sync-catalog` → `materialize` →
 `panels:batch` → panel.
 
+**Medido el 2026-09-25 contra `6e595e3` limpio · el corte está en
+`docs/ESTADO-2026-09-25-formas-y-estados.md`.** Cuatro de los seis estados
+verificados —`DISPONIBLE`, `DEGRADADO`, `BLOQUEADO` y `CARGANDO`— y los dos que
+faltan **no son alcanzables hoy, con su razón**: `SIN_PERMISO` necesita un
+usuario no-admin y `GET /admin/users` da 404 —es **B4.16**—, y `ERROR` pide
+componer un `gauge` sin `maximum`, y ninguno de los doce paneles lo es.
+
+**Y de las once formas del contrato llegan cinco.** Las otras seis
+—`composicion`, `distribucion`, `escalarConIntervalo`, `ranking`,
+`serieConBanda` y `serieTemporal`— **no las declara ninguna métrica del catálogo
+real**, así que no se alcanzan componiendo: un panel se ancla a un `metricId`.
+Es exactamente lo que este criterio pide anotar —«no es un panel roto, es una
+forma que el backend no materializa»— y la pregunta que lo cierra es de datos:
+si UA MX tiene métricas de esas formas o son para otros clientes.
+
 | | |
 |---|---|
 | `make sync-catalog` | `created=6 updated=4 · catalog_version=2` desde `SYNAPSE_METRIC_CATALOG` |
