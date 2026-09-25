@@ -122,8 +122,8 @@ que su resultado esté escrito.
 | `A3 · Usuarios · filtro sin resultados` | **No construida** · ídem |
 | `A4 · Catálogo de métricas` | `src/surfaces/admin/CatalogView.tsx` |
 | `A4 · Métricas · filtro sin resultados` | `src/surfaces/admin/EmptyRow.tsx` |
-| `A5 · Salud de feeds` | **No construida** · ninguna ruta declara la frescura por feed · B2.13 |
-| `A5 · Feeds · tenant sin fuentes` | **No construida** · ídem |
+| `A5 · Salud de feeds` | **No construida** · **F4.24**, abierta el 2026-09-25 · su ruta llegó ese día, verificada contra `1e080ee` |
+| `A5 · Feeds · tenant sin fuentes` | **No construida** · ídem · es el vacío de alta, el tercer tipo |
 | `A6 · Cola de accionables` | **No construida** · F3.10, diferida por D3 |
 | `B1 · Selector de contexto` | `src/surfaces/builder/ContextView.tsx` |
 | `B2 · Canvas de composición` | `src/surfaces/builder/Canvas.tsx` |
@@ -4218,22 +4218,7 @@ estimación que no bajaría.
 
 ### F4.1 ✅ `surfaces/admin/` — layout base y navegación
 ### F4.2 ✅ Lista de tenants
-### F4.3 ⚠️ Gestión de usuarios y roles por tenant · 🔒 ver abajo · el candado dice una ruta que ya no es la que importa
-**EL CANDADO ES LITERALMENTE CIERTO Y SUSTANCIALMENTE VIEJO · medido el
-2026-09-25 contra `1e080ee`.** `/admin/users` y `/admin/roles` **siguen dando
-404**, así que la frase no miente. Pero la capacidad existe en otras rutas:
-`GET /admin/tenants/{tenantId}/users` → 200 y
-`GET /admin/tenants/{tenantId}/roles/composition` → 200 —**tomaron la ruta que
-propusimos y escribimos en el fork**—.
-
-**No se toma sin decidirlo.** Es exactamente la forma del 2026-09-16 con
-F4.17–F4.20: un candado cuya razón venció en parte. Lo que cambia acá es que
-venció del todo y la frase quedó nombrando la ruta equivocada; lo que no cambia
-es que la decisión de tomarla no es del agente.
-
-**La mitad de roles ya se ve contra el servicio real**, verificado en pantalla el
-2026-09-25: A2 dibuja los tres roles con su composición y el aviso de las
-métricas que `planner` no recibe.
+### F4.3 ⚠️ Gestión de usuarios y roles por tenant · ABIERTA el 2026-09-25
 ### F4.4 ✅ Configuración de agente Snowflake por tenant
 ### F4.5 ✅ Vista del catálogo de métricas del tenant
 **Criterio de aceptación (los cinco).**
@@ -4315,6 +4300,23 @@ scroll, que es visible.
 **Tres pantallas se declaran pendientes en vez de mostrarse vacías**, cada una
 con qué la desbloquea. Una pantalla que dice qué le falta no es lo mismo que una
 en blanco.
+
+#### F4.3 · abierta el 2026-09-25
+
+**DESBLOQUEADA el 2026-09-25 (humano)**, con la medición delante.
+El candado decía «`/admin/users` y `/admin/roles` dan 404» y **seguía siendo
+literalmente cierto**: esas dos rutas dan 404. Lo que venció es su sustancia — `/admin/users` y `/admin/roles` **siguen dando
+404**, así que la frase no miente. Pero la capacidad existe en otras rutas:
+`GET /admin/tenants/{tenantId}/users` → 200 y
+`GET /admin/tenants/{tenantId}/roles/composition` → 200 —**tomaron la ruta que
+propusimos y escribimos en el fork**—.
+**No se toma sin decidirlo.** Es exactamente la forma del 2026-09-16 con
+F4.17–F4.20: un candado cuya razón venció en parte. Lo que cambia acá es que
+venció del todo y la frase quedó nombrando la ruta equivocada; lo que no cambia
+es que la decisión de tomarla no es del agente.
+**La mitad de roles ya se ve contra el servicio real**, verificado en pantalla el
+2026-09-25: A2 dibuja los tres roles con su composición y el aviso de las
+métricas que `planner` no recibe.
 
 ### F4.3 parcial el 2026-09-15 · la mitad de roles, no la de usuarios
 
@@ -5668,6 +5670,48 @@ demuestra que es un descuido y no una convención.
 **Verificado por mutación** en los dos casos —generado editado a mano, yaml
 cambiado sin regenerar— y comprobando que los otros tres contratos siguen
 conformes.
+
+#### ➕ F4.24 ⬜ A5 · Salud de feeds · la pantalla que explica por qué una métrica está degradada
+**Descripción.** La quinta pantalla de §7.3, dibujada en `§PEN:A5` y sin
+construir. **Su ruta llegó el 2026-09-25**: `GET /admin/tenants/{tenantId}/feeds`
+· B2.13 · verificada contra `1e080ee`.
+
+La nota del `.pen` la define en una línea: «la pantalla que explica por qué una
+métrica está degradada». Su pregunta operativa, del frame: *¿Por qué una métrica
+está degradada, y qué la desbloquea?*
+
+**Alcance TENANT**, y por eso su navbar **sí** lleva selector de cliente —A1 no lo
+lleva porque opera sobre la plataforma—. Ancho mínimo 1280, como el resto de
+administración.
+
+**Criterio de aceptación.**
+- Las ocho columnas del dibujo: `FUENTE`, `CAPA`, `CADENCIA`, `ÚLTIMA CARGA`,
+  `FRESCURA`, `FILAS`, `FALLAS S › G` y `MÉTRICAS`.
+- **El estado NO se lee: se DERIVA.** El pie del dibujo lo dice con todas las
+  letras —«el estado no se escribe, se deriva · si frescura > cadencia ×
+  tolerancia, degrada»— y es la razón por la que B2.13 se pidió como ruta y no
+  como campo. El payload trae `status` igual; **usarlo sería reintroducir las dos
+  fuentes que el pedido evitó**. Si `status` y la derivación difieren, se muestra
+  la derivación y se declara la diferencia.
+- Una fila se expande y muestra la razón, **qué la desbloquea** y las métricas
+  afectadas con su tipo de panel, con salida al catálogo.
+- El resumen del encabezado —«9 fuentes · 8 al día · 1 degradada»— sale de contar
+  lo derivado, no de un campo.
+- **El vacío de alta**, que es el tercer tipo: `A5 · Feeds · tenant sin fuentes`.
+  «No falta un filtro ni falla nada: el cliente es nuevo y el trabajo está por
+  hacerse», y **el encabezado se conserva** — las columnas siguen diciendo qué
+  habría ahí.
+- **Lo que el cable NO trae se declara, no se inventa**, medido el 2026-09-25
+  contra `1e080ee`:
+  - **La CAPA no llega.** El dibujo la pone como columna y el payload no tiene
+    `layer`. Se declara el hueco y se pide.
+  - **«VER RECHAZOS» y «SINCRONIZAR TODO» no tienen ruta.** Sin manejador no se
+    pinta el CTA · la regla del botón muerto.
+  - Una fuente sin cargar nunca llega con `freshness_hours`, `last_load_at`,
+    `rows_processed` y `rows_failed` en `null` y `status: "unknown"`. **No es un
+    error: es una fuente sin Gold**, y la pantalla lo dice.
+- **Se abre el `.pen` antes de escribir la primera línea** y el archivo lleva
+  `§PEN:A5`, que es lo que `pen-pantallas` verifica.
 
 #### ➕ F4.23 ✅ Los hooks del builder contra el cable
 **Descripción.** `useTenants`, `useLayouts`, `useLayoutDetail`, `useSaveLayout`,
