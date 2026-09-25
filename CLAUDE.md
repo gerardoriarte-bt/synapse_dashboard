@@ -753,11 +753,19 @@ adyacencia pura más un rompimiento que el conflicto no muestra: su commit agreg
 **`go build` pasaba; lo encontró `go vet`**. La receta está en
 `docs/PLAN-INTEGRACION-2026-09-17.md`.
 
-**`backend-drift` sale ✗ a propósito.** La línea `commit` del cable declara
-`733c13c` y ellos están en `82da946`. Se transcribieron **tres rutas** de ese
-commit —`/config/chat`, `/config/chat/threads` y `chat-suggestions`— marcadas
-`x-origen: 82da946`; las otras seis del cable no se reverificaron, así que mover
-la línea diría que sí. La herramienta no sabe expresar «reverificado en parte».
+**`backend-drift` está VERDE desde el 2026-09-25**, por primera vez en ocho
+días y sin mentir: **las nueve rutas leídas contra `75b8ecc`**, una por una.
+
+Antes salía ✗ «a propósito» porque miraba una sola línea `commit` y no sabía
+decir «reverificado en parte», así que la única forma de ponerlo en verde era
+mover la línea y afirmar de más. **Ahora la marca es por ruta**
+—`x-verificado-en`— y el número baja de a una.
+
+**Reverificarlas encontró cuatro cosas** que llevaban entre cuatro y ocho días
+sin transcribirse: `dashboards`, `active_dashboard_id` y `active_layout_id` en
+`/config/me`; `preferred_dashboard_id` en las preferencias; `tab_context` en el
+chat; y `tab_id` en el riel de hilos. **Dos candados vencieron con eso** —F5.1 y
+F3.15— y quedan anotados sin tomar.
 
 ---
 

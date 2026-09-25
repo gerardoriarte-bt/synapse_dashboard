@@ -4095,7 +4095,17 @@ tenía anotada.
 **Abierta en el navegador**: tres chips, apretar uno pregunta, y el bloque
 desaparece al responder.
 
-#### ➕ F3.15 ⬜ El chat tiene presencia en la consola · 🔒 el cable exige un panel
+#### ➕ F3.15 ⬜ El chat tiene presencia en la consola · 🔒 el candado VENCIÓ el 2026-09-25
+
+**MEDIDO CONTRA `75b8ecc`.** Decía «el cable exige un panel» y ya no: el handler
+acepta **exactamente uno** de `panel_context` o `tab_context` —si vienen los dos
+o ninguno devuelve 400— y su propio comentario cita esta tarea.
+`GET /config/chat/threads` acepta `tab_id`, que es el par del riel.
+
+Lo pedimos el 2026-09-25 y lo hicieron el mismo día. **Se deja anotado y no se
+toma**: abrir un candado es decisión humana, y queda puesto a propósito hasta que
+alguien la tome — sin él, `ESTADO.md` lo ofrecería como trabajo libre.
+
 **Descripción.** Decisión humana del **2026-09-22**: *«el chat debe tener
 presencia, es una funcionalidad importante para el uso de Synapse, no un
 complemento — algo flotante o una persiana que abre sobre el dashboard»*.
@@ -5882,7 +5892,20 @@ cliente, el nombre que deja de abrir y Escape que no cierra. Mueren las nueve.
 
 ## Fase 5 — Multi-dashboard, pruebas y pulido
 
-### F5.1 ⬜ Selector de layout cuando hay más de uno · 🔒 `Contexto` no declara `layouts`
+### F5.1 ⬜ Selector de layout cuando hay más de uno · 🔒 el candado VENCIÓ el 2026-09-25
+
+**MEDIDO CONTRA `75b8ecc`.** `DDContextResponse` declara `dashboards` —con `id`,
+`name`, `slug` e `is_default`—, `active_dashboard_id` y `active_layout_id`, y
+`PUT /config/me/preferences` acepta `preferred_dashboard_id`. El orden de
+resolución lo escribe su propio comentario: **preferencia > rol > default del
+tenant**.
+
+Llegó con `168a761` el 2026-09-21 y **estuvo cuatro días sin transcribirse**,
+porque el cable declaraba `733c13c` para `/config/me` y nadie la releyó. Lo
+encontró reverificar el cable ruta por ruta.
+
+**Se deja anotado y no se toma**, igual que F3.15.
+
 **Descripción.** Un tenant puede tener varios dashboards —«Operaciones»,
 «Marca», «Ejecutivo»—. El selector aparece solo si `ctx.layouts.length > 1`.
 **Criterio de aceptación.**

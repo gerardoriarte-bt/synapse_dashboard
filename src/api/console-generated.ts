@@ -296,6 +296,29 @@ export interface components {
              * @example 2026-09
              */
             open_period?: string;
+            /**
+             * @description Los dashboards que el rol ve. **Con más de uno, la consola necesita
+             *     un selector** · F5.1.
+             */
+            dashboards?: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                slug: string;
+                is_default: boolean;
+            }[];
+            /**
+             * Format: uuid
+             * @description El resuelto, y el orden de resolución lo declara su comentario:
+             *     **preferencia del usuario > rol > default del tenant**. Ausente si
+             *     no hay ninguno.
+             */
+            active_dashboard_id?: string;
+            /**
+             * Format: uuid
+             * @description El layout del dashboard activo. Ausente si no hay ninguno.
+             */
+            active_layout_id?: string;
             catalog_version: number;
         };
         /** @description El nombre llega partido; el contrato lo pide junto. */
@@ -571,13 +594,33 @@ export interface components {
             catalog_version: number;
         };
         /**
-         * @description `ddChatRequest` de `dd_chat_handler.go`. Los tres nombres del cable son
-         *     `question`, `panel_context` y `thread_id`, y los dos primeros son
-         *     `binding:"required"`.
+         * @description `ddChatRequest` de `dd_chat_handler.go`.
+         *
+         *     **`panel_context` dejó de ser obligatorio · reverificado contra
+         *     `75b8ecc` el 2026-09-25.** Ahora el handler exige **exactamente uno** de
+         *     `panel_context` o `tab_context` —`if (req.PanelContext == nil) ==
+         *     (req.TabContext == nil)` devuelve 400— y su propio comentario cita la
+         *     tarea: «exactamente uno de panel_context o tab_context (F3.15)».
+         *
+         *     **Es lo que pedimos el 2026-09-25 y lo hicieron el mismo día.** Y es lo
+         *     que F3.15 esperaba: su candado dice «el cable exige un panel», y ya no.
+         *     Queda anotado y **no se toma** — un candado vencido se dice y se
+         *     pregunta.
          */
         ChatAskRequest: {
             question: string;
-            panel_context: {
+            /**
+             * @description **La presencia del chat en la consola** · el `.pen` lo dibuja en las
+             *     quince pantallas y colgaba de un panel. Con esto la pregunta puede
+             *     ser de la pestaña entera.
+             */
+            tab_context?: {
+                /** Format: uuid */
+                tab_id: string;
+                /** @example 2026-09 */
+                period: string;
+            };
+            panel_context?: {
                 /** Format: uuid */
                 panel_id: string;
                 /**
@@ -978,6 +1021,12 @@ export interface operations {
                 "application/json": {
                     /** @enum {string} */
                     theme: "dark" | "light";
+                    /**
+                     * Format: uuid
+                     * @description `null` limpia la preferencia y vuelve a la resolución por
+                     *     rol. Ausente la deja como está.
+                     */
+                    preferred_dashboard_id?: string | null;
                 };
             };
         };
@@ -1066,6 +1115,13 @@ export interface operations {
                  *     la hoja de un panel muestre sus propias conversaciones.
                  */
                 panel_id?: string;
+                /**
+                 * @description **Nuevo · reverificado contra `75b8ecc` el 2026-09-25.** El par del
+                 *     `tab_context` de `POST /config/chat`: con el chat presente en la
+                 *     pestaña, el riel tiene que poder mostrar los hilos de esa pestaña y
+                 *     no los de un panel · F3.15.
+                 */
+                tab_id?: string;
                 /** @description `YYYY-MM`. Otro formato devuelve **400**, no una lista vacía. */
                 period?: string;
                 /**

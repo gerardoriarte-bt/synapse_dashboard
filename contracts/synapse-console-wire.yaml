@@ -93,7 +93,7 @@ tags:
 
 paths:
   /config/me:
-    x-verificado-en: 733c13c
+    x-verificado-en: 75b8ecc
     get:
       tags: [config]
       operationId: getMe
@@ -116,7 +116,7 @@ paths:
         '500': { $ref: '#/components/responses/ServerError' }
 
   /config/catalog:
-    x-verificado-en: 733c13c
+    x-verificado-en: 75b8ecc
     get:
       tags: [config]
       operationId: getCatalog
@@ -140,7 +140,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/blocks:
-    x-verificado-en: 733c13c
+    x-verificado-en: 75b8ecc
     get:
       tags: [config]
       operationId: getBlocks
@@ -164,7 +164,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/tabs/{tabId}:
-    x-verificado-en: 733c13c
+    x-verificado-en: 75b8ecc
     get:
       tags: [config]
       operationId: getTab
@@ -234,7 +234,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/me/preferences:
-    x-verificado-en: 733c13c
+    x-verificado-en: 75b8ecc
     put:
       tags: [config]
       operationId: updatePreferences
@@ -251,6 +251,20 @@ paths:
               required: [theme]
               properties:
                 theme: { type: string, enum: [dark, light] }
+                # **Nuevo, reverificado contra `75b8ecc` el 2026-09-25.** Llegó
+                # con la Fase 5 del backend y estuvo sin transcribir desde
+                # `168a761`: el cable declaraba `733c13c` para esta ruta.
+                #
+                # Es la preferencia que gana en la resolución del dashboard
+                # activo —**preferencia > rol > default del tenant**, lo declara
+                # `DDContextResponse`— así que es la mitad que escribe lo que
+                # `active_dashboard_id` devuelve.
+                preferred_dashboard_id:
+                  type: [string, 'null']
+                  format: uuid
+                  description: |
+                    `null` limpia la preferencia y vuelve a la resolución por
+                    rol. Ausente la deja como está.
       responses:
         '200':
           description: El tema guardado
@@ -270,7 +284,7 @@ paths:
 
   # ── B3.1 · el chat contextual · TRANSCRITO DE 82da946 ────────────────────
   /config/chat:
-    x-verificado-en: 82da946
+    x-verificado-en: 75b8ecc
     post:
       tags: [config]
       operationId: askChat
@@ -328,7 +342,7 @@ paths:
 
   # ── F3.7 · el historial de hilos · TRANSCRITO DE 82da946 ─────────────────
   /config/chat/threads:
-    x-verificado-en: 82da946
+    x-verificado-en: 75b8ecc
     get:
       tags: [config]
       operationId: listChatThreads
@@ -351,6 +365,15 @@ paths:
           description: |
             Filtra a los hilos abiertos desde ese panel. Es lo que permite que
             la hoja de un panel muestre sus propias conversaciones.
+        - name: tab_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+          description: |
+            **Nuevo · reverificado contra `75b8ecc` el 2026-09-25.** El par del
+            `tab_context` de `POST /config/chat`: con el chat presente en la
+            pestaña, el riel tiene que poder mostrar los hilos de esa pestaña y
+            no los de un panel · F3.15.
         - name: period
           in: query
           required: false
@@ -382,7 +405,7 @@ paths:
 
   # ── B3.2 · las preguntas sugeridas · TRANSCRITO DE 82da946 ───────────────
   /config/panels/{panelId}/chat-suggestions:
-    x-verificado-en: 82da946
+    x-verificado-en: 75b8ecc
     get:
       tags: [config]
       operationId: panelChatSuggestions
@@ -539,6 +562,42 @@ components:
             **No se deduce contra `new Date()`**: el corte del día es del tenant
             y su huso, no del navegador · la regla de las dos zonas horarias.
           examples: ['2026-09']
+
+        # ── MULTI-DASHBOARD · reverificado contra `75b8ecc` el 2026-09-25 ────
+        #
+        # **Tres campos que el cable no tenía.** Llegaron con la Fase 5 del
+        # backend y estuvieron sin transcribir desde `168a761` (2026-09-21):
+        # el cable declaraba `733c13c` para esta ruta y nadie la releyó.
+        #
+        # **Esto es lo que F5.1 esperaba.** Su candado dice «`Contexto` no
+        # declara `layouts`», y ahora declara `dashboards` con su
+        # `active_layout_id` resuelto. Queda anotado y **no se toma**: un
+        # candado vencido se dice y se pregunta.
+        dashboards:
+          type: array
+          description: |
+            Los dashboards que el rol ve. **Con más de uno, la consola necesita
+            un selector** · F5.1.
+          items:
+            type: object
+            required: [id, name, slug, is_default]
+            properties:
+              id: { type: string, format: uuid }
+              name: { type: string }
+              slug: { type: string }
+              is_default: { type: boolean }
+        active_dashboard_id:
+          type: string
+          format: uuid
+          description: |
+            El resuelto, y el orden de resolución lo declara su comentario:
+            **preferencia del usuario > rol > default del tenant**. Ausente si
+            no hay ninguno.
+        active_layout_id:
+          type: string
+          format: uuid
+          description: El layout del dashboard activo. Ausente si no hay ninguno.
+
         catalog_version: { type: integer }
 
     UserInfo:
@@ -828,12 +887,31 @@ components:
     ChatAskRequest:
       type: object
       description: |
-        `ddChatRequest` de `dd_chat_handler.go`. Los tres nombres del cable son
-        `question`, `panel_context` y `thread_id`, y los dos primeros son
-        `binding:"required"`.
-      required: [question, panel_context]
+        `ddChatRequest` de `dd_chat_handler.go`.
+
+        **`panel_context` dejó de ser obligatorio · reverificado contra
+        `75b8ecc` el 2026-09-25.** Ahora el handler exige **exactamente uno** de
+        `panel_context` o `tab_context` —`if (req.PanelContext == nil) ==
+        (req.TabContext == nil)` devuelve 400— y su propio comentario cita la
+        tarea: «exactamente uno de panel_context o tab_context (F3.15)».
+
+        **Es lo que pedimos el 2026-09-25 y lo hicieron el mismo día.** Y es lo
+        que F3.15 esperaba: su candado dice «el cable exige un panel», y ya no.
+        Queda anotado y **no se toma** — un candado vencido se dice y se
+        pregunta.
+      required: [question]
       properties:
         question: { type: string }
+        tab_context:
+          type: object
+          description: |
+            **La presencia del chat en la consola** · el `.pen` lo dibuja en las
+            quince pantallas y colgaba de un panel. Con esto la pregunta puede
+            ser de la pestaña entera.
+          required: [tab_id, period]
+          properties:
+            tab_id: { type: string, format: uuid }
+            period: { type: string, examples: ['2026-09'] }
         panel_context:
           type: object
           required: [panel_id, period]
