@@ -496,6 +496,41 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  # ── B2.13 · salud de feeds por fuente ────────────────────────────────────
+  /admin/tenants/{tenantId}/feeds:
+    get:
+      tags: [admin]
+      operationId: listFeeds
+      summary: Las fuentes de datos del cliente y su salud
+      description: |
+        **Transcrita el 2026-09-25 desde `1e080ee`**, leyendo la respuesta del
+        servicio corriendo campo por campo.
+
+        Es la ruta que A5 necesita, y se pidió **como ruta y no como un campo
+        `estado` en la métrica**: el estado de una métrica se DERIVA de
+        `frescura > cadencia × tolerancia`, y guardarlo crearía dos fuentes para
+        el mismo hecho que se separan en el primer feed atrasado.
+
+        **`status` llega igual y el front NO lo usa.** Está acá porque el
+        servicio lo manda, no porque la pantalla lo lea · §PEN:A5, al pie: «el
+        estado no se escribe, se deriva».
+      parameters: [{ $ref: '#/components/parameters/tenantId' }]
+      responses:
+        '200':
+          description: Las fuentes, con su cadencia, su frescura y sus métricas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Feed' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
 components:
   securitySchemes:
     bearer: { type: http, scheme: bearer, bearerFormat: JWT }
@@ -547,6 +582,56 @@ components:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   schemas:
+
+    Feed:
+      type: object
+      description: |
+        Una fuente de datos del tenant · `1e080ee`.
+
+        **Los cuatro campos que importan son `cadence_hours`,
+        `tolerance_factor`, `freshness_hours` y `last_load_at`**: de ahí sale el
+        estado, derivado. El resto es lo que la tabla de §PEN:A5 pinta.
+
+        **`layer` NO llega**, y el dibujo la pone como columna. Declarado como
+        hueco en F4.24 en vez de inventarlo.
+      required: [key, name, cadence_hours, tolerance_factor, metric_count, metric_keys, is_active]
+      properties:
+        key: { type: string }
+        name: { type: string, description: El nombre que ve una persona }
+        gold_table:
+          type: string
+          description: Puede venir vacío · una fuente sin tabla Gold todavía
+        cadence_hours: { type: integer, description: Cada cuántas horas se espera una carga }
+        tolerance_factor: { type: integer, description: El múltiplo de la cadencia que se tolera }
+        source_labels:
+          type: array
+          items: { type: string }
+          description: Los textos de `source` de las métricas que caen en esta fuente
+        last_load_at:
+          type: [string, 'null']
+          format: date-time
+          description: |
+            **`null` cuando nunca cargó**, que es como llegan las cuatro del
+            tenant de prueba el 2026-09-25. No es un error: es una fuente sin
+            Gold todavía.
+        last_load_checked_at: { type: [string, 'null'], format: date-time }
+        rows_processed: { type: [integer, 'null'] }
+        rows_failed: { type: [integer, 'null'], description: Las que fallaron la validación Silver→Gold }
+        freshness_hours:
+          type: [number, 'null']
+          description: Horas desde la última carga. `null` si nunca cargó
+        status:
+          type: string
+          description: |
+            **El front NO lo lee.** Lo manda el servicio y la pantalla deriva el
+            suyo · §PEN:A5. Se transcribe para que la próxima persona que lo vea
+            sepa que la omisión es deliberada.
+        metric_count: { type: integer }
+        metric_keys:
+          type: array
+          items: { type: string }
+          description: Las métricas que dependen de esta fuente
+        is_active: { type: boolean }
     Envelope:
       type: object
       required: [success]

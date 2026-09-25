@@ -122,8 +122,8 @@ que su resultado esté escrito.
 | `A3 · Usuarios · filtro sin resultados` | **No construida** · ídem |
 | `A4 · Catálogo de métricas` | `src/surfaces/admin/CatalogView.tsx` |
 | `A4 · Métricas · filtro sin resultados` | `src/surfaces/admin/EmptyRow.tsx` |
-| `A5 · Salud de feeds` | **No construida** · **F4.24**, abierta el 2026-09-25 · su ruta llegó ese día, verificada contra `1e080ee` |
-| `A5 · Feeds · tenant sin fuentes` | **No construida** · ídem · es el vacío de alta, el tercer tipo |
+| `A5 · Salud de feeds` | `src/surfaces/admin/FeedHealth.tsx` · F4.24, construida el 2026-09-25 |
+| `A5 · Feeds · tenant sin fuentes` | La misma: el vacío de alta lo pinta `EmptyRow` con `clase="alta"` |
 | `A6 · Cola de accionables` | **No construida** · F3.10, diferida por D3 |
 | `B1 · Selector de contexto` | `src/surfaces/builder/ContextView.tsx` |
 | `B2 · Canvas de composición` | `src/surfaces/builder/Canvas.tsx` |

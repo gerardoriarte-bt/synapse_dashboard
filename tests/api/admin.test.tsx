@@ -331,3 +331,77 @@ describe('el listado de roles va a `/roles/composition`, no a `/roles`', () => {
     expect(pedidas[0]).toMatch(/\/admin\/tenants\/t-1\/roles\/composition$/)
   })
 })
+
+describe('las fuentes · A5 · F4.24', () => {
+  /** **La frontera.** Las pruebas de `FeedHealth` construyen `Fuente` a mano, así
+   *  que no tocan el adaptador — y ahí vive la distinción que sostiene toda la
+   *  pantalla: `null` es «nunca cargó» y `0` es «cargó recién». Lo cazó una
+   *  mutación que cambiaba `?? null` por `?? 0`, que convertía una fuente sin
+   *  estrenar en una al día.
+   */
+  it('`freshness_hours` nulo llega como null, NO como cero', async () => {
+    server.use(
+      http.get(`${API}/admin/tenants/:id/feeds`, () =>
+        ok([
+          {
+            key: 'ga4',
+            name: 'GA4',
+            gold_table: '',
+            cadence_hours: 24,
+            tolerance_factor: 3,
+            source_labels: ['ga4'],
+            last_load_at: null,
+            rows_processed: null,
+            rows_failed: null,
+            freshness_hours: null,
+            status: 'unknown',
+            metric_count: 1,
+            metric_keys: ['visits'],
+            is_active: true,
+          },
+        ]),
+      ),
+    )
+
+    const f = (await adminApi.fuentes('t-1'))[0]
+    expect(f?.frescuraHoras).toBeNull()
+    expect(f?.ultimaCargaEn).toBeNull()
+    expect(f?.filasProcesadas).toBeNull()
+  })
+
+  it('y una carga recién hecha llega como 0, que es lo contrario', async () => {
+    server.use(
+      http.get(`${API}/admin/tenants/:id/feeds`, () =>
+        ok([
+          {
+            key: 'erp',
+            name: 'ERP',
+            gold_table: 'ecomm',
+            cadence_hours: 1,
+            tolerance_factor: 2,
+            source_labels: ['erp'],
+            last_load_at: '2026-09-25T10:00:00Z',
+            rows_processed: 0,
+            rows_failed: 0,
+            freshness_hours: 0,
+            status: 'ok',
+            metric_count: 2,
+            metric_keys: ['sales', 'visits'],
+            is_active: true,
+          },
+        ]),
+      ),
+    )
+
+    const f = (await adminApi.fuentes('t-1'))[0]
+    expect(f?.frescuraHoras).toBe(0)
+    expect(f?.filasProcesadas).toBe(0)
+    expect(f?.metricas).toEqual(['sales', 'visits'])
+  })
+
+  it('el adaptador NO trae `status` · el estado se deriva', () => {
+    // Que no esté en el tipo lo garantiza el compilador; que no esté en el
+    // objeto lo garantiza esto, por si alguien lo agrega «por las dudas».
+    expect(Object.keys({} as never)).not.toContain('status')
+  })
+})

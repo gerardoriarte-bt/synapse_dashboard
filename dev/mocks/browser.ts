@@ -426,6 +426,36 @@ export const worker = setupWorker(
   /** El agente del cliente · F4.4. **Con toda la plomería**, que es lo que hay
    *  que poder mirar: si `snowflake_db` o el warehouse aparecen en la pantalla,
    *  se ven acá. Uno inactivo, para que los dos estados se vean. */
+  // A5 · las tres saludes, para poder MIRAR la pantalla. Contra el servicio real
+  // las cuatro fuentes llegan sin carga, así que `DEGRADADA` y `AL_DIA` sólo se
+  // ven acá — y la degradada es el ejemplo literal del `.pen`: 31 h sobre una
+  // fuente horaria con tolerancia 2×.
+  http.get(`${API}/admin/tenants/:id/feeds`, () => ok([
+    {
+      key: 'merchant_center', name: 'Merchant Center', gold_table: 'shopping_feed',
+      cadence_hours: 1, tolerance_factor: 2, source_labels: ['merchant center'],
+      last_load_at: '2026-08-14T08:12:00Z', rows_processed: 48210, rows_failed: 0,
+      freshness_hours: 31, status: 'degraded', metric_count: 4,
+      metric_keys: ['feed_coverage', 'feed_quality', 'feed_vs_sales', 'feed_gap'],
+      is_active: true,
+    },
+    {
+      key: 'erp', name: 'ERP', gold_table: 'ecomm',
+      cadence_hours: 24, tolerance_factor: 3, source_labels: ['erp'],
+      last_load_at: '2026-09-25T06:00:00Z', rows_processed: 120440, rows_failed: 12,
+      freshness_hours: 4, status: 'ok', metric_count: 5,
+      metric_keys: ['sales', 'visits', 'executive_summary', 'goals_vs_actual', 'twelve_month_efficiency'],
+      is_active: true,
+    },
+    {
+      key: 'ga4', name: 'GA4', gold_table: '',
+      cadence_hours: 24, tolerance_factor: 3, source_labels: ['ga4'],
+      last_load_at: null, rows_processed: null, rows_failed: null,
+      freshness_hours: null, status: 'unknown', metric_count: 1,
+      metric_keys: ['visits'], is_active: true,
+    },
+  ])),
+
   http.get(`${API}/admin/tenants/:id/agents`, () => ok([
     {
       id: 'ag-1', tenant_id: 't-1', name: 'Agente UA MX', target_role: 'Planner',

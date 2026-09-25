@@ -282,10 +282,87 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/tenants/{tenantId}/feeds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Las fuentes de datos del cliente y su salud
+         * @description **Transcrita el 2026-09-25 desde `1e080ee`**, leyendo la respuesta del
+         *     servicio corriendo campo por campo.
+         *
+         *     Es la ruta que A5 necesita, y se pidió **como ruta y no como un campo
+         *     `estado` en la métrica**: el estado de una métrica se DERIVA de
+         *     `frescura > cadencia × tolerancia`, y guardarlo crearía dos fuentes para
+         *     el mismo hecho que se separan en el primer feed atrasado.
+         *
+         *     **`status` llega igual y el front NO lo usa.** Está acá porque el
+         *     servicio lo manda, no porque la pantalla lo lea · §PEN:A5, al pie: «el
+         *     estado no se escribe, se deriva».
+         */
+        get: operations["listFeeds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description Una fuente de datos del tenant · `1e080ee`.
+         *
+         *     **Los cuatro campos que importan son `cadence_hours`,
+         *     `tolerance_factor`, `freshness_hours` y `last_load_at`**: de ahí sale el
+         *     estado, derivado. El resto es lo que la tabla de §PEN:A5 pinta.
+         *
+         *     **`layer` NO llega**, y el dibujo la pone como columna. Declarado como
+         *     hueco en F4.24 en vez de inventarlo.
+         */
+        Feed: {
+            key: string;
+            /** @description El nombre que ve una persona */
+            name: string;
+            /** @description Puede venir vacío · una fuente sin tabla Gold todavía */
+            gold_table?: string;
+            /** @description Cada cuántas horas se espera una carga */
+            cadence_hours: number;
+            /** @description El múltiplo de la cadencia que se tolera */
+            tolerance_factor: number;
+            /** @description Los textos de `source` de las métricas que caen en esta fuente */
+            source_labels?: string[];
+            /**
+             * Format: date-time
+             * @description **`null` cuando nunca cargó**, que es como llegan las cuatro del
+             *     tenant de prueba el 2026-09-25. No es un error: es una fuente sin
+             *     Gold todavía.
+             */
+            last_load_at?: string | null;
+            /** Format: date-time */
+            last_load_checked_at?: string | null;
+            rows_processed?: number | null;
+            /** @description Las que fallaron la validación Silver→Gold */
+            rows_failed?: number | null;
+            /** @description Horas desde la última carga. `null` si nunca cargó */
+            freshness_hours?: number | null;
+            /**
+             * @description **El front NO lo lee.** Lo manda el servicio y la pantalla deriva el
+             *     suyo · §PEN:A5. Se transcribe para que la próxima persona que lo vea
+             *     sepa que la omisión es deliberada.
+             */
+            status?: string;
+            metric_count: number;
+            /** @description Las métricas que dependen de esta fuente */
+            metric_keys: string[];
+            is_active: boolean;
+        };
         Envelope: {
             /** @enum {boolean} */
             success: true;
@@ -1033,6 +1110,32 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Envelope"] & {
                         data?: components["schemas"]["AgentAdmin"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listFeeds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las fuentes, con su cadencia, su frescura y sus métricas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["Feed"][];
                     };
                 };
             };

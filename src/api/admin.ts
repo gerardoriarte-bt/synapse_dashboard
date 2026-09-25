@@ -273,6 +273,25 @@ function aCuerpo(tabs: readonly TabParaGuardar[]): A['LayoutUpdateRequest'] {
   }
 }
 
+function adaptarFuente(w: WireFeed): Fuente {
+  return {
+    clave: w.key,
+    nombre: w.name,
+    tablaGold: w.gold_table ?? '',
+    cadenciaHoras: w.cadence_hours,
+    toleranciaFactor: w.tolerance_factor,
+    // `?? null` y no `?? 0`: cero horas de frescura es «cargó recién», que es lo
+    // contrario de «nunca cargó». Confundirlos diría que una fuente sin estrenar
+    // está al día.
+    ultimaCargaEn: w.last_load_at ?? null,
+    frescuraHoras: w.freshness_hours ?? null,
+    filasProcesadas: w.rows_processed ?? null,
+    filasFallidas: w.rows_failed ?? null,
+    metricas: w.metric_keys ?? [],
+    activa: w.is_active,
+  }
+}
+
 function adaptarRol(w: WireRole): Rol {
   return {
     id: w.id,
@@ -351,6 +370,12 @@ export const adminApi = {
   agentes: async (tenantId: string): Promise<Agente[]> =>
     (await pedir<WireAgent[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/agents`)).map(
       adaptAgent,
+    ),
+
+  /** Las fuentes del cliente y su salud · B2.13, servida desde `1e080ee`. */
+  fuentes: async (tenantId: string): Promise<Fuente[]> =>
+    (await pedir<WireFeed[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/feeds`)).map(
+      adaptarFuente,
     ),
 
   roles: async (tenantId: string): Promise<Rol[]> =>
@@ -474,8 +499,34 @@ export const adminApi = {
  */
 
 export type WireAgent = A['AgentAdmin']
+export type WireFeed = A['Feed']
 
 /** El agente, en el vocabulario del producto. */
+/** Una fuente de datos del tenant · A5 · F4.24.
+ *
+ *  **No trae estado.** El cable manda `status` y acá no está a propósito: el
+ *  estado se deriva de `frescura > cadencia × tolerancia` —§PEN:A5, al pie— y
+ *  tenerlo en el tipo invitaría a leerlo. Ver `surfaces/admin/saludDeFuente.ts`.
+ *
+ *  **Tampoco trae capa**, y el dibujo la pone como columna: el cable no la
+ *  manda. Declarado como hueco en F4.24 y pedido; acá no se inventa. */
+export type Fuente = {
+  clave: string
+  nombre: string
+  /** Vacío mientras la fuente no tenga tabla Gold. */
+  tablaGold: string
+  cadenciaHoras: number
+  toleranciaFactor: number
+  /** `null` cuando nunca cargó · no es un error, es una fuente sin estrenar. */
+  ultimaCargaEn: string | null
+  frescuraHoras: number | null
+  filasProcesadas: number | null
+  filasFallidas: number | null
+  /** Las métricas que dependen de esta fuente. */
+  metricas: string[]
+  activa: boolean
+}
+
 export type Agente = {
   id: string
   nombre: string

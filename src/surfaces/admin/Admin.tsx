@@ -24,6 +24,7 @@ import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import {
   useAgents,
+  useFeeds,
   useAdminCatalog,
   useDeleteRole,
   useLayoutDetail,
@@ -35,6 +36,7 @@ import {
 } from '../../api/hooks'
 import { AdminChrome } from './AdminChrome'
 import { CatalogView } from './CatalogView'
+import { FeedHealth } from './FeedHealth'
 import { RoleEditor } from './RoleEditor'
 import { usoPorMetrica } from './uso'
 import { TenantList } from './TenantList'
@@ -50,10 +52,6 @@ const PENDIENTES: Partial<Record<PantallaId, { razon: string; desbloqueaCon: str
   usuarios: {
     razon: 'Sin CRUD de roles no hay permisos que mostrar por usuario.',
     desbloqueaCon: 'B4.8 · CRUD de roles por tenant',
-  },
-  feeds: {
-    razon: 'Ningún endpoint declara la frescura por feed ni qué lo desbloquea.',
-    desbloqueaCon: 'Sin tarea de backend todavía · va a PARA-BACKEND',
   },
 }
 
@@ -87,6 +85,8 @@ export function Admin() {
    *  tenant, igual que los roles: las dos contestan «qué hay configurado para
    *  este cliente». */
   const agentes = useAgents(activo)
+  // A5 · F4.24. La ruta llegó el 2026-09-25 con `1e080ee`.
+  const fuentes = useFeeds(activo)
   const versiones = useLayouts(activo)
   const publicado = versiones.data?.find((v) => v.estado === 'publicado') ?? null
   const detalle = useLayoutDetail(publicado?.id ?? null)
@@ -155,6 +155,12 @@ export function Admin() {
           // El viaje a A4 existe desde acá, así que el enlace del `.pen` se
           // pinta. Sin este manejador `RoleCard` no lo dibuja.
           onVerCatalogo={() => setPantalla('catalogo')}
+        />
+      ) : pantalla === 'feeds' ? (
+        <FeedHealth
+          fuentes={fuentes.data ?? []}
+          tenant={lista.find((x) => x.id === activo)?.nombre ?? null}
+          cargando={fuentes.data === undefined}
         />
       ) : pantalla === 'catalogo' ? (
         // **El uso sale del layout publicado y de los roles, que A2 ya pide.**
