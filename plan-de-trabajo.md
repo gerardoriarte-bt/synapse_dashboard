@@ -3366,7 +3366,7 @@ nadie abriera el archivo.
 
 ---
 
-#### ➕ F1.42 ⚠️ El mes en curso está incompleto y el selector no lo dice
+#### ➕ F1.42 ⚠️ El mes en curso está incompleto y el selector no lo dice · 🔒 `Periodo` no declara si está cerrado
 **Descripción.** El equipo de datos avisó el 2026-09-15 que
 `GLD_ECOMM_DAILY_PERFORMANCE` tiene filas hasta **dic-2028 con valores en 0**
 —metas de planeación— y que **el mes en curso está incompleto**.

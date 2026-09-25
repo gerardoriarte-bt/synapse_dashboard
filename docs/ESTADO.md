@@ -44,13 +44,14 @@
 
 ---
 
-## Se puede tomar hoy · 1 del front
+## Se puede tomar hoy · 0 del front
 
-- **F1.42** · El mes en curso está incompleto y el selector no lo dice
+Nada del front está libre: todo lo pendiente espera algo.
+
 
 ---
 
-## Bloqueadas · 42
+## Bloqueadas · 43
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -61,6 +62,7 @@ Lo que el front espera del backend está detallado en
 - **F1.13b** · Portar format.ts e inyectar el locale
 - **F1.25** · Conectar a la API real
 - **F1.31** · Registro de gráficos y verificación de mínimos
+- **F1.42** · El mes en curso está incompleto y el selector no lo dice
 - **F1.44** · El orden de una tabla se anuncia, no se aplica
 - **F2.3** · SIN_PERMISO · B0.9 (línea 1171) contestada
 - **F3.15** · El chat tiene presencia en la consola
