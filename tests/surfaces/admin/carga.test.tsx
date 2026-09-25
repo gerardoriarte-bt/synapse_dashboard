@@ -176,7 +176,7 @@ describe('A2 · los roles mientras cargan', () => {
       http.get(`${API}/admin/tenants`, () => ok(tenants)),
       http.get(`${API}/admin/tenants/:id/layouts`, () => ok([])),
       http.get(`${API}/admin/tenants/:id/catalog`, () => ok([])),
-      http.get(`${API}/admin/tenants/:id/roles`, colgada),
+      http.get(`${API}/admin/tenants/:id/roles/composition`, colgada),
     )
     montar()
     await screen.findByText('Under Armour México')

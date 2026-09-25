@@ -90,7 +90,7 @@ function base(extra: Parameters<typeof server.use> = []) {
   server.use(
     ...extra,
     http.get(`${API}/admin/tenants`, () => ok(tenants)),
-    http.get(`${API}/admin/tenants/:id/roles`, () => ok(roles)),
+    http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok(roles)),
     http.get(`${API}/admin/tenants/:id/layouts`, () => ok(layouts)),
     http.get(`${API}/admin/layouts/:id`, () => ok(detalle)),
     http.get(`${API}/admin/tenants/:id/catalog`, () => ok(metricas)),
@@ -195,7 +195,7 @@ describe('borrar · el conteo va ANTES del botón', () => {
       http.get(`${API}/admin/tenants/:id/layouts`, () => ok(layouts)),
       http.get(`${API}/admin/layouts/:id`, () => ok(detalle)),
       http.get(`${API}/admin/tenants/:id/catalog`, () => ok(metricas)),
-      http.get(`${API}/admin/tenants/:id/roles`, () =>
+      http.get(`${API}/admin/tenants/:id/roles/composition`, () =>
         ok(roles.filter((r) => !borrados.includes(r.id))),
       ),
       http.delete(`${API}/admin/roles/:roleId`, ({ params }) => {
@@ -315,7 +315,7 @@ describe('el 404 mientras el fork no esté desplegado', () => {
       http.get(`${API}/admin/tenants/:id/layouts`, () => ok([])),
       http.get(`${API}/admin/tenants/:id/catalog`, () => ok([])),
       http.get(
-        `${API}/admin/tenants/:id/roles`,
+        `${API}/admin/tenants/:id/roles/composition`,
         () =>
           new HttpResponse(JSON.stringify({ success: false, error: 'not found' }), {
             status: 404,

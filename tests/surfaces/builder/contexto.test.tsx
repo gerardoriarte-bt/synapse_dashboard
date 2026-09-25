@@ -75,7 +75,7 @@ const detalles: Record<string, unknown> = {
 
 function servir() {
   server.use(
-    http.get(`${API}/admin/tenants/:id/roles`, () =>
+    http.get(`${API}/admin/tenants/:id/roles/composition`, () =>
       ok([
         { id: 'r-1', tenant_id: 't-1', name: 'CEO', tab_ids: ['tab-a'], hidden_metric_ids: [], layout_overrides: {}, user_count: 1 },
         // **El que destapa la vieja aproximación**: no tiene ninguna pestaña, así
@@ -167,7 +167,7 @@ describe('§7.2 · los roles', () => {
   it('sin roles definidos manda a la ficha de cliente', async () => {
     server.use(
       http.get(`${API}/admin/tenants`, () => ok(tenants)),
-      http.get(`${API}/admin/tenants/:id/roles`, () => ok([])),
+      http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([])),
       http.get(`${API}/admin/tenants/:id/layouts`, () => ok(versiones['t-1'])),
     )
     montar()

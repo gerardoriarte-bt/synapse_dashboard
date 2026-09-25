@@ -116,7 +116,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/tenants/{tenantId}/roles": {
+    "/admin/tenants/{tenantId}/roles/composition": {
         parameters: {
             query?: never;
             header?: never;
@@ -124,7 +124,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Los roles del cliente
+         * Los roles del cliente, con su composición
          * @description **No la sirve el servicio desplegado.** Escrita en el fork · B4.8.
          *
          *     `user_count` viaja en el listado a propósito: es lo que decide si el rol
@@ -132,6 +132,22 @@ export interface paths {
          *     ofrecer el botón, no después de un 409.
          */
         get: operations["listRoles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tenants/{tenantId}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         put?: never;
         /**
          * Crear un rol

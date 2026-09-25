@@ -354,7 +354,16 @@ export const adminApi = {
     ),
 
   roles: async (tenantId: string): Promise<Rol[]> =>
-    (await pedir<WireRole[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/roles`)).map(
+    // `/roles/composition` y NO `/roles` · 2026-09-25. `168a761` puso SU listado
+    // en `/roles`, que contesta otra pregunta —qué dashboards ve un rol— y con
+    // otra forma. Mientras pedimos `/roles`, el servicio real devolvía la suya,
+    // `pestanas` quedaba `undefined` donde el tipo promete `string[]` y la
+    // pantalla de admin salía en NEGRO. El `POST` sigue en `/roles`.
+    (
+      await pedir<WireRole[]>(
+        `/admin/tenants/${encodeURIComponent(tenantId)}/roles/composition`,
+      )
+    ).map(
       adaptarRol,
     ),
 

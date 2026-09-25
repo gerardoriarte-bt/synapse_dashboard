@@ -167,7 +167,7 @@ describe('vacío de ALTA · el cliente es nuevo', () => {
     // por hacerse» · nota de `A2 · Ficha · tenant en alta`.
     server.use(
       http.get(`${API}/admin/tenants`, () => ok(tenants)),
-      http.get(`${API}/admin/tenants/:id/roles`, () => ok([])),
+      http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([])),
       http.get(`${API}/admin/tenants/:id/layouts`, () => ok([])),
       http.get(`${API}/admin/tenants/:id/catalog`, () => ok([])),
     )

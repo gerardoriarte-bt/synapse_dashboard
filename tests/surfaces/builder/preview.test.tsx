@@ -80,7 +80,7 @@ function base(extra: Parameters<typeof server.use> = []) {
     http.get(`${API}/admin/tenants/:id/layouts`, () => ok(layouts)),
     http.get(`${API}/admin/layouts/:id`, () => ok(detalle)),
     http.get(`${API}/admin/tenants/:id/catalog`, () => ok(metricas)),
-    http.get(`${API}/admin/tenants/:id/roles`, () => ok(roles)),
+    http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok(roles)),
     http.get(`${API}/config/blocks`, () => ok([])),
     http.get(`${API}/admin/layouts/:id/preview`, ({ request }) =>
       ok(previews[new URL(request.url).searchParams.get('roleId') ?? '']),
@@ -266,7 +266,7 @@ describe('los estados de B5', () => {
   })
 
   it('sin roles manda a definirlos, no se muestra vacía', async () => {
-    base([http.get(`${API}/admin/tenants/:id/roles`, () => ok([]))])
+    base([http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([]))])
     montar()
     await abrirPreview()
 

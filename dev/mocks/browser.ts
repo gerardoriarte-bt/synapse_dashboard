@@ -445,7 +445,7 @@ export const worker = setupWorker(
     },
   ])),
 
-  http.get(`${API}/admin/tenants/:id/roles`, async () => {
+  http.get(`${API}/admin/tenants/:id/roles/composition`, async () => {
     await delay(200)
     return ok(estado.roles)
   }),

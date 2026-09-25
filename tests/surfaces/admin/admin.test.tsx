@@ -174,7 +174,7 @@ describe('las pantallas que todavía no se pueden construir', () => {
     // propia pantalla cuando el 404 llega.
     server.use(
       http.get(`${API}/admin/tenants`, () => ok(tenants)),
-      http.get(`${API}/admin/tenants/:id/roles`, () => ok([])),
+      http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([])),
       http.get(`${API}/admin/tenants/:id/layouts`, () => ok([])),
       http.get(`${API}/admin/tenants/:id/catalog`, () => ok([])),
     )

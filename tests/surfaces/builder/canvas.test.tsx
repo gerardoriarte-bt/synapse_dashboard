@@ -59,7 +59,7 @@ function base(extra: Parameters<typeof server.use> = []) {
     http.get(`${API}/admin/tenants/:id/layouts`, () => ok(layouts)),
     http.get(`${API}/admin/layouts/:id`, () => ok(detalle)),
     http.get(`${API}/admin/tenants/:id/catalog`, () => ok(metricas)),
-    http.get(`${API}/admin/tenants/:id/roles`, () => ok([])),
+    http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([])),
     http.get(`${API}/config/blocks`, () => ok(bloques)),
   )
 }

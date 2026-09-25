@@ -1,3 +1,10 @@
+> ⚠️ **HISTÓRICO · no usar como referencia de rutas.** Se conserva tal como se
+> mandó. **Su cita de `GET /admin/tenants/{tenantId}/roles` venció el
+> 2026-09-25**: ese listado se movió a `.../roles/composition` porque
+> `168a761` puso el de ellos en la ruta original, y en `/roles` sólo quedó el
+> `POST`. El razonamiento del mensaje sigue siendo el que explica por qué se
+> pidió lo que se pidió.
+
 # Para el equipo de backend · dos cosas del cliente de Snowflake · 2026-09-24
 
 > **Histórico.** Un mensaje mandado, con fecha: qué se pidió y con qué

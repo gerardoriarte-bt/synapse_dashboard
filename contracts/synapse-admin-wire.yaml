@@ -270,11 +270,23 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
 
   # ── B4.8 · CRUD de roles · DEL FORK, NO DESPLEGADO ───────────────────────
-  /admin/tenants/{tenantId}/roles:
+  #
+  # **El listado vive en `/roles/composition` y NO en `/roles`** · 2026-09-25.
+  # `168a761` puso SU listado de roles en `/roles`, y no es un choque de nombres:
+  # el suyo contesta qué dashboards ve un rol —`dashboard_ids`— y el nuestro qué
+  # ve dentro de un layout —`tab_ids`, `hidden_metric_ids`, `layout_overrides`—
+  # más `user_count`. Nos corrimos nosotros para no tocarles la ruta.
+  #
+  # **Y esto no era teórico.** Mientras el front siguió pidiendo `/roles`, el
+  # servicio real contestaba con la forma de ELLOS: de los siete campos que el
+  # adaptador lee llegaban dos, `pestanas` quedaba `undefined` donde el tipo
+  # promete `string[]`, y `usoPorMetrica` reventaba. **Pantalla de admin en
+  # negro**, medido el 2026-09-25.
+  /admin/tenants/{tenantId}/roles/composition:
     get:
       tags: [admin]
       operationId: listRoles
-      summary: Los roles del cliente
+      summary: Los roles del cliente, con su composición
       x-origen: fork
       description: |
         **No la sirve el servicio desplegado.** Escrita en el fork · B4.8.
@@ -297,6 +309,8 @@ paths:
                         type: array
                         items: { $ref: '#/components/schemas/Role' }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /admin/tenants/{tenantId}/roles:
     post:
       tags: [admin]
       operationId: createRole

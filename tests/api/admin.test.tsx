@@ -296,3 +296,38 @@ describe('publicar toca DOS cachés · F4.23', () => {
     expect(invalidadas).toContain(JSON.stringify(['config', 'tab']))
   })
 })
+
+describe('el listado de roles va a `/roles/composition`, no a `/roles`', () => {
+  /** **El defecto que cierra, medido el 2026-09-25.** `168a761` puso el listado
+   *  de roles DE ELLOS en `/admin/tenants/{id}/roles`. No es un choque de
+   *  nombres: el suyo contesta qué dashboards ve un rol —`dashboard_ids`— y el
+   *  nuestro qué ve dentro de un layout —`tab_ids`, `hidden_metric_ids`,
+   *  `layout_overrides`— más `user_count`.
+   *
+   *  Mientras el front pidió `/roles`, el servicio real contestaba con la forma
+   *  de ellos: de los siete campos que el adaptador lee llegaban DOS,
+   *  `pestanas` quedaba `undefined` donde el tipo promete `string[]`, y
+   *  `usoPorMetrica` reventaba con `r.pestanas.length`. **La pantalla de admin
+   *  salía en negro**, y no lo vio ninguna prueba: los mocks servían NUESTRA
+   *  forma en la ruta vieja, así que la frontera quedaba escondida — que es
+   *  literal la lección de la bitácora del 14.
+   *
+   *  Lo que esta prueba fija es lo único que una prueba puede fijar acá: **a qué
+   *  ruta se pide**. Que la respuesta real tenga la forma correcta lo verifica
+   *  `npm run humo`, contra el servicio.
+   */
+  it('pide la ruta de composición · el `POST` sigue en `/roles`', async () => {
+    const pedidas: string[] = []
+    server.use(
+      http.get(`${API}/admin/tenants/:id/roles/composition`, ({ request }) => {
+        pedidas.push(new URL(request.url).pathname)
+        return ok([])
+      }),
+    )
+
+    await adminApi.roles('t-1')
+
+    expect(pedidas).toHaveLength(1)
+    expect(pedidas[0]).toMatch(/\/admin\/tenants\/t-1\/roles\/composition$/)
+  })
+})
