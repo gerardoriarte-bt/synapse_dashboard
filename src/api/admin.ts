@@ -388,7 +388,7 @@ export const adminApi = {
       adaptAgent,
     ),
 
-  /** Los usuarios del cliente · B4.16, servida desde `1e080ee`.
+  /** Los usuarios del cliente · B4.17, servida desde `1e080ee`.
    *
    *  **Por cliente, y A3 está dibujada con alcance plataforma.** No se suman N
    *  llamadas: un total armado acá parecería de plataforma y sería una cuenta

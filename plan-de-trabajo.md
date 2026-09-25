@@ -685,6 +685,14 @@ intersectados en los dos estados que muestran número.
 - `frescura` es ISO 8601 y refleja **cuándo se materializó**, no «ahora» (B2.10).
 
 ### B1.13 ⚠️ `Presentacion` opcional
+**LA MITAD GRANDE LLEGÓ · verificada el 2026-09-25 contra `6e595e3` y el servicio
+corriendo.** Queda en ⚠️ y no en ✅ porque **sigue pidiendo la `nota` de panel**,
+que es lo que el párrafo de abajo declara — `para-backend` lo agarró cuando la
+cerré de más. Los seis
+paneles `kpi` traen `presentation` con su `label`, su `meter` —`% OF TARGET`, con
+la nota «706.8K OF 1.27M»— y sus dos comparativos. `roas` sin medidor, que es lo
+que su commit anticipaba. **Es la primera vez que la anatomía completa de un KPI
+se ve con dato del negocio.**
 **Espera del backend.** **Solo la `nota` de panel.** El pedido grande que había acá —«`presentation` para las siete formas que no son escalares»— **se retira: estaba mal**, y lo corrigió leer nuestro propio código el 2026-09-15.
 
 **`presentation` la lee UN solo cuerpo: `KpiBody`.** Ningún otro la toca — verificado con un grep sobre `src/render/bodies/`. Y no es un olvido: los demás sacan sus rótulos **del propio valor**. `BarsBody` hace `value.items.map(i => i.etiqueta)`; cada ítem viaja con su etiqueta. **«Ningún número desnudo» lo cumple la estructura del dato, no `presentation`.**
@@ -706,7 +714,19 @@ Los dos puntos del criterio **se cumplen**: `presentation` llega en los seis pan
 mientras que ROAS y los conteos dicen «TOTAL», que es correcto —no llevan unidad—.
 **Queda en ⚠️ y no en ✅ por la `nota` de panel**, que sigue siendo un pedido vivo.
 
-### B1.14 ⬜ Transformar a las formas de `Valor`
+### B1.14 ⚠️ Transformar a las formas de `Valor`
+**LAS FORMAS LLEGARON · verificado el 2026-09-25 leyendo `transform.go` en
+`75b8ecc`: quince casos.** Queda en ⚠️ porque su otra mitad sigue en pie —
+`decimals` y `unit` por columna en `tabular`—, y el párrafo de abajo la declara.
+El pedido de «las siete formas que `TransformValue` no produce` **ya no
+corresponde**: las produce.
+`distribution` y `series_with_band` entraron con `168a761`, y `75b8ecc` hizo la
+segunda estricta —`level` por valor y `lo`/`hi` obligatorios— que es lo que
+pedimos ese día.
+
+**El conteo viejo de esta tarea decía nueve y costó un mensaje equivocado**: se
+midió con un `grep "case \""` que sólo ve los casos con literal, y siete usan
+constantes.
 **Espera del backend.** **`decimals` y `unit` por columna en `tabular`**, y las siete formas que `TransformValue` no produce.
 
 **NO depende de Snowflake.** Es código Go: las tablas Gold que el materializador consulta ya existen con sus quince columnas, verificado el 2026-09-14.
@@ -823,26 +843,9 @@ La nota de A4 lo dice con un ejemplo: «feed_vs_sales figura DISPONIBLE en el ca
 en `82da946`. Medir contra el fork lo hacía ver como avance de ellos — ver
 `docs/ESTADO-backend-2026-09-22.md`. Lo que sí trae upstream: `min_grain`, `layer`,
 `catalog_version`, `semantic_direction`, `base`, `dimensions` y `source`.
-### B1.18 ⬜ Sincronizar el catálogo con las semantic views de Snowflake
-**Espera del backend.** **La vista `SYNAPSE_METRIC_CATALOG`.** No existe en ninguna base de la cuenta —verificado con `SHOW OBJECTS`, cero filas—, así que `make sync-catalog` falla y el catálogo sale del seed de Postgres.
+### B1.18 ✅ Sincronizar el catálogo con las semantic views de Snowflake
+**Verificado el 2026-09-24** · la vista `SYNAPSE_METRIC_CATALOG` existe, `make sync-catalog` corrió —`created=6 updated=4 catalog_version=2`— y `/config/catalog` devuelve las **diez de la vista** y no las doce de la semilla, contra el servicio corriendo. Hasta ese día esta tarea decía «no existe en ninguna base de la cuenta, `SHOW OBJECTS` da cero filas».
 
-**ESTA ES LA QUE DEPENDE DE SNOWFLAKE**, y es la única de este bloque. Las otras cuatro son código.
-
-**Qué hay que hacer, en orden:**
-
-1. **Ingeniería de datos** corre `docs/snowflake/SYNAPSE_METRIC_CATALOG.sql` en el `db.schema` del agente del tenant —para UA MX, `DB_BT_UA.BT_UA_MART_ANALYTICS`—. Crea tres objetos: la tabla de curaduría, la vista que ustedes leen, y una tercera que lista lo que está mal con su razón.
-2. **Producto y datos** escriben los campos marcados `⟨REVISAR⟩`: `BASE`, `MEASUREMENT_WINDOW` y `SOURCE`. Son texto que se pinta literal, así que se redactan.
-3. **Grant de `SELECT`** para el rol del agente. Sin esto `sync-catalog` falla con un error de permisos que no dice qué falta.
-4. **Backend** agrega `MEASUREMENT_WINDOW` al `SELECT` de `dd_catalog_sync_service.go` — ver B1.17.
-5. Correr `make sync-catalog TENANT_ID=<uuid>`.
-
-**El paso que se rompe en silencio es la clave.** `METRIC_KEY` tiene que caer en `MetricRegistry` o en el alias de `keys.go`: una clave que no está **sincroniza bien y después todos los paneles salen `BLOCKED`** sin que nada lo explique. Nos pasó al escribir la primera versión de ese SQL.
-
-Los pasos completos están en `docs/snowflake/INSTRUCCION-ALTA-TENANT.md`. **Nosotros no corremos nada en Snowflake.**
-
-**Medido el 2026-09-22 · `sync-catalog` sigue sin correr.** `/config/catalog` devuelve las
-**doce claves de la semilla de Postgres** —`sales`, `investment`, `executive_summary`…— y no las
-diez de Snowflake. Pasa de «no verificado» a **medido y ausente**.
 ### B1.19 ⬜ Filtrar el catálogo por permisos de rol
 **Espera del backend.** **Un usuario de prueba con un rol restringido.** El mecanismo está en el código, pero con el usuario que tenemos —rol `Planner`— el catálogo devuelve las doce métricas, incluidas `executive_summary`, `roas` y `decisions`, que su propio documento dice que `planner` oculta. No decimos que esté roto: no se puede comprobar. Con un usuario así se cierran las dos mitades en un minuto — el catálogo recortado y un panel en `FORBIDDEN`.
 **Criterio de aceptación (los tres).**
@@ -1131,7 +1134,7 @@ que el camino completo se ejercita: vista → `sync-catalog` → `materialize` �
 `docs/ESTADO-2026-09-25-formas-y-estados.md`.** Cuatro de los seis estados
 verificados —`DISPONIBLE`, `DEGRADADO`, `BLOQUEADO` y `CARGANDO`— y los dos que
 faltan **no son alcanzables hoy, con su razón**: `SIN_PERMISO` necesita un
-usuario no-admin y `GET /admin/users` da 404 —es **B4.16**—, y `ERROR` pide
+usuario no-admin y `GET /admin/users` da 404 —es **B4.17**—, y `ERROR` pide
 componer un `gauge` sin `maximum`, y ninguno de los doce paneles lo es.
 
 **Y de las once formas del contrato llegan cinco**, por dos razones distintas
@@ -1461,7 +1464,14 @@ la replica para dar feedback inmediato, pero **el servidor es el que decide**.
   bloque gauge no sabe dibujar la forma serieTemporal», no «validación fallida».
 - La regla dura de `serieConBanda` se verifica: solo gráficos con banda.
 
-### B4.8 ⚠️ CRUD de roles por tenant · **LO IMPLEMENTA EL FRONT** · 2026-09-15
+### B4.8 ✅ CRUD de roles por tenant · lo tomaron el 2026-09-25
+**SERVIDA · `GET /admin/tenants/{tenantId}/roles/composition` → 200**, verificado
+contra `1e080ee` con el servicio corriendo. **Tomaron la ruta que propusimos**
+—nos habíamos corrido a `/composition` para no pisar la suya— así que la colisión
+queda cerrada de las dos puntas. Trae `tab_ids`, `hidden_metric_ids`,
+`layout_overrides` y `user_count`.
+
+Con eso A2 se ve contra el servicio real por primera vez.
 **Decidido el 2026-09-15 (humano): esta la escribimos nosotros, en Go.**
 
 **Y eso revierte una regla, así que va con su antecedente.** El 2026-09-08 se
@@ -1679,7 +1689,7 @@ Recién ahí `humo.py` puede verificarlas contra un servicio corriendo — y par
 rutas de admin hace falta además **un usuario `admin`**, que sigue siendo el
 mismo pedido que dejó `synapse-admin-wire.yaml` sin confirmar.
 
-### B4.16 ⚠️ Una ruta que liste usuarios · A3 no se puede empezar sin ella
+### B4.17 ⚠️ Una ruta que liste usuarios · A3 no se puede empezar sin ella
 **SERVIDA el 2026-09-25 · `1e080ee`**, el mismo día que se pidió.
 `GET /admin/tenants/{tenantId}/users` → 200, y trae lo que §7.3 le pide a A3:
 `email`, `first_name`, `last_name`, `role` con su `role_id`, `last_login_at` y

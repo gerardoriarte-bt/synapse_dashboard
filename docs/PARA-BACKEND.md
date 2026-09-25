@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 27 pedido(s)
+## Lo que esperamos · 26 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -84,7 +84,7 @@ Lo que sí falta es la **`nota` de panel** —la lectura al pie, distinta de la 
 
 ### B1.14 · Transformar a las formas de Valor
 
-*Estado de la tarea: pendiente.*
+*Estado de la tarea: parcial.*
 
 
 **`decimals` y `unit` por columna en `tabular`**, y las siete formas que `TransformValue` no produce.
@@ -176,32 +176,6 @@ La nota de A4 lo dice con un ejemplo: «feed_vs_sales figura DISPONIBLE en el ca
 en `82da946`. Medir contra el fork lo hacía ver como avance de ellos — ver
 `docs/ESTADO-backend-2026-09-22.md`. Lo que sí trae upstream: `min_grain`, `layer`,
 `catalog_version`, `semantic_direction`, `base`, `dimensions` y `source`.
-
-
-### B1.18 · Sincronizar el catálogo con las semantic views de Snowflake
-
-*Estado de la tarea: pendiente.*
-
-
-**La vista `SYNAPSE_METRIC_CATALOG`.** No existe en ninguna base de la cuenta —verificado con `SHOW OBJECTS`, cero filas—, así que `make sync-catalog` falla y el catálogo sale del seed de Postgres.
-
-**ESTA ES LA QUE DEPENDE DE SNOWFLAKE**, y es la única de este bloque. Las otras cuatro son código.
-
-**Qué hay que hacer, en orden:**
-
-1. **Ingeniería de datos** corre `docs/snowflake/SYNAPSE_METRIC_CATALOG.sql` en el `db.schema` del agente del tenant —para UA MX, `DB_BT_UA.BT_UA_MART_ANALYTICS`—. Crea tres objetos: la tabla de curaduría, la vista que ustedes leen, y una tercera que lista lo que está mal con su razón.
-2. **Producto y datos** escriben los campos marcados `⟨REVISAR⟩`: `BASE`, `MEASUREMENT_WINDOW` y `SOURCE`. Son texto que se pinta literal, así que se redactan.
-3. **Grant de `SELECT`** para el rol del agente. Sin esto `sync-catalog` falla con un error de permisos que no dice qué falta.
-4. **Backend** agrega `MEASUREMENT_WINDOW` al `SELECT` de `dd_catalog_sync_service.go` — ver B1.17.
-5. Correr `make sync-catalog TENANT_ID=<uuid>`.
-
-**El paso que se rompe en silencio es la clave.** `METRIC_KEY` tiene que caer en `MetricRegistry` o en el alias de `keys.go`: una clave que no está **sincroniza bien y después todos los paneles salen `BLOCKED`** sin que nada lo explique. Nos pasó al escribir la primera versión de ese SQL.
-
-Los pasos completos están en `docs/snowflake/INSTRUCCION-ALTA-TENANT.md`. **Nosotros no corremos nada en Snowflake.**
-
-**Medido el 2026-09-22 · `sync-catalog` sigue sin correr.** `/config/catalog` devuelve las
-**doce claves de la semilla de Postgres** —`sales`, `investment`, `executive_summary`…— y no las
-diez de Snowflake. Pasa de «no verificado» a **medido y ausente**.
 
 
 ### B1.19 · Filtrar el catálogo por permisos de rol
@@ -440,7 +414,7 @@ Los dos están en el modelo de §2 de `design.md` y en `Pestana` del contrato, y
 **Y una pregunta que es de ustedes, no un pedido.** `OperationalQuestion` no es requerido y el servicio acepta la cadena vacía. El producto dice lo contrario —«una pestaña que no contesta una pregunta no se compone», §7.2 y la descripción de `Pestana`—, así que hoy **la regla la sostiene el front solo**: el editor marca la pestaña, la cuenta y no la deja componer. Si además la rechazara el `validate` o el `publish`, la regla dejaría de depender de qué cliente haga el PUT. Es B4.15 quien decidiría.
 
 
-### B4.16 · Una ruta que liste usuarios · A3 no se puede empezar sin ella
+### B4.17 · Una ruta que liste usuarios · A3 no se puede empezar sin ella
 
 *Estado de la tarea: parcial.*
 

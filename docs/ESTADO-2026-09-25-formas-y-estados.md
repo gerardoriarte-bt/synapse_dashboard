@@ -20,7 +20,7 @@ indique, con token de rol `admin`.
 | `DEGRADADO` | ✅ | Los dos paneles de prosa · `Never materialized: Requires BT_UA_DECISION_LOG…` |
 | `BLOQUEADO` | ✅ | Pidiendo un período sin materializar —`2024-01`—: los 12 vuelven `BLOCKED` con razón `No materialization for this period` |
 | `CARGANDO` | ✅ | Lo deriva el front mientras el batch vuela; se ve en cada carga |
-| `SIN_PERMISO` | ⊘ | **Haría falta un usuario con rol `planner`, y no hay cómo conseguirlo**: `GET /admin/users` da 404 y el único usuario de la base local es admin. Es el mismo hueco que **B4.16** |
+| `SIN_PERMISO` | ⊘ | **Haría falta un usuario con rol `planner`, y no hay cómo conseguirlo**: `GET /admin/users` da 404 y el único usuario de la base local es admin. Es el mismo hueco que **B4.17** |
 | `ERROR` | ⊘ | La receta del criterio es «un `gauge` sin `maximum`», y **ninguno de los doce paneles es `gauge`**. Haría falta componer y publicar uno |
 
 **`DEGRADADO` se alcanzó por un camino distinto al que el criterio anticipaba.**
@@ -82,5 +82,5 @@ que B1.14 las agregue, van a los mocks primero.
 
 | | De quién |
 |---|---|
-| `SIN_PERMISO` | Un usuario con rol no-admin · **B4.16**, la ruta que liste usuarios, o darlo de alta a mano |
+| `SIN_PERMISO` | Un usuario con rol no-admin · **B4.17**, la ruta que liste usuarios, o darlo de alta a mano |
 | `ERROR` | Componer y publicar un `gauge` sin `maximum` · es nuestro, y toca el camino de guardar/publicar del builder contra el servicio |

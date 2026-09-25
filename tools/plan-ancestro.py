@@ -93,10 +93,39 @@ def main() -> int:
             print(f"  {ident:8} {titulo}")
         return 1
 
+    # ── Y NINGUNO SE USA DOS VECES · agregado el 2026-09-25 ─────────────────
+    #
+    # **Este chequeo miraba hacia afuera y no hacia adentro.** Comparaba los
+    # identificadores del plan contra el ancestro y no se enteraba de que el
+    # plan usara uno dos veces. El 2026-09-25 se abrió una tarea como `B4.16`
+    # y ese identificador **ya existía** —«Declarar el gráfico en el layout»—:
+    # dos tareas distintas con el mismo nombre, y ninguna herramienta lo vio.
+    #
+    # Lo agarró un `sort | uniq -d` a mano, que es como se agarra una vez.
+    #
+    # **Una tarea se reconoce por su marcador de estado**, que es lo que la
+    # separa de un título de sección: `### B4.8 y B4.9 escritas el…` nombra dos
+    # identificadores y no es una tarea de ninguno.
+    import collections
+
+    # **Sobre la LISTA de encabezados, no sobre `con_tarea`**, que es un `set` y
+    # colapsa justo lo que hay que detectar. La primera versión de este chequeo
+    # miraba el set y **no cazó la mutación de prueba** — es la misma clase de
+    # error que busca: dos cosas que parecen la misma.
+    del_plan = [m.group(1) for l in texto_plan.split("\n") if (m := ENCABEZADO.match(l))]
+    repetidos = [i for i, n in collections.Counter(del_plan).items() if n > 1]
+    if repetidos:
+        print(f"plan-ancestro ✗ {len(repetidos)} identificador(es) usados por DOS tareas")
+        for ident in sorted(repetidos):
+            print(f"  {ident} · dos tareas distintas lo declaran")
+        print("  Un identificador es una dirección: dos tareas con la misma se")
+        print("  pisan en el CSV, en la página y en todo lo que cite una de ellas.")
+        return 1
+
     print(
         f"plan-ancestro ✓ {len(del_ancestro)} identificadores del ancestro conservados"
         f" · {len(propios)} con tarea propia, {len(absorbidos)} absorbidos"
-        f" · {nuevos} agregados por el plan"
+        f" · {nuevos} agregados por el plan · sin repetidos"
     )
     if absorbidos:
         print(f"  absorbidos: {', '.join(absorbidos)}")

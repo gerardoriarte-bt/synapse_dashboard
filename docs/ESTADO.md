@@ -5,7 +5,7 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**111 de 210 tareas cerradas.** 22 parciales · 72 pendientes · 5 diferidas.
+**113 de 210 tareas cerradas.** 22 parciales · 70 pendientes · 5 diferidas.
 
 
 ## Front · 104 de 125
@@ -19,7 +19,7 @@
 | 4 · Admin y Builder | `████████████████······` | 17/24 | 2 | 5 |
 | 5 · Pruebas y pulido | `█████████████████·····` | 14/18 | 0 | 3 |
 
-## Backend · 7 de 85
+## Backend · 9 de 85
 
 > ⚠️ **Este número está bajo y no refleja al backend.** El plan de acá
 > es la fuente del FRONT; el estado de las tareas `B*` solo se mueve
@@ -36,10 +36,10 @@
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██····················` | 1/10 | 1 | 8 |
-| 1 · API de consola | `████··················` | 5/27 | 7 | 15 |
+| 1 · API de consola | `█████·················` | 6/27 | 8 | 13 |
 | 2 · Materialización | `██····················` | 1/13 | 2 | 10 |
 | 3 · Chat contextual | `······················` | 0/11 | 0 | 11 |
-| 4 · Admin y Builder | `······················` | 0/17 | 6 | 11 |
+| 4 · Admin y Builder | `█·····················` | 1/17 | 5 | 11 |
 | 5 · Multi-dashboard y pulido | `······················` | 0/7 | 0 | 6 |
 
 ---
@@ -51,7 +51,7 @@ Nada del front está libre: todo lo pendiente espera algo.
 
 ---
 
-## Bloqueadas · 43
+## Bloqueadas · 42
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -87,7 +87,6 @@ Lo que el front espera del backend está detallado en
 - **B1.15** · Validar reglas mínimas por forma antes de enviar
 - **B1.16** · Seed de demo: 1 tenant, 1 layout, 1 pestaña, 4–6 paneles
 - **B1.17** · Modelo Metrica
-- **B1.18** · Sincronizar el catálogo con las semantic views de Snowflake
 - **B1.19** · Filtrar el catálogo por permisos de rol
 - **B1.21** · Declarar los mínimos de datos por gráfico
 - **B1.25** · ventana de punta a punta · de la vista al payload
@@ -101,7 +100,7 @@ Lo que el front espera del backend está detallado en
 - **B3.9** · CRUD /admin/tenants/{id}/agents
 - **B4.1** · GET /admin/tenants
 - **B4.10** · Asignación de layout publicado a roles
-- **B4.16** · Una ruta que liste usuarios · A3 no se puede empezar sin ella
+- **B4.17** · Una ruta que liste usuarios · A3 no se puede empezar sin ella
 - **B4.2** · GET /admin/tenants/{id}/layouts
 - **B4.4** · PUT /admin/layouts/{id} — editar pestañas y paneles
 - **B5.1** · Varios layouts por tenant
