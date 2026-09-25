@@ -230,6 +230,10 @@ B4.9,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Preview por
 • Para un rol con hidden_metric_ids, el preview devuelve menos paneles que para uno sin ellos, y los layout_overrides de ese rol están aplicados.
 • Un roleId de otro tenant devuelve 404 y no 403: no se revela que existe, igual que GET /config/tabs/:tabId.
 • Queda escrito si el preview incluye payloads o solo el layout. Con solo el layout alcanza para «CEO vs Planner», que es lo que F4.12 pide; con payloads hay que decidir qué período usa y si un panel oculto llega como SIN_PERMISO o no llega. Decidirlo antes, no durante.",parcial,no,,equipo:backend fase:4 estado:parcial
+B4.16,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Una ruta que liste usuarios · A3 no se puede empezar sin ella,,"• Lista por tenant, bajo AdminOnlyMiddleware como el resto de /admin/.
+• Por usuario, lo que §7.3 le pide a A3: el usuario, su rol, su último acceso y su estado.
+• El rol viene identificado, no sólo con su nombre: A3 enlaza a la ficha.
+• El último acceso es un instante, nunca «hace X» — la presentación es del front y depende del huso del navegador · la regla de las dos zonas horarias.",pendiente,no,,equipo:backend fase:4 estado:pendiente bloqueada
 B4.10,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Asignación de layout publicado a roles,,"• Un rol declara tabIds[], hiddenMetricIds[] y layoutOverrides opcionales.
 • El preview devuelve exactamente lo que ese rol vería, resuelto por el mismo código que sirve /config/me. No una simulación aparte.",pendiente,no,,equipo:backend fase:4 estado:pendiente bloqueada
 B4.16,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Declarar el gráfico en el layout,"D2 lo resolvió a favor. PanelConfigurado gana plot?: PlotId. Depende de B1.21: primero los mínimos, después el campo — elegir gráfico sin saber qué necesita cada uno es multiplicar el problema, no resolverlo.","• plot es opcional: ausente ⇒ el gráfico por defecto del tipo, que es exactamente lo que se dibuja hoy. El cambio no mueve ninguna pantalla existente.

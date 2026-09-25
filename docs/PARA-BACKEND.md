@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 26 pedido(s)
+## Lo que esperamos · 27 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -438,6 +438,26 @@ en `2fafe82`. Ver `docs/ESTADO-backend-2026-09-22.md`.
 Los dos están en el modelo de §2 de `design.md` y en `Pestana` del contrato, y no están en `DDTab` ni en `TabInput`: **no hay dónde escribirlos ni de dónde leerlos**. `chatSugerencias[]` es lo que C3 pinta como «chips de consulta sugerida por pestaña», así que sin el campo el chat abre en un vacío sin sugerencias. `icono` es menor y va de paso, porque es la misma línea.
 
 **Y una pregunta que es de ustedes, no un pedido.** `OperationalQuestion` no es requerido y el servicio acepta la cadena vacía. El producto dice lo contrario —«una pestaña que no contesta una pregunta no se compone», §7.2 y la descripción de `Pestana`—, así que hoy **la regla la sostiene el front solo**: el editor marca la pestaña, la cuenta y no la deja componer. Si además la rechazara el `validate` o el `publish`, la regla dejaría de depender de qué cliente haga el PUT. Es B4.15 quien decidiría.
+
+
+### B4.16 · Una ruta que liste usuarios · A3 no se puede empezar sin ella
+
+*Estado de la tarea: pendiente.*
+
+
+Hoy existe `POST /admin/users` y nada más: `GET
+/admin/users` da **404**, comprobado contra el servicio corriendo el
+2026-09-25 con `6e595e3` limpio y token de rol admin.
+
+**No es que A3 se vea incompleta: no hay nada que dibujar.** Es la única
+pantalla de administración cuyo hueco no tenía tarea escrita en ningún lado —ni
+de ellos ni nuestra—, y por eso se abre acá: un pedido que sólo vive en un
+mensaje envejece sin que nadie lo note.
+
+**Va junto con B4.8.** Sin el CRUD de roles no hay permisos que mostrar por
+usuario, que es lo que la propia pantalla declara hoy como razón de estar
+pendiente. Pedidas juntas en
+`docs/MENSAJE-2026-09-25-backend-feeds-y-usuarios.md`.
 
 
 ### B4.10 · Asignación de layout publicado a roles

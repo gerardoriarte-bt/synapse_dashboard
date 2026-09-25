@@ -1652,6 +1652,29 @@ Recién ahí `humo.py` puede verificarlas contra un servicio corriendo — y par
 rutas de admin hace falta además **un usuario `admin`**, que sigue siendo el
 mismo pedido que dejó `synapse-admin-wire.yaml` sin confirmar.
 
+### B4.16 ⬜ Una ruta que liste usuarios · A3 no se puede empezar sin ella
+**Espera del backend.** Hoy existe `POST /admin/users` y nada más: `GET
+/admin/users` da **404**, comprobado contra el servicio corriendo el
+2026-09-25 con `6e595e3` limpio y token de rol admin.
+
+**No es que A3 se vea incompleta: no hay nada que dibujar.** Es la única
+pantalla de administración cuyo hueco no tenía tarea escrita en ningún lado —ni
+de ellos ni nuestra—, y por eso se abre acá: un pedido que sólo vive en un
+mensaje envejece sin que nadie lo note.
+
+**Va junto con B4.8.** Sin el CRUD de roles no hay permisos que mostrar por
+usuario, que es lo que la propia pantalla declara hoy como razón de estar
+pendiente. Pedidas juntas en
+`docs/MENSAJE-2026-09-25-backend-feeds-y-usuarios.md`.
+
+**Criterio de aceptación.**
+- Lista por tenant, bajo `AdminOnlyMiddleware` como el resto de `/admin/*`.
+- Por usuario, lo que §7.3 le pide a A3: **el usuario, su rol, su último acceso
+  y su estado**.
+- El rol viene identificado, no sólo con su nombre: A3 enlaza a la ficha.
+- **El último acceso es un instante, nunca «hace X»** — la presentación es del
+  front y depende del huso del navegador · la regla de las dos zonas horarias.
+
 ### B4.10 ⬜ Asignación de layout publicado a roles
 **Espera del backend.** **Tres etiquetas `json:`** en `DDLayoutVersion`, `DDTab` y `DDPanel`, y un **`json:"-"`** en sus campos `Tenant` / `LayoutVersion` / `Tab`.
 

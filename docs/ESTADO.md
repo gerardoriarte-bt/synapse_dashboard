@@ -5,7 +5,7 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**110 de 208 tareas cerradas.** 20 parciales · 73 pendientes · 5 diferidas.
+**110 de 209 tareas cerradas.** 20 parciales · 74 pendientes · 5 diferidas.
 
 
 ## Front · 103 de 124
@@ -19,7 +19,7 @@
 | 4 · Admin y Builder | `███████████████·······` | 16/23 | 2 | 5 |
 | 5 · Pruebas y pulido | `█████████████████·····` | 14/18 | 0 | 3 |
 
-## Backend · 7 de 84
+## Backend · 7 de 85
 
 > ⚠️ **Este número está bajo y no refleja al backend.** El plan de acá
 > es la fuente del FRONT; el estado de las tareas `B*` solo se mueve
@@ -39,7 +39,7 @@
 | 1 · API de consola | `████··················` | 5/27 | 7 | 15 |
 | 2 · Materialización | `██····················` | 1/13 | 1 | 11 |
 | 3 · Chat contextual | `······················` | 0/11 | 0 | 11 |
-| 4 · Admin y Builder | `······················` | 0/16 | 5 | 11 |
+| 4 · Admin y Builder | `······················` | 0/17 | 5 | 12 |
 | 5 · Multi-dashboard y pulido | `······················` | 0/7 | 0 | 6 |
 
 ---
@@ -50,7 +50,7 @@
 
 ---
 
-## Bloqueadas · 41
+## Bloqueadas · 42
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -99,6 +99,7 @@ Lo que el front espera del backend está detallado en
 - **B3.9** · CRUD /admin/tenants/{id}/agents
 - **B4.1** · GET /admin/tenants
 - **B4.10** · Asignación de layout publicado a roles
+- **B4.16** · Una ruta que liste usuarios · A3 no se puede empezar sin ella
 - **B4.2** · GET /admin/tenants/{id}/layouts
 - **B4.4** · PUT /admin/layouts/{id} — editar pestañas y paneles
 - **B5.1** · Varios layouts por tenant
