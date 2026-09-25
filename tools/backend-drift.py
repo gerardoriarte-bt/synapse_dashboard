@@ -55,6 +55,27 @@ def main() -> int:
 
     nuestro, rama = m_commit.group(1), m_rama.group(1)
 
+    # ── LA VERIFICACIÓN ES POR RUTA · 2026-09-25 ────────────────────────────
+    #
+    # Antes esto miraba una sola línea `commit`, y eso lo dejaba **rojo
+    # permanente**: al reverificar tres rutas contra un commit nuevo, mover la
+    # línea habría dicho que las nueve estaban al día, así que no se movía. Ocho
+    # días después seguía sonando, ya como paisaje, y el backend agregó siete
+    # formas de valor que nadie miró — al punto de mandarles un mensaje diciendo
+    # que no las tenían.
+    #
+    # El chequeo no fallaba. Lo que fallaba es que sólo sabía decir «sí» o «no»
+    # sobre un archivo que se verifica de a pedazos, así que la única forma de
+    # ponerlo en verde era mentir. Con la marca por ruta el número BAJA a medida
+    # que se reverifica, y un rojo que se mueve se sigue leyendo.
+    rutas = re.findall(
+        r"^  (/[^\n]*?):\n    x-verificado-en:\s*([0-9a-f]{7,40})", texto, re.M
+    )
+    if not rutas:
+        print("backend-drift ⊘ BLOQUEADO · ninguna ruta declara `x-verificado-en`")
+        print("  cada ruta del cable lleva el commit contra el que se leyó")
+        return 2
+
     r = subprocess.run(
         ["gh", "api", f"repos/{REPO}/commits/{rama}", "--jq", ".sha + \"\\t\" + .commit.author.date + \"\\t\" + (.commit.message | split(\"\\n\")[0])"],
         capture_output=True,
@@ -70,18 +91,30 @@ def main() -> int:
 
     suyo, fecha, mensaje = (r.stdout.strip().split("\t") + ["", ""])[:3]
 
-    if suyo == nuestro:
-        print(f"backend-drift ✓ sin deriva · {rama} sigue en {nuestro[:7]} ({fecha[:10]})")
+    atrasadas = [(r, c) for r, c in rutas if not suyo.startswith(c)]
+    al_dia = len(rutas) - len(atrasadas)
+
+    if not atrasadas:
+        print(f"backend-drift ✓ sin deriva · las {len(rutas)} rutas leídas contra {suyo[:7]} ({fecha[:10]})")
         return 0
 
-    print(f"backend-drift ✗ el backend se movió · {rama}")
-    print(f"  transcripto   {nuestro[:7]}")
+    print(f"backend-drift ✗ {len(atrasadas)} de {len(rutas)} rutas sin reverificar · {rama}")
     print(f"  ahora en      {suyo[:7]}  ({fecha[:10]})  {mensaje[:56]}")
+    if al_dia:
+        print(f"  al día        {al_dia} ruta(s)")
+    print()
+    for r, c in atrasadas:
+        print(f"   {c:8} {r}")
     print()
     print("  Qué hacer, y en este orden:")
-    print("   1. Ver qué cambió · gh api repos/%s/compare/%s...%s" % (REPO, nuestro[:7], suyo[:7]))
-    print("   2. Si tocó `/config/*` o `/admin/*`, reverificar el cable y correr F1.39")
-    print("   3. Actualizar la línea `commit` de synapse-console-wire.yaml")
+    print("   1. Ver qué cambió · gh api repos/%s/compare/%s...%s" % (REPO, atrasadas[0][1], suyo[:7]))
+    print("   2. Leer la ruta contra su código y corregir el cable si difiere")
+    print("   3. Mover SOLO el `x-verificado-en` de las rutas que releíste")
+    print()
+    print("  **El número baja de a una.** No hace falta reverificar las nueve para")
+    print("  que esto deje de mentir: cada ruta releída lo achica, y un rojo que se")
+    print("  mueve se sigue leyendo. El anterior era binario y se quedó ocho días")
+    print("  en el mismo rojo hasta que dejó de mirarse.")
     print()
     print("  **Que se hayan movido NO mueve ninguna tarea `B*`.** El estado de una")
     print("  tarea de backend se cambia después de verificar contra el servicio,")

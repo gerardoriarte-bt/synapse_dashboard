@@ -11,6 +11,24 @@ openapi: 3.1.0
 #   rama   feature/dynamic-dashboard-backend
 #   commit 733c13c37dd54b9705e714cbc4718d8aa498092b  (2026-09-11)
 #
+# ── LA VERIFICACIÓN ES POR RUTA, DESDE EL 2026-09-25 ─────────────────────────
+#
+# Cada ruta declara `x-verificado-en` con el commit contra el que se leyó. La
+# línea `commit` de arriba es la procedencia del archivo; `x-verificado-en` es
+# lo que `backend-drift` mira.
+#
+# **Antes era una sola línea, y eso tuvo un costo medido.** Al reverificar tres
+# rutas contra `82da946` la línea no se podía mover —habría dicho que las nueve
+# estaban al día— así que se dejó en `733c13c` y el chequeo quedó **rojo
+# permanente**. Ocho días después seguía sonando, ya como paisaje, mientras el
+# backend agregaba siete formas de valor que nadie miró: el 2026-09-25 se les
+# mandó un mensaje afirmando que no las tenían.
+#
+# El chequeo no falló. Lo que falló es que sólo sabía decir «sí» o «no» sobre un
+# archivo que se verifica de a pedazos, así que la única forma de ponerlo en
+# verde era mentir. Con la marca por ruta el número baja a medida que se
+# reverifica, y un rojo que se mueve se sigue leyendo.
+#
 # Archivos leídos, y son la autoridad si esto difiere:
 #   internal/core/ports/dd_config_service.go      los DTO de las seis rutas
 #   internal/core/services/dd_config_service.go   estados, gobierno, períodos
@@ -75,6 +93,7 @@ tags:
 
 paths:
   /config/me:
+    x-verificado-en: 733c13c
     get:
       tags: [config]
       operationId: getMe
@@ -97,6 +116,7 @@ paths:
         '500': { $ref: '#/components/responses/ServerError' }
 
   /config/catalog:
+    x-verificado-en: 733c13c
     get:
       tags: [config]
       operationId: getCatalog
@@ -120,6 +140,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/blocks:
+    x-verificado-en: 733c13c
     get:
       tags: [config]
       operationId: getBlocks
@@ -143,6 +164,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/tabs/{tabId}:
+    x-verificado-en: 733c13c
     get:
       tags: [config]
       operationId: getTab
@@ -178,6 +200,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   /config/panels:batch:
+    x-verificado-en: 1e080ee
     post:
       tags: [config]
       operationId: batchPanels
@@ -211,6 +234,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/me/preferences:
+    x-verificado-en: 733c13c
     put:
       tags: [config]
       operationId: updatePreferences
@@ -246,6 +270,7 @@ paths:
 
   # ── B3.1 · el chat contextual · TRANSCRITO DE 82da946 ────────────────────
   /config/chat:
+    x-verificado-en: 82da946
     post:
       tags: [config]
       operationId: askChat
@@ -303,6 +328,7 @@ paths:
 
   # ── F3.7 · el historial de hilos · TRANSCRITO DE 82da946 ─────────────────
   /config/chat/threads:
+    x-verificado-en: 82da946
     get:
       tags: [config]
       operationId: listChatThreads
@@ -356,6 +382,7 @@ paths:
 
   # ── B3.2 · las preguntas sugeridas · TRANSCRITO DE 82da946 ───────────────
   /config/panels/{panelId}/chat-suggestions:
+    x-verificado-en: 82da946
     get:
       tags: [config]
       operationId: panelChatSuggestions
@@ -572,8 +599,21 @@ components:
         shape:
           type: string
           description: |
-            Las nueve que `materialize.TransformValue` sabe transformar. Una
-            décima sincroniza bien y falla al materializar con `ErrUnknownShape`.
+            Las que `materialize.TransformValue` sabe transformar. **Son quince
+            desde `168a761`** y este texto decía nueve, que era cierto al
+            transcribirlo: `scalar`, `scalar_with_interval`, `categorical`,
+            `ranking`, `time_series`, `multi_series`, `tabular`, `prose`,
+            `composition`, `compared_categorical`, `multi_attribute_profile`,
+            `matrix`, `graph`, `flow`, `distribution` y `series_with_band`.
+
+            **El conteo viejo costó un mensaje equivocado al backend** el
+            2026-09-25: se citó esta línea como si confirmara una medición
+            nuestra, y era la misma lectura vieja escrita dos veces.
+
+            `distribution` emite `{bins:[{label, v, lo?, hi?}]}` y
+            `series_with_band` `{points:[{t, v, lo?, hi?}]}` **sin `level`** —
+            pedido, porque el contrato interno lo exige. Reverificado contra
+            `1e080ee` el 2026-09-25.
           examples:
             - scalar
             - scalar_with_interval
@@ -731,8 +771,14 @@ components:
         presentation:
           description: |
             **Solo se emite para `scalar` y `scalar_with_interval`.**
-            `PresentationFromRows` devuelve `nil` para las otras siete formas, así
+            `PresentationFromRows` devuelve `nil` para **todas las demás**, así
             que un panel de barras o de tabla llega sin rótulo.
+
+            Decía «las otras siete» y eso se venció: el `switch` de
+            `TransformValue` pasó de nueve formas a quince en `168a761`.
+            Reverificado contra `1e080ee` el 2026-09-25 — el comportamiento de
+            `PresentationFromRows` no cambió, el conteo sí. Se escribe sin número
+            para que no vuelva a vencerse.
           type: object
           additionalProperties: true
         reason:

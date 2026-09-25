@@ -349,8 +349,21 @@ export interface components {
             key: string;
             name: string;
             /**
-             * @description Las nueve que `materialize.TransformValue` sabe transformar. Una
-             *     décima sincroniza bien y falla al materializar con `ErrUnknownShape`.
+             * @description Las que `materialize.TransformValue` sabe transformar. **Son quince
+             *     desde `168a761`** y este texto decía nueve, que era cierto al
+             *     transcribirlo: `scalar`, `scalar_with_interval`, `categorical`,
+             *     `ranking`, `time_series`, `multi_series`, `tabular`, `prose`,
+             *     `composition`, `compared_categorical`, `multi_attribute_profile`,
+             *     `matrix`, `graph`, `flow`, `distribution` y `series_with_band`.
+             *
+             *     **El conteo viejo costó un mensaje equivocado al backend** el
+             *     2026-09-25: se citó esta línea como si confirmara una medición
+             *     nuestra, y era la misma lectura vieja escrita dos veces.
+             *
+             *     `distribution` emite `{bins:[{label, v, lo?, hi?}]}` y
+             *     `series_with_band` `{points:[{t, v, lo?, hi?}]}` **sin `level`** —
+             *     pedido, porque el contrato interno lo exige. Reverificado contra
+             *     `1e080ee` el 2026-09-25.
              * @example scalar
              * @example scalar_with_interval
              * @example time_series
@@ -507,8 +520,14 @@ export interface components {
             };
             /**
              * @description **Solo se emite para `scalar` y `scalar_with_interval`.**
-             *     `PresentationFromRows` devuelve `nil` para las otras siete formas, así
+             *     `PresentationFromRows` devuelve `nil` para **todas las demás**, así
              *     que un panel de barras o de tabla llega sin rótulo.
+             *
+             *     Decía «las otras siete» y eso se venció: el `switch` de
+             *     `TransformValue` pasó de nueve formas a quince en `168a761`.
+             *     Reverificado contra `1e080ee` el 2026-09-25 — el comportamiento de
+             *     `PresentationFromRows` no cambió, el conteo sí. Se escribe sin número
+             *     para que no vuelva a vencerse.
              */
             presentation?: {
                 [key: string]: unknown;
