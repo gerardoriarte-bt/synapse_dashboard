@@ -186,6 +186,47 @@ describe('F2.5 · la frescura es relativa a cuándo se materializó', () => {
 })
 
 describe('F2.1 · DEGRADADO muestra la cifra, y la limitación al lado', () => {
+  /** ── LA MITAD QUE EL TÍTULO PROMETÍA Y NADIE VERIFICABA ──────────────────
+   *
+   *  Hasta el 2026-09-25 este `describe` se llamaba «y la limitación al lado» y
+   *  comprobaba la cifra y el badge. `razon` y `desbloqueaCon` **ya estaban en
+   *  el fixture** de arriba y ninguna aserción los miraba, así que el shell los
+   *  descartaba con la puerta en verde y `spec-anclas` en 10 de 10.
+   *
+   *  No lo vio nadie porque hasta el 2026-09-24 ningún panel volvió DEGRADADO
+   *  desde el servicio real. Cuando volvió, la pantalla mostró el texto viejo
+   *  de un panel de prosa —«USD 4.28M»— con un badge y sin una palabra de por
+   *  qué, al lado de un KPI que decía 639.078.
+   */
+  // §ANCLA:DEGRAD-1 · §8: «El panel muestra el dato con un badge que declara la
+  // limitación y su alcance». El dato es 'USD 4.28M' y la limitación y su
+  // alcance son el texto de `razon`, que es como el contrato la describe.
+  it('la RAZÓN está en pantalla · §8 pide declarar la limitación y su alcance', async () => {
+    conUnPanel(DEGRADADO)
+    const { container } = montar()
+    await screen.findByText('USD 4.28M')
+    expect(container.textContent).toContain('El feed de inventario tiene 31 horas')
+  })
+
+  it('y QUÉ LO DESBLOQUEA, con la misma gramática que el bloqueado', async () => {
+    // El literal se comparte con `BlockedState` a propósito: §8 existe para que
+    // cada pantalla no invente su propia gramática de degradación.
+    conUnPanel(DEGRADADO)
+    const { container } = montar()
+    await screen.findByText('USD 4.28M')
+    expect(container.textContent).toContain('Qué lo desbloquea · Reconectar el snapshot de inventario')
+  })
+
+  it('con el MISMO valor en DISPONIBLE no aparece ninguna de las dos', async () => {
+    // El ámbito: la limitación sale del `estado` del backend, no de que el
+    // payload traiga los campos. Sin esto, una nota pegada siempre pasaría.
+    conUnPanel(DISPONIBLE)
+    const { container } = montar()
+    await screen.findByText('USD 4.28M')
+    expect(container.textContent).not.toContain('El feed de inventario tiene 31 horas')
+    expect(container.textContent).not.toMatch(/Qué lo desbloquea/i)
+  })
+
   it('el número está · un degradado no es un panel sin dato', async () => {
     conUnPanel(DEGRADADO)
     montar()

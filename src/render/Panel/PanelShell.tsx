@@ -12,6 +12,7 @@
 import type { ReactNode } from 'react'
 import { Label } from '../primitives/Label'
 import { DegradedBadge } from './DegradedBadge'
+import { DegradedNote } from './DegradedNote'
 import { Provenance } from './Provenance'
 import { resolveGovernance, visualState } from '../state'
 import { panelStyle, COLUMNS } from '../grid'
@@ -137,6 +138,14 @@ export function PanelShell({
           {state === 'DEGRADADO' && <DegradedBadge>Degradado</DegradedBadge>}
         </div>
       </header>
+
+      {/* La limitación del degradado · §8 pide que el badge «declare la
+          limitación y su alcance», y el alcance es el texto de `razon`. Va
+          entre la cabecera y el cuerpo porque es del shell —el degradado no
+          reemplaza el cuerpo— y porque una frase necesita el ancho entero. */}
+      {state === 'DEGRADADO' && 'razon' in payload && (
+        <DegradedNote reason={payload.razon} unblockedBy={payload.desbloqueaCon} />
+      )}
 
       {/* El slot. `min-h-0` es lo que impide que un cuerpo alto estire el panel
           por encima de su `rowSpan` y rompa la fila entera. */}

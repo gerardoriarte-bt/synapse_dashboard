@@ -124,6 +124,17 @@ ANCLAS = [
         ),
     ),
     dict(
+        id="DEGRAD-1",
+        seccion="§8",
+        cita="El panel muestra el dato con un badge que declara la limitación y su alcance",
+        # Agregada el 2026-09-25, después de que la regla se violara con la
+        # puerta en verde durante meses: el shell pintaba el badge y DESCARTABA
+        # `razon` y `desbloqueaCon`. No salió ⊘ porque la regla nunca estuvo en
+        # esta lista — las diez anteriores son de grilla, color, radio y
+        # tipografía, y ningún principio de producto estaba anclado.
+        implementa=["src/render/Panel/DegradedNote.tsx"],
+    ),
+    dict(
         id="TIPO-1",
         seccion="§2.3",
         cita="**siempre mayúsculas**, 10px, letter-spacing 0.12em",
