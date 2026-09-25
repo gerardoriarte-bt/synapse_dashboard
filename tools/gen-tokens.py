@@ -246,6 +246,27 @@ def generar_css(por_tema, planos):
 def generar_ts(por_tema):
     superficies = [k for k in por_tema if not k.startswith("fam-")]
     union = "\n".join(f"  | '{n}'" for n in superficies)
+
+    # ── LOS PASOS DE CADA FAMILIA, CONTADOS DEL `.pen` ──────────────────────
+    #
+    # **Acá había un `0 | 1 | 2 | 3 | 4` escrito a mano**, y el `.pen` no le da
+    # cinco escalones a todas: `externo` tiene DOS. El tipo prometía cinco para
+    # cualquier familia, así que `hue({family:'externo', step:2})` compilaba y
+    # pedía `var(--color-fam-externo-2)`, que no existe — y una variable que no
+    # existe no es un error, se pinta sin color.
+    #
+    # Medido el 2026-09-25. No es alcanzable con el catálogo de UA MX, que no
+    # tiene métricas de familia externa, pero el contrato admite `external` y
+    # `PlotComposition` pide `i % 5` sobre la familia que le toque.
+    pasos = {}
+    for k in por_tema:
+        m = re.match(r"fam-(.+)-(\d+)$", k)
+        if m:
+            pasos[m.group(1)] = max(pasos.get(m.group(1), -1), int(m.group(2))) + 0
+    conteo = {f: n + 1 for f, n in pasos.items()}
+    maximo = max(conteo.values()) if conteo else 1
+    union_paso = " | ".join(str(i) for i in range(maximo))
+    filas = "\n".join(f"  {f}: {n}," for f, n in sorted(conteo.items()))
     return f"""// {AVISO}
 //
 // Espejo en TypeScript de `tokens.css`. Existe para que un token se pueda
@@ -257,15 +278,30 @@ def generar_ts(por_tema):
 export type TokenColor =
 {union}
 
-/** Los cinco escalones de una familia. El 1 es el trazo principal. */
-export type FamilyStep = 0 | 1 | 2 | 3 | 4
+/** Los escalones que puede pedir un plot. El 1 es el trazo principal.
+ *
+ *  **No todas las familias tienen todos**: ver `FAMILY_STEPS`. */
+export type FamilyStep = {union_paso}
+
+/** Cuántos escalones tiene CADA familia, contados del `.pen`.
+ *
+ *  No son iguales, y darlo por sentado costaba un color que no se pinta: una
+ *  `var(--color-fam-x-N)` que no existe no falla, se dibuja sin color. */
+export const FAMILY_STEPS: Readonly<Record<string, number>> = {{
+{filas}
+}}
 
 /** La custom property de un escalón de familia.
  *
  *  Es la ÚNICA forma en que un plot debería pedir color: recibe la familia del
- *  catálogo y no sabe cuál le tocó · regla dura 1 de design.md. */
+ *  catálogo y no sabe cuál le tocó · regla dura 1 de design.md.
+ *
+ *  **El escalón se ajusta al largo de la familia**, que no es el mismo para
+ *  todas. Sin esto, un plot que reparte cinco partes sobre una familia de dos
+ *  pide dos variables inexistentes y las pinta sin color. */
 export function familyVar(family: string, step: FamilyStep = 1): string {{
-  return `var(--color-fam-${{family}}-${{step}})`
+  const largo = FAMILY_STEPS[family] ?? 1
+  return `var(--color-fam-${{family}}-${{step % largo}})`
 }}
 """
 

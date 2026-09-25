@@ -25,13 +25,32 @@ export type TokenColor =
   | 'shad'
   | 'c-grid'
 
-/** Los cinco escalones de una familia. El 1 es el trazo principal. */
+/** Los escalones que puede pedir un plot. El 1 es el trazo principal.
+ *
+ *  **No todas las familias tienen todos**: ver `FAMILY_STEPS`. */
 export type FamilyStep = 0 | 1 | 2 | 3 | 4
+
+/** Cuántos escalones tiene CADA familia, contados del `.pen`.
+ *
+ *  No son iguales, y darlo por sentado costaba un color que no se pinta: una
+ *  `var(--color-fam-x-N)` que no existe no falla, se dibuja sin color. */
+export const FAMILY_STEPS: Readonly<Record<string, number>> = {
+  cliente: 5,
+  demanda: 5,
+  externo: 2,
+  inventario: 5,
+  medios: 5,
+}
 
 /** La custom property de un escalón de familia.
  *
  *  Es la ÚNICA forma en que un plot debería pedir color: recibe la familia del
- *  catálogo y no sabe cuál le tocó · regla dura 1 de design.md. */
+ *  catálogo y no sabe cuál le tocó · regla dura 1 de design.md.
+ *
+ *  **El escalón se ajusta al largo de la familia**, que no es el mismo para
+ *  todas. Sin esto, un plot que reparte cinco partes sobre una familia de dos
+ *  pide dos variables inexistentes y las pinta sin color. */
 export function familyVar(family: string, step: FamilyStep = 1): string {
-  return `var(--color-fam-${family}-${step})`
+  const largo = FAMILY_STEPS[family] ?? 1
+  return `var(--color-fam-${family}-${step % largo})`
 }
