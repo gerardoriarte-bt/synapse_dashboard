@@ -313,7 +313,7 @@ nuestro lado. · Bloquea **B2.12**.
 
 ### B2.13 · Salud de feeds por fuente · de acá sale el ESTADO de cada métrica
 
-*Estado de la tarea: pendiente.*
+*Estado de la tarea: parcial.*
 
 
 **Una ruta que liste, por fuente del tenant: última carga, frescura, cadencia y tolerancia.** Más, si existen, filas procesadas y filas que fallaron la validación Silver→Gold.
@@ -442,7 +442,7 @@ Los dos están en el modelo de §2 de `design.md` y en `Pestana` del contrato, y
 
 ### B4.16 · Una ruta que liste usuarios · A3 no se puede empezar sin ella
 
-*Estado de la tarea: pendiente.*
+*Estado de la tarea: parcial.*
 
 
 Hoy existe `POST /admin/users` y nada más: `GET

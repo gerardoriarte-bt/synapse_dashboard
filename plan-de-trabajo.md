@@ -1225,7 +1225,13 @@ su razón. El front ya pinta `DEGRADED` con su badge, su razón y su
 nuestro lado. · Bloquea **B2.12**.
 
 
-#### ➕ B2.13 ⬜ Salud de feeds por fuente · de acá sale el ESTADO de cada métrica
+#### ➕ B2.13 ⚠️ Salud de feeds por fuente · de acá sale el ESTADO de cada métrica
+**SERVIDA el 2026-09-25 · `1e080ee` · `GET /admin/tenants/{tenantId}/feeds` → 200.**
+Verificada contra el servicio corriendo, cuatro fuentes, y **trae todo lo que el
+criterio pedía**: `cadence_hours`, `freshness_hours`, `last_load_at`,
+`tolerance_factor`, `rows_processed`, `rows_failed` y `status`, más el enlace a
+las métricas —`metric_count`, `metric_keys`— y `gold_table`. Queda en ⚠️ y no en
+✅ hasta que A5 la consuma y se vea en pantalla.
 **Espera del backend.** **Una ruta que liste, por fuente del tenant: última carga, frescura, cadencia y tolerancia.** Más, si existen, filas procesadas y filas que fallaron la validación Silver→Gold.
 
 Pedida el 2026-09-15, **reemplazando un pedido anterior del mismo día que estaba mal.** Esa mañana se pidieron `state` y `state_reason` en el modelo `Metrica` (B1.17) porque A4 necesita filtrar por estado. El `.pen` lo corrigió esa tarde: **el estado de una métrica se DERIVA, no se guarda.**
@@ -1673,7 +1679,12 @@ Recién ahí `humo.py` puede verificarlas contra un servicio corriendo — y par
 rutas de admin hace falta además **un usuario `admin`**, que sigue siendo el
 mismo pedido que dejó `synapse-admin-wire.yaml` sin confirmar.
 
-### B4.16 ⬜ Una ruta que liste usuarios · A3 no se puede empezar sin ella
+### B4.16 ⚠️ Una ruta que liste usuarios · A3 no se puede empezar sin ella
+**SERVIDA el 2026-09-25 · `1e080ee`**, el mismo día que se pidió.
+`GET /admin/tenants/{tenantId}/users` → 200, y trae lo que §7.3 le pide a A3:
+`email`, `first_name`, `last_name`, `role` con su `role_id`, `last_login_at` y
+`is_active`. **No está en `/admin/users`**, que sigue dando 404: va colgada del
+tenant, que es más correcto.
 **Espera del backend.** Hoy existe `POST /admin/users` y nada más: `GET
 /admin/users` da **404**, comprobado contra el servicio corriendo el
 2026-09-25 con `6e595e3` limpio y token de rol admin.
@@ -4207,7 +4218,22 @@ estimación que no bajaría.
 
 ### F4.1 ✅ `surfaces/admin/` — layout base y navegación
 ### F4.2 ✅ Lista de tenants
-### F4.3 ⚠️ Gestión de usuarios y roles por tenant · 🔒 `/admin/users` y `/admin/roles` dan 404
+### F4.3 ⚠️ Gestión de usuarios y roles por tenant · 🔒 ver abajo · el candado dice una ruta que ya no es la que importa
+**EL CANDADO ES LITERALMENTE CIERTO Y SUSTANCIALMENTE VIEJO · medido el
+2026-09-25 contra `1e080ee`.** `/admin/users` y `/admin/roles` **siguen dando
+404**, así que la frase no miente. Pero la capacidad existe en otras rutas:
+`GET /admin/tenants/{tenantId}/users` → 200 y
+`GET /admin/tenants/{tenantId}/roles/composition` → 200 —**tomaron la ruta que
+propusimos y escribimos en el fork**—.
+
+**No se toma sin decidirlo.** Es exactamente la forma del 2026-09-16 con
+F4.17–F4.20: un candado cuya razón venció en parte. Lo que cambia acá es que
+venció del todo y la frase quedó nombrando la ruta equivocada; lo que no cambia
+es que la decisión de tomarla no es del agente.
+
+**La mitad de roles ya se ve contra el servicio real**, verificado en pantalla el
+2026-09-25: A2 dibuja los tres roles con su composición y el aviso de las
+métricas que `planner` no recibe.
 ### F4.4 ✅ Configuración de agente Snowflake por tenant
 ### F4.5 ✅ Vista del catálogo de métricas del tenant
 **Criterio de aceptación (los cinco).**
