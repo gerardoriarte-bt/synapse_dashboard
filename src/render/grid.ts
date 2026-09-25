@@ -54,7 +54,10 @@ export function gridStyle(columns: number = COLUMNS): React.CSSProperties {
   return {
     display: 'grid',
     gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-    gridAutoRows: `${ROW}px`,
+    // **A UNA columna las filas se dimensionan por contenido.** Con `ROW` fijo
+    // el `span N` del panel vuelve a ser una medida exacta, y §4 pide que ahí
+    // sea un piso. Ver `panelStyle`, que es donde está la razón.
+    gridAutoRows: columns === 1 ? 'auto' : `${ROW}px`,
     gap: `${GAP}px`,
   }
 }
@@ -127,8 +130,22 @@ export function panelStyle(c: Placement, columns: number = COLUMNS): React.CSSPr
     // paneles se pisarían entre sí. El orden lo preserva el orden del DOM, que
     // es lo que `readingOrder` ordena.
     gridColumn: full ? `${c.colStart} / span ${colSpan}` : `span ${colSpan}`,
-    gridRow: `span ${c.rowSpan}`,
-    minHeight: 0,
+
+    // ── A UNA COLUMNA EL rowSpan ES UN PISO, NO UNA MEDIDA · §4 ─────────────
+    //
+    // **La razón del alto fijo es la alineación horizontal**, y a una columna no
+    // hay con qué alinearse: el panel de al lado no existe. Está en §4 desde el
+    // 2026-08-21 y la nota de `C1 · 360 · una columna` lo mide: «el resumen
+    // ejecutivo creció a 462 · a 360 su prosa necesita catorce líneas y en los
+    // 368 que manda su rowSpan entran nueve — el texto se salía del panel».
+    //
+    // Estuvo escrito y no aplicado hasta el 2026-09-25: los doce paneles medían
+    // exactamente 368 a 360px. No se vio antes porque nadie había abierto la
+    // consola a un ancho de teléfono con datos reales.
+    ...(columns === 1
+      ? { gridRow: 'auto', minHeight: span(c.rowSpan) }
+      : { gridRow: `span ${c.rowSpan}`, minHeight: 0 }),
+
     minWidth: 0,
   }
 }

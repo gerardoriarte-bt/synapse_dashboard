@@ -224,3 +224,56 @@ describe('los tres escalones de §3.1', () => {
     expect(columnsFor(MIN_WIDTH)).toBe(1)
   })
 })
+
+describe('a UNA columna el `rowSpan` es un PISO y no una medida · §4', () => {
+  /** **La regla citada**, de §4 desde el 2026-08-21 y de la nota de
+   *  `C1 · 360 · una columna` en el `.pen`:
+   *
+   *  > «EL RESUMEN EJECUTIVO CRECIÓ a 462. A 360 su prosa necesita catorce
+   *  > líneas y en los 368 que manda su rowSpan entran nueve: **el texto se
+   *  > salía del panel**. Desde el 2026-08-21 §4 declara que a UNA columna el
+   *  > rowSpan es un piso y no una medida — **la razón del alto fijo es la
+   *  > alineación horizontal, y acá no hay con qué alinearse**.»
+   *
+   *  **Estaba escrita y no aplicada.** Medido el 2026-09-25 abriendo la consola
+   *  a 360px con el catálogo real: los doce paneles medían exactamente 368. Es
+   *  el mismo par que la trampa de `gridAutoRows` que este archivo ya cubre —
+   *  una fórmula escrita y no aplicada— por el otro extremo.
+   *
+   *  No se vio antes porque nadie había mirado la consola a un ancho de
+   *  teléfono con datos que llenaran un panel.
+   */
+  it('a una columna la fila se suelta y el alto pasa a `minHeight`', () => {
+    const e = panelStyle({ colStart: 1, colSpan: 12, rowSpan: 4 }, 1)
+
+    // `auto` es lo que deja crecer: con `span 4` la fila vuelve a ser exacta.
+    expect(e.gridRow).toBe('auto')
+    // Y el piso sigue siendo la fórmula, no un número suelto.
+    expect(e.minHeight).toBe(span(4))
+    expect(isGridMeasure(e.minHeight as number)).toBe(true)
+
+    // **Con DOS rowSpan distintos**, porque `span(4)` son 368 y un 368 quemado
+    // pasaría la aserción de arriba sin calcular nada. Lo cazó una mutación.
+    expect(panelStyle({ colStart: 1, colSpan: 12, rowSpan: 5 }, 1).minHeight).toBe(span(5))
+    expect(panelStyle({ colStart: 1, colSpan: 12, rowSpan: 2 }, 1).minHeight).toBe(span(2))
+  })
+
+  it('con MÁS de una columna el alto sigue siendo una medida exacta', () => {
+    // El ámbito: la alineación horizontal es la razón del alto fijo, así que
+    // donde hay con qué alinearse no cambia nada. Sin esto, soltar la fila en
+    // todos lados pasaría la prueba de arriba y rompería la grilla entera.
+    for (const columnas of [6, COLUMNS]) {
+      const e = panelStyle({ colStart: 1, colSpan: 4, rowSpan: 4 }, columnas)
+      expect(e.gridRow).toBe('span 4')
+      expect(e.minHeight).toBe(0)
+    }
+  })
+
+  it('y el contenedor deja de fijar la fila · si no, el piso no sirve de nada', () => {
+    // `gridAutoRows: 80px` vuelve exacta cualquier fila. Con el panel en `auto`
+    // pero el contenedor en `80px`, el piso no crecería y esto se vería igual
+    // de bien que el defecto.
+    expect(gridStyle(1).gridAutoRows).toBe('auto')
+    expect(gridStyle(6).gridAutoRows).toBe('80px')
+  })
+})
