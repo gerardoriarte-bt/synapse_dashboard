@@ -1133,13 +1133,18 @@ faltan **no son alcanzables hoy, con su razón**: `SIN_PERMISO` necesita un
 usuario no-admin y `GET /admin/users` da 404 —es **B4.16**—, y `ERROR` pide
 componer un `gauge` sin `maximum`, y ninguno de los doce paneles lo es.
 
-**Y de las once formas del contrato llegan cinco.** Las otras seis
-—`composicion`, `distribucion`, `escalarConIntervalo`, `ranking`,
-`serieConBanda` y `serieTemporal`— **no las declara ninguna métrica del catálogo
-real**, así que no se alcanzan componiendo: un panel se ancla a un `metricId`.
-Es exactamente lo que este criterio pide anotar —«no es un panel roto, es una
-forma que el backend no materializa»— y la pregunta que lo cierra es de datos:
-si UA MX tiene métricas de esas formas o son para otros clientes.
+**Y de las once formas del contrato llegan cinco**, por dos razones distintas
+que conviene no mezclar. `escalarConIntervalo`, `serieTemporal`, `ranking` y
+`composicion` **el backend las sabe producir**; lo que pasa es que UA MX no tiene
+métricas de esas formas —**y eso no es un hueco: es este cliente**, decisión de
+producto del 2026-09-25, la intención es tener todas las formas disponibles
+porque otros clientes las van a tener—. `distribucion` y `serieConBanda`, en
+cambio, **el backend no las materializa**: no están en el `switch` de
+`transform.go` y salen con `ErrUnknownShape`. Eso ya está pedido en **B1.14**.
+
+Las cuatro del primer grupo **sí se ven en `npm run dev:mock`**, que cubre las
+nueve del cable — que es lo que evita que un cuerpo quede sin verse nunca sólo
+porque este tenant no usa esa forma.
 
 | | |
 |---|---|

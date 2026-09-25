@@ -44,27 +44,43 @@ quedó verificado igual, y por un camino que además es el real.
 composicion · distribucion · escalarConIntervalo · ranking · serieConBanda · serieTemporal
 ```
 
-**No es que no se vean: es que no hay de dónde.** No se arregla componiendo un
-panel, porque un panel se ancla a un `metricId` y ninguna métrica tiene esas
-formas. Seis de nuestros cuerpos —entre ellos `ForecastBody`,
-`DistributionBody` y `CompositionBody`— **nunca han dibujado un dato real**, y
-sólo los sostienen sus pruebas con fixtures.
+**Pero no por la misma razón, y mezclarlas fue un error de la primera versión de
+este corte.** Son dos grupos con dueños distintos:
 
-**La que más conviene mirar es `serieConBanda`.** `design.md` tiene una regla
-dura —«prohibida la estimación puntual sin intervalo; un pronóstico sin banda no
-se publica»— y el cuerpo que la cumple existe. Si UA MX no tiene métricas de
-pronóstico, la regla no se ejercita nunca y el cuerpo envejece sin uso.
+| | Formas | Qué pasa |
+|---|---|---|
+| **El backend SÍ las sabe producir** | `escalarConIntervalo` · `serieTemporal` · `ranking` · `composicion` | Están entre las nueve de `TransformValue`. **UA MX no tiene métricas de esas formas hoy**, y eso no es un hueco: es este cliente. Otro las va a tener |
+| **El backend NO las sabe producir** | `distribucion` · `serieConBanda` | No están en el `switch` de `transform.go`: cualquier métrica con esa forma sincroniza y **falla al materializar con `ErrUnknownShape`** |
 
-## Qué haría falta para cerrar lo que queda
+**Producto lo aclaró el 2026-09-25:** la intención es tener **todas** las formas
+disponibles, no sólo las que este cliente grafica. UA MX es uno de los clientes.
+Así que las cuatro del primer grupo **no se anotan como «no aplica»**: están
+listas y esperando un tenant que las tenga.
+
+## Lo que sí queda como pedido · B1.14
+
+`distribucion` y `serieConBanda` **tienen esquema en el contrato y cuerpo
+escrito** —`DistributionBody` y `ForecastBody`— y el backend no las materializa.
+El plan ya lo pide en **B1.14**, con la receta: un caso más en el `switch`,
+emitiendo `{shape, cuts:[{label, v}]}` y `{shape, level, points:[{t, v, lo, hi}]}`.
+
+**`serieConBanda` es la que más pesa**: `design.md` tiene una regla dura
+—«prohibida la estimación puntual sin intervalo; un pronóstico sin banda no se
+publica»— y el cuerpo que la cumple no puede recibir un dato del backend hoy.
+
+## Dónde se ven las formas que el dato real no trae
+
+**En `npm run dev:mock`, que cubre las nueve** que el backend sabe producir —
+medido el 2026-09-25 sobre `dev/mocks/`. Es lo que evita que cuatro cuerpos
+queden sin verse nunca sólo porque este cliente no tiene esas métricas.
+
+Las dos que faltan ahí son justamente `distribution` y `series_band`, y falta por
+la misma razón: **los mocks hablan el cable, y el cable no las tiene**. El día
+que B1.14 las agregue, van a los mocks primero.
+
+## Qué haría falta para cerrar los dos estados que quedan
 
 | | De quién |
 |---|---|
 | `SIN_PERMISO` | Un usuario con rol no-admin · **B4.16**, la ruta que liste usuarios, o darlo de alta a mano |
 | `ERROR` | Componer y publicar un `gauge` sin `maximum` · es nuestro, y toca el camino de guardar/publicar del builder contra el servicio |
-| Las seis formas | **Datos**: o el catálogo de UA MX no tiene métricas de esas formas —y entonces se anota y se cierra—, o faltan por curar |
-
-**La pregunta para datos no es «cúrenlas»**, es más simple y más útil: *¿UA MX
-tiene métricas de pronóstico, de composición, de ranking o de distribución, o
-esas formas son para otros clientes?* Con esa respuesta, seis cuerpos pasan de
-«sin verificar» a «no aplica en este tenant», que es una conclusión y no un
-pendiente.
