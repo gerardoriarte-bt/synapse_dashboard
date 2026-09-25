@@ -118,8 +118,8 @@ que su resultado esté escrito.
 | `A1 · Clientes · cargando` | `src/surfaces/admin/SkeletonRows.tsx` |
 | `A2 · Ficha de cliente` | `src/surfaces/admin/RoleEditor.tsx` y `src/surfaces/admin/AgentConfig.tsx` · **diverge** · misma auditoría, §8 y §9 |
 | `A2 · Ficha · tenant en alta` | **No construida** · no hay alta de tenant en el front |
-| `A3 · Usuarios` | **No construida** · ninguna ruta lista usuarios · solo existe `POST /admin/users` |
-| `A3 · Usuarios · filtro sin resultados` | **No construida** · ídem |
+| `A3 · Usuarios` | `src/surfaces/admin/UserList.tsx` · F4.3, construida el 2026-09-25 · **diverge en el alcance**: el dibujo pide plataforma y la ruta es por cliente, declarado en la pantalla |
+| `A3 · Usuarios · filtro sin resultados` | La misma: el vacío de filtro lo pinta `EmptyRow` con `clase="filtro"` y su deshacer |
 | `A4 · Catálogo de métricas` | `src/surfaces/admin/CatalogView.tsx` |
 | `A4 · Métricas · filtro sin resultados` | `src/surfaces/admin/EmptyRow.tsx` |
 | `A5 · Salud de feeds` | `src/surfaces/admin/FeedHealth.tsx` · F4.24, construida el 2026-09-25 |

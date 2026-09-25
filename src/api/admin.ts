@@ -273,6 +273,22 @@ function aCuerpo(tabs: readonly TabParaGuardar[]): A['LayoutUpdateRequest'] {
   }
 }
 
+function adaptarUsuario(w: WireUser): Usuario {
+  return {
+    id: w.id,
+    // El nombre completo se arma acá y no en la pantalla: el cable manda las dos
+    // mitades y quien las junta tiene que ser uno solo.
+    nombre: `${w.first_name} ${w.last_name}`.trim(),
+    email: w.email,
+    rol: w.role,
+    rolId: w.role_id,
+    // `?? null` y no una cadena vacía: «nunca entró» es un hecho, no un texto.
+    ultimoAccesoEn: w.last_login_at ?? null,
+    activo: w.is_active,
+    altaEn: w.created_at,
+  }
+}
+
 function adaptarFuente(w: WireFeed): Fuente {
   return {
     clave: w.key,
@@ -370,6 +386,16 @@ export const adminApi = {
   agentes: async (tenantId: string): Promise<Agente[]> =>
     (await pedir<WireAgent[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/agents`)).map(
       adaptAgent,
+    ),
+
+  /** Los usuarios del cliente · B4.16, servida desde `1e080ee`.
+   *
+   *  **Por cliente, y A3 está dibujada con alcance plataforma.** No se suman N
+   *  llamadas: un total armado acá parecería de plataforma y sería una cuenta
+   *  nuestra. La pantalla lo declara. */
+  usuarios: async (tenantId: string): Promise<Usuario[]> =>
+    (await pedir<WireUser[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/users`)).map(
+      adaptarUsuario,
     ),
 
   /** Las fuentes del cliente y su salud · B2.13, servida desde `1e080ee`. */
@@ -500,8 +526,29 @@ export const adminApi = {
 
 export type WireAgent = A['AgentAdmin']
 export type WireFeed = A['Feed']
+export type WireUser = A['User']
 
 /** El agente, en el vocabulario del producto. */
+/** Un usuario del cliente · A3 · F4.3.
+ *
+ *  **`estado` es derivado y son DOS, no los tres que el dibujo pinta.** A3
+ *  dibuja `ACTIVO`, `SUSPENDIDO` e `INVITACIÓN PENDIENTE`, y el cable sólo trae
+ *  `is_active`. El tercero se declara como hueco en la pantalla: inferirlo de
+ *  «nunca entró» sería inventarlo — alguien puede tener cuenta activa y no haber
+ *  entrado todavía, que es otra cosa. */
+export type Usuario = {
+  id: string
+  nombre: string
+  email: string
+  /** El nombre del rol. `rolId` sirve para enlazar con la ficha. */
+  rol: string
+  rolId: string
+  /** `null` cuando nunca entró · el dibujo lo pinta «Nunca». */
+  ultimoAccesoEn: string | null
+  activo: boolean
+  altaEn: string
+}
+
 /** Una fuente de datos del tenant · A5 · F4.24.
  *
  *  **No trae estado.** El cable manda `status` y acá no está a propósito: el

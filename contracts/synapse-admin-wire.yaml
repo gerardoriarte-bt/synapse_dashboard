@@ -496,6 +496,39 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  # ── B4.16 · los usuarios del cliente ─────────────────────────────────────
+  /admin/tenants/{tenantId}/users:
+    get:
+      tags: [admin]
+      operationId: listUsers
+      summary: Los usuarios del cliente, con su rol
+      description: |
+        **Transcrita el 2026-09-25 desde `1e080ee`**, leyendo la respuesta del
+        servicio corriendo campo por campo.
+
+        **Va colgada del tenant, y A3 está dibujada con alcance PLATAFORMA** —su
+        resumen dice «17 usuarios · 2 clientes con usuarios»—. La diferencia se
+        declara en la pantalla; no se compensa pidiendo N veces esta ruta, que
+        daría un número que parece de plataforma y es una suma nuestra.
+
+        **`/admin/users` NO existe** y da 404: la lista es por cliente.
+      parameters: [{ $ref: '#/components/parameters/tenantId' }]
+      responses:
+        '200':
+          description: Los usuarios del cliente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/User' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   # ── B2.13 · salud de feeds por fuente ────────────────────────────────────
   /admin/tenants/{tenantId}/feeds:
     get:
@@ -582,6 +615,38 @@ components:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   schemas:
+
+    User:
+      type: object
+      description: |
+        Un usuario del cliente · `1e080ee`.
+
+        **Lo que A3 dibuja y esto NO trae**, declarado y no inventado: el estado
+        de INVITACIÓN PENDIENTE —`is_active` sólo distingue activo de
+        suspendido—, quién dio de alta —el dibujo pone «POR M. BENÍTEZ»— y la
+        paginación, que la ruta no ofrece.
+      required: [id, tenant_id, email, first_name, last_name, role, role_id, is_active, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        email: { type: string }
+        first_name: { type: string }
+        last_name: { type: string }
+        phone: { type: string, description: Puede venir vacío }
+        role: { type: string, description: 'El nombre del rol · admin, planner' }
+        role_id: { type: string, format: uuid, description: Para enlazar con la ficha }
+        last_login_at:
+          type: [string, 'null']
+          format: date-time
+          description: |
+            **`null` cuando nunca entró**, que el dibujo pinta como «Nunca». No
+            es un error ni un cero.
+        is_active:
+          type: boolean
+          description: |
+            Activo o suspendido. **No distingue la invitación pendiente**, que el
+            dibujo declara como un tercer estado.
+        created_at: { type: string, format: date-time, description: El alta }
 
     Feed:
       type: object

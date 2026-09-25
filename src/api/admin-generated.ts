@@ -282,6 +282,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/tenants/{tenantId}/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Los usuarios del cliente, con su rol
+         * @description **Transcrita el 2026-09-25 desde `1e080ee`**, leyendo la respuesta del
+         *     servicio corriendo campo por campo.
+         *
+         *     **Va colgada del tenant, y A3 está dibujada con alcance PLATAFORMA** —su
+         *     resumen dice «17 usuarios · 2 clientes con usuarios»—. La diferencia se
+         *     declara en la pantalla; no se compensa pidiendo N veces esta ruta, que
+         *     daría un número que parece de plataforma y es una suma nuestra.
+         *
+         *     **`/admin/users` NO existe** y da 404: la lista es por cliente.
+         */
+        get: operations["listUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/tenants/{tenantId}/feeds": {
         parameters: {
             query?: never;
@@ -316,6 +344,48 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description Un usuario del cliente · `1e080ee`.
+         *
+         *     **Lo que A3 dibuja y esto NO trae**, declarado y no inventado: el estado
+         *     de INVITACIÓN PENDIENTE —`is_active` sólo distingue activo de
+         *     suspendido—, quién dio de alta —el dibujo pone «POR M. BENÍTEZ»— y la
+         *     paginación, que la ruta no ofrece.
+         */
+        User: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            email: string;
+            first_name: string;
+            last_name: string;
+            /** @description Puede venir vacío */
+            phone?: string;
+            /** @description El nombre del rol · admin, planner */
+            role: string;
+            /**
+             * Format: uuid
+             * @description Para enlazar con la ficha
+             */
+            role_id: string;
+            /**
+             * Format: date-time
+             * @description **`null` cuando nunca entró**, que el dibujo pinta como «Nunca». No
+             *     es un error ni un cero.
+             */
+            last_login_at?: string | null;
+            /**
+             * @description Activo o suspendido. **No distingue la invitación pendiente**, que el
+             *     dibujo declara como un tercer estado.
+             */
+            is_active: boolean;
+            /**
+             * Format: date-time
+             * @description El alta
+             */
+            created_at: string;
+        };
         /**
          * @description Una fuente de datos del tenant · `1e080ee`.
          *
@@ -1110,6 +1180,32 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Envelope"] & {
                         data?: components["schemas"]["AgentAdmin"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los usuarios del cliente */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["User"][];
                     };
                 };
             };

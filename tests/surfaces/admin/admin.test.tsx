@@ -154,41 +154,32 @@ describe('F4.2 · la lista de clientes', () => {
   })
 })
 
-describe('las pantallas que todavía no se pueden construir', () => {
-  it('dicen qué las desbloquea en vez de mostrarse vacías', async () => {
-    // Una pantalla que se declara pendiente no es lo mismo que una que no está:
-    // la primera dice qué falta, que es lo que §8 pide de cualquier estado.
-    //
-    // **Esta prueba miraba `Salud de feeds` y dejó de servir el 2026-09-25**:
-    // A5 se construyó ese día —F4.24, con su ruta llegando en `1e080ee`— así
-    // que ya no se declara pendiente. Pasa a mirar `Usuarios`, que es la que
-    // queda: F4.3 está abierta pero la pantalla no está escrita.
-    server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
-    montar()
-    await screen.findByText('Under Armour México')
-
-    await userEvent.click(screen.getByRole('button', { name: 'Usuarios' }))
-
-    expect(await screen.findByText(/Pendiente/)).toBeInTheDocument()
-    expect(screen.getByText(/Se desbloquea con/)).toBeInTheDocument()
-  })
-
-  it('y `Salud de feeds` YA no se declara pendiente · F4.24', async () => {
-    // El complemento de la de arriba: sin esto, borrar A5 volvería a dejar la
-    // pantalla en «pendiente» y la suite no se enteraría.
+describe('las cinco pantallas de §7.3 · ninguna queda pendiente', () => {
+  /** **Esta prueba cambió dos veces en el día, y las dos por la misma razón.**
+   *  A la mañana miraba `Salud de feeds` como pendiente; F4.24 la construyó y
+   *  pasó a mirar `Usuarios`. A la tarde F4.3 construyó ésa también, y el
+   *  describe se quedó sin sujeto: **`PENDIENTES` está vacío**.
+   *
+   *  La forma queda en `Admin.tsx` porque es la que hace que una pantalla
+   *  pendiente diga qué falta en vez de mostrarse vacía, y la próxima la usa.
+   *  Lo que esta prueba fija ahora es que hoy no hace falta ninguna.
+   */
+  it('las cinco pintan su contenido y ninguna dice «Pendiente»', async () => {
     server.use(
       http.get(`${API}/admin/tenants`, () => ok(tenants)),
       http.get(`${API}/admin/tenants/:id/feeds`, () => ok([])),
+      http.get(`${API}/admin/tenants/:id/users`, () => ok([])),
+      http.get(`${API}/admin/tenants/:id/catalog`, () => ok([])),
+      http.get(`${API}/admin/tenants/:id/layouts`, () => ok([])),
+      http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([])),
     )
     montar()
     await screen.findByText('Under Armour México')
 
-    await userEvent.click(screen.getByRole('button', { name: 'Salud de feeds' }))
-
-    // Dos encabezados con ese nombre: el del chrome y el de la pantalla.
-    expect((await screen.findAllByRole('heading', { name: /salud de feeds/i })).length).toBeGreaterThan(0)
-    expect(screen.getByText(/¿Por qué una métrica está degradada/i)).toBeVisible()
-    expect(screen.queryByText(/Pendiente/)).toBeNull()
+    for (const pantalla of ['Usuarios', 'Catálogo de métricas', 'Salud de feeds']) {
+      await userEvent.click(screen.getByRole('button', { name: pantalla }))
+      expect(screen.queryByText(/^Pendiente$/)).toBeNull()
+    }
   })
 
   it('la ficha de cliente YA no se declara pendiente · F4.3', async () => {

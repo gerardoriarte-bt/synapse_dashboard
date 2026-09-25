@@ -38,6 +38,7 @@ export const keys = {
   roles: (tenantId: string) => ['admin', 'roles', tenantId] as const,
   agentes: (tenantId: string) => ['admin', 'agentes', tenantId] as const,
   fuentes: (tenantId: string) => ['admin', 'fuentes', tenantId] as const,
+  usuarios: (tenantId: string) => ['admin', 'usuarios', tenantId] as const,
   preview: (layoutId: string, rolId: string) => ['admin', 'preview', layoutId, rolId] as const,
   layout: (layoutId: string) => ['admin', 'layout', layoutId] as const,
 }
@@ -175,6 +176,15 @@ export function useAdminCatalog(tenantId: string | null) {
  * entera antes de que existiera el servicio. El día que el fork se despliegue —o
  * que el código vuelva a su rama— dejan de dar 404 y no cambia una línea de acá.
  */
+
+/** Los usuarios del cliente · A3 · F4.3. */
+export function useUsers(tenantId: string | null) {
+  return useQuery({
+    queryKey: keys.usuarios(tenantId ?? ''),
+    queryFn: () => adminApi.usuarios(tenantId as string),
+    enabled: tenantId !== null && tenantId !== '',
+  })
+}
 
 /** Las fuentes del cliente y su salud · A5 · F4.24.
  *

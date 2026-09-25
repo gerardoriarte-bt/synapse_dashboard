@@ -25,6 +25,7 @@ import { useState } from 'react'
 import {
   useAgents,
   useFeeds,
+  useUsers,
   useAdminCatalog,
   useDeleteRole,
   useLayoutDetail,
@@ -37,6 +38,7 @@ import {
 import { AdminChrome } from './AdminChrome'
 import { CatalogView } from './CatalogView'
 import { FeedHealth } from './FeedHealth'
+import { UserList } from './UserList'
 import { RoleEditor } from './RoleEditor'
 import { usoPorMetrica } from './uso'
 import { TenantList } from './TenantList'
@@ -48,12 +50,13 @@ import type { PantallaId } from './pantallas'
 
 /** Lo que cada pantalla pendiente espera. Acá y no en un comentario: la pantalla
  *  lo pinta, así que quien la abre se entera sin leer el código. */
-const PENDIENTES: Partial<Record<PantallaId, { razon: string; desbloqueaCon: string }>> = {
-  usuarios: {
-    razon: 'Sin CRUD de roles no hay permisos que mostrar por usuario.',
-    desbloqueaCon: 'B4.8 · CRUD de roles por tenant',
-  },
-}
+/** **Vacío desde el 2026-09-25**, y se deja declarado en vez de borrarlo: las
+ *  cinco pantallas de §7.3 están construidas. `usuarios` salió con F4.3 —su ruta
+ *  llegó en `1e080ee`— y `feeds` con F4.24 el mismo día.
+ *
+ *  La forma queda porque es la que hace que una pantalla pendiente diga qué
+ *  falta en vez de mostrarse vacía, y la próxima que se declare la usa. */
+const PENDIENTES: Partial<Record<PantallaId, { razon: string; desbloqueaCon: string }>> = {}
 
 export function Admin() {
   const navegar = useNavigate()
@@ -87,6 +90,8 @@ export function Admin() {
   const agentes = useAgents(activo)
   // A5 · F4.24. La ruta llegó el 2026-09-25 con `1e080ee`.
   const fuentes = useFeeds(activo)
+  // A3 · F4.3. Abierta el 2026-09-25 con la ruta de `1e080ee`.
+  const usuarios = useUsers(activo)
   const versiones = useLayouts(activo)
   const publicado = versiones.data?.find((v) => v.estado === 'publicado') ?? null
   const detalle = useLayoutDetail(publicado?.id ?? null)
@@ -155,6 +160,12 @@ export function Admin() {
           // El viaje a A4 existe desde acá, así que el enlace del `.pen` se
           // pinta. Sin este manejador `RoleCard` no lo dibuja.
           onVerCatalogo={() => setPantalla('catalogo')}
+        />
+      ) : pantalla === 'usuarios' ? (
+        <UserList
+          usuarios={usuarios.data ?? []}
+          tenant={lista.find((x) => x.id === activo)?.nombre ?? null}
+          cargando={usuarios.data === undefined}
         />
       ) : pantalla === 'feeds' ? (
         <FeedHealth

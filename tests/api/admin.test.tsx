@@ -405,3 +405,38 @@ describe('las fuentes · A5 · F4.24', () => {
     expect(Object.keys({} as never)).not.toContain('status')
   })
 })
+
+describe('los usuarios · A3 · F4.3', () => {
+  /** La misma frontera que las fuentes, y el mismo hueco: las pruebas de
+   *  `UserList` construyen `Usuario` a mano, así que no tocan el adaptador —y
+   *  ahí vive la distinción que sostiene la columna «Nunca»—. Lo cazó una
+   *  mutación que cambiaba `?? null` por una fecha inventada. */
+  it('`last_login_at` nulo llega como null · «nunca entró» es un hecho', async () => {
+    server.use(
+      http.get(`${API}/admin/tenants/:id/users`, () =>
+        ok([
+          {
+            id: 'u-1',
+            tenant_id: 't-1',
+            email: 'sofia@ua.test',
+            first_name: 'Sofía',
+            last_name: 'Marín',
+            phone: '',
+            role: 'planner',
+            role_id: 'r-1',
+            last_login_at: null,
+            is_active: true,
+            created_at: '2026-08-14T10:00:00Z',
+          },
+        ]),
+      ),
+    )
+
+    const u = (await adminApi.usuarios('t-1'))[0]
+    expect(u?.ultimoAccesoEn).toBeNull()
+    // Y el nombre se arma en el adaptador, no en la pantalla: el cable manda las
+    // dos mitades y quien las junta tiene que ser uno solo.
+    expect(u?.nombre).toBe('Sofía Marín')
+    expect(u?.rolId).toBe('r-1')
+  })
+})
