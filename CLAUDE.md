@@ -503,10 +503,12 @@ nunca, ni cuando el código está mal.
 
 ### ⇩ ACÁ SE PARÓ · 2026-09-25 · el backend contestó todo el mismo día
 
-**Lo que costó descubrir está en las bitácoras**: `docs/BITACORA-2026-09-24-tarde.md`
-—el día que el dato se volvió real y contradijo cuatro cierres—, su mañana en
-`docs/BITACORA-2026-09-24.md`, y antes `docs/BITACORA-2026-09-22.md` y
-`docs/BITACORA-2026-09-21.md`. Esto es dónde retomar.
+**Lo que costó descubrir está en las bitácoras**: `docs/BITACORA-2026-09-25.md`
+—el día que nuestra propia transcripción nos hizo acusar al backend—,
+`docs/BITACORA-2026-09-24-tarde.md` —cuando el dato se volvió real y contradijo
+cuatro cierres—, su mañana en `docs/BITACORA-2026-09-24.md`, y antes
+`docs/BITACORA-2026-09-22.md` y `docs/BITACORA-2026-09-21.md`. Esto es dónde
+retomar.
 
 **EL CONTEO NO SE ESCRIBE ACÁ**: sale de `docs/ESTADO.md`, que se genera. Hoy dice
 **0 del front tomables** — no porque no haya trabajo, sino porque todo lo
