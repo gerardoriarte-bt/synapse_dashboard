@@ -5,7 +5,7 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**113 de 210 tareas cerradas.** 22 parciales · 70 pendientes · 5 diferidas.
+**113 de 210 tareas cerradas.** 24 parciales · 68 pendientes · 5 diferidas.
 
 
 ## Front · 104 de 125
@@ -38,9 +38,9 @@
 | 0 · Fundamentos | `██····················` | 1/10 | 1 | 8 |
 | 1 · API de consola | `█████·················` | 6/27 | 8 | 13 |
 | 2 · Materialización | `██····················` | 1/13 | 2 | 10 |
-| 3 · Chat contextual | `······················` | 0/11 | 0 | 11 |
+| 3 · Chat contextual | `······················` | 0/11 | 1 | 10 |
 | 4 · Admin y Builder | `█·····················` | 1/17 | 5 | 11 |
-| 5 · Multi-dashboard y pulido | `······················` | 0/7 | 0 | 6 |
+| 5 · Multi-dashboard y pulido | `······················` | 0/7 | 1 | 5 |
 
 ---
 

@@ -324,7 +324,7 @@ if status == Available && isDegraded(data, now) {
 
 ### B3.1 · POST /config/chat con SSE
 
-*Estado de la tarea: pendiente.*
+*Estado de la tarea: parcial.*
 
 
 **La ruta ya está escrita** — `82da946` la trae con `panel_context: {panel_id, period}`, y con eso se cerró la transversal T4. Lo que falta es **poder verificarla**: sin las migraciones de B3.11 el handler escribe contra columnas que no existen. **Lo pendiente del chat cambió el 2026-09-22 y el pedido vigente es otro**: con las migraciones corridas en la base local, `POST /config/chat` devuelve **409 · «no hay agente activo disponible para este tenant y rol»**. Hace falta un agente de Cortex con credenciales. **Ese pedido es del equipo de DATOS, no del backend** —corregido el 2026-09-22—: el agente `SYNAPSE_UA` y el usuario `SYNAPSE_SERVICE_USER` existen en la cuenta `MAA16864`, y lo único que falta es el par de claves RSA. Va en `docs/MENSAJE-2026-09-22-datos-agente-cortex.md`. Lo que sí le toca al backend es cargar el tenant y el agente una vez que llegue — `docs/MENSAJE-2026-09-22-backend-roles-y-hallazgo.md`, punto 1. El pedido del 21 —los dos campos del evento `data`— quedó cubierto: F3.6 se cerró con el tipo del panel. El chat que el servicio ya tenía antes es **otro producto** —decidido el 2026-09-08—: el nuestro se abre desde un panel y lleva su métrica.
@@ -460,7 +460,7 @@ cable: no están bloqueando nada. Es higiene, y de la barata.
 
 ### B5.1 · Varios layouts por tenant
 
-*Estado de la tarea: pendiente.*
+*Estado de la tarea: parcial.*
 
 
 **La lista de layouts que el usuario puede ver, en `/config/me`.** `GET /config/tabs/:tabId?layoutId=` ya funciona, pero no hay forma de saber qué layouts le tocan a alguien, así que el selector de F5.1 no se puede construir: no se ofrece una elección que no se sabe si existe.

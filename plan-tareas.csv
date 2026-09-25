@@ -157,7 +157,7 @@ B2.13,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización 
 • El front deriva el estado y el backend no lo manda: un estado guardado y una frescura real son dos fuentes del mismo hecho.",parcial,si,,equipo:backend fase:2 estado:parcial nueva bloqueada
 B3.1,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,POST /config/chat con SSE,"Body { pregunta, contextoPanel, periodo, hiloId? }, respuesta por Server-Sent Events.","• Emite los eventos en orden: pensando → fragmento → dato → sql → fin, y error en cualquier punto.
 • El esquema EventoDeChat del yaml ya declara la unión; se respeta.
-• Una conexión cortada por el cliente no deja la query colgada.",pendiente,no,,equipo:backend fase:3 estado:pendiente bloqueada
+• Una conexión cortada por el cliente no deja la query colgada.",parcial,no,,equipo:backend fase:3 estado:parcial bloqueada
 B3.2,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,GET /config/chat/hilos — historial,,"• El historial es del usuario y del tenant; nunca cruza tenants.
 • Un hilo guarda el contexto de panel con el que se abrió.",pendiente,no,,equipo:backend fase:3 estado:pendiente
 B3.10,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,Persistir hilos y mensajes en Postgres,,"• El historial es del usuario y del tenant; nunca cruza tenants.
@@ -240,7 +240,7 @@ B4.16,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Declarar e
 • layouts/{id}/validate verifica tres cosas contra el repertorio: compatibilidad gráfico ↔ forma, la regla dura de banda, y que la métrica pueda alcanzar los mínimos del gráfico en el grano que declara.
 • Un layout con un gráfico incompatible no publica, y el error dice cuál panel y por qué.",pendiente,si,,equipo:backend fase:4 estado:pendiente nueva
 B5.1,Backend · Fase 5 — Multi-dashboard y pulido,Backend,5,Multi-dashboard y pulido,Varios layouts por tenant,"Un tenant puede tener más de un dashboard publicado — «Operaciones», «Marca», «Ejecutivo»— cada uno con sus pestañas.","• Cada layout versiona por separado: publicar «Marca» no toca «Operaciones».
-• /config/me devuelve layouts solo cuando el usuario tiene más de uno asignado; con uno, el campo no viaja.",pendiente,no,,equipo:backend fase:5 estado:pendiente bloqueada
+• /config/me devuelve layouts solo cuando el usuario tiene más de uno asignado; con uno, el campo no viaja.",parcial,no,,equipo:backend fase:5 estado:parcial bloqueada
 B5.2,Backend · Fase 5 — Multi-dashboard y pulido,Backend,5,Multi-dashboard y pulido,"Asignar layout por rol, o dejar elegir si el usuario tiene varios",,"• El superadmin asigna qué layout ve cada rol.
 • GET /config/tabs/{tabId}?layoutId= resuelve contra el layout pedido, y verifica que ese layout esté asignado al rol del token: si no, 404.",pendiente,no,,equipo:backend fase:5 estado:pendiente
 B5.3,Backend · Fase 5 — Multi-dashboard y pulido,Backend,5,Multi-dashboard y pulido,Formas v1.1 cuando haya datos,"categoricaComparada, perfilMultiatributo, matriz, grafo y flujo.","• Se activan cuando exista el dato, no antes. Construir contra formas que ningún endpoint devuelve es escribir a ciegas.

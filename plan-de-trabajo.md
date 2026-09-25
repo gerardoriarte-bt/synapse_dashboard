@@ -1283,7 +1283,9 @@ Pasa de «no verificado» a **medido y ausente**.
 
 ## Fase 3 — Chat contextual
 
-### B3.1 ⬜ `POST /config/chat` con SSE
+### B3.1 ⚠️ `POST /config/chat` con SSE
+**Verificado el 2026-09-24** · el agente `SYNAPSE_UA` contesta desde la consola, el markdown se pinta y el riel guarda el hilo. Y desde `75b8ecc` acepta `tab_context` además de `panel_context`, que es lo que F3.15 esperaba.
+
 **Espera del backend.** **La ruta ya está escrita** — `82da946` la trae con `panel_context: {panel_id, period}`, y con eso se cerró la transversal T4. Lo que falta es **poder verificarla**: sin las migraciones de B3.11 el handler escribe contra columnas que no existen. **Lo pendiente del chat cambió el 2026-09-22 y el pedido vigente es otro**: con las migraciones corridas en la base local, `POST /config/chat` devuelve **409 · «no hay agente activo disponible para este tenant y rol»**. Hace falta un agente de Cortex con credenciales. **Ese pedido es del equipo de DATOS, no del backend** —corregido el 2026-09-22—: el agente `SYNAPSE_UA` y el usuario `SYNAPSE_SERVICE_USER` existen en la cuenta `MAA16864`, y lo único que falta es el par de claves RSA. Va en `docs/MENSAJE-2026-09-22-datos-agente-cortex.md`. Lo que sí le toca al backend es cargar el tenant y el agente una vez que llegue — `docs/MENSAJE-2026-09-22-backend-roles-y-hallazgo.md`, punto 1. El pedido del 21 —los dos campos del evento `data`— quedó cubierto: F3.6 se cerró con el tipo del panel. El chat que el servicio ya tenía antes es **otro producto** —decidido el 2026-09-08—: el nuestro se abre desde un panel y lleva su métrica.
 **Descripción.** Body `{ pregunta, contextoPanel, periodo, hiloId? }`, respuesta
 por Server-Sent Events.
@@ -1777,7 +1779,9 @@ saber qué necesita cada uno es multiplicar el problema, no resolverlo.
 
 ## Fase 5 — Multi-dashboard y pulido
 
-### B5.1 ⬜ Varios layouts por tenant
+### B5.1 ⚠️ Varios layouts por tenant
+**Verificado el 2026-09-25** · `/config/me` declara `dashboards` —con `id`, `name`, `slug` e `is_default`—, `active_dashboard_id` y `active_layout_id`, y `PUT /config/me/preferences` acepta `preferred_dashboard_id`. Queda en ⚠️ hasta que F5.1 lo consuma.
+
 **Espera del backend.** **La lista de layouts que el usuario puede ver, en `/config/me`.** `GET /config/tabs/:tabId?layoutId=` ya funciona, pero no hay forma de saber qué layouts le tocan a alguien, así que el selector de F5.1 no se puede construir: no se ofrece una elección que no se sabe si existe.
 **Descripción.** Un tenant puede tener más de un dashboard publicado —
 «Operaciones», «Marca», «Ejecutivo»— cada uno con sus pestañas.
