@@ -521,14 +521,37 @@ function Preview({
   onVolver: () => void
   hayVersion: boolean
 }) {
+  // ── LOS DOS VACÍOS DE B5 LLEVAN SALIDA · 2026-09-25 ────────────────────────
+  //
+  // **B5 no tiene chrome, y eso es del dibujo**: `sinChrome(forma)` en
+  // `BuilderChrome` — el `.pen` dibuja «Vista previa · rol Planner sin componer»
+  // sin cabecera. Lo que NO es del dibujo es que estos dos vacíos mandaran a
+  // «Contexto de edición» sin ninguna forma de llegar: medido el 2026-09-25,
+  // nueve botones antes de entrar y **cero** después. El texto pedía ir a un
+  // lugar inalcanzable sin escribir la URL.
+  //
+  // «Un estado sin salida es una queja» · §8, y es la misma frase que
+  // `StateBody` lleva escrita. El manejador ya venía pasado —`onVolver`— y sólo
+  // lo usaba la rama con datos, así que el CTA no promete nada que no exista:
+  // es la regla del CTA muerto cumplida, no esquivada.
   if (!hayVersion) {
-    return <Label as="div">Elegí una versión en «Contexto de edición» para previsualizarla</Label>
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <Label as="div">Elegí una versión en «Contexto de edición» para previsualizarla</Label>
+        <button type="button" onClick={onVolver} className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2">
+          Ir a contexto de edición
+        </button>
+      </div>
+    )
   }
   if (roles.length === 0) {
     return (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col items-start gap-3">
         <Label as="div">Este cliente no tiene roles definidos</Label>
         <Label as="div">Se definen en la ficha de cliente de administración · F4.3</Label>
+        <button type="button" onClick={onVolver} className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2">
+          Ir a contexto de edición
+        </button>
       </div>
     )
   }

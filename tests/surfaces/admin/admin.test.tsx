@@ -205,3 +205,48 @@ describe('un 403 dice que falta el rol, no «error del sistema»', () => {
     )
   })
 })
+
+describe('«Ver ficha» abre el cliente que se cliqueó · 2026-09-25', () => {
+  /** **El defecto que cierra.** `onAbrir={() => setPantalla('cliente')}` tiraba
+   *  el `id` que `TenantList` le pasaba, así que `activo` caía siempre en
+   *  `lista[0]` y la ficha era la del PRIMER cliente, hubiera cliqueado el que
+   *  fuera.
+   *
+   *  **Se ve perfectamente bien con un solo cliente en la base**, que es como
+   *  estuvo todo este tiempo. Apareció al abrir admin contra el servicio real,
+   *  que hoy tiene dos tenants: la pantalla mostraba doce métricas de semilla
+   *  cuando el cliente elegido tiene dieciocho.
+   *
+   *  Es la familia del botón muerto de `CLAUDE.md` con una vuelta más: **el
+   *  callback SÍ dispara**, así que la regla «verificar que el callback dispare»
+   *  no alcanza. Lo que hay que verificar es que **llega el argumento correcto**,
+   *  y la única forma honesta es mirar a qué tenant le pide los datos.
+   */
+  it('pide el catálogo del SEGUNDO cliente, no el del primero', async () => {
+    const pedidos: string[] = []
+    server.use(
+      http.get(`${API}/admin/tenants`, () => ok(tenants)),
+      http.get(`${API}/admin/tenants/:id/catalog`, ({ params }) => {
+        pedidos.push(String(params['id']))
+        return ok([])
+      }),
+      http.get(`${API}/admin/tenants/:id/layouts`, () => ok([])),
+      http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([])),
+    )
+    montar()
+
+    const fila = await screen.findByText('Keralty Colombia')
+    await userEvent.click(
+      within(fila.closest('tr') as HTMLElement).getByRole('button', { name: /ver ficha/i }),
+    )
+
+    // **La aserción es a quién se le piden los datos.** Que el título cambie a
+    // «Ficha de cliente» pasaba igual con el defecto puesto.
+    await waitFor(() => expect(pedidos).toContain('t-2'))
+
+    // Y la otra mitad, que son dos cosas y no una: el botón **elige** un cliente
+    // **y navega**. Sin esto, dejar de navegar sobrevivía a la mutación —el
+    // catálogo se pide igual, porque su hook precalienta el cache a propósito.
+    expect(await screen.findByRole('heading', { name: /ficha de cliente/i })).toBeVisible()
+  })
+})

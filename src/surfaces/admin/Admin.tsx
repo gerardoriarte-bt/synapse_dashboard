@@ -157,7 +157,18 @@ export function Admin() {
       ) : (
         <TenantList
           tenants={lista}
-          onAbrir={() => setPantalla('cliente')}
+          // **El id se USA** · 2026-09-25. Esta línea era `() => setPantalla(…)`
+          // y tiraba el argumento, así que «Ver ficha» de cualquier cliente
+          // abría la ficha del PRIMERO —`activo` cae en `lista[0]`— y se veía
+          // perfectamente bien mientras hubiera un solo cliente en la base.
+          //
+          // Es la familia del botón muerto que `CLAUDE.md` describe, con una
+          // vuelta más: el callback SÍ dispara, así que verificar que dispara no
+          // alcanza; hay que verificar que **llega el id correcto**.
+          onAbrir={(id) => {
+            setTenant(id)
+            setPantalla('cliente')
+          }}
           cargando={tenants.data === undefined}
         />
       )}

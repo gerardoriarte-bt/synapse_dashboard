@@ -294,3 +294,34 @@ describe('los estados de B5', () => {
     ).toBeInTheDocument()
   })
 })
+
+describe('B5 no tiene chrome · su vacío lleva salida propia · 2026-09-25', () => {
+  /** **El defecto que cierra.** «Vista previa por rol» se dibuja SIN cabecera, y
+   *  eso sale del `.pen` —`sinChrome(forma)` en `BuilderChrome`, porque B5 se
+   *  dibuja sin cabecera—. Lo que NO sale del dibujo es que su estado vacío
+   *  mandara a «Contexto de edición» **sin ninguna forma de llegar**: medido en
+   *  el navegador, nueve botones antes de entrar y **cero** después. El texto
+   *  pedía ir a un lugar inalcanzable sin escribir la URL.
+   *
+   *  «Un estado sin salida es una queja» · §8, la misma frase que `StateBody`
+   *  lleva escrita. El manejador ya venía pasado —sólo lo usaba la rama con
+   *  datos— así que el CTA no promete una acción que no existe.
+   *
+   *  **Casi se reporta mal**: la primera medición cayó durante una recarga de
+   *  Vite. Se repitió desde una carga limpia antes de afirmarlo.
+   */
+  it('entrar al preview SIN versión deja salida, y el botón devuelve al contexto', async () => {
+    base()
+    montar()
+
+    // Sin elegir versión: se va derecho a la pestaña del preview.
+    await userEvent.click(await screen.findByRole('button', { name: 'Vista previa por rol' }))
+    expect(await screen.findByText(/Elegí una versión/i)).toBeVisible()
+
+    // **La aserción es que el callback LLEVA a algún lado**, no que el botón
+    // esté: un botón muerto se ve igual que uno que funciona, y acá la cadena
+    // pasa por el spread condicional del contenedor.
+    await userEvent.click(screen.getByRole('button', { name: /contexto de edición/i }))
+    expect(await screen.findByRole('button', { name: /v4/ })).toBeInTheDocument()
+  })
+})
