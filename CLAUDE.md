@@ -643,10 +643,17 @@ del 2026-09-14.
 los frames tienen los números y a veces lo que la nota no dice — el velo de la
 hoja del chat y las tres superficies aparecieron así.
 
-**El rebase se rehízo sobre `a643cfe` el 2026-09-24**, en la rama local
-`rebase-a643cfe` de `~/Documents/GitHub/synapse-api-go-fork` —`rebase-prueba`
-queda intacta—. Compila, `go vet` limpio, **1222 inserciones y 1 borrado** en su
-código.
+**El rebase se rehízo sobre `6e595e3` el 2026-09-25 y ESTÁ EMPUJADO**, en
+`rebase-6e595e3` de `~/Documents/GitHub/synapse-api-go-fork` —`rebase-a643cfe` y
+`rebase-prueba` quedan intactas—. Limpio y sin conflictos: `go build` ✓,
+`go vet` ✓, y **+283 −13 en archivos de ellos**, idéntico al rebase anterior, que
+es el número que dice que no se coló nada.
+
+**`go test ./...` falla UNA prueba, y no es una regresión**:
+`TestPreviewConMetricasOcultasDevuelveMenosPaneles`, por la compuerta de
+`dd_config_service.go:415`. Se comprobó que sigue siendo esa línea — la lección
+de los dos rebases previos es que **lo que rompe no es lo que conflictúa**, así
+que después de un rebase limpio se corre `vet` y la suite entera igual.
 
 **Y el fork se achicó solo, que era el objetivo.** Upstream absorbió dos de las
 cinco partes del segundo commit: B4.2 —`168a761` trae auditoría de publicaciones
@@ -825,12 +832,17 @@ es nuestra. Las cinco son aditivas y con default.
 **Sí hay un PR, y vive en NUESTRO fork** · 2026-09-16 ·
 <https://github.com/gerardoriarte-bt/synapse-api-go/pull/1>. Va de
 `feature/roles-y-preview` contra nuestra copia de su rama, y **desde el
-2026-09-17 esa base está vieja**: la rama quedó en `733c13c` y ellos se movieron
-a `82da946`, así que el diff **muestra de menos** hasta que se rebase. Es
-exactamente el trabajo que la regla de abajo nos obliga a hacer, y por eso está
-probado y esperando en `rebase-prueba`. **Existe para que lo
-lean y comenten, no para mergear**, y no escribe una línea en
-`AntPack-dev/synapse-api-go`. Es la forma de darles una revisión cómoda sin
+2026-09-25 las dos están al día**: la base avanzó por fast-forward a `6e595e3` y
+la cabeza se reescribió con el rebase. El PR muestra **30 archivos, +1400 −13**,
+que es exactamente lo medido local.
+
+**Ese force-push es parte del mecanismo, no un accidente**: mantener la rama
+rebasada es lo que la regla pide, y el costo es que un comentario anclado a un
+commit viejo se desprende. Se hace con `--force-with-lease`, y la base se mueve
+aparte porque **avanzarla no reescribe nada**.
+
+**Existe para que lo lean y comenten, no para mergear**, y no escribe una línea
+en `AntPack-dev/synapse-api-go`. Es la forma de darles una revisión cómoda sin
 romper la regla. Eso nos obliga a mantener
 la rama rebasada (`backend-drift` antes de tocarla), a commits que se expliquen
 solos, y a **cero churn en su código**.
