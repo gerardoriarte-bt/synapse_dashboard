@@ -811,13 +811,45 @@ export function adaptValue(raw: unknown): ValorOk | ValorMal {
       return { ok: true, valor: { forma: 'composicion', partes } }
     }
 
+    case 'distribution': {
+      // **El backend SÍ la emite, desde `168a761` (2026-09-21).** Acá caía en el
+      // `default` con un comentario que decía lo contrario, y ese comentario era
+      // la razón por la que nadie la miraba: una métrica de esta forma salía
+      // «forma desconocida» y el panel quedaba rechazado.
+      //
+      // El comentario se escribió cuando era cierto y envejeció sin aviso. Lo
+      // destapó el equipo de backend contestando un mensaje nuestro que decía,
+      // con la misma seguridad, que ellos no la producían · 2026-09-25.
+      const bins = lista(v, 'bins')
+      if (bins === null) return { ok: false, razon: 'Una distribución sin cortes.' }
+      const cortes: { etiqueta: string; v: number }[] = []
+      for (const b of bins) {
+        const etiqueta = cadena(b, 'label')
+        const n = numero(b, 'v')
+        if (etiqueta === null || n === null) continue
+        cortes.push({ etiqueta, v: n })
+      }
+      // `lo` y `hi` del bin llegan opcionales y **no se adaptan**: el contrato
+      // interno declara `cortes` con `etiqueta` y `v`, nada más. Traerlos sin que
+      // el contrato los declare sería inventar una forma.
+      if (cortes.length === 0) return { ok: false, razon: 'Una distribución sin cortes válidos.' }
+      return { ok: true, valor: { forma: 'distribucion', cortes } }
+    }
+
     default:
-      // Las siete formas del contrato que el materializador no produce
-      // —`distribution`, `series_with_band`, `compared_categorical`,
-      // `multi_attribute_profile`, `matrix`, `graph`, `flow`— caen acá, igual
-      // que cualquier valor corrupto. No son alcanzables hoy: el `switch` de
-      // `TransformValue` tiene nueve casos y un `default` que devuelve
-      // `ErrUnknownShape`, así que el backend nunca las escribe en `panel_data`.
+      // Lo que queda acá son las formas que el contrato **no declara**:
+      // `compared_categorical`, `multi_attribute_profile`, `matrix`, `graph` y
+      // `flow`. El backend las emite desde `168a761`; lo que falta es de este
+      // lado —esquema en `Valor` y cuerpo—, y son F4.17–F4.19, que siguen
+      // bloqueadas con esa razón escrita y verificada el 2026-09-25.
+      //
+      // **`series_with_band` también cae acá, y por una razón distinta**: el
+      // contrato declara `nivel` obligatorio en `ValorSerieConBanda` y el cable
+      // no lo manda. Una banda sin su nivel de confianza no se puede leer —80%
+      // y 95% son afirmaciones distintas—, así que adaptarla hoy sería inventar
+      // el número. Está preguntado en
+      // `docs/RESPUESTA-2026-09-25-dos-formas.md` §3, y ellos ya ofrecieron
+      // agregarlo.
       return { ok: false, razon: `Forma desconocida: «${shape}».` }
   }
 }

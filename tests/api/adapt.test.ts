@@ -454,20 +454,68 @@ describe('las nueve formas que el backend materializa', () => {
   })
 })
 
-describe('las siete formas que el backend NO materializa', () => {
-  // `TransformValue` tiene nueve casos y un `default` que devuelve
-  // `ErrUnknownShape`, así que el backend nunca las escribe en `panel_data`.
-  // No son panels rotos: son formas que no llegan. Si algún día llegan, esta
-  // prueba falla y alguien decide qué se pinta.
+describe('las formas de v1.1 · el día que llegaron', () => {
+  /** **Esta prueba decía «las siete que el backend NO materializa», y estaba
+   *  escrita para fallar el día que llegaran** —«si algún día llegan, esta
+   *  prueba falla y alguien decide qué se pinta»—. Ese día fue el 2026-09-25.
+   *
+   *  El backend las emite desde `168a761`, del 2026-09-21. Nadie lo notó por
+   *  cuatro días porque el comentario que lo negaba estaba en tres lugares a la
+   *  vez —acá, en `adapt.ts` y en el plan— y los tres se escribieron cuando era
+   *  cierto. **Lo destapó el equipo de backend contestando un mensaje nuestro**
+   *  que afirmaba, con la misma seguridad, que ellos no las producían.
+   *
+   *  Ahora son tres grupos y no uno, que es lo que el comentario viejo tapaba.
+   */
+  it('distribution SÍ se adapta · contrato, cuerpo y ahora adaptador', () => {
+    expect(
+      conValor({ shape: 'distribution', bins: [{ label: '0–10', v: 4 }, { label: '10–20', v: 9 }] }),
+    ).toMatchObject({
+      valor: {
+        forma: 'distribucion',
+        cortes: [{ etiqueta: '0–10', v: 4 }, { etiqueta: '10–20', v: 9 }],
+      },
+    })
+  })
+
+  it('y `lo`/`hi` del bin NO se adaptan · el contrato interno no los declara', () => {
+    // Traerlos sin que `cortes` los declare sería inventar una forma. Si se los
+    // necesita, primero entran al contrato.
+    const p = conValor({ shape: 'distribution', bins: [{ label: '0–10', v: 4, lo: 0, hi: 10 }] })
+    expect((p as { valor: { cortes: unknown[] } }).valor.cortes[0]).toEqual({
+      etiqueta: '0–10',
+      v: 4,
+    })
+  })
+
+  it('una distribución cuyos bins no sirven NO pasa vacía', () => {
+    // Sin esto, un `bins` con filas ilegibles produce una distribución de cero
+    // cortes: el panel se pinta, no dice nada y nadie se entera. Es preferible
+    // el ERROR con su razón. Lo cazó una mutación que quitaba la guarda.
+    expect(conValor({ shape: 'distribution', bins: [{ label: 3, v: 'x' }] })).toMatchObject({
+      estado: 'ERROR',
+    })
+    expect(conValor({ shape: 'distribution', bins: [] })).toMatchObject({ estado: 'ERROR' })
+  })
+
+  it('series_with_band NO se adapta todavía · y la razón NO es que no llegue', () => {
+    // El contrato declara `nivel` obligatorio en `ValorSerieConBanda` y el cable
+    // no lo manda. Una banda sin su nivel de confianza no se puede leer: 80% y
+    // 95% son afirmaciones distintas. Adaptarla hoy sería inventar el número.
+    const p = conValor({ shape: 'series_with_band', points: [{ t: '2026-09', v: 10, lo: 8, hi: 12 }] })
+    expect(p).toMatchObject({ estado: 'ERROR' })
+  })
+
   it.each([
-    'distribution',
-    'series_with_band',
     'compared_categorical',
     'multi_attribute_profile',
     'matrix',
     'graph',
     'flow',
-  ])('%s no es alcanzable hoy, y sale con la razón', (shape) => {
+  ])('%s no se adapta · `Valor` no declara su esquema · F4.17–F4.19', (shape) => {
+    // **Estas cinco sí siguen bloqueadas, y el candado se verificó el
+    // 2026-09-25**: el contrato las nombra en la unión `Forma` y no declara el
+    // objeto de ninguna. No es que no lleguen: es que no hay dónde ponerlas.
     const p = conValor({ shape })
     expect(p).toMatchObject({ estado: 'ERROR' })
     expect((p as { mensaje: string }).mensaje).toContain(shape)

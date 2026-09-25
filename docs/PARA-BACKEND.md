@@ -93,7 +93,7 @@ Lo que sí falta es la **`nota` de panel** —la lectura al pie, distinta de la 
 
 **Y las siete no son un solo trabajo, son dos.** El contrato declara dieciséis formas en el enum `Forma` pero **solo once tienen esquema de `Valor`**:
 
-- **`distribucion` y `serieConBanda` tienen esquema** y las puede hacer el backend hoy: un caso más en el `switch` de `internal/core/dashboard/materialize/transform.go`, emitiendo `{shape, cuts:[{label, v}]}` y `{shape, level, points:[{t, v, lo, hi}]}`.
+- **`distribucion` y `serieConBanda` YA LAS EMITE EL BACKEND**, desde `168a761` (2026-09-21) · verificado el 2026-09-25 leyendo el `switch`, que tiene **quince** casos y no nueve. Los nombres que esta línea traía —`cuts`, `series_band`, `level` en la fila— **eran inventados**: el cable manda `{shape: 'distribution', bins:[{label, v, lo?, hi?}]}` y `{shape: 'series_with_band', points:[{t, v, lo?, hi?}]}`, **sin `level`**. `distribucion` ya se adapta; `serieConBanda` espera que el cable declare el nivel, que nuestro contrato exige.
 - **`categoricaComparada`, `perfilMultiatributo`, `matriz`, `flujo` y `grafo` NO tienen esquema.** Antes de que alguien las materialice hay que declararlas en el contrato, y **eso es trabajo nuestro**, no suyo. Hasta entonces no hay contra qué implementar.
 
 **Ninguna de las siete es urgente**, y conviene decirlo: sus consumidores son los cuerpos `comparison`, `matrix`, `graph` y `distribution`, que el front tampoco va a construir hasta que exista una métrica que los use. **Entran juntos o no entran.**

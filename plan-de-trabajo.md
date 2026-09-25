@@ -156,6 +156,7 @@ decir qué rol cumple**, porque ahí empieza la superposición.
 | `docs/AUDITORIA-*.md` | **Histórico.** Un cruce puntual, con fecha |
 | `docs/ENTREGA-*.md` | **Histórico.** Qué se entregó y cuándo |
 | `docs/MENSAJE-*-*.md` | **Histórico.** Un mensaje mandado, con fecha. Qué se pidió y con qué evidencia |
+| `docs/RESPUESTA-*-*.md` | **Histórico.** Lo que OTRO equipo contestó, con fecha. No lo escribimos nosotros y **no se edita**: si algo de ahí resulta inexacto, se dice en la respuesta nuestra, no corrigiendo la suya |
 | `docs/B0.9-preguntas-abiertas.md` | Las preguntas del contrato, con su resolución |
 | `docs/PROPUESTA-*-*.md` | Una **propuesta de spec** abierta, con fecha. Lo que `design.md` no declara y el código no puede inventar |
 | `docs/F1.28-escala-tipografica.md` | La bitácora de una tarea que cambió el sistema |
@@ -712,7 +713,7 @@ mientras que ROAS y los conteos dicen «TOTAL», que es correcto —no llevan un
 
 **Y las siete no son un solo trabajo, son dos.** El contrato declara dieciséis formas en el enum `Forma` pero **solo once tienen esquema de `Valor`**:
 
-- **`distribucion` y `serieConBanda` tienen esquema** y las puede hacer el backend hoy: un caso más en el `switch` de `internal/core/dashboard/materialize/transform.go`, emitiendo `{shape, cuts:[{label, v}]}` y `{shape, level, points:[{t, v, lo, hi}]}`.
+- **`distribucion` y `serieConBanda` YA LAS EMITE EL BACKEND**, desde `168a761` (2026-09-21) · verificado el 2026-09-25 leyendo el `switch`, que tiene **quince** casos y no nueve. Los nombres que esta línea traía —`cuts`, `series_band`, `level` en la fila— **eran inventados**: el cable manda `{shape: 'distribution', bins:[{label, v, lo?, hi?}]}` y `{shape: 'series_with_band', points:[{t, v, lo?, hi?}]}`, **sin `level`**. `distribucion` ya se adapta; `serieConBanda` espera que el cable declare el nivel, que nuestro contrato exige.
 - **`categoricaComparada`, `perfilMultiatributo`, `matriz`, `flujo` y `grafo` NO tienen esquema.** Antes de que alguien las materialice hay que declararlas en el contrato, y **eso es trabajo nuestro**, no suyo. Hasta entonces no hay contra qué implementar.
 
 **Ninguna de las siete es urgente**, y conviene decirlo: sus consumidores son los cuerpos `comparison`, `matrix`, `graph` y `distribution`, que el front tampoco va a construir hasta que exista una métrica que los use. **Entran juntos o no entran.**
