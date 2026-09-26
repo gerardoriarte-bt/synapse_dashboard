@@ -55,6 +55,46 @@ export function isEmpty(value: Value): boolean {
       return value.partes.length === 0
     case 'distribucion':
       return value.cortes.length === 0
+
+    // ── LAS CINCO DE v1.1 · decididas el 2026-09-26 ────────────────────────
+    //
+    // El `switch` dejó de compilar al declararlas en el contrato, que es para
+    // lo que está escrito así. Cada una lleva su razón porque «vacío» no
+    // significa lo mismo en todas.
+
+    // Igual que `categorica`: sin items no hay nada que comparar.
+    case 'categoricaComparada':
+      return value.items.length === 0
+
+    // **Dos condiciones, como `seriesMultiples`.** Perfiles sin atributos es un
+    // radar con ejes y sin polígono: se dibujaría la telaraña vacía, que se ve
+    // como un gráfico y no dice nada.
+    case 'perfilMultiatributo':
+      return (
+        value.perfiles.length === 0 || value.perfiles.every((p) => p.atributos.length === 0)
+      )
+
+    // **Sin ejes no hay matriz, y con TODAS las celdas en `null` tampoco.**
+    // Lo segundo es la decisión: las etiquetas solas —lunes a viernes, 06 a
+    // 00 h— dibujan una grilla que parece un mapa de calor y no tiene un solo
+    // dato. `null` es «no hay dato» en cada celda; en todas, es un panel vacío.
+    case 'matriz':
+      return (
+        value.filas.length === 0 ||
+        value.columnas.length === 0 ||
+        value.celdas.every((fila) => fila.every((c) => c === null))
+      )
+
+    // **Se mira las ARISTAS y no los nodos.** Un grafo contesta sobre
+    // relaciones; nodos sueltos son puntos sin pregunta. Del cable no puede
+    // venir —`transformGraph` crea los nodos desde las aristas— pero el cuerpo
+    // no depende de eso.
+    case 'grafo':
+      return value.aristas.length === 0
+
+    // Mismo criterio: un embudo sin enlaces son etapas que no fluyen.
+    case 'flujo':
+      return value.enlaces.length === 0
     case 'tabular':
       return value.filas.length === 0
     case 'prosa':

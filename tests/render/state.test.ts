@@ -59,6 +59,81 @@ describe('isEmpty · un cero es un dato', () => {
   })
 })
 
+/** Las cinco formas v1.1 entraron al contrato el 2026-09-26 y **el `switch` de
+ *  `isEmpty` dejó de compilar**, que es para lo que está escrito exhaustivo.
+ *  Cada decisión se prueba porque «vacío» no significa lo mismo en todas, y
+ *  ninguna se puede tomar por omisión. */
+describe('isEmpty · las cinco de v1.1', () => {
+  const val = (v: unknown) => v as unknown as Value
+
+  it('una categórica comparada sin items está vacía', () => {
+    expect(isEmpty(val({ forma: 'categoricaComparada', items: [] }))).toBe(true)
+  })
+
+  it('un perfil con ejes y SIN atributos está vacío · la telaraña sola no dice nada', () => {
+    // Dibujaría la retícula del radar sin polígono: se ve como un gráfico y no
+    // tiene un dato. Es el mismo criterio que `seriesMultiples`.
+    expect(
+      isEmpty(val({ forma: 'perfilMultiatributo', perfiles: [{ etiqueta: 'UA', atributos: [] }] })),
+    ).toBe(true)
+    expect(
+      isEmpty(
+        val({
+          forma: 'perfilMultiatributo',
+          perfiles: [{ etiqueta: 'UA', atributos: [{ clave: 'PRECIO', v: 3 }] }],
+        }),
+      ),
+    ).toBe(false)
+  })
+
+  it('una matriz con TODAS las celdas en `null` está vacía', () => {
+    // **La decisión que más importa de las cinco.** `null` es «no hay dato» por
+    // celda; en todas, las etiquetas dibujan una grilla que parece un mapa de
+    // calor y no tiene una sola cifra.
+    expect(
+      isEmpty(
+        val({
+          forma: 'matriz',
+          filas: ['LUN', 'MAR'],
+          columnas: ['06 H', '09 H'],
+          celdas: [
+            [null, null],
+            [null, null],
+          ],
+        }),
+      ),
+    ).toBe(true)
+  })
+
+  it('pero UNA sola celda con dato ya no lo está · ni siquiera en cero', () => {
+    // El corolario de «un cero es un dato»: una celda en 0 es una hora que se
+    // midió y dio cero, no una hora sin registrar.
+    expect(
+      isEmpty(
+        val({
+          forma: 'matriz',
+          filas: ['LUN'],
+          columnas: ['06 H', '09 H'],
+          celdas: [[0, null]],
+        }),
+      ),
+    ).toBe(false)
+  })
+
+  it('un grafo se mide por sus ARISTAS, no por sus nodos', () => {
+    // Un grafo contesta sobre relaciones: nodos sueltos son puntos sin pregunta.
+    expect(
+      isEmpty(val({ forma: 'grafo', nodos: [{ id: 'a', etiqueta: 'A' }], aristas: [] })),
+    ).toBe(true)
+  })
+
+  it('y un flujo por sus enlaces · etapas que no fluyen', () => {
+    expect(
+      isEmpty(val({ forma: 'flujo', etapas: [{ id: 'a', etiqueta: 'A', v: 1 }], enlaces: [] })),
+    ).toBe(true)
+  })
+})
+
 describe('visualState · VACIO se deriva, no se recibe', () => {
   it('un DISPONIBLE sin nada que dibujar es VACIO', () => {
     const sinPuntos = {

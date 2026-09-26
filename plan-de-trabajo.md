@@ -159,6 +159,7 @@ decir qué rol cumple**, porque ahí empieza la superposición.
 | `docs/RESPUESTA-*-*.md` | **Histórico.** Lo que OTRO equipo contestó, con fecha. No lo escribimos nosotros y **no se edita**: si algo de ahí resulta inexacto, se dice en la respuesta nuestra, no corrigiendo la suya |
 | `docs/B0.9-preguntas-abiertas.md` | Las preguntas del contrato, con su resolución |
 | `docs/PROPUESTA-*-*.md` | Una **propuesta de spec** abierta, con fecha. Lo que `design.md` no declara y el código no puede inventar |
+| `docs/DECISIONES-*-*.md` | Decisiones ya **tomadas** sobre una spec, con lo que se midió para tomarlas y lo que se descartó. Es el par de `PROPUESTA-*`: aquella pregunta, ésta contesta — y no se edita después, porque la decisión tiene fecha |
 | `docs/F1.28-escala-tipografica.md` | La bitácora de una tarea que cambió el sistema |
 | `docs/FOLDER_STRUCTURE.md` | La estructura de `src/`, para quien llega |
 | `docs/historico/*` | Documentos **vencidos**, con el aviso adentro. No se consultan para planificar |
@@ -5682,9 +5683,9 @@ cuerpo propio a cada una, o escribirlo en una sección de evidencia como ésta, 
 el parser no reparte—. Se eligió el segundo, que es el que ya usan las once
 tareas cerradas de esta fase.
 
-### F4.17 ⬜ `ComparisonBody` + `ComparePlot` · 🔒 NUESTRO contrato no declara `categoricaComparada`
-### F4.18 ⬜ `MatrixBody` + `HeatmapPlot` · 🔒 NUESTRO contrato no declara `matriz`
-### F4.19 ⬜ `GraphBody` + `GraphPlot` · 🔒 NUESTRO contrato no declara `grafo` ni `flujo`
+### F4.17 ⬜ `ComparisonBody` + `ComparePlot` · 🔒 ninguna métrica declara `categoricaComparada`
+### F4.18 ⬜ `MatrixBody` + `HeatmapPlot` · 🔒 ninguna métrica declara `matriz`
+### F4.19 ⬜ `GraphBody` + `GraphPlot` · 🔒 ninguna métrica declara `grafo` ni `flujo`
 ### F4.20 ⬜ Registrar los tres con carga diferida · 🔒 espera a F4.17–F4.19
 **Verificado el 2026-09-26 contra `8633b10`.** **EL BLOQUEO CAMBIÓ DE DUEÑO.** El criterio decía «se construyen cuando el backend envíe esas formas (B5.3), no antes», y esa mitad ya no lo frena: `transform_v11.go` transforma **las cinco** —`compared_categorical`, `multi_attribute_profile`, `matrix`, `graph`, `flow`— y el `switch` principal las enruta con constantes.
 
@@ -5697,7 +5698,11 @@ Su respuesta del 25 lo dice del otro lado: «sobre las cinco formas v1.1: de acu
 1. **Declarar las cinco en `contracts/synapse-api.yaml`.** El enum `Forma` las nombra y **ninguna tiene objeto de `Valor`**, así que hoy no hay contra qué implementar un cuerpo.
 2. **Una métrica que las use.** Las 18 del tenant declaran `scalar`, `categorical`, `prose`, `tabular`, `multi_series` y `time_series`. Un cuerpo para una forma que nadie emite es código sin consumidor.
 
-**El `🔒` se queda y sigue siendo condicionante** — lo que cambia es a quién hay que pedirle: a nosotros el contrato, y a datos una métrica.
+**Nuestra mitad se hizo el 2026-09-26**: el contrato declara las cinco, con sus decisiones en cada esquema y en `docs/DECISIONES-2026-09-26-formas-v11.md`. Al declararlas **`isEmpty` dejó de compilar**, que es para lo que su `switch` está escrito exhaustivo, y las cinco decisiones de «vacío» quedaron tomadas con su razón.
+
+**El `🔒` se queda, y ahora apunta a DATOS**: hace falta una métrica que use una de las cinco. Las 18 del tenant declaran `scalar`, `categorical`, `prose`, `tabular`, `multi_series` y `time_series`.
+
+**Y `adapt.ts` las sigue rechazando** con su razón —«forma que el front todavía no dibuja»— hasta que existan los cuerpos. Es correcto: una forma declarada sin cuerpo daría un panel en blanco sin decir por qué.
 **Criterio de aceptación.**
 - Se construyen cuando el contrato declare esas formas **y** exista una métrica
   que las use. Hoy ninguna las usa; existen para que el builder pueda ofrecerlas.

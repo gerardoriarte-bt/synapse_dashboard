@@ -1395,7 +1395,7 @@ export interface components {
             /** @description Lectura al pie del panel, cuando la métrica la necesita. */
             nota?: string;
         };
-        Valor: components["schemas"]["ValorEscalar"] | components["schemas"]["ValorEscalarConIntervalo"] | components["schemas"]["ValorSerieTemporal"] | components["schemas"]["ValorSerieConBanda"] | components["schemas"]["ValorSeriesMultiples"] | components["schemas"]["ValorCategorica"] | components["schemas"]["ValorRanking"] | components["schemas"]["ValorComposicion"] | components["schemas"]["ValorDistribucion"] | components["schemas"]["ValorTabular"] | components["schemas"]["ValorProsa"];
+        Valor: components["schemas"]["ValorEscalar"] | components["schemas"]["ValorEscalarConIntervalo"] | components["schemas"]["ValorSerieTemporal"] | components["schemas"]["ValorSerieConBanda"] | components["schemas"]["ValorSeriesMultiples"] | components["schemas"]["ValorCategorica"] | components["schemas"]["ValorRanking"] | components["schemas"]["ValorComposicion"] | components["schemas"]["ValorDistribucion"] | components["schemas"]["ValorCategoricaComparada"] | components["schemas"]["ValorPerfilMultiatributo"] | components["schemas"]["ValorMatriz"] | components["schemas"]["ValorGrafo"] | components["schemas"]["ValorFlujo"] | components["schemas"]["ValorTabular"] | components["schemas"]["ValorProsa"];
         Punto: {
             /**
              * @description La etiqueta del eje, ya lista para pintar.
@@ -1524,6 +1524,194 @@ export interface components {
             forma: "distribucion";
             cortes: {
                 etiqueta: string;
+                v: number;
+            }[];
+        };
+        /**
+         * @description Una categórica con su punto de comparación · `comparison`.
+         *
+         *     El `.pen` la dibuja de cuatro maneras —`COLUMNAS AGRUPADAS · Real contra
+         *     objetivo`, `DUMBBELL · Brecha contra objetivo`, `PENDIENTE` y
+         *     `TORNADO`— y todas necesitan lo mismo: un valor, una referencia y la
+         *     distancia entre los dos.
+         *
+         *     **`delta` lo calcula el BACKEND**, y el front no lo deriva aunque tenga
+         *     los dos números. Es la misma regla que `porcentaje` en `composicion`:
+         *     quien conoce la definición del delta —absoluto, relativo, contra qué
+         *     base— es quien produjo el dato. Verificado en `transform_v11.go`: si la
+         *     fila no lo trae y hay `referencia`, lo escribe como `v − referencia`.
+         *
+         *     **Sin `referencia` no hay comparación**, y entonces el cuerpo no debe
+         *     pintar una: es una categórica común con otro nombre, y el panel tiene
+         *     que decirlo en vez de inventar un objetivo.
+         */
+        ValorCategoricaComparada: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            forma: "categoricaComparada";
+            items: {
+                etiqueta: string;
+                v: number;
+                /** @description El objetivo, el período anterior o la categoría contra la que se compara. */
+                referencia?: number;
+                /**
+                 * @description **Del backend.** Presente cuando la fila lo trae o cuando hay
+                 *     `referencia`; ausente si no hay contra qué comparar.
+                 */
+                delta?: number;
+            }[];
+        };
+        /**
+         * @description Varios perfiles medidos sobre los mismos atributos · `comparison`.
+         *
+         *     El `.pen` lo dibuja como `RADAR · Perfil de marca contra categoría`, con
+         *     seis ejes —NOTORIEDAD, RELEVANCIA, CALIDAD, PRECIO, INNOVACIÓN,
+         *     LEALTAD— y sin cifras: lo que se lee es la FORMA.
+         *
+         *     ── **LA DECISIÓN, Y ES UNA REGLA QUE EL CABLE NO PUEDE GARANTIZAR** ───
+         *
+         *     **Todos los atributos comparten la unidad de la métrica.** Un radar con
+         *     ejes en unidades distintas —pesos en uno, porcentaje en otro— dibuja un
+         *     polígono que no significa nada: el área depende de en qué orden se
+         *     pusieron los ejes.
+         *
+         *     **No se agrega un `maximo` por atributo**, que sería la otra salida: el
+         *     cable no lo manda, así que sería un campo que nadie llena — el defecto
+         *     de `BodyProps.presentation`. Si algún día hace falta un perfil con
+         *     unidades mixtas, **se pide entonces** y se declara con el dato real
+         *     enfrente.
+         *
+         *     **Lo que el cuerpo SÍ puede hacer** es escalar contra el máximo
+         *     observado entre todos los perfiles: eso es presentación y no inventa un
+         *     techo que nadie declaró.
+         */
+        ValorPerfilMultiatributo: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            forma: "perfilMultiatributo";
+            /**
+             * @description **El orden es el de aparición en las filas**, no alfabético —lo fija
+             *     el backend— y el cuerpo lo respeta: el primero suele ser el sujeto y
+             *     el segundo la referencia.
+             */
+            perfiles: {
+                /**
+                 * @example Under Armour
+                 * @example Categoría
+                 */
+                etiqueta: string;
+                atributos: {
+                    /** @example NOTORIEDAD */
+                    clave: string;
+                    v: number;
+                }[];
+            }[];
+        };
+        /**
+         * @description Una tabla de doble entrada con una cifra por celda · `matrix`.
+         *
+         *     El `.pen` la dibuja como `MAPA DE CALOR · Venta por día y hora`,
+         *     `COHORTES · Recompra por cohorte` y `CALENDARIO`.
+         *
+         *     ── **`null` ES «NO HAY DATO», NO CERO** ────────────────────────────────
+         *
+         *     La decisión que más importa, y es la misma distinción que ya costó en
+         *     A5 y en A1. `transformMatrix` deja la celda en `nil` cuando ninguna fila
+         *     la cubrió, y **el cuerpo tiene que dejarla vacía**: pintarla con el color
+         *     más frío la muestra como el peor valor de la escala, y una hora sin
+         *     ventas registradas no es una hora con cero ventas.
+         *
+         *     **La escala la calcula el cuerpo** sobre las celdas presentes. Eso es
+         *     presentación; el contrato no declara mínimo ni máximo porque el backend
+         *     no los manda y derivarlos de otro lado sería inventar el rango.
+         */
+        ValorMatriz: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            forma: "matriz";
+            /** @description Las etiquetas de fila, en el orden en que se dibujan. */
+            filas: string[];
+            columnas: string[];
+            /**
+             * @description **Una fila por cada `filas`, en el mismo orden**, y dentro una celda
+             *     por cada `columnas`. Es una matriz densa: si faltan filas o columnas
+             *     respecto de las etiquetas, el cuerpo no puede dibujarla y lo dice.
+             */
+            celdas: (number | null)[][];
+        };
+        /**
+         * @description Nodos y las aristas dirigidas entre ellos · `graph`.
+         *
+         *     El `.pen` lo dibuja como `GRAFO · Rutas hasta la segunda compra`.
+         *
+         *     **Las posiciones NO están en el contrato**, y es deliberado: dónde cae
+         *     cada nodo es una decisión de dibujo —depende del ancho del panel, del
+         *     `colSpan` y del algoritmo— y ponerlas acá las congelaría al tamaño con
+         *     el que se generaron.
+         */
+        ValorGrafo: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            forma: "grafo";
+            nodos: {
+                id: string;
+                /**
+                 * @description **Cae al `id` cuando la fila no trae una**, y lo hace el
+                 *     backend. Así que siempre hay algo que pintar y el cuerpo nunca
+                 *     muestra un identificador crudo por su cuenta.
+                 */
+                etiqueta: string;
+            }[];
+            aristas: {
+                /** @description El `id` de un nodo. */
+                desde: string;
+                hacia: string;
+                /**
+                 * @description **Opcional, y su ausencia significa «todas iguales»** — no
+                 *     cero. Sin peso el cuerpo dibuja todas las aristas con el mismo
+                 *     grosor en vez de hacerlas invisibles.
+                 */
+                peso?: number;
+            }[];
+        };
+        /**
+         * @description Etapas y el volumen que pasa entre ellas · `graph`.
+         *
+         *     El `.pen` lo dibuja como `EMBUDO · Embudo de conversión` y `FLUJO ·
+         *     Canal hacia división`.
+         *
+         *     **La `v` de cada etapa la calcula el BACKEND**, y el front no la suma:
+         *     `transformFlow` usa la suma de lo que SALE, o la de lo que entra si la
+         *     etapa es terminal. Sumar los enlaces acá daría otro número en la última
+         *     etapa, y el panel mostraría dos totales distintos para el mismo embudo.
+         *
+         *     **La conversión entre etapas sí es del cuerpo**: es un cociente entre
+         *     dos cifras que ya están, igual que el agrupado por tiempo del riel de
+         *     hilos, y el contrato lo permite explícitamente para presentación.
+         */
+        ValorFlujo: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            forma: "flujo";
+            /** @description En el orden en que aparecen en las filas, que es el del flujo. */
+            etapas: {
+                id: string;
+                etiqueta: string;
+                v: number;
+            }[];
+            enlaces: {
+                desde: string;
+                hacia: string;
                 v: number;
             }[];
         };

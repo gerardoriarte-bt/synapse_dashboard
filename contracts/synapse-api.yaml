@@ -2022,6 +2022,11 @@ components:
         - $ref: '#/components/schemas/ValorRanking'
         - $ref: '#/components/schemas/ValorComposicion'
         - $ref: '#/components/schemas/ValorDistribucion'
+        - $ref: '#/components/schemas/ValorCategoricaComparada'
+        - $ref: '#/components/schemas/ValorPerfilMultiatributo'
+        - $ref: '#/components/schemas/ValorMatriz'
+        - $ref: '#/components/schemas/ValorGrafo'
+        - $ref: '#/components/schemas/ValorFlujo'
         - $ref: '#/components/schemas/ValorTabular'
         - $ref: '#/components/schemas/ValorProsa'
       discriminator:
@@ -2036,20 +2041,33 @@ components:
           ranking: '#/components/schemas/ValorRanking'
           composicion: '#/components/schemas/ValorComposicion'
           distribucion: '#/components/schemas/ValorDistribucion'
+          categoricaComparada: '#/components/schemas/ValorCategoricaComparada'
+          perfilMultiatributo: '#/components/schemas/ValorPerfilMultiatributo'
+          matriz: '#/components/schemas/ValorMatriz'
+          grafo: '#/components/schemas/ValorGrafo'
+          flujo: '#/components/schemas/ValorFlujo'
           tabular: '#/components/schemas/ValorTabular'
           prosa: '#/components/schemas/ValorProsa'
-      # Faltan cinco formas del enumerado: categoricaComparada,
-      # perfilMultiatributo, matriz, flujo y grafo.
+      # ── LAS DIECISÉIS ESTÁN · desde el 2026-09-26 ─────────────────────────
       #
-      # No es un olvido. Verificado el 2026-08-19 recorriendo las pestañas de los
-      # dos tenants: **ninguna métrica las declara y ningún panel las usa**. Los
-      # tres tipos que las consumirían —comparison, matrix, graph— están en
-      # SYNAPSE_BLOCKS para que el builder pueda ofrecerlos, y el builder es
-      # v1.1.
+      # Acá faltaban cinco, con esta razón escrita el 2026-08-19: «agregarlas
+      # ahora sería declarar una forma que ningún endpoint devuelve».
       #
-      # Agregarlas ahora sería declarar una forma que ningún endpoint devuelve:
-      # el mismo problema que un chequeo que pasa porque no encontró nada.
-      # Entran cuando exista una métrica que las declare.
+      # **Esa razón venció.** El backend las transforma —`transform_v11.go` en
+      # `8633b10`, verificado leyendo el `switch`— y su respuesta del
+      # 2026-09-25 dice que las esperaba de nuestro lado: «entran juntas cuando
+      # ustedes las declaren».
+      #
+      # **La otra mitad de la razón sigue en pie y no bloquea esto**: ninguna
+      # métrica las declara todavía. Lo que cambia es quién espera a quién —
+      # antes el contrato esperaba al backend, ahora el cuerpo espera al dato.
+      # `adapt.ts` las sigue rechazando con su razón hasta que F4.17–F4.19
+      # construyan los cuerpos, y eso es correcto: una forma declarada sin
+      # cuerpo no se puede dibujar.
+      #
+      # Las decisiones que hubo que tomar están en cada esquema, y las dos que
+      # el cable no resuelve —la escala del radar y el `null` de la matriz— en
+      # `docs/DECISIONES-2026-09-26-formas-v11.md`.
 
     Punto:
       type: object
@@ -2196,6 +2214,237 @@ components:
             required: [etiqueta, v]
             properties:
               etiqueta: { type: string }
+              v: { type: number }
+
+    # ══ LAS CINCO DE v1.1 · declaradas el 2026-09-26 ═════════════════════════
+    #
+    # **Entraron porque el backend las emite y estaba esperándonos.** Su
+    # respuesta del 2026-09-25 lo dice: «sobre las cinco formas v1.1: de
+    # acuerdo, entran juntas **cuando ustedes las declaren**».
+    #
+    # Verificado leyendo `transform_v11.go` en `8633b10`: las cinco tienen
+    # transformador y el `switch` principal las enruta con constantes —que es
+    # justo lo que un `grep "case \""` no ve, y por lo que el 2026-09-25 se les
+    # mandó un mensaje diciendo que no las tenían.
+    #
+    # Y los tres tipos que las consumen existen en `/config/blocks`, medido:
+    # `comparison` (span 5–8) toma las dos primeras, `matrix` (6–12) la tercera
+    # y `graph` (6–12) las dos últimas.
+    #
+    # ── LO QUE SIGUE SIN PASAR, Y ESTÁ BIEN ─────────────────────────────────
+    #
+    # **Ninguna métrica las declara todavía**, así que ningún panel las recibe.
+    # El adaptador las sigue rechazando con su razón —«forma que el front
+    # todavía no dibuja»— hasta que F4.17–F4.19 construyan los cuerpos. Declarar
+    # la forma es lo que permite construirlos; construirlos sin una métrica que
+    # los use sería código sin consumidor.
+
+    ValorCategoricaComparada:
+      type: object
+      description: |
+        Una categórica con su punto de comparación · `comparison`.
+
+        El `.pen` la dibuja de cuatro maneras —`COLUMNAS AGRUPADAS · Real contra
+        objetivo`, `DUMBBELL · Brecha contra objetivo`, `PENDIENTE` y
+        `TORNADO`— y todas necesitan lo mismo: un valor, una referencia y la
+        distancia entre los dos.
+
+        **`delta` lo calcula el BACKEND**, y el front no lo deriva aunque tenga
+        los dos números. Es la misma regla que `porcentaje` en `composicion`:
+        quien conoce la definición del delta —absoluto, relativo, contra qué
+        base— es quien produjo el dato. Verificado en `transform_v11.go`: si la
+        fila no lo trae y hay `referencia`, lo escribe como `v − referencia`.
+
+        **Sin `referencia` no hay comparación**, y entonces el cuerpo no debe
+        pintar una: es una categórica común con otro nombre, y el panel tiene
+        que decirlo en vez de inventar un objetivo.
+      required: [forma, items]
+      properties:
+        forma: { type: string, enum: [categoricaComparada] }
+        items:
+          type: array
+          items:
+            type: object
+            required: [etiqueta, v]
+            properties:
+              etiqueta: { type: string }
+              v: { type: number }
+              referencia:
+                type: number
+                description: El objetivo, el período anterior o la categoría contra la que se compara.
+              delta:
+                type: number
+                description: |
+                  **Del backend.** Presente cuando la fila lo trae o cuando hay
+                  `referencia`; ausente si no hay contra qué comparar.
+
+    ValorPerfilMultiatributo:
+      type: object
+      description: |
+        Varios perfiles medidos sobre los mismos atributos · `comparison`.
+
+        El `.pen` lo dibuja como `RADAR · Perfil de marca contra categoría`, con
+        seis ejes —NOTORIEDAD, RELEVANCIA, CALIDAD, PRECIO, INNOVACIÓN,
+        LEALTAD— y sin cifras: lo que se lee es la FORMA.
+
+        ── **LA DECISIÓN, Y ES UNA REGLA QUE EL CABLE NO PUEDE GARANTIZAR** ───
+
+        **Todos los atributos comparten la unidad de la métrica.** Un radar con
+        ejes en unidades distintas —pesos en uno, porcentaje en otro— dibuja un
+        polígono que no significa nada: el área depende de en qué orden se
+        pusieron los ejes.
+
+        **No se agrega un `maximo` por atributo**, que sería la otra salida: el
+        cable no lo manda, así que sería un campo que nadie llena — el defecto
+        de `BodyProps.presentation`. Si algún día hace falta un perfil con
+        unidades mixtas, **se pide entonces** y se declara con el dato real
+        enfrente.
+
+        **Lo que el cuerpo SÍ puede hacer** es escalar contra el máximo
+        observado entre todos los perfiles: eso es presentación y no inventa un
+        techo que nadie declaró.
+      required: [forma, perfiles]
+      properties:
+        forma: { type: string, enum: [perfilMultiatributo] }
+        perfiles:
+          type: array
+          description: |
+            **El orden es el de aparición en las filas**, no alfabético —lo fija
+            el backend— y el cuerpo lo respeta: el primero suele ser el sujeto y
+            el segundo la referencia.
+          items:
+            type: object
+            required: [etiqueta, atributos]
+            properties:
+              etiqueta: { type: string, examples: ['Under Armour', 'Categoría'] }
+              atributos:
+                type: array
+                items:
+                  type: object
+                  required: [clave, v]
+                  properties:
+                    clave: { type: string, examples: ['NOTORIEDAD'] }
+                    v: { type: number }
+
+    ValorMatriz:
+      type: object
+      description: |
+        Una tabla de doble entrada con una cifra por celda · `matrix`.
+
+        El `.pen` la dibuja como `MAPA DE CALOR · Venta por día y hora`,
+        `COHORTES · Recompra por cohorte` y `CALENDARIO`.
+
+        ── **`null` ES «NO HAY DATO», NO CERO** ────────────────────────────────
+
+        La decisión que más importa, y es la misma distinción que ya costó en
+        A5 y en A1. `transformMatrix` deja la celda en `nil` cuando ninguna fila
+        la cubrió, y **el cuerpo tiene que dejarla vacía**: pintarla con el color
+        más frío la muestra como el peor valor de la escala, y una hora sin
+        ventas registradas no es una hora con cero ventas.
+
+        **La escala la calcula el cuerpo** sobre las celdas presentes. Eso es
+        presentación; el contrato no declara mínimo ni máximo porque el backend
+        no los manda y derivarlos de otro lado sería inventar el rango.
+      required: [forma, filas, columnas, celdas]
+      properties:
+        forma: { type: string, enum: [matriz] }
+        filas:
+          type: array
+          description: Las etiquetas de fila, en el orden en que se dibujan.
+          items: { type: string }
+        columnas:
+          type: array
+          items: { type: string }
+        celdas:
+          type: array
+          description: |
+            **Una fila por cada `filas`, en el mismo orden**, y dentro una celda
+            por cada `columnas`. Es una matriz densa: si faltan filas o columnas
+            respecto de las etiquetas, el cuerpo no puede dibujarla y lo dice.
+          items:
+            type: array
+            items:
+              type: [number, 'null']
+
+    ValorGrafo:
+      type: object
+      description: |
+        Nodos y las aristas dirigidas entre ellos · `graph`.
+
+        El `.pen` lo dibuja como `GRAFO · Rutas hasta la segunda compra`.
+
+        **Las posiciones NO están en el contrato**, y es deliberado: dónde cae
+        cada nodo es una decisión de dibujo —depende del ancho del panel, del
+        `colSpan` y del algoritmo— y ponerlas acá las congelaría al tamaño con
+        el que se generaron.
+      required: [forma, nodos, aristas]
+      properties:
+        forma: { type: string, enum: [grafo] }
+        nodos:
+          type: array
+          items:
+            type: object
+            required: [id, etiqueta]
+            properties:
+              id: { type: string }
+              etiqueta:
+                type: string
+                description: |
+                  **Cae al `id` cuando la fila no trae una**, y lo hace el
+                  backend. Así que siempre hay algo que pintar y el cuerpo nunca
+                  muestra un identificador crudo por su cuenta.
+        aristas:
+          type: array
+          items:
+            type: object
+            required: [desde, hacia]
+            properties:
+              desde: { type: string, description: El `id` de un nodo. }
+              hacia: { type: string }
+              peso:
+                type: number
+                description: |
+                  **Opcional, y su ausencia significa «todas iguales»** — no
+                  cero. Sin peso el cuerpo dibuja todas las aristas con el mismo
+                  grosor en vez de hacerlas invisibles.
+
+    ValorFlujo:
+      type: object
+      description: |
+        Etapas y el volumen que pasa entre ellas · `graph`.
+
+        El `.pen` lo dibuja como `EMBUDO · Embudo de conversión` y `FLUJO ·
+        Canal hacia división`.
+
+        **La `v` de cada etapa la calcula el BACKEND**, y el front no la suma:
+        `transformFlow` usa la suma de lo que SALE, o la de lo que entra si la
+        etapa es terminal. Sumar los enlaces acá daría otro número en la última
+        etapa, y el panel mostraría dos totales distintos para el mismo embudo.
+
+        **La conversión entre etapas sí es del cuerpo**: es un cociente entre
+        dos cifras que ya están, igual que el agrupado por tiempo del riel de
+        hilos, y el contrato lo permite explícitamente para presentación.
+      required: [forma, etapas, enlaces]
+      properties:
+        forma: { type: string, enum: [flujo] }
+        etapas:
+          type: array
+          description: En el orden en que aparecen en las filas, que es el del flujo.
+          items:
+            type: object
+            required: [id, etiqueta, v]
+            properties:
+              id: { type: string }
+              etiqueta: { type: string }
+              v: { type: number }
+        enlaces:
+          type: array
+          items:
+            type: object
+            required: [desde, hacia, v]
+            properties:
+              desde: { type: string }
+              hacia: { type: string }
               v: { type: number }
 
     ValorTabular:
