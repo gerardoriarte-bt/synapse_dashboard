@@ -514,7 +514,11 @@ consola: `me`, `catalog`, `blocks`, `tabs/{tabId}`, `panels:batch`, `chat`,
   lados (T1).
 
 ### B0.6 ⬜ Extender el contrato con admin y builder
-**Espera del backend.** **Cerrar su B0.7: declarar `/config/*` y `/admin/layouts/*` en el OpenAPI que el binario ya embebe.** Mientras no esté, el front mantiene `contracts/synapse-console-wire.yaml`, que es una **transcripción nuestra leyendo structs de Go** — y eso ya costó un error con el servicio de acceso. Con el spec emitido, ese archivo se reemplaza por el suyo y `console-drift` lo verifica solo.
+**Medido el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **Su mitad está hecha y la nuestra no**, así que la tarea sigue abierta pero ya no espera a nadie. `internal/adapters/handler/docs/openapi.yaml` declara **59 rutas, 12 de ellas `/config/*`** —tres más que nuestro cable: `chat/threads/{id}/messages` y las dos de drill-down— y `/docs` las sirve.
+
+**Y proponen que reemplacemos nuestro cable por el suyo. NO se hace**, decidido el 2026-09-26. Su spec es su declaración de intención, la misma clase de fuente que el comentario de `dd_catalog_metric.go` que nos hizo escribir `HIGHER_IS_BETTER` y que el servicio corrigió. Nuestro cable lleva `x-verificado-en` por ruta y `humo` lo compara contra respuestas reales en las dos direcciones: reemplazarlo nos saca justo lo que atrapó la deriva. **Sirve como segunda fuente para diferir contra ella**, que es más de lo que daba antes.
+
+Lo que falta es lo que el criterio pide y sigue siendo nuestro: extender `contracts/synapse-api.yaml`, que es la forma interna.
 **Descripción.** Agregar al yaml los endpoints de §5: `/admin/tenants`,
 `/admin/tenants/{id}/layouts`, `/admin/layouts/{id}`, `.../publish`,
 `.../validate`, `/admin/tenants/{id}/catalog`, `/admin/tenants/{id}/agents`.
@@ -594,7 +598,14 @@ la ruta que lo emite.
 
 ### B1.1 ⚠️ `GET /config/me`
 **Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `GET /config/me` responde con `user`, `tenant`, `role`, `tabs`, `periods` y `catalog_version`. **Parcial** porque faltan `theme` —el campo existe en `users` y el `PUT` lo escribe— y el resto del contexto que declara el contrato.
-**Espera del backend.** **`theme` en la respuesta.** El campo existe en `users`, la migración lo creó y `PUT /config/me/preferences` ya lo escribe — pero `/config/me` no lo devuelve, así que **la preferencia se guarda y no se puede leer**. El front la necesita antes del primer pixel: leerla en una segunda llamada haría que la consola pinte oscura y cambie a clara a la vista del usuario. Y falta el resto del contexto: `alcance`, `tenant.etiqueta` y `vertical`, `role.puedeAprobar`, `user.capabilities`, y en la pestaña `key`, `icon` y `chat_suggestions`.
+**Medido el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **`theme` LLEGÓ** — `user.theme: "light"` en `/config/me`—, y con él `tenant.locale`, `tenant.currency` y `tenant.timezone`, que no estaban pedidos acá y son los que desbloquean F1.13b.
+
+**Sigue en ⚠️ por dos bullets del criterio que no se cumplen**, y conviene que estén separados del `theme` para que nadie la cierre de más:
+
+- **`Periodo` no declara su `grano`.** `periods` son doce cadenas sueltas —`"2026-09"`— y el criterio pide `dia | semana | mes`: «sin él el front sabe que una métrica es mensual pero no si `2026-W32` es una semana».
+- **`alcance` no existe**, y con él `tenantsDisponibles`. Por eso el adaptador fija `alcance: 'usuario'` con su razón escrita.
+
+**Espera del backend.** El resto del contexto: `alcance` con `tenantsDisponibles`, el `grano` de cada período, `tenant.etiqueta` y `vertical`, `role.puedeAprobar`, `user.capabilities`, y en la pestaña `key`, `icon` y `chat_suggestions`.
 **Descripción.** Contexto de arranque: `user` (con `capacidades` y
 `preferencias`), `tenant`, `role` (con `puedeAprobar`), `tabs` **sin paneles**,
 `periodos`, `catalogVersion`, `alcance` y —si hay más de uno— `layouts`.
@@ -714,7 +725,9 @@ Los dos puntos del criterio **se cumplen**: `presentation` llega en los seis pan
 mientras que ROAS y los conteos dicen «TOTAL», que es correcto —no llevan unidad—.
 **Queda en ⚠️ y no en ✅ por la `nota` de panel**, que sigue siendo un pedido vivo.
 
-### B1.14 ⚠️ Transformar a las formas de `Valor`
+### B1.14 ✅ Transformar a las formas de `Valor`
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. `decimals` y `unit` por columna llegan en `tabular` — medido en el panel de inversión por plataforma: `{key: 'roas', title: 'ROAS', numeric: true, decimals: 2, unit: 'x'}`. Con eso **se cierran los cinco bullets del criterio**: `tabular` con decimales y unidad medido en vivo; intervalo estricto, `composicion` con porcentaje, `ranking` con `position` desde 1 y `prosa` con pilares como objetos leídos de `transform.go`, porque **no existe dato de esas formas todavía** —el tenant sólo materializa `scalar`, `multi_series`, `categorical`, `tabular` y `prose`— y eso queda dicho en vez de darse por medido.
+
 **LAS FORMAS LLEGARON · verificado el 2026-09-25 leyendo `transform.go` en
 `75b8ecc`: quince casos.** Queda en ⚠️ porque su otra mitad sigue en pie —
 `decimals` y `unit` por columna en `tabular`—, y el párrafo de abajo la declara.
@@ -727,7 +740,7 @@ pedimos ese día.
 **El conteo viejo de esta tarea decía nueve y costó un mensaje equivocado**: se
 midió con un `grep "case \""` que sólo ve los casos con literal, y siete usan
 constantes.
-**Espera del backend.** **`decimals` y `unit` por columna en `tabular`**, y las siete formas que `TransformValue` no produce.
+**El pedido, cumplido.** Pedía **`decimals` y `unit` por columna en `tabular`** —servidos en `8633b10`— y «las siete formas que `TransformValue` no produce», que **nunca correspondió**: las producía. Queda escrito porque el conteo equivocado costó un mensaje al backend.
 
 **NO depende de Snowflake.** Es código Go: las tablas Gold que el materializador consulta ya existen con sus quince columnas, verificado el 2026-09-14.
 
@@ -749,8 +762,13 @@ mínimas de §8 del documento.
 - `prosa` trae pilares como **objetos**, nunca cadenas parseables.
 - `tabular` declara por columna si es numérica, con `decimales` y `unidad`.
 
-### B1.15 ⬜ Validar reglas mínimas por forma antes de enviar
-**Espera del backend.** **`percentage` siempre en `composition`**, y la banda completa en `scalar_with_interval`.
+### B1.15 ✅ Validar reglas mínimas por forma antes de enviar
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **Las dos mitades están escritas**, leídas en `transform.go`:
+
+- `fillCompositionPercentages` calcula `percentage` cuando la fila no lo trae, con un decimal, y **la última parte absorbe el redondeo para que la suma dé 100** — que es la razón por la que no lo hace el front.
+- `transformScalarWithInterval` **exige `level`** y falla con `ErrMissingField` si falta. Antes lo inventaba: `if level == 0 { level = 0.95 }`, o sea que publicaba un intervalo con un nivel de confianza que nadie midió. Es la regla dura 6 al revés.
+
+**Leídas y no medidas, y se dice por qué**: ninguna métrica del tenant materializa `composition` ni `scalar_with_interval`, así que no hay payload contra el que comprobarlo. El día que exista, `humo` lo ve.
 
 **NO depende de Snowflake.** La validación vive en el servicio y en el transformador, no en la vista.
 
@@ -816,8 +834,8 @@ tipo: hoy `bars` puede recibir un ítem y dibujar una barra sola.
 **Medido el 2026-09-22 · `GET /config/plots` devuelve 404.** La ruta no existe en
 `82da946`. Pasa de «no verificado» a **medido y ausente**.
 
-### B1.17 ⬜ Modelo `Metrica`
-**Espera del backend.** **`window` en el catálogo** — el único de esta lista que se ve en pantalla. El shell pinta `Base · {base} · {window}` en los doce paneles y en los siete estados, y sin él la línea queda `Base · COMPLETED · MONTH ·` con el separador colgando.
+### B1.17 ✅ Modelo `Metrica`
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **`measurement_window` llega**, con texto redactado de Snowflake —«Mes calendario seleccionado», «Cada día del mes calendario seleccionado»— en 10 de las 18 métricas del tenant; las ocho vacías son las de la semilla, que la vista no tiene. Del criterio compartido: `min_grain` viaja por métrica y `catalog_version` viaja en el catálogo **y** en `governance` de cada payload. El bullet de la capa `SILVER` no se puede comprobar: las 18 declaran `GOLD`.
 
 **Depende de Snowflake solo EN LA SEGUNDA MITAD**, y conviene no confundirlas:
 
@@ -962,8 +980,10 @@ escrita, tres capas más abajo.
   materializador no lee la capa semántica, lee las tablas Gold directo. Es el
   error que ya se cometió una vez al escribir la primera semilla.
 
-#### ➕ B1.25 ⚠️ `ventana` de punta a punta · de la vista al payload
-**Espera del backend.** **Ya no espera a Snowflake: espera dos líneas de Go.** Verificado el 2026-09-15.
+#### ➕ B1.25 ✅ `ventana` de punta a punta · de la vista al payload
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **De punta a punta, que es lo que su nombre pide**: el `SELECT` de `dd_catalog_sync_service.go` lee `MEASUREMENT_WINDOW`, `catalogMetricEqual` la compara —así que un re-sync la actualiza—, viaja en `/config/catalog` y en `governance` del payload, y el front la consume con un renombre, que es lo que el criterio pedía: «sin lógica nueva».
+
+**Y el segundo bullet se cumple con un cambio nuestro**: «ningún panel muestra `undefined` en la línea de BASE». Vacío no es `undefined`, pero el template literal dejaba el separador colgando —`Base · COMPLETED · MONTH ·`— para las ocho métricas sin ventana. `PanelShell` une las partes que existen.
 
 `MEASUREMENT_WINDOW` **existe en la vista, con valor en las diez métricas y sin nulos** —lo entrega el equipo de datos en `docs/snowflake/synapse-catalogo-metricas.md` §8—, y con ese nombre justamente para no chocar con `WINDOW`, reservada en ANSI. Falta lo de siempre: leerla en el `SELECT` de `dd_catalog_sync_service.go` y exponerla en `GET /config/catalog`.
 
@@ -998,8 +1018,8 @@ literal imprime la cadena `undefined`, no un hueco.
 el fork llega **vacío en las doce métricas**, que es lo que deja la línea de BASE con el
 separador colgando. Ver `docs/ESTADO-backend-2026-09-22.md`.
 
-#### ➕ B1.27 ⚠️ El período declara si está cerrado
-**Espera del backend.** **Un campo en `Periodo`** que diga si el período está cerrado o en curso — pedido el 2026-09-15.
+#### ➕ B1.27 ✅ El período declara si está cerrado
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. `/config/me` devuelve `open_period: "2026-09"` al lado de `periods` — **la forma que propusimos en el fork**, un campo suelto y no uno dentro de cada período. El adaptador ya lo leía desde el 22, así que la consola marca el mes en curso sin tocar el reloj del navegador.
 
 `availablePeriods()` emite los últimos doce meses **contando el actual**, y el actual está incompleto. Hoy los trece llegan iguales: una cadena `2026-09`. La consola los ofrece todos con la misma pinta, y quien compare el mes en curso contra el anterior lee una caída que es «todavía no terminó».
 
@@ -1228,14 +1248,15 @@ su razón. El front ya pinta `DEGRADED` con su badge, su razón y su
 nuestro lado. · Bloquea **B2.12**.
 
 
-#### ➕ B2.13 ⚠️ Salud de feeds por fuente · de acá sale el ESTADO de cada métrica
+#### ➕ B2.13 ✅ Salud de feeds por fuente · de acá sale el ESTADO de cada métrica
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **Cierra su propia condición**: quedaba en ⚠️ «hasta que A5 la consuma y se vea en pantalla», y A5 se abrió contra el servicio real — cuatro fuentes con su cadencia, tolerancia, frescura y métricas afectadas, las cuatro en `SIN CARGA`, que es el dato verdadero. Se agregó también `GET /admin/tenants/{tenantId}/catalog/health`, que mapea métrica → fuentes y que todavía no consumimos.
 **SERVIDA el 2026-09-25 · `1e080ee` · `GET /admin/tenants/{tenantId}/feeds` → 200.**
 Verificada contra el servicio corriendo, cuatro fuentes, y **trae todo lo que el
 criterio pedía**: `cadence_hours`, `freshness_hours`, `last_load_at`,
 `tolerance_factor`, `rows_processed`, `rows_failed` y `status`, más el enlace a
 las métricas —`metric_count`, `metric_keys`— y `gold_table`. Queda en ⚠️ y no en
 ✅ hasta que A5 la consuma y se vea en pantalla.
-**Espera del backend.** **Una ruta que liste, por fuente del tenant: última carga, frescura, cadencia y tolerancia.** Más, si existen, filas procesadas y filas que fallaron la validación Silver→Gold.
+**El pedido, cumplido.** Pedía una ruta que listara, por fuente del tenant: **última carga, frescura, cadencia y tolerancia**, y si existían las filas procesadas y las que fallaron Silver→Gold. Llegaron todas, más el enlace a las métricas.
 
 Pedida el 2026-09-15, **reemplazando un pedido anterior del mismo día que estaba mal.** Esa mañana se pidieron `state` y `state_reason` en el modelo `Metrica` (B1.17) porque A4 necesita filtrar por estado. El `.pen` lo corrigió esa tarde: **el estado de una métrica se DERIVA, no se guarda.**
 
@@ -1331,10 +1352,14 @@ por el usuario, no un dashboard entero.
   `Valor` + `Gobierno`** que un panel, para que el front lo dibuje con el mismo
   cuerpo. Es un solo modelo de datos, no dos.
 
-### B3.9 ⬜ CRUD `/admin/tenants/{id}/agents`
-**Espera del backend.** **La ruta entera** — pedida el 2026-09-15, cuando F4.4 quedó sin nada que consumir.
+### B3.9 ⚠️ CRUD `/admin/tenants/{id}/agents`
+**Medido el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **EL PEDIDO ESTABA MAL Y LA MEDICIÓN TAMBIÉN.** Acá decía «existe `POST /admin/agents` y **nada más**». Las cinco rutas por tenant —GET lista, POST, GET uno, PUT, DELETE— **ya existían en `82da946`**, que es el commit contra el que se midió, y también `GET /agents/ping`. Se comprobó recorriendo `router.go` en cinco commits: aparecen en los cinco.
 
-Existe `POST /admin/agents` y **nada más**: no hay forma de leer la configuración de un tenant ni de editarla. Las seis rutas de `/admin/*` que el servicio sirve no incluyen ninguna de agente.
+**Y `/agents/ping` es justo lo que esta tarea decía que bloqueaba** —«lo que el front necesita no es la configuración, es su CONSECUENCIA»—: responde `{status: "ok", latency_ms: 891, base_url}` contra Cortex de verdad. Son los tres campos que §7.3 pide, servidos.
+
+De su criterio: la credencial **no viaja** —medido, la respuesta trae base, esquema, agente, warehouse y vistas, y ninguna clave— y `a643cfe` le puso `json:"-"` a `PrivateKeyPEM` y a su passphrase.
+
+**Queda en ⚠️ y no en ✅** porque dos bullets no se pueden comprobar: el servicio no usa `aud` sino `AdminOnlyMiddleware` por rol, y que cambiar las vistas permitidas surta efecto en la siguiente pregunta sin reiniciar no se probó.
 
 **Y lo que el front necesita no es la configuración, es su CONSECUENCIA.** §7.3 prohíbe mostrar vocabulario de infraestructura —ni base, ni rol técnico, ni warehouse, ni grant— y pide en su lugar: **si el acceso a datos está vigente, cuándo se verificó por última vez, y qué hacer si no lo está.** Tres campos, no un CRUD.
 
@@ -1405,8 +1430,10 @@ Snowflake, o un modo que no llame a Cortex — ver `docs/ESTADO-backend-2026-09-
 
 ## Fase 4 — Admin y Builder
 
-### B4.1 ⚠️ `GET /admin/tenants`
-**Espera del backend.** **Cinco campos en `GET /admin/tenants`**: `status`, `vertical`, `user_count`, `oldest_feed_freshness` y `last_published_at`.
+### B4.1 ✅ `GET /admin/tenants`
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. Devuelve `locale`, `currency`, `timezone`, `user_count`, `last_published_at`, `worst_feed_status`, `worst_feed_freshness_hours`, `status`, `vertical` y `created_at`. **A1 pinta tres columnas nuevas** —usuarios, feed más atrasado y última publicación— y se vio en pantalla contra el servicio.
+
+**`status` y `vertical` llegan en `null`, y eso NO reabre esta tarea.** El campo existe; lo que falta es que **nosotros** definamos qué valores toma cada uno, y lo dicen en su respuesta del 2026-09-25. La pantalla declara los dos huecos con esa razón y no con «se desbloquea con B4.1», que habría quedado esperando algo ya ocurrido.
 
 Hoy devuelve `ports.TenantPublicOption` —`id` y `name`—, que nació para llenar un
 selector. **§7.3 de `design.md` describe la banda de clientes de A1 con seis
@@ -1562,7 +1589,19 @@ de la regla: «les saca la decisión de las manos».
 - El fork está rebasado sobre su rama **al empezar** —`npm run backend-drift` en
   verde— y se vuelve a rebasar antes de proponer el código de vuelta. Un fork
   escrito sobre una base vieja no se puede integrar sin rehacerlo.
-### B4.9 ⚠️ Preview por rol · **LO IMPLEMENTA EL FRONT** · 2026-09-15
+### B4.9 ⚠️ Preview por rol · LA TOMARON, y más chica
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **`GET /admin/layouts/{layoutId}/preview` responde 200** y con eso el fork queda absorbido entero. **Y resolvieron la colisión de diseño como propusimos**: la compuerta de borradores mira `sel.CallerRole` —quién pregunta— y no el rol simulado.
+
+**Dos cosas que no se deducen y hay que saber:**
+
+- **El parámetro es `role_id`, no `roleId`.** Medido: camelCase devuelve **400**. No se deduce del resto del cable —`/config/tabs` usa `layoutId` y `dashboardId`— y **MSW no podía verlo**, porque su handler leía la misma grafía que mandábamos. F4.12 nunca pudo haber funcionado contra el servicio real.
+- **Viene SIN paneles.** `tabs[]` trae `id`, `name`, `operational_question` y `sort_order`. Nuestra versión devolvía la pestaña con sus paneles ya filtrados, que es lo que deja comparar «CEO contra Planner» panel por panel.
+
+**Queda en ⚠️ por lo segundo**, que es un pedido nuevo: sin paneles, el preview contesta qué pestañas ve un rol y no su composición, y **no hay otra ruta que lo dé** — `GetTab` resuelve el rol desde el token y no acepta lente.
+
+**Lo de abajo quedó como registro**: se implementó en el fork el 2026-09-15 y ya no hace falta.
+
+### Cómo se decidió implementarla en el front · 2026-09-15
 **Decidido el 2026-09-15 (humano), junto con B4.8** y por la misma razón: son
 vecinas, tienen la misma forma, y las dos bloquean superficie de admin que hoy no
 se puede empezar. El antecedente y el alcance de la excepción están escritos en
@@ -1691,15 +1730,17 @@ Recién ahí `humo.py` puede verificarlas contra un servicio corriendo — y par
 rutas de admin hace falta además **un usuario `admin`**, que sigue siendo el
 mismo pedido que dejó `synapse-admin-wire.yaml` sin confirmar.
 
-### B4.17 ⚠️ Una ruta que liste usuarios · A3 no se puede empezar sin ella
+### B4.17 ✅ Una ruta que liste usuarios · A3 no se puede empezar sin ella
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **`GET /admin/users` existe desde `6e521cc`** y devuelve `{total, tenants, users}` con `tenant_name` por usuario. Es el alcance de plataforma que A3 dibuja, y **los dos conteos los cuenta el servicio** — que es exactamente lo que pedía la razón por la que no se compensaba desde el front: «un total armado acá se leería como un número de plataforma y sería una suma nuestra». A3 se abrió contra el servicio con la columna `CLIENTE`.
 **SERVIDA el 2026-09-25 · `1e080ee`**, el mismo día que se pidió.
 `GET /admin/tenants/{tenantId}/users` → 200, y trae lo que §7.3 le pide a A3:
 `email`, `first_name`, `last_name`, `role` con su `role_id`, `last_login_at` y
 `is_active`. **No está en `/admin/users`**, que sigue dando 404: va colgada del
 tenant, que es más correcto.
-**Espera del backend.** Hoy existe `POST /admin/users` y nada más: `GET
-/admin/users` da **404**, comprobado contra el servicio corriendo el
-2026-09-25 con `6e595e3` limpio y token de rol admin.
+**El pedido, cumplido.** Pedía una ruta que listara usuarios. El 2026-09-25 `GET
+/admin/users` daba **404** —comprobado contra `6e595e3` limpio con token de rol
+admin— y ese mismo día sirvieron la por-cliente; `6e521cc` agregó la de
+plataforma, que es la que A3 dibuja.
 
 **No es que A3 se vea incompleta: no hay nada que dibujar.** Es la única
 pantalla de administración cuyo hueco no tenía tarea escrita en ningún lado —ni
@@ -1719,8 +1760,12 @@ pendiente. Pedidas juntas en
 - **El último acceso es un instante, nunca «hace X»** — la presentación es del
   front y depende del huso del navegador · la regla de las dos zonas horarias.
 
-### B4.10 ⬜ Asignación de layout publicado a roles
-**Espera del backend.** **Tres etiquetas `json:`** en `DDLayoutVersion`, `DDTab` y `DDPanel`, y un **`json:"-"`** en sus campos `Tenant` / `LayoutVersion` / `Tab`.
+### B4.10 ⚠️ Asignación de layout publicado a roles
+**Medido el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **Las tres etiquetas `json:` llegaron** en `8633b10` y el `json:"-"` en `a643cfe`. Con eso el cable de admin deja de mezclar dos convenciones — y **romperlo fue lo que nos enteró**: el front leía quince campos en PascalCase que pasaron a `undefined`, y `ESTADOS[w.Status] ?? 'borrador'` afirmaba que todo layout era borrador.
+
+También llegó el primer bullet del criterio: el rol declara `tab_ids`, `hidden_metric_ids` y `layout_overrides`, más `dashboard_ids` y `default_dashboard_id`.
+
+**El segundo bullet NO se cumple, y es el que da nombre a la tarea**: «el preview devuelve **exactamente** lo que ese rol vería, resuelto por el mismo código que sirve `/config/me`. No una simulación aparte». El preview de upstream es un servicio propio y devuelve **las pestañas sin sus paneles**, así que no muestra qué recorta `hidden_metric_ids`. Ver B4.9.
 
 **No es una preferencia nuestra: rompe sus propios tests de Postman.**
 `scriptCreateDraft` de su colección F4 afirma `lv.status === 'draft'` y lo que
@@ -2273,7 +2318,15 @@ desglosado en diez tareas.
   techo 1M el máximo es «1M» de dos caracteres y el tick «500K» son cuatro, y
   calculado sobre el máximo se salía por la izquierda y se leía «00K».
 
-#### F1.13b ⚠️ Portar `format.ts` e **inyectar el locale** · 🔒 `Contexto` no trae locale, moneda ni zona
+#### F1.13b ⚠️ Portar `format.ts` e **inyectar el locale**
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **EL CANDADO VENCIÓ.** Decía «`Contexto` no trae locale, moneda ni zona» y los tres llegan: `tenant.locale`, `tenant.currency` y `tenant.timezone` en `/config/me`.
+
+**No se tomó al descubrirlo**, y queda dicho: un bloqueo escrito no se razona por encima. Lo que falta es trabajo nuestro y no espera a nadie — hoy `FeedHealth`, `UserList`, `ConsoleContainer` y `TenantList` fijan `es-MX` a mano, cada uno con un comentario que dice «el día que el campo exista se cambia una línea».
+
+**El valor que llega hoy es el default de la migración, no el del cliente**: «Under Armour México» trae `es-CO`, `COP` y `America/Bogota`. Se carga con `PUT /admin/tenants/{tenantId}`, que también llegó. Es dato a cargar, no un impedimento para inyectarlo.
+
+**Y la zona horaria que entra por acá es la del TENANT**, que es la del corte del día del negocio. La presentación —«HACE 3 H», el agrupado del riel— sigue saliendo del huso del navegador. Confundirlas es el bug.
+
 **Descripción.** El formateo de cifras, en un solo lugar. En v2 `LOCALE` es la
 constante `'es-MX'` y **cinco de los seis plots importan el formateador directo**
 en vez de recibirlo, así que la prop existe y está muerta.
@@ -4242,7 +4295,14 @@ estimación que no bajaría.
 
 ### F4.1 ✅ `surfaces/admin/` — layout base y navegación
 ### F4.2 ✅ Lista de tenants
-### F4.3 ⚠️ Gestión de usuarios y roles por tenant · A3 construida · 🔒 el alcance de plataforma no tiene ruta
+### F4.3 ✅ Gestión de usuarios y roles por tenant · A3 con alcance de plataforma
+**Verificado el 2026-09-26 contra el servicio corriendo** · cerrada. El candado decía «el alcance de plataforma no tiene ruta» y venció: `GET /admin/users` llegó con `6e521cc` · B4.17. A3 pasó a ser de plataforma, con `CLIENTE` como columna —seis, las del dibujo— y los dos conteos del servicio.
+
+**La razón por la que no se compensaba se cumplió, no se salteó.** Decía: «un total armado acá se leería como un número de plataforma y sería una suma nuestra: si un cliente falla, el total baja sin decirlo». `total` y `tenants` los cuenta el servicio, y hay una prueba que pasa una lista de uno con un total de diecisiete para que un `length` nuestro no pueda colarse.
+
+**Y la pantalla afirmaba en pantalla que `/admin/users` da 404.** Quedó falso el día que la ruta llegó; una afirmación vencida a la vista del usuario es peor que un hueco, porque no tiene con qué dudarla. Hay una prueba que afirma su ausencia.
+
+Quedan tres huecos declarados, que eran cuatro: invitación pendiente, quién dio de alta y reenviar invitación · ninguno tiene campo ni ruta.
 ### F4.4 ✅ Configuración de agente Snowflake por tenant
 ### F4.5 ✅ Vista del catálogo de métricas del tenant
 **Criterio de aceptación (los cinco).**
@@ -4506,7 +4566,12 @@ semántica en blanco en vez de «—». Las seis mueren.
 ### F4.9 ✅ Canvas de 12 columnas — arrastrar y colocar
 ### F4.10 ✅ Configurador de panel: métrica, tipo, spans, opciones
 ### F4.11 ✅ Validación en tiempo real contra `/config/blocks`
-### F4.12 ⚠️ Preview por rol · 🔒 la ruta es del fork y no está desplegada
+### F4.12 ⚠️ Preview por rol · 🔒 el preview de upstream no trae paneles · B4.9
+**Verificado el 2026-09-26 contra el servicio corriendo** · el candado del fork venció: `GET /admin/layouts/{layoutId}/preview` responde 200 en upstream. Y de paso apareció que **la pantalla nunca pudo haber funcionado** contra el servicio real: mandábamos `?roleId=` donde va `role_id`, y devuelve 400. MSW no podía verlo — su handler leía nuestra propia grafía. Ahora exige `role_id`, y volver el cliente atrás rompe nueve de catorce pruebas.
+
+**Sigue en ⚠️ por otra razón, y es una pérdida de alcance.** El preview de upstream devuelve qué pestañas ve el rol y **no sus paneles**, así que ya no se puede ver qué recorta `hidden_metric_ids`. `RolePreview` perdió su grilla y lo declara: armarla del lado nuestro diría «esto ve el Planner» sobre paneles que nadie filtró, que es lo que esta pantalla existe para no adivinar.
+
+**Está pedido en B4.9.** No hay ruta alterna: `GET /config/tabs/{tabId}` resuelve el rol desde el token y no acepta lente.
 ### F4.13 ✅ Guardar borrador
 ### F4.14 ✅ Validar antes de publicar
 ### F4.15 ✅ Publicar sin deploy

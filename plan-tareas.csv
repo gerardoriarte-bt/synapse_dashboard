@@ -17,7 +17,7 @@ B0.5,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e
 • Al adoptarse deja de ser propuesta del front y pasa a ser fuente de los dos lados (T1).",hecho,no,,equipo:backend fase:0 estado:hecho
 B0.6,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e infraestructura,Extender el contrato con admin y builder,"Agregar al yaml los endpoints de §5: /admin/tenants, /admin/tenants/{id}/layouts, /admin/layouts/{id}, .../publish, .../validate, /admin/tenants/{id}/catalog, /admin/tenants/{id}/agents.","• Los esquemas de admin reutilizan PanelConfigurado, Metrica y Bloque; no se declaran versiones paralelas.
 • openapi-typescript genera sin errores y el front compila contra los tipos.
-• Cada endpoint declara qué aud del token acepta.",pendiente,no,,equipo:backend fase:0 estado:pendiente bloqueada
+• Cada endpoint declara qué aud del token acepta.",pendiente,no,,equipo:backend fase:0 estado:pendiente
 B0.7,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e infraestructura,Tipos de servidor desde OpenAPI,"Generar los tipos del backend desde el mismo yaml, o compartir el contrato de modo que una divergencia rompa el build de alguno de los dos.","• Cambiar un campo en el yaml sin actualizar el backend falla en CI.
 • No hay un segundo lugar donde estén escritos los mismos tipos a mano.",pendiente,no,,equipo:backend fase:0 estado:pendiente
 B0.8,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e infraestructura,Secret manager para credenciales Snowflake,Las credenciales por tenant salen de un gestor de secretos.,"• Ninguna credencial en código, en variables de entorno del front ni en ninguna respuesta de API.
@@ -67,9 +67,9 @@ B1.14,Backend · Fase 1 — API de consola,Backend,1,API de consola,Transformar 
 • composicion trae porcentaje calculado por el backend, y suma 100.
 • ranking trae posicion ≥ 1.
 • prosa trae pilares como objetos, nunca cadenas parseables.
-• tabular declara por columna si es numérica, con decimales y unidad.",parcial,no,,equipo:backend fase:1 estado:parcial bloqueada
+• tabular declara por columna si es numérica, con decimales y unidad.",hecho,no,,equipo:backend fase:1 estado:hecho
 B1.15,Backend · Fase 1 — API de consola,Backend,1,API de consola,Validar reglas mínimas por forma antes de enviar,,"• Un panel gauge sin maximo en opciones no se sirve como DISPONIBLE.
-• Una serieTemporal con cero puntos llega como DISPONIBLE con vacioRazon y vacioDesbloqueaCon, no como un array vacío: §8 pide que el vacío sea invitación a actuar, y un array vacío no alcanza para escribir «el período cierra el 1 de septiembre».",pendiente,no,,equipo:backend fase:1 estado:pendiente bloqueada
+• Una serieTemporal con cero puntos llega como DISPONIBLE con vacioRazon y vacioDesbloqueaCon, no como un array vacío: §8 pide que el vacío sea invitación a actuar, y un array vacío no alcanza para escribir «el período cierra el 1 de septiembre».",hecho,no,,equipo:backend fase:1 estado:hecho
 B1.16,Backend · Fase 1 — API de consola,Backend,1,API de consola,"Seed de demo: 1 tenant, 1 layout, 1 pestaña, 4–6 paneles",B1.16 pide datos de demo. Esto pide que sean estables: el front necesita que la misma llamada devuelva lo mismo para poder escribir pruebas de integración contra HTTP.,"• Un script recrea el seed de cero.
 • Con el seed cargado, panels:batch devuelve los mismos valores en dos corridas.
 • El seed cubre al menos un panel por cada estado: DISPONIBLE, DEGRADADO, BLOQUEADO, ERROR. Sin eso, F2.1–F2.4 no se pueden probar contra el backend.",parcial,no,,equipo:backend fase:1 estado:parcial bloqueada
@@ -82,7 +82,7 @@ B1.21,Backend · Fase 1 — API de consola,Backend,1,API de consola,Declarar los
 • La tabla vive en un solo lugar y la consumen los tres que validan: el builder, layouts/{id}/validate y el adaptador del front.",pendiente,si,,equipo:backend fase:1 estado:pendiente nueva bloqueada
 B1.17,Backend · Fase 1 — API de consola,Backend,1,API de consola,Modelo Metrica,,"• El catálogo declara granoMinimo por métrica: el período más fino que puede contestar.
 • Una métrica cuyo insumo está en SILVER no declara GOLD: la compuesta hereda la peor capa.
-• Cambiar el catálogo incrementa catalogVersion, y ese número viaja en cada payload.",pendiente,no,,equipo:backend fase:1 estado:pendiente bloqueada
+• Cambiar el catálogo incrementa catalogVersion, y ese número viaja en cada payload.",hecho,no,,equipo:backend fase:1 estado:hecho
 B1.18,Backend · Fase 1 — API de consola,Backend,1,API de consola,Sincronizar el catálogo con las semantic views de Snowflake,,"• El catálogo declara granoMinimo por métrica: el período más fino que puede contestar.
 • Una métrica cuyo insumo está en SILVER no declara GOLD: la compuesta hereda la peor capa.
 • Cambiar el catálogo incrementa catalogVersion, y ese número viaja en cada payload.",hecho,no,,equipo:backend fase:1 estado:hecho
@@ -106,11 +106,11 @@ B1.24,Backend · Fase 1 — API de consola,Backend,1,API de consola,Alinear las 
 B1.25,Backend · Fase 1 — API de consola,Backend,1,API de consola,ventana de punta a punta · de la vista al payload,"Lo único de este bloque que es código y no Snowflake, y es de una línea en dos lugares: agregar MEASUREMENT_WINDOW al SELECT de dd_catalog_sync_service.go, y el campo a DDCatalogMetric para que salga por GET /config/catalog. Sin esto la consola no se puede entregar. PanelShell pinta Base · {base} · {ventana} en la cabecera de todos los paneles y en todos sus estados —es shell, no cuerpo, así que no se reemplaza nunca— y el template literal imprime la cadena undefined, no un hueco. Guía: docs/snowflake/INSTRUCCION-ALTA-TENANT.md §4 paso 5.","• GET /config/catalog devuelve el campo para cada métrica.
 • Ningún panel de la consola muestra undefined en la línea de BASE, en ninguno de los siete estados.
 • La columna se llama MEASUREMENT_WINDOW y no WINDOW: WINDOW es reservada en ANSI y obligaría a citarla en la vista, en el SELECT de Go y en cada consulta a mano. Si se prefiere WINDOW, se decide antes de escribir el campo, no después.
-• El front lo consume por el adaptador de F1.33 sin lógica nueva: es un renombre, no un cálculo.",parcial,si,,equipo:backend fase:1 estado:parcial nueva bloqueada
+• El front lo consume por el adaptador de F1.33 sin lógica nueva: es un renombre, no un cálculo.",hecho,si,,equipo:backend fase:1 estado:hecho nueva
 B1.27,Backend · Fase 1 — API de consola,Backend,1,API de consola,El período declara si está cerrado,"El catálogo vive en Snowflake y el registro de queries en Go: dos mitades del mismo hecho, en dos lugares, que se pueden separar sin que nadie se entere. El puente es el mapa de alias de keys.go, escrito a mano. Un tenant cuyo catálogo declare ventas no tiene alias, no encuentra query, y la métrica sale bloqueada. Con un tenant se sostiene; con el segundo deja de sostenerse. A · contrato de forma: todo tenant expone dos objetos con las quince columnas, vía una vista que renombre lo que ya tenga. Barato y rígido — sin BUDGET_TARGET no hay goal_attainment. B · el registro pasa a ser dato: MetricRegistry sale de Go a una tabla por tenant. Caro y flexible — la clave del catálogo es la del registro y el alias desaparece. Guía: docs/snowflake/CONTRATO-DE-TENANT.md §7 y docs/snowflake/INSTRUCCION-ALTA-TENANT.md §7, con los dos caminos y su costo.","• La decisión queda escrita con su razón, no elegida por omisión al dar de alta el segundo tenant.
 • Si se elige A, B queda declarado como destino y con fecha. A sin fecha para B es cómo el mapa de alias termina con cuarenta entradas.
 • Si se elige A, queda escrito qué pasa con un tenant al que le falta una columna: hoy el panel sale bloqueado sin razón, y §8 pide estado, razón y qué lo desbloquea.
-• La decisión nombra quién es dueño de la vista por tenant: hoy sync-catalog asume que existe y falla sin decir que falta.",parcial,si,,equipo:backend fase:1 estado:parcial nueva bloqueada
+• La decisión nombra quién es dueño de la vista por tenant: hoy sync-catalog asume que existe y falla sin decir que falta.",hecho,si,,equipo:backend fase:1 estado:hecho nueva
 B1.26,Backend · Fase 1 — API de consola,Backend,1,API de consola,"Decidir cómo escala el registro, antes del segundo tenant","El catálogo vive en Snowflake y el registro de queries en Go: dos mitades del mismo hecho, en dos lugares, que se pueden separar sin que nadie se entere. El puente es el mapa de alias de keys.go, escrito a mano. Un tenant cuyo catálogo declare ventas no tiene alias, no encuentra query, y la métrica sale bloqueada. Con un tenant se sostiene; con el segundo deja de sostenerse. A · contrato de forma: todo tenant expone dos objetos con las quince columnas, vía una vista que renombre lo que ya tenga. Barato y rígido — sin BUDGET_TARGET no hay goal_attainment. B · el registro pasa a ser dato: MetricRegistry sale de Go a una tabla por tenant. Caro y flexible — la clave del catálogo es la del registro y el alias desaparece. Guía: docs/snowflake/CONTRATO-DE-TENANT.md §7 y docs/snowflake/INSTRUCCION-ALTA-TENANT.md §7, con los dos caminos y su costo.","• La decisión queda escrita con su razón, no elegida por omisión al dar de alta el segundo tenant.
 • Si se elige A, B queda declarado como destino y con fecha. A sin fecha para B es cómo el mapa de alias termina con cuarenta entradas.
 • Si se elige A, queda escrito qué pasa con un tenant al que le falta una columna: hoy el panel sale bloqueado sin razón, y §8 pide estado, razón y qué lo desbloquea.
@@ -154,7 +154,7 @@ B2.12,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización 
 • Queda registrado contra qué commit del backend y con qué período se verificó. Un «funcionó» sin eso no se puede repetir.",parcial,si,,equipo:backend fase:2 estado:parcial nueva bloqueada
 B2.13,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y cache,Salud de feeds por fuente · de acá sale el ESTADO de cada métrica,"Exponer la salud de las fuentes de datos del tenant, que hoy no sale por ninguna ruta.","• Por fuente: identificador legible, última carga, frescura, cadencia y tolerancia. Sin vocabulario de infraestructura · §7.3.
 • La frescura es el instante de materialización, nunca «ahora» · misma regla que B2.10.
-• El front deriva el estado y el backend no lo manda: un estado guardado y una frescura real son dos fuentes del mismo hecho.",parcial,si,,equipo:backend fase:2 estado:parcial nueva bloqueada
+• El front deriva el estado y el backend no lo manda: un estado guardado y una frescura real son dos fuentes del mismo hecho.",hecho,si,,equipo:backend fase:2 estado:hecho nueva
 B3.1,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,POST /config/chat con SSE,"Body { pregunta, contextoPanel, periodo, hiloId? }, respuesta por Server-Sent Events.","• Emite los eventos en orden: pensando → fragmento → dato → sql → fin, y error en cualquier punto.
 • El esquema EventoDeChat del yaml ya declara la unión; se respeta.
 • Una conexión cortada por el cliente no deja la query colgada.",parcial,no,,equipo:backend fase:3 estado:parcial bloqueada
@@ -174,13 +174,13 @@ B3.7,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,Formato de 
 B3.8,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,"La respuesta puede incluir { forma, datos, procedencia }",,"• Cuando el agente devuelve un dato estructurado, viene con la misma unión Valor + Gobierno que un panel, para que el front lo dibuje con el mismo cuerpo. Es un solo modelo de datos, no dos.",pendiente,no,,equipo:backend fase:3 estado:pendiente
 B3.9,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,CRUD /admin/tenants/{id}/agents,"El superadmin configura el agente de cada tenant: cuenta, warehouse, vistas semánticas permitidas y prompt base.","• Solo accesible con aud: platform.
 • La credencial no se edita acá: se referencia por identificador del gestor de secretos (B0.8), y ninguna respuesta la incluye.
-• Cambiar las vistas permitidas surte efecto en la siguiente pregunta, sin reiniciar el servicio.",pendiente,no,,equipo:backend fase:3 estado:pendiente bloqueada
+• Cambiar las vistas permitidas surte efecto en la siguiente pregunta, sin reiniciar el servicio.",parcial,no,,equipo:backend fase:3 estado:parcial
 B3.11,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,Aplicar las migraciones de 82da946 sobre la base compartida,"Aplicar las columnas que el commit escribe, y el índice. La tabla va ARRIBA de Descripción a propósito. para-backend.py corta el bloque en ","• La consulta del mensaje sobre information_schema devuelve las nueve columnas, las tres tablas incluidas. La corremos nosotros, contra la base compartida y con fecha: el aviso de que se corrieron no alcanza para cerrarla.
 • El índice único existe, o hay una razón escrita de por qué no. El código de ellos no lo crea si encuentra duplicados y lo avisa por log, así que su ausencia no es necesariamente un error.
 • POST /config/chat contra el servicio con panel_context guarda el hilo, y GET /config/chat/threads lo devuelve con su panel y su período.",pendiente,si,,equipo:backend fase:3 estado:pendiente nueva bloqueada
 B4.1,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,GET /admin/tenants,,"• Solo accesibles con aud: platform; con token de usuario devuelven 403.
 • Publicar genera versionId, sella publishedAt, registra quién publicó e invalida la cache del tenant.
-• Editar nunca muta la versión publicada.",parcial,no,,equipo:backend fase:4 estado:parcial bloqueada
+• Editar nunca muta la versión publicada.",hecho,no,,equipo:backend fase:4 estado:hecho
 B4.2,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,GET /admin/tenants/{id}/layouts,,"• Solo accesibles con aud: platform; con token de usuario devuelven 403.
 • Publicar genera versionId, sella publishedAt, registra quién publicó e invalida la cache del tenant.
 • Editar nunca muta la versión publicada.",parcial,no,,equipo:backend fase:4 estado:parcial bloqueada
@@ -225,7 +225,7 @@ B4.8,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,CRUD de rol
 • hidden_metric_ids sigue siendo filtro de composición y no de permiso: el servidor verifica igual, y hay una prueba que lo demuestra pidiendo una métrica oculta directamente.
 • layout_overrides escrito por el CRUD se refleja en GET /config/tabs/:tabId del rol afectado sin republicar el layout.
 • El fork está rebasado sobre su rama al empezar —npm run backend-drift en verde— y se vuelve a rebasar antes de proponer el código de vuelta. Un fork escrito sobre una base vieja no se puede integrar sin rehacerlo.",hecho,no,,equipo:backend fase:4 estado:hecho
-B4.9,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Preview por rol · LO IMPLEMENTA EL FRONT · 2026-09-15,,"• Bajo AdminOnlyMiddleware. Un usuario de consola que la llame recibe 403.
+B4.9,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,"Preview por rol · LA TOMARON, y más chica",,"• Bajo AdminOnlyMiddleware. Un usuario de consola que la llame recibe 403.
 • Reusa GetTab, no una copia: verificable porque cambiar el filtrado en un solo lugar cambia la consola y el preview a la vez.
 • Para un rol con hidden_metric_ids, el preview devuelve menos paneles que para uno sin ellos, y los layout_overrides de ese rol están aplicados.
 • Un roleId de otro tenant devuelve 404 y no 403: no se revela que existe, igual que GET /config/tabs/:tabId.
@@ -233,9 +233,9 @@ B4.9,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Preview por
 B4.17,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Una ruta que liste usuarios · A3 no se puede empezar sin ella,,"• Lista por tenant, bajo AdminOnlyMiddleware como el resto de /admin/.
 • Por usuario, lo que §7.3 le pide a A3: el usuario, su rol, su último acceso y su estado.
 • El rol viene identificado, no sólo con su nombre: A3 enlaza a la ficha.
-• El último acceso es un instante, nunca «hace X» — la presentación es del front y depende del huso del navegador · la regla de las dos zonas horarias.",parcial,no,,equipo:backend fase:4 estado:parcial bloqueada
+• El último acceso es un instante, nunca «hace X» — la presentación es del front y depende del huso del navegador · la regla de las dos zonas horarias.",hecho,no,,equipo:backend fase:4 estado:hecho
 B4.10,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Asignación de layout publicado a roles,,"• Un rol declara tabIds[], hiddenMetricIds[] y layoutOverrides opcionales.
-• El preview devuelve exactamente lo que ese rol vería, resuelto por el mismo código que sirve /config/me. No una simulación aparte.",pendiente,no,,equipo:backend fase:4 estado:pendiente bloqueada
+• El preview devuelve exactamente lo que ese rol vería, resuelto por el mismo código que sirve /config/me. No una simulación aparte.",parcial,no,,equipo:backend fase:4 estado:parcial
 B4.16,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Declarar el gráfico en el layout,"D2 lo resolvió a favor. PanelConfigurado gana plot?: PlotId. Depende de B1.21: primero los mínimos, después el campo — elegir gráfico sin saber qué necesita cada uno es multiplicar el problema, no resolverlo.","• plot es opcional: ausente ⇒ el gráfico por defecto del tipo, que es exactamente lo que se dibuja hoy. El cambio no mueve ninguna pantalla existente.
 • layouts/{id}/validate verifica tres cosas contra el repertorio: compatibilidad gráfico ↔ forma, la regla dura de banda, y que la métrica pueda alcanzar los mínimos del gráfico en el grano que declara.
 • Un layout con un gráfico incompatible no publica, y el error dice cuál panel y por qué.",pendiente,si,,equipo:backend fase:4 estado:pendiente nueva
@@ -319,7 +319,7 @@ F1.13a,Front · Fase 1 — Consola y el traslado de render/,Front,1,Consola y el
 F1.13b,Front · Fase 1 — Consola y el traslado de render/,Front,1,Consola y el traslado de render/,Portar format.ts e inyectar el locale,"El formateo de cifras, en un solo lugar. En v2 LOCALE es la constante 'es-MX' y cinco de los seis plots importan el formateador directo en vez de recibirlo, así que la prop existe y está muerta.","• PlotProps.format se usa: ningún plot importa el formateador. Verificable con un grep, y candidato a regla de design-lint.
 • El locale, la moneda y la zona horaria salen del tenant vía /config/me y bajan por props.
 • La abreviatura no tiene escalón para mil millones: «B» es billion en inglés y un billón en español son 10¹², así que 2.5e9 sale «2,500M» — largo pero sin ambigüedad.
-• Se conservan sus pruebas.",parcial,no,,equipo:front fase:1 estado:parcial bloqueada
+• Se conservan sus pruebas.",parcial,no,,equipo:front fase:1 estado:parcial
 F1.13c,Front · Fase 1 — Consola y el traslado de render/,Front,1,Consola y el traslado de render/,Portar los primitivos Label y Value,"Label es por donde pasa todo texto de meta: mono 10px, 0.12em, mayúsculas, text-dim. Existe porque §1.3 no admite un número desnudo.","• Traducidos a utilidades de Tailwind sobre tokens; cero hex, cero valor arbitrario que no salga de un token.
 • Value aplica cifra (tabular-nums) y recibe el texto ya formateado: no formatea, porque el locale es del tenant.
 • El andamio de Console.tsx que hoy usa text-[10px] tracking-[0.12em] a mano pasa a usar Label.",hecho,no,,equipo:front fase:1 estado:hecho
@@ -505,9 +505,9 @@ F4.1,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,surfaces/admin/
 F4.2,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Lista de tenants,,"• No se muestra vocabulario de infraestructura (§7.3 de design.md): ni base, ni rol técnico, ni grants, ni warehouse. Se declara la consecuencia —acceso vigente, última verificación— no la plomería. Única excepción: la lista de subprocesadores, que es obligación legal.
 • La credencial de Snowflake no se muestra ni se edita desde acá: se referencia por identificador del gestor de secretos.
 • Un usuario ve su propia fila marcada «sin acción sobre tu cuenta».",hecho,no,,equipo:front fase:4 estado:hecho
-F4.3,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Gestión de usuarios y roles por tenant · A3 construida,,"• No se muestra vocabulario de infraestructura (§7.3 de design.md): ni base, ni rol técnico, ni grants, ni warehouse. Se declara la consecuencia —acceso vigente, última verificación— no la plomería. Única excepción: la lista de subprocesadores, que es obligación legal.
+F4.3,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Gestión de usuarios y roles por tenant · A3 con alcance de plataforma,,"• No se muestra vocabulario de infraestructura (§7.3 de design.md): ni base, ni rol técnico, ni grants, ni warehouse. Se declara la consecuencia —acceso vigente, última verificación— no la plomería. Única excepción: la lista de subprocesadores, que es obligación legal.
 • La credencial de Snowflake no se muestra ni se edita desde acá: se referencia por identificador del gestor de secretos.
-• Un usuario ve su propia fila marcada «sin acción sobre tu cuenta».",parcial,no,,equipo:front fase:4 estado:parcial bloqueada
+• Un usuario ve su propia fila marcada «sin acción sobre tu cuenta».",hecho,no,,equipo:front fase:4 estado:hecho
 F4.4,Front · Fase 4 — Admin y Builder,Front,4,Admin y Builder,Configuración de agente Snowflake por tenant,,"• No se muestra vocabulario de infraestructura (§7.3 de design.md): ni base, ni rol técnico, ni grants, ni warehouse. Se declara la consecuencia —acceso vigente, última verificación— no la plomería. Única excepción: la lista de subprocesadores, que es obligación legal.
 • La credencial de Snowflake no se muestra ni se edita desde acá: se referencia por identificador del gestor de secretos.
 • Un usuario ve su propia fila marcada «sin acción sobre tu cuenta».",hecho,no,,equipo:front fase:4 estado:hecho

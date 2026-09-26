@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**113 de 210 tareas cerradas.** 24 parciales · 68 pendientes · 5 diferidas.
+**122 de 210 tareas cerradas.** 19 parciales · 64 pendientes · 5 diferidas.
 
 
-## Front · 104 de 125
+## Front · 105 de 125
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -16,15 +16,20 @@
 | 1 · Consola y render/ | `████████████████████··` | 41/46 | 3 | 2 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `████████████████······` | 11/15 | 0 | 1 |
-| 4 · Admin y Builder | `████████████████······` | 17/24 | 2 | 5 |
+| 4 · Admin y Builder | `████████████████······` | 18/24 | 1 | 5 |
 | 5 · Pruebas y pulido | `█████████████████·····` | 14/18 | 0 | 3 |
 
-## Backend · 9 de 85
+## Backend · 17 de 85
 
 > ⚠️ **Este número está bajo y no refleja al backend.** El plan de acá
 > es la fuente del FRONT; el estado de las tareas `B*` solo se mueve
-> cuando el front lo verifica contra el servicio, y eso se hizo por
-> primera vez el 2026-09-14 y solo para las de Fase 1.
+> cuando el front lo verifica contra el servicio corriendo. Se hizo por
+> primera vez el 2026-09-14 y sólo con las de Fase 1; el 2026-09-26
+> se midieron también las de las fases 2, 3 y 4 contra `8633b10`.
+>
+> **Una `B*` cerrada acá dice CONTRA QUÉ se cerró**, y varias dicen
+> que un bullet se leyó de su código porque no hay dato de esa forma
+> todavía. Eso es cobertura declarada, no cobertura supuesta.
 >
 > El backend lleva su propio avance en
 > `docs/dynamic-dashboard-backend.md` de su repositorio, donde hay
@@ -36,22 +41,21 @@
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██····················` | 1/10 | 1 | 8 |
-| 1 · API de consola | `█████·················` | 6/27 | 8 | 13 |
-| 2 · Materialización | `██····················` | 1/13 | 2 | 10 |
-| 3 · Chat contextual | `······················` | 0/11 | 1 | 10 |
-| 4 · Admin y Builder | `█·····················` | 1/17 | 5 | 11 |
+| 1 · API de consola | `█████████·············` | 11/27 | 5 | 11 |
+| 2 · Materialización | `███···················` | 2/13 | 1 | 10 |
+| 3 · Chat contextual | `······················` | 0/11 | 2 | 9 |
+| 4 · Admin y Builder | `████··················` | 3/17 | 4 | 10 |
 | 5 · Multi-dashboard y pulido | `······················` | 0/7 | 1 | 5 |
 
 ---
 
-## Se puede tomar hoy · 0 del front
+## Se puede tomar hoy · 1 del front
 
-Nada del front está libre: todo lo pendiente espera algo.
-
+- **F1.13b** · Portar format.ts e inyectar el locale
 
 ---
 
-## Bloqueadas · 42
+## Bloqueadas · 29
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -59,7 +63,6 @@ Lo que el front espera del backend está detallado en
 
 **Front**
 
-- **F1.13b** · Portar format.ts e inyectar el locale
 - **F1.25** · Conectar a la API real
 - **F1.31** · Registro de gráficos y verificación de mínimos
 - **F1.42** · El mes en curso está incompleto y el selector no lo dice
@@ -72,7 +75,6 @@ Lo que el front espera del backend está detallado en
 - **F4.19** · GraphBody + GraphPlot
 - **F4.20** · Registrar los tres con carga diferida
 - **F4.21** · Selector de gráfico en el builder
-- **F4.3** · Gestión de usuarios y roles por tenant · A3 construida
 - **F5.1** · Selector de layout cuando hay más de uno
 - **F5.13** · Períodos libres en el selector
 - **F5.3** · Completar los plots que falten
@@ -80,27 +82,16 @@ Lo que el front espera del backend está detallado en
 **Backend**
 
 - **B0.4** · Middleware de auth y envelope
-- **B0.6** · Extender el contrato con admin y builder
 - **B1.1** · GET /config/me
 - **B1.13** · Presentacion opcional
-- **B1.14** · Transformar a las formas de Valor
-- **B1.15** · Validar reglas mínimas por forma antes de enviar
 - **B1.16** · Seed de demo: 1 tenant, 1 layout, 1 pestaña, 4–6 paneles
-- **B1.17** · Modelo Metrica
 - **B1.19** · Filtrar el catálogo por permisos de rol
 - **B1.21** · Declarar los mínimos de datos por gráfico
-- **B1.25** · ventana de punta a punta · de la vista al payload
-- **B1.27** · El período declara si está cerrado
 - **B1.6** · POST /config/panels:batch
 - **B2.12** · Correr el materializador contra datos reales y verificar los seis estados
-- **B2.13** · Salud de feeds por fuente · de acá sale el ESTADO de cada métrica
 - **B2.7** · Estado SIN_PERMISO en el batch
 - **B3.1** · POST /config/chat con SSE
 - **B3.11** · Aplicar las migraciones de 82da946 sobre la base compartida
-- **B3.9** · CRUD /admin/tenants/{id}/agents
-- **B4.1** · GET /admin/tenants
-- **B4.10** · Asignación de layout publicado a roles
-- **B4.17** · Una ruta que liste usuarios · A3 no se puede empezar sin ella
 - **B4.2** · GET /admin/tenants/{id}/layouts
 - **B4.4** · PUT /admin/layouts/{id} — editar pestañas y paneles
 - **B5.1** · Varios layouts por tenant
