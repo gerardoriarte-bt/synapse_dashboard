@@ -5,17 +5,17 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**122 de 210 tareas cerradas.** 19 parciales · 64 pendientes · 5 diferidas.
+**123 de 210 tareas cerradas.** 19 parciales · 63 pendientes · 5 diferidas.
 
 
-## Front · 105 de 125
+## Front · 106 de 125
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██████████████████████` | 16/16 | 0 | 0 |
 | 1 · Consola y render/ | `████████████████████··` | 41/46 | 3 | 2 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
-| 3 · Chat contextual | `████████████████······` | 11/15 | 0 | 1 |
+| 3 · Chat contextual | `██████████████████····` | 12/15 | 0 | 0 |
 | 4 · Admin y Builder | `████████████████······` | 18/24 | 1 | 5 |
 | 5 · Pruebas y pulido | `█████████████████·····` | 14/18 | 0 | 3 |
 
@@ -49,10 +49,9 @@
 
 ---
 
-## Se puede tomar hoy · 2 del front
+## Se puede tomar hoy · 1 del front
 
 - **F1.13b** · Portar format.ts e inyectar el locale
-- **F3.15** · El chat tiene presencia en la consola
 
 ---
 

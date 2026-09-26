@@ -1,6 +1,20 @@
-/** La hoja del chat atada a UN panel · F3.3
+/** La hoja del chat · de un PANEL o de una PESTAÑA · F3.3 · F3.15
  *
- *  **Se monta sólo cuando hay panel, y eso es la mitad del diseño.** `useChat`
+ *  **Se llamaba `PanelChat` hasta el 2026-09-26**, y el nombre dejó de ser
+ *  cierto: desde que el cable acepta `tab_context` la misma hoja sirve a las dos
+ *  entradas que el `.pen` dibuja —el `PREGUNTAR` de cada panel y el de la barra
+ *  inferior—. Se ensanchó en vez de duplicarse: el riel, la conversación y el
+ *  compositor son los mismos, y lo único que cambia es de qué habla.
+ *
+ *  **Lo que el contexto de pestaña NO tiene, y se declara en vez de fingirse:**
+ *
+ *  | | panel | pestaña |
+ *  |---|---|---|
+ *  | sugeridas | `/config/panels/{id}/chat-suggestions` | **no hay ruta** · el campo abre sin abridores |
+ *  | cuerpo de la cifra | el del panel de origen | **ninguno** · ver `ChatFigure` |
+ *  | riel de hilos | `?panel_id=` | `?tab_id=` · las dos las filtra el servicio |
+ *
+ *  **Se monta sólo cuando hay contexto, y eso es la mitad del diseño.** `useChat`
  *  vive acá adentro, así que abrir el chat de otro panel desmonta éste y arranca
  *  un hilo nuevo: no hay forma de que una respuesta sobre «Venta diaria» quede
  *  colgando en la hoja de «Ventas por canal». El estado no se comparte porque no
@@ -23,6 +37,8 @@
  */
 import { useState } from 'react'
 import { useChat } from '../../api/useChat'
+import { esDePanel } from '../../api/chat'
+import type { ContextoDeChat } from '../../api/chat'
 import { useSuggestions, useThreads } from '../../api/hooks'
 import { Label } from '../../render/primitives/Label'
 import { ChatOverlay } from './ChatOverlay'
@@ -41,23 +57,29 @@ const CAMPO =
   'outline-none focus:border-w5 flex-1 min-w-0'
 
 type Props = {
-  /** El panel desde el que se preguntó. Es la mitad del contexto que el
-   *  servicio necesita; la otra es el período. */
-  panelId: string
+  /** **De panel o de pestaña, nunca las dos** · F3.15. El servicio exige
+   *  exactamente uno y devuelve 400 con ambos; la unión lo hace inexpresable. */
+  contexto: ContextoDeChat
   /** `YYYY-MM`. El servicio lo valida y devuelve 400 si no calza. */
   periodo: string
-  /** El nombre de la métrica, para que la hoja diga de qué se está hablando. */
+  /** De qué se está hablando: el nombre de la métrica, o el de la pestaña. */
   titulo: string
-  /** Con qué cuerpo se dibujan las cifras del agente · F3.6. */
-  panelTipo: PanelType
+  /** Con qué cuerpo se dibujan las cifras del agente · F3.6.
+   *
+   *  **Ausente con contexto de pestaña**, y no es un olvido: el cuerpo sale del
+   *  panel de origen y una pregunta de pestaña no tiene uno. Qué dibujar ahí es
+   *  una pregunta de spec abierta —§7 de la propuesta del 2026-09-22— y hasta
+   *  que se conteste la hoja lo dice en vez de elegir un cuerpo por su cuenta. */
+  panelTipo?: PanelType | undefined
   bloques: BlockTable
   /** Para el agrupado del riel · «HOY», «ESTA SEMANA», «JULIO». */
   format: Formatter
   onClose: () => void
 }
 
-export function PanelChat({ panelId, periodo, titulo, panelTipo, bloques, format, onClose }: Props) {
-  const { turns, threadId, ask, resume, reset } = useChat({ panelId, periodo })
+export function ChatSheet({ contexto, periodo, titulo, panelTipo, bloques, format, onClose }: Props) {
+  const { turns, threadId, ask, resume, reset } = useChat(contexto)
+  const dePanel = esDePanel(contexto)
   const [texto, setTexto] = useState('')
   /** El riel colapsado es una pantalla propia del `.pen`. Vive acá y no en el
    *  contenedor: es preferencia de lectura de esta hoja, no estado de la app. */
@@ -69,11 +91,11 @@ export function PanelChat({ panelId, periodo, titulo, panelTipo, bloques, format
   /** Los hilos de ESTE panel y ESTE período · F3.7. El filtro lo aplica el
    *  servicio: pedir todos y descartar acá traería por la red las
    *  conversaciones de los otros once paneles para tirarlas. */
-  const hilos = useThreads(panelId, periodo)
+  const hilos = useThreads(contexto, periodo)
 
   /** Qué preguntar sobre este panel · §PEN:C3. Deterministas del lado del
    *  servicio, así que no se refrescan mientras la hoja está abierta. */
-  const sugeridas = useSuggestions(panelId, periodo)
+  const sugeridas = useSuggestions(dePanel ? contexto.panelId : null, periodo)
 
   /** El agrupado por tiempo **es la excepción a que el front no calcule**, y el
    *  contrato la concede explícitamente: «HOY, ESTA SEMANA, JULIO lo hace el
@@ -243,8 +265,9 @@ export function PanelChat({ panelId, periodo, titulo, panelTipo, bloques, format
             <label htmlFor="panel-chat-pregunta" className="sr-only">
               Tu pregunta sobre {titulo}
             </label>
-            {/* §PEN:C3 dice «Preguntá sobre esta pestaña». Acá el contexto es
-                el PANEL, así que el literal se adapta. */}
+            {/* §PEN:C3 dice «Preguntá sobre esta pestaña», y desde F3.15 ese
+                literal vuelve a ser el del dibujo cuando el contexto lo es. Con
+                contexto de panel se adapta, que es más específico. */}
             <input
               id="panel-chat-pregunta"
               name="pregunta"
@@ -252,7 +275,7 @@ export function PanelChat({ panelId, periodo, titulo, panelTipo, bloques, format
               autoComplete="off"
               value={texto}
               onChange={(e) => setTexto(e.target.value)}
-              placeholder="Preguntá sobre este panel"
+              placeholder={dePanel ? 'Preguntá sobre este panel' : 'Preguntá sobre esta pestaña'}
               className={CAMPO}
             />
             <button

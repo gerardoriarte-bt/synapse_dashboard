@@ -40,14 +40,35 @@ type Dato = Extract<ChatEvent, { tipo: 'dato' }>
 
 type Props = {
   dato: Dato
-  /** El panel desde el que se preguntó. Es el que decide el cuerpo. */
-  panelTipo: PanelType
+  /** El panel desde el que se preguntó. Es el que decide el cuerpo.
+   *
+   *  **Ausente cuando se preguntó desde la PESTAÑA** · F3.15: ahí no hay panel
+   *  de origen, así que no hay cuerpo que elegir. Ver abajo. */
+  panelTipo?: PanelType | undefined
   bloques: BlockTable
   format: Formatter
   now: Date
 }
 
 export function ChatFigure({ dato, panelTipo, bloques, format, now }: Props) {
+  // ── SIN PANEL DE ORIGEN NO SE ELIGE UN CUERPO · F3.15 ────────────────────
+  //
+  // Una pregunta de pestaña no tiene panel, y **elegir uno acá sería inventar
+  // con qué se dibuja**: el mismo dato como `kpi` o como `bars` dice cosas
+  // distintas, y nadie decidió cuál. Qué dibujar es una pregunta de spec
+  // abierta —§7 de `PROPUESTA-2026-09-22-divergencias-con-el-pen.md`— así que
+  // la cifra se declara en vez de pintarse mal.
+  if (panelTipo === undefined) {
+    return (
+      <div className="flex flex-col gap-1">
+        <Label as="div">Una cifra que todavía no se dibuja</Label>
+        <Label as="div">
+          Llegó en forma «{dato.valor.forma}» y esta pregunta no salió de un panel
+        </Label>
+      </div>
+    )
+  }
+
   const Body = bodyFor(panelTipo)
 
   if (Body === undefined || !acceptsShape(bloques, panelTipo, dato.valor.forma)) {

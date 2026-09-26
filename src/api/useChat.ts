@@ -11,8 +11,9 @@
  *  llega a un `setState` sobre algo desmontado.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ChatStreamError, askSynapse } from './chat'
-import type { ChatRequest } from './chat'
+import { ChatStreamError, askSynapse, esDePanel } from './chat'
+import type { ChatRequest, ContextoDeChat } from './chat'
+export type { ContextoDeChat }
 import type { ChatEvent } from './types'
 
 /** Lo que el agente respondió a UNA pregunta.
@@ -60,18 +61,17 @@ export function apply(previa: Answer, evento: ChatEvent): Answer {
   }
 }
 
-/** El contexto que el cable exige para poder preguntar.
+/** **`PanelContext` se fue el 2026-09-26** y su lugar lo toma `ContextoDeChat`,
+ *  que es una unión: panel o pestaña, nunca las dos · F3.15.
  *
- *  **Son los dos campos que manda el backend y nada más** · decisión del
- *  2026-09-17. El servicio arma el resto —el tab, la métrica, el valor del
- *  panel— leyendo el panel por su id, así que el front no los transcribe. */
-export type PanelContext = {
-  panelId: string
-  /** `YYYY-MM`. */
-  periodo: string
-}
-
-export function useChat(contexto: PanelContext) {
+ *  Lo que NO cambió es por qué son dos campos y no doce: el servicio arma el
+ *  resto —la métrica, el valor, los paneles de la pestaña— leyendo por id, así
+ *  que el front no los transcribe. Esa parte del criterio de F3.2 se retiró el
+ *  2026-09-17 y esto no la reabre. */
+export function useChat(contexto: ContextoDeChat) {
+  const clave = esDePanel(contexto)
+    ? `panel:${contexto.panelId}:${contexto.periodo}`
+    : `tab:${contexto.tabId}:${contexto.periodo}`
   const [turns, setTurns] = useState<ChatTurn[]>([])
   const [threadId, setThreadId] = useState<string | null>(null)
 
@@ -127,8 +127,9 @@ export function useChat(contexto: PanelContext) {
 
       const cuerpo: ChatRequest = {
         pregunta,
-        panelId: contexto.panelId,
-        periodo: contexto.periodo,
+        // **Se pasa entero y no campo por campo**: desarmarlo acá obligaría a
+        // reconstruir la unión, y ahí es donde alguien manda las dos ramas.
+        contexto,
         ...(threadId === null ? {} : { hiloId: threadId }),
       }
 
@@ -171,7 +172,10 @@ export function useChat(contexto: PanelContext) {
         parche((t) => (t.streaming ? { ...t, streaming: false } : t))
       }
     },
-    [contexto.panelId, contexto.periodo, threadId, turns.length],
+    // **Una clave derivada y no el objeto**: el llamador pasa un literal, así
+    // que `[contexto]` recrearía `ask` en cada render. Y con la unión ya no
+    // alcanza `contexto.panelId` — la rama de pestaña no lo tiene.
+    [clave, threadId, turns.length],
   )
 
   return { turns, threadId, ask, resume, reset }

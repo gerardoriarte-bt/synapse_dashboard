@@ -26,6 +26,8 @@ type Props = {
   onSelectPeriod: (id: string) => void
   onSelectTenant?: (id: string) => void
   onChangeTheme?: (theme: Theme) => void
+  /** Abre el chat con contexto de PESTAÑA · F3.15. **Sin él no hay botón.** */
+  onAskTab?: (() => void) | undefined
 }
 
 export function Topbar({
@@ -37,6 +39,7 @@ export function Topbar({
   onSelectPeriod,
   onSelectTenant,
   onChangeTheme,
+  onAskTab,
 }: Props) {
   const platform = context.alcance === 'plataforma'
   const tenants = context.tenantsDisponibles ?? []
@@ -92,6 +95,46 @@ export function Topbar({
             descripción y cliente»— y acá era texto suelto. Desde el
             2026-09-16 cuelga de ahí además la salida a las otras dos
             superficies, para el admin. */}
+        {/* ── CTA SYNAPSE · §PEN:C1 · F3.15 ────────────────────────────
+            Del frame: alto 32, fondo `$acc`, radio `$r-lg`, gap 8, padding
+            lateral 14, `sparkles` de 14 en `$on-acc` y el texto mono 10 **w500**
+            —el único de la barra que no es `normal`—.
+
+            **Va justo antes del usuario**, que es donde el dibujo lo pone:
+            `… Notificaciones · CTA Synapse · Usuario`. Nuestro navbar no tiene
+            notificaciones y pone el tema después del usuario, que es una
+            divergencia anterior a esto y no se toca acá.
+
+            **Sin manejador no se pinta** · regla del CTA muerto: el builder
+            monta esta misma consola sin chat. */}
+        {onAskTab !== undefined && (
+          <button
+            type="button"
+            onClick={onAskTab}
+            // **El literal visible es del frame —`PREGUNTAR`— y el nombre
+            //   accesible dice el ALCANCE.** En la misma pantalla hay tres
+            //   botones que dicen «Preguntar»: éste, el de cada panel y el de
+            //   enviar dentro de la hoja. Los dos últimos tienen contexto
+            //   —el panel los agrupa bajo su `aria-label`, la hoja es un
+            //   diálogo—; éste queda suelto en la barra.
+            aria-label="Preguntar sobre esta pestaña"
+            className="flex h-8 shrink-0 cursor-pointer items-center gap-2 rounded-lg border-0 bg-acc px-3.5 font-mono text-label leading-rotulo tracking-rotulo uppercase text-on-acc"
+          >
+            <svg
+              aria-hidden
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="size-3.5 shrink-0"
+            >
+              <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+            </svg>
+            Preguntar
+          </button>
+        )}
         <UserMenu context={context} />
         <ThemeToggle {...(onChangeTheme === undefined ? {} : { onChange: onChangeTheme })} />
       </div>

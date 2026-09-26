@@ -215,7 +215,10 @@ describe('F3.3 · los CTA del shell son callbacks, y sin manejador no se pintan'
         <p>EL CUERPO</p>
       </Panel>,
     )
-    screen.getByRole('button', { name: 'Preguntar' }).click()
+    // **El nombre accesible declara el ALCANCE** desde F3.15: en la consola hay
+    // tres botones que dicen «Preguntar» —éste, el del navbar y el de enviar— y
+    // el visible sigue siendo el literal del dibujo.
+    screen.getByRole('button', { name: `Preguntar sobre ${metric.nombre}` }).click()
     expect(preguntado).toHaveBeenCalledTimes(1)
   })
 })

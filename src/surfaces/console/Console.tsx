@@ -17,6 +17,7 @@ import { useColumns } from '../../render/useColumns'
 import { measureLayoutCommit, measureLayoutPainted } from '../../render/budget'
 import { PanelInGrid } from './PanelInGrid'
 import { Topbar } from './Topbar'
+import { ConsoleDock } from './ConsoleDock'
 import type { Formatter } from '../../render/format'
 import type { Theme } from '../../tokens/theme'
 import type { AppContext, Metric, PanelConfig, Payload, Tab } from '../../api/types'
@@ -51,6 +52,9 @@ type Props = {
    *  viaje es quien monta la consola, que en el builder y en la vista previa
    *  por rol no es el mismo. */
   onAskPanel?: (panelId: string) => void
+  /** Abre el chat con contexto de PESTAÑA · F3.15 · la barra y el CTA del
+   *  navbar. **Sin él ninguno de los dos se pinta.** */
+  onAskTab?: (() => void) | undefined
 }
 
 export function Console({
@@ -68,10 +72,14 @@ export function Console({
   onChangeTheme,
   onRetryPanel,
   onAskPanel,
+  onAskTab,
 }: Props) {
   // El colapso · F1.30. No lo puede hacer solo el CSS: el `colSpan` viaja en un
   // estilo en línea y una media query no lo alcanza.
   const columns = useColumns()
+
+  /** El período activo, con su etiqueta · para la línea de contexto del dock. */
+  const periodoActivo = context.periodos.find((p) => p.id === activePeriodId)
 
   // Un solo `now` para toda la pantalla. Si cada panel llamara a `new Date()`,
   // dos paneles del mismo lote podrían escribir frescuras distintas para la
@@ -105,6 +113,7 @@ export function Console({
         onSelectTab={onSelectTab}
         onSelectPeriod={onSelectPeriod}
         {...(onChangeTheme === undefined ? {} : { onChangeTheme })}
+        {...(onAskTab === undefined ? {} : { onAskTab })}
       />
 
       {/* El cuerpo sí lleva el padding de la grilla · §4. */}
@@ -172,6 +181,31 @@ export function Console({
           )
         })}
       </div>
+
+      {/* ── LA BARRA INFERIOR · §PEN:C1 · F3.15 ────────────────────────────
+          **Es la presencia del chat**, y va DESPUÉS de la grilla y no fija al
+          viewport: el `.pen` la dibuja como el último hijo del frame, con el
+          canvas midiendo 2329 arriba. Fijarla taparía la última fila de paneles
+          en los anchos donde la grilla es alta, que es donde más paneles hay.
+
+          **Declara el contexto que va a viajar**: la pestaña activa, su período
+          y cuántos paneles tiene. `panels` ya viene filtrado por rol desde
+          `/config/tabs/{tabId}`, así que ese número es el mismo que el servicio
+          mete en `tab_context` — lo que la barra dice es lo que se pregunta. */}
+      {activeTab !== undefined && periodoActivo !== undefined && (
+        <ConsoleDock
+          tenant={context.tenant.etiqueta}
+          pestana={activeTab.nombre}
+          // **La etiqueta del período, no su id** · es la misma que pinta el
+          // selector. Hoy las dos son `2026-09` porque el cable no manda
+          // etiqueta —lo declara B1.1—, y el día que la mande esto la sigue sin
+          // tocarse. Formatearla acá sería una segunda fuente para el mismo
+          // texto, y se separarían.
+          periodo={periodoActivo.etiqueta}
+          paneles={panels.length}
+          {...(onAskTab === undefined ? {} : { onPreguntar: onAskTab })}
+        />
+      )}
     </main>
   )
 }

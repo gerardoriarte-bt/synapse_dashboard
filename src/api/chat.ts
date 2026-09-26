@@ -67,17 +67,37 @@ type WireChatFrameData = WireSchemas['ChatFrameData']
 
 const BASE = import.meta.env['VITE_API_URL'] ?? '/api/v1'
 
-/** Lo que el front pide, en el vocabulario del contrato.
+/** El contexto de una pregunta · **uno de los dos, nunca los dos**.
  *
- *  **`panelId` y `periodo` no son opcionales, y eso es del cable**: el servicio
- *  declara `panel_context` como `binding:"required"` con `panel_id` uuid. No hay
- *  chat sin panel — la decisión del 2026-09-17 fue adoptar esa forma, que es la
- *  que reescribió el criterio de F3.2. */
+ *  ── POR QUÉ ES UNA UNIÓN Y NO DOS CAMPOS OPCIONALES · 2026-09-26 ───────────
+ *
+ *  El servicio exige **exactamente uno** —`if (req.PanelContext == nil) ==
+ *  (req.TabContext == nil)` devuelve 400— así que con dos opcionales se podría
+ *  escribir el estado que el cable rechaza, y el compilador no diría nada. La
+ *  unión lo hace imposible de expresar.
+ *
+ *  **Hasta hoy sólo existía la forma de panel**, y era del cable: `panel_context`
+ *  estaba `binding:"required"`. Lo pedimos el 2026-09-25 —F3.15— y llegó en
+ *  `8da70de`; medido contra `8633b10` el 26.
+ *
+ *  **Y la de pestaña es la que hace posible la presencia.** Un chat «del panel»
+ *  no puede estar siempre visible porque el panel es quien da el contexto; uno
+ *  «de la pestaña» sí. Es la decisión humana del 2026-09-22. */
+export type ContextoDeChat =
+  | { panelId: string; periodo: string }
+  | { tabId: string; periodo: string }
+
+/** `true` si el contexto es de panel. Se usa para elegir la rama del cable y
+ *  para decidir qué puede ofrecer la hoja: las sugeridas y el riel de hilos
+ *  cuelgan de un panel, no de una pestaña. */
+export function esDePanel(c: ContextoDeChat): c is { panelId: string; periodo: string } {
+  return 'panelId' in c
+}
+
+/** Lo que el front pide, en el vocabulario del contrato. */
 export type ChatRequest = {
   pregunta: string
-  panelId: string
-  /** `YYYY-MM`. El servicio lo valida y devuelve 400 si no calza. */
-  periodo: string
+  contexto: ContextoDeChat
   hiloId?: string
 }
 
@@ -188,7 +208,11 @@ export async function* askSynapse(
 function alCable(body: ChatRequest): WireSchemas['ChatAskRequest'] {
   return {
     question: body.pregunta,
-    panel_context: { panel_id: body.panelId, period: body.periodo },
+    // **Una de las dos ramas y nunca las dos**: mandar ambas es 400, igual que
+    // no mandar ninguna. El tipo de `contexto` ya lo impide; esto sólo traduce.
+    ...(esDePanel(body.contexto)
+      ? { panel_context: { panel_id: body.contexto.panelId, period: body.contexto.periodo } }
+      : { tab_context: { tab_id: body.contexto.tabId, period: body.contexto.periodo } }),
     // **El `thread_id` del cable es un ENTERO**, no el uuid que sugiere
     // `hiloId`. Se guarda como texto porque `EventoFin.hiloId` es texto, y se
     // devuelve como número porque el binding de Gin lo pide `*int64`: un texto

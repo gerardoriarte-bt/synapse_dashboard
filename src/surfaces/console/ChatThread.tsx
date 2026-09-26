@@ -33,7 +33,8 @@ type Props = {
   turns: readonly ChatTurn[]
   /** Con qué cuerpo se dibujan las cifras · F3.6. Es el tipo del panel desde
    *  el que se preguntó: la cifra se dibuja como se dibuja ese panel. */
-  panelTipo: PanelType
+  /** Ausente con contexto de pestaña · ver `ChatFigure`. */
+  panelTipo?: PanelType | undefined
   bloques: BlockTable
   format: Formatter
   now: Date

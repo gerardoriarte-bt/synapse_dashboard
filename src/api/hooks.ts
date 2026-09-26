@@ -9,6 +9,8 @@
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
+import { esDePanel } from './chat'
+import type { ContextoDeChat } from './chat'
 import { adminApi } from './admin'
 import type { RolParaGuardar, TabParaGuardar } from './admin'
 import type { Theme } from '../tokens/theme'
@@ -20,8 +22,17 @@ export const keys = {
   blocks: ['config', 'blocks'] as const,
   tab: (tabId: string, layoutId?: string) => ['config', 'tab', tabId, layoutId ?? null] as const,
   panels: (tabId: string, period: string) => ['panels', tabId, period] as const,
-  threads: (panelId?: string, periodo?: string) =>
-    ['chat', 'hilos', panelId ?? null, periodo ?? null] as const,
+  // **La clave lleva de QUÉ es el contexto, no sólo su id** · F3.15. Un panel y
+  // una pestaña pueden compartir uuid en principio, y sin el prefijo el riel de
+  // una hoja se serviría del cache de la otra — el mismo defecto que el preview
+  // por rol tuvo y que su prueba persigue.
+  threads: (contexto?: ContextoDeChat, periodo?: string) =>
+    [
+      'chat',
+      'hilos',
+      contexto === undefined ? null : esDePanel(contexto) ? `panel:${contexto.panelId}` : `tab:${contexto.tabId}`,
+      periodo ?? null,
+    ] as const,
   sugerencias: (panelId: string, periodo: string) =>
     ['chat', 'sugerencias', panelId, periodo] as const,
 
@@ -97,17 +108,22 @@ export function usePanelsBatch(tabId: string | null, panelIds: string[], period:
  *  **Son deterministas del lado del servicio**, así que no hay razón para
  *  refrescarlas mientras la hoja está abierta: cambian con el estado del panel,
  *  no con el tiempo. */
-export function useSuggestions(panelId: string, periodo: string) {
+export function useSuggestions(panelId: string | null, periodo: string) {
   return useQuery({
-    queryKey: keys.sugerencias(panelId, periodo),
-    queryFn: () => api.suggestions(panelId, periodo),
+    queryKey: keys.sugerencias(panelId ?? '', periodo),
+    queryFn: () => api.suggestions(panelId as string, periodo),
+    // **`null` es «esta hoja es de pestaña»** · F3.15. La ruta es
+    // `/config/panels/{panelId}/chat-suggestions`: cuelga de un panel y no
+    // existe para una pestaña. No se pide con un id vacío —eso sería un 404
+    // por render— y la hoja muestra el campo sin abridores.
+    enabled: panelId !== null,
   })
 }
 
-export function useThreads(panelId?: string, periodo?: string) {
+export function useThreads(contexto?: ContextoDeChat, periodo?: string) {
   return useQuery({
-    queryKey: keys.threads(panelId, periodo),
-    queryFn: () => api.threads(panelId, periodo),
+    queryKey: keys.threads(contexto, periodo),
+    queryFn: () => api.threads(contexto, periodo),
   })
 }
 

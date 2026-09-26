@@ -191,6 +191,11 @@ export function PanelShell({
             <button
               type="button"
               onClick={onChat}
+              // Mismo motivo que el CTA de la barra · F3.15: tres botones dicen
+              // «Preguntar» en la misma pantalla. Éste ya está agrupado bajo el
+              // `aria-label` del panel, y nombrarlo igual lo vuelve inequívoco
+              // también fuera de ese grupo.
+              aria-label={`Preguntar sobre ${metric.nombre}`}
               className="font-mono text-label tracking-rotulo uppercase text-dim hover:text-ink cursor-pointer bg-transparent border-0 p-0"
             >
               Preguntar

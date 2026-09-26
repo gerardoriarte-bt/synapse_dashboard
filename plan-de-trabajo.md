@@ -107,8 +107,8 @@ que su resultado esté escrito.
 | `C1 · 768 · seis columnas` | `src/render/useColumns.ts` · el colapso se resuelve en JS · F1.30 |
 | `C1 · 360 · una columna` | ídem · el mínimo son 360 y no 768 · PS-12 |
 | `Consola · C2 · Drill-down de panel` | **No construida** · F3.9, diferida por D3 |
-| `Consola · C3 · Chat expandido` | `src/surfaces/console/PanelChat.tsx` · la forma se cerró en F5.17; lo que queda diverge por decisión, ver `docs/AUDITORIA-2026-09-21-pen-vs-chat-y-ficha.md` §2 |
-| `Consola · C3 · Chat · historial colapsado` | `src/surfaces/console/PanelChat.tsx` |
+| `Consola · C3 · Chat expandido` | `src/surfaces/console/ChatSheet.tsx` · la forma se cerró en F5.17; lo que queda diverge por decisión, ver `docs/AUDITORIA-2026-09-21-pen-vs-chat-y-ficha.md` §2 |
+| `Consola · C3 · Chat · historial colapsado` | `src/surfaces/console/ChatSheet.tsx` |
 | `Consola · C4 · Detalle de hallazgo` | **No construida** · F3.10, diferida por D3 |
 | `Consola · C4 · Hallazgo fuera de banda` | **No construida** · ídem |
 | `Consola · C5 · Sin permiso` | `src/render/states/ForbiddenState.tsx` |
@@ -4203,7 +4203,21 @@ tenía anotada.
 **Abierta en el navegador**: tres chips, apretar uno pregunta, y el bloque
 desaparece al responder.
 
-#### ➕ F3.15 ⬜ El chat tiene presencia en la consola
+#### ➕ F3.15 ✅ El chat tiene presencia en la consola
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **Contestó Cortex de verdad con contexto de pestaña**, desde la barra inferior: el agente nombró la pestaña y el período, enumeró sus siete bloques, declaró «FUENTES CONSULTADAS · paneles de la pestaña Overview (período 2026-09)» y —lo que más vale— su propio **LÍMITE DECLARADO**: «dos paneles de texto aparecen marcados como DEGRADED, su detalle puede estar incompleto».
+
+**Las dos entradas del `.pen`, construidas desde el FRAME.** Medidas en el navegador contra el dibujo: barra de **56**, padding **24**, botón de **32** con borde **1**, radio **8** —que es `--radius-lg`, comprobado— e icono de **14**.
+
+**Y el frame dice tres composiciones donde el plan decía una.** Esto sólo aparece comparando los dieciséis frames de consola: a 768 y 360 la barra mide **52** y no 56, el padding baja a 20, el fondo `$dock` desaparece, el botón pasa a 28 con `$elev` y sin icono, y el texto a mono 9. A 360 además **el pie suelta el contexto**, que es literal de su nota.
+
+**Lo que NO se construyó, y por qué:** el `DECISIONES` que el frame de 360 pone a la derecha. `/config/decisiones` no existe —el cable lo declara en «lo que no está»— así que sería un CTA que devuelve 404.
+
+**Lo que NO se pudo VER:** las dos composiciones responsive. La ventana del navegador no se achicó —está maximizada— así que se verificó la de escritorio en pantalla y las otras dos sólo contra el frame. Queda dicho en vez de darse por mirado.
+
+**La hoja se ensanchó en vez de duplicarse**: `PanelChat` pasó a `ChatSheet` y toma una **unión** —panel o pestaña, nunca las dos—, porque el servicio devuelve 400 con ambos y con dos campos opcionales ese estado se podría escribir. Lo que el contexto de pestaña no tiene queda declarado: sin sugeridas —esa ruta cuelga de un panel— y sin cuerpo para la cifra, que es §7 de la propuesta del 22 y sigue abierta.
+
+**Y apareció una colisión de nombres accesibles.** Tres botones dicen «Preguntar» en la misma pantalla —el del navbar, el de cada panel y el de enviar—. El literal visible es el del dibujo y no se toca; lo que se agregó es el `aria-label` con el alcance: «Preguntar sobre esta pestaña», «Preguntar sobre {métrica}».
+
 
 **MEDIDO CONTRA `75b8ecc`.** Decía «el cable exige un panel» y ya no: el handler
 acepta **exactamente uno** de `panel_context` o `tab_context` —si vienen los dos

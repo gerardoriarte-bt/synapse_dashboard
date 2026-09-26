@@ -23,7 +23,7 @@ import { preloadBodies } from '../../render/bodies/registry'
 import { createFormat } from '../../render/format'
 import { markTabConfig } from '../../render/budget'
 import { Console } from './Console'
-import { PanelChat } from './PanelChat'
+import { ChatSheet } from './ChatSheet'
 import { SurfaceMessage } from './SurfaceMessage'
 import type { Metric, PanelType, Payload } from '../../api/types'
 
@@ -46,6 +46,10 @@ export function ConsoleContainer() {
    *  estructuralmente imposible tener dos hojas abiertas — la red del contador
    *  de `ChatOverlay` es para quien monte una desde otro lado. */
   const [askingPanelId, setAskingPanelId] = useState<string | null>(null)
+  /** **Un booleano y no un id**: el chat de pestaña es siempre el de la pestaña
+   *  activa, y guardar su id abriría la puerta a preguntarle a una que ya no se
+   *  está mirando. Cambiar de pestaña con la hoja abierta la cierra. */
+  const [askingTab, setAskingTab] = useState(false)
 
   const context = useMe()
   const catalog = useCatalog()
@@ -204,15 +208,16 @@ export function ConsoleContainer() {
       onChangeTheme={(theme) => saveTheme.mutate(theme)}
       onRetryPanel={(panelId) => retryPanel.mutate(panelId)}
       onAskPanel={setAskingPanelId}
+      onAskTab={() => setAskingTab(true)}
     />
 
     {askingPanel !== undefined && askingMetric !== undefined && activePeriod !== undefined ? (
-      <PanelChat
+      <ChatSheet
         // **La `key` es el panel, y no es decorativa.** Sin ella, abrir el chat
         // de otro panel reutilizaría el mismo `useChat` y los turnos de la
         // conversación anterior quedarían debajo de un título nuevo.
         key={askingPanel.id}
-        panelId={askingPanel.id}
+        contexto={{ panelId: askingPanel.id, periodo: activePeriod.id }}
         periodo={activePeriod.id}
         titulo={askingMetric.nombre}
         // **El tipo del panel es lo que decide con qué cuerpo se dibuja la
@@ -222,6 +227,29 @@ export function ConsoleContainer() {
         bloques={blockTable(blocks.data?.blocks ?? [])}
         format={format}
         onClose={() => setAskingPanelId(null)}
+      />
+    ) : null}
+
+    {/* ── LA HOJA DE PESTAÑA · F3.15 ─────────────────────────────────────
+        **Es la misma hoja**, con el otro contexto: el servicio exige
+        exactamente uno de los dos y la unión lo garantiza.
+
+        **La `key` lleva la pestaña** por la misma razón que la de panel lleva
+        el panel: sin ella, cambiar de pestaña con la hoja abierta reusaría el
+        mismo `useChat` y los turnos de la conversación anterior quedarían bajo
+        un título nuevo.
+
+        **Sin `panelTipo`**, que no es un olvido: no hay panel de origen, así
+        que no hay cuerpo con que dibujar una cifra. `ChatFigure` lo dice. */}
+    {askingTab && activeTab !== undefined && activePeriod !== undefined ? (
+      <ChatSheet
+        key={`tab:${activeTab.id}`}
+        contexto={{ tabId: activeTab.id, periodo: activePeriod.id }}
+        periodo={activePeriod.id}
+        titulo={activeTab.nombre}
+        bloques={blockTable(blocks.data?.blocks ?? [])}
+        format={format}
+        onClose={() => setAskingTab(false)}
       />
     ) : null}
     </>

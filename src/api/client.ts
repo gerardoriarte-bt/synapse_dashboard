@@ -33,6 +33,9 @@ import type {
 } from './types'
 import { currentToken } from '../app/auth/session'
 
+import { esDePanel } from './chat'
+import type { ContextoDeChat } from './chat'
+
 const BASE = import.meta.env.VITE_API_URL ?? '/api/v1'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -148,9 +151,15 @@ export const api = {
    *  **El filtro por panel es lo que hace útil al riel dentro de la hoja**: la
    *  conversación de un panel se lista sola, sin mezclarse con las de los otros
    *  once. Lo resuelve el servicio, no el front. */
-  threads: (panelId?: string, periodo?: string) => {
+  threads: (contexto?: ContextoDeChat, periodo?: string) => {
     const q = new URLSearchParams()
-    if (panelId !== undefined) q.set('panel_id', panelId)
+    // **`tab_id` es la otra mitad del filtro** · F3.15, declarado en el cable
+    // desde el 2026-09-25. Sin él, el riel de la hoja de pestaña listaría las
+    // conversaciones de todos los paneles, que es justo lo que el filtro evita.
+    if (contexto !== undefined) {
+      if (esDePanel(contexto)) q.set('panel_id', contexto.panelId)
+      else q.set('tab_id', contexto.tabId)
+    }
     if (periodo !== undefined) q.set('period', periodo)
     const cola = q.toString()
     return request<WireChatThread[]>(

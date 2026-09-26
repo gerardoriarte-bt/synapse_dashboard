@@ -61,7 +61,16 @@ function trama(evento: string, datos: unknown): string {
   return `event: ${evento}\ndata: ${JSON.stringify(datos)}\n\n`
 }
 
-const PREGUNTA = { pregunta: '¿Y las ventas?', panelId: 'p-1', periodo: '2026-09' }
+const PREGUNTA = {
+  pregunta: '¿Y las ventas?',
+  contexto: { panelId: 'p-1', periodo: '2026-09' },
+}
+
+/** La otra rama · F3.15. El servicio exige **exactamente una** de las dos. */
+const PREGUNTA_DE_PESTANA = {
+  pregunta: '¿Cómo vamos este mes?',
+  contexto: { tabId: 'tab-1', periodo: '2026-09' },
+}
 
 const THREAD_INFO = { thread_id: 41, parent_message_id: 7, user_thread_id: 'ut-uuid' }
 const INFO = trama('thread_info', THREAD_INFO)
@@ -240,7 +249,9 @@ describe('el troceado · un chunk de la red no es una trama', () => {
 describe('la pregunta viaja en el CUERPO, con el contexto de panel', () => {
   it('es un POST con `question` y `panel_context`, en el vocabulario del cable', async () => {
     responde([INFO, DONE])
-    await recolectar(askSynapse({ pregunta: '¿cuánto vendimos?', panelId: 'p-9', periodo: '2026-08' }))
+    await recolectar(
+      askSynapse({ pregunta: '¿cuánto vendimos?', contexto: { panelId: 'p-9', periodo: '2026-08' } }),
+    )
 
     const [url, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit]
     // En la URL quedaría en logs de proxy y en el historial del navegador, que
@@ -251,6 +262,34 @@ describe('la pregunta viaja en el CUERPO, con el contexto de panel', () => {
       question: '¿cuánto vendimos?',
       panel_context: { panel_id: 'p-9', period: '2026-08' },
     })
+  })
+
+  // ── LA OTRA RAMA · F3.15 ──────────────────────────────────────────────────
+  //
+  // El servicio exige **exactamente uno** de los dos contextos: con los dos o
+  // con ninguno devuelve 400, medido el 2026-09-26. Así que no alcanza con que
+  // `tab_context` salga: hay que afirmar que `panel_context` **no** sale.
+  it('con contexto de pestaña manda `tab_context` y NO `panel_context`', async () => {
+    responde([INFO, DONE])
+    await recolectar(askSynapse(PREGUNTA_DE_PESTANA))
+
+    const [, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit]
+    const cuerpo = JSON.parse(init.body as string)
+    expect(cuerpo).toEqual({
+      question: '¿Cómo vamos este mes?',
+      tab_context: { tab_id: 'tab-1', period: '2026-09' },
+    })
+    // Explícito, porque `toEqual` con una clave de más ya falla pero el mensaje
+    // no diría cuál es el problema: mandar las dos es 400.
+    expect(cuerpo).not.toHaveProperty('panel_context')
+  })
+
+  it('y con contexto de panel NO manda `tab_context`', async () => {
+    responde([INFO, DONE])
+    await recolectar(askSynapse(PREGUNTA))
+
+    const [, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit]
+    expect(JSON.parse(init.body as string)).not.toHaveProperty('tab_context')
   })
 
   it('sin hilo previo no se manda `thread_id` · no va un null', async () => {
