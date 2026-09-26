@@ -91,7 +91,28 @@ export const context: WireContext = {
   // Cadenas sueltas, como las manda `availablePeriods()`.
   periods: ['2026-07'],
   catalog_version: 1,
+  // ── MULTI-DASHBOARD · F5.1 · 2026-09-26 ──────────────────────────────────
+  //
+  // **UNO solo, y eso es lo que se prueba por defecto**: el primer bullet del
+  // criterio dice «con un solo layout no hay selector». La prueba que necesita
+  // dos los declara ella.
+  //
+  // **`active_layout_id` no es decorativo**: sin él la consola muestra «todavía
+  // no se compuso», que es el estado real de un dashboard sin layout publicado
+  // —medido el 2026-09-26 creando uno—. Un fixture que lo omite está simulando
+  // ese estado sin querer.
+  dashboards: [{ id: 'd-1', name: 'Overview', slug: 'overview', is_default: true }],
+  active_dashboard_id: 'd-1',
+  active_layout_id: 'l-1',
 }
+
+/** **La pestaña del contexto, ya desenvuelta** · F5.1.
+ *
+ *  `context.tabs` pasó a ser `TabMeta[] | null` el 2026-09-26, porque un
+ *  dashboard sin layout publicado devuelve `null` —medido—. Las nueve pruebas
+ *  que hacían `tab` dejaron de compilar, y encadenar un `?.` en
+ *  cada una escondería la razón. Acá está una vez, con su porqué. */
+export const tab = context.tabs?.[0] as NonNullable<WireContext['tabs']>[number]
 
 export const metrics: WireMetric[] = []
 export const blocks: WireBlock[] = []

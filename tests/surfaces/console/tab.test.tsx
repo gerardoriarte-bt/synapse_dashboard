@@ -18,7 +18,7 @@ import { render, screen, within } from '@testing-library/react'
 import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { ConsoleContainer } from '@/surfaces/console/ConsoleContainer'
-import { API, context, ok } from '../../mocks/handlers'
+import { API, ok, tab } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
 import type { WireMetric, WirePanel, WirePayload } from '@/api/adapt'
 
@@ -111,7 +111,7 @@ const payloads = Object.fromEntries(
 function laPestana(payloadsUsados: Record<string, unknown> = payloads) {
   server.use(
     http.get(`${API}/config/catalog`, () => ok(metrics)),
-    http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: context.tabs[0], panels })),
+    http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: tab, panels })),
     http.post(`${API}/config/panels:batch`, () => ok(payloadsUsados)),
   )
 }

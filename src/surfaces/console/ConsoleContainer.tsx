@@ -14,6 +14,7 @@ import {
   usePanelsBatch,
   useRetryPanel,
   useSaveTheme,
+  useSelectDashboard,
   useTab,
 } from '../../api/hooks'
 import { adaptPanelParams } from '../../api/params'
@@ -21,6 +22,7 @@ import { blockTable } from '../../catalog/blocks'
 import { applyTheme } from '../../tokens/theme'
 import { preloadBodies } from '../../render/bodies/registry'
 import { createFormat, LOCALE_POR_DEFECTO } from '../../render/format'
+import { currentTheme } from '../../tokens/theme'
 import { markTabConfig } from '../../render/budget'
 import { Console } from './Console'
 import { ChatSheet } from './ChatSheet'
@@ -60,6 +62,7 @@ export function ConsoleContainer() {
   // params que sí declara el contrato · F1.29.
   const blocks = useBlocks()
   const saveTheme = useSaveTheme()
+  const selectDashboard = useSelectDashboard()
 
   /** **El formateador sale del locale del TENANT** · F1.13b.
    *
@@ -160,6 +163,55 @@ export function ConsoleContainer() {
     )
   }
 
+  /* ── UN DASHBOARD SIN COMPONER · F5.1 ────────────────────────────────────
+   *
+   * **Existe y no está compuesto, que no es un error.** `POST
+   * /admin/tenants/{id}/dashboards` crea uno sin layout, y ése es su estado
+   * normal hasta que alguien lo componga en el builder. Medido el 2026-09-26
+   * creando «Marca»: `/config/me` devuelve `active_layout_id: null` y
+   * `tabs: null`.
+   *
+   * **Antes de esto la consola decía «No se pudo cargar tu contexto · sin
+   * detalle del servidor»**, porque el adaptador tiraba con `tabs: null`. Dos
+   * cosas mal en una: se caía, y le atribuía al servicio un fallo nuestro.
+   *
+   * **Y NO es lo mismo que cero pestañas**, que es un rol al que no le
+   * asignaron ninguna. Los dos muestran un dashboard vacío y la salida es
+   * distinta: componer uno, pedir acceso el otro. Por eso se mira
+   * `layoutActivoId` y no `tabs.length`. */
+  if (context.data.layoutActivoId === null) {
+    const activo = context.data.dashboards.find((d) => d.id === context.data?.dashboardActivoId)
+    // **La salida es el default del tenant**, no «el anterior»: no guardamos
+    // cuál era, y el default es el que con más probabilidad está compuesto.
+    // Si el activo YA es el default, no se ofrece: volver a donde ya se está
+    // es un botón que no hace nada.
+    const porDefecto = context.data.dashboards.find((d) => d.esDefault)
+    return (
+      <SurfaceMessage
+        title={
+          activo === undefined
+            ? 'Este cliente todavía no tiene un dashboard'
+            : `«${activo.nombre}» todavía no se compuso`
+        }
+        detail="Un dashboard sin layout publicado no tiene pestañas que mostrar · se compone en el builder"
+        {...(porDefecto === undefined || porDefecto.id === context.data.dashboardActivoId
+          ? {}
+          : {
+              accion: {
+                rotulo: `Volver a ${porDefecto.nombre}`,
+                onAccion: () => {
+                  setTabId(null)
+                  selectDashboard.mutate({
+                    theme: context.data?.user.preferencias?.tema ?? currentTheme(),
+                    dashboardId: porDefecto.id,
+                  })
+                },
+              },
+            })}
+      />
+    )
+  }
+
   // Un fallo del batch NO baja acá: los shells siguen visibles y cada panel
   // muestra su estado de error · F1.26. Por eso el payload cae a CARGANDO y no
   // a una pantalla de error.
@@ -224,6 +276,24 @@ export function ConsoleContainer() {
       onSelectTab={setTabId}
       onSelectPeriod={setPeriodId}
       onChangeTheme={(theme) => saveTheme.mutate(theme)}
+      onSelectDashboard={(dashboardId) => {
+        // **Reiniciar la pestaña es el segundo bullet del criterio**, y su
+        // razón: «la pestaña de un layout no existe en el otro». Sin esto,
+        // `tabId` seguiría apuntando a una pestaña del dashboard anterior y
+        // `/config/tabs/{tabId}` devolvería 404 — o peor, la pestaña de otro
+        // dashboard si los ids colisionaran.
+        //
+        // Se limpia ANTES de la mutación: el `onSuccess` invalida `me` y la
+        // pestaña por defecto sale de la respuesta nueva, que es la única que
+        // sabe cuáles existen.
+        setTabId(null)
+        selectDashboard.mutate({
+          // El tema viaja obligado —el cuerpo lo declara `required`— y sale del
+          // que el usuario tiene, no de uno fijo: escribir uno acá lo pisaría.
+          theme: context.data?.user.preferencias?.tema ?? currentTheme(),
+          dashboardId,
+        })
+      }}
       onRetryPanel={(panelId) => retryPanel.mutate(panelId)}
       onAskPanel={setAskingPanelId}
       onAskTab={() => setAskingTab(true)}

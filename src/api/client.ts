@@ -196,4 +196,22 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify({ theme }),
     }),
+
+  /** Cambiar de dashboard · F5.1.
+   *
+   *  **Es una PREFERENCIA y no un parámetro de consulta**, y eso no es una
+   *  elección nuestra: el servicio resuelve el dashboard activo con
+   *  **preferencia > rol > default del tenant**, así que la única forma de
+   *  cambiarlo es escribir la preferencia y volver a pedir `/config/me`.
+   *
+   *  **El `theme` viaja obligado.** El cuerpo lo declara `binding:"required"`,
+   *  así que mandar sólo el dashboard da 400 — medido el 2026-09-26. Por eso lo
+   *  recibe: escribir uno fijo acá pisaría el del usuario.
+   *
+   *  `null` limpia la preferencia y vuelve a la resolución por rol. */
+  savePreferredDashboard: (theme: 'dark' | 'light', dashboardId: string | null) =>
+    request<{ theme: 'dark' | 'light'; preferred_dashboard_id: string | null }>(
+      '/config/me/preferences',
+      { method: 'PUT', body: JSON.stringify({ theme, preferred_dashboard_id: dashboardId }) },
+    ),
 }

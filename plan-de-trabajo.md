@@ -6087,8 +6087,25 @@ cliente, el nombre que deja de abrir y Escape que no cierra. Mueren las nueve.
 
 ## Fase 5 — Multi-dashboard, pruebas y pulido
 
-### F5.1 ⬜ Selector de layout cuando hay más de uno
-**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **El `🔒` se saca**, porque su propio título decía «el candado VENCIÓ el 2026-09-25» y el emoji la contaba como bloqueada igual — el mismo defecto que tenía F3.15.
+### F5.1 ✅ Selector de dashboard cuando hay más de uno
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **El ciclo entero, en pantalla**: el selector lista «Overview» y «Marca», cambiar a «Marca» muestra «todavía no se compuso», y «Volver a Overview» devuelve a la consola compuesta.
+
+**Para poder verificarlo se creó el segundo dashboard** con `POST /admin/tenants/{tenantId}/dashboards`, en vez de esperar — igual que el usuario restringido de B1.19. Con uno solo no hay selector, que es su propio criterio, así que no había nada que mirar. Queda documentado en `dev/postgres/README.md`.
+
+**Y crearlo destapó dos defectos que ninguna prueba habría encontrado:**
+
+1. **`tabs` puede ser `null`.** Un dashboard sin layout publicado devuelve `active_layout_id: null` y `tabs: null`; el cable lo declaraba arreglo requerido y el adaptador hacía `w.tabs.map(...)`. Se cayó.
+2. **Y el mensaje decía «No se pudo cargar tu contexto · sin detalle del servidor»** — un fallo NUESTRO atribuido al servicio. Es la familia del 401 del chat, que también culpaba al agente.
+
+**Cambiar de dashboard es escribir una PREFERENCIA**, y eso no lo elegimos: el servicio resuelve el activo con **preferencia > rol > default del tenant**, así que no hay parámetro de consulta. Un selector que creyera lo contrario no habría cambiado nada.
+
+**El vacío lleva salida propia**, y eso se vio abriéndolo: el estado reemplaza la pantalla entera —navbar incluido—, así que quien cambiaba a un dashboard sin componer **quedaba encerrado**. Mismo precedente que B5 el 2026-09-25. No se ofrece si el vacío ya es el default: sería un botón que no hace nada.
+
+**Y el contrato no declaraba nada de esto.** La descripción de esta tarea decía «el selector aparece solo si `ctx.layouts.length > 1`» y `Contexto` no tenía el campo. Ahora declara `dashboards`, `dashboardActivoId` y `layoutActivoId`, con `null` como estado y no como ausencia.
+
+**Lo que NO se decidió solo, y va a diseño** · `docs/PROPUESTA-2026-09-26-selector-de-dashboard.md`: **ni el `.pen` ni `design.md` dibujan este control**. §7.1 lista el navbar entero y no lo incluye; el `.pen` tampoco, y sus «capítulos» son pestañas de un layout. Se siguió la vecindad que sí dibuja —el `chevrons-up-down` del bloque de cliente— y la forma del selector de período, que ya vive en esa barra. Queda abierto dónde va, qué pasa a 768, y fijar la palabra.
+
+**El `🔒` se saca**, porque su propio título decía «el candado VENCIÓ el 2026-09-25» y el emoji la contaba como bloqueada igual — el mismo defecto que tenía F3.15.
 
 Remedido: `/config/me` devuelve `dashboards[{id, name, slug, is_default}]`, `active_dashboard_id` y `active_layout_id`. **Lo que no se puede comprobar todavía es el filtrado por rol**: el tenant tiene un solo dashboard, así que `admin` y `planner` ven el mismo.
 

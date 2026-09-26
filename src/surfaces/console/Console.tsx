@@ -55,6 +55,8 @@ type Props = {
   /** Abre el chat con contexto de PESTAÑA · F3.15 · la barra y el CTA del
    *  navbar. **Sin él ninguno de los dos se pinta.** */
   onAskTab?: (() => void) | undefined
+  /** Cambiar de dashboard · F5.1. **Sin él no hay selector.** */
+  onSelectDashboard?: ((id: string) => void) | undefined
 }
 
 export function Console({
@@ -73,6 +75,7 @@ export function Console({
   onRetryPanel,
   onAskPanel,
   onAskTab,
+  onSelectDashboard,
 }: Props) {
   // El colapso · F1.30. No lo puede hacer solo el CSS: el `colSpan` viaja en un
   // estilo en línea y una media query no lo alcanza.
@@ -114,6 +117,7 @@ export function Console({
         onSelectPeriod={onSelectPeriod}
         {...(onChangeTheme === undefined ? {} : { onChangeTheme })}
         {...(onAskTab === undefined ? {} : { onAskTab })}
+        {...(onSelectDashboard === undefined ? {} : { onSelectDashboard })}
       />
 
       {/* El cuerpo sí lleva el padding de la grilla · §4. */}

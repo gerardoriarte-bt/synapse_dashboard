@@ -645,6 +645,47 @@ export interface components {
             periodos: components["schemas"]["Periodo"][];
             /** @description Con qué versión del catálogo se resolvió esta respuesta. */
             catalogVersion: number;
+            /**
+             * @description Los que este usuario puede ver, ya filtrados por su rol.
+             *
+             *     **Con uno solo no hay selector** · si hay una sola opción no se
+             *     ofrece una elección: es la misma regla que el selector de tenant,
+             *     que existe sólo para tokens de plataforma.
+             */
+            dashboards: {
+                /** Format: uuid */
+                id: string;
+                /**
+                 * @example Overview
+                 * @example Marca
+                 */
+                nombre: string;
+                /**
+                 * @description El que resuelve cuando el usuario no declaró preferencia y su
+                 *     rol tampoco. **Orden: preferencia > rol > default del tenant**,
+                 *     y lo resuelve el servidor.
+                 */
+                esDefault: boolean;
+            }[];
+            /**
+             * Format: uuid
+             * @description Cuál de `dashboards` está resuelto. `null` si no hay ninguno.
+             */
+            dashboardActivoId: string | null;
+            /**
+             * Format: uuid
+             * @description El layout publicado del dashboard activo.
+             *
+             *     **`null` es un estado normal y no un error**: un dashboard recién
+             *     creado existe y todavía no se compuso. Medido el 2026-09-26 creando
+             *     uno — el servicio devuelve `active_layout_id: null` y `tabs: null`.
+             *
+             *     **La superficie tiene que distinguirlo de «cero pestañas»**, que es
+             *     otra cosa: un rol al que no le asignaron ninguna. Los dos muestran
+             *     un dashboard vacío y la salida es distinta — componer uno, o pedir
+             *     acceso al otro.
+             */
+            layoutActivoId: string | null;
         };
         Periodo: {
             id: components["schemas"]["PeriodoId"];

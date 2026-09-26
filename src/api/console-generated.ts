@@ -273,7 +273,24 @@ export interface components {
             user: components["schemas"]["UserInfo"];
             tenant: components["schemas"]["TenantInfo"];
             role: components["schemas"]["RoleInfo"];
-            tabs: components["schemas"]["TabMeta"][];
+            /**
+             * @description ── **PUEDE SER `null`, Y SE MIDIÓ ROMPIENDO LA CONSOLA** · 2026-09-26
+             *
+             *     Estaba declarado `array` a secas y está en `required`, así que el
+             *     adaptador hacía `w.tabs.map(...)` sin mirar. **Un dashboard sin
+             *     layout publicado devuelve `tabs: null`** —no `[]`— y ahí el
+             *     adaptador tira.
+             *
+             *     Se encontró al crear un segundo dashboard para poder verificar F5.1:
+             *     `POST /admin/tenants/{tenantId}/dashboards` deja crearlo sin layout,
+             *     que es el estado normal de uno recién creado. Con la preferencia
+             *     apuntada ahí, la consola muestra «No se pudo cargar tu contexto ·
+             *     sin detalle del servidor» — y el fallo era nuestro.
+             *
+             *     **Sigue en `required`**: la clave viaja siempre, lo que cambia es
+             *     que su valor puede ser nulo.
+             */
+            tabs: components["schemas"]["TabMeta"][] | null;
             /**
              * @description **Cadenas sueltas, no objetos.** `availablePeriods()` devuelve los
              *     últimos doce meses del CALENDARIO contando desde `time.Now()`, tenga
@@ -319,9 +336,12 @@ export interface components {
             active_dashboard_id?: string;
             /**
              * Format: uuid
-             * @description El layout del dashboard activo. Ausente si no hay ninguno.
+             * @description El layout del dashboard activo. **`null` cuando ese dashboard no
+             *     tiene layout publicado**, medido el 2026-09-26 contra un dashboard
+             *     recién creado — y ahí `tabs` también viene `null`. Los dos juntos
+             *     son el estado «existe pero no se compuso todavía».
              */
-            active_layout_id?: string;
+            active_layout_id?: string | null;
             catalog_version: number;
         };
         /** @description El nombre llega partido; el contrato lo pide junto. */

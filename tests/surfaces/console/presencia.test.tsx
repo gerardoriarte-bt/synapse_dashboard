@@ -27,7 +27,7 @@ import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { ConsoleContainer } from '@/surfaces/console/ConsoleContainer'
-import { API, context, ok } from '../../mocks/handlers'
+import { API, ok, tab } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
 import type { WireMetric, WirePanel, WirePayload } from '@/api/adapt'
 
@@ -98,7 +98,7 @@ function laConsola(): { preguntas: Record<string, unknown>[] } {
   const preguntas: Record<string, unknown>[] = []
   server.use(
     http.get(`${API}/config/catalog`, () => ok(metrics)),
-    http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: context.tabs[0], panels })),
+    http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: tab, panels })),
     http.post(`${API}/config/panels:batch`, () => ok(payloads)),
     http.get(`${API}/config/chat/threads`, () => ok([])),
     http.post(`${API}/config/chat`, async ({ request }) => {
@@ -148,7 +148,7 @@ describe('la barra inferior declara el contexto que va a viajar', () => {
     // «0 paneles» y la aserción mide el estado de carga.
     const linea = await screen.findByText(/3 paneles/)
     expect(linea).toHaveTextContent('Under Armour México')
-    expect(linea).toHaveTextContent(context.tabs[0]?.name as string)
+    expect(linea).toHaveTextContent(tab?.name as string)
   })
 
   it('el conteo es el de los paneles QUE LLEGARON, no uno fijo', async () => {
@@ -158,7 +158,7 @@ describe('la barra inferior declara el contexto que va a viajar', () => {
     laConsola()
     server.use(
       http.get(`${API}/config/tabs/:tabId`, () =>
-        ok({ tab: context.tabs[0], panels: panels.slice(0, 2) }),
+        ok({ tab: tab, panels: panels.slice(0, 2) }),
       ),
     )
     montar()
@@ -170,7 +170,7 @@ describe('la barra inferior declara el contexto que va a viajar', () => {
     laConsola()
     server.use(
       http.get(`${API}/config/tabs/:tabId`, () =>
-        ok({ tab: context.tabs[0], panels: panels.slice(0, 1) }),
+        ok({ tab: tab, panels: panels.slice(0, 1) }),
       ),
     )
     montar()
@@ -192,7 +192,7 @@ describe('las DOS entradas mandan `tab_context` · F3.15', () => {
     await waitFor(() => expect(preguntas).toHaveLength(1))
     expect(preguntas[0]).toMatchObject({
       question: '¿Cómo vamos?',
-      tab_context: { tab_id: context.tabs[0]?.id, period: '2026-07' },
+      tab_context: { tab_id: tab?.id, period: '2026-07' },
     })
     // **Explícito**: el servicio devuelve 400 con los dos contextos, así que
     // que `tab_context` esté no alcanza — `panel_context` tiene que NO estar.
@@ -273,7 +273,7 @@ describe('la hoja de pestaña declara lo que NO tiene', () => {
 
     await waitFor(() => expect(urls.length).toBeGreaterThan(0))
     const ultima = urls.at(-1) as string
-    expect(ultima).toContain(`tab_id=${context.tabs[0]?.id as string}`)
+    expect(ultima).toContain(`tab_id=${tab?.id as string}`)
     expect(ultima).not.toContain('panel_id=')
   })
 })

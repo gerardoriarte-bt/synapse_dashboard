@@ -85,6 +85,9 @@ const contextoDe = (
   tabs: [{ id: tab.id, name: tab.name, operational_question: tab.pregunta, sort_order: 1 }],
   periods: ['2026-07'],
   catalog_version: 1,
+  dashboards: [{ id: `d-${tenant}`, name: 'Overview', slug: 'overview', is_default: true }],
+  active_dashboard_id: `d-${tenant}`,
+  active_layout_id: `l-${tenant}`,
 })
 
 /** Sirve UN contexto con SU composición. Los tres endpoints a la vez, porque el
@@ -99,7 +102,7 @@ function servir(
     http.get(`${API}/config/me`, () => ok(contexto)),
     http.get(`${API}/config/catalog`, () => ok(metricas)),
     http.get(`${API}/config/tabs/:tabId`, () =>
-      ok({ tab: contexto.tabs[0], panels }),
+      ok({ tab: contexto.tabs?.[0], panels }),
     ),
     http.post(`${API}/config/panels:batch`, () => ok(payloads)),
   )

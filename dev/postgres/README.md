@@ -103,6 +103,21 @@ DATA_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef
 **No es un secreto real** —es una base descartable— pero anotarla acá evita
 perder media hora persiguiendo un fantasma.
 
+## Y un SEGUNDO dashboard, sin componer · desde el 2026-09-26
+
+**«Marca»**, creado con `POST /admin/tenants/{tenantId}/dashboards`. Existe para
+poder verificar F5.1: con un solo dashboard el selector no aparece —es su propio
+criterio— así que no había nada que mirar.
+
+**No tiene layout publicado, y eso es lo que lo hace útil.** Es el estado normal
+de uno recién creado, y el que destapó dos defectos: el servicio devuelve
+`active_layout_id: null` **y `tabs: null`**, el adaptador tiraba, y la consola
+decía «No se pudo cargar tu contexto · sin detalle del servidor» — atribuyéndole
+al servicio un fallo nuestro.
+
+**Si lo componés, F5.1 deja de poder verificarse en su estado vacío.** Para
+volver al inicio, crear otro.
+
 ## Cargar el agente de Cortex · `dev/agente/cargar.sh`
 
 Cuando haya una clave privada para `SYNAPSE_SERVICE_USER`:

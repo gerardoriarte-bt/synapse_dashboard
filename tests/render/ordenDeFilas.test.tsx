@@ -35,7 +35,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { http } from 'msw'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ConsoleContainer } from '@/surfaces/console/ConsoleContainer'
-import { API, context, kpiMetric, ok } from '../mocks/handlers'
+import { API, kpiMetric, ok, tab } from '../mocks/handlers'
 import { server } from '../mocks/server'
 import type { WireMetric, WirePanel } from '@/api/adapt'
 
@@ -78,7 +78,7 @@ function montar() {
 function servir() {
   server.use(
     http.get(`${API}/config/catalog`, () => ok(metricas)),
-    http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: context.tabs[0], panels })),
+    http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: tab, panels })),
     http.post(`${API}/config/panels:batch`, () =>
       ok(
         Object.fromEntries(

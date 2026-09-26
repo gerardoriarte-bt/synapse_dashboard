@@ -14,7 +14,7 @@ import userEvent from '@testing-library/user-event'
 import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { ConsoleContainer } from '@/surfaces/console/ConsoleContainer'
-import { API, context, fail, kpiMetric, kpiPanel, ok } from '../../mocks/handlers'
+import { API, context, fail, kpiMetric, kpiPanel, ok, tab } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
 
 function montar() {
@@ -38,7 +38,7 @@ function conUnPanel(payload: unknown) {
   server.use(
     http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
     http.get(`${API}/config/tabs/:tabId`, () =>
-      ok({ tab: context.tabs[0], panels: [kpiPanel] }),
+      ok({ tab: tab, panels: [kpiPanel] }),
     ),
     http.post(`${API}/config/panels:batch`, () => ok({ [kpiPanel.id]: payload })),
   )
@@ -92,7 +92,7 @@ describe('F1.26 · la carga y el error viven en la superficie', () => {
     // batch son los datos de cada panel, y un panel roto no rompe los otros.
     server.use(
       http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
-      http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: context.tabs[0], panels: [kpiPanel] })),
+      http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: tab, panels: [kpiPanel] })),
       http.post(`${API}/config/panels:batch`, () =>
         fail('No se pudieron traer los datos.', { status: 500 }),
       ),
@@ -114,7 +114,7 @@ describe('un metricId que el catálogo no resuelve', () => {
     // significa que el layout referencia algo que este rol no puede ver.
     server.use(
       http.get(`${API}/config/tabs/:tabId`, () =>
-        ok({ tab: context.tabs[0], panels: [{ ...kpiPanel, metric_id: 'm-fantasma' }] }),
+        ok({ tab: tab, panels: [{ ...kpiPanel, metric_id: 'm-fantasma' }] }),
       ),
     )
     montar()
@@ -135,7 +135,7 @@ describe('el selector de período respeta el granoMinimo · F1.7', () => {
         }),
       ),
       http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
-      http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: context.tabs[0], panels: [kpiPanel] })),
+      http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: tab, panels: [kpiPanel] })),
       http.post(`${API}/config/panels:batch`, () => ok({ [kpiPanel.id]: { estado: 'CARGANDO' } })),
     )
     montar()
@@ -179,7 +179,7 @@ describe('F1.29 · un param inválido degrada el panel con la razón visible', (
         ]),
       ),
       http.get(`${API}/config/tabs/:tabId`, () =>
-        ok({ tab: context.tabs[0], panels: [{ ...kpiPanel, type: 'bars', options: { order: 'ascending' } }],
+        ok({ tab: tab, panels: [{ ...kpiPanel, type: 'bars', options: { order: 'ascending' } }],
         }),
       ),
       http.post(`${API}/config/panels:batch`, () =>
@@ -217,7 +217,7 @@ describe('F1.29 · un param inválido degrada el panel con la razón visible', (
     server.use(
       http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
       http.get(`${API}/config/tabs/:tabId`, () =>
-        ok({ tab: context.tabs[0], panels: [{ ...kpiPanel, options: { colorcito: 'azul' } }] }),
+        ok({ tab: tab, panels: [{ ...kpiPanel, options: { colorcito: 'azul' } }] }),
       ),
       http.post(`${API}/config/panels:batch`, () =>
         ok({
@@ -251,7 +251,7 @@ describe('la cadena de callbacks llega hasta el botón', () => {
     let intentos = 0
     server.use(
       http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
-      http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: context.tabs[0], panels: [kpiPanel] })),
+      http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: tab, panels: [kpiPanel] })),
       http.post(`${API}/config/panels:batch`, () => {
         intentos++
         return fail('No se pudieron traer los datos.', { status: 500 })
@@ -278,7 +278,7 @@ describe('F1.35 · una métrica que el adaptador rechaza dice POR QUÉ', () => {
   it('la pantalla nombra el valor que llegó, no «no resuelta» a secas', async () => {
     server.use(
       http.get(`${API}/config/catalog`, () => ok([{ ...kpiMetric, family: 'vendors' }])),
-      http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: context.tabs[0], panels: [kpiPanel] })),
+      http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: tab, panels: [kpiPanel] })),
     )
     montar()
 
@@ -297,7 +297,7 @@ describe('F1.35 · una métrica que el adaptador rechaza dice POR QUÉ', () => {
       ),
       http.get(`${API}/config/tabs/:tabId`, () =>
         ok({
-          tab: context.tabs[0],
+          tab: tab,
           panels: [kpiPanel, { ...kpiPanel, id: 'p-2', metric_id: 'm-ok', col_start: 5 }],
         }),
       ),
@@ -326,7 +326,7 @@ describe('F1.35 · una métrica que el adaptador rechaza dice POR QUÉ', () => {
     server.use(
       http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
       http.get(`${API}/config/tabs/:tabId`, () =>
-        ok({ tab: context.tabs[0], panels: [{ ...kpiPanel, metric_id: 'm-fantasma' }] }),
+        ok({ tab: tab, panels: [{ ...kpiPanel, metric_id: 'm-fantasma' }] }),
       ),
     )
     montar()

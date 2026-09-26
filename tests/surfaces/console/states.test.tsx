@@ -22,7 +22,7 @@ import userEvent from '@testing-library/user-event'
 import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { ConsoleContainer } from '@/surfaces/console/ConsoleContainer'
-import { API, context, kpiMetric, kpiPanel, ok } from '../../mocks/handlers'
+import { API, context, kpiMetric, kpiPanel, ok, tab } from '../../mocks/handlers'
 import type { WirePayload } from '@/api/adapt'
 import { server } from '../../mocks/server'
 
@@ -48,7 +48,7 @@ function montar() {
 function conUnPanel(payload: unknown, metrica: unknown = kpiMetric) {
   server.use(
     http.get(`${API}/config/catalog`, () => ok([metrica])),
-    http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: context.tabs[0], panels: [kpiPanel] })),
+    http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: tab, panels: [kpiPanel] })),
     http.post(`${API}/config/panels:batch`, () => ok({ [kpiPanel.id]: payload })),
   )
 }
@@ -351,7 +351,7 @@ describe('F2.4 · ERROR · el mensaje es del backend y el reintento es de ESE pa
     server.use(
       http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
       http.get(`${API}/config/tabs/:tabId`, () =>
-        ok({ tab: context.tabs[0], panels: [kpiPanel, otro] }),
+        ok({ tab: tab, panels: [kpiPanel, otro] }),
       ),
       http.post(`${API}/config/panels:batch`, async ({ request }) => {
         const body = (await request.json()) as { panel_ids: string[] }
@@ -405,7 +405,7 @@ describe('§7 · cambiar de período NO vuelve a pedir el layout', () => {
       http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
       http.get(`${API}/config/tabs/:tabId`, ({ params }) => {
         layouts.push(String(params['tabId']))
-        return ok({ tab: context.tabs[0], panels: [kpiPanel] })
+        return ok({ tab: tab, panels: [kpiPanel] })
       }),
       http.post(`${API}/config/panels:batch`, async ({ request }) => {
         const body = (await request.json()) as { period: string }

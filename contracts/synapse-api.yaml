@@ -894,7 +894,10 @@ components:
 
     Contexto:
       type: object
-      required: [alcance, user, tenant, role, tabs, periodos, catalogVersion]
+      # `dashboards` es requerido y puede venir vacío; los dos ids son
+      # requeridos y pueden ser `null` — «no hay ninguno» es un estado · F5.1.
+      required: [alcance, user, tenant, role, tabs, periodos, catalogVersion,
+                 dashboards, dashboardActivoId, layoutActivoId]
       properties:
         alcance:
           type: string
@@ -1049,6 +1052,54 @@ components:
         catalogVersion:
           type: integer
           description: Con qué versión del catálogo se resolvió esta respuesta.
+        # ── MULTI-DASHBOARD · agregado el 2026-09-26 · F5.1 ──────────────────
+        #
+        # **El contrato hablaba de `ctx.layouts` y no lo declaraba.** La
+        # descripción de F5.1 dice «el selector aparece solo si
+        # `ctx.layouts.length > 1`» y el esquema no tenía el campo, así que la
+        # tarea no se podía escribir contra nada.
+        #
+        # El cable los trae desde `168a761` con otro nombre —**dashboards**, no
+        # layouts— y esa es la palabra que se adopta: un dashboard es la cosa
+        # que se elige, y su layout publicado es cómo está compuesto hoy.
+        dashboards:
+          type: array
+          description: |
+            Los que este usuario puede ver, ya filtrados por su rol.
+
+            **Con uno solo no hay selector** · si hay una sola opción no se
+            ofrece una elección: es la misma regla que el selector de tenant,
+            que existe sólo para tokens de plataforma.
+          items:
+            type: object
+            required: [id, nombre, esDefault]
+            properties:
+              id: { type: string, format: uuid }
+              nombre: { type: string, examples: ['Overview', 'Marca'] }
+              esDefault:
+                type: boolean
+                description: |
+                  El que resuelve cuando el usuario no declaró preferencia y su
+                  rol tampoco. **Orden: preferencia > rol > default del tenant**,
+                  y lo resuelve el servidor.
+        dashboardActivoId:
+          type: ['string', 'null']
+          format: uuid
+          description: Cuál de `dashboards` está resuelto. `null` si no hay ninguno.
+        layoutActivoId:
+          type: ['string', 'null']
+          format: uuid
+          description: |
+            El layout publicado del dashboard activo.
+
+            **`null` es un estado normal y no un error**: un dashboard recién
+            creado existe y todavía no se compuso. Medido el 2026-09-26 creando
+            uno — el servicio devuelve `active_layout_id: null` y `tabs: null`.
+
+            **La superficie tiene que distinguirlo de «cero pestañas»**, que es
+            otra cosa: un rol al que no le asignaron ninguna. Los dos muestran
+            un dashboard vacío y la salida es distinta — componer uno, o pedir
+            acceso al otro.
       # CERRADO 2026-08-19 (humano): un usuario de cliente pertenece a UN tenant.
       # El invariante 2.1 se mantiene y `users.tenant_id NOT NULL` con él.
       #

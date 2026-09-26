@@ -19,7 +19,7 @@ import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { ConsoleContainer } from '@/surfaces/console/ConsoleContainer'
-import { API, context, ok } from '../../mocks/handlers'
+import { API, ok, tab } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
 import type { WireChatThread, WireMetric, WirePanel, WirePayload } from '@/api/adapt'
 
@@ -84,7 +84,7 @@ function laConsola(hilos: WireChatThread[]) {
   const preguntas: Record<string, unknown>[] = []
   server.use(
     http.get(`${API}/config/catalog`, () => ok(metrics)),
-    http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: context.tabs[0], panels })),
+    http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: tab, panels })),
     http.post(`${API}/config/panels:batch`, () => ok(payloads)),
     http.get(`${API}/config/chat/threads`, ({ request }) => {
       pedidos.push({ url: request.url })

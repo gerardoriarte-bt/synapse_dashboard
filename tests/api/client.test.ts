@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest'
 import { api } from '@/api/client'
 import { ApiError, SIN_CODIGO } from '@/api/types'
 import { saveToken } from '@/app/auth/session'
-import { API, context, fail, ok } from '../mocks/handlers'
+import { API, context, fail, ok, tab } from '../mocks/handlers'
 import { server } from '../mocks/server'
 
 describe('el envelope se desenvuelve en el cliente y en ningún otro lado', () => {
@@ -27,7 +27,7 @@ describe('el envelope se desenvuelve en el cliente y en ningún otro lado', () =
     const ctx = await api.me()
 
     expect(ctx.catalogVersion).toBe(context.catalog_version)
-    expect(ctx.tabs[0]?.pregunta).toBe(context.tabs[0]?.operational_question)
+    expect(ctx.tabs[0]?.pregunta).toBe(tab?.operational_question)
     // `first_name` + `last_name` → `nombre`. Los dos datos llegaron, así que
     // componerlo es reformatear y no inventar.
     expect(ctx.user.nombre).toBe('Prueba Uno')
@@ -131,7 +131,7 @@ describe('las rutas que arma el cliente', () => {
     server.use(
       http.get(`${API}/config/tabs/:tabId`, ({ request }) => {
         urls.push(new URL(request.url).search)
-        return ok({ tab: context.tabs[0], panels: [] })
+        return ok({ tab: tab, panels: [] })
       }),
     )
 

@@ -167,6 +167,21 @@ export function useSaveTheme() {
   })
 }
 
+/** Cambiar de dashboard · F5.1.
+ *
+ *  **Invalida `me` y nada más**, y es suficiente: `/config/me` vuelve con otras
+ *  `tabs`, otro `active_layout_id` y otro `active_dashboard_id`, y todo lo
+ *  demás cuelga de eso. Invalidar las pestañas o los paneles a mano sería
+ *  adivinar cuáles, y el servidor ya lo sabe. */
+export function useSelectDashboard() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ theme, dashboardId }: { theme: Theme; dashboardId: string | null }) =>
+      api.savePreferredDashboard(theme, dashboardId),
+    onSuccess: () => client.invalidateQueries({ queryKey: keys.me }),
+  })
+}
+
 
 /* ══ Builder · F4.23 ═════════════════════════════════════════════════════════
  *

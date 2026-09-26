@@ -28,6 +28,9 @@ type Props = {
   onChangeTheme?: (theme: Theme) => void
   /** Abre el chat con contexto de PESTAÑA · F3.15. **Sin él no hay botón.** */
   onAskTab?: (() => void) | undefined
+  /** Cambiar de dashboard · F5.1. **Sin él no hay selector**, aunque haya
+   *  varios: el builder monta esta consola sin poder cambiar de contexto. */
+  onSelectDashboard?: ((id: string) => void) | undefined
 }
 
 export function Topbar({
@@ -40,6 +43,7 @@ export function Topbar({
   onSelectTenant,
   onChangeTheme,
   onAskTab,
+  onSelectDashboard,
 }: Props) {
   const platform = context.alcance === 'plataforma'
   const tenants = context.tenantsDisponibles ?? []
@@ -85,6 +89,44 @@ export function Topbar({
           </div>
         ) : (
           <Label as="span">{context.tenant.etiqueta}</Label>
+        )}
+
+        {/* ── SELECTOR DE DASHBOARD · F5.1 ──────────────────────────────────
+            **Sólo con más de uno**, que es el primer bullet del criterio: «no
+            se ofrece una elección que no existe». Es la misma regla que el
+            selector de tenant de acá al lado, que existe sólo para tokens de
+            plataforma.
+
+            ── DÓNDE VA, Y ES UNA PROPUESTA DE SPEC ─────────────────────────
+
+            **Ni el `.pen` ni `design.md` lo dibujan.** §7.1 lista el navbar
+            —«wordmark · selector de tenant · rol · tema · período ·
+            notificaciones · CTA de chat · usuario»— y no lo incluye; el `.pen`
+            tampoco, y sus «capítulos» son PESTAÑAS de un layout, no
+            dashboards. El multi-dashboard llegó después del dibujo.
+
+            Lo que sí dibuja el `.pen` es un `chevrons-up-down` sobre el bloque
+            de cliente, para elegir contexto. Se sigue esa vecindad —el
+            dashboard es contexto, igual que el cliente— y se usa el mismo
+            control que el selector de período, que está dibujado y ya vive en
+            esta barra. **No se inventa una forma nueva**, y la pregunta de
+            dónde va queda abierta ·
+            `docs/PROPUESTA-2026-09-26-selector-de-dashboard.md`. */}
+        {context.dashboards.length > 1 && onSelectDashboard !== undefined && (
+          <label className="flex min-w-0 items-center gap-2">
+            <Label as="span">Dashboard</Label>
+            <select
+              value={context.dashboardActivoId ?? ''}
+              onChange={(e) => onSelectDashboard(e.target.value)}
+              className="font-mono text-label leading-rotulo tracking-rotulo uppercase text-ink bg-transparent border border-w3 rounded-md px-2 py-1 cursor-pointer"
+            >
+              {context.dashboards.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
         )}
 
         {/* El `Spacer` del dibujo. */}

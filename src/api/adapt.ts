@@ -301,7 +301,29 @@ export function adaptContext(w: WireContext): AppContext {
       puedeAprobar: false,
     },
 
-    tabs: w.tabs.map(adaptTabMeta),
+    // ── MULTI-DASHBOARD · F5.1 · renombre, no cálculo ──────────────────────
+    //
+    // `is_default` → `esDefault` y `active_*_id` → `*ActivoId`. **`?? null` en
+    // los dos ids**: el cable los declara `null` cuando el dashboard activo no
+    // tiene layout, y eso es un estado, no una ausencia.
+    dashboards: (w.dashboards ?? []).map((d) => ({
+      id: d.id,
+      nombre: d.name,
+      esDefault: d.is_default,
+    })),
+    dashboardActivoId: w.active_dashboard_id ?? null,
+    layoutActivoId: w.active_layout_id ?? null,
+
+    // **`?? []` y no un `!`** · F5.1. El cable puede mandar `tabs: null` cuando
+    // el dashboard activo no tiene layout publicado, medido el 2026-09-26. Sin
+    // esto el adaptador tira y la superficie dice «no se pudo cargar tu
+    // contexto · sin detalle del servidor» — atribuyendo al servicio un fallo
+    // nuestro.
+    //
+    // **Vacío no es lo mismo que «sin layout», y por eso viaja `layoutActivoId`
+    // aparte**: cero pestañas puede ser un rol que no ve ninguna. Quien tiene
+    // que distinguirlos es la superficie, y no puede si acá se colapsan.
+    tabs: (w.tabs ?? []).map(adaptTabMeta),
 
     // El cable manda cadenas sueltas —los últimos doce meses del CALENDARIO,
     // tenga o no materialización—. `etiqueta` es requerida por el contrato.

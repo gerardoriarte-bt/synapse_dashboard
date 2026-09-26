@@ -23,7 +23,7 @@ import { render, screen } from '@testing-library/react'
 import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { ConsoleContainer } from '@/surfaces/console/ConsoleContainer'
-import { API, context, kpiMetric, kpiPanel, ok } from '../../mocks/handlers'
+import { API, context, kpiMetric, kpiPanel, ok, tab } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
 import type { WireContext, WirePayload } from '@/api/adapt'
 
@@ -50,7 +50,7 @@ function conLocale(locale: string) {
   server.use(
     http.get(`${API}/config/me`, () => ok(ctx)),
     http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
-    http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: context.tabs[0], panels: [kpiPanel] })),
+    http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: tab, panels: [kpiPanel] })),
     http.post(`${API}/config/panels:batch`, () => ok({ [kpiPanel.id]: payload })),
   )
 }
