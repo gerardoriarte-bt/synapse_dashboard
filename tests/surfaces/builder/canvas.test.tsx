@@ -25,18 +25,18 @@ import { server } from '../../mocks/server'
 const API = '*/api/v1'
 
 const tenants = [{ id: 't-1', name: 'Under Armour México' }]
-const layouts = [{ ID: 'l-2', TenantID: 't-1', Status: 'draft', VersionID: 'v4', PublishedAt: null }]
+const layouts = [{ id: 'l-2', tenant_id: 't-1', status: 'draft', version_id: 'v4', published_at: null }]
 
 const panel = (id: string, metricId: string, colStart: number, colSpan: number) => ({
-  ID: id, TabID: 'tab-a', MetricID: metricId, Type: 'kpi',
-  ColStart: colStart, ColSpan: colSpan, RowSpan: 4,
+  id: id, tab_id: 'tab-a', metric_id: metricId, type: 'kpi',
+  col_start: colStart, col_span: colSpan, row_span: 4,
 })
 
 const detalle = {
   layout: layouts[0],
   tabs: [
     {
-      tab: { ID: 'tab-a', LayoutVersionID: 'l-2', Name: 'Resumen', OperationalQuestion: '¿?', SortOrder: 1, RoleIDs: [] },
+      tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
       panels: [panel('p-1', 'm-1', 1, 6), panel('p-2', 'm-2', 7, 6)],
     },
   ],
@@ -243,7 +243,7 @@ describe('§7.2 · el slot vacío es DERIVADO', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { ID: 'tab-a', LayoutVersionID: 'l-2', Name: 'Resumen', OperationalQuestion: '¿?', SortOrder: 1, RoleIDs: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [panel('p-1', 'm-1', 1, 6)],
             },
           ],
@@ -266,7 +266,7 @@ describe('el teclado no es un accesorio · y no es una puerta trasera', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { ID: 'tab-a', LayoutVersionID: 'l-2', Name: 'Resumen', OperationalQuestion: '¿?', SortOrder: 1, RoleIDs: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [panel('p-1', 'm-1', 1, 3)],
             },
           ],
@@ -293,7 +293,7 @@ describe('el teclado no es un accesorio · y no es una puerta trasera', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { ID: 'tab-a', LayoutVersionID: 'l-2', Name: 'Resumen', OperationalQuestion: '¿?', SortOrder: 1, RoleIDs: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [panel('p-1', 'm-1', 1, 3)],
             },
           ],
@@ -346,7 +346,7 @@ describe('los handles del panel seleccionado', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { ID: 'tab-a', LayoutVersionID: 'l-2', Name: 'Resumen', OperationalQuestion: '¿?', SortOrder: 1, RoleIDs: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [panel('p-1', 'm-1', 1, 3)],
             },
           ],
@@ -409,7 +409,7 @@ describe('«Span al soltar» · lo que va a ocupar, antes de soltar', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { ID: 'tab-a', LayoutVersionID: 'l-2', Name: 'Resumen', OperationalQuestion: '¿?', SortOrder: 1, RoleIDs: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [panel('p-1', 'm-1', 1, 6)],
             },
           ],
@@ -441,10 +441,10 @@ describe('«Span al soltar» · lo que va a ocupar, antes de soltar', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { ID: 'tab-a', LayoutVersionID: 'l-2', Name: 'Resumen', OperationalQuestion: '¿?', SortOrder: 1, RoleIDs: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [
                 panel('p-1', 'm-1', 1, 6),
-                { ...panel('p-2', 'm-2', 7, 6), RowSpan: 2 },
+                { ...panel('p-2', 'm-2', 7, 6), row_span: 2 },
               ],
             },
           ],

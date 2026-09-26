@@ -6,17 +6,25 @@
  *  vertical, cantidad de usuarios, frescura del feed más atrasado y última
  *  publicación**.
  *
- *  `GET /admin/tenants` devuelve **dos**: `id` y `name`. Es
- *  `ports.TenantPublicOption`, que se llama «public option» porque nació para
- *  llenar un selector, no para sostener una tabla de administración.
+ *  ── **B4.1 LLEGÓ** · 2026-09-26, medido contra `8633b10` ───────────────────
  *
- *  **Las cuatro que faltan no se inventan ni se omiten en silencio.** Omitirlas
- *  daría una tabla que parece completa y no lo es: quien la mire va a concluir
- *  que no hay nada que saber del estado de un cliente. Se declaran ausentes, con
- *  la gramática de §8 — estado, razón y qué lo desbloquea — que es la misma que
- *  el producto usa para un feed vencido.
+ *  Acá decía que `GET /admin/tenants` devuelve **dos** campos —`id` y `name`,
+ *  `ports.TenantPublicOption`, «public option» porque nació para llenar un
+ *  selector— y que las otras cinco columnas se declaraban ausentes.
  *
- *  Está pedido en B4.1 de `docs/PARA-BACKEND.md`.
+ *  **Llegaron tres**: usuarios, frescura del feed más atrasado y última
+ *  publicación. Las escribimos en el fork y las implementaron ellos.
+ *
+ *  **Las dos que quedan son una pregunta NUESTRA, no un hueco suyo.** `status` y
+ *  `vertical` vienen en `null` porque el campo existe y nadie definió sus
+ *  valores; lo dicen en su respuesta del 2026-09-25. Por eso el aviso del pie
+ *  cambió de razón y no sólo de número: «se desbloquea con B4.1» habría quedado
+ *  esperando algo que ya pasó.
+ *
+ *  Lo que sigue valiendo es por qué se declaran: omitirlas daría una tabla que
+ *  parece completa y no lo es. Se declaran ausentes con la gramática de §8
+ *  —estado, razón y qué lo desbloquea—, la misma que el producto usa para un
+ *  feed vencido.
  *
  *  ── Y LO QUE NO SE MUESTRA AUNQUE SE PUDIERA ────────────────────────────────
  *
@@ -34,13 +42,22 @@ import type { Tenant } from '../../api/admin'
 /** Lo que §7.3 pide y el cable no trae. Se declara acá y no en un comentario
  *  para que la pantalla lo diga: una columna que falta y nadie nombra es una
  *  columna que nadie pide. */
-const COLUMNAS_QUE_FALTAN = [
-  'estado',
-  'vertical',
-  'usuarios',
-  'frescura del feed más atrasado',
-  'última publicación',
-] as const
+const COLUMNAS_QUE_FALTAN = ['estado', 'vertical'] as const
+
+/** El huso del NAVEGADOR y no el del tenant, y es a propósito · §2.4.
+ *
+ *  «Última publicación» es un evento de operación —cuándo alguien apretó
+ *  publicar— y lo lee quien está mirando la pantalla. El corte del día del
+ *  negocio es otra cosa y ésa sí sale de `tenant.timezone`. Confundirlas es el
+ *  bug que `CLAUDE.md` describe. */
+const FECHA = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
+
+/** `null` es «nunca cargó» y `0` es «recién». No se colapsan. */
+function frescura(horas: number | null, estado: string): string {
+  if (horas === null) return estado === 'unknown' ? 'Nunca cargó' : '—'
+  if (horas < 1) return 'Recién'
+  return `${String(Math.round(horas))} h`
+}
 
 type Props = {
   tenants: readonly Tenant[]
@@ -71,17 +88,26 @@ export function TenantList({ tenants, onAbrir, cargando = false }: Props) {
             <th className="text-left py-2">
               <Label>Cliente</Label>
             </th>
+            <th className="text-left py-2">
+              <Label>Usuarios</Label>
+            </th>
+            <th className="text-left py-2">
+              <Label>Feed más atrasado</Label>
+            </th>
+            <th className="text-left py-2">
+              <Label>Última publicación</Label>
+            </th>
             <th className="text-right py-2">
               <Label>Acción</Label>
             </th>
           </tr>
         </thead>
         <tbody>
-          {cargando && <SkeletonRows columnas={2} />}
+          {cargando && <SkeletonRows columnas={5} />}
           {vacio && (
             <EmptyRow
               clase="sistema"
-              columnas={2}
+              columnas={5}
               razon="Ningún cliente dado de alta todavía"
               salida="Se crean con POST /admin/tenants · crear uno exige elegir plantilla de vertical"
             />
@@ -89,6 +115,23 @@ export function TenantList({ tenants, onAbrir, cargando = false }: Props) {
           {tenants.map((t) => (
             <tr key={t.id} className="border-b border-w3">
               <td className="py-3 text-ink text-celda">{t.nombre}</td>
+              <td className="py-3 text-ink text-celda">{t.usuarios}</td>
+              <td className="py-3">
+                {/* Dos datos en una celda porque son uno: cuánto hace y de qué
+                    fuente. La hora sola no dice si está bien — eso depende de la
+                    cadencia, que el servicio ya consideró al reducir. */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-ink text-celda">
+                    {frescura(t.peorFuenteHoras, t.peorFuente)}
+                  </span>
+                  <Label as="div">{t.peorFuente}</Label>
+                </div>
+              </td>
+              <td className="py-3 text-ink text-celda">
+                {/* «Nunca» y no un guion: que un cliente jamás haya publicado es
+                    un hecho operativo, no un dato ausente. */}
+                {t.publicadoEn === null ? 'Nunca' : FECHA.format(new Date(t.publicadoEn))}
+              </td>
               <td className="py-3 text-right">
                 <button
                   type="button"
@@ -109,8 +152,13 @@ export function TenantList({ tenants, onAbrir, cargando = false }: Props) {
       <div className="flex flex-col gap-1 rounded-sm bg-w2 p-3">
         <Label as="div">Faltan {COLUMNAS_QUE_FALTAN.length} columnas que el diseño pide</Label>
         <Label as="div">{COLUMNAS_QUE_FALTAN.join(' · ')}</Label>
+        {/* **La razón cambió de dueño** · 2026-09-26. Acá decía «GET
+            /admin/tenants devuelve solo id y nombre · se desbloquea con B4.1», y
+            B4.1 llegó: las dos que faltan vienen en `null` esperando que
+            NOSOTROS definamos sus valores. Dejar la razón vieja habría hecho que
+            la pantalla siguiera esperando a otro equipo. */}
         <Label as="div">
-          GET /admin/tenants devuelve solo id y nombre · se desbloquea con B4.1
+          El campo llega vacío · falta que definamos qué valores toma cada una
         </Label>
       </div>
     </div>

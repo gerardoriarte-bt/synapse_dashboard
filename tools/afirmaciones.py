@@ -190,6 +190,30 @@ def main() -> int:
         texto = doc.read_text(encoding="utf-8")
         rel = doc.relative_to(RAIZ)
 
+        # ── UN DOCUMENTO QUE NOS MANDARON NO SE VALIDA CONTRA NUESTRO CABLE ──
+        #
+        # Agregado el 2026-09-26. `RESPUESTA-2026-09-25-para-backend.md` lo
+        # escribió el equipo de BACKEND y su primera línea lo dice: «Para el
+        # equipo de front». Cita `GET /admin/users` y dos `POST` que el servicio
+        # sirve y **nuestro cable no declara**, así que el chequeo los marcaba.
+        #
+        # **Y la autoridad está al revés.** Su API es el hecho; nuestro yaml es
+        # una transcripción. Marcarle una ruta a quien la implementa porque
+        # nosotros no la transcribimos todavía persigue nuestro vocabulario, que
+        # es la misma razón por la que `backdocs/` y `snowflake/` están afuera.
+        #
+        # **La exención NO es por el prefijo solo.** Se exige que el documento se
+        # declare dirigido a nosotros: si algún día escribimos un `RESPUESTA-*`
+        # nuestro, se sigue validando, que es lo que queremos — el error de
+        # mandar una ruta mal escrita ya nos pasó.
+        #
+        # Lo que el chequeo NO puede decir es si nos falta transcribir algo. Eso
+        # lo dice `humo`, que compara contra el servicio y no contra un texto.
+        if doc.name.startswith("RESPUESTA-") and texto.lstrip().startswith(
+            "# Para el equipo de front"
+        ):
+            continue
+
         # ── 1 · método + ruta ────────────────────────────────────────────────
         # `GET/POST/PUT/DELETE /x` se expande a los cuatro.
         for m in re.finditer(

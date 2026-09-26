@@ -3,16 +3,26 @@
 /** B5 · Vista previa por rol · F4.12
  *
  *  **El recorte lo hace el SERVIDOR, y estas pruebas lo respetan.** Los fixtures
- *  devuelven lo que `/admin/layouts/:id/preview?roleId=` contestaría — ya
- *  filtrado— porque «filtrar en el front lo que ya se tiene probaría el filtro
- *  del front, que no existe».
+ *  devuelven lo que la ruta contestaría — ya filtrado— porque «filtrar en el
+ *  front lo que ya se tiene probaría el filtro del front, que no existe».
  *
- *  Forma de la CONSOLA en la respuesta —`sort_order`, `col_start`— y no la del
- *  builder: el preview sale de `GetTab`.
+ *  ── **LA FORMA CAMBIÓ Y LA PANTALLA PERDIÓ LOS PANELES** · 2026-09-26 ───────
+ *
+ *  Upstream tomó B4.9 en `8633b10` con una forma distinta de la de nuestro fork:
+ *  `role` anidado, pestañas planas y **sin paneles**. Las cuatro pruebas de nivel
+ *  de panel se fueron con ellos, y en su lugar hay una que afirma el hueco.
+ *
+ *  ── **Y EL MOCK EXIGE `role_id`** ──────────────────────────────────────────
+ *
+ *  Antes leía `searchParams.get('roleId')`, que es lo que el cliente mandaba, así
+ *  que **ninguna prueba podía atrapar que el servicio quiere `role_id`** — el
+ *  handler respondía igual con la grafía equivocada. Medido el 2026-09-26:
+ *  `?roleId=` da 400. Es la familia de F1.38: un mock que no exige lo que el
+ *  servicio exige esconde la frontera en vez de probarla.
  */
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
@@ -24,13 +34,13 @@ const API = '*/api/v1'
 
 const tenants = [{ id: 't-1', name: 'Under Armour México' }]
 const layouts = [
-  { ID: 'l-2', TenantID: 't-1', Status: 'draft', VersionID: 'v4', PublishedAt: null },
+  { id: 'l-2', tenant_id: 't-1', status: 'draft', version_id: 'v4', published_at: null },
 ]
 const detalle = {
   layout: layouts[0],
   tabs: [
     {
-      tab: { ID: 'tab-a', LayoutVersionID: 'l-2', Name: 'Resumen', OperationalQuestion: '¿Cómo vamos?', SortOrder: 1, RoleIDs: [] },
+      tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿Cómo vamos?', sort_order: 1, role_ids: [] },
       panels: [],
     },
   ],
@@ -46,32 +56,49 @@ const metricas = [
   { id: 'm-2', tenant_id: 't-1', key: 'margin', name: 'Margen', shape: 'scalar', family: 'demand', layer: 'GOLD', source: 'ERP', base: 'x', min_grain: 'day', dimensions: [], catalog_version: 1 },
 ]
 
-const panel = (id: string, metricId: string, colStart: number) => ({
-  id, metric_id: metricId, type: 'kpi', col_start: colStart, col_span: 3, row_span: 4,
-})
-
-/** Lo que el servidor devuelve por rol · YA filtrado. */
+/** Lo que el servidor devuelve por rol · las pestañas que ve, YA filtradas.
+ *
+ *  **Sin `panels` y sin `without_payloads`**: la respuesta de upstream no los
+ *  tiene. `role` va anidado. Medido el 2026-09-26 contra `8633b10`. */
 const previews: Record<string, unknown> = {
   'r-ceo': {
-    layout_id: 'l-2', role_id: 'r-ceo', role_name: 'CEO', without_payloads: true,
+    layout_id: 'l-2',
+    dashboard_id: 'd-1',
+    status: 'draft',
+    role: { id: 'r-ceo', name: 'CEO' },
     tabs: [
-      {
-        tab: { id: 'tab-a', name: 'Resumen', operational_question: '¿Cómo vamos?', sort_order: 1 },
-        panels: [panel('p-1', 'm-1', 1), panel('p-2', 'm-2', 4)],
-      },
+      { id: 'tab-a', name: 'Resumen', operational_question: '¿Cómo vamos?', sort_order: 1 },
+      { id: 'tab-b', name: 'Medios', operational_question: '¿Rinde la inversión?', sort_order: 2 },
     ],
   },
   'r-pla': {
-    layout_id: 'l-2', role_id: 'r-pla', role_name: 'Planner', without_payloads: true,
-    // El servidor ya sacó el panel de la métrica oculta.
+    layout_id: 'l-2',
+    dashboard_id: 'd-1',
+    status: 'draft',
+    role: { id: 'r-pla', name: 'Planner' },
+    // El servidor ya sacó la pestaña que este rol no ve · `roles.tab_ids`.
     tabs: [
-      {
-        tab: { id: 'tab-a', name: 'Resumen', operational_question: '¿Cómo vamos?', sort_order: 1 },
-        panels: [panel('p-1', 'm-1', 1)],
-      },
+      { id: 'tab-a', name: 'Resumen', operational_question: '¿Cómo vamos?', sort_order: 1 },
     ],
   },
 }
+
+/** **Exige `role_id` y devuelve 400 con `roleId`**, igual que el servicio.
+ *
+ *  Es lo que convierte la grafía en algo que una prueba puede atrapar: volver el
+ *  cliente a `roleId` rompe esta suite en vez de pasar en verde y fallar en
+ *  producción. */
+const handlerPreview = http.get(`${API}/admin/layouts/:id/preview`, ({ request }) => {
+  const params = new URL(request.url).searchParams
+  const rol = params.get('role_id')
+  if (rol === null) {
+    return HttpResponse.json(
+      { success: false, error: 'role_id es requerido y debe ser un uuid' },
+      { status: 400 },
+    )
+  }
+  return ok(previews[rol])
+})
 
 function base(extra: Parameters<typeof server.use> = []) {
   server.use(
@@ -82,9 +109,7 @@ function base(extra: Parameters<typeof server.use> = []) {
     http.get(`${API}/admin/tenants/:id/catalog`, () => ok(metricas)),
     http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok(roles)),
     http.get(`${API}/config/blocks`, () => ok([])),
-    http.get(`${API}/admin/layouts/:id/preview`, ({ request }) =>
-      ok(previews[new URL(request.url).searchParams.get('roleId') ?? '']),
-    ),
+    handlerPreview,
   )
 }
 
@@ -110,18 +135,29 @@ async function abrirPreview() {
 }
 
 describe('§7.2 · como lo verá el rol seleccionado', () => {
-  it('pinta las pestañas y paneles que el servidor devolvió para ese rol', async () => {
+  it('pinta las PESTAÑAS que el servidor devolvió para ese rol', async () => {
     base()
     montar()
     await abrirPreview()
 
     expect(await screen.findByText('Como lo ve · CEO')).toBeInTheDocument()
-    // El título de la pestaña, que sale del cable en snake_case —`name`— y no
-    // del PascalCase del builder: el preview viene de `GetTab`.
+    // Los títulos salen del cable en snake_case —`name`, `operational_question`—.
     expect(screen.getByRole('heading', { name: 'Resumen' })).toBeInTheDocument()
     expect(screen.getByText('¿Cómo vamos?')).toBeInTheDocument()
-    expect(screen.getByText('Ventas')).toBeInTheDocument()
-    expect(screen.getByText('Margen')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Medios' })).toBeInTheDocument()
+    expect(screen.getByText('2 pestaña(s)')).toBeInTheDocument()
+  })
+
+  it('declara si el layout previsualizado es un BORRADOR', async () => {
+    // **Un borrador SÍ se puede previsualizar** desde que arreglaron la compuerta
+    // —mira quién pregunta, no a quién se simula—. Y sin decirlo, alguien compara
+    // «lo que ve el Planner» contra algo que el Planner todavía no ve.
+    base()
+    montar()
+    await abrirPreview()
+    await screen.findByText('Como lo ve · CEO')
+
+    expect(screen.getByText('Borrador')).toBeInTheDocument()
   })
 
   it('cambiar de rol PIDE OTRO preview · no se filtra acá', async () => {
@@ -135,8 +171,10 @@ describe('§7.2 · como lo verá el rol seleccionado', () => {
     await userEvent.selectOptions(screen.getByLabelText('Rol'), 'r-pla')
 
     expect(await screen.findByText('Como lo ve · Planner')).toBeInTheDocument()
-    await waitFor(() => expect(screen.queryByText('Margen')).toBeNull())
-    expect(screen.getByText('Ventas')).toBeInTheDocument()
+    // El CEO ve dos pestañas y el Planner una. La diferencia la decidió el
+    // servidor con `roles.tab_ids`, y es lo que esta pantalla existe para mostrar.
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Medios' })).toBeNull())
+    expect(screen.getByRole('heading', { name: 'Resumen' })).toBeInTheDocument()
   })
 
   it('el preview de un rol NO se sirve del cache de otro', async () => {
@@ -145,7 +183,7 @@ describe('§7.2 · como lo verá el rol seleccionado', () => {
     const pedidos: string[] = []
     base([
       http.get(`${API}/admin/layouts/:id/preview`, ({ request }) => {
-        const r = new URL(request.url).searchParams.get('roleId') ?? ''
+        const r = new URL(request.url).searchParams.get('role_id') ?? ''
         pedidos.push(r)
         return ok(previews[r])
       }),
@@ -163,7 +201,13 @@ describe('§7.2 · como lo verá el rol seleccionado', () => {
   it('un rol sin pestañas lo dice, y no es un error', async () => {
     base([
       http.get(`${API}/admin/layouts/:id/preview`, () =>
-        ok({ layout_id: 'l-2', role_id: 'r-ceo', role_name: 'CEO', without_payloads: true, tabs: [] }),
+        ok({
+          layout_id: 'l-2',
+          dashboard_id: 'd-1',
+          status: 'published',
+          role: { id: 'r-ceo', name: 'CEO' },
+          tabs: [],
+        }),
       ),
     ])
     montar()
@@ -198,35 +242,43 @@ describe('§7.2 · sin chrome de edición, y con toggle', () => {
 })
 
 describe('la mitad que §7.2 pide y no llega', () => {
-  it('declara que la vista NO trae cifras, y por qué', async () => {
-    // Sin esto, quien mire un panel sin número va a leer «este panel no tiene
-    // datos» en vez de «esta vista no los pide».
+  it('declara que la vista NO trae paneles ni cifras, y por qué', async () => {
+    // Sin esto, quien mire la pantalla va a leer «este rol no tiene paneles» en
+    // vez de «esta vista no los pide».
     base()
     const { container } = montar()
     await abrirPreview()
     await screen.findByText('Como lo ve · CEO')
 
     const texto = container.textContent ?? ''
-    expect(texto).toContain('muestra la composición, no las cifras')
-    expect(texto).toContain('B4.9')
+    expect(texto).toContain('qué pestañas ve el rol')
+    expect(texto).toContain('no sus paneles ni sus cifras')
+    // Y la razón, que es de la ruta y no nuestra.
+    expect(texto).toContain('no hay otra que acepte el rol como lente')
   })
 
-  it('el aviso se APAGA si la respuesta deja de declarar `without_payloads`', async () => {
-    // **La prueba que la mutación pidió.** Escrito fijo, el aviso seguiría
-    // diciendo que no hay cifras el día que el servicio las mande — y nadie lo
-    // notaría hasta mirar. Colgado del campo, se apaga solo.
-    base([
-      http.get(`${API}/admin/layouts/:id/preview`, () =>
-        ok({ ...(previews['r-ceo'] as object), without_payloads: false }),
-      ),
-    ])
+  // ── UNA PROPIEDAD QUE SE PERDIÓ, Y SE DICE ─────────────────────────────────
+  //
+  // Acá había una prueba —«el aviso se APAGA si la respuesta deja de declarar
+  // `without_payloads`»— que existía por una mutación: colgado del campo, el
+  // aviso se apagaba solo el día que el servicio mandara cifras, y escrito fijo
+  // se volvía una leyenda que nadie notaría vencida.
+  //
+  // **La respuesta de upstream no tiene ese campo**, así que el aviso pasó a ser
+  // fijo y esa propiedad NO existe más. No se reemplaza por una prueba que
+  // parezca cubrirla. Lo que sí se puede afirmar es que no hay paneles, que es
+  // comprobable mirando la pantalla y falla el día que empiecen a llegar.
+  it('no hay NINGÚN panel en la vista · y el día que lleguen, esto falla', async () => {
+    base()
     const { container } = montar()
     await abrirPreview()
     await screen.findByText('Como lo ve · CEO')
 
-    expect(container.textContent ?? '').not.toContain('muestra la composición, no las cifras')
-    // Lo que sí sigue siendo cierto se sigue diciendo.
-    expect(container.textContent ?? '').toContain('El recorte por rol lo hizo el servidor')
+    // Los fixtures traen dos pestañas y cero paneles. Si la respuesta empezara a
+    // traerlos, la pantalla los pintaría con su medida —`3×4 · col 1`— y este
+    // `not` se cae, que es la señal de que hay que volver a construir la grilla.
+    expect(container.textContent ?? '').not.toMatch(/\d+×\d+ · col \d+/)
+    expect(container.querySelector('[style*="grid-column"]')).toBeNull()
   })
 
   it('los paneles NO se dibujan con un payload inventado', async () => {
@@ -241,17 +293,6 @@ describe('la mitad que §7.2 pide y no llega', () => {
     for (const estado of ['BLOQUEADO', 'CARGANDO', 'SIN_PERMISO', 'DEGRADADO']) {
       expect(texto).not.toContain(estado)
     }
-  })
-
-  it('pinta la posición y el tamaño en unidades de grilla', async () => {
-    // Es lo que sí se puede afirmar, y es la mitad que compone.
-    base()
-    montar()
-    await abrirPreview()
-    await screen.findByText('Como lo ve · CEO')
-
-    const ventas = screen.getByText('Ventas').closest('div')
-    expect(within(ventas as HTMLElement).getByText('3×4 · col 1')).toBeInTheDocument()
   })
 })
 

@@ -20,9 +20,26 @@ import { server } from '../../mocks/server'
 
 const API = '*/api/v1'
 
+/** **El superset de B4.1**, medido el 2026-09-26 · era `{id, name}`.
+ *
+ *  Los dos clientes difieren a propósito en lo que enseña: uno publicó y tiene
+ *  una fuente al día; el otro **nunca publicó y ninguna fuente cargó nunca**, que
+ *  son los dos `null` que no se pueden colapsar en cero. */
 const tenants = [
-  { id: 't-1', name: 'Under Armour México' },
-  { id: 't-2', name: 'Keralty Colombia' },
+  {
+    id: 't-1', name: 'Under Armour México',
+    locale: 'es-CO', currency: 'COP', timezone: 'America/Bogota',
+    user_count: 12, last_published_at: '2026-09-22T09:19:00Z',
+    worst_feed_status: 'ok', worst_feed_freshness_hours: 4,
+    status: null, vertical: null, created_at: '2026-09-22T09:18:45Z',
+  },
+  {
+    id: 't-2', name: 'Keralty Colombia',
+    locale: 'es-CO', currency: 'COP', timezone: 'America/Bogota',
+    user_count: 0, last_published_at: null,
+    worst_feed_status: 'unknown', worst_feed_freshness_hours: null,
+    status: null, vertical: null, created_at: '2026-09-25T10:00:00Z',
+  },
 ]
 
 function montar() {
@@ -122,22 +139,56 @@ describe('F4.2 · la lista de clientes', () => {
     expect(screen.getByText('Keralty Colombia')).toBeInTheDocument()
   })
 
-  it('DECLARA las columnas que §7.3 pide y el cable no trae', async () => {
-    // La mitad que importa: `GET /admin/tenants` devuelve `id` y `name`, y el
-    // diseño pide seis columnas. Omitir las cuatro que faltan daría una tabla
-    // que parece completa — quien la mire concluiría que no hay nada que saber
-    // del estado de un cliente.
+  it('pinta las TRES columnas que B4.1 trajo · usuarios, feed y publicación', async () => {
+    server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
+    const { container } = montar()
+    await screen.findByText('Under Armour México')
+
+    const filas = screen.getAllByRole('row')
+    // UA MX: 12 usuarios, su peor fuente en 4 h y publicado el 22 de septiembre.
+    const ua = within(filas[1] as HTMLElement)
+    expect(ua.getByText('12')).toBeVisible()
+    expect(ua.getByText('4 h')).toBeVisible()
+    expect(ua.getByText('22 sep 2026')).toBeVisible()
+    // Y el encabezado declara las tres.
+    const texto = container.textContent ?? ''
+    for (const col of ['Usuarios', 'Feed más atrasado', 'Última publicación']) {
+      expect(texto).toContain(col)
+    }
+  })
+
+  it('«nunca» NO se colapsa con cero ni con un guion', async () => {
+    // **La distinción que A5 ya documentó, acá otra vez**: `null` es «nunca» y
+    // `0` es «recién». Un cliente que nunca publicó y cuyas fuentes nunca
+    // cargaron se ve igual a uno sano si se colapsan.
+    server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
+    montar()
+    await screen.findByText('Keralty Colombia')
+
+    const filas = screen.getAllByRole('row')
+    const keralty = within(filas[2] as HTMLElement)
+    expect(keralty.getByText('Nunca cargó')).toBeVisible()
+    expect(keralty.getByText('Nunca')).toBeVisible()
+    // Cero usuarios SÍ se pinta como cero: es un conteo, no una ausencia.
+    expect(keralty.getByText('0')).toBeVisible()
+  })
+
+  it('DECLARA las dos que faltan, y que la pregunta es NUESTRA', async () => {
+    // **La razón cambió de dueño el 2026-09-26.** Antes decía «GET
+    // /admin/tenants devuelve solo id y nombre · se desbloquea con B4.1»; B4.1
+    // llegó, y `status`/`vertical` vienen en `null` esperando que definamos sus
+    // valores. Dejar la razón vieja habría hecho que la pantalla siguiera
+    // esperando a otro equipo.
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     const { container } = montar()
     await screen.findByText('Under Armour México')
 
     const texto = container.textContent ?? ''
-    expect(texto).toContain('Faltan 5 columnas')
-    for (const columna of ['estado', 'vertical', 'usuarios', 'última publicación']) {
-      expect(texto).toContain(columna)
-    }
-    // §8: estado, razón, y qué lo desbloquea.
-    expect(texto).toContain('B4.1')
+    expect(texto).toContain('Faltan 2 columnas')
+    expect(texto).toContain('estado')
+    expect(texto).toContain('vertical')
+    expect(texto).toContain('falta que definamos qué valores toma cada una')
+    expect(texto).not.toContain('se desbloquea con B4.1')
   })
 
   it('sin clientes invita a actuar, y NO se sale de la tabla', async () => {
@@ -168,7 +219,10 @@ describe('las cinco pantallas de §7.3 · ninguna queda pendiente', () => {
     server.use(
       http.get(`${API}/admin/tenants`, () => ok(tenants)),
       http.get(`${API}/admin/tenants/:id/feeds`, () => ok([])),
-      http.get(`${API}/admin/tenants/:id/users`, () => ok([])),
+      // **De plataforma desde el 2026-09-26** · A3 llama `/admin/users`, no la
+      // por-cliente. Dejar la vieja acá pasaba igual —la pantalla pinta su vacío
+      // sin errar— y el handler decía una ruta que ya no se pide.
+      http.get(`${API}/admin/users`, () => ok({ total: 0, tenants: 0, users: [] })),
       http.get(`${API}/admin/tenants/:id/catalog`, () => ok([])),
       http.get(`${API}/admin/tenants/:id/layouts`, () => ok([])),
       http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([])),

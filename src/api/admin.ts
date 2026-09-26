@@ -91,7 +91,39 @@ async function pedir<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
 
 /* ── Lo que sale de acá · la propuesta ─────────────────────────────────────── */
 
-export type Tenant = { id: string; nombre: string }
+/** Un cliente, con lo que A1 necesita para su banda · B4.1 · desde `6e521cc`.
+ *
+ *  **Era `{ id, nombre }` hasta el 2026-09-26.** `GET /admin/tenants` servía
+ *  `TenantPublicOption` —«public option» porque nació para llenar un selector— y
+ *  A1 declaraba cinco columnas ausentes. Llegaron tres.
+ *
+ *  `estado` y `vertical` siguen en `null`, y **no porque falte el campo**: el
+ *  servicio los manda vacíos esperando que definamos sus valores. Es una
+ *  pregunta nuestra sin contestar, no un hueco de ellos. */
+export type Tenant = {
+  id: string
+  nombre: string
+  locale: string
+  moneda: string
+  zonaHoraria: string
+  /** Usuarios ACTIVOS. **Cero es válido**: un cliente nuevo no tiene ninguno. */
+  usuarios: number
+  /** `null` si nunca se publicó un layout. */
+  publicadoEn: string | null
+  /** Ya reducido por el servicio sobre todas las fuentes del cliente.
+   *
+   *  **`unknown` no es lo mismo que vencido**: quiere decir que ninguna fuente
+   *  cargó nunca. Colapsarlos pintaría un cliente sin datos como uno al día. */
+  peorFuente: string
+  /** Horas desde la última carga de la peor fuente. **`null` es «nunca cargó» y
+   *  `0` es «recién»** — la misma distinción que `saludDeFuente` sostiene en A5,
+   *  y confundirlas pinta una fuente muerta como sana. */
+  peorFuenteHoras: number | null
+  /** `null` hasta que definamos los valores · pedido abierto. */
+  estado: string | null
+  /** `null` hasta que definamos los valores · pedido abierto. */
+  vertical: string | null
+}
 
 export type EstadoDeLayout = 'borrador' | 'publicado'
 
@@ -121,12 +153,29 @@ export type RolParaGuardar = {
 }
 
 /** El layout como lo vería un rol · B4.9. **Sin payloads**, y lo declara. */
+/** ── LA FORMA CAMBIÓ Y ES MÁS CHICA · 2026-09-26 ────────────────────────────
+ *
+ *  Este tipo describía la respuesta de NUESTRO fork, que devolvía cada pestaña
+ *  con **sus paneles ya filtrados** por `hidden_metric_ids`. Upstream tomó B4.9
+ *  en `8633b10` con una forma distinta, medida: devuelve QUÉ PESTAÑAS ve el rol
+ *  y nada más — ni paneles, ni `without_payloads`.
+ *
+ *  **Y no hay otra ruta que lo dé.** `GET /config/tabs/{tabId}` resuelve el rol
+ *  desde el token y no acepta lente, así que un admin no puede pedir una pestaña
+ *  «con los ojos de otro rol». Está medido y anotado en el cable.
+ *
+ *  Lo que se pierde es el nivel de panel, que es la mitad de §7.2. Queda pedido
+ *  a backend; hasta entonces `RolePreview` declara el hueco en vez de pintar una
+ *  grilla vacía. */
 export type PreviewDeRol = {
   layoutId: string
-  rolId: string
-  rolNombre: string
-  tabs: { tab: TabDeLayout; panels: PanelConfig[] }[]
-  sinPayloads: boolean
+  dashboardId: string
+  /** El del layout previsualizado: un borrador se puede previsualizar. */
+  estado: EstadoDeLayout
+  /** Anidado en el cable, y acá también: son un par, no dos campos sueltos. */
+  rol: { id: string; nombre: string }
+  /** **Sin paneles.** Ver el aviso de arriba. */
+  tabs: TabDeLayout[]
 }
 
 export type LayoutVersion = {
@@ -175,28 +224,55 @@ const ESTADOS: Readonly<Record<string, EstadoDeLayout>> = {
   published: 'publicado',
 }
 
+/** ── LOS QUINCE CAMPOS PASARON A snake_case · 2026-09-26 ────────────────────
+ *
+ *  Los tres adaptadores de abajo leían PascalCase —`w.ID`, `p.MetricID`,
+ *  `t.tab.SortOrder`— porque hasta `6e595e3` los structs de dominio de Go **no
+ *  tenían etiquetas `json:`** y Go serializaba con el nombre del campo. Estaba
+ *  medido y escrito: «el PascalCase quedó confirmado y no deducido».
+ *
+ *  **`8633b10` les puso etiquetas** —B4.10— y los quince pasaron a `undefined`.
+ *
+ *  **Y no rompía: mentía.** Trece de los quince dan `undefined`, que se ve como
+ *  un hueco. El catorceavo es el que enseña:
+ *
+ *      estado: ESTADOS[w.Status] ?? 'borrador'
+ *
+ *  `ESTADOS[undefined]` es `undefined`, así que el `??` entregaba `'borrador'`
+ *  **para todo layout, incluido el publicado**. El fallback estaba escrito como
+ *  «la lectura SEGURA», y con la clave cambiada dejó de ser una lectura segura y
+ *  pasó a ser una afirmación falsa con cara de prudencia.
+ *
+ *  No lo vio el compilador —el tipo venía del yaml, que también decía
+ *  PascalCase—, ni el lint, ni las pruebas, que corren contra fixtures hechos
+ *  del mismo yaml. Lo encontró `humo` la primera vez que supo comparar los
+ *  campos que el servicio manda contra los que el cable declara. */
 function adaptarVersion(w: WireLayoutVersion): LayoutVersion {
   return {
-    id: w.ID,
-    tenantId: w.TenantID,
+    id: w.id,
+    tenantId: w.tenant_id,
     // Un estado que no es `draft` ni `published` no se sustituye por uno: cae en
     // `borrador`, que es la lectura SEGURA — un layout que no se sabe si está
     // publicado no se trata como publicado.
-    estado: ESTADOS[w.Status] ?? 'borrador',
-    versionId: w.VersionID,
-    publicadoEn: w.PublishedAt ?? null,
+    //
+    // **Ese «seguro» depende de que la clave exista.** Ver el comentario de
+    // arriba: con `Status` en vez de `status` este `??` afirmaba «borrador» sobre
+    // el layout publicado durante un día entero.
+    estado: ESTADOS[w.status] ?? 'borrador',
+    versionId: w.version_id,
+    publicadoEn: w.published_at ?? null,
   }
 }
 
 function adaptarPanel(p: A['LayoutPanel']): PanelConfig {
   return {
-    id: p.ID,
-    tipo: p.Type as PanelConfig['tipo'],
-    metricId: p.MetricID,
-    colStart: p.ColStart,
-    colSpan: p.ColSpan,
-    rowSpan: p.RowSpan,
-    ...(p.Options === undefined ? {} : { opciones: p.Options }),
+    id: p.id,
+    tipo: p.type as PanelConfig['tipo'],
+    metricId: p.metric_id,
+    colStart: p.col_start,
+    colSpan: p.col_span,
+    rowSpan: p.row_span,
+    ...(p.options === undefined ? {} : { opciones: p.options }),
   }
 }
 
@@ -205,11 +281,11 @@ export function adaptarDetalle(w: WireLayoutDetail): LayoutDetalle {
     layout: adaptarVersion(w.layout),
     tabs: w.tabs.map((t) => ({
       tab: {
-        id: t.tab.ID,
-        nombre: t.tab.Name,
-        pregunta: t.tab.OperationalQuestion ?? '',
-        orden: t.tab.SortOrder,
-        roles: t.tab.RoleIDs ?? [],
+        id: t.tab.id,
+        nombre: t.tab.name,
+        pregunta: t.tab.operational_question ?? '',
+        orden: t.tab.sort_order,
+        roles: t.tab.role_ids ?? [],
       },
       panels: t.panels.map(adaptarPanel),
     })),
@@ -286,6 +362,9 @@ function adaptarUsuario(w: WireUser): Usuario {
     ultimoAccesoEn: w.last_login_at ?? null,
     activo: w.is_active,
     altaEn: w.created_at,
+    // `?? null` por la misma razón que arriba: ausente es una procedencia —vino
+    // de la ruta por cliente— y no un nombre vacío.
+    clienteNombre: w.tenant_name ?? null,
   }
 }
 
@@ -320,36 +399,24 @@ function adaptarRol(w: WireRole): Rol {
   }
 }
 
-/** **La forma de la CONSOLA, no la del builder.** El preview sale de `GetTab`,
- *  así que sus pestañas y paneles vienen en snake_case —`sort_order`,
- *  `col_start`— y no en el PascalCase del dominio. Adaptarlos con
- *  `adaptarDetalle` daría `undefined` en todo. */
+/** El preview sale de su propio servicio y ya no de `GetTab`, así que su forma
+ *  es la suya: `role` anidado, pestañas planas y sin paneles. Ver `PreviewDeRol`.
+ *
+ *  **`roles: []` en cada pestaña no es un hueco**: la pregunta «qué roles ven
+ *  esta pestaña» ya está contestada — es la pestaña de ESTE rol. */
 function adaptarPreview(w: WirePreview): PreviewDeRol {
   return {
     layoutId: w.layout_id,
-    rolId: w.role_id,
-    rolNombre: w.role_name,
+    dashboardId: w.dashboard_id,
+    estado: ESTADOS[w.status] ?? 'borrador',
+    rol: { id: w.role.id, nombre: w.role.name },
     tabs: w.tabs.map((t) => ({
-      tab: {
-        id: t.tab.id,
-        nombre: t.tab.name,
-        pregunta: t.tab.operational_question ?? '',
-        orden: t.tab.sort_order,
-        // El preview no devuelve los roles de la pestaña: la pregunta ya está
-        // contestada — es la pestaña de ESTE rol.
-        roles: [],
-      },
-      panels: t.panels.map((p) => ({
-        id: p.id,
-        tipo: p.type as PanelConfig['tipo'],
-        metricId: p.metric_id,
-        colStart: p.col_start,
-        colSpan: p.col_span,
-        rowSpan: p.row_span,
-        ...(p.options === undefined ? {} : { opciones: p.options }),
-      })),
+      id: t.id,
+      nombre: t.name,
+      pregunta: t.operational_question ?? '',
+      orden: t.sort_order,
+      roles: [],
     })),
-    sinPayloads: w.without_payloads,
   }
 }
 
@@ -362,7 +429,21 @@ const cuerpoDeRol = (r: RolParaGuardar): A['RoleInput'] => ({
 
 export const adminApi = {
   tenants: async (): Promise<Tenant[]> =>
-    (await pedir<WireTenantOption[]>('/admin/tenants')).map((t) => ({ id: t.id, nombre: t.name })),
+    (await pedir<WireTenantOption[]>('/admin/tenants')).map((t) => ({
+      id: t.id,
+      nombre: t.name,
+      locale: t.locale,
+      moneda: t.currency,
+      zonaHoraria: t.timezone,
+      usuarios: t.user_count,
+      // `?? null` en los tres, y **nunca `?? 0` ni `?? ''`**: un cero que
+      // significa «no sé» es el defecto que A5 ya documentó.
+      publicadoEn: t.last_published_at ?? null,
+      peorFuente: t.worst_feed_status ?? 'unknown',
+      peorFuenteHoras: t.worst_feed_freshness_hours ?? null,
+      estado: t.status ?? null,
+      vertical: t.vertical ?? null,
+    })),
 
   /** **El catálogo SIN filtrar por rol** · es la diferencia con
    *  `/config/catalog`. Quien compone tiene que poder asignar una métrica que
@@ -388,15 +469,31 @@ export const adminApi = {
       adaptAgent,
     ),
 
-  /** Los usuarios del cliente · B4.17, servida desde `1e080ee`.
+  /** Los usuarios de UN cliente · servida desde `1e080ee`.
    *
-   *  **Por cliente, y A3 está dibujada con alcance plataforma.** No se suman N
-   *  llamadas: un total armado acá parecería de plataforma y sería una cuenta
-   *  nuestra. La pantalla lo declara. */
+   *  Sigue existiendo aunque haya alcance de plataforma: es la que sirve a la
+   *  ficha de cliente (A2), donde la pregunta ya es de un cliente. */
   usuarios: async (tenantId: string): Promise<Usuario[]> =>
     (await pedir<WireUser[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/users`)).map(
       adaptarUsuario,
     ),
+
+  /** **Todos los usuarios de la plataforma** · B4.17 · desde `6e521cc`.
+   *
+   *  Es la que A3 pedía y no existía. Los conteos vienen del servicio: ver
+   *  `UsuariosDePlataforma`.
+   *
+   *  **No reemplaza a `usuarios`** — la de arriba sirve a A2, donde el cliente ya
+   *  está elegido y pedir toda la plataforma para filtrar uno sería traer N veces
+   *  lo que no se usa. */
+  usuariosDePlataforma: async (): Promise<UsuariosDePlataforma> => {
+    const w = await pedir<WireUsersPlatform>('/admin/users')
+    return {
+      total: w.total,
+      clientes: w.tenants,
+      usuarios: w.users.map(adaptarUsuario),
+    }
+  },
 
   /** Las fuentes del cliente y su salud · B2.13, servida desde `1e080ee`. */
   fuentes: async (tenantId: string): Promise<Fuente[]> =>
@@ -461,7 +558,16 @@ export const adminApi = {
   previewPorRol: async (layoutId: string, rolId: string): Promise<PreviewDeRol> =>
     adaptarPreview(
       await pedir<WirePreview>(
-        `/admin/layouts/${encodeURIComponent(layoutId)}/preview?roleId=${encodeURIComponent(rolId)}`,
+        // **`role_id`, snake_case** · corregido el 2026-09-26. Mandaba `roleId`
+        // y el servicio contesta **400 · «role_id es requerido y debe ser un
+        // uuid»**, medido: F4.12 no pudo haber funcionado nunca contra el
+        // servicio real.
+        //
+        // No se deduce del resto: `/config/tabs` usa `layoutId` y `dashboardId`
+        // en camelCase, en el mismo binario. Y **MSW no podía verlo** — su
+        // handler leía la misma grafía que mandábamos, así que respondía igual.
+        // Ahora el mock exige `role_id` y devuelve 400 sin él.
+        `/admin/layouts/${encodeURIComponent(layoutId)}/preview?role_id=${encodeURIComponent(rolId)}`,
       ),
     ),
 
@@ -527,6 +633,7 @@ export const adminApi = {
 export type WireAgent = A['AgentAdmin']
 export type WireFeed = A['Feed']
 export type WireUser = A['User']
+export type WireUsersPlatform = A['UsersPlatform']
 
 /** El agente, en el vocabulario del producto. */
 /** Un usuario del cliente · A3 · F4.3.
@@ -547,6 +654,25 @@ export type Usuario = {
   ultimoAccesoEn: string | null
   activo: boolean
   altaEn: string
+  /** **El nombre del cliente, y sólo llega en el alcance de PLATAFORMA.**
+   *
+   *  `GET /admin/tenants/{id}/users` no lo trae —sería redundante, el cliente es
+   *  el de la URL— y `GET /admin/users` sí. `null` dice «esta fila vino de la
+   *  ruta por cliente», que es una procedencia y no un dato faltante. */
+  clienteNombre: string | null
+}
+
+/** El listado de plataforma · B4.17.
+ *
+ *  **Los dos conteos los cuenta el SERVICIO**, y por eso viajan en vez de
+ *  derivarse de `usuarios.length`: `clientes` es «clientes con al menos un
+ *  usuario», que de la lista no se deduce sin agrupar, y un total nuestro bajaría
+ *  en silencio si una consulta fallara. Es la razón que `UserList` escribió
+ *  cuando la ruta no existía. */
+export type UsuariosDePlataforma = {
+  total: number
+  clientes: number
+  usuarios: Usuario[]
 }
 
 /** Una fuente de datos del tenant · A5 · F4.24.

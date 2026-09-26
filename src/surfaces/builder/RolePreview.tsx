@@ -29,33 +29,42 @@
  *  persigue: algo que compila, se ve bien y miente. Se dibuja la GRILLA con las
  *  posiciones reales, y cada hueco dice qué métrica va ahí.
  *
- *  La grilla sale de `render/grid.ts` —`gridStyle`, `panelStyle`,
- *  `readingOrder`—, así que la colocación es la misma que la consola aplica y no
- *  una copia.
+ *  ── **LO DE ARRIBA DEJÓ DE SER CIERTO** · 2026-09-26 ───────────────────────
+ *
+ *  Esta pantalla pintaba la grilla con `render/grid.ts` para que la colocación
+ *  fuera la misma que aplica la consola y no una copia. **Upstream tomó B4.9 con
+ *  otra forma** —medida en `8633b10`— que devuelve qué pestañas ve el rol y no
+ *  sus paneles, y no existe otra ruta que dé una pestaña con el lente de otro
+ *  rol: `GetTab` resuelve el rol desde el token.
+ *
+ *  Así que hoy contesta **«qué pestañas ve este rol»**, que es menos de lo que
+ *  §7.2 pide, y lo dice en pantalla. La grilla no se reemplaza por una armada
+ *  del lado nuestro: sería afirmar «esto ve el Planner» sobre paneles que nadie
+ *  filtró por `hidden_metric_ids`, que es exactamente lo que esta pantalla
+ *  existe para no adivinar.
  *
  *  **§PEN:B5** · B5 · «Vista previa · rol Planner sin componer».
  */
 import { Label } from '../../render/primitives/Label'
-import { gridStyle, panelStyle, readingOrder } from '../../render/grid'
 import type { PreviewDeRol } from '../../api/admin'
-import type { Metric } from '../../api/types'
 
 type Props = {
   preview: PreviewDeRol
-  /** Para nombrar la métrica de cada panel en vez de pintar su id. */
-  metricas: readonly Pick<Metric, 'id' | 'nombre'>[]
   /** El toggle de §7.2 · «un toggle vuelve a edición». */
   onVolver: () => void
 }
 
-export function RolePreview({ preview, metricas, onVolver }: Props) {
-  const nombreDeMetrica = (id: string) => metricas.find((m) => m.id === id)?.nombre ?? '—'
+export function RolePreview({ preview, onVolver }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
-        <Label as="div">{`Como lo ve · ${preview.rolNombre}`}</Label>
+        <Label as="div">{`Como lo ve · ${preview.rol.nombre}`}</Label>
         <Label as="div">{`${String(preview.tabs.length)} pestaña(s)`}</Label>
+        {/* **El estado del layout, y no es decoración**: se puede previsualizar
+            un BORRADOR, y sin decirlo alguien compara «lo que ve el Planner»
+            contra algo que el Planner todavía no ve. */}
+        <Label as="div">{preview.estado === 'borrador' ? 'Borrador' : 'Publicado'}</Label>
         <button
           type="button"
           onClick={onVolver}
@@ -71,49 +80,43 @@ export function RolePreview({ preview, metricas, onVolver }: Props) {
         <Label as="div">Este rol no ve ninguna pestaña de este layout</Label>
       )}
 
-      {preview.tabs.map(({ tab, panels }) => (
+      {/* ── ACÁ HABÍA UNA GRILLA DE PANELES · 2026-09-26 ────────────────────
+          Se pintaba un panel por cada uno que el rol ve, con su tipo, su
+          métrica y su medida en unidades de grilla. **El servicio dejó de
+          mandarlos**: upstream tomó B4.9 con una forma que devuelve las
+          pestañas y no sus paneles, y no hay otra ruta que las dé con el lente
+          de otro rol.
+
+          No se reemplaza por una grilla vacía ni por un conteo derivado del
+          layout de edición: eso diría «esto ve el Planner» sobre paneles que
+          nadie filtró por `hidden_metric_ids`, y esta pantalla existe justamente
+          para no adivinar eso. */}
+      {preview.tabs.map((tab) => (
         <section key={tab.id} className="flex flex-col gap-2">
           {/* **Sin chrome de edición** · §7.2. El título y la pregunta son de la
               pestaña, no controles. */}
           <h2 className="font-display text-titulo tracking-titulo text-ink m-0">{tab.nombre}</h2>
           <Label as="div">{tab.pregunta === '' ? 'Sin pregunta operativa' : tab.pregunta}</Label>
-          <Label as="div">{`${String(panels.length)} panel(es)`}</Label>
-
-          <div style={gridStyle()} className="w-full">
-            {readingOrder(panels).map((p) => (
-              <div
-                key={p.id}
-                style={panelStyle(p)}
-                className="rounded-xl bg-panel border border-w3 p-6 flex flex-col gap-1"
-              >
-                <Label as="div">{p.tipo}</Label>
-                <span className="text-ink text-celda">{nombreDeMetrica(p.metricId)}</span>
-                {/* La medida en unidades de grilla, que es la que compone. */}
-                <Label as="div">{`${String(p.colSpan)}×${String(p.rowSpan)} · col ${String(p.colStart)}`}</Label>
-              </div>
-            ))}
-          </div>
         </section>
       ))}
 
       <div className="flex flex-col gap-1 rounded-sm bg-w2 p-3">
-        {/* **El aviso cuelga de `sinPayloads`, que es el campo que la respuesta
-            declara.** Escribirlo fijo lo volvería una leyenda: el día que el
-            servicio empiece a mandar cifras seguiría diciendo que no las hay, y
-            nadie lo notaría hasta mirar. Así se apaga solo. */}
-        {preview.sinPayloads && (
-          <>
-            <Label as="div">
-              Esta vista muestra la composición, no las cifras · el preview viene sin payloads
-            </Label>
-            <Label as="div">
-              §7.2 pide «con datos reales» · decidido en B4.9: habría que fijar qué período usa
-              y qué pasa con un panel oculto
-            </Label>
-          </>
-        )}
+        {/* **Antes este aviso colgaba de `sinPayloads`**, un campo que la
+            respuesta de nuestro fork declaraba, y se apagaba solo el día que el
+            servicio mandara cifras. La respuesta de upstream no lo tiene, así que
+            el aviso pasó a ser fijo — y con él se pierde esa propiedad.
+
+            Para que no quede como leyenda, lo que se declara es lo que se PUEDE
+            comprobar mirando la pantalla: que no hay paneles. */}
         <Label as="div">
-          El recorte por rol lo hizo el servidor con el mismo GetTab que sirve a la consola
+          Esta vista muestra qué pestañas ve el rol · no sus paneles ni sus cifras
+        </Label>
+        <Label as="div">
+          §7.2 pide la composición por rol · la ruta devuelve las pestañas y no los paneles,
+          y no hay otra que acepte el rol como lente
+        </Label>
+        <Label as="div">
+          El recorte por pestaña lo hizo el servidor · `roles.tab_ids`
         </Label>
       </div>
     </div>

@@ -125,7 +125,11 @@ export interface paths {
         };
         /**
          * Los roles del cliente, con su composición
-         * @description **No la sirve el servicio desplegado.** Escrita en el fork · B4.8.
+         * @description **LA TOMARON, y en la ruta que propusimos** · B4.8 · medida el 2026-09-26.
+         *     Acá decía «no la sirve el servicio desplegado», y eso venció el
+         *     2026-09-25: `GET .../roles/composition` responde 200. La colisión con su
+         *     propio `GET .../roles` se resolvió moviendo el NUESTRO, y su ruta quedó
+         *     intacta.
          *
          *     `user_count` viaja en el listado a propósito: es lo que decide si el rol
          *     se puede borrar, y la pantalla tiene que poder decirlo **antes** de
@@ -200,18 +204,41 @@ export interface paths {
         };
         /**
          * El layout como lo vería un rol
-         * @description **No la sirve el servicio desplegado.** Escrita en el fork · B4.9.
+         * @description ── **YA LA SIRVE EL SERVICIO** · medido el 2026-09-26 ─────────────────
          *
-         *     **Pasa por el mismo `GetTab` que sirve a la consola**, así que
-         *     `tab_ids`, `hidden_metric_ids` y `layout_overrides` se aplican una sola
-         *     vez y en un solo lugar. Un preview que reimplemente el filtrado termina
-         *     mostrando algo que la consola no muestra, y se publica confiando en él.
+         *     Acá decía «no la sirve el servicio desplegado, escrita en el fork». La
+         *     tomaron en `8633b10` y **responde 200**. Con eso el fork queda absorbido
+         *     entero: era su última parte pendiente.
          *
-         *     **Viene SIN payloads** y lo declara en `without_payloads`. Con el layout
-         *     alcanza para «CEO vs Planner»; con payloads habría que decidir qué
-         *     período usa y si un panel oculto llega como `SIN_PERMISO`.
+         *     **Y resolvieron la colisión de diseño como propusimos.** `168a761` había
+         *     puesto una compuerta que comparaba el rol SIMULADO contra «es admin», así
+         *     que un borrador se rechazaba siempre; hoy `dd_config_service.go:424`
+         *     compara `sel.CallerRole` —quién pregunta— y el lente es otra cosa.
          *
-         *     Un `roleId` de otro tenant devuelve **404 y no 403**: un 403 confirmaría
+         *     ── **EL PARÁMETRO ES `role_id`, NO `roleId`** ─────────────────────────
+         *
+         *     Medido: `?roleId=` devuelve **400 · «role_id es requerido y debe ser un
+         *     uuid»**, y `?role_id=` devuelve 200. Nuestro cliente mandaba `roleId`,
+         *     así que F4.12 **nunca pudo haber funcionado** contra el servicio real.
+         *
+         *     **No se deduce del resto del cable**: `/config/tabs/{tabId}` usa
+         *     `layoutId` y `dashboardId` en camelCase, en el mismo binario. Dos
+         *     convenciones, y la única forma de saber cuál es cuál es leer el handler.
+         *
+         *     **Ojo con un comentario SUYO que es falso**: dice «es lo que hace `GetTab`
+         *     cuando el admin manda `?roleId=`». `GetTab` toma el rol **sólo del
+         *     token**, vía `resolveTenantAndRole` → `c.Get("role_id")`, y **ignora
+         *     cualquier parámetro de rol**. `?roleId=` ahí da 200 porque se descarta,
+         *     no porque se aplique.
+         *
+         *     **Viene SIN paneles**, medido: `tabs[]` trae `id`, `name`,
+         *     `operational_question` y `sort_order`, y nada más. Con eso alcanza para
+         *     «qué pestañas ve el CEO y cuáles el Planner»; **no alcanza** para ver qué
+         *     paneles ve, que es lo que `hidden_metric_ids` filtra. Y no hay otra ruta
+         *     que lo dé, porque `GetTab` no acepta lente. Es la razón escrita de por
+         *     qué F4.12 no trae cifras.
+         *
+         *     Un `role_id` de otro tenant devuelve **404 y no 403**: un 403 confirmaría
          *     que el rol existe.
          */
         get: operations["previewLayout"];
@@ -260,9 +287,11 @@ export interface paths {
          *     `internal/core/ports/agent.go` —`AgentAdminDTO`— y
          *     `internal/adapters/handler/agent_handler.go`.
          *
-         *     **`AgentAdminDTO` SÍ tiene etiquetas `json:` y sale en snake_case**, a
-         *     diferencia del resto de admin, que serializa structs de dominio en
-         *     PascalCase. No se deduce del patrón: se leyó.
+         *     **`AgentAdminDTO` SÍ tiene etiquetas `json:` y sale en snake_case.** Al
+         *     transcribirla era la excepción —el resto de admin serializaba structs de
+         *     dominio en PascalCase— y desde `8633b10` es la regla: B4.10 les puso
+         *     etiquetas a los tres structs de layout. No se deduce del patrón: se leyó,
+         *     las dos veces.
          *
          *     **Nunca incluye credenciales** — lo dice el comentario del DTO y lo
          *     confirma la lista de campos. Lo que sí trae y **§7.3 prohíbe mostrar**
@@ -274,6 +303,39 @@ export interface paths {
          *     alguien apretó, no una verificación de que el acceso funcione.
          */
         get: operations["listAgents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Todos los usuarios de la plataforma, con su cliente
+         * @description ── **CIERRA EL HUECO DE ALCANCE DE A3** · B4.17, medida el 2026-09-26 ──
+         *
+         *     El dibujo de A3 declara `ALCANCE · PLATAFORMA` y su resumen dice «17
+         *     usuarios · 2 clientes con usuarios». Hasta `6e521cc` la única ruta era
+         *     **por cliente**, y `UserList` lo declaraba como hueco con su razón: «no se
+         *     compensa pidiendo N veces la ruta — un total armado acá se leería como un
+         *     número de plataforma y sería una suma nuestra».
+         *
+         *     **Esta ruta lo da del lado del servidor**, y con `tenant_name` por usuario,
+         *     que es la columna `CLIENTE` del dibujo.
+         *
+         *     **`total` y `tenants` los cuenta el servicio**, no nosotros. Es la
+         *     diferencia que la razón del hueco señalaba: si un cliente fallara, un
+         *     total nuestro bajaría sin decirlo.
+         */
+        get: operations["listAllUsers"];
         put?: never;
         post?: never;
         delete?: never;
@@ -345,6 +407,22 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * @description El sobre de `GET /admin/users` · B4.17 · medido el 2026-09-26.
+         *
+         *     **No es un arreglo desnudo**, al revés de casi todo el resto del cable:
+         *     trae los dos conteos que el dibujo de A3 pinta en su resumen.
+         */
+        UsersPlatform: {
+            /** @description Usuarios en toda la plataforma. **Lo cuenta el servicio.** */
+            total: number;
+            /**
+             * @description Clientes **con al menos un usuario**, que es lo que el dibujo dice —«2
+             *     clientes con usuarios»— y no la cantidad de clientes.
+             */
+            tenants: number;
+            users: components["schemas"]["User"][];
+        };
+        /**
          * @description Un usuario del cliente · `1e080ee`.
          *
          *     **Lo que A3 dibuja y esto NO trae**, declarado y no inventado: el estado
@@ -357,6 +435,8 @@ export interface components {
             id: string;
             /** Format: uuid */
             tenant_id: string;
+            /** @example Under Armour México */
+            tenant_name?: string;
             email: string;
             first_name: string;
             last_name: string;
@@ -397,6 +477,14 @@ export interface components {
          *     hueco en F4.24 en vez de inventarlo.
          */
         Feed: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
             key: string;
             /** @description El nombre que ve una persona */
             name: string;
@@ -443,11 +531,76 @@ export interface components {
             success: false;
             error: string;
         };
-        /** @description `ports.TenantPublicOption` · SÍ tiene etiquetas `json:`. */
+        /**
+         * @description `ports.TenantAdminOption` · snake_case.
+         *
+         *     ── **B4.1 LLEGÓ** · 2026-09-26, medido contra `8633b10` ────────────────
+         *
+         *     Acá había dos campos, `id` y `name`, y eso era el bloqueo de **A1 · la
+         *     banda de clientes**: el dibujo pide cinco columnas y la ruta daba el
+         *     nombre. Estaba escrita en nuestro fork —`8c03132`— esperando que la
+         *     tomaran, y la escribieron ellos.
+         *
+         *     **El nombre del esquema ya no describe lo que es** —una «opción» de un
+         *     selector— pero no se renombra: `admin-generated.ts` se genera de acá y el
+         *     renombre tocaría los consumidores sin cambiar un solo campo.
+         *
+         *     **Dos de las cinco columnas llegan en `null` a propósito**: `status` y
+         *     `vertical` esperan que definamos sus valores, y lo dicen en su respuesta
+         *     del 2026-09-25. No es un hueco suyo — es una pregunta nuestra sin
+         *     contestar.
+         */
         TenantOption: {
             /** Format: uuid */
             id: string;
             name: string;
+            /** @example es-CO */
+            locale: string;
+            /** @example COP */
+            currency: string;
+            /** @example America/Bogota */
+            timezone: string;
+            /**
+             * @description Usuarios ACTIVOS del tenant. **Cero es un valor válido y no un
+             *     hueco**: un cliente recién creado no tiene usuarios hasta que alguien
+             *     acepte la invitación.
+             */
+            user_count: number;
+            /**
+             * Format: date-time
+             * @description `null` si nunca se publicó un layout.
+             */
+            last_published_at?: string | null;
+            /**
+             * @description El PEOR de los feeds del tenant, ya reducido por el servicio. Vale
+             *     `unknown` cuando ningún feed cargó nunca — que es distinto de estar
+             *     vencido, y por eso no se colapsa con él.
+             *
+             *     **Los tres valores se leyeron de `dashboard.FeedStatus`**, no se
+             *     dedujeron: acá había `examples: ['unknown', 'ok', 'late', 'stale']`
+             *     con `ok` y `late` INVENTADOS, escritos el 2026-09-26 mirando una
+             *     respuesta que sólo traía `unknown`. La pantalla mostró `fresh` y ahí
+             *     se fue a leer el código.
+             *
+             *     **Y el orden importa**: `WorstStatus` rankea `stale > unknown >
+             *     fresh`, o sea que **no saber es peor que estar al día**. Es una
+             *     decisión de producto y no un detalle: un cliente cuyas fuentes nunca
+             *     cargaron no se presenta como sano.
+             * @enum {string}
+             */
+            worst_feed_status?: "fresh" | "unknown" | "stale";
+            /**
+             * @description Horas desde la última carga del peor feed. **`null` es «nunca cargó»
+             *     y 0 es «recién»** — la misma distinción que `FeedHealth` ya sostiene
+             *     del lado nuestro, y confundirlas pinta un feed muerto como sano.
+             */
+            worst_feed_freshness_hours?: number | null;
+            /** @description `null` hasta que definamos los valores · pedido abierto. */
+            status?: string | null;
+            /** @description `null` hasta que definamos los valores · pedido abierto. */
+            vertical?: string | null;
+            /** Format: date-time */
+            created_at: string;
         };
         /**
          * @description `domain.DDCatalogMetric`, el mismo de `/config/catalog`. **Con etiquetas
@@ -457,6 +610,9 @@ export interface components {
         CatalogMetric: {
             /** Format: uuid */
             id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            dimensions: string[];
             key: string;
             name: string;
             shape: string;
@@ -470,95 +626,141 @@ export interface components {
             [key: string]: unknown;
         };
         /**
-         * @description `domain.DDLayoutVersion`, **serializado SIN etiquetas `json:`**. Las
-         *     claves son los nombres de los campos de Go.
+         * @description `domain.DDLayoutVersion`.
          *
-         *     `Tenant` viaja porque el struct lo declara y no lleva `json:"-"`. Hoy
-         *     llega en cero —nadie hace `Preload`— y por eso no se declaran sus
-         *     campos acá: **lo que sea que traiga, el front no lo lee**.
+         *     ── **PASÓ DE PascalCase A snake_case** · 2026-09-26, `8633b10` ─────────
+         *
+         *     Acá decía «serializado SIN etiquetas `json:`, las claves son los nombres
+         *     de los campos de Go», y era cierto: medido el 2026-09-16 contra
+         *     `82da946`, el struct **no tenía ni una etiqueta**, así que Go serializaba
+         *     `ID`, `TenantID`, `Status`. `CLAUDE.md` lo registró como «el PascalCase
+         *     quedó confirmado y no deducido».
+         *
+         *     **`8633b10` les puso etiquetas a los tres structs** —B4.10—, y con eso
+         *     las claves cambiaron todas. No lo vio ninguna persona: lo encontró
+         *     `humo` la primera vez que supo mirar los campos que el servicio manda y
+         *     el cable no declara.
+         *
+         *     **Y rompía en silencio.** `src/api/admin.ts` leía quince campos en
+         *     PascalCase y los quince pasaron a `undefined`; el peor no fallaba —
+         *     `ESTADOS[w.Status] ?? 'borrador'` afirmaba que TODO layout era borrador,
+         *     incluido el publicado.
+         *
+         *     `Tenant` ya no viaja: `a643cfe` le puso `json:"-"` a él y a las dos
+         *     credenciales, que es el hallazgo que les reportamos el 2026-09-22.
          */
         LayoutVersion: {
             /** Format: uuid */
-            ID: string;
+            id: string;
             /** Format: uuid */
-            TenantID: string;
+            tenant_id: string;
             /**
-             * @description Solo uno `published` por tenant. Publicar demota al anterior.
+             * Format: uuid
+             * @description **Nuevo con el multi-dashboard.** Un tenant puede tener varios
+             *     dashboards y cada layout cuelga de uno · F5.1.
+             */
+            dashboard_id: string;
+            /**
+             * @description Uno `published` por **dashboard**, no por tenant: publicar demota al
+             *     anterior del mismo dashboard.
              * @enum {string}
              */
-            Status: "draft" | "published";
+            status: "draft" | "published";
             /** @description Etiqueta legible. Cadena vacía si nunca se puso. */
-            VersionID: string;
+            version_id: string;
             /** Format: date-time */
-            PublishedAt?: string | null;
+            published_at?: string | null;
             /** Format: date-time */
-            CreatedAt?: string;
+            created_at?: string;
             /** Format: date-time */
-            UpdatedAt?: string;
-            /** @description **No se lee.** Ver el aviso de la cabecera del archivo. */
-            Tenant?: {
-                [key: string]: unknown;
-            };
+            updated_at?: string;
         };
-        /** @description `domain.DDTab`, también sin etiquetas `json:`. */
+        /**
+         * @description **Nuevo el 2026-09-26.** `GET /admin/layouts/{layoutId}` pasó a devolver
+         *     el dashboard al que pertenece el layout, además de `layout` y `tabs`.
+         *     Es lo que deja al builder decir DE QUÉ dashboard está editando una
+         *     versión, que con varios por tenant deja de ser obvio.
+         */
+        LayoutDashboard: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            /** @example Overview */
+            name: string;
+            /** @example overview */
+            slug: string;
+            /** @description El que resuelve cuando el rol no declara preferencia. */
+            is_default: boolean;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        /** @description `domain.DDTab`, también en snake_case desde `8633b10`. */
         LayoutTab: {
             /** Format: uuid */
-            ID: string;
+            id: string;
             /** Format: uuid */
-            LayoutVersionID: string;
-            Name: string;
+            layout_version_id: string;
+            name: string;
             /**
              * @description La pregunta operativa. Cadena vacía si no se puso — **y el producto
              *     dice que una pestaña que no contesta una pregunta no se compone**,
              *     así que el builder no la deja vacía aunque el backend sí.
              */
-            OperationalQuestion?: string;
-            SortOrder: number;
+            operational_question?: string;
+            sort_order: number;
             /** @description Vacío significa «la ven todos los roles». */
-            RoleIDs?: string[];
+            role_ids?: string[];
             /** Format: date-time */
-            CreatedAt?: string;
+            created_at?: string;
             /** Format: date-time */
-            UpdatedAt?: string;
+            updated_at?: string;
         };
         /**
-         * @description `domain.DDPanel`, sin etiquetas `json:`. **Ojo con `Type`**: en la base la
-         *     columna es `block_type` y acá el campo es `Type`.
+         * @description `domain.DDPanel`, en snake_case desde `8633b10`. **Ojo con `type`**: en la
+         *     base la columna es `block_type` y acá el campo es `type`.
          */
         LayoutPanel: {
             /** Format: uuid */
-            ID: string;
+            id: string;
             /** Format: uuid */
-            TabID: string;
+            tab_id: string;
             /** Format: uuid */
-            MetricID: string;
-            Type: string;
-            ColStart: number;
-            ColSpan: number;
-            RowSpan: number;
+            metric_id: string;
+            type: string;
+            col_start: number;
+            col_span: number;
+            row_span: number;
             /** @description Los nombres van en inglés · ver `PARAMS` del adaptador. */
-            Options?: {
+            options?: {
                 [key: string]: unknown;
             };
             /** Format: date-time */
-            CreatedAt?: string;
+            created_at?: string;
             /** Format: date-time */
-            UpdatedAt?: string;
+            updated_at?: string;
         };
         /**
-         * @description `ports.DDLayoutDetail`. **Las dos claves de afuera SÍ tienen etiqueta**
-         *     —`layout`, `tabs`— y lo de adentro no. Esa mezcla es toda la deuda.
+         * @description `ports.DDLayoutDetail`. **La mezcla de convenciones se terminó**: acá
+         *     decía «las dos claves de afuera SÍ tienen etiqueta y lo de adentro no,
+         *     esa mezcla es toda la deuda». Desde `8633b10` todo va en snake_case, y
+         *     el builder ya manda y recibe la misma forma.
          */
         LayoutDetail: {
             layout: components["schemas"]["LayoutVersion"];
+            dashboard?: components["schemas"]["LayoutDashboard"];
             tabs: {
                 tab: components["schemas"]["LayoutTab"];
                 panels: components["schemas"]["LayoutPanel"][];
             }[];
         };
         /**
-         * @description `ports.DDLayoutUpdateRequest`. **El cuerpo va en snake_case y la respuesta
-         *     en PascalCase**: el builder manda una forma y recibe otra.
+         * @description `ports.DDLayoutUpdateRequest`. **La asimetría se terminó el 2026-09-26**:
+         *     acá decía «el cuerpo va en snake_case y la respuesta en PascalCase, el
+         *     builder manda una forma y recibe otra». Desde `8633b10` las dos van en
+         *     snake_case.
          */
         LayoutUpdateRequest: {
             tabs: components["schemas"]["TabInput"][];
@@ -612,9 +814,9 @@ export interface components {
             message: string;
         };
         /**
-         * @description `ports.DDRoleDTO`. **SÍ lleva etiquetas `json:`**, así que sale en
-         *     snake_case entero — a diferencia de `LayoutVersion` y compañía. Es lo
-         *     que B4.10 pide para aquellos.
+         * @description `ports.DDRoleDTO`, snake_case entero. Acá decía «a diferencia de
+         *     `LayoutVersion` y compañía», y **B4.10 cerró esa diferencia** en
+         *     `8633b10`: ya no hay dos convenciones en el cable de admin.
          */
         Role: {
             /** Format: uuid */
@@ -641,6 +843,24 @@ export interface components {
             };
             /** @description Cuántos usuarios tienen el rol. Con uno o más, borrar da 409. */
             user_count: number;
+            /**
+             * @description Los dashboards que el rol puede ver. Vacío significa «los que el
+             *     tenant tenga por default», no «ninguno».
+             */
+            dashboard_ids?: string[];
+            /**
+             * Format: uuid
+             * @description El que abre primero. **`null` es lo normal**: la resolución cae a
+             *     `preferencia del usuario > rol > default del tenant`, y este campo es
+             *     el escalón del medio.
+             */
+            default_dashboard_id?: string | null;
+            /**
+             * @description `DELETE /admin/roles/{roleId}` **desactiva, no borra** — medido el
+             *     2026-09-26: responde 200 con `{id, is_active: false}`. La auditoría de
+             *     quién vio qué se conserva.
+             */
+            is_active?: boolean;
         };
         RoleInput: {
             name: string;
@@ -652,48 +872,61 @@ export interface components {
             };
         };
         /**
-         * @description `ports.DDPreviewResponse` · el layout como lo vería un rol, resuelto por
-         *     el **mismo `GetTab`** que sirve a la consola.
+         * @description `ports.DDPreviewResponse`.
+         *
+         *     ── **REESCRITO CONTRA EL SERVICIO** · 2026-09-26, `8633b10` ────────────
+         *
+         *     Acá estaba la forma de NUESTRO fork, y la suya es otra. Se transcribió a
+         *     ciegas porque el servicio devolvía 404; ahora responde y se midió:
+         *
+         *       nuestra           suya
+         *       `role_id`         `role.id`      · anidado
+         *       `role_name`       `role.name`
+         *       —                 `dashboard_id` · nuevo con el multi-dashboard
+         *       —                 `status`       · para avisar que es un borrador
+         *       `tabs[].tab`      `tabs[]`       · la pestaña SIN envoltorio
+         *       `tabs[].panels`   —              · **no vienen**
+         *       `without_payloads` —             · la ausencia no se declara
+         *
+         *     **La diferencia que importa es `panels`.** Nuestra versión devolvía la
+         *     pestaña con sus paneles ya filtrados por `hidden_metric_ids`, que es lo
+         *     que deja ver «qué ve el CEO y qué ve el Planner» panel por panel. La
+         *     suya devuelve sólo QUÉ PESTAÑAS ve cada rol.
+         *
+         *     **Y no hay otra ruta que lo dé**: `GET /config/tabs/{tabId}` resuelve el
+         *     rol desde el token y no acepta lente, así que un admin no puede pedir una
+         *     pestaña «con los ojos de otro rol». Es el techo de F4.12, medido.
          */
         Preview: {
             /** Format: uuid */
             layout_id: string;
             /** Format: uuid */
-            role_id: string;
-            role_name: string;
+            dashboard_id: string;
             /**
-             * @description Solo las que el rol puede ver, con sus paneles ya filtrados y los
-             *     overrides aplicados. **Forma de la CONSOLA** —`ports.DDTabWithPanels`,
-             *     snake_case— y no la del builder.
+             * @description El del layout que se está previsualizando. **Un borrador se puede
+             *     previsualizar y un rol no-admin no lo vería**: la compuerta mira quién
+             *     pregunta, no a quién se simula.
+             * @enum {string}
+             */
+            status: "draft" | "published";
+            /** @description El lente. Anidado, no dos campos planos. */
+            role: {
+                /** Format: uuid */
+                id: string;
+                /** @example planner */
+                name: string;
+            };
+            /**
+             * @description Sólo las que el rol puede ver, por `roles.tab_ids`. **Sin `panels`**
+             *     y sin envoltorio `{tab, panels}`: la pestaña va plana.
              */
             tabs: {
-                tab: {
-                    /** Format: uuid */
-                    id: string;
-                    name: string;
-                    operational_question?: string;
-                    sort_order: number;
-                };
-                panels: {
-                    /** Format: uuid */
-                    id: string;
-                    /** Format: uuid */
-                    metric_id: string;
-                    type: string;
-                    col_start: number;
-                    col_span: number;
-                    row_span: number;
-                    options?: {
-                        [key: string]: unknown;
-                    };
-                }[];
+                /** Format: uuid */
+                id: string;
+                name: string;
+                operational_question: string;
+                sort_order: number;
             }[];
-            /**
-             * @description Siempre `true` hoy. **Es una declaración, no un flag**: quien la
-             *     consuma tiene que saber que los paneles vienen sin datos, para no
-             *     dibujar un cuerpo vacío creyendo que el panel está en blanco.
-             */
-            without_payloads: boolean;
         };
         /**
          * @description `ports.AgentAdminDTO` · el agente visto desde administración.
@@ -1105,7 +1338,11 @@ export interface operations {
     previewLayout: {
         parameters: {
             query: {
-                roleId: string;
+                /**
+                 * @description **snake_case**, al revés de `layoutId` y `dashboardId` de
+                 *     `/config/tabs`. Se leyó del handler; mandarlo en camelCase da 400.
+                 */
+                role_id: string;
             };
             header?: never;
             path: {
@@ -1185,6 +1422,29 @@ export interface operations {
             };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    listAllUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los usuarios de todos los clientes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["UsersPlatform"];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
         };
     };
     listUsers: {

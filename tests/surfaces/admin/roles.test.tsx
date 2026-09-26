@@ -50,19 +50,19 @@ const roles = [
  *  «el primero de la lista» y «el publicado» son el mismo layout y una mutación
  *  que confunda los dos sobrevive. Lo hizo, en la primera corrida del arnés. */
 const layouts = [
-  { ID: 'l-2', TenantID: 't-1', Status: 'draft', VersionID: 'v4', PublishedAt: null },
-  { ID: 'l-1', TenantID: 't-1', Status: 'published', VersionID: 'v3', PublishedAt: '2026-09-10T12:00:00Z' },
+  { id: 'l-2', tenant_id: 't-1', status: 'draft', version_id: 'v4', published_at: null },
+  { id: 'l-1', tenant_id: 't-1', status: 'published', version_id: 'v3', published_at: '2026-09-10T12:00:00Z' },
 ]
 
 const detalle = {
   layout: layouts[1],
   tabs: [
     {
-      tab: { ID: 'tab-a', LayoutVersionID: 'l-1', Name: 'Resumen', OperationalQuestion: '¿?', SortOrder: 1, RoleIDs: [] },
+      tab: { id: 'tab-a', layout_version_id: 'l-1', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
       panels: [],
     },
     {
-      tab: { ID: 'tab-b', LayoutVersionID: 'l-1', Name: 'Inventario', OperationalQuestion: '¿?', SortOrder: 2, RoleIDs: [] },
+      tab: { id: 'tab-b', layout_version_id: 'l-1', name: 'Inventario', operational_question: '¿?', sort_order: 2, role_ids: [] },
       panels: [],
     },
   ],
@@ -299,7 +299,7 @@ describe('las pestañas que se ofrecen salen del layout PUBLICADO', () => {
             layout: layouts[0],
             tabs: [
               {
-                tab: { ID: 'tab-z', LayoutVersionID: 'l-2', Name: 'Borrador', OperationalQuestion: '¿?', SortOrder: 1, RoleIDs: [] },
+                tab: { id: 'tab-z', layout_version_id: 'l-2', name: 'Borrador', operational_question: '¿?', sort_order: 1, role_ids: [] },
                 panels: [],
               },
             ],
@@ -381,10 +381,10 @@ describe('A4 · la columna USO · divergencia 6', () => {
     layout: layouts[1],
     tabs: [
       {
-        tab: { ID: 'tab-a', LayoutVersionID: 'l-1', Name: 'Resumen', OperationalQuestion: '¿?', SortOrder: 1, RoleIDs: [] },
+        tab: { id: 'tab-a', layout_version_id: 'l-1', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
         panels: [
-          { ID: 'p-1', TabID: 'tab-a', MetricID: 'm-1', Type: 'kpi', ColStart: 1, ColSpan: 3, RowSpan: 4 },
-          { ID: 'p-2', TabID: 'tab-a', MetricID: 'm-1', Type: 'kpi', ColStart: 4, ColSpan: 3, RowSpan: 4 },
+          { id: 'p-1', tab_id: 'tab-a', metric_id: 'm-1', type: 'kpi', col_start: 1, col_span: 3, row_span: 4 },
+          { id: 'p-2', tab_id: 'tab-a', metric_id: 'm-1', type: 'kpi', col_start: 4, col_span: 3, row_span: 4 },
         ],
       },
     ],
@@ -475,10 +475,10 @@ describe('el desglose de §9, desde la superficie · A2 §9', () => {
           tabs: [
             {
               tab: {
-                ID: 'tab-a', LayoutVersionID: 'l-1', Name: 'Resumen',
-                OperationalQuestion: '¿Cómo va el negocio?', SortOrder: 1, RoleIDs: [],
+                id: 'tab-a', layout_version_id: 'l-1', name: 'Resumen',
+                operational_question: '¿Cómo va el negocio?', sort_order: 1, role_ids: [],
               },
-              panels: [{ ID: 'p-1' }, { ID: 'p-2' }, { ID: 'p-3' }],
+              panels: [{ id: 'p-1' }, { id: 'p-2' }, { id: 'p-3' }],
             },
           ],
         }),

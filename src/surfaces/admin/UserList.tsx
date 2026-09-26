@@ -5,16 +5,20 @@
  *
  *  Presentacional: los hooks viven en `Admin`, como el resto de §4.
  *
- *  ── LA DIVERGENCIA GRANDE, Y ES DE ALCANCE ─────────────────────────────────
+ *  ── LA DIVERGENCIA GRANDE SE CERRÓ · 2026-09-26 ────────────────────────────
  *
- *  **El dibujo declara `ALCANCE · PLATAFORMA`** —su resumen dice «17 usuarios ·
- *  2 clientes con usuarios»— y la ruta que existe es **por cliente**:
- *  `/admin/tenants/{tenantId}/users`. `/admin/users` da 404.
+ *  Acá decía que **el dibujo declara `ALCANCE · PLATAFORMA`** y la única ruta era
+ *  por cliente, con `/admin/users` dando 404. La razón escrita para no compensar
+ *  era buena y sigue valiendo: «un total armado acá se leería como un número de
+ *  plataforma y sería una suma nuestra — si un cliente falla, el total baja sin
+ *  decirlo».
  *
- *  **No se compensa pidiendo N veces la ruta.** Un total armado acá se leería
- *  como un número de plataforma y sería una suma nuestra: si un cliente falla,
- *  el total baja sin decirlo. La pantalla dice de qué cliente está hablando y
- *  declara el hueco.
+ *  **`GET /admin/users` llegó en `6e521cc`** —B4.17— y trae `total`, `tenants` y
+ *  `tenant_name` por usuario: los conteos los cuenta el servicio, que es
+ *  exactamente lo que esa razón pedía. Medida el 2026-09-26.
+ *
+ *  Así que la pantalla pasa a ser de plataforma, con `CLIENTE` como columna, que
+ *  es como el dibujo la compone.
  *
  *  ── LOS OTROS TRES HUECOS ──────────────────────────────────────────────────
  *
@@ -34,13 +38,15 @@ import type { Usuario } from '../../api/admin'
 
 const NOTA = 'font-mono text-nota leading-rotulo tracking-rotulo uppercase text-dim m-0'
 
-/** Seis en el dibujo; acá cinco. `CLIENTE` no se pinta como columna porque la
- *  pantalla ya es de un cliente —lo dice su encabezado— y repetirlo en cada fila
- *  sería el mismo ruido que `BodyProps.metric` prohíbe para el título. */
-const COLUMNAS = ['Usuario', 'Rol', 'Estado', 'Último acceso', 'Alta'] as const
+/** Las seis del dibujo. **`CLIENTE` entró el 2026-09-26**: cuando la pantalla
+ *  era de un cliente repetirlo en cada fila era ruido, y con alcance de
+ *  plataforma es la columna que contesta la mitad de la pregunta —«¿quién entra a
+ *  QUÉ CLIENTE?»—. §7.3 lo fundamenta: A3 cruza clientes porque la regla del
+ *  tenant no editable sólo se ve cuando el tenant es una columna que se compara. */
+const COLUMNAS = ['Usuario', 'Cliente', 'Rol', 'Estado', 'Último acceso', 'Alta'] as const
 
+/** **Eran cuatro hasta el 2026-09-26.** El de alcance se cerró con B4.17. */
 const FALTANTES = [
-  'Alcance · el dibujo pide plataforma y la ruta es por cliente · `/admin/users` da 404',
   'Invitación pendiente · el cable sólo trae activo o suspendido',
   'Quién dio de alta · el dibujo pone «por M. Benítez» y no hay campo',
   'Reenviar invitación · no hay ruta',
@@ -53,16 +59,25 @@ const FECHA = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short',
 
 type Props = {
   usuarios: readonly Usuario[]
-  tenant: string | null
+  /** **Los cuenta el SERVICIO**, no esta pantalla · ver el encabezado. */
+  total: number
+  /** Clientes **con al menos un usuario**, que es lo que el dibujo dice. */
+  clientes: number
   cargando?: boolean
 }
 
-export function UserList({ usuarios, tenant, cargando = false }: Props) {
+export function UserList({ usuarios, total, clientes, cargando = false }: Props) {
   const [busqueda, setBusqueda] = useState('')
 
   const q = busqueda.trim().toLowerCase()
   const visibles = usuarios.filter(
-    (u) => q === '' || u.nombre.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
+    (u) =>
+      q === '' ||
+      u.nombre.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      // **El cliente también se busca**: con alcance de plataforma, «mostrame los
+      // de UA MX» es la primera cosa que alguien va a escribir acá.
+      (u.clienteNombre ?? '').toLowerCase().includes(q),
   )
 
   // **Dos vacíos distintos**, como en `CatalogView`: sin usuarios es de alta —el
@@ -80,33 +95,29 @@ export function UserList({ usuarios, tenant, cargando = false }: Props) {
           Usuarios
         </h1>
         <Label as="div">¿Quién entra a qué cliente, y con qué rol?</Label>
-        {/* **Acá había un chip «Alcance · cliente» y era un defecto**, visto en
-            pantalla el 2026-09-25: el chrome de arriba declara «alcance ·
-            plataforma · todas las cuentas» —lo dice `pantallas.ts`, y §7.3 lo
-            fundamenta: A3 cruza clientes porque la regla del tenant no editable
-            sólo se ve cuando el tenant es una columna que se compara—. Dos
-            chips contradiciéndose en la misma página es peor que uno solo.
-            
-            El alcance lo declara el chrome. Lo que le toca a la pantalla es
-            decir **qué está mostrando de verdad**, que es un cliente. */}
-        <div className="flex items-center gap-3">
-          <Label as="div">
-            Esta lista es de UN cliente · la ruta que existe es por tenant y
-            `/admin/users` da 404
-          </Label>
-        </div>
+        {/* **El resumen literal del dibujo** —«17 usuarios · 2 clientes con
+            usuarios»— y los dos números salen del servicio.
+
+            Acá vivió un aviso diciendo «esta lista es de UN cliente · la ruta que
+            existe es por tenant y `/admin/users` da 404». Era cierto al
+            escribirlo y **quedó falso el 2026-09-26**, cuando la ruta llegó: una
+            afirmación vencida en pantalla es peor que un hueco, porque el
+            usuario no tiene con qué dudarla.
+
+            El alcance lo declara el chrome; lo que le toca a la pantalla es decir
+            qué está mostrando, y ahora es todo. */}
         <div className="flex items-center gap-3">
           <Label>
             {filtroVacio
-              ? `0 usuarios con este filtro · ${String(usuarios.length)} en total`
-              : `${String(usuarios.length)} ${usuarios.length === 1 ? 'usuario' : 'usuarios'} · ${String(activos)} ${activos === 1 ? 'activo' : 'activos'}`}
+              ? `0 usuarios con este filtro · ${String(total)} en total`
+              : `${String(total)} ${total === 1 ? 'usuario' : 'usuarios'} · ${String(clientes)} ${clientes === 1 ? 'cliente con usuarios' : 'clientes con usuarios'} · ${String(activos)} ${activos === 1 ? 'activo' : 'activos'}`}
           </Label>
         </div>
       </header>
 
       <section className="flex flex-col gap-3">
         <div className="flex items-center gap-3">
-          <Label as="div">{tenant === null ? 'Usuarios' : `Usuarios de ${tenant}`}</Label>
+          <Label as="div">Usuarios de todos los clientes</Label>
           <div className="flex-1" />
           <input
             type="search"
@@ -135,7 +146,7 @@ export function UserList({ usuarios, tenant, cargando = false }: Props) {
               <EmptyRow
                 clase="alta"
                 columnas={COLUMNAS.length}
-                razon="Este cliente todavía no tiene usuarios."
+                razon="Todavía no hay usuarios en ningún cliente."
                 salida="El alta es por invitación · nadie fija la contraseña de otro."
               />
             )}
@@ -157,6 +168,12 @@ export function UserList({ usuarios, tenant, cargando = false }: Props) {
                     <span className="text-ink text-celda">{u.nombre}</span>
                     <span className={NOTA}>{u.email}</span>
                   </div>
+                </td>
+                <td className="py-3">
+                  {/* **`—` cuando no llega, y no el id.** `clienteNombre` es
+                      `null` sólo si la fila vino de la ruta por cliente; acá no
+                      pasa, y si pasara un guion dice «no sé» en vez de mentir. */}
+                  <span className="text-ink text-celda">{u.clienteNombre ?? '—'}</span>
                 </td>
                 <td className="py-3">
                   <span className="text-ink text-celda">{u.rol}</span>

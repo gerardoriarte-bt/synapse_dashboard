@@ -22,18 +22,18 @@ import { server } from '../../mocks/server'
 const API = '*/api/v1'
 
 const tenants = [{ id: 't-1', name: 'Under Armour México' }]
-const borrador = { ID: 'l-2', TenantID: 't-1', Status: 'draft', VersionID: 'v4', PublishedAt: null }
+const borrador = { id: 'l-2', tenant_id: 't-1', status: 'draft', version_id: 'v4', published_at: null }
 
 const detalle = {
   layout: borrador,
   tabs: [
     {
       tab: {
-        ID: 'tab-a', LayoutVersionID: 'l-2', Name: 'Resumen',
-        OperationalQuestion: '¿Cómo vamos?', SortOrder: 1, RoleIDs: [],
+        id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen',
+        operational_question: '¿Cómo vamos?', sort_order: 1, role_ids: [],
       },
       panels: [
-        { ID: 'p-1', TabID: 'tab-a', MetricID: 'm-1', Type: 'kpi', ColStart: 1, ColSpan: 3, RowSpan: 4 },
+        { id: 'p-1', tab_id: 'tab-a', metric_id: 'm-1', type: 'kpi', col_start: 1, col_span: 3, row_span: 4 },
       ],
     },
   ],
@@ -216,7 +216,7 @@ describe('F4.15 · publicar', () => {
       http.post(`${API}/admin/layouts/:id/validate`, () => ok({ valid: true, errors: [] })),
       http.post(`${API}/admin/layouts/:id/publish`, async ({ request }) => {
         cuerpos.push(await request.json())
-        return ok({ ...borrador, Status: 'published', PublishedAt: '2026-09-15T10:00:00Z' })
+        return ok({ ...borrador, status: 'published', published_at: '2026-09-15T10:00:00Z' })
       }),
     ])
     montar()

@@ -22,13 +22,13 @@ const API = '*/api/v1'
 
 const tenants = [{ id: 't-1', name: 'Under Armour México' }]
 
-const borrador = { ID: 'l-2', TenantID: 't-1', Status: 'draft', VersionID: 'v4', PublishedAt: null }
+const borrador = { id: 'l-2', tenant_id: 't-1', status: 'draft', version_id: 'v4', published_at: null }
 const publicado = {
-  ID: 'l-1',
-  TenantID: 't-1',
-  Status: 'published',
-  VersionID: 'v3',
-  PublishedAt: '2026-09-10T12:00:00Z',
+  id: 'l-1',
+  tenant_id: 't-1',
+  status: 'published',
+  version_id: 'v3',
+  published_at: '2026-09-10T12:00:00Z',
 }
 
 const tabDe = (layout: unknown, id: string | undefined, nombre: string) => ({
@@ -36,12 +36,12 @@ const tabDe = (layout: unknown, id: string | undefined, nombre: string) => ({
   tabs: [
     {
       tab: {
-        ...(id === undefined ? {} : { ID: id }),
-        LayoutVersionID: 'l-2',
-        Name: nombre,
-        OperationalQuestion: '¿Cómo vamos?',
-        SortOrder: 1,
-        RoleIDs: [],
+        ...(id === undefined ? {} : { id: id }),
+        layout_version_id: 'l-2',
+        name: nombre,
+        operational_question: '¿Cómo vamos?',
+        sort_order: 1,
+        role_ids: [],
       },
       panels: [],
     },
@@ -96,12 +96,12 @@ describe('§7.2 · guardado explícito', () => {
           tabs: [
             {
               tab: {
-                ID: 'tab-a', LayoutVersionID: 'l-2', Name: 'Resumen',
-                OperationalQuestion: '¿Cómo vamos?', SortOrder: 1,
-                RoleIDs: ['r-1'],
+                id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen',
+                operational_question: '¿Cómo vamos?', sort_order: 1,
+                role_ids: ['r-1'],
               },
               panels: [
-                { ID: 'p-1', TabID: 'tab-a', MetricID: 'm-1', Type: 'kpi', ColStart: 1, ColSpan: 3, RowSpan: 4 },
+                { id: 'p-1', tab_id: 'tab-a', metric_id: 'm-1', type: 'kpi', col_start: 1, col_span: 3, row_span: 4 },
               ],
             },
           ],
@@ -143,8 +143,8 @@ describe('§7.2 · guardado explícito', () => {
             ...tabDe(borrador, 'tab-a', 'Resumen').tabs,
             {
               tab: {
-                ID: 'tab-nueva', LayoutVersionID: 'l-2', Name: 'Pestaña nueva',
-                OperationalQuestion: '¿?', SortOrder: 2, RoleIDs: [],
+                id: 'tab-nueva', layout_version_id: 'l-2', name: 'Pestaña nueva',
+                operational_question: '¿?', sort_order: 2, role_ids: [],
               },
               panels: [],
             },
@@ -202,8 +202,8 @@ describe('§7.2 · guardado explícito', () => {
           tabs: [
             {
               tab: {
-                ID: 'tab-a', LayoutVersionID: 'l-2', Name: 'Resumen',
-                OperationalQuestion: '', SortOrder: 1, RoleIDs: [],
+                id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen',
+                operational_question: '', sort_order: 1, role_ids: [],
               },
               panels: [],
             },

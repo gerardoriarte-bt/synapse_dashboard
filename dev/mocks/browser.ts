@@ -43,7 +43,7 @@ const mal = (mensaje: string, status: number) =>
  */
 const estado = {
   layouts: structuredClone(layouts),
-  detalles: new Map(layouts.map((l) => [l.ID, structuredClone(detalle(l.ID))])),
+  detalles: new Map(layouts.map((l) => [l.id, structuredClone(detalle(l.id))])),
   roles: structuredClone(roles),
 }
 
@@ -54,9 +54,9 @@ const estado = {
  *  panel — así que hasta un `bars` recibía un escalar. */
 function formaDe(panelId: string): string {
   const paneles = [...estado.detalles.values()].flatMap((d) => d.tabs.flatMap((t) => t.panels))
-  const panel = paneles.find((p) => p.ID === panelId)
+  const panel = paneles.find((p) => p.id === panelId)
   if (panel === undefined) return 'scalar'
-  return catalogo.find((m) => m.id === panel.MetricID)?.shape ?? 'scalar'
+  return catalogo.find((m) => m.id === panel.metric_id)?.shape ?? 'scalar'
 }
 
 /** Un valor del CABLE para cada una de las nueve formas que el backend
@@ -183,18 +183,18 @@ export const worker = setupWorker(
   http.get(`${API}/config/blocks`, () => ok(bloques)),
   http.get(`${API}/config/tabs/:tabId`, ({ params }) => {
     const d = estado.detalles.get(LAYOUT_PUB)
-    const t = d?.tabs.find((x) => x.tab.ID === params['tabId'])
+    const t = d?.tabs.find((x) => x.tab.id === params['tabId'])
     if (t === undefined) return mal('tab not found', 404)
     return ok({
       tab: {
-        id: t.tab.ID,
-        name: t.tab.Name,
-        operational_question: t.tab.OperationalQuestion,
-        sort_order: t.tab.SortOrder,
+        id: t.tab.id,
+        name: t.tab.name,
+        operational_question: t.tab.operational_question,
+        sort_order: t.tab.sort_order,
       },
       panels: t.panels.map((p) => ({
-        id: p.ID, metric_id: p.MetricID, type: p.Type,
-        col_start: p.ColStart, col_span: p.ColSpan, row_span: p.RowSpan,
+        id: p.id, metric_id: p.metric_id, type: p.type,
+        col_start: p.col_start, col_span: p.col_span, row_span: p.row_span,
       })),
     })
   }),
@@ -364,14 +364,14 @@ export const worker = setupWorker(
   http.post(`${API}/admin/tenants/:id/layouts`, async ({ request }) => {
     const { version_id } = (await request.json()) as { version_id?: string }
     const nuevo = {
-      ID: crypto.randomUUID(), TenantID: tenants[0]!.id, Status: 'draft',
-      VersionID: `${version_id ?? 'v'}-copia`, PublishedAt: null,
+      id: crypto.randomUUID(), tenant_id: tenants[0]!.id, status: 'draft',
+      version_id: `${version_id ?? 'v'}-copia`, published_at: null,
     }
     estado.layouts = [nuevo, ...estado.layouts]
     // Duplicar copia el contenido de la versión de origen, que es lo que hace
     // que «duplicar para editar» sirva de algo.
     const origen = estado.detalles.get(LAYOUT_PUB)
-    estado.detalles.set(nuevo.ID, { layout: nuevo, tabs: structuredClone(origen?.tabs ?? []) })
+    estado.detalles.set(nuevo.id, { layout: nuevo, tabs: structuredClone(origen?.tabs ?? []) })
     return HttpResponse.json({ success: true, data: nuevo }, { status: 201 })
   }),
 
@@ -382,10 +382,10 @@ export const worker = setupWorker(
 
   http.put(`${API}/admin/layouts/:id`, async ({ params, request }) => {
     const id = params['id'] as string
-    const layout = estado.layouts.find((l) => l.ID === id)
+    const layout = estado.layouts.find((l) => l.id === id)
     // **El 409 de verdad**, que es el que hace útil a la barra de guardado: el
     // servicio solo deja editar borradores.
-    if (layout?.Status === 'published') return mal('layout is published', 409)
+    if (layout?.status === 'published') return mal('layout is published', 409)
 
     const cuerpo = (await request.json()) as {
       tabs: { id?: string; name: string; operational_question: string; sort_order: number; role_ids?: string[]; panels?: unknown[] }[]
@@ -397,19 +397,19 @@ export const worker = setupWorker(
       // hace que el segundo guardado no duplique.
       tabs: cuerpo.tabs.map((t) => ({
         tab: {
-          ID: t.id ?? crypto.randomUUID(),
-          LayoutVersionID: id,
-          Name: t.name,
-          OperationalQuestion: t.operational_question,
-          SortOrder: t.sort_order,
-          RoleIDs: t.role_ids ?? [],
+          id: t.id ?? crypto.randomUUID(),
+          layout_version_id: id,
+          name: t.name,
+          operational_question: t.operational_question,
+          sort_order: t.sort_order,
+          role_ids: t.role_ids ?? [],
         },
         panels: (t.panels ?? []).map((p) => {
           const q = p as { id?: string; metric_id: string; type: string; col_start: number; col_span: number; row_span: number; options?: unknown }
           return {
-            ID: q.id ?? crypto.randomUUID(), TabID: t.id ?? '', MetricID: q.metric_id,
-            Type: q.type, ColStart: q.col_start, ColSpan: q.col_span, RowSpan: q.row_span,
-            ...(q.options === undefined ? {} : { Options: q.options }),
+            id: q.id ?? crypto.randomUUID(), tab_id: t.id ?? '', metric_id: q.metric_id,
+            type: q.type, col_start: q.col_start, col_span: q.col_span, row_span: q.row_span,
+            ...(q.options === undefined ? {} : { options: q.options }),
           }
         }),
       })),
@@ -424,9 +424,9 @@ export const worker = setupWorker(
     // **200 aunque sea inválido** · el 200 dice que la validación corrió. Y lo
     // que marca es una pestaña sin pregunta operativa, que es la regla dura.
     const errors = (d?.tabs ?? [])
-      .filter((t) => t.tab.OperationalQuestion.trim() === '')
+      .filter((t) => t.tab.operational_question.trim() === '')
       .map((t) => ({
-        tab_id: t.tab.ID,
+        tab_id: t.tab.id,
         field: 'operational_question',
         message: 'una pestaña que no contesta una pregunta no se compone',
       }))
@@ -437,16 +437,16 @@ export const worker = setupWorker(
     const id = params['id'] as string
     await delay(400)
     const d = estado.detalles.get(id)
-    if ((d?.tabs ?? []).some((t) => t.tab.OperationalQuestion.trim() === '')) {
+    if ((d?.tabs ?? []).some((t) => t.tab.operational_question.trim() === '')) {
       return mal('invalid panels', 422)
     }
     // Publicar **demota al anterior**: solo hay uno publicado por tenant.
     estado.layouts = estado.layouts.map((l) => ({
       ...l,
-      Status: l.ID === id ? 'published' : l.Status === 'published' ? 'draft' : l.Status,
-      PublishedAt: l.ID === id ? new Date().toISOString() : l.PublishedAt,
+      status: l.id === id ? 'published' : l.status === 'published' ? 'draft' : l.status,
+      published_at: l.id === id ? new Date().toISOString() : l.published_at,
     }))
-    return ok(estado.layouts.find((l) => l.ID === id))
+    return ok(estado.layouts.find((l) => l.id === id))
   }),
 
   /* ── B4.8 y B4.9 · del fork ─────────────────────────────────────────────── */
@@ -457,6 +457,61 @@ export const worker = setupWorker(
   // las cuatro fuentes llegan sin carga, así que `DEGRADADA` y `AL_DIA` sólo se
   // ven acá — y la degradada es el ejemplo literal del `.pen`: 31 h sobre una
   // fuente horaria con tolerancia 2×.
+  // ── A3 · LOS USUARIOS · agregados el 2026-09-26 ───────────────────────────
+  //
+  // **No había handler de usuarios y A3 nunca se pudo MIRAR con datos acá.** El
+  // modo mock existe para ver pantallas, y ésta salía con su vacío de alta.
+  //
+  // Los números son los del dibujo —«17 usuarios · 2 clientes con usuarios»— y
+  // por eso `total` NO coincide con el largo de la lista: es lo que pasa cuando
+  // la ruta pagina, y con los dos iguales nadie vería la diferencia entre el
+  // conteo del servicio y un `length` nuestro.
+  //
+  // Los tres estados que el dibujo pinta: activo con acceso, activo que **nunca
+  // entró** —`last_login_at: null`, que no es lo mismo que suspendido— y
+  // suspendido. El tercero del dibujo, «invitación pendiente», no está: el cable
+  // no lo distingue y **inventarlo acá sería inventarlo en la pantalla**.
+  http.get(`${API}/admin/users`, () => ok({
+    total: 17,
+    tenants: 2,
+    users: [
+      {
+        id: 'u-1', tenant_id: 't-1', tenant_name: 'Under Armour México',
+        email: 'sofia.marin@underarmour.com', first_name: 'Sofía', last_name: 'Marín',
+        role: 'planner', role_id: 'r-pla', last_login_at: '2026-09-25T14:10:00Z',
+        is_active: true, created_at: '2026-08-14T10:00:00Z',
+      },
+      {
+        id: 'u-2', tenant_id: 't-1', tenant_name: 'Under Armour México',
+        email: 'gerardo.riarte@buentipo.com', first_name: 'Gerardo', last_name: 'Riarte',
+        role: 'admin', role_id: 'r-adm', last_login_at: '2026-09-26T08:02:00Z',
+        is_active: true, created_at: '2026-07-01T10:00:00Z',
+      },
+      {
+        id: 'u-3', tenant_id: 't-1', tenant_name: 'Under Armour México',
+        email: 'nuevo.ingreso@underarmour.com', first_name: 'Nuevo', last_name: 'Ingreso',
+        role: 'planner', role_id: 'r-pla', last_login_at: null,
+        is_active: true, created_at: '2026-09-24T09:00:00Z',
+      },
+      {
+        id: 'u-4', tenant_id: 't-2', tenant_name: 'Cliente Dos',
+        email: 'ana.paz@clientedos.com', first_name: 'Ana', last_name: 'Paz',
+        role: 'ceo', role_id: 'r-ceo', last_login_at: '2026-09-20T11:00:00Z',
+        is_active: false, created_at: '2026-06-02T10:00:00Z',
+      },
+    ],
+  })),
+
+  // La por-cliente, que sirve a A2 · sin `tenant_name`, igual que el servicio.
+  http.get(`${API}/admin/tenants/:id/users`, () => ok([
+    {
+      id: 'u-1', tenant_id: 't-1',
+      email: 'sofia.marin@underarmour.com', first_name: 'Sofía', last_name: 'Marín',
+      role: 'planner', role_id: 'r-pla', last_login_at: '2026-09-25T14:10:00Z',
+      is_active: true, created_at: '2026-08-14T10:00:00Z',
+    },
+  ])),
+
   http.get(`${API}/admin/tenants/:id/feeds`, () => ok([
     {
       key: 'merchant_center', name: 'Merchant Center', gold_table: 'shopping_feed',
@@ -547,17 +602,17 @@ export const worker = setupWorker(
     // **El recorte lo hace el servidor** · acá se simula con las mismas reglas:
     // `tab_ids` vacío ve todas, y `hidden_metric_ids` saca paneles.
     const tabs = (d?.tabs ?? [])
-      .filter((t) => rol.tab_ids.length === 0 || rol.tab_ids.includes(t.tab.ID))
+      .filter((t) => rol.tab_ids.length === 0 || rol.tab_ids.includes(t.tab.id))
       .map((t) => ({
         tab: {
-          id: t.tab.ID, name: t.tab.Name,
-          operational_question: t.tab.OperationalQuestion, sort_order: t.tab.SortOrder,
+          id: t.tab.id, name: t.tab.name,
+          operational_question: t.tab.operational_question, sort_order: t.tab.sort_order,
         },
         panels: t.panels
-          .filter((p) => !rol.hidden_metric_ids.includes(p.MetricID))
+          .filter((p) => !rol.hidden_metric_ids.includes(p.metric_id))
           .map((p) => ({
-            id: p.ID, metric_id: p.MetricID, type: p.Type,
-            col_start: p.ColStart, col_span: p.ColSpan, row_span: p.RowSpan,
+            id: p.id, metric_id: p.metric_id, type: p.type,
+            col_start: p.col_start, col_span: p.col_span, row_span: p.row_span,
           })),
       }))
 

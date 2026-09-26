@@ -36,11 +36,11 @@ const API = '*/api/v1'
 /** Un layout como lo serializa Go: **sin etiquetas `json:`**, así que las claves
  *  son los nombres de los campos. */
 const borrador = {
-  ID: 'l-1',
-  TenantID: 't-1',
-  Status: 'draft',
-  VersionID: 'borrador-1',
-  PublishedAt: null,
+  id: 'l-1',
+  tenant_id: 't-1',
+  status: 'draft',
+  version_id: 'borrador-1',
+  published_at: null,
 }
 
 const detalle = {
@@ -48,23 +48,23 @@ const detalle = {
   tabs: [
     {
       tab: {
-        ID: 'tab-1',
-        LayoutVersionID: 'l-1',
-        Name: 'Resumen',
-        OperationalQuestion: '¿Qué movió el negocio?',
-        SortOrder: 1,
-        RoleIDs: [],
+        id: 'tab-1',
+        layout_version_id: 'l-1',
+        name: 'Resumen',
+        operational_question: '¿Qué movió el negocio?',
+        sort_order: 1,
+        role_ids: [],
       },
       panels: [
         {
-          ID: 'p-1',
-          TabID: 'tab-1',
-          MetricID: 'm-1',
-          Type: 'kpi',
-          ColStart: 5,
-          ColSpan: 3,
-          RowSpan: 4,
-          Options: { comparative: true },
+          id: 'p-1',
+          tab_id: 'tab-1',
+          metric_id: 'm-1',
+          type: 'kpi',
+          col_start: 5,
+          col_span: 3,
+          row_span: 4,
+          options: { comparative: true },
         },
       ],
     },
@@ -85,7 +85,7 @@ describe('el PascalCase del dominio se absorbe acá', () => {
   it('`published` → `publicado`, con su fecha', async () => {
     server.use(
       http.get(`${API}/admin/tenants/t-1/layouts`, () =>
-        ok([{ ...borrador, Status: 'published', PublishedAt: '2026-09-11T14:00:00Z' }]),
+        ok([{ ...borrador, status: 'published', published_at: '2026-09-11T14:00:00Z' }]),
       ),
     )
     const [l] = await adminApi.layouts('t-1')
@@ -96,7 +96,7 @@ describe('el PascalCase del dominio se absorbe acá', () => {
     // No se sustituye por `publicado`: un layout del que no se sabe si está
     // publicado no se trata como publicado. La dirección importa.
     server.use(
-      http.get(`${API}/admin/tenants/t-1/layouts`, () => ok([{ ...borrador, Status: 'archived' }])),
+      http.get(`${API}/admin/tenants/t-1/layouts`, () => ok([{ ...borrador, status: 'archived' }])),
     )
     expect((await adminApi.layouts('t-1'))[0]?.estado).toBe('borrador')
   })
@@ -276,7 +276,7 @@ describe('publicar toca DOS cachés · F4.23', () => {
 
     server.use(
       http.post(`${API}/admin/layouts/l-1/publish`, () =>
-        ok({ ...borrador, Status: 'published', PublishedAt: '2026-09-15T10:00:00Z' }),
+        ok({ ...borrador, status: 'published', published_at: '2026-09-15T10:00:00Z' }),
       ),
     )
 

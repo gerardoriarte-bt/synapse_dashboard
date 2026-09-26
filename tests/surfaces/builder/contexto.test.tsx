@@ -33,10 +33,10 @@ const tenants = [
 
 const versiones = {
   't-1': [
-    { ID: 'l-1', TenantID: 't-1', Status: 'published', VersionID: 'v3', PublishedAt: '2026-09-10T12:00:00Z' },
-    { ID: 'l-2', TenantID: 't-1', Status: 'draft', VersionID: 'v4', PublishedAt: null },
+    { id: 'l-1', tenant_id: 't-1', status: 'published', version_id: 'v3', published_at: '2026-09-10T12:00:00Z' },
+    { id: 'l-2', tenant_id: 't-1', status: 'draft', version_id: 'v4', published_at: null },
   ],
-  't-2': [{ ID: 'l-9', TenantID: 't-2', Status: 'draft', VersionID: 'k1', PublishedAt: null }],
+  't-2': [{ id: 'l-9', tenant_id: 't-2', status: 'draft', version_id: 'k1', published_at: null }],
 }
 
 const detalles: Record<string, unknown> = {
@@ -45,27 +45,27 @@ const detalles: Record<string, unknown> = {
     tabs: [
       {
         tab: {
-          ID: 'tab-b',
-          LayoutVersionID: 'l-2',
-          Name: 'Inventario',
-          OperationalQuestion: '',
-          SortOrder: 2,
-          RoleIDs: ['a3f1c2d4-0000-0000-0000-00000000dead'],
+          id: 'tab-b',
+          layout_version_id: 'l-2',
+          name: 'Inventario',
+          operational_question: '',
+          sort_order: 2,
+          role_ids: ['a3f1c2d4-0000-0000-0000-00000000dead'],
         },
         panels: [],
       },
       {
         tab: {
-          ID: 'tab-a',
-          LayoutVersionID: 'l-2',
-          Name: 'Resumen',
-          OperationalQuestion: '¿Cómo vamos contra el plan?',
-          SortOrder: 1,
-          RoleIDs: [],
+          id: 'tab-a',
+          layout_version_id: 'l-2',
+          name: 'Resumen',
+          operational_question: '¿Cómo vamos contra el plan?',
+          sort_order: 1,
+          role_ids: [],
         },
         panels: [
-          { ID: 'p-1', TabID: 'tab-a', MetricID: 'm-1', Type: 'kpi', ColStart: 1, ColSpan: 3, RowSpan: 4 },
-          { ID: 'p-2', TabID: 'tab-a', MetricID: 'm-2', Type: 'series', ColStart: 4, ColSpan: 6, RowSpan: 4 },
+          { id: 'p-1', tab_id: 'tab-a', metric_id: 'm-1', type: 'kpi', col_start: 1, col_span: 3, row_span: 4 },
+          { id: 'p-2', tab_id: 'tab-a', metric_id: 'm-2', type: 'series', col_start: 4, col_span: 6, row_span: 4 },
         ],
       },
     ],

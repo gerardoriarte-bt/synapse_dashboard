@@ -153,18 +153,18 @@ export const tenants = [
 ]
 
 const panel = (n: number, metric: number, tab: string, colStart: number, colSpan: number, tipo: string) => ({
-  ID: P(n), TabID: tab, MetricID: M(metric), Type: tipo,
-  ColStart: colStart, ColSpan: colSpan, RowSpan: 4,
+  id: P(n), tab_id: tab, metric_id: M(metric), type: tipo,
+  col_start: colStart, col_span: colSpan, row_span: 4,
 })
 
 export const layouts = [
-  { ID: LAYOUT_PUB, TenantID: TENANT, Status: 'published', VersionID: 'v3', PublishedAt: '2026-09-10T12:00:00Z' },
-  { ID: LAYOUT_DRAFT, TenantID: TENANT, Status: 'draft', VersionID: 'v4', PublishedAt: null },
+  { id: LAYOUT_PUB, tenant_id: TENANT, status: 'published', version_id: 'v3', published_at: '2026-09-10T12:00:00Z' },
+  { id: LAYOUT_DRAFT, tenant_id: TENANT, status: 'draft', version_id: 'v4', published_at: null },
 ]
 
 const tabsDe = (layout: string) => [
   {
-    tab: { ID: TAB_A, LayoutVersionID: layout, Name: 'eCommerce Overview', OperationalQuestion: '¿Cómo va el negocio?', SortOrder: 1, RoleIDs: [] },
+    tab: { id: TAB_A, layout_version_id: layout, name: 'eCommerce Overview', operational_question: '¿Cómo va el negocio?', sort_order: 1, role_ids: [] },
     panels: [
       panel(1, 0, TAB_A, 1, 3, 'kpi'),
       panel(2, 1, TAB_A, 4, 3, 'kpi'),
@@ -178,13 +178,13 @@ const tabsDe = (layout: string) => [
     ],
   },
   {
-    tab: { ID: TAB_B, LayoutVersionID: layout, Name: 'Inventory & Shopping', OperationalQuestion: '', SortOrder: 2, RoleIDs: [R(1)] },
+    tab: { id: TAB_B, layout_version_id: layout, name: 'Inventory & Shopping', operational_question: '', sort_order: 2, role_ids: [R(1)] },
     panels: [panel(5, 13, TAB_B, 1, 6, 'list')],
   },
 ]
 
 export const detalle = (layout: string) => ({
-  layout: layouts.find((l) => l.ID === layout) ?? layouts[1],
+  layout: layouts.find((l) => l.id === layout) ?? layouts[1],
   tabs: tabsDe(layout),
 })
 
@@ -203,10 +203,10 @@ export const contexto = {
   // significara dos cosas.
   role: { id: '66666666-6666-6666-6666-6666666666ad', name: 'admin' },
   tabs: tabsDe(LAYOUT_PUB).map((t) => ({
-    id: t.tab.ID,
-    name: t.tab.Name,
-    operational_question: t.tab.OperationalQuestion,
-    sort_order: t.tab.SortOrder,
+    id: t.tab.id,
+    name: t.tab.name,
+    operational_question: t.tab.operational_question,
+    sort_order: t.tab.sort_order,
   })),
   periods: ['2026-09', '2026-08', '2026-07'],
   catalog_version: 4,

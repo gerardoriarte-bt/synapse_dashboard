@@ -68,7 +68,7 @@ import { SurfaceMessage } from '../console/SurfaceMessage'
 import { Label } from '../../render/primitives/Label'
 import { ApiError } from '../../api/types'
 import type { TabParaGuardar } from '../../api/admin'
-import type { Metric, PanelConfig } from '../../api/types'
+import type { PanelConfig } from '../../api/types'
 import type { PantallaId } from './pantallas'
 
 /** Qué espera cada pantalla. Acá y no en un comentario: la pantalla lo pinta, así
@@ -345,7 +345,6 @@ export function Builder() {
           rolActivo={rolActivo}
           onRol={setRol}
           query={preview}
-          metricas={catalogo.data?.metrics ?? []}
           onVolver={() => setPantalla('contexto')}
           hayVersion={version !== null}
         />
@@ -509,7 +508,6 @@ function Preview({
   rolActivo,
   onRol,
   query,
-  metricas,
   onVolver,
   hayVersion,
 }: {
@@ -517,7 +515,6 @@ function Preview({
   rolActivo: string | null
   onRol: (id: string) => void
   query: ReturnType<typeof usePreview>
-  metricas: readonly Metric[]
   onVolver: () => void
   hayVersion: boolean
 }) {
@@ -586,7 +583,9 @@ function Preview({
       ) : query.data === undefined ? (
         <Label as="div">Resolviendo el preview…</Label>
       ) : (
-        <RolePreview preview={query.data} metricas={metricas} onVolver={onVolver} />
+        // `metricas` ya no se pasa: el preview dejó de traer paneles, así que
+        // no hay id de métrica que nombrar. Ver el encabezado de `RolePreview`.
+        <RolePreview preview={query.data} onVolver={onVolver} />
       )}
     </div>
   )

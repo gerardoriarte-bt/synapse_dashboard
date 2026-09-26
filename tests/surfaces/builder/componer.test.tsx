@@ -31,23 +31,23 @@ import { server } from '../../mocks/server'
 
 const API = '*/api/v1'
 
-const version = { ID: 'l-2', TenantID: 't-1', Status: 'draft', VersionID: 'v4', PublishedAt: null }
+const version = { id: 'l-2', tenant_id: 't-1', status: 'draft', version_id: 'v4', published_at: null }
 
 /** Dos pestañas con distinta cantidad de paneles · del cable, en PascalCase. */
 const panel = (n: number, tab: string) => ({
-  ID: `p-${String(n)}`, TabID: tab, MetricID: 'm-1', Type: 'kpi',
-  ColStart: n === 1 ? 1 : 4, ColSpan: 3, RowSpan: 4,
+  id: `p-${String(n)}`, tab_id: tab, metric_id: 'm-1', type: 'kpi',
+  col_start: n === 1 ? 1 : 4, col_span: 3, row_span: 4,
 })
 
 const detalle = {
   layout: version,
   tabs: [
     {
-      tab: { ID: 'tab-a', LayoutVersionID: 'l-2', Name: 'Resumen', OperationalQuestion: '¿Cómo vamos?', SortOrder: 1, RoleIDs: [] },
+      tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿Cómo vamos?', sort_order: 1, role_ids: [] },
       panels: [panel(1, 'tab-a')],
     },
     {
-      tab: { ID: 'tab-b', LayoutVersionID: 'l-2', Name: 'Detalle', OperationalQuestion: '¿Dónde se movió?', SortOrder: 2, RoleIDs: [] },
+      tab: { id: 'tab-b', layout_version_id: 'l-2', name: 'Detalle', operational_question: '¿Dónde se movió?', sort_order: 2, role_ids: [] },
       panels: [panel(2, 'tab-b'), panel(3, 'tab-b')],
     },
   ],

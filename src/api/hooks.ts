@@ -39,6 +39,10 @@ export const keys = {
   agentes: (tenantId: string) => ['admin', 'agentes', tenantId] as const,
   fuentes: (tenantId: string) => ['admin', 'fuentes', tenantId] as const,
   usuarios: (tenantId: string) => ['admin', 'usuarios', tenantId] as const,
+  // **Sin tenant en la clave, a propósito**: es de plataforma. Compartir la clave
+  // con la de arriba serviría el listado de un cliente donde va el de todos, que
+  // es la clase de mentira que costó el defecto del cache del preview por rol.
+  usuariosDePlataforma: () => ['admin', 'usuarios', 'plataforma'] as const,
   preview: (layoutId: string, rolId: string) => ['admin', 'preview', layoutId, rolId] as const,
   layout: (layoutId: string) => ['admin', 'layout', layoutId] as const,
 }
@@ -177,7 +181,19 @@ export function useAdminCatalog(tenantId: string | null) {
  * que el código vuelva a su rama— dejan de dar 404 y no cambia una línea de acá.
  */
 
-/** Los usuarios del cliente · A3 · F4.3. */
+/** **Todos los usuarios de la plataforma** · A3 · F4.3 · B4.17.
+ *
+ *  Sin parámetro y sin `enabled`: la pregunta de A3 no es de un cliente. Es lo
+ *  que el dibujo declara —`ALCANCE · PLATAFORMA`— y lo que la ruta no daba hasta
+ *  `6e521cc`. */
+export function useAllUsers() {
+  return useQuery({
+    queryKey: keys.usuariosDePlataforma(),
+    queryFn: () => adminApi.usuariosDePlataforma(),
+  })
+}
+
+/** Los usuarios de UN cliente · sirve a A2, donde el cliente ya está elegido. */
 export function useUsers(tenantId: string | null) {
   return useQuery({
     queryKey: keys.usuarios(tenantId ?? ''),

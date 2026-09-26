@@ -25,7 +25,7 @@ import { useState } from 'react'
 import {
   useAgents,
   useFeeds,
-  useUsers,
+  useAllUsers,
   useAdminCatalog,
   useDeleteRole,
   useLayoutDetail,
@@ -90,8 +90,10 @@ export function Admin() {
   const agentes = useAgents(activo)
   // A5 · F4.24. La ruta llegó el 2026-09-25 con `1e080ee`.
   const fuentes = useFeeds(activo)
-  // A3 · F4.3. Abierta el 2026-09-25 con la ruta de `1e080ee`.
-  const usuarios = useUsers(activo)
+  // A3 · F4.3. **De PLATAFORMA desde el 2026-09-26**: `GET /admin/users` llegó
+  // con `6e521cc` y es lo que el dibujo declara. La por-cliente —`useUsers`—
+  // sigue existiendo para A2, donde el cliente ya está elegido.
+  const usuarios = useAllUsers()
   const versiones = useLayouts(activo)
   const publicado = versiones.data?.find((v) => v.estado === 'publicado') ?? null
   const detalle = useLayoutDetail(publicado?.id ?? null)
@@ -163,8 +165,9 @@ export function Admin() {
         />
       ) : pantalla === 'usuarios' ? (
         <UserList
-          usuarios={usuarios.data ?? []}
-          tenant={lista.find((x) => x.id === activo)?.nombre ?? null}
+          usuarios={usuarios.data?.usuarios ?? []}
+          total={usuarios.data?.total ?? 0}
+          clientes={usuarios.data?.clientes ?? 0}
           cargando={usuarios.data === undefined}
         />
       ) : pantalla === 'feeds' ? (

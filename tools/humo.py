@@ -339,8 +339,50 @@ def comprobar_admin(token: str, ctx: object, fallas: list[str]) -> str | None:
 
     # **Publicar NO se prueba.** Demota el layout publicado del tenant y cambia
     # lo que la consola sirve: un chequeo de humo no toca producción.
+    # ── LAS QUE ERAN «DEL FORK» YA SE MIDEN · 2026-09-26 ────────────────────
+    #
+    # Acá había una línea diciendo «`/roles` y `/preview` son del fork, el
+    # servicio devuelve 404». **Las tomaron**: las de rol el 2026-09-25 y el
+    # preview en `8633b10`. La línea se quedó afirmando un 404 que ya no pasaba.
+    _, roles = pedir(f"/admin/tenants/{tid}/roles/composition", token)
+    lista_roles = roles.get("data") if isinstance(roles, dict) else None
+    if isinstance(lista_roles, list) and lista_roles:
+        revisar("/admin/tenants/{id}/roles/composition[0]", lista_roles[0], "Role")
+
+    # **El preview necesita `role_id` y NO `roleId`** · medido: camelCase da 400.
+    # Se pide con un rol real del tenant, que sale del listado de arriba.
+    if isinstance(lista_roles, list) and lista_roles:
+        lid_prev = layouts[0].get("id")
+        estado_pv, pv = pedir(
+            f"/admin/layouts/{lid_prev}/preview?role_id={lista_roles[0]['id']}", token
+        )
+        if estado_pv != 200:
+            fallas.append(f"/admin/layouts/{{id}}/preview · respondió {estado_pv}")
+            print(f"  ✗ /admin/layouts/{{id}}/preview · HTTP {estado_pv}")
+        else:
+            revisar("/admin/layouts/{id}/preview", pv.get("data"), "Preview")
+
+    for ruta, esquema, etiqueta in (
+        (f"/admin/tenants/{tid}/users", "User", "/admin/tenants/{id}/users[0]"),
+        (f"/admin/tenants/{tid}/feeds", "Feed", "/admin/tenants/{id}/feeds[0]"),
+        (f"/admin/tenants/{tid}/agents", "AgentAdmin", "/admin/tenants/{id}/agents[0]"),
+    ):
+        estado_l, cuerpo_l = pedir(ruta, token)
+        datos_l = cuerpo_l.get("data") if isinstance(cuerpo_l, dict) else None
+        if estado_l != 200:
+            fallas.append(f"{etiqueta} · respondió {estado_l}")
+            print(f"  ✗ {etiqueta} · HTTP {estado_l}")
+        elif not isinstance(datos_l, list):
+            fallas.append(f"{etiqueta} · `data` no es un arreglo")
+            print(f"  ✗ {etiqueta} · `data` no es un arreglo")
+        elif datos_l:
+            revisar(etiqueta, datos_l[0], esquema)
+        else:
+            print(f"  ⊘ {etiqueta} · lista vacía · no hay forma que comparar")
+
     print("  ⊘ /admin/layouts/{id}/publish · no se prueba · demota el publicado del tenant")
-    print("  ⊘ /admin/tenants/{id}/roles y /preview · son del fork, el servicio devuelve 404")
+    print("  ⊘ las de ESCRITURA de rol · POST, PUT y DELETE · medidas a mano el")
+    print("     2026-09-26 con un rol descartable: 201, 200 y 200 con is_active:false")
     return None
 
 
