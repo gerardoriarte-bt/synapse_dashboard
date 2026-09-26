@@ -146,18 +146,77 @@ el `cut`. Vimos que planean renombrarlo a `horizon_cut`; con eso alcanza.
 
 ---
 
-## Lo que les debemos
+## Lo que les debíamos · las tres están pagadas
 
-Tres, y las tres dependen de nosotros:
+Eran tres y las tres dependían de nosotros. **Se cerraron el mismo 2026-09-26**,
+después de escribir la primera versión de este mensaje:
 
-1. **Declarar las cinco formas v1.1** en nuestro contrato —`compared_categorical`,
-   `multi_attribute_profile`, `matrix`, `graph`, `flow`—. De acuerdo con que
-   entran juntas; el contrato las nombra en el enum y **no declara el objeto de
-   ninguna**, así que hoy no hay contra qué implementar.
-2. **Los mínimos por gráfico de B1.21**, que es la mitad nuestra de esa tarea.
-3. **Los valores de `status` y `vertical`** para `GET /admin/tenants`. Los campos
-   ya llegan en `null` y la pantalla los declara como huecos **nuestros**, no
-   suyos. Lo llevamos a producto.
+1. **Las cinco formas v1.1 están declaradas.** El contrato ya no sólo las nombra
+   en el enum: declara el objeto de las cinco —`ValorCategoricaComparada`,
+   `ValorPerfilMultiatributo`, `ValorMatriz`, `ValorGrafo`, `ValorFlujo`—, con la
+   forma leída de `transform_v11.go`. Las decisiones que hubo que tomar para eso
+   están en `docs/DECISIONES-2026-09-26-formas-v11.md`; las que los tocan a
+   ustedes son tres: **el `delta` de una categórica comparada lo calculan
+   ustedes** (el front no lo deriva aunque tenga los dos números), **una celda de
+   matriz en `null` es «no hay dato» y no cero**, y **la cifra de cada etapa de un
+   flujo la calculan ustedes** — si la sumáramos acá daría otro total en la última
+   etapa.
+2. **Los mínimos por gráfico están decididos**, con la tabla que
+   `GET /config/plots` tiene que servir: `docs/DECISIONES-2026-09-26-minimos-por-grafico.md`.
+   El contrato declara la ruta y los esquemas `Grafico` y `MinimoDeDatos`.
+3. **`status` y `vertical`: contestado, y son dos respuestas distintas.** Abajo.
+
+### `status` · tres valores, y uno de ellos es más que una columna
+
+`docs/DECISIONES-2026-09-26-estado-y-vertical.md` tiene lo que se midió; en corto:
+
+| Valor | Consecuencia |
+|---|---|
+| `ACTIVO` | ninguna · es el estado normal |
+| `PILOTO` | ninguna funcional · es una etiqueta comercial |
+| `SUSPENDIDO` | **sus usuarios no entran** |
+
+Los dos primeros están dibujados en el `.pen`, así que son una transcripción y no
+una elección nuestra. `SUSPENDIDO` es el que proponemos, y la razón es de
+vocabulario: **A3 ya lo dibuja para usuarios**, y usar otra palabra para clientes
+daría dos vocabularios para el mismo concepto en la misma superficie.
+
+**Y acá está lo que cambia el tamaño de lo que dimensionaron.** Dijeron «dos
+columnas más y un campo en `PUT /admin/tenants/{id}`, que ya existe». Con
+`SUSPENDIDO` son **dos columnas y una compuerta**: un tenant suspendido no deja
+entrar a sus usuarios, y eso es una regla en el login, no un valor en una celda.
+
+**La compuerta exceptúa a los super-admins.** Si suspender un cliente encerrara
+también a quien tiene que arreglarlo, el estado no tendría salida.
+
+**No es uno de los doce de arriba**, y conviene decirlo: hoy no bloquea nada. La
+columna de A1 ya está declarada ausente con su razón y se queda así hasta que el
+valor llegue. Lo decimos ahora porque es más caro descubrirlo al estimarlo.
+
+### `vertical` · no les pedimos la columna, y la razón es nuestra
+
+**Retiramos este pedido**, y no por falta de decisión: la pregunta estaba mal
+planteada de nuestro lado.
+
+`design.md` §3.5 declara `Tenant { … vertical, plantillaOrigen … }` — **son dos
+campos**, y el `.pen` dibuja el par en la misma celda: `Retail · apparel` sobre
+`retail_apparel_v2`. Al pie de A1 está la regla: «crear un cliente exige elegir
+plantilla de vertical · la plantilla define sus pestañas y métricas de arranque».
+
+Así que `vertical` no es una etiqueta a enumerar: es **la cabeza de la herencia de
+composición** de §3.4 —plantilla → override por tenant → override por rol—, y
+`plantillaOrigen` es un puntero versionado dentro de ella. Medido contra
+`6e595e3`: **la palabra no aparece una sola vez en su código**, y esa herencia
+tampoco existe del nuestro.
+
+**Pedirles la columna sin la plantilla les haría escribir un campo que nadie
+llena**, que es el defecto que ya tenemos puesto en este mismo campo —nuestro
+`Contexto` declara `tenant.vertical` requerido, el cable no lo trae y lo dejamos
+en `''`—. Si algún día la plantilla de vertical entra en alcance, viene con su
+propio pedido y no como una columna suelta.
+
+**Entonces el `null` de `vertical` no es un pendiente de nadie**, y así queda
+anotado de nuestro lado.
 
 ---
 

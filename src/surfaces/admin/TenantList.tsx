@@ -42,8 +42,42 @@ import type { Tenant } from '../../api/admin'
 
 /** Lo que §7.3 pide y el cable no trae. Se declara acá y no en un comentario
  *  para que la pantalla lo diga: una columna que falta y nadie nombra es una
- *  columna que nadie pide. */
-const COLUMNAS_QUE_FALTAN = ['estado', 'vertical'] as const
+ *  columna que nadie pide.
+ *
+ *  ── **LAS DOS DEJARON DE COMPARTIR RAZÓN** · 2026-09-26 ─────────────────────
+ *
+ *  Hasta acá las dos decían «el campo llega vacío · falta que definamos qué
+ *  valores toma cada una», que era cierto de las dos. **Se definieron** —ver
+ *  `docs/DECISIONES-2026-09-26-estado-y-vertical.md`— y resultaron dos respuestas
+ *  distintas: `estado` quedó decidido y le falta una columna que el servicio no
+ *  tiene, y `vertical` se retiró porque son **dos** campos y un mecanismo que no
+ *  existe de ningún lado.
+ *
+ *  **Y el aviso no dice DÓNDE falta la columna.** La primera versión decía «su
+ *  `Tenant` no la tiene», que nombra un struct de Go: preciso para nosotros e
+ *  inútil para quien administra la plataforma. No es §7.3 —el `.pen` dibuja
+ *  «3 TENANTS» en esta misma pantalla, así que la palabra es de producto— es que
+ *  el destinatario del aviso no es el equipo de backend.
+ *
+ *  **Ninguna de las dos dice «espera»**, y no es estilo: `carga.test.tsx`
+ *  prohíbe esa palabra en pantalla porque mientras el esqueleto está puesto se
+ *  leería como un «aguardá» — y la encontró ella, no la revisión.
+ *
+ *  **Una razón compartida ya mentiría sobre una de las dos**, y es la misma
+ *  corrección que el 2026-09-26 le cambió el dueño: un aviso que sigue esperando
+ *  a quien ya contestó manda a buscar el trabajo al equipo equivocado. */
+const COLUMNAS_QUE_FALTAN = [
+  {
+    nombre: 'estado',
+    razon: 'Decidido · ACTIVO, PILOTO y SUSPENDIDO',
+    desbloquea: 'falta la columna en el servicio',
+  },
+  {
+    nombre: 'vertical',
+    razon: 'Son dos campos · la vertical y su plantilla de origen',
+    desbloquea: 'falta que la plantilla entre en alcance',
+  },
+] as const
 
 
 /** `null` es «nunca cargó» y `0` es «recién». No se colapsan. */
@@ -147,15 +181,15 @@ export function TenantList({ format, tenants, onAbrir, cargando = false }: Props
           lo desbloquea. Sin esto la tabla se lee como completa. */}
       <div className="flex flex-col gap-1 rounded-sm bg-w2 p-3">
         <Label as="div">Faltan {COLUMNAS_QUE_FALTAN.length} columnas que el diseño pide</Label>
-        <Label as="div">{COLUMNAS_QUE_FALTAN.join(' · ')}</Label>
-        {/* **La razón cambió de dueño** · 2026-09-26. Acá decía «GET
-            /admin/tenants devuelve solo id y nombre · se desbloquea con B4.1», y
-            B4.1 llegó: las dos que faltan vienen en `null` esperando que
-            NOSOTROS definamos sus valores. Dejar la razón vieja habría hecho que
-            la pantalla siguiera esperando a otro equipo. */}
-        <Label as="div">
-          El campo llega vacío · falta que definamos qué valores toma cada una
-        </Label>
+        {/* **Una razón por columna** · 2026-09-26. Antes acá había una sola línea
+            para las dos —«el campo llega vacío · falta que definamos qué valores
+            toma cada una»— y dejó de ser cierta de `estado` el día que se
+            definió. Un aviso que promedia dos razones no sirve para ninguna. */}
+        {COLUMNAS_QUE_FALTAN.map((c) => (
+          <Label as="div" key={c.nombre}>
+            {c.nombre} · {c.razon} · {c.desbloquea}
+          </Label>
+        ))}
       </div>
     </div>
   )

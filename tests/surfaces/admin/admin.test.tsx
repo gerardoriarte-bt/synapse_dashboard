@@ -173,22 +173,36 @@ describe('F4.2 · la lista de clientes', () => {
     expect(keralty.getByText('0')).toBeVisible()
   })
 
-  it('DECLARA las dos que faltan, y que la pregunta es NUESTRA', async () => {
-    // **La razón cambió de dueño el 2026-09-26.** Antes decía «GET
-    // /admin/tenants devuelve solo id y nombre · se desbloquea con B4.1»; B4.1
-    // llegó, y `status`/`vertical` vienen en `null` esperando que definamos sus
-    // valores. Dejar la razón vieja habría hecho que la pantalla siguiera
-    // esperando a otro equipo.
+  it('DECLARA las dos que faltan, y cada una con SU razón', async () => {
+    // **La razón cambió de dueño dos veces, y la segunda las separó.** Primero
+    // decía «GET /admin/tenants devuelve solo id y nombre · se desbloquea con
+    // B4.1»; B4.1 llegó y pasó a «falta que definamos qué valores toma cada
+    // una», cierto de las dos. El 2026-09-26 se definieron y **dejó de ser
+    // cierto de `estado`**: quedó decidido y ahora espera una columna que su
+    // `Tenant` no tiene, mientras `vertical` se retiró por ser dos campos.
+    //
+    // **Lo que se verifica es que la razón viaje PEGADA a su columna**, no que
+    // los textos estén en algún lugar de la pantalla. Un `toContain` sobre todo
+    // el contenedor pasaría igual con las dos razones cruzadas — es la familia
+    // del botón muerto: se ve idéntico.
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     const { container } = montar()
     await screen.findByText('Under Armour México')
 
+    expect(screen.getByText(/Faltan 2 columnas/)).toBeVisible()
+
+    expect(
+      screen.getByText('estado · Decidido · ACTIVO, PILOTO y SUSPENDIDO · falta la columna en el servicio'),
+    ).toBeVisible()
+    expect(
+      screen.getByText('vertical · Son dos campos · la vertical y su plantilla de origen · falta que la plantilla entre en alcance'),
+    ).toBeVisible()
+
+    // Las dos razones vencidas: la de B4.1, y la compartida que dejó de ser
+    // cierta de `estado` el día que se decidió.
     const texto = container.textContent ?? ''
-    expect(texto).toContain('Faltan 2 columnas')
-    expect(texto).toContain('estado')
-    expect(texto).toContain('vertical')
-    expect(texto).toContain('falta que definamos qué valores toma cada una')
     expect(texto).not.toContain('se desbloquea con B4.1')
+    expect(texto).not.toContain('falta que definamos qué valores toma cada una')
   })
 
   it('sin clientes invita a actuar, y NO se sale de la tabla', async () => {

@@ -1468,10 +1468,15 @@ Snowflake, o un modo que no llame a Cortex — ver `docs/ESTADO-backend-2026-09-
 ### B4.1 ✅ `GET /admin/tenants`
 **Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. Devuelve `locale`, `currency`, `timezone`, `user_count`, `last_published_at`, `worst_feed_status`, `worst_feed_freshness_hours`, `status`, `vertical` y `created_at`. **A1 pinta tres columnas nuevas** —usuarios, feed más atrasado y última publicación— y se vio en pantalla contra el servicio.
 
-**`status` y `vertical` llegan en `null`, y eso NO reabre esta tarea.** El campo existe; lo que falta es que **nosotros** definamos qué valores toma cada uno, y lo dicen en su respuesta del 2026-09-25. La pantalla declara los dos huecos con esa razón y no con «se desbloquea con B4.1», que habría quedado esperando algo ya ocurrido.
+**`status` y `vertical` llegan en `null`, y eso NO reabre esta tarea.** El campo existe; lo que faltaba era que **nosotros** definiéramos qué valores toma cada uno, y lo dicen en su respuesta del 2026-09-25.
 
-Hoy devuelve `ports.TenantPublicOption` —`id` y `name`—, que nació para llenar un
-selector. **§7.3 de `design.md` describe la banda de clientes de A1 con seis
+**Contestado el 2026-09-26 · `docs/DECISIONES-2026-09-26-estado-y-vertical.md`, y son dos respuestas distintas.** La pantalla declaraba los dos huecos con la misma razón y ya no la comparten:
+
+- **`status` · decidido.** Tres valores —`ACTIVO`, `PILOTO`, `SUSPENDIDO`—, y los dos primeros están dibujados en A1, así que son transcripción y no elección. **Ahora espera su columna, que no existe**: su `Tenant` de `internal/core/domain/tenant.go` no la tiene, medido contra `6e595e3`. Y `SUSPENDIDO` es más que una columna: es una compuerta en el login que exceptúa a los super-admins.
+- **`vertical` · retirado.** No es una etiqueta a enumerar. §3.5 declara `Tenant { … vertical, plantillaOrigen … }` —**dos campos**— y el `.pen` dibuja el par en la misma celda; al pie de A1 la regla dice que la plantilla define las pestañas y métricas de arranque. Es la cabeza de la herencia de §3.4, que no existe en ninguno de los dos lados. **La columna sigue declarada ausente y el `null` deja de ser un pendiente de nadie.**
+
+**Cuando se escribió esta tarea devolvía** `ports.TenantPublicOption` —`id` y
+`name`—, que nació para llenar un selector. **§7.3 de `design.md` describe la banda de clientes de A1 con seis
 columnas**, así que la pantalla muestra una y declara que faltan cinco.
 
 No bloquea: la lista funciona y el builder puede elegir tenant. Lo que falta es

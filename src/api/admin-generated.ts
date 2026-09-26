@@ -545,10 +545,29 @@ export interface components {
          *     selector— pero no se renombra: `admin-generated.ts` se genera de acá y el
          *     renombre tocaría los consumidores sin cambiar un solo campo.
          *
-         *     **Dos de las cinco columnas llegan en `null` a propósito**: `status` y
-         *     `vertical` esperan que definamos sus valores, y lo dicen en su respuesta
-         *     del 2026-09-25. No es un hueco suyo — es una pregunta nuestra sin
-         *     contestar.
+         *     **Dos de las cinco columnas llegan en `null`**, y desde el 2026-09-26
+         *     por razones DISTINTAS · `docs/DECISIONES-2026-09-26-estado-y-vertical.md`.
+         *     Hasta acá compartían una —«esperan que definamos sus valores»— y ya no:
+         *
+         *       · `status` **está decidido**: `ACTIVO`, `PILOTO`, `SUSPENDIDO`. Los dos
+         *         primeros los dibuja el `.pen` en A1, así que son transcripción. Ahora
+         *         falta **la columna**: su `Tenant` de `internal/core/domain/tenant.go`
+         *         no la tiene, medido contra `6e595e3`.
+         *
+         *         **Acá NO se declara el enum, a propósito.** Este archivo transcribe
+         *         lo que el servicio emite, y emite `null`; declararlo sería afirmar
+         *         una forma que nadie manda. El día que el valor llegue, el enum se
+         *         cierra en el ADAPTADOR, que es donde ya se cierran `shape`, `family`
+         *         y `layer` — el cable los trae como `string` libre.
+         *
+         *         Y `SUSPENDIDO` no es sólo una columna: es una compuerta en el login,
+         *         que exceptúa a los super-admins.
+         *
+         *       · `vertical` **se retiró**. §3.5 de `design.md` declara `vertical` Y
+         *         `plantillaOrigen` —dos campos— y el `.pen` dibuja el par en la misma
+         *         celda de A1: `Retail · apparel` sobre `retail_apparel_v2`. Es la
+         *         cabeza de la herencia de §3.4, que no existe de ninguno de los dos
+         *         lados. **Su `null` no es un pendiente de nadie.**
          */
         TenantOption: {
             /** Format: uuid */
