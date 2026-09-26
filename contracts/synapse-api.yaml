@@ -126,6 +126,45 @@ paths:
                             type: array
                             items: { $ref: '#/components/schemas/Bloque' }
 
+  /config/plots:
+    get:
+      tags: [config]
+      operationId: obtenerGraficos
+      summary: El repertorio de gráficos, con sus mínimos y sus topes
+      description: |
+        **B1.21 · propuesto por el front el 2026-09-26, medido en 404.**
+
+        La tabla de §5 de `design.md` en forma legible por máquina. **Vive en el
+        backend por la misma razón que `/config/blocks`**: la consumen el
+        builder, `layouts/{id}/validate` y el adaptador del front, y una tabla
+        duplicada en tres lugares se separa en el primer cambio.
+
+        **Global, no por tenant.** Qué puede dibujar un gráfico no depende del
+        cliente.
+
+        **Lo que esta ruta agrega sobre el repertorio que ya existe son los
+        `minimos`.** `SYNAPSE_PLOTS` declara `formas`, `soportaBanda` y `tope`
+        desde v2; sin mínimos, nada impide que `bars` reciba un ítem y dibuje
+        una barra sola.
+      responses:
+        '200':
+          description: Los gráficos del repertorio
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [plots]
+                        properties:
+                          plots:
+                            type: array
+                            items: { $ref: '#/components/schemas/Grafico' }
+        '401': { $ref: '#/components/responses/NoAutorizado' }
+
   /config/tabs/{tabId}:
     get:
       tags: [config]
@@ -1240,6 +1279,85 @@ components:
         paramsDisponibles:
           type: array
           items: { type: string }
+
+    # ── El repertorio de gráficos · B1.21 ────────────────────────────────────
+    #
+    # **Lo que faltaba era el MÍNIMO**, no el repertorio. `SYNAPSE_PLOTS` declara
+    # desde v2 `formas`, `soportaBanda` y `tope` —el techo, con su razón— y nada
+    # impedía que un gráfico recibiera menos datos de los que necesita y dibujara
+    # algo que engaña: hoy `bars` puede recibir un ítem y pintar una barra sola.
+    #
+    # **El mínimo es de la FORMA; un gráfico lo SUBE sólo si su geometría lo
+    # exige.** Es la simetría de `tope`, que baja el techo por la misma razón.
+    # Un mínimo por gráfico elegido a mano cuarenta y nueve veces sería
+    # cuarenta y nueve juicios, y la mayoría arbitrarios.
+    #
+    # Las razones están en `docs/DECISIONES-2026-09-26-minimos-por-grafico.md`,
+    # con la tabla que el backend implementa.
+
+    MinimoDeDatos:
+      type: object
+      description: |
+        Cuánto dato necesita un gráfico para no engañar.
+
+        **La razón no es documentación: es lo que se muestra en pantalla.** Un
+        panel que se apaga sin decir por qué manda a buscar un error donde hay
+        una regla, y es la misma gramática de §8 que usa un feed vencido —
+        estado, razón y qué lo desbloquea.
+      required: [cuando, razon]
+      properties:
+        cuando:
+          type: string
+          description: |
+            La condición, legible y evaluable sobre el valor. Misma forma que
+            `tope.cuando`, para que las dos se lean juntas.
+          examples: ['puntos < 2', 'items < 3', 'filas < 2 o columnas < 2']
+        razon:
+          type: string
+          description: |
+            **Copy de producto, en minúscula y sin punto final**, como el resto
+            de los rótulos del sistema. Se pinta tal cual.
+          examples: ['un punto no es una tendencia', 'una parte sola es el 100 %']
+
+    Grafico:
+      type: object
+      description: |
+        Una entrada del repertorio · `SYNAPSE_PLOTS`.
+
+        **Vive en el backend y se sirve en `GET /config/plots`**, con la misma
+        figura que `/config/blocks`: una tabla global, no por tenant. La
+        consumen los tres que validan — el builder, `layouts/{id}/validate` y el
+        adaptador del front— y por eso no se duplica en ninguno.
+      required: [id, nombre, formas, soportaBanda, minimos]
+      properties:
+        id: { type: string, examples: ['bars', 'radar', 'heatmap'] }
+        nombre: { type: string, examples: ['Barras', 'Radar'] }
+        formas:
+          type: array
+          description: Qué formas de dato sabe dibujar.
+          items: { $ref: '#/components/schemas/Forma' }
+        soportaBanda:
+          type: boolean
+          description: |
+            **Regla dura 6**: `serieConBanda` sólo admite gráficos con esto en
+            `true`. Un pronóstico sin banda no se publica.
+        minimos:
+          type: array
+          description: |
+            **Vacío significa «ninguno», y es un valor legítimo**: una cifra es
+            una cifra, y una prosa con titular ya dice algo. No se rellena con
+            un mínimo inventado para que la lista no quede vacía.
+          items: { $ref: '#/components/schemas/MinimoDeDatos' }
+        tope:
+          type: ['object', 'null']
+          description: |
+            El techo que lo deshabilita, con su razón. `null` cuando no tiene.
+            Existe desde v2 y no cambia acá — se declara para que las dos
+            reglas del mismo gráfico vivan juntas.
+          required: [cuando, razon]
+          properties:
+            cuando: { type: string, examples: ['partes > 5'] }
+            razon: { type: string, examples: ['más de cinco partes, ilegible en dona'] }
 
     # ── Métrica ──────────────────────────────────────────────────────────────
 

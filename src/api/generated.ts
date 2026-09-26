@@ -72,6 +72,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/config/plots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * El repertorio de gráficos, con sus mínimos y sus topes
+         * @description **B1.21 · propuesto por el front el 2026-09-26, medido en 404.**
+         *
+         *     La tabla de §5 de `design.md` en forma legible por máquina. **Vive en el
+         *     backend por la misma razón que `/config/blocks`**: la consumen el
+         *     builder, `layouts/{id}/validate` y el adaptador del front, y una tabla
+         *     duplicada en tres lugares se separa en el primer cambio.
+         *
+         *     **Global, no por tenant.** Qué puede dibujar un gráfico no depende del
+         *     cliente.
+         *
+         *     **Lo que esta ruta agrega sobre el repertorio que ya existe son los
+         *     `minimos`.** `SYNAPSE_PLOTS` declara `formas`, `soportaBanda` y `tope`
+         *     desde v2; sin mínimos, nada impide que `bars` reciba un ítem y dibuje
+         *     una barra sola.
+         */
+        get: operations["obtenerGraficos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/config/tabs/{tabId}": {
         parameters: {
             query?: never;
@@ -785,6 +818,76 @@ export interface components {
             rowSpanMin: number;
             rowSpanMax: number;
             paramsDisponibles?: string[];
+        };
+        /**
+         * @description Cuánto dato necesita un gráfico para no engañar.
+         *
+         *     **La razón no es documentación: es lo que se muestra en pantalla.** Un
+         *     panel que se apaga sin decir por qué manda a buscar un error donde hay
+         *     una regla, y es la misma gramática de §8 que usa un feed vencido —
+         *     estado, razón y qué lo desbloquea.
+         */
+        MinimoDeDatos: {
+            /**
+             * @description La condición, legible y evaluable sobre el valor. Misma forma que
+             *     `tope.cuando`, para que las dos se lean juntas.
+             * @example puntos < 2
+             * @example items < 3
+             * @example filas < 2 o columnas < 2
+             */
+            cuando: string;
+            /**
+             * @description **Copy de producto, en minúscula y sin punto final**, como el resto
+             *     de los rótulos del sistema. Se pinta tal cual.
+             * @example un punto no es una tendencia
+             * @example una parte sola es el 100 %
+             */
+            razon: string;
+        };
+        /**
+         * @description Una entrada del repertorio · `SYNAPSE_PLOTS`.
+         *
+         *     **Vive en el backend y se sirve en `GET /config/plots`**, con la misma
+         *     figura que `/config/blocks`: una tabla global, no por tenant. La
+         *     consumen los tres que validan — el builder, `layouts/{id}/validate` y el
+         *     adaptador del front— y por eso no se duplica en ninguno.
+         */
+        Grafico: {
+            /**
+             * @example bars
+             * @example radar
+             * @example heatmap
+             */
+            id: string;
+            /**
+             * @example Barras
+             * @example Radar
+             */
+            nombre: string;
+            /** @description Qué formas de dato sabe dibujar. */
+            formas: components["schemas"]["Forma"][];
+            /**
+             * @description **Regla dura 6**: `serieConBanda` sólo admite gráficos con esto en
+             *     `true`. Un pronóstico sin banda no se publica.
+             */
+            soportaBanda: boolean;
+            /**
+             * @description **Vacío significa «ninguno», y es un valor legítimo**: una cifra es
+             *     una cifra, y una prosa con titular ya dice algo. No se rellena con
+             *     un mínimo inventado para que la lista no quede vacía.
+             */
+            minimos: components["schemas"]["MinimoDeDatos"][];
+            /**
+             * @description El techo que lo deshabilita, con su razón. `null` cuando no tiene.
+             *     Existe desde v2 y no cambia acá — se declara para que las dos
+             *     reglas del mismo gráfico vivan juntas.
+             */
+            tope?: {
+                /** @example partes > 5 */
+                cuando: string;
+                /** @example más de cinco partes, ilegible en dona */
+                razon: string;
+            } | null;
         };
         Metrica: {
             /** Format: uuid */
@@ -1870,6 +1973,31 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    obtenerGraficos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los gráficos del repertorio */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: {
+                            plots: components["schemas"]["Grafico"][];
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["NoAutorizado"];
         };
     };
     obtenerPestana: {
