@@ -57,7 +57,7 @@ El resto del contexto: `alcance` con `tenantsDisponibles`, el `grano` de cada pe
 *Estado de la tarea: parcial.*
 
 
-**`unlocks_with` en `BLOCKED`** —hoy llega vacío; el servicio solo lo escribe al derivar `DEGRADED`, y §8 pide estado, razón **y qué lo desbloquea**— y **`request_from` real** en `FORBIDDEN`, que hoy es la constante `"administrator"` escrita en el código y no el rol que decide sobre la métrica.
+**`unlocks_with` en `BLOCKED`** —el servicio sólo lo escribe al derivar `DEGRADED`, y §8 pide estado, razón **y qué lo desbloquea**— y confirmar si `request_from` constante es la decisión.
 
 
 ### B1.13 · Presentacion opcional

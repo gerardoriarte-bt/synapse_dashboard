@@ -658,7 +658,11 @@ la ruta que lo emite.
 
 ### B1.6 ⚠️ `POST /config/panels:batch`
 **Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `POST /config/panels:batch` devuelve los 12 payloads y la consola los pinta. **Parcial** por `unlocks_with` vacío en `BLOCKED` y `request_from` como constante.
-**Espera del backend.** **`unlocks_with` en `BLOCKED`** —hoy llega vacío; el servicio solo lo escribe al derivar `DEGRADED`, y §8 pide estado, razón **y qué lo desbloquea**— y **`request_from` real** en `FORBIDDEN`, que hoy es la constante `"administrator"` escrita en el código y no el rol que decide sobre la métrica.
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`, con el usuario `planner` recién creado. **`request_from` llega y vale `"admin"`** — era `"administrator"` cuando se escribió este pedido. **Sigue siendo una constante**, `forbiddenRequestFrom` en `dd_config_service.go`, pero su comentario dice que es deliberado: «el rol que decide sobre la visibilidad de la métrica». O sea que **puede estar contestado por decisión y no por olvido**, y conviene preguntarlo así en vez de volver a pedirlo.
+
+**`unlocks_with` en `BLOCKED` no se pudo medir**: ningún panel del tenant llega en ese estado — los doce dan `AVAILABLE`, `DEGRADED` o `FORBIDDEN`.
+
+**Espera del backend.** **`unlocks_with` en `BLOCKED`** —el servicio sólo lo escribe al derivar `DEGRADED`, y §8 pide estado, razón **y qué lo desbloquea**— y confirmar si `request_from` constante es la decisión.
 **Descripción.** Un request por pestaña, no uno por panel. Body
 `{ panelIds, periodo }` → `{ [panelId]: Payload }`.
 **Criterio de aceptación.**
