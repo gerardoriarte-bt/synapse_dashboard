@@ -65,6 +65,48 @@ que la mutación se aplicó** —falló tres veces en este repositorio por
 indentación y por comillas—: una mutación que «pasa» sin haberse aplicado se lee
 igual que una prueba débil.
 
+## 1b · Un `🔒` vencido
+
+**La pregunta es «¿la razón escrita sigue siendo cierta?», y no se automatiza.**
+Un candado dice por qué una tarea no se puede tomar, y esa razón es una
+afirmación sobre el mundo —una ruta que da 404, un campo que no llega, una
+decisión sin tomar—. El mundo cambia y la razón se queda.
+
+**Medido el 2026-09-26: cuatro de quince candados estaban vencidos o cambiados.**
+
+| | Qué decía | Qué pasaba |
+|---|---|---|
+| **F5.1** | «el candado VENCIÓ el 2026-09-25» | **lo decía su propio título** y el `🔒` la contaba bloqueada igual |
+| **F1.25** | «depende de B1.16 y B1.20» | son tareas de semilla de demo · la consola corría contra el servicio real hacía días |
+| **F1.42** | «`Periodo` no declara si está cerrado» | llegó · pero quedaba OTRO hueco, así que el candado se reescribe, no se saca |
+| **F4.17–19** | «el backend no envía esas formas» | las transforma las cinco · el bloqueo pasó a ser NUESTRO |
+
+**Tres formas de falla, y las tres aparecieron el mismo día:**
+
+- **El candado que anuncia su propio vencimiento.** Alguien lo notó, lo escribió
+  en el título y no sacó el emoji. `estado.py` lee el `🔒`, no la prosa.
+- **El candado que apunta a una tarea que ya no bloquea**, o que nunca bloqueó
+  —F1.25 dependía de datos de demo para «conectar a la API real»—.
+- **El candado que cambió de dueño.** La razón sigue siendo cierta a medias: una
+  de las dos condiciones venció y la otra no, o la que queda es nuestra. **No
+  se saca: se reescribe**, porque sacarlo ofrecería trabajo imposible y dejarlo
+  haría esperar a un equipo que ya entregó.
+
+**Cómo se revisa, y es una por una:** se lee la razón, se la convierte en algo
+medible —una ruta se pide, un campo se busca en la respuesta, un commit se lee—
+y se compara. **No se deduce del estado de otra tarea**: F4.17 decía «cuando el
+backend envíe esas formas» y el backend las enviaba desde hacía días.
+
+**Lo que NO se hace es sacar el candado solo.** «Un bloqueo escrito no se razona
+por encima»: se informa que venció y lo abre quien lo puso.
+
+**Y un `🔒` sin `**Espera del backend.**` no es un defecto por sí mismo** —lo
+verificamos: de once, once eran legítimos, porque el candado apuntaba a otra
+tarea que sí registra el pedido, a una decisión nuestra o a un grupo diferido—.
+Lo que sí es un defecto es un candado sobre un hueco del backend que **nadie
+pidió**: pasó con B4.9 y con F1.42, y en los dos casos el pedido nunca llegaba a
+`PARA-BACKEND.md`.
+
 ## 2 · El estado de las tareas `B*`
 
 **Decisión del 2026-09-14: el estado de una tarea de backend lo mueve el front,

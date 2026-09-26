@@ -5,15 +5,15 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**124 de 210 tareas cerradas.** 18 parciales · 63 pendientes · 5 diferidas.
+**125 de 210 tareas cerradas.** 18 parciales · 62 pendientes · 5 diferidas.
 
 
-## Front · 107 de 125
+## Front · 108 de 125
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██████████████████████` | 16/16 | 0 | 0 |
-| 1 · Consola y render/ | `████████████████████··` | 42/46 | 2 | 2 |
+| 1 · Consola y render/ | `█████████████████████·` | 43/46 | 2 | 1 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `██████████████████····` | 12/15 | 0 | 0 |
 | 4 · Admin y Builder | `████████████████······` | 18/24 | 1 | 5 |
@@ -49,14 +49,13 @@
 
 ---
 
-## Se puede tomar hoy · 0 del front
+## Se puede tomar hoy · 1 del front
 
-Nada del front está libre: todo lo pendiente espera algo.
-
+- **F5.1** · Selector de layout cuando hay más de uno
 
 ---
 
-## Bloqueadas · 26
+## Bloqueadas · 24
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -64,7 +63,6 @@ Lo que el front espera del backend está detallado en
 
 **Front**
 
-- **F1.25** · Conectar a la API real
 - **F1.31** · Registro de gráficos y verificación de mínimos
 - **F1.42** · El mes en curso está incompleto y el selector no lo dice
 - **F1.44** · El orden de una tabla se anuncia, no se aplica
@@ -75,7 +73,6 @@ Lo que el front espera del backend está detallado en
 - **F4.19** · GraphBody + GraphPlot
 - **F4.20** · Registrar los tres con carga diferida
 - **F4.21** · Selector de gráfico en el builder
-- **F5.1** · Selector de layout cuando hay más de uno
 - **F5.13** · Períodos libres en el selector
 - **F5.3** · Completar los plots que falten
 

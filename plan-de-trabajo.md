@@ -2693,7 +2693,17 @@ período, así que es estructural y no una disciplina.
 **Criterio de aceptación.** Verificado por `design-lint` (F0.11), no por
 revisión manual.
 
-#### F1.25 ⬜ Conectar a la API real · 🔒 depende de B1.16 y B1.20
+#### F1.25 ✅ Conectar a la API real
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **EL CANDADO VENCIÓ, y hace rato.** Decía «depende de B1.16 y B1.20», que son las dos tareas de **semilla de demo** — datos de ejemplo y que sean estables. Ninguna hace falta para conectar: la consola corre contra el servicio con datos reales de Snowflake.
+
+Los tres bullets, comprobados:
+
+- *«carga contra el backend real vía `VITE_API_URL`»* · lo leen `client.ts`, `chat.ts` y `admin.ts`, y la consola se abrió contra `:4010` todo el día.
+- *«cero fixtures en el bundle»* · `mocks-fuera` en la puerta, y buscado sobre `dist/assets/*.js`: ni `prueba@uamx`, ni `kpiMetric`, ni el tenant del fixture.
+- *«un `401` limpia la sesión; un `500` muestra el estado de error»* · `AuthGuard` y `SurfaceMessage`.
+
+**B1.16 y B1.20 siguen abiertas** y está bien: son para poder escribir pruebas de integración contra HTTP con datos estables, que es otra cosa.
+
 **Descripción.** Apuntar el front al backend y sacar cualquier respuesta simulada
 del camino, aunque el backend devuelva una sola pestaña.
 **Criterio de aceptación.**
@@ -3523,7 +3533,17 @@ nadie abriera el archivo.
 
 ---
 
-#### ➕ F1.42 ⚠️ El mes en curso está incompleto y el selector no lo dice · 🔒 `Periodo` no declara si está cerrado
+#### ➕ F1.42 ⚠️ El mes en curso está incompleto y el selector no lo dice · 🔒 el período no declara QUÉ PARTE del mes cubre
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **EL CANDADO CAMBIÓ DE RAZÓN, NO VENCIÓ.** Decía «`Periodo` no declara si está cerrado» y eso llegó con B1.27: `open_period` está en `/config/me`, el adaptador lo lee como `enCurso` y `PeriodPicker` ya pinta «· en curso» y su aviso.
+
+**Lo que falta es el otro bullet del criterio**: «con qué parte del mes cubre». El período llega como cadena suelta —`"2026-09"`— así que `rango` nunca se define y esa línea no se pinta nunca.
+
+**Y no se puede derivar**, que es lo que el propio criterio prohíbe: «el texto sale de lo que el período declara, **no de comparar contra `new Date()`**». Tener `tenant.timezone` desde hoy no lo cambia — el reloj seguiría siendo el del navegador.
+
+**Espera del backend.** **Que cada período declare su cobertura** — qué parte del mes abarca el que está en curso. El `.pen` lo dibuja en B5: «PERÍODO · 1 – 31 JUL 2026». Hoy `periods` son doce cadenas y `open_period` dice **cuál** está abierto pero no **cuánto** lleva.
+
+**Este pedido no estaba registrado**: la tarea tenía `🔒` y ninguna `**Espera del backend.**`, así que su hueco nunca llegó a `PARA-BACKEND.md`. Es el segundo caso del día — el otro fue B4.9.
+
 **Descripción.** El equipo de datos avisó el 2026-09-15 que
 `GLD_ECOMM_DAILY_PERFORMANCE` tiene filas hasta **dic-2028 con valores en 0**
 —metas de planeación— y que **el mes en curso está incompleto**.
@@ -5662,13 +5682,25 @@ cuerpo propio a cada una, o escribirlo en una sección de evidencia como ésta, 
 el parser no reparte—. Se eligió el segundo, que es el que ya usan las once
 tareas cerradas de esta fase.
 
-### F4.17 ⬜ `ComparisonBody` + `ComparePlot` · 🔒 `Valor` no declara `categoricaComparada`
-### F4.18 ⬜ `MatrixBody` + `HeatmapPlot` · 🔒 `Valor` no declara `matriz`
-### F4.19 ⬜ `GraphBody` + `GraphPlot` · 🔒 `Valor` no declara `grafo` ni `flujo`
+### F4.17 ⬜ `ComparisonBody` + `ComparePlot` · 🔒 NUESTRO contrato no declara `categoricaComparada`
+### F4.18 ⬜ `MatrixBody` + `HeatmapPlot` · 🔒 NUESTRO contrato no declara `matriz`
+### F4.19 ⬜ `GraphBody` + `GraphPlot` · 🔒 NUESTRO contrato no declara `grafo` ni `flujo`
 ### F4.20 ⬜ Registrar los tres con carga diferida · 🔒 espera a F4.17–F4.19
+**Verificado el 2026-09-26 contra `8633b10`.** **EL BLOQUEO CAMBIÓ DE DUEÑO.** El criterio decía «se construyen cuando el backend envíe esas formas (B5.3), no antes», y esa mitad ya no lo frena: `transform_v11.go` transforma **las cinco** —`compared_categorical`, `multi_attribute_profile`, `matrix`, `graph`, `flow`— y el `switch` principal las enruta con constantes.
+
+**Son las mismas siete que `grep "case \""` no veía el 2026-09-25**, y por las que se les mandó un mensaje equivocado. Leerlas bien es lo que corrigió esto.
+
+Su respuesta del 25 lo dice del otro lado: «sobre las cinco formas v1.1: de acuerdo, **entran juntas cuando ustedes las declaren**».
+
+**Así que lo que queda son dos cosas, y ninguna es del backend:**
+
+1. **Declarar las cinco en `contracts/synapse-api.yaml`.** El enum `Forma` las nombra y **ninguna tiene objeto de `Valor`**, así que hoy no hay contra qué implementar un cuerpo.
+2. **Una métrica que las use.** Las 18 del tenant declaran `scalar`, `categorical`, `prose`, `tabular`, `multi_series` y `time_series`. Un cuerpo para una forma que nadie emite es código sin consumidor.
+
+**El `🔒` se queda y sigue siendo condicionante** — lo que cambia es a quién hay que pedirle: a nosotros el contrato, y a datos una métrica.
 **Criterio de aceptación.**
-- Se construyen **cuando el backend envíe esas formas** (B5.3), no antes. Hoy
-  ninguna métrica las usa; existen para que el builder pueda ofrecerlas.
+- Se construyen cuando el contrato declare esas formas **y** exista una métrica
+  que las use. Hoy ninguna las usa; existen para que el builder pueda ofrecerlas.
 - Al estar los quince, el registro pasa de `Partial<Record<PanelType, …>>` a
   `Record` completo, y **agregar un tipo al enumerado sin su cuerpo deja de
   compilar**.
@@ -6055,7 +6087,11 @@ cliente, el nombre que deja de abrir y Escape que no cierra. Mueren las nueve.
 
 ## Fase 5 — Multi-dashboard, pruebas y pulido
 
-### F5.1 ⬜ Selector de layout cuando hay más de uno · 🔒 el candado VENCIÓ el 2026-09-25
+### F5.1 ⬜ Selector de layout cuando hay más de uno
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **El `🔒` se saca**, porque su propio título decía «el candado VENCIÓ el 2026-09-25» y el emoji la contaba como bloqueada igual — el mismo defecto que tenía F3.15.
+
+Remedido: `/config/me` devuelve `dashboards[{id, name, slug, is_default}]`, `active_dashboard_id` y `active_layout_id`. **Lo que no se puede comprobar todavía es el filtrado por rol**: el tenant tiene un solo dashboard, así que `admin` y `planner` ven el mismo.
+
 
 **MEDIDO CONTRA `75b8ecc`.** `DDContextResponse` declara `dashboards` —con `id`,
 `name`, `slug` e `is_default`—, `active_dashboard_id` y `active_layout_id`, y

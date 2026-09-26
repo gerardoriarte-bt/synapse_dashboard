@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 12 pedido(s)
+## Lo que esperamos · 13 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -247,6 +247,16 @@ es peor que no tenerlo: se publica confiando en él.
 Es la misma razón por la que F4.12 dice que no se puede simular en el cliente —
 «filtrar en el front lo que ya se tiene probaría el filtro del front, que no
 existe».
+
+
+### F1.42 · El mes en curso está incompleto y el selector no lo dice
+
+*Estado de la tarea: parcial.*
+
+
+**Que cada período declare su cobertura** — qué parte del mes abarca el que está en curso. El `.pen` lo dibuja en B5: «PERÍODO · 1 – 31 JUL 2026». Hoy `periods` son doce cadenas y `open_period` dice **cuál** está abierto pero no **cuánto** lleva.
+
+**Este pedido no estaba registrado**: la tarea tenía `🔒` y ninguna `**Espera del backend.**`, así que su hueco nunca llegó a `PARA-BACKEND.md`. Es el segundo caso del día — el otro fue B4.9.
 
 
 ### F1.44 · El orden de una tabla se anuncia, no se aplica
