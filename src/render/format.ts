@@ -83,7 +83,33 @@ export type Formatter = {
    *  decisión de presentación y el contrato la concede. La zona del tenant es
    *  la del corte del día del negocio, que es otra cosa. */
   threadStamp: (iso: string, now: Date) => string
+  /** Una fecha de calendario · «14 sep 2026».
+   *
+   *  **Existe porque la regla de arriba se estaba rompiendo** · F1.13b: tres
+   *  pantallas de admin armaban su propio `Intl.DateTimeFormat('es-MX', …)`, y
+   *  con eso quedaban tres lugares donde el locale se decidía y ninguno era el
+   *  del tenant. Acá hay uno.
+   *
+   *  **Con año, a diferencia de `threadStamp`**: en admin una fecha de alta o de
+   *  publicación puede ser de cualquier año, y «14 sep» sin año no ubica nada.
+   *  El riel de hilos es otra cosa — ahí la retención es de doce meses y el año
+   *  sólo aparece cuando no es el corriente. */
+  calendar: (iso: string) => string
+  /** La hora de un instante · «06:00». 24 horas, igual que `threadStamp`: en el
+   *  producto el corte del día importa más que la costumbre local. */
+  clock: (iso: string) => string
 }
+
+/** **El único default del front** · F1.13b.
+ *
+ *  Un tenant sin locale cargado manda cadena vacía —el campo es `string` sin
+ *  `omitempty` del lado del servicio— e `Intl` con `''` tira. Cae acá y no en
+ *  cada llamada, que es lo que hacía que el locale se decidiera en cuatro
+ *  lugares distintos.
+ *
+ *  **Vive en `render/` y no en una superficie**: lo usan la consola y admin, y
+ *  ponerlo en una de las dos obligaba a la otra a importarla. */
+export const LOCALE_POR_DEFECTO = 'es-MX'
 
 export function createFormat(locale: string): Formatter {
   function number(value: number, options: NumberOptions = {}): string {
@@ -206,6 +232,22 @@ export function createFormat(locale: string): Formatter {
       if (hours < 1) return 'RECIÉN'
       if (hours < 48) return `HACE ${hours} H`
       return `HACE ${Math.floor(hours / 24)} D`
+    },
+
+    calendar(iso) {
+      return new Intl.DateTimeFormat(locale, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      }).format(new Date(iso))
+    },
+
+    clock(iso) {
+      return new Intl.DateTimeFormat(locale, {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).format(new Date(iso))
     },
   }
 }

@@ -2359,8 +2359,25 @@ desglosado en diez tareas.
   techo 1M el máximo es «1M» de dos caracteres y el tick «500K» son cuatro, y
   calculado sobre el máximo se salía por la izquierda y se leía «00K».
 
-#### F1.13b ⚠️ Portar `format.ts` e **inyectar el locale**
-**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **EL CANDADO VENCIÓ.** Decía «`Contexto` no trae locale, moneda ni zona» y los tres llegan: `tenant.locale`, `tenant.currency` y `tenant.timezone` en `/config/me`.
+#### F1.13b ✅ Portar `format.ts` e **inyectar el locale**
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **Visto en pantalla**: la consola formatea con el locale del tenant — `20.953` con punto de miles y `-25,6 %` con coma decimal, que es `es-CO`. Antes de hoy salía `20,953` con la constante `'es-MX'`.
+
+**El criterio, punto por punto:**
+
+- *«ningún plot importa el formateador»* · ya se cumplía, y **ahora hay una regla que lo hace cumplible**: `locale` en `design-lint`, verificada por mutación en sus dos formas —un `Intl` fuera de `format.ts` y un locale literal suelto—.
+- *«el locale, la moneda y la zona salen del tenant vía `/config/me`»* · el contrato no tenía dónde ponerlos y ahora los declara. **`locale` se consume; `moneda` y `zonaHoraria` no, y queda escrito por qué**: la unidad de una cifra sale de la MÉTRICA —`metric.unidad` dice `USD`— y ningún cálculo del front cruza un borde de día. Se declaran porque el cable los trae, no para que alguien los use sin razón.
+- *«la abreviatura no tiene escalón para mil millones»* · ya estaba: `2.5e9` sale `2,500M`.
+- *«se conservan sus pruebas»* · 934 en verde.
+
+**Lo que apareció y no era del enunciado.** `format.ts` declaraba desde siempre que **nadie fuera de él arma un `Intl`**, y había **tres** pantallas de admin rompiéndolo, cada una con su `'es-MX'` fijo y su comentario prometiendo cambiar una línea. El problema no era el valor: era que el locale se decidía en cuatro lugares, así que arreglar uno no arreglaba los otros. Se agregaron `calendar` y `clock` al formateador y las tres reciben `format` por props.
+
+**Y una decisión que conviene que esté escrita**: en admin el locale es el de QUIEN MIRA, no el de cada fila. A1 lista clientes y A3 los cruza, cada uno con su locale; formatear cada fila con el suyo daría una columna con tres formatos distintos justo donde la pregunta es comparar. En la consola es al revés y por la misma razón: ahí todo es de un tenant.
+
+**Lo que se vio y lo que no.** Se abrieron dos de las tres composiciones de la barra —la de escritorio a 1710 y la angosta a 700, donde se comprobó que la línea de contexto está oculta de verdad—. La del medio, entre 768 y 1279, no se pudo ver: la ventana del navegador no se deja llevar a ese ancho.
+
+**Y el fixture compartido volvió a `es-MX`, a contramano de lo medido.** El valor real es `es-CO` —default de la migración, dato a cargar— y al conectar el locale se propagó a ocho aserciones que no son de locale. Un fixture compartido no es el lugar de un dato de un día; lo medido vive en `locale.test.tsx`, que usa `es-CO` explícito porque con `es-MX` la prueba pasaría con el campo desconectado.
+
+**EL CANDADO VENCIÓ.** Decía «`Contexto` no trae locale, moneda ni zona» y los tres llegan: `tenant.locale`, `tenant.currency` y `tenant.timezone` en `/config/me`.
 
 **No se tomó al descubrirlo**, y queda dicho: un bloqueo escrito no se razona por encima. Lo que falta es trabajo nuestro y no espera a nadie — hoy `FeedHealth`, `UserList`, `ConsoleContainer` y `TenantList` fijan `es-MX` a mano, cada uno con un comentario que dice «el día que el campo exista se cambia una línea».
 

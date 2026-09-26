@@ -5,15 +5,15 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**123 de 210 tareas cerradas.** 19 parciales · 63 pendientes · 5 diferidas.
+**124 de 210 tareas cerradas.** 18 parciales · 63 pendientes · 5 diferidas.
 
 
-## Front · 106 de 125
+## Front · 107 de 125
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██████████████████████` | 16/16 | 0 | 0 |
-| 1 · Consola y render/ | `████████████████████··` | 41/46 | 3 | 2 |
+| 1 · Consola y render/ | `████████████████████··` | 42/46 | 2 | 2 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `██████████████████····` | 12/15 | 0 | 0 |
 | 4 · Admin y Builder | `████████████████······` | 18/24 | 1 | 5 |
@@ -49,9 +49,10 @@
 
 ---
 
-## Se puede tomar hoy · 1 del front
+## Se puede tomar hoy · 0 del front
 
-- **F1.13b** · Portar format.ts e inyectar el locale
+Nada del front está libre: todo lo pendiente espera algo.
+
 
 ---
 

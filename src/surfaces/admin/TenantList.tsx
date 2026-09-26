@@ -37,6 +37,7 @@
 import { Label } from '../../render/primitives/Label'
 import { EmptyRow } from './EmptyRow'
 import { SkeletonRows } from './SkeletonRows'
+import type { Formatter } from '../../render/format'
 import type { Tenant } from '../../api/admin'
 
 /** Lo que §7.3 pide y el cable no trae. Se declara acá y no en un comentario
@@ -44,13 +45,6 @@ import type { Tenant } from '../../api/admin'
  *  columna que nadie pide. */
 const COLUMNAS_QUE_FALTAN = ['estado', 'vertical'] as const
 
-/** El huso del NAVEGADOR y no el del tenant, y es a propósito · §2.4.
- *
- *  «Última publicación» es un evento de operación —cuándo alguien apretó
- *  publicar— y lo lee quien está mirando la pantalla. El corte del día del
- *  negocio es otra cosa y ésa sí sale de `tenant.timezone`. Confundirlas es el
- *  bug que `CLAUDE.md` describe. */
-const FECHA = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
 
 /** `null` es «nunca cargó» y `0` es «recién». No se colapsan. */
 function frescura(horas: number | null, estado: string): string {
@@ -61,6 +55,8 @@ function frescura(horas: number | null, estado: string): string {
 
 type Props = {
   tenants: readonly Tenant[]
+  /** Del locale del tenant · F1.13b. Antes acá había un `Intl` con `'es-MX'`. */
+  format: Formatter
   /** Abrir la ficha del cliente · A2. */
   onAbrir: (id: string) => void
   /** Mientras la lista vuela. **La tabla se pinta igual**: encabezado completo y
@@ -68,7 +64,7 @@ type Props = {
   cargando?: boolean
 }
 
-export function TenantList({ tenants, onAbrir, cargando = false }: Props) {
+export function TenantList({ format, tenants, onAbrir, cargando = false }: Props) {
   // **Nunca se sale de la tabla.** El vacío es una FILA, no un reemplazo: «las
   // columnas siguen diciendo qué habría acá» · las tres notas del `.pen`. Una
   // pantalla que se vacía entera pierde lo único que explicaba qué falta.
@@ -130,7 +126,7 @@ export function TenantList({ tenants, onAbrir, cargando = false }: Props) {
               <td className="py-3 text-ink text-celda">
                 {/* «Nunca» y no un guion: que un cliente jamás haya publicado es
                     un hecho operativo, no un dato ausente. */}
-                {t.publicadoEn === null ? 'Nunca' : FECHA.format(new Date(t.publicadoEn))}
+                {t.publicadoEn === null ? 'Nunca' : format.calendar(t.publicadoEn)}
               </td>
               <td className="py-3 text-right">
                 <button

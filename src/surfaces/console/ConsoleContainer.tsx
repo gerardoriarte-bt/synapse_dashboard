@@ -6,7 +6,7 @@
  *  se muestra mientras el contexto vuela — que es F1.26: **ningún componente de
  *  `render/` lee `isLoading` ni `isError`**.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   useBlocks,
   useCatalog,
@@ -20,24 +20,27 @@ import { adaptPanelParams } from '../../api/params'
 import { blockTable } from '../../catalog/blocks'
 import { applyTheme } from '../../tokens/theme'
 import { preloadBodies } from '../../render/bodies/registry'
-import { createFormat } from '../../render/format'
+import { createFormat, LOCALE_POR_DEFECTO } from '../../render/format'
 import { markTabConfig } from '../../render/budget'
 import { Console } from './Console'
 import { ChatSheet } from './ChatSheet'
 import { SurfaceMessage } from './SurfaceMessage'
 import type { Metric, PanelType, Payload } from '../../api/types'
 
-/** El locale del tenant · F1.13b.
+/** **El locale del tenant, y ya no un supuesto** · F1.13b, cerrado el 2026-09-26.
  *
- *  SUPUESTO DECLARADO, y **el único lugar del front donde se decide**. El
- *  contrato todavía no lo declara: `Contexto` no trae `locale`, `moneda` ni zona
- *  horaria, así que el criterio de F1.13b —«salen del tenant vía
- *  `/config/me`»— no se puede cumplir entero hasta que el yaml los tenga.
+ *  Acá había una constante `createFormat('es-MX')` con su supuesto declarado:
+ *  «el contrato todavía no lo declara». Lo declara desde hoy y `/config/me` lo
+ *  trae, así que el formateador se construye con el locale del tenant.
  *
- *  Lo que sí está hecho es lo que importa: el formateador se inyecta y baja por
- *  props hasta el último plot, así que el día que el campo llegue se cambia esta
- *  línea y nada más. Propuesta de spec abierta · va con B0.9. */
-const format = createFormat('es-MX')
+ *  **Se cambió una línea, que es lo que el comentario viejo prometía.** El
+ *  formateador ya bajaba por props hasta el último plot desde F1.13b, así que
+ *  todo el trabajo de inyección estaba hecho y esto sólo cambia de dónde sale
+ *  el argumento.
+ *
+ *  **El default vive en `render/format.ts`**, con el resto del formateo: lo
+ *  usan la consola y admin, y ponerlo en una de las dos obligaba a la otra a
+ *  importarla. */
 
 export function ConsoleContainer() {
   const [tabId, setTabId] = useState<string | null>(null)
@@ -57,6 +60,21 @@ export function ConsoleContainer() {
   // params que sí declara el contrato · F1.29.
   const blocks = useBlocks()
   const saveTheme = useSaveTheme()
+
+  /** **El formateador sale del locale del TENANT** · F1.13b.
+   *
+   *  `useMemo` y no una constante: el locale llega con `/config/me`, así que en
+   *  el primer render no está. Y no se recrea en cada render porque `format`
+   *  baja por props hasta el último plot — un objeto nuevo por render haría que
+   *  cada memo de abajo se invalidara solo.
+   *
+   *  **Una cifra formateada con el locale de quien mira cambia según quién abre
+   *  la consola**, y eso no es auditable. Por eso sale del tenant y no de
+   *  `navigator.language`. */
+  const format = useMemo(
+    () => createFormat(context.data?.tenant.locale || LOCALE_POR_DEFECTO),
+    [context.data?.tenant.locale],
+  )
 
   // La pestaña y el período por defecto salen del backend, no de una constante.
   // Sin esto volvíamos a los `ua_mx` / `ceo` quemados que v2 arrastraba.

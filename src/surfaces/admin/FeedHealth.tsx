@@ -28,6 +28,7 @@ import { SkeletonRows } from './SkeletonRows'
 import { limiteHoras, resumen, saludDe } from './saludDeFuente'
 import type { SaludDeFuente } from './saludDeFuente'
 import type { Fuente } from '../../api/admin'
+import type { Formatter } from '../../render/format'
 
 /** Mono 9 · el tamaño `nota`, el mismo que usan `RoleCard` y la identidad del
  *  navbar. La segunda línea de cada celda va acá: el dibujo la pone más chica. */
@@ -43,15 +44,16 @@ const FALTANTES = [
   'Sincronizar todo · no hay ruta que dispare una carga',
 ] as const
 
-/** **El mismo precedente que `ConsoleContainer`, con su misma razón.** El locale
- *  del tenant no llega —`Contexto` no trae locale, moneda ni zona horaria: es
- *  F1.13b, bloqueada— así que se fija acá y **el día que el campo llegue se
- *  cambia esta línea y nada más**.
+/** **Acá se armaban dos `Intl` con `'es-MX'` fijo** y su comentario prometía
+ *  cambiar una línea el día que el locale llegara · F1.13b. Llegó el
+ *  2026-09-26, y lo que se cambió no fue el argumento: se borraron los dos.
+ *
+ *  `format.ts` ya declaraba la regla —«nadie fuera de acá arma un `Intl`»— y
+ *  tres pantallas de admin la rompían, cada una decidiendo el locale por su
+ *  cuenta. Ahora el formateador baja por props, como en la consola.
  *
  *  Se formatea y no se muestra el ISO crudo porque el dibujo pone «14 ago» y
  *  «08:12» en dos líneas, no un `2026-08-14T08:12:00Z`. */
-const FECHA = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short' })
-const HORA = new Intl.DateTimeFormat('es-MX', { hour: '2-digit', minute: '2-digit' })
 
 const TEXTO: Record<SaludDeFuente, string> = {
   AL_DIA: 'Dentro de límite',
@@ -62,10 +64,12 @@ const TEXTO: Record<SaludDeFuente, string> = {
 type Props = {
   fuentes: readonly Fuente[]
   tenant: string | null
+  /** Del locale del tenant · F1.13b. Ver el comentario de arriba. */
+  format: Formatter
   cargando?: boolean
 }
 
-export function FeedHealth({ fuentes, tenant, cargando = false }: Props) {
+export function FeedHealth({ fuentes, tenant, format, cargando = false }: Props) {
   const [abierta, setAbierta] = useState<string | null>(null)
   const cuenta = resumen(fuentes)
 
@@ -152,9 +156,9 @@ export function FeedHealth({ fuentes, tenant, cargando = false }: Props) {
                     ) : (
                       <div className="flex flex-col gap-1">
                         <span className="text-ink text-celda">
-                          {FECHA.format(new Date(f.ultimaCargaEn))}
+                          {format.calendar(f.ultimaCargaEn)}
                         </span>
-                        <span className={NOTA}>{HORA.format(new Date(f.ultimaCargaEn))}</span>
+                        <span className={NOTA}>{format.clock(f.ultimaCargaEn)}</span>
                       </div>
                     )}
                   </td>

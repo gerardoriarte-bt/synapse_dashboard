@@ -275,6 +275,19 @@ export function adaptContext(w: WireContext): AppContext {
       etiqueta: w.tenant.name,
       // `vertical` no llega y no se rellena.
       vertical: '',
+      // ── LOS TRES DE F1.13b · desde `8633b10` · 2026-09-26 ────────────────
+      //
+      // **Es un renombre, no un cálculo**, igual que el resto del adaptador. Y
+      // los tres son `string` sin `omitempty` del lado del servicio: vienen
+      // siempre, vacíos si el tenant no los tiene cargados.
+      //
+      // **El valor de hoy es el default de la migración**: «Under Armour
+      // México» trae `es-CO`, `COP` y `America/Bogota`. Eso se carga con
+      // `PUT /admin/tenants/{tenantId}` y no es cosa del adaptador — si acá se
+      // «corrigiera» a `es-MX` estaríamos escribiendo un dato que nadie midió.
+      locale: w.tenant.locale,
+      moneda: w.tenant.currency,
+      zonaHoraria: w.tenant.timezone,
     },
 
     role: {

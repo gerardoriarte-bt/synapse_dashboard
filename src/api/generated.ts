@@ -583,6 +583,41 @@ export interface components {
                 etiqueta: string;
                 /** @example retail_apparel */
                 vertical: string;
+                /**
+                 * @description Etiqueta BCP 47. **Es lo único de los tres que hoy se consume**:
+                 *     `createFormat(locale)` y los `Intl.DateTimeFormat` de las
+                 *     pantallas de admin. Vacío cae al default del front, que queda
+                 *     escrito en un solo lugar.
+                 * @example es-MX
+                 * @example es-CO
+                 */
+                locale?: string;
+                /**
+                 * @description ISO 4217. **Hoy no lo consume nadie, y se declara igual porque
+                 *     el cable lo trae**: la unidad de una cifra sale de la MÉTRICA
+                 *     —`metric.unidad`, que dice `USD`— y no del tenant. El día que
+                 *     haya una cifra sin unidad propia, ésta es la que corresponde.
+                 * @example MXN
+                 * @example COP
+                 */
+                moneda?: string;
+                /**
+                 * @description IANA. **El corte del día del NEGOCIO**, uno solo aunque el tenant
+                 *     tenga tiendas en varios países · decidido el 2026-09-04.
+                 *
+                 *     **No es el huso de quien mira**, y confundirlos es el bug: «HACE
+                 *     3 H» y el agrupado HOY/ESTA SEMANA del riel salen del navegador
+                 *     y el contrato lo sanciona explícitamente. Por eso se llaman
+                 *     distinto — un solo campo «timezone» es cómo alguien, en seis
+                 *     meses, calcula un período con el huso equivocado.
+                 *
+                 *     **Hoy no lo consume nadie**: ningún cálculo del front cruza un
+                 *     borde de día. Se declara para que el día que uno lo haga, la
+                 *     fuente ya esté y no se invente `Intl.DateTimeFormat().resolvedOptions()`.
+                 * @example America/Mexico_City
+                 * @example America/Bogota
+                 */
+                zonaHoraria?: string;
             };
             role: {
                 id: string;

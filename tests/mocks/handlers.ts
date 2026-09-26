@@ -58,20 +58,26 @@ export const context: WireContext = {
     last_name: 'Uno',
     theme: 'light',
   },
-  // **Los tres valores son los que el servicio devuelve HOY, no los que este
-  // tenant debería tener.** Medidos el 2026-09-26: «Under Armour México» trae
-  // `es-CO`, `COP` y `America/Bogota`, que es el default de la migración. Se
-  // cargan con `PUT /admin/tenants/{tenantId}`.
+  // ── POR QUÉ `es-MX` Y NO EL VALOR MEDIDO · 2026-09-26 ────────────────────
   //
-  // Se escriben medidos y no deducidos a propósito: poner `es-MX` acá sería
-  // escribir lo que espero en vez de lo que hay, que es el error que este
-  // fixture existe para no cometer.
+  // Acá decía `es-CO`, `COP` y `America/Bogota`, que es lo que el servicio
+  // devuelve HOY para este tenant — el default de la migración, y dato a
+  // cargar con `PUT /admin/tenants/{tenantId}`. Se escribió medido a propósito.
+  //
+  // **Cuando F1.13b conectó el locale, ese valor se propagó a ocho aserciones
+  // que no son de locale**: `USD 4.28M` pasó a `USD 4,28M` en pruebas de
+  // paneles, de estados y de frescura. Un fixture COMPARTIDO no es el lugar de
+  // un dato de un día: su trabajo es ser un ejemplo coherente, y un tenant que
+  // se llama «Under Armour México» con formato colombiano no lo es.
+  //
+  // **Lo medido no se pierde**: está en el cable, en B4.1 y en la prueba que sí
+  // es de locale, que usa `es-CO` explícito porque es lo que el servicio manda.
   tenant: {
     id: 't-1',
     name: 'Under Armour México',
-    locale: 'es-CO',
-    currency: 'COP',
-    timezone: 'America/Bogota',
+    locale: 'es-MX',
+    currency: 'MXN',
+    timezone: 'America/Mexico_City',
   },
   role: { id: 'r-planner', name: 'Planner' },
   tabs: [

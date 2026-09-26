@@ -70,12 +70,16 @@ const contextoDe = (
     last_name: 'Uno',
     theme: 'light',
   },
+  // **`es-MX` y no el valor medido**, por la misma razón que el fixture
+  // compartido: esta prueba es de composición por rol y tenant, no de locale, y
+  // un formato colombiano acá haría que sus aserciones de cifra midan otra cosa.
+  // Lo medido vive en la prueba que sí es de locale · F1.13b.
   tenant: {
     id: `t-${tenant}`,
     name: tenant,
-    locale: 'es-CO',
-    currency: 'COP',
-    timezone: 'America/Bogota',
+    locale: 'es-MX',
+    currency: 'MXN',
+    timezone: 'America/Mexico_City',
   },
   role: { id: `r-${rol}`, name: rol },
   tabs: [{ id: tab.id, name: tab.name, operational_question: tab.pregunta, sort_order: 1 }],

@@ -976,6 +976,47 @@ components:
               description: La forma corta, para el navbar.
               examples: ['UA MX']
             vertical: { type: string, examples: ['retail_apparel'] }
+            # ── LOS TRES DE F1.13b · agregados el 2026-09-26 ─────────────────
+            #
+            # Llegan en `/config/me` desde `8633b10` —`tenant.locale`,
+            # `tenant.currency`, `tenant.timezone`— y el contrato no tenía dónde
+            # ponerlos, así que `createFormat` usaba `'es-MX'` fijo.
+            #
+            # **Son del TENANT y no del navegador**, que es la mitad del punto:
+            # una cifra formateada con el locale de quien mira cambia según quién
+            # abre la consola, y eso no es auditable.
+            locale:
+              type: string
+              description: |
+                Etiqueta BCP 47. **Es lo único de los tres que hoy se consume**:
+                `createFormat(locale)` y los `Intl.DateTimeFormat` de las
+                pantallas de admin. Vacío cae al default del front, que queda
+                escrito en un solo lugar.
+              examples: ['es-MX', 'es-CO']
+            moneda:
+              type: string
+              description: |
+                ISO 4217. **Hoy no lo consume nadie, y se declara igual porque
+                el cable lo trae**: la unidad de una cifra sale de la MÉTRICA
+                —`metric.unidad`, que dice `USD`— y no del tenant. El día que
+                haya una cifra sin unidad propia, ésta es la que corresponde.
+              examples: ['MXN', 'COP']
+            zonaHoraria:
+              type: string
+              description: |
+                IANA. **El corte del día del NEGOCIO**, uno solo aunque el tenant
+                tenga tiendas en varios países · decidido el 2026-09-04.
+
+                **No es el huso de quien mira**, y confundirlos es el bug: «HACE
+                3 H» y el agrupado HOY/ESTA SEMANA del riel salen del navegador
+                y el contrato lo sanciona explícitamente. Por eso se llaman
+                distinto — un solo campo «timezone» es cómo alguien, en seis
+                meses, calcula un período con el huso equivocado.
+
+                **Hoy no lo consume nadie**: ningún cálculo del front cruza un
+                borde de día. Se declara para que el día que uno lo haga, la
+                fuente ya esté y no se invente `Intl.DateTimeFormat().resolvedOptions()`.
+              examples: ['America/Mexico_City', 'America/Bogota']
         role:
           type: object
           required: [id, nombre, puedeAprobar]

@@ -21,7 +21,7 @@
  *  la primera dice qué la desbloquea, que es lo que §8 pide de cualquier estado.
  */
 import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   useAgents,
   useFeeds,
@@ -39,6 +39,7 @@ import { AdminChrome } from './AdminChrome'
 import { CatalogView } from './CatalogView'
 import { FeedHealth } from './FeedHealth'
 import { UserList } from './UserList'
+import { createFormat, LOCALE_POR_DEFECTO } from '../../render/format'
 import { RoleEditor } from './RoleEditor'
 import { usoPorMetrica } from './uso'
 import { TenantList } from './TenantList'
@@ -65,6 +66,22 @@ export function Admin() {
   // La identidad del navbar · §PEN:A1. Sale del mismo `/config/me` que la
   // consola: no hay una fuente de identidad por superficie.
   const contexto = useMe()
+
+  /** **El locale de QUIEN MIRA, no el de cada fila** · F1.13b, 2026-09-26.
+   *
+   *  Es una decisión y conviene que esté escrita. Las pantallas de admin cruzan
+   *  clientes —A1 los lista, A3 los cruza con alcance de plataforma— y cada uno
+   *  trae su propio `locale`. Formatear cada fila con el suyo haría una columna
+   *  con fechas en tres formatos distintos, que es ilegible justo donde la
+   *  pregunta es comparar.
+   *
+   *  En la consola es al revés y por la misma razón: ahí todo es de UN tenant y
+   *  una cifra formateada con el locale de quien mira cambiaría según quién la
+   *  abre. Son dos superficies con dos preguntas. */
+  const format = useMemo(
+    () => createFormat(contexto.data?.tenant.locale || LOCALE_POR_DEFECTO),
+    [contexto.data?.tenant.locale],
+  )
   const tenants = useTenants()
 
   const lista = tenants.data ?? []
@@ -168,12 +185,14 @@ export function Admin() {
           usuarios={usuarios.data?.usuarios ?? []}
           total={usuarios.data?.total ?? 0}
           clientes={usuarios.data?.clientes ?? 0}
+          format={format}
           cargando={usuarios.data === undefined}
         />
       ) : pantalla === 'feeds' ? (
         <FeedHealth
           fuentes={fuentes.data ?? []}
           tenant={lista.find((x) => x.id === activo)?.nombre ?? null}
+          format={format}
           cargando={fuentes.data === undefined}
         />
       ) : pantalla === 'catalogo' ? (
@@ -184,6 +203,7 @@ export function Admin() {
       ) : (
         <TenantList
           tenants={lista}
+          format={format}
           // **El id se USA** · 2026-09-25. Esta línea era `() => setPantalla(…)`
           // y tiraba el argumento, así que «Ver ficha» de cualquier cliente
           // abría la ficha del PRIMERO —`activo` cae en `lista[0]`— y se veía

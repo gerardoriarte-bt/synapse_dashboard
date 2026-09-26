@@ -536,6 +536,35 @@ def sin_class_name_externo(ruta, texto):
             yield n, "acepta `className` como prop · el llamador podría inyectar un color sin token"
 
 
+@regla("locale", "el locale es del TENANT · `render/format.ts` es el único que arma un `Intl`",
+       excluir=("render/format.ts",))
+def locale_en_un_solo_lugar(ruta, texto):
+    """Nadie fuera de `render/format.ts` construye un `Intl`.
+
+    **La regla ya estaba escrita y no se podía comprobar.** `Formatter.locale`
+    la declara desde F1.13b —«lo usa el llamador para decidir, no para
+    formatear: nadie fuera de acá arma un `Intl`»— y el 2026-09-26 había
+    **tres** pantallas de admin rompiéndola, cada una con su
+    `new Intl.DateTimeFormat('es-MX', …)` y su comentario prometiendo
+    arreglarlo «el día que el campo llegue».
+
+    Llegó. Y el problema no era el valor fijo: era que el locale se decidía en
+    cuatro lugares, así que arreglar uno no arreglaba los otros.
+
+    **Un locale literal es el mismo defecto aunque no haya `Intl`.** Una cadena
+    como `'es-MX'` fuera de `format.ts` es una segunda fuente para algo que el
+    tenant ya declara, y una cifra formateada con el locale equivocado **se ve
+    bien**: `4,28` y `4.28` son los dos números válidos.
+
+    Lo que NO persigue es `navigator.language` — eso es otra discusión y hoy no
+    aparece; si apareciera, esta regla no lo vería y conviene saberlo."""
+    for n, linea in lineas(texto):
+        if "new Intl." in linea:
+            yield n, "construye un `Intl` fuera de `render/format.ts`"
+        elif re.search(r"['\"`][a-z]{2}-[A-Z]{2}['\"`]", linea) and "locale" not in linea.lower():
+            yield n, "un locale literal · el locale sale del tenant"
+
+
 @regla("tipografia", "§2.3: la escala tipográfica sale del `.pen` · ni arbitraria ni la de fábrica")
 def escala_tipografica(ruta, texto):
     """Ni `text-[13px]` ni `text-sm`. Las dos formas de salirse de la escala.

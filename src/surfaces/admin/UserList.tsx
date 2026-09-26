@@ -34,6 +34,7 @@ import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
 import { EmptyRow } from './EmptyRow'
 import { SkeletonRows } from './SkeletonRows'
+import type { Formatter } from '../../render/format'
 import type { Usuario } from '../../api/admin'
 
 const NOTA = 'font-mono text-nota leading-rotulo tracking-rotulo uppercase text-dim m-0'
@@ -52,13 +53,11 @@ const FALTANTES = [
   'Reenviar invitación · no hay ruta',
 ] as const
 
-/** Mismo precedente y misma razón que `FeedHealth` y `ConsoleContainer`: el
- *  locale del tenant no llega —F1.13b— así que se fija acá y el día que el campo
- *  exista se cambia una línea. */
-const FECHA = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
 
 type Props = {
   usuarios: readonly Usuario[]
+  /** Del locale del tenant · F1.13b. Antes acá había un `Intl` con `'es-MX'`. */
+  format: Formatter
   /** **Los cuenta el SERVICIO**, no esta pantalla · ver el encabezado. */
   total: number
   /** Clientes **con al menos un usuario**, que es lo que el dibujo dice. */
@@ -66,7 +65,7 @@ type Props = {
   cargando?: boolean
 }
 
-export function UserList({ usuarios, total, clientes, cargando = false }: Props) {
+export function UserList({ format, usuarios, total, clientes, cargando = false }: Props) {
   const [busqueda, setBusqueda] = useState('')
 
   const q = busqueda.trim().toLowerCase()
@@ -185,11 +184,11 @@ export function UserList({ usuarios, total, clientes, cargando = false }: Props)
                 </td>
                 <td className="py-3">
                   <span className="text-ink text-celda">
-                    {u.ultimoAccesoEn === null ? 'Nunca' : FECHA.format(new Date(u.ultimoAccesoEn))}
+                    {u.ultimoAccesoEn === null ? 'Nunca' : format.calendar(u.ultimoAccesoEn)}
                   </span>
                 </td>
                 <td className="py-3">
-                  <span className="text-ink text-celda">{FECHA.format(new Date(u.altaEn))}</span>
+                  <span className="text-ink text-celda">{format.calendar(u.altaEn)}</span>
                 </td>
               </tr>
             ))}
