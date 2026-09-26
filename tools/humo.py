@@ -5,10 +5,39 @@
 
 Dos cables, dos secciones y **dos resultados que no se mezclan**:
 
-  · `synapse-console-wire.yaml` · las cinco rutas de `/config/*`
+  · `synapse-console-wire.yaml` · las rutas de `/config/*` · **todas**, y la
+    que se saltea lo dice con su razón · ver `MEDIDAS` y `SALTADAS`
   · `synapse-admin-wire.yaml`   · las de `/admin/*` — **transcritas a ciegas**,
     porque cuelgan de `AdminOnlyMiddleware` y hasta el 2026-09-15 no hubo un
     usuario con rol `admin` para confirmarlas.
+
+── DOS DIRECCIONES · la segunda desde el 2026-09-26 ─────────────────────────
+
+  · `faltantes()`      ¿está lo que el yaml EXIGE?  → transcripción optimista
+  · `no_declarados()`  ¿llegó algo que no declara?  → transcripción VENCIDA
+
+**Hasta el 2026-09-26 sólo existía la primera, y toda la deriva que se nos
+escapó estaba en la segunda.** Once campos en dos semanas, los once
+encontrados por un humano leyendo una respuesta: los cinco del 25
+—`dashboards`, `active_dashboard_id`, `active_layout_id`,
+`preferred_dashboard_id`, `tab_id`— y los seis del 26 —`user.theme`,
+`tenant.locale`, `tenant.currency`, `tenant.timezone`,
+`governance.measurement_window` y `columns[].decimals`/`unit`—.
+
+**Y en la primera corrida encontró uno que ningún humano vio**: el cable de
+admin declara PascalCase —`ID`, `TenantID`, `VersionID`— y el servicio pasó a
+snake_case en `8633b10`, que le agregó tags json a structs que no los tenían.
+`src/api/admin.ts` lee quince campos que hoy son `undefined`, y el peor no
+falla: `ESTADOS[w.Status] ?? 'borrador'` afirma que todo layout es borrador.
+
+**Verificado por mutación**, cinco casos: una propiedad borrada se reporta; un
+`additionalProperties: true` detiene el descenso; adentro de un arreglo la ruta
+sale como `tabs[].sort_order`; un extra que está SÓLO en el segundo elemento se
+ve —mirar el primero habría dicho que no existe—; y sin extras no inventa nada.
+
+La base NO está verde —hay deriva real—, así que el arnés no puede leer el
+código de salida: afirma que una ruta que la base no contenía aparece, o que
+una que sí contenía desaparece.
 
 ── QUÉ PRUEBA, Y POR QUÉ NO ALCANZA CON LAS OTRAS ───────────────────────────
 
@@ -17,7 +46,7 @@ Eso demuestra que **el adaptador es coherente con lo que nosotros creemos del
 cable** — no con el cable. Si la transcripción se equivocó, las pruebas pasan
 igual y el error aparece en producción.
 
-Este chequeo cierra esa brecha: pide las cinco rutas al servicio de verdad y
+Este chequeo cierra esa brecha: pide las rutas al servicio de verdad y
 compara la RESPUESTA contra el yaml. Ya encontró una diferencia el 2026-09-14 —
 `semantic_direction` es texto ya redactado y no un código, al revés de lo que
 decía el comentario de Go del que se transcribió.
@@ -46,18 +75,49 @@ import sys
 import urllib.error
 import urllib.request
 
+# ── NINGUNA RUTA DEL CABLE SE QUEDA SIN MIRAR · desde el 2026-09-26 ─────────
+#
+# **Esto es lo que faltaba, y es por qué el hueco duró meses.** El cable declaró
+# nueve rutas de `/config/*`, este chequeo pedía cinco, y la línea final decía
+# «las cinco rutas de consola coinciden» — cierto sobre cinco y leído como si
+# fueran todas. Nada relacionaba las dos listas, así que agregar una ruta al
+# cable sin medirla no producía ninguna señal.
+#
+# Ahora cada ruta del cable tiene que estar en una de las dos listas, y el
+# chequeo **falla si aparece una que no está en ninguna**. Saltear es legítimo;
+# saltear en silencio no.
+MEDIDAS = {
+    "/config/me",
+    "/config/catalog",
+    "/config/blocks",
+    "/config/tabs/{tabId}",
+    # Con los dos puntos, como el cable la declara. **Acá escribí
+    # `/config/panels` de memoria y el propio chequeo me corrigió**, en su
+    # primera corrida: es el mismo error que vino a buscar.
+    "/config/panels:batch",
+    "/config/me/preferences",
+    "/config/chat/threads",
+    "/config/panels/{panelId}/chat-suggestions",
+}
+SALTADAS = {
+    "/config/chat": "SSE · cuesta una llamada a Cortex y escribe un hilo",
+}
+
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
 CABLE = RAIZ / "contracts" / "synapse-console-wire.yaml"
 CABLE_ADMIN = RAIZ / "contracts" / "synapse-admin-wire.yaml"
 BASE = os.getenv("SYNAPSE_API", "http://localhost:4010/api/v1")
 
 
-def pedir(ruta: str, token: str | None = None, cuerpo: dict | None = None) -> tuple[int, object]:
+def pedir(
+    ruta: str, token: str | None = None, cuerpo: dict | None = None, metodo: str | None = None
+) -> tuple[int, object]:
+    """`metodo` sólo hace falta cuando no se deduce del cuerpo — un PUT."""
     datos = None if cuerpo is None else json.dumps(cuerpo).encode()
     req = urllib.request.Request(
         f"{BASE}{ruta}",
         data=datos,
-        method="POST" if datos else "GET",
+        method=metodo or ("POST" if datos else "GET"),
         headers={
             "Content-Type": "application/json",
             **({} if token is None else {"Authorization": f"Bearer {token}"}),
@@ -76,6 +136,106 @@ def faltantes(obj: object, requeridos: list[str]) -> list[str]:
     if not isinstance(obj, dict):
         return requeridos
     return [c for c in requeridos if c not in obj]
+
+
+def esquema_en_linea(spec: dict, ruta: str, metodo: str) -> dict:
+    """El esquema del `data` de un 200 declarado ADENTRO de la ruta.
+
+    No todas las respuestas del cable son un componente con nombre: la de
+    `/config/me/preferences` se declara en línea, bajo un `allOf` que intersecta
+    el `Envelope` con un objeto que sólo tiene `data`. Se lee de ahí en vez de
+    duplicarlo acá, para que el cable siga siendo la única fuente.
+
+    Devuelve `{}` si no lo encuentra, y entonces `no_declarados` no reporta nada
+    — que es lo correcto: sin esquema no hay contra qué comparar. **Un `{}` se
+    lee como conforme**, así que el llamador ve un ✓ con cero propiedades, y eso
+    es visible en la salida.
+    """
+    try:
+        respuesta = spec["paths"][ruta][metodo]["responses"]["200"]
+        esquema = respuesta["content"]["application/json"]["schema"]
+    except (KeyError, TypeError):
+        return {}
+    for parte in esquema.get("allOf", [esquema]):
+        data = (parte.get("properties") or {}).get("data")
+        if isinstance(data, dict):
+            return data
+    return {}
+
+
+# ── LA OTRA DIRECCIÓN · agregada el 2026-09-26 ──────────────────────────────
+#
+# **Este chequeo miraba un solo lado, y toda la deriva que se nos escapó estaba
+# en el otro.** `faltantes()` pregunta «¿está lo que el yaml exige?», que atrapa
+# una transcripción OPTIMISTA. No atrapa la que sobra, y la que sobra es la que
+# pasó: el 2026-09-25 se descubrieron `dashboards`, `active_dashboard_id`,
+# `active_layout_id`, `preferred_dashboard_id` y `tab_id` —cinco campos que el
+# servicio mandaba desde hacía entre cuatro y ocho días—, y el 26 aparecieron
+# `user.theme`, `tenant.locale`, `tenant.currency`, `tenant.timezone`,
+# `governance.measurement_window` y `columns[].decimals`/`unit`.
+#
+# **Los once salieron de que un humano leyera una respuesta.** Ninguno lo podía
+# ver este chequeo, y por eso salía ✓ mientras el cable envejecía.
+#
+# Un campo no declarado no es cosmético: es una tarea que espera sin saber que
+# ya llegó. `open_period` estuvo en el cable desde el 22 y `enCurso` lo leía;
+# `tenant.locale` no, y F1.13b siguió bloqueada con el campo servido.
+#
+# **Dónde se DETIENE, y sale del propio yaml.** Tres puntos son de forma libre a
+# propósito —`PanelDTO.options`, `Payload.value` y `Payload.presentation`— y
+# están marcados con `additionalProperties: true`. Descender ahí reportaría cada
+# campo de cada forma de valor, y un chequeo ruidoso es uno que se deja de leer:
+# es el mismo modo de falla que tuvo `backend-drift` ocho días en el mismo rojo.
+def no_declarados(
+    obj: object, esquema: dict, esquemas: dict, ruta: str = ""
+) -> list[str]:
+    """Campos que el servicio MANDA y el yaml no declara, recursivo.
+
+    `esquema` ya viene resuelto —sin `$ref`—. Devuelve rutas con punto, del
+    estilo `tenant.locale` o `columns[].decimals`, en el orden en que aparecen.
+    """
+    if not isinstance(esquema, dict):
+        return []
+    # Forma libre declarada: el yaml dice «acá no sé qué viene», y lo dice a
+    # propósito. No es un hueco.
+    if esquema.get("additionalProperties") is True:
+        return []
+
+    def resolver(e: object) -> dict:
+        """Sigue un `$ref` hasta el esquema nombrado. Uno solo de profundidad
+        alcanza: el cable no anida referencias a referencias."""
+        if not isinstance(e, dict):
+            return {}
+        ref = e.get("$ref")
+        if isinstance(ref, str) and ref.startswith("#/components/schemas/"):
+            return esquemas.get(ref.rsplit("/", 1)[1]) or {}
+        return e
+
+    # Un arreglo se recorre ENTERO, no sólo su primer elemento. `columns[].unit`
+    # existe sólo en las columnas numéricas: mirar la primera —`platform`, que no
+    # lo trae— habría dicho que no existe.
+    if isinstance(obj, list):
+        items = resolver(esquema.get("items"))
+        vistos: list[str] = []
+        for elemento in obj:
+            for hallado in no_declarados(elemento, items, esquemas, f"{ruta}[]"):
+                if hallado not in vistos:
+                    vistos.append(hallado)
+        return vistos
+
+    props = esquema.get("properties")
+    if not isinstance(obj, dict) or not isinstance(props, dict):
+        return []
+
+    hallados: list[str] = []
+    for clave, valor in obj.items():
+        camino = f"{ruta}.{clave}" if ruta else clave
+        if clave not in props:
+            hallados.append(camino)
+            continue
+        # Declarado: se baja a ver si ADENTRO hay algo sin declarar.
+        hallados.extend(no_declarados(valor, resolver(props[clave]), esquemas, camino))
+    return hallados
 
 
 def comprobar_admin(token: str, ctx: object, fallas: list[str]) -> str | None:
@@ -112,13 +272,30 @@ def comprobar_admin(token: str, ctx: object, fallas: list[str]) -> str | None:
         return None
 
     def revisar(nombre: str, obj: object, esquema: str) -> None:
-        req = esquemas[esquema].get("required", [])
+        """Las DOS direcciones, y se informan por separado.
+
+        `faltantes` es una transcripción optimista —declaramos algo que no
+        llega—; `no_declarados` es una vencida —llegó algo que no declaramos—.
+        Se arreglan distinto: la primera borra del yaml, la segunda transcribe.
+        """
+        # Un esquema puede venir por NOMBRE o en línea: la respuesta de
+        # `/config/me/preferences` no es un componente, se declara adentro de la
+        # ruta. Sin esto habría que inventarle un componente al cable para poder
+        # medirla, y el cable no se cambia para que la herramienta ande.
+        e = esquemas[esquema] if isinstance(esquema, str) else esquema
+        etiqueta = esquema if isinstance(esquema, str) else "el esquema en línea"
+        req = e.get("required", [])
         falta = faltantes(obj, req)
+        sobra = no_declarados(obj, e, esquemas)
         if falta:
-            fallas.append(f"{nombre} · {esquema} no trae {', '.join(falta)}")
+            fallas.append(f"{nombre} · {etiqueta} no trae {', '.join(falta)}")
             print(f"  ✗ {nombre} · faltan {', '.join(falta)}")
-        else:
-            print(f"  ✓ {nombre} · los {len(req)} campos requeridos")
+        if sobra:
+            fallas.append(f"{nombre} · {etiqueta} no declara {', '.join(sobra)}")
+            print(f"  ✗ {nombre} · el servicio manda y el yaml no declara: {', '.join(sobra)}")
+        if not falta and not sobra:
+            props = len(e.get("properties") or {})
+            print(f"  ✓ {nombre} · {len(req)} requeridos, y nada fuera de los {props} declarados")
 
     if not tenants:
         print("  ⊘ /admin/tenants · sin tenants · no hay con qué seguir")
@@ -199,13 +376,30 @@ def main() -> int:
     fallas: list[str] = []
 
     def revisar(nombre: str, obj: object, esquema: str) -> None:
-        req = esquemas[esquema].get("required", [])
+        """Las DOS direcciones, y se informan por separado.
+
+        `faltantes` es una transcripción optimista —declaramos algo que no
+        llega—; `no_declarados` es una vencida —llegó algo que no declaramos—.
+        Se arreglan distinto: la primera borra del yaml, la segunda transcribe.
+        """
+        # Un esquema puede venir por NOMBRE o en línea: la respuesta de
+        # `/config/me/preferences` no es un componente, se declara adentro de la
+        # ruta. Sin esto habría que inventarle un componente al cable para poder
+        # medirla, y el cable no se cambia para que la herramienta ande.
+        e = esquemas[esquema] if isinstance(esquema, str) else esquema
+        etiqueta = esquema if isinstance(esquema, str) else "el esquema en línea"
+        req = e.get("required", [])
         falta = faltantes(obj, req)
+        sobra = no_declarados(obj, e, esquemas)
         if falta:
-            fallas.append(f"{nombre} · {esquema} no trae {', '.join(falta)}")
+            fallas.append(f"{nombre} · {etiqueta} no trae {', '.join(falta)}")
             print(f"  ✗ {nombre} · faltan {', '.join(falta)}")
-        else:
-            print(f"  ✓ {nombre} · los {len(req)} campos requeridos")
+        if sobra:
+            fallas.append(f"{nombre} · {etiqueta} no declara {', '.join(sobra)}")
+            print(f"  ✗ {nombre} · el servicio manda y el yaml no declara: {', '.join(sobra)}")
+        if not falta and not sobra:
+            props = len(e.get("properties") or {})
+            print(f"  ✓ {nombre} · {len(req)} requeridos, y nada fuera de los {props} declarados")
 
     _, me = pedir("/config/me", token)
     ctx = me.get("data") if isinstance(me, dict) else None
@@ -252,6 +446,85 @@ def main() -> int:
                 fallas.append("panels:batch · `data` no es un mapa de payloads")
                 print("  ✗ panels:batch · `data` no es un mapa")
 
+    # ── LAS CUATRO QUE NUNCA SE MEDÍAN · agregadas el 2026-09-26 ────────────
+    #
+    # **El cable declara nueve rutas y este chequeo pedía cinco**, mientras la
+    # línea final decía «las cinco rutas de consola coinciden» — cierto sobre
+    # cinco y leído como si fueran todas.
+    #
+    # Las cuatro que faltaban son exactamente las que el 2026-09-26 no se
+    # pudieron reverificar a mano: no es casualidad, es que **nunca hubo nada
+    # que las midiera** y sólo se transcribieron leyendo Go.
+
+    # El PUT es un NO-OP a propósito: se le manda el tema que ya tiene. El
+    # handler responde con lo que recibió, así que la forma se ve igual y no se
+    # le cambia la preferencia a nadie — misma prudencia que con `publish`.
+    tema_actual = ((ctx or {}).get("user") or {}).get("theme") or "light"
+    estado_pref, pref = pedir(
+        "/config/me/preferences", token, {"theme": tema_actual}, metodo="PUT"
+    )
+    if estado_pref != 200:
+        fallas.append(f"/config/me/preferences · respondió {estado_pref}")
+        print(f"  ✗ /config/me/preferences · HTTP {estado_pref}")
+    else:
+        # El esquema se LEE del cable, no se escribe acá. Si mañana la respuesta
+        # pasa a ser un componente, esto lo sigue encontrando sin tocarse.
+        revisar("/config/me/preferences", pref.get("data"), esquema_en_linea(spec, "/config/me/preferences", "put"))
+
+    estado_hilos, hilos = pedir("/config/chat/threads", token)
+    lista_hilos = hilos.get("data") if isinstance(hilos, dict) else None
+    if estado_hilos != 200:
+        fallas.append(f"/config/chat/threads · respondió {estado_hilos}")
+        print(f"  ✗ /config/chat/threads · HTTP {estado_hilos}")
+    elif not isinstance(lista_hilos, list):
+        fallas.append("/config/chat/threads · `data` no es un arreglo")
+        print("  ✗ /config/chat/threads · `data` no es un arreglo")
+    elif lista_hilos:
+        revisar("/config/chat/threads[0]", lista_hilos[0], "ChatThread")
+    else:
+        print("  ⊘ /config/chat/threads · sin hilos todavía · no hay forma que comparar")
+
+    if tabs and paneles:
+        pid = paneles[0]["id"]
+        estado_sug, sug = pedir(f"/config/panels/{pid}/chat-suggestions", token)
+        lista_sug = sug.get("data") if isinstance(sug, dict) else None
+        if estado_sug != 200:
+            fallas.append(f"chat-suggestions · respondió {estado_sug}")
+            print(f"  ✗ chat-suggestions · HTTP {estado_sug}")
+        elif not isinstance(lista_sug, list):
+            fallas.append("chat-suggestions · `data` no es un arreglo")
+            print("  ✗ chat-suggestions · `data` no es un arreglo")
+        elif lista_sug:
+            revisar("chat-suggestions[0]", lista_sug[0], "ChatSuggestion")
+        else:
+            print("  ⊘ chat-suggestions · sin sugerencias para este panel")
+
+    # **`POST /config/chat` va detrás de una variable, y no por pereza.** Cada
+    # corrida le cuesta una llamada a Cortex y deja un hilo escrito: un chequeo
+    # que gasta plata en cada corrida es uno que se deja de correr, que es el
+    # mismo modo de falla que tuvo `backend-drift` ocho días en rojo. Y la
+    # respuesta es SSE, no JSON — `pedir()` no la puede leer.
+    #
+    # Son las seis formas de trama —`ChatFrame*`— las que quedan sin medir, y
+    # eso es cobertura que falta, no cobertura que sobra: queda dicho.
+    for ruta, razon in sorted(SALTADAS.items()):
+        print(f"  ⊘ {ruta} · {razon}")
+    print("     las seis formas `ChatFrame*` siguen SIN medir contra el servicio")
+
+    # **Y ninguna ruta del cable se queda afuera sin decirlo.** Si alguien
+    # transcribe una ruta nueva y nadie la mide, esto lo dice acá y no en seis
+    # semanas: es la misma clase de silencio que tapó cinco campos.
+    huerfanas = sorted(set(spec.get("paths") or {}) - MEDIDAS - set(SALTADAS))
+    if huerfanas:
+        for r in huerfanas:
+            fallas.append(f"{r} · el cable la declara y nada la mide")
+            print(f"  ✗ {r} · el cable la declara y NADA la mide")
+    else:
+        print(
+            f"  ✓ cobertura · las {len(spec.get('paths') or {})} rutas del cable están"
+            f" medidas ({len(MEDIDAS)}) o salteadas con razón ({len(SALTADAS)})"
+        )
+
     # ── /admin/* ────────────────────────────────────────────────────────────
     #
     # **Se separa a propósito.** Un chequeo que no pudo correr no puede
@@ -273,7 +546,7 @@ def main() -> int:
         print("  adaptador necesita algo.")
         return 1
 
-    print("humo ✓ las cinco rutas de consola coinciden con synapse-console-wire.yaml")
+    print("humo ✓ el cable de consola coincide con el servicio en las dos direcciones")
     print("  Anotar en el cierre de F1.39 con qué commit del backend se verificó:")
     print("  npm run backend-drift")
 

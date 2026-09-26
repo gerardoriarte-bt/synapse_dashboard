@@ -233,9 +233,21 @@ def main() -> int:
                 if tid not in ids:
                     fallas.append(f"{rel} · la tarea {tid} no está en el plan")
 
+    # **Se cuenta lo que se IMPRIME** · corregido el 2026-09-26. Contaba
+    # `len(fallas)` y listaba `set(fallas)`, así que una afirmación repetida en
+    # dos párrafos del mismo documento decía «4» y mostraba 3. El número no
+    # llevaba a ninguna línea que lo sostuviera.
+    #
+    # Es el ESPEJO del defecto que `plan-ancestro` tuvo hasta el 2026-09-25, que
+    # contaba sobre un `set` y por eso no veía el identificador duplicado. La
+    # misma pregunta —¿el conteo y la lista salen de la misma colección?— y las
+    # dos respuestas equivocadas posibles.
     if fallas:
-        print(f"afirmaciones ✗ {len(fallas)} afirmación(es) que la fuente desmiente")
-        for f in sorted(set(fallas)):
+        distintas = sorted(set(fallas))
+        repetidas = len(fallas) - len(distintas)
+        cola = f" · {repetidas} repetida(s) en el mismo documento" if repetidas else ""
+        print(f"afirmaciones ✗ {len(distintas)} afirmación(es) que la fuente desmiente{cola}")
+        for f in distintas:
             print(f"  {f}")
         return 1
 
