@@ -865,7 +865,16 @@ en `82da946`. Medir contra el fork lo hacía ver como avance de ellos — ver
 **Verificado el 2026-09-24** · la vista `SYNAPSE_METRIC_CATALOG` existe, `make sync-catalog` corrió —`created=6 updated=4 catalog_version=2`— y `/config/catalog` devuelve las **diez de la vista** y no las doce de la semilla, contra el servicio corriendo. Hasta ese día esta tarea decía «no existe en ninguna base de la cuenta, `SHOW OBJECTS` da cero filas».
 
 ### B1.19 ⬜ Filtrar el catálogo por permisos de rol
-**Espera del backend.** **Un usuario de prueba con un rol restringido.** El mecanismo está en el código, pero con el usuario que tenemos —rol `Planner`— el catálogo devuelve las doce métricas, incluidas `executive_summary`, `roas` y `decisions`, que su propio documento dice que `planner` oculta. No decimos que esté roto: no se puede comprobar. Con un usuario así se cierran las dos mitades en un minuto — el catálogo recortado y un panel en `FORBIDDEN`.
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **EL PEDIDO NO HACÍA FALTA.** Pedía «un usuario de prueba con un rol restringido» porque el mecanismo no se podía comprobar. **Desde que existen `POST /admin/tenants/{tenantId}/roles` y `POST /admin/users` lo creamos nosotros**, y las dos mitades cierran:
+
+| | admin | planner |
+|---|---|---|
+| `/config/catalog` | 18 métricas | **15** · el rol oculta tres |
+| `panels:batch` | 10 AVAILABLE · 2 DEGRADED | 9 AVAILABLE · **3 FORBIDDEN** |
+
+`planner@synapse.local`, documentado en `dev/postgres/README.md`. **No estaba roto: nunca lo estuvo, y no se podía saber.**
+
+Queda en ⬜ por el bullet que sigue sin comprobarse: que una métrica oculta no aparezca **ni siquiera con `estado`** exige cruzar la respuesta contra la lista de ocultas campo por campo.
 **Criterio de aceptación (los tres).**
 - El catálogo declara `granoMinimo` por métrica: el período más fino que puede
   contestar.
@@ -1187,8 +1196,22 @@ dato real: `2026-09` da ventas 639.078 y `2026-08` da 918.978, ROAS 9,88x contra
 **Queda en ⚠️ porque faltan dos puntos**: sólo se vieron `AVAILABLE` y `BLOCKED`
 de los seis estados, y no se comprobó que las nueve formas aparezcan en pantalla.
 
-**Espera del backend.** **El materializador no produce `presentation`, y al
-correr PISA la que había.** Antes de materializar, seis paneles `kpi` traían su
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **YA LA PRODUCE.** Este pedido —del 2026-09-24, en
+`docs/MENSAJE-2026-09-24-materializador.md`— decía que el materializador no
+escribía `presentation` y que al correr pisaba la de la semilla, dejando los seis
+KPI como una cifra sola.
+
+Medido después de rematerializar con el binario nuevo: **6 de los 12 paneles
+traen `presentation`**, y son los seis escalares, con su `label`, su `meter`
+—«81 % de la meta · 2.6M DE 3.19M»— y sus dos `comparative`. Las cifras son de
+Snowflake, no de la semilla. Lo arma `PresentationFromRows` y lo persiste
+`dd_materializer_service.go`.
+
+**Sigue en ⚠️** por la otra mitad de su título: verificar los seis estados. El
+dato real sólo produce `AVAILABLE`, `DEGRADED` y `FORBIDDEN`.
+
+Lo que decía el pedido, como registro: **El materializador no produce
+`presentation`, y al correr PISA la que había.** Antes de materializar, seis paneles `kpi` traían su
 `label`, su `medidor` y sus `comparativo` —de la semilla— y en pantalla se veían
 la barra de avance y el «VS MES ANTERIOR». Después de materializar, **ninguna de
 las 18 filas tiene `presentation`**: los KPI quedaron como una cifra sola.
@@ -1307,7 +1330,9 @@ Pasa de «no verificado» a **medido y ausente**.
 ### B3.1 ⚠️ `POST /config/chat` con SSE
 **Verificado el 2026-09-24** · el agente `SYNAPSE_UA` contesta desde la consola, el markdown se pinta y el riel guarda el hilo. Y desde `75b8ecc` acepta `tab_context` además de `panel_context`, que es lo que F3.15 esperaba.
 
-**Espera del backend.** **La ruta ya está escrita** — `82da946` la trae con `panel_context: {panel_id, period}`, y con eso se cerró la transversal T4. Lo que falta es **poder verificarla**: sin las migraciones de B3.11 el handler escribe contra columnas que no existen. **Lo pendiente del chat cambió el 2026-09-22 y el pedido vigente es otro**: con las migraciones corridas en la base local, `POST /config/chat` devuelve **409 · «no hay agente activo disponible para este tenant y rol»**. Hace falta un agente de Cortex con credenciales. **Ese pedido es del equipo de DATOS, no del backend** —corregido el 2026-09-22—: el agente `SYNAPSE_UA` y el usuario `SYNAPSE_SERVICE_USER` existen en la cuenta `MAA16864`, y lo único que falta es el par de claves RSA. Va en `docs/MENSAJE-2026-09-22-datos-agente-cortex.md`. Lo que sí le toca al backend es cargar el tenant y el agente una vez que llegue — `docs/MENSAJE-2026-09-22-backend-roles-y-hallazgo.md`, punto 1. El pedido del 21 —los dos campos del evento `data`— quedó cubierto: F3.6 se cerró con el tipo del panel. El chat que el servicio ya tenía antes es **otro producto** —decidido el 2026-09-08—: el nuestro se abre desde un panel y lleva su métrica.
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **EL PEDIDO ESTÁ VENCIDO.** Decía que lo que faltaba era «poder verificarla: sin las migraciones de B3.11 el handler escribe contra columnas que no existen». Con la base local esas migraciones corren solas, y **el chat contesta contra Cortex de verdad desde el 2026-09-24**. B3.11 sigue en pie para la base COMPARTIDA, que es otra tarea.
+
+Lo que decía el pedido, como registro: **La ruta ya está escrita** — `82da946` la trae con `panel_context: {panel_id, period}`, y con eso se cerró la transversal T4. Lo que falta es **poder verificarla**: sin las migraciones de B3.11 el handler escribe contra columnas que no existen. **Lo pendiente del chat cambió el 2026-09-22 y el pedido vigente es otro**: con las migraciones corridas en la base local, `POST /config/chat` devuelve **409 · «no hay agente activo disponible para este tenant y rol»**. Hace falta un agente de Cortex con credenciales. **Ese pedido es del equipo de DATOS, no del backend** —corregido el 2026-09-22—: el agente `SYNAPSE_UA` y el usuario `SYNAPSE_SERVICE_USER` existen en la cuenta `MAA16864`, y lo único que falta es el par de claves RSA. Va en `docs/MENSAJE-2026-09-22-datos-agente-cortex.md`. Lo que sí le toca al backend es cargar el tenant y el agente una vez que llegue — `docs/MENSAJE-2026-09-22-backend-roles-y-hallazgo.md`, punto 1. El pedido del 21 —los dos campos del evento `data`— quedó cubierto: F3.6 se cerró con el tipo del panel. El chat que el servicio ya tenía antes es **otro producto** —decidido el 2026-09-08—: el nuestro se abre desde un panel y lleva su métrica.
 **Descripción.** Body `{ pregunta, contextoPanel, periodo, hiloId? }`, respuesta
 por Server-Sent Events.
 **Criterio de aceptación.**
@@ -1448,7 +1473,9 @@ vistazo qué cliente tiene el feed más atrasado es la mitad de para qué existe
 en `2fafe82`. Ver `docs/ESTADO-backend-2026-09-22.md`.
 
 ### B4.2 ⚠️ `GET /admin/tenants/{id}/layouts`
-**Espera del backend.** **Autor, diferencia y reversión en `LayoutVersion`** — pedido el 2026-09-15, cuando F4.6 declaró B6.
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **DOS DE LOS TRES LLEGARON.** `GET /admin/layouts/{layoutId}/publications` responde 200 y `DDLayoutPublication` trae `action`, `actor_user_id`, `actor_role`, `previous_layout_id`, `diff` y `created_at` — **quién, cuándo y qué cambió**, los tres que §7.2 nombra.
+
+**Espera del backend.** **La reversión**, que es el tercio que falta: no hay ruta de revertir ni de rollback en el router. `previous_layout_id` da con qué hacerlo y publicar el anterior con la ruta que ya existe sería el camino, pero eso es una decisión y no un hecho medido. El pedido original decía: **Autor, diferencia y reversión en `LayoutVersion`** — pedido el 2026-09-15, cuando F4.6 declaró B6.
 
 §7.2 describe el historial de versiones en una línea: «**quién, cuándo, qué cambió. Permite revertir.** Sin esto, un error de composición en producción no tiene vuelta atrás». La respuesta de hoy trae **cuándo** y nada más.
 
@@ -1827,7 +1854,11 @@ saber qué necesita cada uno es multiplicar el problema, no resolverlo.
 ### B5.1 ⚠️ Varios layouts por tenant
 **Verificado el 2026-09-25** · `/config/me` declara `dashboards` —con `id`, `name`, `slug` e `is_default`—, `active_dashboard_id` y `active_layout_id`, y `PUT /config/me/preferences` acepta `preferred_dashboard_id`. Queda en ⚠️ hasta que F5.1 lo consuma.
 
-**Espera del backend.** **La lista de layouts que el usuario puede ver, en `/config/me`.** `GET /config/tabs/:tabId?layoutId=` ya funciona, pero no hay forma de saber qué layouts le tocan a alguien, así que el selector de F5.1 no se puede construir: no se ofrece una elección que no se sabe si existe.
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **LLEGÓ, con otro nombre.** Pedía «la lista de layouts que el usuario puede ver, en `/config/me`», y lo que llegó es la lista de **dashboards**: `dashboards[{id, name, slug, is_default}]`, `active_dashboard_id` y `active_layout_id`. Es el modelo multi-dashboard, y es con lo que el selector de F5.1 se construye.
+
+**El filtrado por rol no se puede comprobar todavía**: el tenant tiene un solo dashboard, así que admin y planner ven el mismo. El rol declara `dashboard_ids` y `default_dashboard_id`, que es dónde viviría.
+
+Lo que decía el pedido, como registro: **La lista de layouts que el usuario puede ver, en `/config/me`.** `GET /config/tabs/:tabId?layoutId=` ya funciona, pero no hay forma de saber qué layouts le tocan a alguien, así que el selector de F5.1 no se puede construir: no se ofrece una elección que no se sabe si existe.
 **Descripción.** Un tenant puede tener más de un dashboard publicado —
 «Operaciones», «Marca», «Ejecutivo»— cada uno con sus pestañas.
 **Criterio de aceptación.**
@@ -4162,7 +4193,7 @@ tenía anotada.
 **Abierta en el navegador**: tres chips, apretar uno pregunta, y el bloque
 desaparece al responder.
 
-#### ➕ F3.15 ⬜ El chat tiene presencia en la consola · 🔒 el candado VENCIÓ el 2026-09-25
+#### ➕ F3.15 ⬜ El chat tiene presencia en la consola
 
 **MEDIDO CONTRA `75b8ecc`.** Decía «el cable exige un panel» y ya no: el handler
 acepta **exactamente uno** de `panel_context` o `tab_context` —si vienen los dos
@@ -4199,10 +4230,22 @@ porque el panel es quien da el contexto; uno «de la pestaña» sí.
 **El `PREGUNTAR` de cada panel no se va**: sigue existiendo y es más específico.
 Son dos entradas con dos alcances, que es lo que el `.pen` dibuja.
 
-**Espera del backend.** **Que `POST /config/chat` acepte contexto de PESTAÑA.**
-Hoy `panel_context: {panel_id, period}` está declarado `binding:"required"`, así
-que un chat abierto desde la barra inferior —que no tiene panel— no se puede
-pedir. La línea que el `.pen` dibuja en esa barra es, literal:
+**Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **EL BLOQUEO VENCIÓ.** Pedía que `POST /config/chat` aceptara contexto de
+PESTAÑA porque `panel_context` estaba `binding:"required"`. Hoy los dos son
+punteros y el handler exige **exactamente uno**:
+
+- sin ninguno → 400 · «se requiere panel_context o tab_context (uno solo)»
+- con los dos → el mismo 400
+- con `tab_context` incompleto → el validador nombra
+  `ddChatRequest.TabContext.Period`, que prueba que el campo se parsea
+
+Medido sin gastar una llamada a Cortex. `DDTabContext` lleva `TabID`, `TabName`,
+`OperationalQuestion`, `Period` y un resumen de los paneles, y el cable ya lo
+tiene transcrito desde el 2026-09-25.
+
+**Así que esta tarea es del front y no espera a nadie.**
+
+Lo que decía el pedido, como registro: La línea que el `.pen` dibuja en esa barra es, literal:
 `CONTEXTO · UA MX · ECOMMERCE OVERVIEW · JUL 2026 · 12 PANELES`.
 
 Alcanza con que el contexto admita una de las dos formas —`{tab_id, period}` o

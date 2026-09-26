@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 15 pedido(s)
+## Lo que esperamos · 11 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -101,34 +101,12 @@ Lo que sí falta es la **`nota` de panel** —la lectura al pie, distinta de la 
 **Sirve desde el primer día aunque haya un gráfico por tipo**, que es por qué está en Fase 1 y no en Fase 4: hoy nada impide que `bars` reciba un ítem y dibuje una barra sola.
 
 
-### B1.19 · Filtrar el catálogo por permisos de rol
-
-*Estado de la tarea: pendiente.*
-
-
-**Un usuario de prueba con un rol restringido.** El mecanismo está en el código, pero con el usuario que tenemos —rol `Planner`— el catálogo devuelve las doce métricas, incluidas `executive_summary`, `roas` y `decisions`, que su propio documento dice que `planner` oculta. No decimos que esté roto: no se puede comprobar. Con un usuario así se cierran las dos mitades en un minuto — el catálogo recortado y un panel en `FORBIDDEN`.
-
-
 ### B2.12 · Correr el materializador contra datos reales y verificar los seis estados
 
 *Estado de la tarea: parcial.*
 
 
-**El materializador no produce `presentation`, y al
-correr PISA la que había.** Antes de materializar, seis paneles `kpi` traían su
-`label`, su `medidor` y sus `comparativo` —de la semilla— y en pantalla se veían
-la barra de avance y el «VS MES ANTERIOR». Después de materializar, **ninguna de
-las 18 filas tiene `presentation`**: los KPI quedaron como una cifra sola.
-
-Es la segunda mitad de B1.13, y se dio por cerrada el 2026-09-14 **contra la
-semilla**. Es el mismo modo de falla que `semantic_direction` el mismo día, y
-que el catálogo: lo que la semilla traía, el camino real no lo trae.
-
-Sin esto un KPI pierde el medidor y los comparativos, que es lo que el `.pen`
-dibuja y lo que hace que una cifra se lea contra algo en vez de sola. · Bloquea
-**B2.12**.
-
-**Espera del backend.** **Los paneles de prosa los genera el AGENTE, y hoy no hay
+**Los paneles de prosa los genera el AGENTE, y hoy no hay
 camino.** Decidido el 2026-09-24 por producto: `executive_summary` y `decisions`
 no son métricas sino **interpretación** —el resumen y las propuestas sobre los
 datos del período—, así que no se curan en Snowflake, y **es el materializador
@@ -175,14 +153,6 @@ su razón. El front ya pinta `DEGRADED` con su badge, su razón y su
 nuestro lado. · Bloquea **B2.12**.
 
 
-### B3.1 · POST /config/chat con SSE
-
-*Estado de la tarea: parcial.*
-
-
-**La ruta ya está escrita** — `82da946` la trae con `panel_context: {panel_id, period}`, y con eso se cerró la transversal T4. Lo que falta es **poder verificarla**: sin las migraciones de B3.11 el handler escribe contra columnas que no existen. **Lo pendiente del chat cambió el 2026-09-22 y el pedido vigente es otro**: con las migraciones corridas en la base local, `POST /config/chat` devuelve **409 · «no hay agente activo disponible para este tenant y rol»**. Hace falta un agente de Cortex con credenciales. **Ese pedido es del equipo de DATOS, no del backend** —corregido el 2026-09-22—: el agente `SYNAPSE_UA` y el usuario `SYNAPSE_SERVICE_USER` existen en la cuenta `MAA16864`, y lo único que falta es el par de claves RSA. Va en `docs/MENSAJE-2026-09-22-datos-agente-cortex.md`. Lo que sí le toca al backend es cargar el tenant y el agente una vez que llegue — `docs/MENSAJE-2026-09-22-backend-roles-y-hallazgo.md`, punto 1. El pedido del 21 —los dos campos del evento `data`— quedó cubierto: F3.6 se cerró con el tipo del panel. El chat que el servicio ya tenía antes es **otro producto** —decidido el 2026-09-08—: el nuestro se abre desde un panel y lleva su métrica.
-
-
 ### B3.11 · Aplicar las migraciones de 82da946 sobre la base compartida
 
 *Estado de la tarea: pendiente.*
@@ -206,7 +176,7 @@ Sin ellas `POST /config/chat` no puede guardar el hilo, y eso se ve como un **50
 *Estado de la tarea: parcial.*
 
 
-**Autor, diferencia y reversión en `LayoutVersion`** — pedido el 2026-09-15, cuando F4.6 declaró B6.
+**La reversión**, que es el tercio que falta: no hay ruta de revertir ni de rollback en el router. `previous_layout_id` da con qué hacerlo y publicar el anterior con la ruta que ya existe sería el camino, pero eso es una decisión y no un hecho medido. El pedido original decía: **Autor, diferencia y reversión en `LayoutVersion`** — pedido el 2026-09-15, cuando F4.6 declaró B6.
 
 §7.2 describe el historial de versiones en una línea: «**quién, cuándo, qué cambió. Permite revertir.** Sin esto, un error de composición en producción no tiene vuelta atrás». La respuesta de hoy trae **cuándo** y nada más.
 
@@ -233,14 +203,6 @@ Los dos están en el modelo de §2 de `design.md` y en `Pestana` del contrato, y
 **Y una pregunta que es de ustedes, no un pedido.** `OperationalQuestion` no es requerido y el servicio acepta la cadena vacía. El producto dice lo contrario —«una pestaña que no contesta una pregunta no se compone», §7.2 y la descripción de `Pestana`—, así que hoy **la regla la sostiene el front solo**: el editor marca la pestaña, la cuenta y no la deja componer. Si además la rechazara el `validate` o el `publish`, la regla dejaría de depender de qué cliente haga el PUT. Es B4.15 quien decidiría.
 
 
-### B5.1 · Varios layouts por tenant
-
-*Estado de la tarea: parcial.*
-
-
-**La lista de layouts que el usuario puede ver, en `/config/me`.** `GET /config/tabs/:tabId?layoutId=` ya funciona, pero no hay forma de saber qué layouts le tocan a alguien, así que el selector de F5.1 no se puede construir: no se ofrece una elección que no se sabe si existe.
-
-
 ### F1.44 · El orden de una tabla se anuncia, no se aplica
 
 *Estado de la tarea: parcial.*
@@ -256,23 +218,6 @@ ocho estampas mensuales —`jan`, `feb`, `mar`…— sin importar el `cut`, así
 que declara `31 DAYS` en su BASE **dibuja ocho puntos mensuales**. Eso es una
 segunda cosa que revisar, y hasta que alguna de las dos se aclare el param se
 descarta con aviso en vez de leerse mal. · Bloquea **F1.44**.
-
-
-### F3.15 · El chat tiene presencia en la consola
-
-*Estado de la tarea: pendiente.*
-
-
-**Que `POST /config/chat` acepte contexto de PESTAÑA.**
-Hoy `panel_context: {panel_id, period}` está declarado `binding:"required"`, así
-que un chat abierto desde la barra inferior —que no tiene panel— no se puede
-pedir. La línea que el `.pen` dibuja en esa barra es, literal:
-`CONTEXTO · UA MX · ECOMMERCE OVERVIEW · JUL 2026 · 12 PANELES`.
-
-Alcanza con que el contexto admita una de las dos formas —`{tab_id, period}` o
-`{panel_id, period}`— y que el servicio arme el resto, igual que ya hace con el
-panel. **No pedimos los doce campos**: esa parte del criterio de F3.2 ya se
-retiró el 2026-09-17 y esto no la reabre. · Bloquea **F3.15**.
 
 
 ---

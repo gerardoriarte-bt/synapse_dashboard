@@ -27,6 +27,26 @@ npm run dev
 
 Entrás con **`dev@synapse.local`** y **`synapse`**.
 
+## Y un SEGUNDO usuario, con rol restringido · desde el 2026-09-26
+
+**`planner@synapse.local`** / **`synapse-dev`** · rol `planner`, que oculta tres
+métricas. Se crea con `POST /admin/users`, que exige contraseña de ocho.
+
+**Existe para cerrar B1.19**, que llevaba semanas esperando «un usuario de prueba
+con un rol restringido» de parte del backend. **No hacía falta pedirlo**: desde
+que existen las rutas de rol y de alta, lo creamos nosotros. Medido ese día:
+
+| | admin | planner |
+|---|---|---|
+| `/config/catalog` | 18 métricas | **15** |
+| `panels:batch` | 10 AVAILABLE · 2 DEGRADED | 9 AVAILABLE · **3 FORBIDDEN** |
+
+Y el `FORBIDDEN` trae `request_from: "admin"`, que es lo que la consola pinta
+como «a quién pedirle acceso».
+
+**Sirve para más que B1.19**: es la única forma de ver la consola como la ve
+alguien que no es admin, que es la mitad de lo que el preview por rol promete.
+
 ## Por qué NO hace falta bajar un dump
 
 Con `DB_AUTO_MIGRATE=true` el binario crea el esquema, corre las migraciones

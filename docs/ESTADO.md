@@ -49,13 +49,14 @@
 
 ---
 
-## Se puede tomar hoy · 1 del front
+## Se puede tomar hoy · 2 del front
 
 - **F1.13b** · Portar format.ts e inyectar el locale
+- **F3.15** · El chat tiene presencia en la consola
 
 ---
 
-## Bloqueadas · 29
+## Bloqueadas · 25
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -68,7 +69,6 @@ Lo que el front espera del backend está detallado en
 - **F1.42** · El mes en curso está incompleto y el selector no lo dice
 - **F1.44** · El orden de una tabla se anuncia, no se aplica
 - **F2.3** · SIN_PERMISO · B0.9 (línea 1171) contestada
-- **F3.15** · El chat tiene presencia en la consola
 - **F4.12** · Preview por rol
 - **F4.17** · ComparisonBody + ComparePlot
 - **F4.18** · MatrixBody + HeatmapPlot
@@ -85,16 +85,13 @@ Lo que el front espera del backend está detallado en
 - **B1.1** · GET /config/me
 - **B1.13** · Presentacion opcional
 - **B1.16** · Seed de demo: 1 tenant, 1 layout, 1 pestaña, 4–6 paneles
-- **B1.19** · Filtrar el catálogo por permisos de rol
 - **B1.21** · Declarar los mínimos de datos por gráfico
 - **B1.6** · POST /config/panels:batch
 - **B2.12** · Correr el materializador contra datos reales y verificar los seis estados
 - **B2.7** · Estado SIN_PERMISO en el batch
-- **B3.1** · POST /config/chat con SSE
 - **B3.11** · Aplicar las migraciones de 82da946 sobre la base compartida
 - **B4.2** · GET /admin/tenants/{id}/layouts
 - **B4.4** · PUT /admin/layouts/{id} — editar pestañas y paneles
-- **B5.1** · Varios layouts por tenant
 
 ---
 
