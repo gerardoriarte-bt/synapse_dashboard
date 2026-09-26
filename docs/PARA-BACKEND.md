@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 11 pedido(s)
+## Lo que esperamos · 12 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -57,7 +57,7 @@ El resto del contexto: `alcance` con `tenantsDisponibles`, el `grano` de cada pe
 *Estado de la tarea: parcial.*
 
 
-**`unlocks_with` en `BLOCKED`** —el servicio sólo lo escribe al derivar `DEGRADED`, y §8 pide estado, razón **y qué lo desbloquea**— y confirmar si `request_from` constante es la decisión.
+**Una confirmación, no un campo**: si `request_from` constante es la decisión. Vale `"admin"` —era `"administrator"` cuando se pidió— y sigue siendo `forbiddenRequestFrom` en el código, pero el comentario de al lado dice que es a propósito: «el rol que decide sobre la visibilidad de la métrica». Si es eso, se cierra y lo anotamos.
 
 
 ### B1.13 · Presentacion opcional
@@ -201,6 +201,52 @@ Sin ellas `POST /config/chat` no puede guardar el hilo, y eso se ve como un **50
 Los dos están en el modelo de §2 de `design.md` y en `Pestana` del contrato, y no están en `DDTab` ni en `TabInput`: **no hay dónde escribirlos ni de dónde leerlos**. `chatSugerencias[]` es lo que C3 pinta como «chips de consulta sugerida por pestaña», así que sin el campo el chat abre en un vacío sin sugerencias. `icono` es menor y va de paso, porque es la misma línea.
 
 **Y una pregunta que es de ustedes, no un pedido.** `OperationalQuestion` no es requerido y el servicio acepta la cadena vacía. El producto dice lo contrario —«una pestaña que no contesta una pregunta no se compone», §7.2 y la descripción de `Pestana`—, así que hoy **la regla la sostiene el front solo**: el editor marca la pestaña, la cuenta y no la deja componer. Si además la rechazara el `validate` o el `publish`, la regla dejaría de depender de qué cliente haga el PUT. Es B4.15 quien decidiría.
+
+
+### B4.9 · Preview por rol · LA TOMARON, y más chica
+
+*Estado de la tarea: parcial.*
+
+
+**Los paneles de cada pestaña en el preview.** Hoy `GET /admin/layouts/{layoutId}/preview?role_id=` devuelve `tabs[]` con `id`, `name`, `operational_question` y `sort_order`, y nada más — medido el 2026-09-26.
+
+Sin ellos el preview contesta **qué pestañas** ve un rol y no **qué paneles**, que es la mitad que `hidden_metric_ids` recorta y la razón por la que §7.2 pide esta pantalla. **No hay otra ruta que lo dé**: `GET /config/tabs/{tabId}` resuelve el rol desde el token y no acepta lente, así que un admin no puede pedir una pestaña con los ojos de otro rol.
+
+Nuestra versión del fork devolvía `tabs[].panels[]` ya filtrados, reusando `GetTab`. Si prefieren no tocar el preview, la alternativa es aceptar un `role_id` en `GET /config/tabs/{tabId}` bajo la compuerta de admin — que es lo que su propio comentario ya describe como si existiera.
+
+**Lo de abajo quedó como registro**: se implementó en el fork el 2026-09-15 y ya no hace falta.
+
+### Cómo se decidió implementarla en el front · 2026-09-15
+**Decidido el 2026-09-15 (humano), junto con B4.8** y por la misma razón: son
+vecinas, tienen la misma forma, y las dos bloquean superficie de admin que hoy no
+se puede empezar. El antecedente y el alcance de la excepción están escritos en
+B4.8 y no se repiten acá. **Sale de `docs/PARA-BACKEND.md`.**
+
+**Qué hay que implementar.** Una forma de resolver una pestaña *como la vería otro
+rol*, bajo `AdminOnlyMiddleware`. Dos caminos y conviene elegir con cuidado:
+
+| | |
+|---|---|
+| `GET /admin/layouts/:layoutId/preview?roleId=` | Ruta propia. Más explícita, y no toca `/config/*` |
+| `GET /config/tabs/:tabId?asRoleId=` | Un parámetro en la ruta que ya existe. Menos código, **pero mete una capacidad de admin en el namespace de la consola** |
+
+**La recomendación es la primera**, y no por gusto: `/config/*` lo sirve
+`RequireUser` y su invariante es «lo que ves es lo tuyo». Un parámetro que lo
+rompa es la clase de cosa que un día se llama sin `AdminOnlyMiddleware` delante.
+
+**Y la propiedad que hace que esto sirva o no sirva:**
+
+> **El preview tiene que pasar por el MISMO código de filtrado que la consola.**
+
+`GetTab` ya aplica `roles.tab_ids`, `hidden_metric_ids` y `layout_overrides`. El
+preview resuelve el rol de otra forma —del parámetro y no del JWT— y **de ahí en
+adelante es la misma función**. Reimplementar el filtrado en paralelo es cómo el
+preview termina mostrando algo que la consola no muestra, y un preview que miente
+es peor que no tenerlo: se publica confiando en él.
+
+Es la misma razón por la que F4.12 dice que no se puede simular en el cliente —
+«filtrar en el front lo que ya se tiene probaría el filtro del front, que no
+existe».
 
 
 ### F1.44 · El orden de una tabla se anuncia, no se aplica

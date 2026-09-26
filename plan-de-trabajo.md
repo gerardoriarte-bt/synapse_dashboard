@@ -662,7 +662,9 @@ la ruta que lo emite.
 
 **`unlocks_with` en `BLOCKED` no se pudo medir**: ningún panel del tenant llega en ese estado — los doce dan `AVAILABLE`, `DEGRADED` o `FORBIDDEN`.
 
-**Espera del backend.** **`unlocks_with` en `BLOCKED`** —el servicio sólo lo escribe al derivar `DEGRADED`, y §8 pide estado, razón **y qué lo desbloquea**— y confirmar si `request_from` constante es la decisión.
+**`unlocks_with` en `BLOCKED` también está hecho**, leído el 2026-09-26 en `dd_materializer_service.go`: al bloquear escribe `blockedUnlocksWith` —«Se calcula en la próxima materialización cuando haya datos»— y `BatchPanels` lo pasa en **todos** los estados, no sólo al derivar `DEGRADED`. No se pudo medir en vivo porque ningún panel del tenant llega bloqueado.
+
+**Espera del backend.** **Una confirmación, no un campo**: si `request_from` constante es la decisión. Vale `"admin"` —era `"administrator"` cuando se pidió— y sigue siendo `forbiddenRequestFrom` en el código, pero el comentario de al lado dice que es a propósito: «el rol que decide sobre la visibilidad de la métrica». Si es eso, se cierra y lo anotamos.
 **Descripción.** Un request por pestaña, no uno por panel. Body
 `{ panelIds, periodo }` → `{ [panelId]: Payload }`.
 **Criterio de aceptación.**
@@ -1628,7 +1630,11 @@ de la regla: «les saca la decisión de las manos».
 - **El parámetro es `role_id`, no `roleId`.** Medido: camelCase devuelve **400**. No se deduce del resto del cable —`/config/tabs` usa `layoutId` y `dashboardId`— y **MSW no podía verlo**, porque su handler leía la misma grafía que mandábamos. F4.12 nunca pudo haber funcionado contra el servicio real.
 - **Viene SIN paneles.** `tabs[]` trae `id`, `name`, `operational_question` y `sort_order`. Nuestra versión devolvía la pestaña con sus paneles ya filtrados, que es lo que deja comparar «CEO contra Planner» panel por panel.
 
-**Queda en ⚠️ por lo segundo**, que es un pedido nuevo: sin paneles, el preview contesta qué pestañas ve un rol y no su composición, y **no hay otra ruta que lo dé** — `GetTab` resuelve el rol desde el token y no acepta lente.
+**Espera del backend.** **Los paneles de cada pestaña en el preview.** Hoy `GET /admin/layouts/{layoutId}/preview?role_id=` devuelve `tabs[]` con `id`, `name`, `operational_question` y `sort_order`, y nada más — medido el 2026-09-26.
+
+Sin ellos el preview contesta **qué pestañas** ve un rol y no **qué paneles**, que es la mitad que `hidden_metric_ids` recorta y la razón por la que §7.2 pide esta pantalla. **No hay otra ruta que lo dé**: `GET /config/tabs/{tabId}` resuelve el rol desde el token y no acepta lente, así que un admin no puede pedir una pestaña con los ojos de otro rol.
+
+Nuestra versión del fork devolvía `tabs[].panels[]` ya filtrados, reusando `GetTab`. Si prefieren no tocar el preview, la alternativa es aceptar un `role_id` en `GET /config/tabs/{tabId}` bajo la compuerta de admin — que es lo que su propio comentario ya describe como si existiera.
 
 **Lo de abajo quedó como registro**: se implementó en el fork el 2026-09-15 y ya no hace falta.
 

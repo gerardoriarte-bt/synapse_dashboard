@@ -229,7 +229,7 @@ B4.9,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,"Preview po
 • Reusa GetTab, no una copia: verificable porque cambiar el filtrado en un solo lugar cambia la consola y el preview a la vez.
 • Para un rol con hidden_metric_ids, el preview devuelve menos paneles que para uno sin ellos, y los layout_overrides de ese rol están aplicados.
 • Un roleId de otro tenant devuelve 404 y no 403: no se revela que existe, igual que GET /config/tabs/:tabId.
-• Queda escrito si el preview incluye payloads o solo el layout. Con solo el layout alcanza para «CEO vs Planner», que es lo que F4.12 pide; con payloads hay que decidir qué período usa y si un panel oculto llega como SIN_PERMISO o no llega. Decidirlo antes, no durante.",parcial,no,,equipo:backend fase:4 estado:parcial
+• Queda escrito si el preview incluye payloads o solo el layout. Con solo el layout alcanza para «CEO vs Planner», que es lo que F4.12 pide; con payloads hay que decidir qué período usa y si un panel oculto llega como SIN_PERMISO o no llega. Decidirlo antes, no durante.",parcial,no,,equipo:backend fase:4 estado:parcial bloqueada
 B4.17,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Una ruta que liste usuarios · A3 no se puede empezar sin ella,,"• Lista por tenant, bajo AdminOnlyMiddleware como el resto de /admin/.
 • Por usuario, lo que §7.3 le pide a A3: el usuario, su rol, su último acceso y su estado.
 • El rol viene identificado, no sólo con su nombre: A3 enlaza a la ficha.

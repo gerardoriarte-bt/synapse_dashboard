@@ -56,7 +56,7 @@
 
 ---
 
-## Bloqueadas · 25
+## Bloqueadas · 26
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -92,6 +92,7 @@ Lo que el front espera del backend está detallado en
 - **B3.11** · Aplicar las migraciones de 82da946 sobre la base compartida
 - **B4.2** · GET /admin/tenants/{id}/layouts
 - **B4.4** · PUT /admin/layouts/{id} — editar pestañas y paneles
+- **B4.9** · Preview por rol · LA TOMARON, y más chica
 
 ---
 
