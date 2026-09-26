@@ -32,6 +32,9 @@ const governance = {
   source: 'Snowflake',
   freshness: '2026-09-02T08:00:00Z',
   catalog_version: 1,
+  // Vacío, que es el valor real de las 8 métricas de la semilla · B1.25. El
+  // caso CON ventana lo cubre `adapt.test.ts`, que es donde vive el renombre.
+  measurement_window: '',
 }
 
 /** (tipo de panel, forma de la métrica EN EL CABLE, nombre, valor). Los cinco

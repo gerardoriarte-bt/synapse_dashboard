@@ -41,9 +41,13 @@ function montar() {
   )
 }
 
-function conUnPanel(payload: unknown) {
+/** `metrica` es opcional y existe por una razón medida: el 2026-09-26 una prueba
+ *  puso su propio handler de `/config/catalog` ANTES de llamar acá, y éste lo
+ *  pisó —MSW usa el último registrado—. La prueba quedó afirmando sobre el
+ *  fixture de siempre y **la mutación sobrevivió**. */
+function conUnPanel(payload: unknown, metrica: unknown = kpiMetric) {
   server.use(
-    http.get(`${API}/config/catalog`, () => ok([kpiMetric])),
+    http.get(`${API}/config/catalog`, () => ok([metrica])),
     http.get(`${API}/config/tabs/:tabId`, () => ok({ tab: context.tabs[0], panels: [kpiPanel] })),
     http.post(`${API}/config/panels:batch`, () => ok({ [kpiPanel.id]: payload })),
   )
@@ -65,6 +69,9 @@ const governance = {
   source: 'Snowflake',
   freshness: '2026-09-02T08:00:00Z',
   catalog_version: 1,
+  // Vacío, que es el valor real de las 8 métricas de la semilla · B1.25. El
+  // caso CON ventana lo cubre `adapt.test.ts`, que es donde vive el renombre.
+  measurement_window: '',
 }
 
 // `status` en inglés y `value` discriminado por `shape`: las cinco constantes
@@ -117,27 +124,38 @@ describe('F2.6 · el gobierno sigue visible en los seis estados', () => {
     expect(base).toHaveTextContent('48 tiendas sobre 52')
   })
 
-  // ── ATESTIGUA UN HUECO, NO LO TAPA · B1.25 ────────────────────────────────
+  // ── EL HUECO SE CERRÓ, Y LA PRUEBA QUE LO ATESTIGUABA LO AVISÓ ────────────
   //
-  // Esta prueba exigía también la VENTANA —«Últimos 30 días»—, que es la otra
-  // mitad de la BASE: «toda métrica declara su BASE (denominador + ventana)».
+  // Acá vivían seis aserciones que afirmaban que `ventana` llegaba **vacía** y
+  // que el separador quedaba colgando —«Base · 48 tiendas sobre 52 ·»—, escritas
+  // así a propósito: «una prueba borrada no avisa cuando el campo aparece; esta
+  // falla el día que B1.25 llegue».
   //
-  // **El cable no manda `ventana`.** `/config/catalog` devuelve once columnas y
-  // ninguna es esa, y el adaptador NO la inventa: dos métricas consultadas con
-  // el mismo `2026-07` pueden tener ventanas distintas —un total mensual y un
-  // promedio móvil de treinta días—, así que no hay de dónde derivarla.
-  //
-  // Se afirma que llega VACÍA en vez de borrar la aserción. La diferencia es que
-  // una prueba borrada no avisa cuando el campo aparece; esta falla el día que
-  // B1.25 llegue, y ese día vuelve a ser la de arriba.
-  it.each(SEIS)('en %s la ventana llega VACÍA · el cable no la manda', async (_, payload) => {
+  // **Falló el 2026-09-26**, sola, al poner `measurement_window` en el fixture.
+  // No hizo falta que nadie se acordara. Es el mejor argumento a favor de
+  // atestiguar un hueco en vez de bajar la aserción.
+  it.each(SEIS)('en %s la BASE declara sus DOS mitades · B1.25', async (_, payload) => {
     conUnPanel(payload)
     montar()
     const base = await screen.findByText(/^Base ·/)
-    expect(base).not.toHaveTextContent('Últimos 30 días')
-    // El separador queda colgando: «Base · 48 tiendas sobre 52 ·». Es visible a
-    // propósito — un hueco que se ve es un hueco que alguien arregla.
-    expect(base.textContent?.trimEnd().endsWith('·')).toBe(true)
+    // §1.3: «toda métrica declara su BASE (denominador + ventana)». Las dos.
+    expect(base).toHaveTextContent('48 tiendas sobre 52')
+    expect(base).toHaveTextContent('Mes calendario seleccionado')
+    expect(base.textContent?.trimEnd().endsWith('·')).toBe(false)
+  })
+
+  // **Y el caso vacío no desapareció: es 8 de 18 métricas.** Las que la vista
+  // `SYNAPSE_METRIC_CATALOG` no tiene llegan con `measurement_window: ''`, y ahí
+  // el segmento no se pinta en vez de dejar el `·` colgando.
+  //
+  // Se afirma con `endsWith` y no con una cadena completa a propósito: lo que
+  // importa es que no haya separador sin nada detrás, no el texto exacto.
+  it('sin ventana, la BASE no deja el separador colgando', async () => {
+    conUnPanel(DISPONIBLE, { ...kpiMetric, measurement_window: '' })
+    montar()
+    const base = await screen.findByText(/^Base ·/)
+    expect(base).toHaveTextContent('48 tiendas sobre 52')
+    expect(base.textContent?.trimEnd().endsWith('·')).toBe(false)
   })
 
   it.each(SEIS)('en %s la procedencia sigue declarando capa y fuente', async (_, payload) => {

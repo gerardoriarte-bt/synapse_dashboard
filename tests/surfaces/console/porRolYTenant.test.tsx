@@ -63,8 +63,20 @@ const contextoDe = (
   rol: string,
   tab: { id: string; name: string; pregunta: string },
 ): WireContext => ({
-  user: { id: 'u-1', email: 'prueba@uamx.test', first_name: 'Prueba', last_name: 'Uno' },
-  tenant: { id: `t-${tenant}`, name: tenant },
+  user: {
+    id: 'u-1',
+    email: 'prueba@uamx.test',
+    first_name: 'Prueba',
+    last_name: 'Uno',
+    theme: 'light',
+  },
+  tenant: {
+    id: `t-${tenant}`,
+    name: tenant,
+    locale: 'es-CO',
+    currency: 'COP',
+    timezone: 'America/Bogota',
+  },
   role: { id: `r-${rol}`, name: rol },
   tabs: [{ id: tab.id, name: tab.name, operational_question: tab.pregunta, sort_order: 1 }],
   periods: ['2026-07'],

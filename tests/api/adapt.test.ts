@@ -20,8 +20,16 @@ import type {
 } from '@/api/adapt'
 
 const contexto: WireContext = {
-  user: { id: 'u-1', email: 'ana@uamx.test', first_name: 'Ana', last_name: 'Ruiz' },
-  tenant: { id: 't-1', name: 'Under Armour México' },
+  user: { id: 'u-1', email: 'ana@uamx.test', first_name: 'Ana', last_name: 'Ruiz', theme: 'dark' },
+  // **`dark` y no `light` a propósito**: el default del servicio es `light`, así
+  // que un fixture con `light` pasaría igual si el adaptador ignorara el campo.
+  tenant: {
+    id: 't-1',
+    name: 'Under Armour México',
+    locale: 'es-CO',
+    currency: 'COP',
+    timezone: 'America/Bogota',
+  },
   role: { id: 'r-1', name: 'Planner' },
   tabs: [
     { id: 'tab-1', name: 'Inventario', operational_question: '¿Tenemos stock?', sort_order: 2 },
@@ -41,8 +49,13 @@ const metrica: WireMetric = {
   source: 'Adobe + Ads API',
   base: '48 tiendas sobre 52',
   unit: 'USD',
+  // **Llegan las DOS formas y el front pinta la que venga** · medido el
+  // 2026-09-26: `HIGHER_IS_BETTER` en las 6 métricas de Snowflake y
+  // `HIGHER = BETTER` en las 8 de la semilla. Acá va el código porque es el que
+  // se ve mal en pantalla, y la prueba de abajo afirma que NO se traduce.
   semantic_direction: 'HIGHER_IS_BETTER',
   min_grain: 'month',
+  measurement_window: 'Mes calendario seleccionado',
   dimensions: ['canal'],
   catalog_version: 7,
 }
@@ -112,10 +125,21 @@ describe('catálogo', () => {
     expect(metrics[0]?.direccionSemantica).toBe('HIGHER_IS_BETTER')
   })
 
-  it('la VENTANA llega vacía porque el cable no la manda · B1.25', () => {
-    // Es la otra mitad de la BASE. No se deriva del período: dos métricas con el
-    // mismo `2026-08` pueden tener ventanas distintas.
+  // **La VENTANA ya llega · B1.25, desde `8633b10`.** Acá se afirmaba que era
+  // `''` porque el cable no la mandaba, y esa aserción **falló sola** el
+  // 2026-09-26 al llegar el campo — que es para lo que estaba escrita así.
+  it('la VENTANA se RENOMBRA de `measurement_window` · B1.25', () => {
     const { metrics } = adaptCatalog([metrica])
+    expect(metrics[0]?.ventana).toBe('Mes calendario seleccionado')
+  })
+
+  it('una ventana vacía pasa VACÍA · no se deriva del período', () => {
+    // **Es 8 de 18 métricas**, las que la vista de Snowflake no tiene. Y lo que
+    // esta prueba defiende es que el adaptador NO la invente: dos métricas
+    // consultadas con el mismo `2026-08` pueden tener ventanas distintas —un
+    // total mensual y un promedio móvil de treinta días—, así que derivarla del
+    // período sería escribir un dato de gobierno que nadie midió.
+    const { metrics } = adaptCatalog([{ ...metrica, measurement_window: '' }])
     expect(metrics[0]?.ventana).toBe('')
   })
 
@@ -308,6 +332,10 @@ const governance = {
   source: 'Snowflake',
   freshness: '2026-09-02T08:00:00Z',
   catalog_version: 3,
+  // **B1.25 · requerido desde el 2026-09-26.** Con texto, porque el caso que
+  // importa es que `ventana` DEJE de salir vacía: de ahí venía el separador
+  // colgando de la línea de BASE. El caso vacío tiene su propia prueba.
+  measurement_window: 'Mes calendario seleccionado',
 }
 
 const conValor = (value: unknown) => adaptPayload({ status: 'AVAILABLE', governance, value } as WirePayload)

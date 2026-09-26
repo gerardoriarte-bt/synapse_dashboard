@@ -125,9 +125,19 @@ export function PanelShell({
         </div>
 
         <div className={compact ? 'flex flex-col gap-1' : 'flex flex-col items-end gap-1 min-w-0 text-right'}>
-          {/* BASE = denominador + ventana. Los dos, siempre: el denominador del
-              payload cuando hay cifra y del catálogo cuando no. */}
-          <Label>{`Base · ${governance.base} · ${governance.ventana}`}</Label>
+          {/* BASE = denominador + ventana. El denominador del payload cuando hay
+              cifra y del catálogo cuando no.
+
+              **Se unen las partes que EXISTEN** · corregido el 2026-09-26. El
+              template literal ponía el separador siempre, así que con `ventana`
+              vacía salía `Base · COMPLETED · MONTH ·` con el `·` colgando — es
+              lo que `CLAUDE.md` listaba como «lo que se ve mal». Con `ventana`
+              llegando (B1.25) el caso no desaparece: vacío es el valor real de
+              las 8 métricas de 18 que la vista de Snowflake no tiene.
+
+              Vacío se lee como ausente y un segmento ausente no se pinta, que es
+              la misma regla que «un CTA sin manejador no se pinta». */}
+          <Label>{['Base', governance.base, governance.ventana].filter((p) => p !== '').join(' · ')}</Label>
           <Provenance
             capa={governance.capa}
             fuente={governance.fuente}

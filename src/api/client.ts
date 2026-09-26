@@ -175,10 +175,13 @@ export const api = {
    *  **La ruta es `/preferences` y la clave es `theme`** · F1.36. Iba a
    *  `/preferencias` con `{ tema }`, que en este servicio es un 404.
    *
-   *  Y hay una asimetría que no es nuestra: el servicio ESCRIBE el tema pero
-   *  `/config/me` no lo devuelve, así que la preferencia se guarda y no se puede
-   *  leer. Está pedido en §4 del plan de integración; hasta entonces la consola
-   *  arranca con el defecto que emite `tokens.css`. */
+   *  **La asimetría se cerró el 2026-09-26** · B1.1 en `8633b10`. Acá decía que
+   *  el servicio escribía el tema y `/config/me` no lo devolvía; ahora lo
+   *  devuelve en `user.theme`, medido.
+   *
+   *  La consola **sigue** arrancando con el defecto de `tokens.css`, y eso ya no
+   *  es del backend: el campo llega y ninguna superficie lo aplica. Está
+   *  declarado en `adapt.ts`, donde se decide no poblarlo sin consumidor. */
   savePreferences: (theme: 'dark' | 'light') =>
     request<{ theme: 'dark' | 'light' }>('/config/me/preferences', {
       method: 'PUT',

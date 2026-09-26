@@ -35,6 +35,9 @@ const governance = {
   source: 'Snowflake',
   freshness: '2026-09-02T08:00:00Z',
   catalog_version: 1,
+  // Vacío, que es el valor real de las 8 métricas de la semilla · B1.25. El
+  // caso CON ventana lo cubre `adapt.test.ts`, que es donde vive el renombre.
+  measurement_window: '',
 }
 
 /** DOS paneles, y son dos a propósito: con uno solo, un `onChat` cableado

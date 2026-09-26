@@ -68,13 +68,41 @@ def main() -> int:
     # sobre un archivo que se verifica de a pedazos, así que la única forma de
     # ponerlo en verde era mentir. Con la marca por ruta el número BAJA a medida
     # que se reverifica, y un rojo que se mueve se sigue leyendo.
-    rutas = re.findall(
-        r"^  (/[^\n]*?):\n    x-verificado-en:\s*([0-9a-f]{7,40})", texto, re.M
-    )
+    # ── EL MARCADOR PUEDE NO ESTAR EN LA LÍNEA SIGUIENTE · 2026-09-26 ────────
+    #
+    # **Este patrón exigía `x-verificado-en` pegado al nombre de la ruta**, y eso
+    # lo rompió el mismo día que se escribió un comentario arriba del marcador
+    # explicando POR QUÉ esa ruta se había verificado por lectura y no midiendo.
+    #
+    # Lo grave no es el patrón: es que la ruta **desapareció del conteo en
+    # silencio** y el chequeo salió ✓ cubriendo una ruta menos. Un comentario
+    # escrito para ser más honesto hizo al chequeo menos honesto.
+    #
+    # Ahora el marcador se busca en el bloque de la ruta —hasta la próxima ruta o
+    # el fin de `paths`— y, sobre todo, **toda ruta del cable tiene que tenerlo**:
+    # una sin marcador es un error, no una omisión.
+    bloques = re.findall(r"^  (/[^\n]*?):\n((?:(?!^  /)[^\n]*\n)*)", texto, re.M)
+    rutas: list[tuple[str, str]] = []
+    sin_marca: list[str] = []
+    for nombre, cuerpo in bloques:
+        m = re.search(r"^    x-verificado-en:\s*([0-9a-f]{7,40})", cuerpo, re.M)
+        if m:
+            rutas.append((nombre, m.group(1)))
+        else:
+            sin_marca.append(nombre)
+
     if not rutas:
         print("backend-drift ⊘ BLOQUEADO · ninguna ruta declara `x-verificado-en`")
         print("  cada ruta del cable lleva el commit contra el que se leyó")
         return 2
+
+    if sin_marca:
+        print(f"backend-drift ✗ {len(sin_marca)} ruta(s) del cable sin `x-verificado-en`")
+        for n in sin_marca:
+            print(f"   {n}")
+        print("  Una ruta sin marcador no se cuenta, y entonces el ✓ de este")
+        print("  chequeo cubre menos de lo que dice. Pasó el 2026-09-26.")
+        return 1
 
     r = subprocess.run(
         ["gh", "api", f"repos/{REPO}/commits/{rama}", "--jq", ".sha + \"\\t\" + .commit.author.date + \"\\t\" + (.commit.message | split(\"\\n\")[0])"],

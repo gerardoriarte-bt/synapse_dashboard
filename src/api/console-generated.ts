@@ -124,8 +124,11 @@ export interface paths {
         get?: never;
         /**
          * Persistir el tema del usuario
-         * @description Escribe `users.theme`. **No hay ruta para leerlo**: `/config/me` no lo
-         *     devuelve, así que la preferencia se guarda y no se puede recuperar.
+         * @description Escribe `users.theme`. **Y desde el 2026-09-26 SÍ se puede leer**:
+         *     `/config/me` devuelve `user.theme` (B1.1). Acá decía «no hay ruta para
+         *     leerlo, la preferencia se guarda y no se puede recuperar», que era cierto
+         *     cuando se transcribió y dejó de serlo sin que nada avisara — el chequeo
+         *     sólo miraba los campos que el yaml exige, no los que el servicio agrega.
          */
         put: operations["updatePreferences"];
         post?: never;
@@ -329,12 +332,40 @@ export interface components {
             email: string;
             first_name: string;
             last_name: string;
+            /**
+             * @example light
+             * @enum {string}
+             */
+            theme: "light" | "dark";
         };
         TenantInfo: {
             /** Format: uuid */
             id: string;
             /** @example Under Armour México */
             name: string;
+            /**
+             * @description Etiqueta BCP 47. **El valor de hoy es el default de la migración, no
+             *     el del cliente**: el tenant «Under Armour México» trae `es-CO` con
+             *     `COP` y `America/Bogota`, medido el 2026-09-26. Se corrige con
+             *     `PUT /admin/tenants/{tenantId}`, que también llegó en `8633b10` — es
+             *     dato a cargar, no un defecto del campo.
+             * @example es-CO
+             * @example es-MX
+             */
+            locale: string;
+            /**
+             * @description Código ISO 4217.
+             * @example COP
+             * @example MXN
+             */
+            currency: string;
+            /**
+             * @description IANA. **Del tenant y uno solo**, aunque tenga tiendas en varios
+             *     países: una cifra que cambia según quién la mira no es auditable.
+             * @example America/Bogota
+             * @example America/Mexico_City
+             */
+            timezone: string;
         };
         RoleInfo: {
             /** Format: uuid */
@@ -357,8 +388,9 @@ export interface components {
          *     impide otros, y `sync-catalog` hace upsert de lo que diga una vista de
          *     Snowflake. Cerrarlos es trabajo del adaptador · F1.35.
          *
-         *     Le faltan cuatro campos que el contrato declara: `ventana`, `estado`,
-         *     `estadoRazon` y `notaLectura`.
+         *     Le faltan tres campos que el contrato declara: `estado`, `estadoRazon` y
+         *     `notaLectura`. **Eran cuatro hasta el 2026-09-26**: `ventana` llegó como
+         *     `measurement_window`, abajo.
          */
         CatalogMetric: {
             /** Format: uuid */
@@ -424,20 +456,34 @@ export interface components {
             base: string;
             unit?: string | null;
             /**
-             * @description **TEXTO que se pinta tal cual, no un código** · corregido el
-             *     2026-09-14 contra el servicio real (F1.39).
+             * @description **LLEGAN LAS DOS FORMAS, Y EL FRONT LO PINTA CRUDO** · corregido el
+             *     2026-09-26, medido contra `8633b10`.
              *
-             *     La transcripción original decía «el servicio manda un CÓDIGO» y daba
-             *     `HIGHER_IS_BETTER` de ejemplo — salía de leer el comentario de
-             *     `dd_catalog_metric.go`, que dice «Ej. `HIGHER_IS_BETTER` para
-             *     color/flecha en front». El dato real de las doce métricas del tenant
-             *     dice `HIGHER = BETTER`: ya redactado, como el contrato lo declara.
+             *     Acá decía «TEXTO que se pinta tal cual, no un código», con fecha y
+             *     medición del 2026-09-14. **La medición era correcta y la conclusión
+             *     no**: ese día el catálogo tenía sólo las doce métricas de la SEMILLA,
+             *     y `dd_seed.go` escribe literal `HIGHER = BETTER`. Se generalizó de la
+             *     semilla a Snowflake sin haber visto una fila de Snowflake.
              *
-             *     Es la única diferencia que el humo encontró entre el cable real y
-             *     esta transcripción. Cierra la pregunta 7 de §4 del plan de
-             *     integración: **el front lo pinta y no lo traduce**, que es lo que el
-             *     adaptador ya hacía.
+             *     Contado el 2026-09-26 sobre las 18 métricas del tenant, después de
+             *     que `sync-catalog` corriera:
+             *
+             *       · `HIGHER_IS_BETTER`  6  ← de la vista `SYNAPSE_METRIC_CATALOG`
+             *       · `HIGHER = BETTER`   8  ← de la semilla de Postgres
+             *       · `null`              4
+             *
+             *     **Y `PanelShell` lo pinta dentro de un `Label` sin mirarlo**, así que
+             *     seis paneles muestran `HIGHER_IS_BETTER` con guiones bajos. No es un
+             *     defecto nuestro: la regla es que el adaptador no escribe copy de
+             *     producto, y el dueño de este texto es el catálogo.
+             *
+             *     **Está pedido a DATOS**, y su propia vista de validación lo detecta:
+             *     la séptima regla de `SYNAPSE_METRIC_CATALOG_ISSUES`. Hasta que las
+             *     seis filas se retipeen, el front no lo traduce — traducir acá sería
+             *     una tabla de equivalencias que nadie mantiene el día que el texto de
+             *     origen cambie.
              * @example HIGHER = BETTER
+             * @example HIGHER_IS_BETTER
              */
             semantic_direction?: string | null;
             /**
@@ -446,6 +492,12 @@ export interface components {
              * @example month
              */
             min_grain: string;
+            /**
+             * @description Ventana **ya redactada**, de la columna `MEASUREMENT_WINDOW`.
+             *     `string` sin `omitempty`: siempre viene, vacío si no hay.
+             * @example Mes calendario seleccionado
+             */
+            measurement_window: string;
             dimensions: string[];
             catalog_version: number;
             /** Format: date-time */
@@ -579,7 +631,7 @@ export interface components {
             request_from?: string;
         };
         /**
-         * @description `ports.DDGovernanceDTO`. Los cinco campos que el contrato pide, con otros
+         * @description `ports.DDGovernanceDTO`. Los campos que el contrato pide, con otros
          *     nombres y un nivel más abajo.
          */
         Governance: {
@@ -592,6 +644,13 @@ export interface components {
              */
             freshness: string;
             catalog_version: number;
+            /**
+             * @description Ventana de medición **ya redactada**, de la columna
+             *     `MEASUREMENT_WINDOW` de la vista. No se deriva del período.
+             * @example Mes calendario seleccionado
+             * @example Cada día del mes calendario seleccionado
+             */
+            measurement_window: string;
         };
         /**
          * @description `ddChatRequest` de `dd_chat_handler.go`.
@@ -1041,6 +1100,13 @@ export interface operations {
                         data?: {
                             /** @enum {string} */
                             theme: "dark" | "light";
+                            /**
+                             * Format: uuid
+                             * @description **`null` cuando el pedido no lo mandó**, porque es
+                             *     un puntero sin `omitempty`: el eco no distingue
+                             *     «no lo pedí» de «lo limpié».
+                             */
+                            preferred_dashboard_id: string | null;
                         };
                     };
                 };

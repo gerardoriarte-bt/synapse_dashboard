@@ -248,9 +248,21 @@ export function adaptContext(w: WireContext): AppContext {
       // llegaron, así que componerlo es reformatear y no inventar.
       nombre: `${w.user.first_name} ${w.user.last_name}`.trim(),
       email: w.user.email,
-      // `capacidades` y `preferencias.tema` NO se rellenan. El tema es el que
-      // más duele y el más barato: `users.theme` existe y el PUT lo escribe,
-      // pero `/config/me` no lo devuelve — se guarda y no se puede leer.
+      // `capacidades` y `preferencias.tema` NO se rellenan.
+      //
+      // **Y la razón del tema CAMBIÓ el 2026-09-26.** Acá decía «`/config/me` no
+      // lo devuelve, se guarda y no se puede leer», y eso venció: B1.1 llegó en
+      // `8633b10` y `w.user.theme` está en el cable, medido.
+      //
+      // No se rellena todavía porque **nadie lo consumiría**. `tokens/theme.ts`
+      // declara quién debería —«el valor inicial llega en `/config/me` y lo
+      // aplica la superficie»— y ninguna superficie lo hace: `applyTheme` sólo
+      // se llama desde `ThemeToggle`. Un campo poblado sin consumidor es el
+      // defecto de `BodyProps.presentation`, que existió meses documentado y sin
+      // que nadie lo pasara.
+      //
+      // Lo que falta es una línea en la superficie y su prueba, y es trabajo de
+      // front sobre un campo que ya llega.
     },
 
     tenant: {
@@ -391,13 +403,19 @@ export function adaptCatalog(rows: readonly WireMetric[]): AdaptedCatalog {
       capa,
       fuente: m.source,
       base: m.base,
-      // **`ventana` no llega, y es la mitad de la BASE.** El shell pinta
-      // `Base · {base} · {ventana}` en los doce paneles y en los siete estados.
-      // Queda VACÍA y no se deriva del período: dos métricas consultadas con el
-      // mismo `2026-07` pueden tener ventanas distintas —un total mensual y un
-      // promedio móvil de treinta días—, así que no hay de dónde sacarla.
-      // Es B1.25, y hasta que llegue la línea sale incompleta.
-      ventana: '',
+      // **`ventana` YA LLEGA · B1.25, desde `8633b10`, medido el 2026-09-26.**
+      // Acá había cinco líneas explicando que el cable no la traía y que no se
+      // podía derivar del período. Lo segundo sigue siendo cierto y es por eso
+      // que se lee y no se calcula: dos métricas consultadas con el mismo
+      // `2026-07` pueden tener ventanas distintas —un total mensual y un
+      // promedio móvil de treinta días—.
+      //
+      // Es un renombre, que es lo que el criterio de B1.25 pide: «el front lo
+      // consume por el adaptador de F1.33 sin lógica nueva».
+      //
+      // **Vacío para las métricas que Snowflake no tiene** —8 de 18 el
+      // 2026-09-26, las de la semilla—, y vacío se lee como ausente.
+      ventana: m.measurement_window,
       unidad: m.unit ?? null,
       dimensiones: m.dimensions,
       // El cable manda un CÓDIGO —`HIGHER_IS_BETTER`— y el contrato declara

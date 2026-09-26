@@ -30,7 +30,7 @@ openapi: 3.1.0
 # reverifica, y un rojo que se mueve se sigue leyendo.
 #
 # Archivos leídos, y son la autoridad si esto difiere:
-#   internal/core/ports/dd_config_service.go      los DTO de las seis rutas
+#   internal/core/ports/dd_config_service.go      los DTO de las rutas de config
 #   internal/core/services/dd_config_service.go   estados, gobierno, períodos
 #   internal/core/dashboard/blocks.go             BlockRule
 #   internal/core/domain/dd_catalog_metric.go     la métrica, con sus json tags
@@ -63,19 +63,25 @@ openapi: 3.1.0
 # en el servicio. No se transcriben: declarar una ruta que nadie sirve es el
 # mismo problema que un chequeo que pasa porque no encontró nada.
 #
-# `/config/chat` SÍ existe desde `82da946` y está transcrita abajo, marcada con
-# `x-origen: 82da946` porque el resto del archivo sigue leído de `733c13c`. Sus
-# hermanas del mismo commit —`/config/chat/threads`, `.../messages` y
-# `/config/panels/{panelId}/chat-suggestions`— no se transcriben todavía: son
-# F3.7 y una tarea que aún no tiene número, y una ruta transcrita que nadie
-# llama envejece sin que nadie lo note.
+# `/config/chat`, `/config/chat/threads` y
+# `/config/panels/{panelId}/chat-suggestions` SÍ existen y están transcritas
+# abajo. **Acá decía que las dos últimas «no se transcriben todavía»**, y dejó de
+# ser cierto cuando F3.7 las usó.
+#
+# `/config/chat/threads/{id}/messages` sigue SIN transcribir, y sus dos hermanas
+# de la Fase 5 —`/config/panels/{panelId}/drilldown` y `.../dimensions`—
+# tampoco: una ruta transcrita que nadie llama envejece sin que nadie lo note. Su
+# spec las tiene, así que son doce contra las nueve de acá.
 # ─────────────────────────────────────────────────────────────────────────────
 
 info:
   title: Synapse · el cable de la consola
   version: 0.1.0-transcripcion
   description: |
-    Las seis rutas `/config/*` que sirve `synapse-api-go`, tal como las sirve.
+    Las rutas `/config/*` que sirve `synapse-api-go`, tal como las sirve.
+
+    **El conteo no se escribe acá.** `humo` exige que cada ruta esté en
+    `MEDIDAS` o en `SALTADAS` con su razón, y lo informa al correr.
 
     **Nombres en inglés snake_case**, que es la convención del servicio. No se
     traducen acá: este archivo describe el cable. La traducción al vocabulario
@@ -93,7 +99,7 @@ tags:
 
 paths:
   /config/me:
-    x-verificado-en: 75b8ecc
+    x-verificado-en: 8633b10
     get:
       tags: [config]
       operationId: getMe
@@ -116,7 +122,7 @@ paths:
         '500': { $ref: '#/components/responses/ServerError' }
 
   /config/catalog:
-    x-verificado-en: 75b8ecc
+    x-verificado-en: 8633b10
     get:
       tags: [config]
       operationId: getCatalog
@@ -140,7 +146,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/blocks:
-    x-verificado-en: 75b8ecc
+    x-verificado-en: 8633b10
     get:
       tags: [config]
       operationId: getBlocks
@@ -164,7 +170,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/tabs/{tabId}:
-    x-verificado-en: 75b8ecc
+    x-verificado-en: 8633b10
     get:
       tags: [config]
       operationId: getTab
@@ -200,7 +206,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   /config/panels:batch:
-    x-verificado-en: 75b8ecc
+    x-verificado-en: 8633b10
     post:
       tags: [config]
       operationId: batchPanels
@@ -234,14 +240,17 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/me/preferences:
-    x-verificado-en: 75b8ecc
+    x-verificado-en: 8633b10
     put:
       tags: [config]
       operationId: updatePreferences
       summary: Persistir el tema del usuario
       description: |
-        Escribe `users.theme`. **No hay ruta para leerlo**: `/config/me` no lo
-        devuelve, así que la preferencia se guarda y no se puede recuperar.
+        Escribe `users.theme`. **Y desde el 2026-09-26 SÍ se puede leer**:
+        `/config/me` devuelve `user.theme` (B1.1). Acá decía «no hay ruta para
+        leerlo, la preferencia se guarda y no se puede recuperar», que era cierto
+        cuando se transcribió y dejó de serlo sin que nada avisara — el chequeo
+        sólo miraba los campos que el yaml exige, no los que el servicio agrega.
       requestBody:
         required: true
         content:
@@ -277,14 +286,46 @@ paths:
                     properties:
                       data:
                         type: object
-                        required: [theme]
+                        # **El handler ECO lo que recibió** — `gin.H{"theme":
+                        # req.Theme, "preferred_dashboard_id":
+                        # req.PreferredDashboardID}` — así que la respuesta trae
+                        # los dos campos del pedido y no el estado guardado.
+                        # `preferred_dashboard_id` faltaba acá desde el 25:
+                        # estaba transcrito en el `requestBody` y no en la
+                        # respuesta, y nada comparaba las dos.
+                        required: [theme, preferred_dashboard_id]
                         properties:
                           theme: { type: string, enum: [dark, light] }
+                          preferred_dashboard_id:
+                            type: [string, 'null']
+                            format: uuid
+                            description: |
+                              **`null` cuando el pedido no lo mandó**, porque es
+                              un puntero sin `omitempty`: el eco no distingue
+                              «no lo pedí» de «lo limpié».
         '400': { $ref: '#/components/responses/BadRequest' }
 
   # ── B3.1 · el chat contextual · TRANSCRITO DE 82da946 ────────────────────
   /config/chat:
-    x-verificado-en: 75b8ecc
+    # **Reverificada POR LECTURA, no por medición** · 2026-09-26 · `8633b10`.
+    # Las otras ocho se midieron pidiéndoselas al servicio; ésta no: `humo` la
+    # saltea porque es SSE, cuesta una llamada a Cortex y escribe un hilo.
+    #
+    # La base es que su forma **no cambió**: entre `75b8ecc` y `8633b10` los seis
+    # archivos que emiten sus tramas —`ports/dd_chat_service.go`,
+    # `cortex_chat.go`, `cortex_client.go`, `cortex_sse.go`,
+    # `handler/dd_chat_handler.go` y `services/dd_config_service.go`— salen «sin
+    # cambios» salvo el último, y de él **ninguna línea del diff menciona chat,
+    # thread, sse, delta ni thinking**.
+    #
+    # Los seis se enumeraron a mano a propósito: `git diff -- '*chat*'` decía
+    # «dos archivos» y **se perdía tres**, porque `cortex_sse.go` y
+    # `cortex_client.go` no tienen «chat» en el nombre. Es la misma clase de
+    # error que `grep "case \""` el 2026-09-25.
+    #
+    # **Las seis formas `ChatFrame*` siguen sin verse contra el servicio.** Eso
+    # es cobertura que falta, y queda dicho acá y en la salida de `humo`.
+    x-verificado-en: 8633b10
     post:
       tags: [config]
       operationId: askChat
@@ -342,7 +383,7 @@ paths:
 
   # ── F3.7 · el historial de hilos · TRANSCRITO DE 82da946 ─────────────────
   /config/chat/threads:
-    x-verificado-en: 75b8ecc
+    x-verificado-en: 8633b10
     get:
       tags: [config]
       operationId: listChatThreads
@@ -405,7 +446,7 @@ paths:
 
   # ── B3.2 · las preguntas sugeridas · TRANSCRITO DE 82da946 ───────────────
   /config/panels/{panelId}/chat-suggestions:
-    x-verificado-en: 75b8ecc
+    x-verificado-en: 8633b10
     get:
       tags: [config]
       operationId: panelChatSuggestions
@@ -603,19 +644,61 @@ components:
     UserInfo:
       type: object
       description: El nombre llega partido; el contrato lo pide junto.
-      required: [id, email, first_name, last_name]
+      required: [id, email, first_name, last_name, theme]
       properties:
         id: { type: string, format: uuid }
         email: { type: string, format: email }
         first_name: { type: string }
         last_name: { type: string }
+        # **B1.1 · agregado el 2026-09-26, medido contra `8633b10`.** Hasta acá
+        # la ruta de preferencias decía «no hay ruta para leerlo: `/config/me` no
+        # lo devuelve», y esa frase quedó falsa: `DDUserInfo.Theme` existe y se
+        # sirve para que la consola pinte bien desde el primer pixel.
+        #
+        # `string` pelado, sin `omitempty`: siempre viene, nunca `null`.
+        theme:
+          type: string
+          enum: [light, dark]
+          examples: [light]
 
     TenantInfo:
       type: object
-      required: [id, name]
+      # **Las tres de F1.13b · agregadas el 2026-09-26, medidas contra `8633b10`.**
+      # Llegaron con la migración que le puso `locale`, `currency` y `timezone` a
+      # `tenants`, y son las que el front venía fijando a mano: `es-MX` escrito en
+      # `FeedHealth`, `UserList` y `ConsoleContainer` con un comentario que decía
+      # «el día que el campo exista se cambia una línea».
+      #
+      # **`timezone` es el del TENANT, no el del navegador**, y confundirlos es el
+      # bug que `CLAUDE.md` describe: el corte del día del negocio sale de acá, la
+      # presentación —«HACE 3 H», el agrupado del riel— sale del huso de quien
+      # mira. Que se llamen distinto en nuestra capa es a propósito.
+      #
+      # Los tres son `string` sin `omitempty`: vienen siempre, y **vacío** —no
+      # `null`— cuando el tenant no los tiene cargados.
+      required: [id, name, locale, currency, timezone]
       properties:
         id: { type: string, format: uuid }
         name: { type: string, examples: ['Under Armour México'] }
+        locale:
+          type: string
+          description: |
+            Etiqueta BCP 47. **El valor de hoy es el default de la migración, no
+            el del cliente**: el tenant «Under Armour México» trae `es-CO` con
+            `COP` y `America/Bogota`, medido el 2026-09-26. Se corrige con
+            `PUT /admin/tenants/{tenantId}`, que también llegó en `8633b10` — es
+            dato a cargar, no un defecto del campo.
+          examples: ['es-CO', 'es-MX']
+        currency:
+          type: string
+          description: Código ISO 4217.
+          examples: ['COP', 'MXN']
+        timezone:
+          type: string
+          description: |
+            IANA. **Del tenant y uno solo**, aunque tenga tiendas en varios
+            países: una cifra que cambia según quién la mira no es auditable.
+          examples: ['America/Bogota', 'America/Mexico_City']
 
     RoleInfo:
       type: object
@@ -645,11 +728,12 @@ components:
         impide otros, y `sync-catalog` hace upsert de lo que diga una vista de
         Snowflake. Cerrarlos es trabajo del adaptador · F1.35.
 
-        Le faltan cuatro campos que el contrato declara: `ventana`, `estado`,
-        `estadoRazon` y `notaLectura`.
+        Le faltan tres campos que el contrato declara: `estado`, `estadoRazon` y
+        `notaLectura`. **Eran cuatro hasta el 2026-09-26**: `ventana` llegó como
+        `measurement_window`, abajo.
       required:
         [id, tenant_id, key, name, shape, family, layer, source, base,
-         min_grain, dimensions, catalog_version]
+         min_grain, dimensions, catalog_version, measurement_window]
       properties:
         id: { type: string, format: uuid }
         tenant_id: { type: string, format: uuid }
@@ -701,21 +785,46 @@ components:
         semantic_direction:
           type: [string, 'null']
           description: |
-            **TEXTO que se pinta tal cual, no un código** · corregido el
-            2026-09-14 contra el servicio real (F1.39).
+            **LLEGAN LAS DOS FORMAS, Y EL FRONT LO PINTA CRUDO** · corregido el
+            2026-09-26, medido contra `8633b10`.
 
-            La transcripción original decía «el servicio manda un CÓDIGO» y daba
-            `HIGHER_IS_BETTER` de ejemplo — salía de leer el comentario de
-            `dd_catalog_metric.go`, que dice «Ej. `HIGHER_IS_BETTER` para
-            color/flecha en front». El dato real de las doce métricas del tenant
-            dice `HIGHER = BETTER`: ya redactado, como el contrato lo declara.
+            Acá decía «TEXTO que se pinta tal cual, no un código», con fecha y
+            medición del 2026-09-14. **La medición era correcta y la conclusión
+            no**: ese día el catálogo tenía sólo las doce métricas de la SEMILLA,
+            y `dd_seed.go` escribe literal `HIGHER = BETTER`. Se generalizó de la
+            semilla a Snowflake sin haber visto una fila de Snowflake.
 
-            Es la única diferencia que el humo encontró entre el cable real y
-            esta transcripción. Cierra la pregunta 7 de §4 del plan de
-            integración: **el front lo pinta y no lo traduce**, que es lo que el
-            adaptador ya hacía.
-          examples: ['HIGHER = BETTER']
+            Contado el 2026-09-26 sobre las 18 métricas del tenant, después de
+            que `sync-catalog` corriera:
+
+              · `HIGHER_IS_BETTER`  6  ← de la vista `SYNAPSE_METRIC_CATALOG`
+              · `HIGHER = BETTER`   8  ← de la semilla de Postgres
+              · `null`              4
+
+            **Y `PanelShell` lo pinta dentro de un `Label` sin mirarlo**, así que
+            seis paneles muestran `HIGHER_IS_BETTER` con guiones bajos. No es un
+            defecto nuestro: la regla es que el adaptador no escribe copy de
+            producto, y el dueño de este texto es el catálogo.
+
+            **Está pedido a DATOS**, y su propia vista de validación lo detecta:
+            la séptima regla de `SYNAPSE_METRIC_CATALOG_ISSUES`. Hasta que las
+            seis filas se retipeen, el front no lo traduce — traducir acá sería
+            una tabla de equivalencias que nadie mantiene el día que el texto de
+            origen cambie.
+          examples: ['HIGHER = BETTER', 'HIGHER_IS_BETTER']
         min_grain: { type: string, examples: [day, week, month] }
+        # ── B1.25 · agregado el 2026-09-26, medido contra `8633b10` ───────────
+        #
+        # El mismo campo que `Governance.measurement_window` y por la misma
+        # razón, un nivel arriba: acá describe la métrica, allá viaja con el dato
+        # del panel. Con valor en **10 de las 18**; las ocho vacías son de la
+        # semilla, que la vista no tiene.
+        measurement_window:
+          type: string
+          description: |
+            Ventana **ya redactada**, de la columna `MEASUREMENT_WINDOW`.
+            `string` sin `omitempty`: siempre viene, vacío si no hay.
+          examples: ['Mes calendario seleccionado']
         dimensions:
           type: array
           items: { type: string }
@@ -868,9 +977,9 @@ components:
     Governance:
       type: object
       description: |
-        `ports.DDGovernanceDTO`. Los cinco campos que el contrato pide, con otros
+        `ports.DDGovernanceDTO`. Los campos que el contrato pide, con otros
         nombres y un nivel más abajo.
-      required: [base, layer, source, freshness, catalog_version]
+      required: [base, layer, source, freshness, catalog_version, measurement_window]
       properties:
         base: { type: string }
         layer: { type: string }
@@ -881,6 +990,29 @@ components:
             `materialized_at` en RFC 3339. **Cadena vacía** cuando el registro no
             tiene fecha de materialización, no `null`.
         catalog_version: { type: integer }
+        # ── B1.25 · agregado el 2026-09-26, medido contra `8633b10` ───────────
+        #
+        # **Es la mitad que faltaba de la línea de BASE.** El shell pinta
+        # `Base · {base} · {ventana}` y el adaptador tenía `ventana: ''` a mano
+        # con un comentario de tres párrafos explicando que el cable no lo traía:
+        # de ahí salía el separador colgando —`Base · COMPLETED · MONTH ·`— que
+        # `CLAUDE.md` lista como «lo que se ve mal y es del backend».
+        #
+        # **Y NO es lo mismo que `base`.** `base` es el denominador —«Órdenes
+        # totales del sitio medidas por Adobe Analytics»— y esto es la ventana
+        # —«Mes calendario seleccionado»—. Dos períodos con el mismo id pueden
+        # tener ventanas distintas.
+        #
+        # **Viene vacío en las métricas que no están en Snowflake.** Medido el
+        # 2026-09-26: con valor en 4 de los 12 paneles y en 10 de las 18
+        # métricas; las que faltan son las de la semilla, que la vista
+        # `SYNAPSE_METRIC_CATALOG` no tiene. Vacío se lee como ausente.
+        measurement_window:
+          type: string
+          description: |
+            Ventana de medición **ya redactada**, de la columna
+            `MEASUREMENT_WINDOW` de la vista. No se deriva del período.
+          examples: ['Mes calendario seleccionado', 'Cada día del mes calendario seleccionado']
 
     # ── /config/chat · B3.1 · TRANSCRITO DE 82da946 ──────────────────────────
 

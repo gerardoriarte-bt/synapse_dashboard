@@ -50,8 +50,29 @@ export function fail(mensaje: string, init: { status?: number } = {}) {
  *  Los campos son los `required` del cable y nada más: un fixture que rellena
  *  opcionales enseña a depender de ellos. */
 export const context: WireContext = {
-  user: { id: 'u-1', email: 'prueba@uamx.test', first_name: 'Prueba', last_name: 'Uno' },
-  tenant: { id: 't-1', name: 'Under Armour México' },
+  // `theme` es requerido desde el 2026-09-26 · B1.1 · medido contra `8633b10`.
+  user: {
+    id: 'u-1',
+    email: 'prueba@uamx.test',
+    first_name: 'Prueba',
+    last_name: 'Uno',
+    theme: 'light',
+  },
+  // **Los tres valores son los que el servicio devuelve HOY, no los que este
+  // tenant debería tener.** Medidos el 2026-09-26: «Under Armour México» trae
+  // `es-CO`, `COP` y `America/Bogota`, que es el default de la migración. Se
+  // cargan con `PUT /admin/tenants/{tenantId}`.
+  //
+  // Se escriben medidos y no deducidos a propósito: poner `es-MX` acá sería
+  // escribir lo que espero en vez de lo que hay, que es el error que este
+  // fixture existe para no cometer.
+  tenant: {
+    id: 't-1',
+    name: 'Under Armour México',
+    locale: 'es-CO',
+    currency: 'COP',
+    timezone: 'America/Bogota',
+  },
   role: { id: 'r-planner', name: 'Planner' },
   tabs: [
     {
@@ -86,6 +107,11 @@ export const kpiMetric: WireMetric = {
   base: '48 tiendas sobre 52',
   unit: 'USD',
   min_grain: 'month',
+  // **B1.25 · requerido desde el 2026-09-26.** Con valor, porque `base` y
+  // `measurement_window` son dos cosas distintas y el fixture tiene que
+  // mostrarlo: `base` es el denominador —48 sobre 52— y esto es la ventana.
+  // El texto es uno real de Snowflake, medido el 2026-09-26.
+  measurement_window: 'Mes calendario seleccionado',
   dimensions: [],
   catalog_version: 1,
 }
