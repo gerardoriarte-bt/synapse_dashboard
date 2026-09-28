@@ -133,7 +133,8 @@ que su resultado esté escrito.
 | `B3 · Selector · gráfico deshabilitado por tope` | **No construida** · ídem · el tope sale de B1.21 |
 | `B4 · Binder de métrica` | `src/surfaces/builder/PanelConfigurator.tsx` |
 | `B5 · Vista previa · rol Planner sin componer` | `src/surfaces/builder/RolePreview.tsx` |
-| `B6 · Historial de versiones` | **No construida** · ninguna ruta lista versiones con su autor y fecha |
+| `B6 · Historial de versiones` | **No construida** · ninguna ruta lista versiones con su autor y fecha · **desde el 2026-09-28 tiene entrada dibujada**: el `Más` del navbar del builder |
+| `B7 · Guardar como plantilla` | **No construida** · dibujada el 2026-09-28 · promueve la composición a plantilla de vertical, que es el movimiento que a §3.4 le faltaba. **No hay backend**: `vertical` no existe en su código, medido en `docs/DECISIONES-2026-09-26-estado-y-vertical.md` |
 
 ---
 
@@ -496,7 +497,9 @@ recibe todo resuelto en `/config/me`.
 - Ningún endpoint devuelve `tenant_id` como identificador que el front deba
   reenviar: la pertenencia se resuelve del token.
 
-### B0.4 ⬜ Middleware de auth y envelope
+### B0.4 ⚠️ Middleware de auth y envelope
+**Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. **Todo error trae `code`**, medido en cuatro familias: `AUTH_UNAUTHORIZED`, `NOT_FOUND_RESOURCE`, `AUTH_FORBIDDEN` y `VALIDATION_REQUEST`. **Queda en ⚠️ y no en ✅ por el `error`**: dos handlers devuelven el mensaje crudo —«tab not found» y el volcado del validador de Go— y `ErrorState` lo pinta tal cual. Pedido, no nuestro.
+
 **Espera del backend.** **El envelope de error estructurado de §4.1.** Hoy `error` es una cadena, así que el front no puede distinguir «error de campo» de «regla de negocio» de «fallo técnico». La propuesta está en el yaml desde el 2026-09-03 y es barata: `FAMILIA_DETALLE`, con la familia como prefijo hasta el primer `_`. **El front solo necesita el prefijo**, nunca la lista completa, así que pueden agregar códigos sin que nos desincronicemos.
 **Descripción.** Toda respuesta viaja como `{ success: true, data }` o
 `{ success: false, error: { codigo, mensaje, campo?, desbloqueaCon? } }`.
@@ -601,7 +604,9 @@ la ruta que lo emite.
 
 ## Fase 1 — API de consola
 
-### B1.1 ⚠️ `GET /config/me`
+### B1.1 ✅ `GET /config/me`
+**Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. Llegan `period_grain: "month"`, `periods_detail` con `[start, end)` por período, y `scope` —`kind: single_tenant` con el token de planner, y `tenants` nunca `null`—.
+
 **Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `GET /config/me` responde con `user`, `tenant`, `role`, `tabs`, `periods` y `catalog_version`. **Parcial** porque faltan `theme` —el campo existe en `users` y el `PUT` lo escribe— y el resto del contexto que declara el contrato.
 **Medido el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **`theme` LLEGÓ** — `user.theme: "light"` en `/config/me`—, y con él `tenant.locale`, `tenant.currency` y `tenant.timezone`, que no estaban pedidos acá y son los que desbloquean F1.13b.
 
@@ -706,7 +711,9 @@ intersectados en los dos estados que muestran número.
   se recuerde poner.
 - `frescura` es ISO 8601 y refleja **cuándo se materializó**, no «ahora» (B2.10).
 
-### B1.13 ⚠️ `Presentacion` opcional
+### B1.13 ✅ `Presentacion` opcional
+**Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. La `nota` del panel llega: **los nueve paneles del planner traen la clave `note`**, junto a `col_span`, `col_start`, `id`, `metric_id`, `options`, `row_span` y `type`.
+
 **LA MITAD GRANDE LLEGÓ · verificada el 2026-09-25 contra `6e595e3` y el servicio
 corriendo.** Queda en ⚠️ y no en ✅ porque **sigue pidiendo la `nota` de panel**,
 que es lo que el párrafo de abajo declara — `para-backend` lo agarró cuando la
@@ -1492,6 +1499,8 @@ vistazo qué cliente tiene el feed más atrasado es la mitad de para qué existe
 en `2fafe82`. Ver `docs/ESTADO-backend-2026-09-22.md`.
 
 ### B4.2 ⚠️ `GET /admin/tenants/{id}/layouts`
+**Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. **La reversión existe** · `POST /admin/layouts/{layoutId}/revert`. Se midieron sus dos compuertas sin mutar nada —`409 CONFLICT_NO_PREVIOUS` y `409 CONFLICT_REVERT_SELF`, las dos con mensaje en español—. **Sigue en ⚠️ porque la reversión en sí no se probó**: copia y publica, así que cambiaría el layout que la consola sirve. Se mide cuando haya una segunda versión.
+
 **Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **DOS DE LOS TRES LLEGARON.** `GET /admin/layouts/{layoutId}/publications` responde 200 y `DDLayoutPublication` trae `action`, `actor_user_id`, `actor_role`, `previous_layout_id`, `diff` y `created_at` — **quién, cuándo y qué cambió**, los tres que §7.2 nombra.
 
 **Espera del backend.** **La reversión**, que es el tercio que falta: no hay ruta de revertir ni de rollback en el router. `previous_layout_id` da con qué hacerlo y publicar el anterior con la ruta que ya existe sería el camino, pero eso es una decisión y no un hecho medido. El pedido original decía: **Autor, diferencia y reversión en `LayoutVersion`** — pedido el 2026-09-15, cuando F4.6 declaró B6.
@@ -1509,7 +1518,9 @@ en `2fafe82`. Ver `docs/ESTADO-backend-2026-09-22.md`.
 `PublishedByEmail` y la ruta `/admin/layouts/{layoutId}/diff` son **nuestras**, de `2fafe82`.
 
 ### B4.3 ⬜ `POST /admin/tenants/{id}/layouts` — crear borrador
-### B4.4 ⚠️ `PUT /admin/layouts/{id}` — editar pestañas y paneles
+### B4.4 ✅ `PUT /admin/layouts/{id}` — editar pestañas y paneles
+**Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. `tab.icon` y `tab.chat_suggestions` llegan en `GET /config/tabs/{id}`, y las sugerencias **como lista, nunca `null`**. Vacías en la semilla, presentes en el cable.
+
 **Espera del backend.** **`chat_suggestions` e `icon` en la pestaña** — pedido el 2026-09-15, cuando F4.8 construyó el editor.
 
 Los dos están en el modelo de §2 de `design.md` y en `Pestana` del contrato, y no están en `DDTab` ni en `TabInput`: **no hay dónde escribirlos ni de dónde leerlos**. `chatSugerencias[]` es lo que C3 pinta como «chips de consulta sugerida por pestaña», así que sin el campo el chat abre en un vacío sin sugerencias. `icono` es menor y va de paso, porque es la misma línea.
@@ -1635,7 +1646,9 @@ de la regla: «les saca la decisión de las manos».
 - El fork está rebasado sobre su rama **al empezar** —`npm run backend-drift` en
   verde— y se vuelve a rebasar antes de proponer el código de vuelta. Un fork
   escrito sobre una base vieja no se puede integrar sin rehacerlo.
-### B4.9 ⚠️ Preview por rol · LA TOMARON, y más chica
+### B4.9 ✅ Preview por rol · con los paneles
+**Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. **El preview trae `tabs[].panels[]`.** Medido con los dos lentes sobre el mismo layout: `admin` → 12 paneles con `col_span` 12; `planner` → **9 paneles con `col_span` 4**, o sea el override aplicado. **Esto destraba F4.12.**
+
 **Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **`GET /admin/layouts/{layoutId}/preview` responde 200** y con eso el fork queda absorbido entero. **Y resolvieron la colisión de diseño como propusimos**: la compuerta de borradores mira `sel.CallerRole` —quién pregunta— y no el rol simulado.
 
 **Dos cosas que no se deducen y hay que saber:**
@@ -4683,7 +4696,9 @@ semántica en blanco en vez de «—». Las seis mueren.
 ### F4.9 ✅ Canvas de 12 columnas — arrastrar y colocar
 ### F4.10 ✅ Configurador de panel: métrica, tipo, spans, opciones
 ### F4.11 ✅ Validación en tiempo real contra `/config/blocks`
-### F4.12 ⚠️ Preview por rol · 🔒 el preview de upstream no trae paneles · B4.9
+### F4.12 ⚠️ Preview por rol · 🔒 el candado VENCIÓ el 2026-09-28 · falta reconstruir la grilla
+**Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. **El candado era «el preview de upstream no trae paneles» y ya no es cierto**: `5924bf2b` devuelve `tabs[].panels[]` filtrados por rol, medido 12 contra 9. Lo que falta ahora es nuestro: `RolePreview` perdió su grilla cuando el alcance se achicó y hay que devolvérsela.
+
 **Verificado el 2026-09-26 contra el servicio corriendo** · el candado del fork venció: `GET /admin/layouts/{layoutId}/preview` responde 200 en upstream. Y de paso apareció que **la pantalla nunca pudo haber funcionado** contra el servicio real: mandábamos `?roleId=` donde va `role_id`, y devuelve 400. MSW no podía verlo — su handler leía nuestra propia grafía. Ahora exige `role_id`, y volver el cliente atrás rompe nueve de catorce pruebas.
 
 **Sigue en ⚠️ por otra razón, y es una pérdida de alcance.** El preview de upstream devuelve qué pestañas ve el rol y **no sus paneles**, así que ya no se puede ver qué recorta `hidden_metric_ids`. `RolePreview` perdió su grilla y lo declara: armarla del lado nuestro diría «esto ve el Planner» sobre paneles que nadie filtró, que es lo que esta pantalla existe para no adivinar.
