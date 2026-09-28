@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**129 de 210 tareas cerradas.** 16 parciales · 60 pendientes · 5 diferidas.
+**130 de 211 tareas cerradas.** 15 parciales · 61 pendientes · 5 diferidas.
 
 
-## Front · 109 de 125
+## Front · 110 de 125
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -16,10 +16,10 @@
 | 1 · Consola y render/ | `█████████████████████·` | 43/46 | 2 | 1 |
 | 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
 | 3 · Chat contextual | `██████████████████····` | 12/15 | 0 | 0 |
-| 4 · Admin y Builder | `████████████████······` | 18/24 | 1 | 5 |
+| 4 · Admin y Builder | `█████████████████·····` | 19/24 | 0 | 5 |
 | 5 · Pruebas y pulido | `██████████████████····` | 15/18 | 0 | 2 |
 
-## Backend · 20 de 85
+## Backend · 20 de 86
 
 > ⚠️ **Este número está bajo y no refleja al backend.** El plan de acá
 > es la fuente del FRONT; el estado de las tareas `B*` solo se mueve
@@ -41,7 +41,7 @@
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██····················` | 1/10 | 2 | 7 |
-| 1 · API de consola | `██████████············` | 12/27 | 4 | 11 |
+| 1 · API de consola | `█████████·············` | 12/28 | 4 | 12 |
 | 2 · Materialización | `███···················` | 2/13 | 1 | 10 |
 | 3 · Chat contextual | `······················` | 0/11 | 2 | 9 |
 | 4 · Admin y Builder | `██████················` | 5/17 | 2 | 10 |
@@ -56,7 +56,7 @@ Nada del front está libre: todo lo pendiente espera algo.
 
 ---
 
-## Bloqueadas · 21
+## Bloqueadas · 18
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -68,7 +68,6 @@ Lo que el front espera del backend está detallado en
 - **F1.42** · El mes en curso está incompleto y el selector no lo dice
 - **F1.44** · El orden de una tabla se anuncia, no se aplica
 - **F2.3** · SIN_PERMISO · B0.9 (línea 1171) contestada
-- **F4.12** · Preview por rol
 - **F4.17** · ComparisonBody + ComparePlot
 - **F4.18** · MatrixBody + HeatmapPlot
 - **F4.19** · GraphBody + GraphPlot
@@ -81,12 +80,10 @@ Lo que el front espera del backend está detallado en
 
 - **B0.4** · Middleware de auth y envelope
 - **B1.1** · GET /config/me · llegaron dos de seis
-- **B1.16** · Seed de demo: 1 tenant, 1 layout, 1 pestaña, 4–6 paneles
 - **B1.21** · Declarar los mínimos de datos por gráfico
-- **B1.6** · POST /config/panels:batch
+- **B1.28** · PayloadDegradado dice DESDE QUÉ PUNTO el dato está vencido
 - **B2.12** · Correr el materializador contra datos reales y verificar los seis estados
 - **B2.7** · Estado SIN_PERMISO en el batch
-- **B3.11** · Aplicar las migraciones de 82da946 sobre la base compartida
 - **B4.2** · GET /admin/tenants/{id}/layouts
 
 ---

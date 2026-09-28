@@ -2082,6 +2082,75 @@
                   ]
                 }
               ]
+            },
+            {
+              "type": "frame",
+              "id": "FiHOP",
+              "name": "Teclado del lienzo",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "P9Zvy",
+                  "fill": "$dim",
+                  "content": "TECLADO DEL LIENZO · B2",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 10,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.2
+                },
+                {
+                  "type": "text",
+                  "id": "Ufban",
+                  "fill": "$dim",
+                  "content": "FLECHAS: MUEVEN EL PANEL SELECCIONADO UNA CELDA",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 9,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.08
+                },
+                {
+                  "type": "text",
+                  "id": "NXDwo",
+                  "fill": "$dim",
+                  "content": "SHIFT + FLECHAS: CAMBIAN SU SPAN UNA CELDA",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 9,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.08
+                },
+                {
+                  "type": "text",
+                  "id": "N8Hu4A",
+                  "fill": "$dim",
+                  "content": "ESCAPE: CANCELA EL ARRASTRE EN CURSO",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 9,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.08
+                },
+                {
+                  "type": "text",
+                  "id": "E4h1m5",
+                  "fill": "$dim",
+                  "content": "EL TECLADO NO ES UNA PUERTA TRASERA: LAS MISMAS REGLAS DE COLISIÓN Y DE RANGO",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 9,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.08
+                },
+                {
+                  "type": "text",
+                  "id": "w3QfRo",
+                  "fill": "$dim",
+                  "content": "ARRASTRAR NO PUEDE SER EL ÚNICO CAMINO · TAMBIÉN ES CÓMO SE COLOCA CON PRECISIÓN",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 9,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.08
+                }
+              ]
             }
           ]
         }

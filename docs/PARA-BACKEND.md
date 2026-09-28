@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 5 pedido(s)
+## Lo que esperamos · 6 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -95,6 +95,22 @@ Sólo tres suben el de su forma —`treemap`, `pareto` y `waterfall`, a 3— y e
 **NO depende de Snowflake.** No toca datos: es una tabla de reglas y un endpoint.
 
 **Sirve desde el primer día aunque haya un gráfico por tipo**, que es por qué está en Fase 1 y no en Fase 4: hoy nada impide que `bars` reciba un ítem y dibuje una barra sola.
+
+
+### B1.28 · PayloadDegradado dice DESDE QUÉ PUNTO el dato está vencido
+
+*Estado de la tarea: pendiente.*
+
+
+**Un campo en `PayloadDegradado` que diga desde dónde el dato dejó de ser fresco** — pedido el 2026-09-28, al cerrar la propuesta del degradado.
+
+Hoy el cable manda `reason` y `unlocks_with` como texto redactado, que sirve para la nota pero no para el cuerpo: **no dice qué tramo de la serie está vencido.**
+
+**Lo pide el dibujo, no nosotros.** `Librería de gráficos / ESTADO · Degradado` dibuja una serie con las **dos últimas barras en `$w2`** en vez del color de familia, y su nota lo declara: «DEGRADADO NO BLOQUEA: OBLIGA A FECHAR. **LA TRAMA MARCA EL TRAMO VENCIDO**».
+
+**Medido el 2026-09-28**: la trama existe sólo en la biblioteca y **el panel degradado de C1 no la aplica** —sus rellenos de datos son los de la familia, sin una sola barra en `$w2`—, así que ni dentro del `.pen` está puesta donde se vería.
+
+**Alcance decidido ese día**, en `docs/PROPUESTA-2026-09-25-degradado.md`: la trama es para las **formas con eje temporal** —serie, área, forecast—; en las que no lo tienen, «obliga a fechar» lo cumple la procedencia con su frescura, que ya se pinta en los seis estados.
 
 
 ### B2.12 · Correr el materializador contra datos reales y verificar los seis estados

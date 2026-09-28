@@ -4742,6 +4742,7 @@ semántica en blanco en vez de «—». Las seis mueren.
 ### F4.10 ✅ Configurador de panel: métrica, tipo, spans, opciones
 ### F4.11 ✅ Validación en tiempo real contra `/config/blocks`
 ### F4.12 ✅ Preview por rol · con la grilla y los huecos
+**Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`.
 
 **Cerrada el 2026-09-28 contra `5924bf2b`.** El candado —«el preview de upstream no trae paneles»— venció al llegar B4.9, y la grilla volvió: sale de `render/grid.ts`, la misma que aplica la consola, así que si el reflujo cambia cambian las dos.
 
