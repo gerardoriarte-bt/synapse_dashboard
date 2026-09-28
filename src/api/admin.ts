@@ -174,8 +174,10 @@ export type PreviewDeRol = {
   estado: EstadoDeLayout
   /** Anidado en el cable, y acá también: son un par, no dos campos sueltos. */
   rol: { id: string; nombre: string }
-  /** **Sin paneles.** Ver el aviso de arriba. */
-  tabs: TabDeLayout[]
+  /** **Con sus paneles desde el 2026-09-28** · B4.9 llegó. Vienen filtrados por
+   *  `hidden_metric_ids` y con los `layout_overrides` aplicados — el servidor
+   *  usa el mismo código que sirve la consola, así que no pueden divergir. */
+  tabs: { tab: TabDeLayout; paneles: PanelConfig[] }[]
 }
 
 export type LayoutVersion = {
@@ -400,10 +402,14 @@ function adaptarRol(w: WireRole): Rol {
 }
 
 /** El preview sale de su propio servicio y ya no de `GetTab`, así que su forma
- *  es la suya: `role` anidado, pestañas planas y sin paneles. Ver `PreviewDeRol`.
+ *  es la suya: `role` anidado y pestañas planas.
  *
  *  **`roles: []` en cada pestaña no es un hueco**: la pregunta «qué roles ven
- *  esta pestaña» ya está contestada — es la pestaña de ESTE rol. */
+ *  esta pestaña» ya está contestada — es la pestaña de ESTE rol.
+ *
+ *  **Los paneles volvieron el 2026-09-28** · medido contra `5924bf2b`: lente
+ *  `admin` 12 paneles, lente `planner` 9 con `col_span` 4. Los dos recortes que
+ *  §7.2 pide —qué pestañas y qué paneles— en una sola respuesta. */
 function adaptarPreview(w: WirePreview): PreviewDeRol {
   return {
     layoutId: w.layout_id,
@@ -411,11 +417,24 @@ function adaptarPreview(w: WirePreview): PreviewDeRol {
     estado: ESTADOS[w.status] ?? 'borrador',
     rol: { id: w.role.id, nombre: w.role.name },
     tabs: w.tabs.map((t) => ({
-      id: t.id,
-      nombre: t.name,
-      pregunta: t.operational_question ?? '',
-      orden: t.sort_order,
-      roles: [],
+      tab: {
+        id: t.id,
+        nombre: t.name,
+        pregunta: t.operational_question ?? '',
+        orden: t.sort_order,
+        roles: [],
+      },
+      paneles: t.panels.map((x) => ({
+        id: x.id,
+        tipo: x.type as PanelConfig['tipo'],
+        metricId: x.metric_id,
+        colStart: x.col_start,
+        colSpan: x.col_span,
+        rowSpan: x.row_span,
+        ...(x.options === undefined ? {} : { opciones: x.options }),
+        // La nota vacía se omite · misma regla que en el cable de consola.
+        ...(x.note === '' ? {} : { nota: x.note }),
+      })),
     })),
   }
 }

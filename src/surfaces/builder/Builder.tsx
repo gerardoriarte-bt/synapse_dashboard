@@ -45,6 +45,7 @@ import { Library } from './Library'
 import { PanelConfigurator } from './PanelConfigurator'
 import { PublishBar } from './PublishBar'
 import { RolePreview } from './RolePreview'
+import type { LayoutDetalle } from '../../api/admin'
 import { SaveBar } from './SaveBar'
 import { ValidationSummary } from './ValidationSummary'
 import { validarBorrador } from './validar'
@@ -347,6 +348,7 @@ export function Builder() {
           query={preview}
           onVolver={() => setPantalla('contexto')}
           hayVersion={version !== null}
+          {...(detalle.data === undefined ? {} : { completo: detalle.data })}
         />
       ) : (
         <ContextView
@@ -510,6 +512,7 @@ function Preview({
   query,
   onVolver,
   hayVersion,
+  completo,
 }: {
   roles: readonly { id: string; nombre: string }[]
   rolActivo: string | null
@@ -517,6 +520,10 @@ function Preview({
   query: ReturnType<typeof usePreview>
   onVolver: () => void
   hayVersion: boolean
+  /** El layout SIN lente · de acá salen los huecos, por diferencia contra lo
+   *  que el preview devuelve. Ya está cargado para el editor, así que no cuesta
+   *  una consulta más. */
+  completo?: LayoutDetalle | undefined
 }) {
   // ── LOS DOS VACÍOS DE B5 LLEVAN SALIDA · 2026-09-25 ────────────────────────
   //
@@ -583,9 +590,11 @@ function Preview({
       ) : query.data === undefined ? (
         <Label as="div">Resolviendo el preview…</Label>
       ) : (
-        // `metricas` ya no se pasa: el preview dejó de traer paneles, así que
-        // no hay id de métrica que nombrar. Ver el encabezado de `RolePreview`.
-        <RolePreview preview={query.data} onVolver={onVolver} />
+        <RolePreview
+          preview={query.data}
+          {...(completo === undefined ? {} : { completo })}
+          onVolver={onVolver}
+        />
       )}
     </div>
   )

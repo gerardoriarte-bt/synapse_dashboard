@@ -58,8 +58,12 @@ const metricas = [
 
 /** Lo que el servidor devuelve por rol · las pestañas que ve, YA filtradas.
  *
- *  **Sin `panels` y sin `without_payloads`**: la respuesta de upstream no los
- *  tiene. `role` va anidado. Medido el 2026-09-26 contra `8633b10`. */
+ *  **Con `panels` desde el 2026-09-28** · B4.9 llegó y se midió contra
+ *  `5924bf2b`: el lente `admin` da 12 paneles y el `planner` 9 con `col_span` 4.
+ *  Sigue sin `without_payloads`, que era de nuestro fork. `role` va anidado.
+ *
+ *  **Acá el CEO ve dos paneles y el Planner uno**, para que la diferencia sea
+ *  lo que se prueba: el que falta es el hueco. */
 const previews: Record<string, unknown> = {
   'r-ceo': {
     layout_id: 'l-2',
@@ -67,8 +71,27 @@ const previews: Record<string, unknown> = {
     status: 'draft',
     role: { id: 'r-ceo', name: 'CEO' },
     tabs: [
-      { id: 'tab-a', name: 'Resumen', operational_question: '¿Cómo vamos?', sort_order: 1 },
-      { id: 'tab-b', name: 'Medios', operational_question: '¿Rinde la inversión?', sort_order: 2 },
+      {
+        id: 'tab-a',
+        name: 'Resumen',
+        operational_question: '¿Cómo vamos?',
+        sort_order: 1,
+        icon: '',
+        chat_suggestions: [],
+        panels: [
+          { id: 'p-1', metric_id: 'm-1', type: 'kpi', col_start: 1, col_span: 4, row_span: 4, note: '' },
+          { id: 'p-2', metric_id: 'm-2', type: 'bars', col_start: 5, col_span: 8, row_span: 4, note: '' },
+        ],
+      },
+      {
+        id: 'tab-b',
+        name: 'Medios',
+        operational_question: '¿Rinde la inversión?',
+        sort_order: 2,
+        icon: '',
+        chat_suggestions: [],
+        panels: [],
+      },
     ],
   },
   'r-pla': {
@@ -76,9 +99,20 @@ const previews: Record<string, unknown> = {
     dashboard_id: 'd-1',
     status: 'draft',
     role: { id: 'r-pla', name: 'Planner' },
-    // El servidor ya sacó la pestaña que este rol no ve · `roles.tab_ids`.
+    // El servidor ya sacó la pestaña que este rol no ve · `roles.tab_ids`, y el
+    // panel que `hidden_metric_ids` le oculta. **Los dos recortes, del servidor.**
     tabs: [
-      { id: 'tab-a', name: 'Resumen', operational_question: '¿Cómo vamos?', sort_order: 1 },
+      {
+        id: 'tab-a',
+        name: 'Resumen',
+        operational_question: '¿Cómo vamos?',
+        sort_order: 1,
+        icon: '',
+        chat_suggestions: [],
+        panels: [
+          { id: 'p-1', metric_id: 'm-1', type: 'kpi', col_start: 1, col_span: 4, row_span: 4, note: '' },
+        ],
+      },
     ],
   },
 }
@@ -145,7 +179,7 @@ describe('§7.2 · como lo verá el rol seleccionado', () => {
     expect(screen.getByRole('heading', { name: 'Resumen' })).toBeInTheDocument()
     expect(screen.getByText('¿Cómo vamos?')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Medios' })).toBeInTheDocument()
-    expect(screen.getByText('2 pestaña(s)')).toBeInTheDocument()
+    expect(screen.getByText('2 pestaña(s) · 2 paneles')).toBeInTheDocument()
   })
 
   it('declara si el layout previsualizado es un BORRADOR', async () => {
@@ -241,44 +275,38 @@ describe('§7.2 · sin chrome de edición, y con toggle', () => {
   })
 })
 
-describe('la mitad que §7.2 pide y no llega', () => {
-  it('declara que la vista NO trae paneles ni cifras, y por qué', async () => {
-    // Sin esto, quien mire la pantalla va a leer «este rol no tiene paneles» en
-    // vez de «esta vista no los pide».
+describe('la grilla volvió · B4.9 llegó el 2026-09-28', () => {
+  // ── ESTA SUITE ERA LA CONTRARIA, Y FALLÓ COMO SE ESPERABA ──────────────────
+  //
+  // Se llamaba «la mitad que §7.2 pide y no llega» y una de sus pruebas decía en
+  // el nombre **«y el día que lleguen, esto falla»**. Llegaron el 2026-09-28 y
+  // falló. Eso es lo que una prueba escrita contra una carencia tiene que hacer:
+  // avisar cuando la carencia termina, en vez de quedar como leyenda.
+  it('pinta los paneles con su posición REAL, no con una copia del reflujo', async () => {
+    base()
+    const { container } = montar()
+    await abrirPreview()
+    await screen.findByText('Como lo ve · CEO')
+
+    // La colocación sale de `render/grid.ts`, la misma que aplica la consola.
+    const cajas = container.querySelectorAll('[style*="grid-column"]')
+    expect(cajas.length).toBeGreaterThanOrEqual(2)
+    expect(container.textContent ?? '').toContain('4 × 4')
+    expect(container.textContent ?? '').toContain('8 × 4')
+  })
+
+  it('el aviso ya no dice «no trae paneles» · esa razón venció', async () => {
     base()
     const { container } = montar()
     await abrirPreview()
     await screen.findByText('Como lo ve · CEO')
 
     const texto = container.textContent ?? ''
-    expect(texto).toContain('qué pestañas ve el rol')
-    expect(texto).toContain('no sus paneles ni sus cifras')
-    // Y la razón, que es de la ruta y no nuestra.
-    expect(texto).toContain('no hay otra que acepte el rol como lente')
-  })
-
-  // ── UNA PROPIEDAD QUE SE PERDIÓ, Y SE DICE ─────────────────────────────────
-  //
-  // Acá había una prueba —«el aviso se APAGA si la respuesta deja de declarar
-  // `without_payloads`»— que existía por una mutación: colgado del campo, el
-  // aviso se apagaba solo el día que el servicio mandara cifras, y escrito fijo
-  // se volvía una leyenda que nadie notaría vencida.
-  //
-  // **La respuesta de upstream no tiene ese campo**, así que el aviso pasó a ser
-  // fijo y esa propiedad NO existe más. No se reemplaza por una prueba que
-  // parezca cubrirla. Lo que sí se puede afirmar es que no hay paneles, que es
-  // comprobable mirando la pantalla y falla el día que empiecen a llegar.
-  it('no hay NINGÚN panel en la vista · y el día que lleguen, esto falla', async () => {
-    base()
-    const { container } = montar()
-    await abrirPreview()
-    await screen.findByText('Como lo ve · CEO')
-
-    // Los fixtures traen dos pestañas y cero paneles. Si la respuesta empezara a
-    // traerlos, la pantalla los pintaría con su medida —`3×4 · col 1`— y este
-    // `not` se cae, que es la señal de que hay que volver a construir la grilla.
-    expect(container.textContent ?? '').not.toMatch(/\d+×\d+ · col \d+/)
-    expect(container.querySelector('[style*="grid-column"]')).toBeNull()
+    expect(texto).not.toContain('no sus paneles ni sus cifras')
+    expect(texto).not.toContain('no hay otra que acepte el rol como lente')
+    // Lo que SÍ sigue siendo cierto: no hay cifras.
+    expect(texto).toContain('sin cifras')
+    expect(texto).toContain('`roles.tab_ids` y `hidden_metric_ids`')
   })
 
   it('los paneles NO se dibujan con un payload inventado', async () => {

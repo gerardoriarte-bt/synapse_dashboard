@@ -29,38 +29,77 @@
  *  persigue: algo que compila, se ve bien y miente. Se dibuja la GRILLA con las
  *  posiciones reales, y cada hueco dice qué métrica va ahí.
  *
- *  ── **LO DE ARRIBA DEJÓ DE SER CIERTO** · 2026-09-26 ───────────────────────
+ *  ── **LA GRILLA VOLVIÓ** · 2026-09-28 ──────────────────────────────────────
  *
- *  Esta pantalla pintaba la grilla con `render/grid.ts` para que la colocación
- *  fuera la misma que aplica la consola y no una copia. **Upstream tomó B4.9 con
- *  otra forma** —medida en `8633b10`— que devuelve qué pestañas ve el rol y no
- *  sus paneles, y no existe otra ruta que dé una pestaña con el lente de otro
- *  rol: `GetTab` resuelve el rol desde el token.
+ *  Entre el 26 y el 28 esta pantalla contestó sólo «qué pestañas ve este rol»,
+ *  porque la forma que upstream tomó de B4.9 devolvía las pestañas sin sus
+ *  paneles. **Se pidió y llegó**: `5924bf2b` devuelve `tabs[].panels[]` ya
+ *  filtrados por `hidden_metric_ids` y con los `layout_overrides` aplicados.
  *
- *  Así que hoy contesta **«qué pestañas ve este rol»**, que es menos de lo que
- *  §7.2 pide, y lo dice en pantalla. La grilla no se reemplaza por una armada
- *  del lado nuestro: sería afirmar «esto ve el Planner» sobre paneles que nadie
- *  filtró por `hidden_metric_ids`, que es exactamente lo que esta pantalla
- *  existe para no adivinar.
+ *  Medido ese día sobre el mismo layout publicado: lente `admin` **12 paneles**
+ *  con `col_span` 12; lente `planner` **9 con `col_span` 4**. Los dos recortes
+ *  que §7.2 pide, en una sola respuesta.
+ *
+ *  **La colocación sale de `render/grid.ts`**, la misma que aplica la consola.
+ *  No es una copia: si el reflujo cambiara, cambian las dos.
+ *
+ *  ── LOS HUECOS, QUE SON LA MITAD DEL DIAGNÓSTICO ───────────────────────────
+ *
+ *  §3.4 regla 3: «**el hueco se muestra en el builder, nunca en la consola**. B5
+ *  dibuja los huecos en su posición original —es la vista de diagnóstico, y por
+ *  eso avisa cuántos hay y de qué ancho—. La consola aplica el reflujo y no
+ *  muestra agujeros: un hueco le dice al usuario "acá hay algo que no podés
+ *  ver", que es ruido, no información.»
+ *
+ *  **Un hueco NO se deduce de un espacio vacío en la grilla.** Un layout puede
+ *  tener un espacio libre porque el admin lo dejó, y decir «no llega a este rol»
+ *  ahí sería afirmar una causa que nadie verificó.
+ *
+ *  Se calcula por DIFERENCIA: un hueco es **un panel que está en el layout
+ *  completo y no en el preview**. Así el hueco conserva su `colStart`, su
+ *  `colSpan` y su `rowSpan` reales —que es lo que el dibujo rotula, «HUECO · 3
+ *  COLUMNAS»— y su causa es un hecho, no una inferencia.
  *
  *  **§PEN:B5** · B5 · «Vista previa · rol Planner sin componer».
  */
 import { Label } from '../../render/primitives/Label'
-import type { PreviewDeRol } from '../../api/admin'
+import { gridStyle, panelStyle } from '../../render/grid'
+import type { LayoutDetalle, PreviewDeRol } from '../../api/admin'
+import type { PanelConfig } from '../../api/types'
 
 type Props = {
   preview: PreviewDeRol
+  /** El layout SIN el lente del rol · de acá salen los huecos, por diferencia.
+   *  **Ausente es legítimo**: sin él la grilla se pinta igual y los huecos se
+   *  declaran como no calculables, que es mejor que inferirlos de un espacio
+   *  vacío. */
+  completo?: LayoutDetalle | undefined
   /** El toggle de §7.2 · «un toggle vuelve a edición». */
   onVolver: () => void
 }
 
-export function RolePreview({ preview, onVolver }: Props) {
+/** Los paneles que el layout tiene y este rol no ve · §3.4 regla 3.
+ *
+ *  **Por id y no por posición.** Un `colStart` repetido no identifica un panel
+ *  —dos pestañas pueden empezar en la columna 1— y comparar posiciones daría
+ *  huecos donde hay un panel movido por un override. */
+function huecosDe(
+  paneles: readonly PanelConfig[],
+  completos: readonly PanelConfig[] | undefined,
+): PanelConfig[] {
+  if (completos === undefined) return []
+  const visibles = new Set(paneles.map((x) => x.id))
+  return completos.filter((x) => !visibles.has(x.id))
+}
+
+export function RolePreview({ preview, completo, onVolver }: Props) {
+  const total = preview.tabs.reduce((s, x) => s + x.paneles.length, 0)
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <Label as="div">{`Como lo ve · ${preview.rol.nombre}`}</Label>
-        <Label as="div">{`${String(preview.tabs.length)} pestaña(s)`}</Label>
+        <Label as="div">{`${String(preview.tabs.length)} pestaña(s) · ${String(total)} paneles`}</Label>
         {/* **El estado del layout, y no es decoración**: se puede previsualizar
             un BORRADOR, y sin decirlo alguien compara «lo que ve el Planner»
             contra algo que el Planner todavía no ve. */}
@@ -80,25 +119,57 @@ export function RolePreview({ preview, onVolver }: Props) {
         <Label as="div">Este rol no ve ninguna pestaña de este layout</Label>
       )}
 
-      {/* ── ACÁ HABÍA UNA GRILLA DE PANELES · 2026-09-26 ────────────────────
-          Se pintaba un panel por cada uno que el rol ve, con su tipo, su
-          métrica y su medida en unidades de grilla. **El servicio dejó de
-          mandarlos**: upstream tomó B4.9 con una forma que devuelve las
-          pestañas y no sus paneles, y no hay otra ruta que las dé con el lente
-          de otro rol.
+      {preview.tabs.map(({ tab, paneles }) => {
+        const completos = completo?.tabs.find((x) => x.tab.id === tab.id)?.panels
+        const huecos = huecosDe(paneles, completos)
+        return (
+          <section key={tab.id} className="flex flex-col gap-2">
+            {/* **Sin chrome de edición** · §7.2. El título y la pregunta son de
+                la pestaña, no controles. */}
+            <h2 className="font-display text-titulo tracking-titulo text-ink m-0">{tab.nombre}</h2>
+            <Label as="div">{tab.pregunta === '' ? 'Sin pregunta operativa' : tab.pregunta}</Label>
+            {huecos.length > 0 && (
+              // El dibujo lo pone arriba de la grilla: cuántos y de qué ancho.
+              <Label as="div">
+                {`${String(huecos.length)} hueco(s) · ${huecos.map((h) => `${String(h.colSpan)} columnas`).join(' · ')}`}
+              </Label>
+            )}
 
-          No se reemplaza por una grilla vacía ni por un conteo derivado del
-          layout de edición: eso diría «esto ve el Planner» sobre paneles que
-          nadie filtró por `hidden_metric_ids`, y esta pantalla existe justamente
-          para no adivinar eso. */}
-      {preview.tabs.map((tab) => (
-        <section key={tab.id} className="flex flex-col gap-2">
-          {/* **Sin chrome de edición** · §7.2. El título y la pregunta son de la
-              pestaña, no controles. */}
-          <h2 className="font-display text-titulo tracking-titulo text-ink m-0">{tab.nombre}</h2>
-          <Label as="div">{tab.pregunta === '' ? 'Sin pregunta operativa' : tab.pregunta}</Label>
-        </section>
-      ))}
+            <div style={gridStyle()}>
+              {paneles.map((p) => (
+                // **No se dibuja con `render/Panel`**, y la razón no cambió: el
+                // preview va sin payloads, así que habría que inventarle uno —un
+                // `BLOQUEADO` que nadie emitió— y eso es lo que este repositorio
+                // persigue. Se pinta la CAJA con su posición real.
+                <div
+                  key={p.id}
+                  style={panelStyle(p)}
+                  className="rounded-xl border border-w4 bg-panel p-3 flex flex-col gap-1 min-w-0"
+                >
+                  <Label as="div">{p.tipo}</Label>
+                  <Label as="div">{`${String(p.colSpan)} × ${String(p.rowSpan)}`}</Label>
+                  {p.nota !== undefined && <Label as="div">{p.nota}</Label>}
+                </div>
+              ))}
+
+              {huecos.map((h) => (
+                // **En su posición original** · §3.4 regla 3. Punteado y sin
+                // relleno: un hueco no es un panel vacío, es un lugar donde no
+                // va a haber nada para este rol.
+                <div
+                  key={`h-${h.id}`}
+                  style={panelStyle(h)}
+                  className="rounded-xl border border-dashed border-w4 p-3 flex flex-col gap-1 min-w-0"
+                >
+                  <Label as="div">{`Hueco · ${String(h.colSpan)} columnas`}</Label>
+                  <Label as="div">No llega a este rol</Label>
+                  <Label as="div">Al publicar se cierra</Label>
+                </div>
+              ))}
+            </div>
+          </section>
+        )
+      })}
 
       <div className="flex flex-col gap-1 rounded-sm bg-w2 p-3">
         {/* **Antes este aviso colgaba de `sinPayloads`**, un campo que la
@@ -109,15 +180,20 @@ export function RolePreview({ preview, onVolver }: Props) {
             Para que no quede como leyenda, lo que se declara es lo que se PUEDE
             comprobar mirando la pantalla: que no hay paneles. */}
         <Label as="div">
-          Esta vista muestra qué pestañas ve el rol · no sus paneles ni sus cifras
+          Esta vista muestra la composición · sin cifras, que el preview no manda
         </Label>
         <Label as="div">
-          §7.2 pide la composición por rol · la ruta devuelve las pestañas y no los paneles,
-          y no hay otra que acepte el rol como lente
+          Los dos recortes los hizo el servidor · `roles.tab_ids` y `hidden_metric_ids`
         </Label>
-        <Label as="div">
-          El recorte por pestaña lo hizo el servidor · `roles.tab_ids`
-        </Label>
+        {completo === undefined && (
+          // **Se declara en vez de inferirlos.** Sin el layout completo un hueco
+          // sería un espacio vacío, y un espacio vacío puede ser una decisión
+          // del admin. Decir «no llega a este rol» ahí afirmaría una causa que
+          // nadie verificó.
+          <Label as="div">
+            Los huecos no se pueden calcular sin el layout sin lente
+          </Label>
+        )}
       </div>
     </div>
   )

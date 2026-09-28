@@ -1113,6 +1113,22 @@ desaparece.
 - La decisión nombra quién es dueño de la vista por tenant: hoy `sync-catalog`
   asume que existe y falla sin decir que falta.
 
+#### ➕ B1.28 ⬜ `PayloadDegradado` dice DESDE QUÉ PUNTO el dato está vencido
+**Espera del backend.** **Un campo en `PayloadDegradado` que diga desde dónde el dato dejó de ser fresco** — pedido el 2026-09-28, al cerrar la propuesta del degradado.
+
+Hoy el cable manda `reason` y `unlocks_with` como texto redactado, que sirve para la nota pero no para el cuerpo: **no dice qué tramo de la serie está vencido.**
+
+**Lo pide el dibujo, no nosotros.** `Librería de gráficos / ESTADO · Degradado` dibuja una serie con las **dos últimas barras en `$w2`** en vez del color de familia, y su nota lo declara: «DEGRADADO NO BLOQUEA: OBLIGA A FECHAR. **LA TRAMA MARCA EL TRAMO VENCIDO**».
+
+**Medido el 2026-09-28**: la trama existe sólo en la biblioteca y **el panel degradado de C1 no la aplica** —sus rellenos de datos son los de la familia, sin una sola barra en `$w2`—, así que ni dentro del `.pen` está puesta donde se vería.
+
+**Alcance decidido ese día**, en `docs/PROPUESTA-2026-09-25-degradado.md`: la trama es para las **formas con eje temporal** —serie, área, forecast—; en las que no lo tienen, «obliga a fechar» lo cumple la procedencia con su frescura, que ya se pinta en los seis estados.
+**Criterio de aceptación.**
+- El payload degradado declara el punto desde el cual el dato está vencido, en la
+  misma unidad del eje: si la serie es semanal, una semana.
+- **El front no lo calcula.** Sin el campo no se dibuja la trama, porque adivinar
+  cuál es el tramo es inventar el dato.
+- Una forma sin eje temporal no lo necesita y el campo queda ausente, no en cero.
 
 ---
 
@@ -4725,7 +4741,17 @@ semántica en blanco en vez de «—». Las seis mueren.
 ### F4.9 ✅ Canvas de 12 columnas — arrastrar y colocar
 ### F4.10 ✅ Configurador de panel: métrica, tipo, spans, opciones
 ### F4.11 ✅ Validación en tiempo real contra `/config/blocks`
-### F4.12 ⚠️ Preview por rol · 🔒 el candado VENCIÓ el 2026-09-28 · falta reconstruir la grilla
+### F4.12 ✅ Preview por rol · con la grilla y los huecos
+
+**Cerrada el 2026-09-28 contra `5924bf2b`.** El candado —«el preview de upstream no trae paneles»— venció al llegar B4.9, y la grilla volvió: sale de `render/grid.ts`, la misma que aplica la consola, así que si el reflujo cambia cambian las dos.
+
+**Y se agregaron los huecos, que son la otra mitad de §3.4 regla 3**: «el hueco se muestra en el builder, nunca en la consola · B5 dibuja los huecos en su posición original». El dibujo los rotula «HUECO · 3 COLUMNAS · NO LLEGA A ESTE ROL · AL PUBLICAR SE CIERRA».
+
+**Un hueco NO se deduce de un espacio vacío en la grilla**, y ésa es la decisión que sostiene la pantalla: un layout puede tener lugar libre porque el admin lo dejó, y decir «no llega a este rol» ahí afirmaría una causa que nadie verificó. Se calcula por diferencia contra el layout sin lente, **y por id**: el lente `planner` trae los paneles movidos por override —`col_span` 4 donde el admin tiene 12—, así que comparar por posición daría un hueco fantasma en la columna original y el panel presente en la nueva. Hay prueba y mutación de eso.
+
+**Sin el layout sin lente los huecos se declaran no calculables** en vez de inferirse.
+
+**Dos pruebas viejas fallaron y era lo que tenían que hacer.** Una se llamaba «no hay NINGÚN panel en la vista · **y el día que lleguen, esto falla**». Llegaron y falló: una prueba escrita contra una carencia tiene que avisar cuando la carencia termina, en vez de quedar como leyenda.
 **Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. **El candado era «el preview de upstream no trae paneles» y ya no es cierto**: `5924bf2b` devuelve `tabs[].panels[]` filtrados por rol, medido 12 contra 9. Lo que falta ahora es nuestro: `RolePreview` perdió su grilla cuando el alcance se achicó y hay que devolvérsela.
 
 **Verificado el 2026-09-26 contra el servicio corriendo** · el candado del fork venció: `GET /admin/layouts/{layoutId}/preview` responde 200 en upstream. Y de paso apareció que **la pantalla nunca pudo haber funcionado** contra el servicio real: mandábamos `?roleId=` donde va `role_id`, y devuelve 400. MSW no podía verlo — su handler leía nuestra propia grafía. Ahora exige `role_id`, y volver el cliente atrás rompe nueve de catorce pruebas.
