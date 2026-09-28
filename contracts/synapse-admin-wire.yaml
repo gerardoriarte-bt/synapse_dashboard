@@ -970,10 +970,22 @@ components:
             celda de A1: `Retail · apparel` sobre `retail_apparel_v2`. Es la
             cabeza de la herencia de §3.4, que no existe de ninguno de los dos
             lados. **Su `null` no es un pendiente de nadie.**
-      required: [id, name, locale, currency, timezone, user_count, created_at]
+      required: [id, name, label, locale, currency, timezone, user_count, created_at]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
+        label:
+          type: string
+          description: |
+            **La forma corta** · llegó en `f70cec2` con `tenant.label` del cable
+            de consola, y acá se transcribió tarde: lo encontró `npm run humo`
+            el 2026-09-28, no una lectura.
+
+            **Y acá SÍ puede venir vacía**, a diferencia de `/config/me`, donde
+            el servicio la hace caer a `name`. Medido ese día: el tenant
+            sembrado la trae en `""`. Quien la pinte cae a `name` — es lo que
+            hace A1.
+          examples: ['UA México']
         locale: { type: string, examples: ['es-CO'] }
         currency: { type: string, examples: ['COP'] }
         timezone: { type: string, examples: ['America/Bogota'] }
@@ -1473,10 +1485,21 @@ components:
             desde el 2026-09-28.
           items:
             type: object
-            required: [id, name, operational_question, sort_order, icon, chat_suggestions, panels]
+            required: [id, name, key, operational_question, sort_order, icon, chat_suggestions, panels]
             properties:
               id: { type: string, format: uuid }
               name: { type: string }
+              key:
+                type: string
+                description: |
+                  **La identidad estable de la pestaña** · llegó en `f70cec2` y
+                  acá se transcribió tarde: lo encontró `npm run humo` el
+                  2026-09-28, no una lectura del diff.
+
+                  Es la que va a usar `roles.tab_keys` para decidir qué ve cada
+                  rol, así que en el preview es **el campo por el que se filtra**
+                  — hoy filtra por `tab_ids`, que se recrean al publicar.
+                examples: ['overview']
               operational_question: { type: string }
               sort_order: { type: integer }
               icon: { type: string, examples: [''] }
@@ -1498,7 +1521,7 @@ components:
                   mismo código las sirve.
                 items:
                   type: object
-                  required: [id, metric_id, type, col_start, col_span, row_span, note]
+                  required: [id, metric_id, type, col_start, col_span, row_span, note, chart]
                   properties:
                     id: { type: string, format: uuid }
                     metric_id: { type: string, format: uuid }
@@ -1508,6 +1531,18 @@ components:
                     row_span: { type: integer }
                     options: { type: object, additionalProperties: true }
                     note: { type: string }
+                    chart:
+                      type: string
+                      description: |
+                        **El gráfico, igual que en el cable de consola** · llegó
+                        en `f70cec2`. Cadena vacía = el de por defecto del
+                        bloque, y así salen los doce publicados.
+
+                        Importa que esté acá y no sólo en la consola: **la vista
+                        previa por rol tiene que dibujar lo mismo que el rol va a
+                        ver**, y si el preview no trajera el gráfico mostraría
+                        una cascada como dona y nadie lo notaría.
+                      examples: ['', waterfall]
 
     AgentAdmin:
       type: object

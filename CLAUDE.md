@@ -362,12 +362,17 @@ el **2026-09-16**: `gerardo.riarte@buentipo.com` pasó a rol `Admin` —lo hizo 
 backend, no nosotros— y `/admin/*` dejó de dar 403. El claim se compara contra
 `roles.name` **normalizando la mayúscula**, así que `Admin` entra.
 
-**De las dos rutas del fork ya queda una** · medido el 2026-09-25 contra
-`1e080ee`. **B4.8 la tomaron**, y en la ruta que propusimos:
-`GET /admin/tenants/{tenantId}/roles/composition` → 200, así que A2 y A3 se ven
-contra el servicio real. **B4.9 sigue en 404** —`/admin/layouts/{id}/preview`—,
-así que para la vista previa por rol el modo mock sigue siendo la única forma de
-recorrerla.
+**NINGUNA DE LAS DOS RUTAS DEL FORK SIGUE EN 404** · remedido el 2026-09-28
+contra upstream `f70cec2`, levantado acá. **B4.8** la tomaron en la ruta que
+propusimos —`GET /admin/tenants/{tenantId}/roles/composition` → 200— y **B4.9
+TAMBIÉN**: `GET /admin/layouts/{layoutId}/preview?role_id=…&period=…` contesta
+200 con `tabs[]`, y cada pestaña trae sus `panels[]` ya filtrados por el rol.
+
+Acá decía «B4.9 sigue en 404, así que para la vista previa por rol el modo mock
+sigue siendo la única forma de recorrerla». **Dejó de ser cierto** y lo encontró
+`npm run humo`, no una lectura: el humo marcó deriva en esa ruta —campos que el
+servicio manda y el yaml no declaraba— y para que marque deriva tiene que haber
+contestado.
 
 **Y el humo de `/admin/*` ya corrió** · 2026-09-16, las ocho rutas contra
 `synapse-admin-wire.yaml`, campo por campo. **El PascalCase quedó confirmado y no

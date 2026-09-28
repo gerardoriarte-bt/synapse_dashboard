@@ -643,6 +643,18 @@ export interface components {
             /** Format: uuid */
             id: string;
             name: string;
+            /**
+             * @description **La forma corta** · llegó en `f70cec2` con `tenant.label` del cable
+             *     de consola, y acá se transcribió tarde: lo encontró `npm run humo`
+             *     el 2026-09-28, no una lectura.
+             *
+             *     **Y acá SÍ puede venir vacía**, a diferencia de `/config/me`, donde
+             *     el servicio la hace caer a `name`. Medido ese día: el tenant
+             *     sembrado la trae en `""`. Quien la pinte cae a `name` — es lo que
+             *     hace A1.
+             * @example UA México
+             */
+            label: string;
             /** @example es-CO */
             locale: string;
             /** @example COP */
@@ -1087,6 +1099,17 @@ export interface components {
                 /** Format: uuid */
                 id: string;
                 name: string;
+                /**
+                 * @description **La identidad estable de la pestaña** · llegó en `f70cec2` y
+                 *     acá se transcribió tarde: lo encontró `npm run humo` el
+                 *     2026-09-28, no una lectura del diff.
+                 *
+                 *     Es la que va a usar `roles.tab_keys` para decidir qué ve cada
+                 *     rol, así que en el preview es **el campo por el que se filtra**
+                 *     — hoy filtra por `tab_ids`, que se recrean al publicar.
+                 * @example overview
+                 */
+                key: string;
                 operational_question: string;
                 sort_order: number;
                 /** @example  */
@@ -1126,6 +1149,19 @@ export interface components {
                         [key: string]: unknown;
                     };
                     note: string;
+                    /**
+                     * @description **El gráfico, igual que en el cable de consola** · llegó
+                     *     en `f70cec2`. Cadena vacía = el de por defecto del
+                     *     bloque, y así salen los doce publicados.
+                     *
+                     *     Importa que esté acá y no sólo en la consola: **la vista
+                     *     previa por rol tiene que dibujar lo mismo que el rol va a
+                     *     ver**, y si el preview no trajera el gráfico mostraría
+                     *     una cascada como dona y nadie lo notaría.
+                     * @example
+                     * @example waterfall
+                     */
+                    chart: string;
                 }[];
             }[];
         };
