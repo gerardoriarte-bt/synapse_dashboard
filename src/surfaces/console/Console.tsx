@@ -112,6 +112,7 @@ export function Console({
         context={context}
         activeTab={activeTab}
         activePeriodId={activePeriodId}
+        format={format}
         tabMetrics={tabMetrics}
         onSelectTab={onSelectTab}
         onSelectPeriod={onSelectPeriod}

@@ -37,17 +37,34 @@
  */
 import { Label } from '../../render/primitives/Label'
 import { GRAINS, GRAIN_LABEL, coarsestRequired, grainOf } from './periodGrain'
+import type { Formatter } from '../../render/format'
 import type { Metric, Period } from '../../api/types'
+
+/** El último día incluido, a partir de un fin EXCLUSIVO.
+ *
+ *  **Se hace con UTC a propósito.** `new Date('2026-10-01')` se interpreta como
+ *  medianoche UTC; restar un día con métodos locales lo correría al huso del
+ *  navegador, y en América eso devuelve el 29 de septiembre en vez del 30. Es la
+ *  regla de las dos zonas horarias otra vez: el borde del período es del negocio
+ *  y no de quien mira. */
+function diaAnterior(iso: string): string {
+  const d = new Date(`${iso}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() - 1)
+  return d.toISOString().slice(0, 10)
+}
 
 type Props = {
   periods: readonly Period[]
   activeId: string | undefined
   /** Las métricas de la pestaña activa. De acá sale qué granos son ofrecibles. */
   metrics: readonly Metric[]
+  /** Del locale del TENANT · F1.13b. El rango llega como dos fechas ISO y se
+   *  redacta acá, que es el único lugar del sistema que sabe en qué idioma. */
+  format: Formatter
   onSelect: (id: string) => void
 }
 
-export function PeriodPicker({ periods, activeId, metrics, onSelect }: Props) {
+export function PeriodPicker({ periods, activeId, metrics, format, onSelect }: Props) {
   const required = coarsestRequired(metrics)
   const requiredIndex = GRAINS.indexOf(required)
 
@@ -101,8 +118,16 @@ export function PeriodPicker({ periods, activeId, metrics, onSelect }: Props) {
       </select>
 
       {/* El rango, debajo del control, que es donde el dibujo lo pone. Sale del
-          período y no se compone acá: sin `rango` no se inventa uno. */}
-      {activo?.rango !== undefined && <Label as="div">{activo.rango}</Label>}
+          período y no se compone acá: sin `rango` no se inventa uno.
+          **El fin es EXCLUSIVO**, así que el último día del período es el
+          anterior: `2026-09` va de `2026-09-01` a `2026-10-01` y lo que se pinta
+          es «1 sep 2026 – 30 sep 2026». Restar un día acá no es calcular una
+          cifra: es leer el borde que el cable declara medio abierto. */}
+      {activo?.rango !== undefined && (
+        <Label as="div">
+          {`${format.calendar(activo.rango.desde)} – ${format.calendar(diaAnterior(activo.rango.hasta))}`}
+        </Label>
+      )}
 
       {activo?.enCurso === true && (
         <Label as="div">Período en curso · incompleto, no compara contra uno cerrado</Label>

@@ -12,6 +12,7 @@ import { PeriodPicker } from './PeriodPicker'
 import { Tabs } from './Tabs'
 import { UserMenu } from './UserMenu'
 import { ThemeToggle } from './ThemeToggle'
+import type { Formatter } from '../../render/format'
 import type { Theme } from '../../tokens/theme'
 import type { AppContext, Metric, Tab } from '../../api/types'
 
@@ -22,6 +23,9 @@ type Props = {
   /** Las métricas de la pestaña activa · el selector de período las necesita
    *  para saber qué granos puede ofrecer. */
   tabMetrics: readonly Metric[]
+  /** Del locale del tenant · baja hasta el selector de período, que redacta el
+   *  rango. Es el único lugar del sistema que sabe en qué idioma se formatea. */
+  format: Formatter
   onSelectTab: (id: string) => void
   onSelectPeriod: (id: string) => void
   onSelectTenant?: (id: string) => void
@@ -38,6 +42,7 @@ export function Topbar({
   activeTab,
   activePeriodId,
   tabMetrics,
+  format,
   onSelectTab,
   onSelectPeriod,
   onSelectTenant,
@@ -196,6 +201,7 @@ export function Topbar({
           periods={context.periodos}
           activeId={activePeriodId}
           metrics={tabMetrics}
+          format={format}
           onSelect={onSelectPeriod}
         />
       </div>

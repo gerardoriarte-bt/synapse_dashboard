@@ -240,7 +240,21 @@ export function adaptContext(w: WireContext): AppContext {
     // selector de tenant del navbar, y para eso hace falta `tenantsDisponibles`,
     // que tampoco existe. Declarar `plataforma` pintaría un selector vacío.
     // Pedido en §4 del plan.
-    alcance: 'usuario',
+    // ── **`scope` LLEGÓ** · B1.1, medido el 2026-09-28 ──────────────────────
+    //
+    // Acá decía `'usuario'` fijo con su razón: «declarar `plataforma` pintaría
+    // un selector vacío». Esa razón venció — el cable trae `kind` y la lista.
+    //
+    // **`multi_tenant` es lo que el contrato llama `plataforma`**, y la
+    // traducción es del adaptador: son los dos nombres de lo mismo y el contrato
+    // no adopta la grafía del cable.
+    alcance: w.scope.kind === 'multi_tenant' ? 'plataforma' : 'usuario',
+    // **Sólo cuando hay más de uno.** Con un tenant el selector no tiene qué
+    // ofrecer, y es la misma regla que el selector de dashboard de F5.1: un
+    // control que no ofrece una elección es ruido.
+    ...(w.scope.tenants.length > 1
+      ? { tenantsDisponibles: w.scope.tenants.map((x) => ({ id: x.id, etiqueta: x.name })) }
+      : {}),
 
     user: {
       id: w.user.id,
@@ -344,12 +358,28 @@ export function adaptContext(w: WireContext): AppContext {
     // fork—, y es la respuesta correcta: no sabemos cuál está abierto, así que
     // no afirmamos nada de ninguno. Marcar el primero «porque suele ser el mes
     // en curso» sería adivinar, y se vería bien.
-    periodos: w.periods.map((id) => ({
-      id,
-      etiqueta: id,
-      grano: granoDelId(id),
-      ...(w.open_period === undefined ? {} : { enCurso: id === w.open_period }),
-    })),
+    // ── **`periods_detail` LLEGÓ** · B1.1, medido el 2026-09-28 ─────────────
+    //
+    // `periods` sigue siendo la fuente del ORDEN y de qué períodos hay; el
+    // detalle se busca por clave y **no se asume que venga para todos**: si
+    // falta, se cae a lo de antes en vez de descartar el período.
+    periodos: w.periods.map((id) => {
+      const det = (w.periods_detail ?? []).find((d) => d.key === id)
+      return {
+        id,
+        etiqueta: id,
+        // **El grano DECLARADO le gana al deducido del id.** `granoDelId` existe
+        // porque no había otra fuente, y el contrato ya advertía que deducirlo
+        // «es frágil en cuanto aparezca un período con nombre propio». Ahora hay
+        // fuente; el deducido queda de respaldo.
+        grano: det === undefined ? granoDelId(id) : adaptGrano(det.grain),
+        // **El rango va como lo manda el cable, sin formatear.** Quien lo pinta
+        // tiene el formateador del tenant; redactarlo acá sería el adaptador
+        // escribiendo copy, y además con el locale equivocado.
+        ...(det === undefined ? {} : { rango: { desde: det.start, hasta: det.end } }),
+        ...(w.open_period === undefined ? {} : { enCurso: id === w.open_period }),
+      }
+    }),
 
     catalogVersion: w.catalog_version,
   }
@@ -363,6 +393,19 @@ export function adaptContext(w: WireContext): AppContext {
  *  no hay otra fuente, y el selector NECESITA el grano para deshabilitar lo que
  *  una métrica mensual no puede contestar. Desaparece en cuanto el backend
  *  mande el período como objeto · §4 ask 10. */
+/** El grano DECLARADO, del cable al contrato · 2026-09-28
+ *
+ *  Dos vocabularios para lo mismo: el cable dice `month`/`week` y el contrato
+ *  `mes`/`semana`. **Es el adaptador quien traduce**, que es exactamente su
+ *  trabajo — renombrar sin calcular.
+ *
+ *  **El cable no declara `day` y el contrato sí `dia`**, así que un grano diario
+ *  sólo puede llegar por el id. No se inventa una rama para un valor que nadie
+ *  emite: el `switch` cubre lo que el cable declara y nada más. */
+function adaptGrano(g: 'month' | 'week'): 'semana' | 'mes' {
+  return g === 'week' ? 'semana' : 'mes'
+}
+
 function granoDelId(id: string): 'dia' | 'semana' | 'mes' {
   if (/^\d{4}-W\d{2}$/.test(id)) return 'semana'
   if (/^\d{4}-\d{2}-\d{2}/.test(id)) return 'dia'
@@ -379,7 +422,20 @@ function adaptTabMeta(t: W['TabMeta']): Tab {
     nombre: t.name,
     pregunta: t.operational_question,
     orden: t.sort_order,
-    // `icono` y `chatSugerencias` no llegan y no se rellenan.
+    // ── **LLEGARON el 2026-09-28** · B4.4, medido contra `5924bf2b` ──────────
+    //
+    // Estuvieron pedidos desde el 2026-09-15, cuando F4.8 construyó el editor:
+    // el builder los escribía y la consola no los recibía.
+    //
+    // **El icono vacío se omite en vez de pasarse como `''`.** El contrato lo
+    // declara opcional, y un `icono: ''` obliga a cada consumidor a distinguir
+    // «sin icono» de «icono vacío» — que es la misma cadena y no significan lo
+    // mismo. Ausente ya dice «no hay».
+    ...(t.icon === '' ? {} : { icono: t.icon }),
+    // **La lista vacía SÍ se pasa**, y la asimetría es a propósito: el servicio
+    // la emite siempre como lista, así que `[]` es «no hay sugerencias» y no
+    // «no sé». Omitirla obligaría a un `?? []` en cada consumidor.
+    chatSugerencias: t.chat_suggestions,
   }
 }
 
@@ -582,6 +638,12 @@ function adaptPanel(p: WirePanel): PanelConfig {
     // `paramsDisponibles`; lo que cambia es que ahora los dos lados de esa
     // comparación hablan el mismo idioma.
     ...(p.options === undefined ? {} : { opciones: traducirParams(p.options) }),
+    // **La nota de lectura** · B1.13, llegó el 2026-09-28 · medida.
+    //
+    // **Vacía se OMITE**, igual que el icono de la pestaña: una nota de cadena
+    // vacía obliga a cada consumidor a distinguirla de «no hay», y no es lo
+    // mismo. Ausente ya lo dice, y el cuerpo no pinta un renglón en blanco.
+    ...(p.note === '' ? {} : { nota: p.note }),
   }
 }
 

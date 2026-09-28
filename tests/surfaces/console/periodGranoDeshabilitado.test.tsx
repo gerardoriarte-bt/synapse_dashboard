@@ -18,6 +18,7 @@
  *  que el grupo exista, es que esté apagado y que diga por qué.
  */
 import { render, screen } from '@testing-library/react'
+import { createFormat } from '@/render/format'
 import { describe, expect, it, vi } from 'vitest'
 import { PeriodPicker } from '@/surfaces/console/PeriodPicker'
 import type { Metric, Period } from '@/api/types'
@@ -37,7 +38,7 @@ const LOS_TRES = [
 
 const montar = (metrics: readonly Metric[]) =>
   render(
-    <PeriodPicker periods={LOS_TRES} activeId="2026-09" metrics={metrics} onSelect={vi.fn()} />,
+    <PeriodPicker periods={LOS_TRES} activeId="2026-09" metrics={metrics} format={createFormat('es-MX')} onSelect={vi.fn()} />,
   )
 
 describe('una pestaña MENSUAL apaga semanas y días', () => {

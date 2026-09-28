@@ -14,6 +14,7 @@
  */
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { createFormat } from '@/render/format'
 import { describe, expect, it, vi } from 'vitest'
 import { PeriodPicker } from '@/surfaces/console/PeriodPicker'
 import { adaptContext } from '@/api/adapt'
@@ -31,7 +32,7 @@ const periodo = (id: string, enCurso?: boolean): Period => ({
  *  suyas en `periodGrain.test.ts`. */
 const montar = (periods: Period[], activeId = '2026-09') =>
   render(
-    <PeriodPicker periods={periods} activeId={activeId} metrics={[]} onSelect={vi.fn()} />,
+    <PeriodPicker periods={periods} activeId={activeId} metrics={[]} format={createFormat('es-MX')} onSelect={vi.fn()} />,
   )
 
 describe('se marca el que el CABLE declara, no el primero', () => {
@@ -71,6 +72,10 @@ describe('sin el campo, no se afirma nada de ninguno', () => {
       role: { id: 'r', name: 'admin' },
       tabs: [],
       periods: ['2026-09', '2026-08'],
+      // Requerido en el cable desde el 2026-09-28 y leído sin guardia, igual
+      // que el resto de los requeridos. Sin `periods_detail` a propósito: es
+      // opcional de hecho, y el grano tiene que seguir saliendo del id.
+      scope: { kind: 'single_tenant', tenants: [{ id: 't', name: 'UA' }] },
       catalog_version: 1,
     } as never)
 
@@ -85,6 +90,7 @@ describe('sin el campo, no se afirma nada de ninguno', () => {
       tabs: [],
       periods: ['2026-09', '2026-08'],
       open_period: '2026-08',
+      scope: { kind: 'single_tenant', tenants: [{ id: 't', name: 'UA' }] },
       catalog_version: 1,
     } as never)
 
@@ -127,6 +133,7 @@ describe('el desplegable · 2026-09-24', () => {
         periods={[periodo('2026-09', true), periodo('2026-08', false)]}
         activeId="2026-09"
         metrics={[]}
+        format={createFormat('es-MX')}
         onSelect={elegir}
       />,
     )

@@ -724,8 +724,42 @@ export interface components {
             id: components["schemas"]["PeriodoId"];
             /** @example JUL 2026 */
             etiqueta: string;
-            /** @example 1 – 31 JUL 2026 */
-            rango?: string;
+            /**
+             * @description Los bordes del período · **`[desde, hasta)`, con el fin EXCLUSIVO**.
+             *
+             *     ── **ERA UNA CADENA REDACTADA HASTA EL 2026-09-28** ─────────────────
+             *
+             *     Decía `rango: string` con el ejemplo `'1 – 31 JUL 2026'`, o sea que el
+             *     backend lo redactaba. **Cambió porque el dato llegó y es otra cosa**:
+             *     `periods_detail` trae `start` y `end` como fechas ISO, medidas contra
+             *     `5924bf2b`.
+             *
+             *     **Y está bien que sea así.** Redactar «1 – 31 JUL 2026» es formatear
+             *     fechas, y eso depende del locale del tenant, que es lo que
+             *     `render/format.ts` ya sabe hacer con `calendar()`. Si lo redactara el
+             *     backend tendríamos dos formateadores de fecha en el sistema y el día
+             *     que cambie el locale sólo se enteraría uno.
+             *
+             *     **El adaptador NO lo redacta**: pasa los bordes. Quien lo pinta tiene
+             *     el formateador del tenant; componer la cadena acá sería el adaptador
+             *     escribiendo copy, y encima en un locale que no conoce.
+             *
+             *     El fin exclusivo no es una preferencia: es lo que el servicio emite
+             *     —`2026-09` va de `2026-09-01` a `2026-10-01`— y escribirlo inclusivo
+             *     haría que la última fecha del rango fuera de otro mes.
+             */
+            rango?: {
+                /**
+                 * Format: date
+                 * @example 2026-09-01
+                 */
+                desde: string;
+                /**
+                 * Format: date
+                 * @example 2026-10-01
+                 */
+                hasta: string;
+            };
             /**
              * @description **Texto ya redactado por el backend**, para pintarlo tal cual. Es lo
              *     que el `.pen` dibuja en el header: «1 – 31 JUL 2026 · MTD CERRADO».
@@ -816,6 +850,17 @@ export interface components {
             grafico?: components["schemas"]["GraficoId"];
             /** Format: uuid */
             metricId: string;
+            /**
+             * @description La nota de lectura que el admin escribe en el builder · **llegó el
+             *     2026-09-28**, B1.13, medida sobre los nueve paneles del planner.
+             *
+             *     **Vive en el LAYOUT y no en el dato**, y por eso está acá y no en el
+             *     payload: es una decisión de composición —qué conviene saber al leer
+             *     este panel— y no cambia con el período.
+             *
+             *     Un rol puede reemplazarla con su override.
+             */
+            nota?: string;
             colStart: number;
             colSpan: number;
             /** @description En unidades de grilla, nunca en píxeles: `px = 96·N − 16`. */

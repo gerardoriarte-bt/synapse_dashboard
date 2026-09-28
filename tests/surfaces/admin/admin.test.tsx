@@ -430,6 +430,7 @@ describe('§PEN:A1 · el navbar de admin pinta la identidad', () => {
           role: { id: 'r-9', name: 'planner' },
           tabs: [],
           periods: ['2026-09'],
+          scope: { kind: 'single_tenant', tenants: [{ id: 't-1', name: 'Under Armour México' }] },
           catalog_version: 1,
         }),
       ),
