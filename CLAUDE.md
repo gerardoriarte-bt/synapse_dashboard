@@ -984,6 +984,16 @@ está ignorado desde el 2026-09-14. Pero circularon por un archivo compartido.
 en el plan porque no es una tarea del front — es operación. **Está diferido, no
 olvidado**: si alguien lo vuelve a levantar, ya se decidió.
 
+**Y se sumó una el 2026-09-28**: la contraseña de producción de
+`gerardo.riarte@buentipo.com` se pegó en una conversación con el agente. **No se
+usó** —para medir el servicio local alcanzan los dos usuarios sembrados, que
+están documentados en `dev/postgres/README.md`— pero quedó en un historial.
+
+**Conviene rotarla antes que las otras**, porque a diferencia de las de
+`environments.txt` ésta es de una persona y da acceso a la consola. Y vale la
+regla para adelante: **para medir cualquier cosa contra `:4010` no hace falta una
+credencial real** — `dev@synapse.local` tiene rol `admin` en la base descartable.
+
 **Para el contexto de cómo se llegó hasta acá**, las bitácoras cuentan lo que
 costó descubrir y no está en el log: `docs/BITACORA-2026-09-02.md` la jornada que
 cerró la Fase 1, `docs/BITACORA-2026-09-04.md` los dos días que dejaron el front

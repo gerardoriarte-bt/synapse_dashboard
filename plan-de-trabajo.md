@@ -604,7 +604,7 @@ la ruta que lo emite.
 
 ## Fase 1 — API de consola
 
-### B1.1 ✅ `GET /config/me`
+### B1.1 ⚠️ `GET /config/me` · llegaron dos de seis
 **Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. Llegan `period_grain: "month"`, `periods_detail` con `[start, end)` por período, y `scope` —`kind: single_tenant` con el token de planner, y `tenants` nunca `null`—.
 
 **Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `GET /config/me` responde con `user`, `tenant`, `role`, `tabs`, `periods` y `catalog_version`. **Parcial** porque faltan `theme` —el campo existe en `users` y el `PUT` lo escribe— y el resto del contexto que declara el contrato.
@@ -615,7 +615,21 @@ la ruta que lo emite.
 - **`Periodo` no declara su `grano`.** `periods` son doce cadenas sueltas —`"2026-09"`— y el criterio pide `dia | semana | mes`: «sin él el front sabe que una métrica es mensual pero no si `2026-W32` es una semana».
 - **`alcance` no existe**, y con él `tenantsDisponibles`. Por eso el adaptador fija `alcance: 'usuario'` con su razón escrita.
 
-**Espera del backend.** El resto del contexto: `alcance` con `tenantsDisponibles`, el `grano` de cada período, `tenant.etiqueta` y `vertical`, `role.puedeAprobar`, `user.capabilities`, y en la pestaña `key`, `icon` y `chat_suggestions`.
+**Espera del backend.** `tenant.etiqueta`, `role.puedeAprobar`, `user.capabilities` y la `key` de la pestaña.
+
+**Medido campo por campo el 2026-09-28 contra `5924bf2b`**, y por eso esta tarea NO pasa a ✅: el pedido tenía seis cosas y llegaron dos.
+
+| Pedido | Estado |
+|---|---|
+| `alcance` con `tenantsDisponibles` | ✅ llegó como `scope` · `{kind, tenants[]}` |
+| El `grano` de cada período | ✅ `period_grain` y `periods_detail[].grain` |
+| `icon` y `chat_suggestions` en la pestaña | ✅ · y las sugerencias como lista, nunca `null` |
+| `tenant.etiqueta` | ✗ · `tenant` trae `id`, `name`, `locale`, `currency`, `timezone` |
+| `role.puedeAprobar` | ✗ · `role` trae `id` y `name` |
+| `user.capabilities` | ✗ · `user` trae `id`, `email`, nombre y `theme` |
+| La `key` de la pestaña | ✗ |
+
+**Y `tenant.vertical` se RETIRA del pedido**, que es nuestro y no suyo: §3.5 declara `vertical` **y** `plantillaOrigen`, y el mecanismo no existe de ningún lado · `docs/DECISIONES-2026-09-28-estado-y-vertical.md`. Pedir la columna sin la plantilla les haría escribir un campo que nadie llena.
 **Descripción.** Contexto de arranque: `user` (con `capacidades` y
 `preferencias`), `tenant`, `role` (con `puedeAprobar`), `tabs` **sin paneles**,
 `periodos`, `catalogVersion`, `alcance` y —si hay más de uno— `layouts`.
@@ -722,7 +736,7 @@ paneles `kpi` traen `presentation` con su `label`, su `meter` —`% OF TARGET`, 
 la nota «706.8K OF 1.27M»— y sus dos comparativos. `roas` sin medidor, que es lo
 que su commit anticipaba. **Es la primera vez que la anatomía completa de un KPI
 se ve con dato del negocio.**
-**Espera del backend.** **Solo la `nota` de panel.** El pedido grande que había acá —«`presentation` para las siete formas que no son escalares»— **se retira: estaba mal**, y lo corrigió leer nuestro propio código el 2026-09-15.
+**Pedido cumplido el 2026-09-28.** Era **solo la `nota` de panel**, y llegó. El pedido grande que había acá —«`presentation` para las siete formas que no son escalares»— **se retira: estaba mal**, y lo corrigió leer nuestro propio código el 2026-09-15.
 
 **`presentation` la lee UN solo cuerpo: `KpiBody`.** Ningún otro la toca — verificado con un grep sobre `src/render/bodies/`. Y no es un olvido: los demás sacan sus rótulos **del propio valor**. `BarsBody` hace `value.items.map(i => i.etiqueta)`; cada ítem viaja con su etiqueta. **«Ningún número desnudo» lo cumple la estructura del dato, no `presentation`.**
 
@@ -1521,7 +1535,7 @@ en `2fafe82`. Ver `docs/ESTADO-backend-2026-09-22.md`.
 ### B4.4 ✅ `PUT /admin/layouts/{id}` — editar pestañas y paneles
 **Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. `tab.icon` y `tab.chat_suggestions` llegan en `GET /config/tabs/{id}`, y las sugerencias **como lista, nunca `null`**. Vacías en la semilla, presentes en el cable.
 
-**Espera del backend.** **`chat_suggestions` e `icon` en la pestaña** — pedido el 2026-09-15, cuando F4.8 construyó el editor.
+**Pedido cumplido el 2026-09-28.** Eran **`chat_suggestions` e `icon` en la pestaña**, pedidos el 2026-09-15 cuando F4.8 construyó el editor. Entran por `PUT /admin/layouts/{id}` —máximo 8 sugerencias, más da `422 VALIDATION_CHAT_SUGGESTIONS`— y salen por la consola.
 
 Los dos están en el modelo de §2 de `design.md` y en `Pestana` del contrato, y no están en `DDTab` ni en `TabInput`: **no hay dónde escribirlos ni de dónde leerlos**. `chatSugerencias[]` es lo que C3 pinta como «chips de consulta sugerida por pestaña», así que sin el campo el chat abre en un vacío sin sugerencias. `icono` es menor y va de paso, porque es la misma línea.
 
@@ -1656,7 +1670,7 @@ de la regla: «les saca la decisión de las manos».
 - **El parámetro es `role_id`, no `roleId`.** Medido: camelCase devuelve **400**. No se deduce del resto del cable —`/config/tabs` usa `layoutId` y `dashboardId`— y **MSW no podía verlo**, porque su handler leía la misma grafía que mandábamos. F4.12 nunca pudo haber funcionado contra el servicio real.
 - **Viene SIN paneles.** `tabs[]` trae `id`, `name`, `operational_question` y `sort_order`. Nuestra versión devolvía la pestaña con sus paneles ya filtrados, que es lo que deja comparar «CEO contra Planner» panel por panel.
 
-**Espera del backend.** **Los paneles de cada pestaña en el preview.** Hoy `GET /admin/layouts/{layoutId}/preview?role_id=` devuelve `tabs[]` con `id`, `name`, `operational_question` y `sort_order`, y nada más — medido el 2026-09-26.
+**Pedido cumplido el 2026-09-28.** Eran **los paneles de cada pestaña en el preview**, y llegaron. Hoy `GET /admin/layouts/{layoutId}/preview?role_id=` devuelve `tabs[]` con `id`, `name`, `operational_question` y `sort_order`, y nada más — medido el 2026-09-26.
 
 Sin ellos el preview contesta **qué pestañas** ve un rol y no **qué paneles**, que es la mitad que `hidden_metric_ids` recorta y la razón por la que §7.2 pide esta pantalla. **No hay otra ruta que lo dé**: `GET /config/tabs/{tabId}` resuelve el rol desde el token y no acepta lente, así que un admin no puede pedir una pestaña con los ojos de otro rol.
 

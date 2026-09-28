@@ -22,9 +22,14 @@ transcripción — la lección del 2026-09-25, «una transcripción que coincide
 una medición no es una segunda fuente». Todo lo de abajo sale de **llamar a las
 rutas**.
 
-**Con qué token.** `planner@synapse.local`, que está documentado en
-`dev/postgres/README.md` para la base descartable. Alcanza para las rutas de
-consola; **las de admin quedaron sin medir**, y se dice cuáles.
+**Con qué token.** Los dos usuarios de la base descartable, los dos documentados
+en `dev/postgres/README.md`: **`planner@synapse.local`** para las rutas de
+consola y **`dev@synapse.local`** —rol `admin`, del `arranque.sql`— para las de
+administración.
+
+**No se usó ninguna credencial de producción**, y conviene dejarlo escrito: la
+base local tiene sus propios usuarios sembrados, así que una contraseña real no
+sólo estaría fuera de lugar — probablemente ni siquiera entraría.
 
 ## Medido y confirmado
 
@@ -67,7 +72,7 @@ Cuatro familias, medidas una por una:
 | `/admin/tenants` con token de planner | 403 | `AUTH_FORBIDDEN` |
 | `theme: "morado"` en preferencias | 400 | `VALIDATION_REQUEST` |
 
-**El `code` funciona. El `error` no.**
+**El `code` funciona. El `error`, a veces.**
 
 ## EL HALLAZGO · dos mensajes de error no están en español, y uno filtra el validador
 
@@ -85,6 +90,11 @@ su razón escrita: «redactar el error del servidor sin saber qué pasó sería 
 front inventando»— y `ErrorState` lo pinta como `phrase`. O sea que un usuario
 puede ver el nombre de un struct de Go y el tag de un validador.
 
+**No es universal, y eso lo hace más fácil de arreglar.** Los errores del revert
+salen en español y bien redactados —«el layout no tiene una versión anterior a la
+que volver; indique to_layout_id»—, así que no es una política: son dos handlers
+que devuelven el error crudo.
+
 **No es nuestro para arreglar.** El producto habla español y el dueño del copy es
 quien lo emite; traducir acá sería una tabla de traducción que nadie mantiene.
 **Va como pedido**, y es barato: el 400 genérico necesita un mensaje redactado en
@@ -92,15 +102,39 @@ vez del `err.Error()` del validador.
 
 ## NO medido, y por qué
 
-| | Por qué |
-|---|---|
-| **B4.9** · preview con paneles | Ruta de admin · el token de planner da 403. La ruta existe y el esquema declara `panels[]`, pero **eso es su transcripción, no una medición** |
-| **B4.2** · revert | Ídem · `POST /admin/layouts/{id}/revert` |
-| **B2.12** · prosa por agente | Detrás de `DD_MATERIALIZE_PROSE_ENABLED`, default `false`. Con el flag apagado los dos paneles siguen sirviendo el valor de la semilla — el «4.28M» de siempre |
+### B4.9 · el preview trae los paneles · ✅ · y es lo que F4.12 había perdido
 
-**Para cerrar las tres hace falta un token de admin.** El de
-`gerardo.riarte@buentipo.com` no está documentado en el repositorio, y no se
-inventa.
+Medido con los dos lentes sobre el mismo layout publicado:
+
+| Lente | Pestañas | Paneles | `col_span` del primero |
+|---|---|---|---|
+| `admin` | 1 | **12** | 12 |
+| `planner` | 1 | **9** | **4** ← el override aplicado |
+
+Y cada panel trae las ocho claves, `note` incluida. **Esto destraba F4.12**, que
+estaba en ⚠️ porque «el preview de upstream devuelve qué pestañas ve el rol y no
+sus paneles», así que `RolePreview` había perdido su grilla.
+
+### B4.2 · revert · ✅ las compuertas, medidas sin mutar
+
+Con un solo layout publicado no hay a qué volver, que es justo lo que deja
+probar las dos guardas **sin tocar el estado**:
+
+```
+POST /admin/layouts/{id}/revert  {}                   → 409 CONFLICT_NO_PREVIOUS
+POST /admin/layouts/{id}/revert  {to_layout_id: él}   → 409 CONFLICT_REVERT_SELF
+```
+
+**La reversión en sí no se midió**, y es a propósito: copia y publica, o sea que
+cambiaría el layout que la consola está sirviendo. Se mide cuando haya una
+segunda versión que no sea la de nadie.
+
+### B2.12 · prosa por agente · ⚠️ sin medir
+
+Detrás de `DD_MATERIALIZE_PROSE_ENABLED`, default `false`. Con el flag apagado
+los dos paneles siguen sirviendo el valor de la semilla — el «4.28M» de siempre.
+**Prenderlo es una llamada a Cortex por panel de prosa y por período**, así que
+no se prende sin decidirlo.
 
 ## Lo que nos avisaron, y hay que mirarlo
 
