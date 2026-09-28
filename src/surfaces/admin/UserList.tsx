@@ -90,9 +90,15 @@ export function UserList({ format, usuarios, total, clientes, cargando = false }
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
-        <h1 className="font-display text-titulo tracking-titulo leading-titulo text-ink m-0">
-          Usuarios
-        </h1>
+        {/* ── EL TÍTULO NO VA ACÁ · 2026-09-28 ────────────────────────────
+            Había un `<h1>` con «Usuarios» **y `AdminChrome` pinta el mismo
+            texto**, porque sale de `pantallas.ts`. Dos `<h1>` por pantalla y el
+            título repetido; el dibujo tiene uno solo.
+
+            Lo destapó cruzar el tamaño contra el dibujo: la pregunta era de 15
+            contra 26 y la respuesta resultó ser que sobraba un título. La
+            pregunta operativa SÍ es de la vista —es lo que esta pantalla
+            contesta— y se queda. */}
         <Label as="div">¿Quién entra a qué cliente, y con qué rol?</Label>
         {/* **El resumen literal del dibujo** —«17 usuarios · 2 clientes con
             usuarios»— y los dos números salen del servicio.

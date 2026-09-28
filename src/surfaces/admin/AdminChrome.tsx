@@ -81,7 +81,15 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
           </div>
 
           <div className="flex items-baseline justify-between gap-6">
-            <h1 className="font-display text-titulo tracking-titulo leading-titulo text-ink m-0">
+            {/* **`titulo-lg`, no `titulo`** · 2026-09-28. El dibujo pone los
+                títulos de superficie de admin en el mismo tamaño que la pregunta
+                operativa de la consola, y el token que los sirve a los dos es
+                éste. Estaba en `titulo` —15— porque el token medía 20 con dos
+                nodos; al remedirlo contra los 36 que existen quedó en 26.
+
+                **Y acá vive EL título de la pantalla, uno solo.** Las vistas ya
+                no pintan el suyo — ver abajo. */}
+            <h1 className="font-display text-titulo-lg tracking-titulo leading-titulo text-ink m-0">
               {pantalla.nombre}
             </h1>
 
