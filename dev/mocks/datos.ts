@@ -26,6 +26,9 @@
 
 export const TENANT = '11111111-1111-1111-1111-111111111111'
 export const LAYOUT_PUB = '22222222-2222-2222-2222-222222222222'
+/** Los dos dashboards · el segundo sin layout, como el «Marca» de la base local. */
+export const DASH_A = '44444444-4444-4444-4444-4444444444aa'
+export const DASH_B = '44444444-4444-4444-4444-4444444444bb'
 export const LAYOUT_DRAFT = '22222222-2222-2222-2222-333333333333'
 export const TAB_A = '33333333-3333-3333-3333-333333333333'
 export const TAB_B = '33333333-3333-3333-3333-444444444444'
@@ -147,14 +150,28 @@ export const roles = [
   { id: R(3), tenant_id: TENANT, name: 'Analista', tab_ids: [], hidden_metric_ids: [], layout_overrides: {}, user_count: 0 },
 ]
 
+/** **`label` DISTINTA de `name`, a propósito.** El selector de cliente del
+ *  navbar lee la corta y la cabecera la larga; con las dos iguales no se puede
+ *  ver cuál se está leyendo, y **ese fue el defecto**: el adaptador leía `name`
+ *  acá mientras el resto ya leía `label`, y se descubrió abriendo la aplicación.
+ *  Un fixture donde los dos valores coinciden no distingue nada. */
 export const tenants = [
-  { id: TENANT, name: 'Under Armour México' },
-  { id: '11111111-1111-1111-1111-222222222222', name: 'Terpel Colombia' },
+  { id: TENANT, name: 'Under Armour México', label: 'UA México' },
+  { id: '11111111-1111-1111-1111-222222222222', name: 'Terpel Colombia', label: 'Terpel' },
 ]
 
-const panel = (n: number, metric: number, tab: string, colStart: number, colSpan: number, tipo: string) => ({
+/** **`chart` y `note` son del cable desde `f70cec2`** · medidos el 2026-09-28.
+ *  Los dos van SIEMPRE, con cadena vacía por defecto, que es exactamente como
+ *  los emite el servicio en los doce paneles publicados. Omitirlos acá haría que
+ *  el modo mock hablara un cable más viejo que el real, que es la forma en que
+ *  este modo deja de servir para mirar. */
+const panel = (
+  n: number, metric: number, tab: string, colStart: number, colSpan: number, tipo: string,
+  chart = '',
+) => ({
   id: P(n), tab_id: tab, metric_id: M(metric), type: tipo,
   col_start: colStart, col_span: colSpan, row_span: 4,
+  chart, note: '',
 })
 
 export const layouts = [
@@ -164,10 +181,14 @@ export const layouts = [
 
 const tabsDe = (layout: string) => [
   {
-    tab: { id: TAB_A, layout_version_id: layout, name: 'eCommerce Overview', operational_question: '¿Cómo va el negocio?', sort_order: 1, role_ids: [] },
+    tab: { id: TAB_A, layout_version_id: layout, name: 'eCommerce Overview', key: 'ecommerce-overview', operational_question: '¿Cómo va el negocio?', sort_order: 1, role_ids: [] },
     panels: [
       panel(1, 0, TAB_A, 1, 3, 'kpi'),
       panel(2, 1, TAB_A, 4, 3, 'kpi'),
+      // La serie simple · `time_series`, sin `chart`. **Se queda acá**: la
+      // primera versión de este cambio la reemplazó por la apilada y con eso la
+      // línea de una serie dejaba de poder mirarse. Agregar un gráfico no puede
+      // costar otro.
       panel(3, 6, TAB_A, 7, 6, 'series'),
       panel(4, 12, TAB_A, 1, 4, 'bars'),
       // **El pronóstico, con su banda** · el bloque `forecast` acepta
@@ -178,8 +199,19 @@ const tabsDe = (layout: string) => [
     ],
   },
   {
-    tab: { id: TAB_B, layout_version_id: layout, name: 'Inventory & Shopping', operational_question: '', sort_order: 2, role_ids: [R(1)] },
-    panels: [panel(5, 13, TAB_B, 1, 6, 'list')],
+    tab: { id: TAB_B, layout_version_id: layout, name: 'Inventory & Shopping', key: 'inventory-shopping', operational_question: '', sort_order: 2, role_ids: [R(1)] },
+    panels: [
+      panel(5, 13, TAB_B, 1, 6, 'list'),
+      // **`stackarea`, y es lo que hace que se pueda MIRAR.** Los tres gráficos
+      // que se construyeron esta semana tenían cuerpo, repertorio y pruebas, y
+      // **no se podían ver en ningún lado**: el servicio real manda `''` en los
+      // doce paneles publicados y acá el campo no existía. Misma razón por la
+      // que `series_with_band` y `distribution` entraron el 25.
+      //
+      // Va sobre `multi_series` —M(8)— porque apilar una serie contra nada es el
+      // área que ya existe, y el cuerpo lo rechaza declarándolo.
+      panel(8, 8, TAB_B, 7, 6, 'series', 'stackarea'),
+    ],
   },
 ]
 
@@ -191,7 +223,11 @@ export const detalle = (layout: string) => ({
 /** El contexto de la consola · forma del cable. */
 export const contexto = {
   user: { id: usuario.id, email: usuario.email, first_name: usuario.first_name, last_name: usuario.last_name },
-  tenant: { id: TENANT, name: 'Under Armour México', timezone: 'America/Mexico_City' },
+  // **`label` es requerida en el cable desde `f70cec2`** y el navbar la pinta.
+  // Sin ella la consola decía «Contexto · undefined». El servicio la hace caer a
+  // `name` cuando el tenant no la define, así que acá va la forma corta que un
+  // navbar de verdad usaría — es lo que este modo existe para poder mirar.
+  tenant: { id: TENANT, name: 'Under Armour México', label: 'UA México', timezone: 'America/Mexico_City' },
   // **`admin`, y no uno de los tres roles del cliente.** El login de este modo
   // ya devolvía `role: 'admin'` y `/config/me` devolvía `CEO`: la consola lee el
   // segundo, así que el menú de usuario escondía la salida a administración y al
@@ -205,9 +241,53 @@ export const contexto = {
   tabs: tabsDe(LAYOUT_PUB).map((t) => ({
     id: t.tab.id,
     name: t.tab.name,
+    // **La identidad estable, y por qué el mock la tiene que traer de verdad**:
+    // el `id` se recrea en cada versión de layout y `key` no, así que es lo que
+    // hace que una restricción de rol sobreviva a una publicación. Un mock que
+    // la derivara del `id` esconde exactamente lo que el campo resuelve.
+    key: t.tab.key,
     operational_question: t.tab.operational_question,
     sort_order: t.tab.sort_order,
   })),
   periods: ['2026-09', '2026-08', '2026-07'],
+
+  // ── LOS CUATRO QUE FALTABAN, Y POR QUÉ ROMPÍAN LA APLICACIÓN ──────────────
+  //
+  // **El modo mock NO ARRANCABA y la puerta estaba verde** · encontrado el
+  // 2026-09-28 abriéndolo. `adaptContext` lee `w.scope.kind`, y sin `scope` eso
+  // es un `TypeError` sin mensaje: la consola decía «No se pudo cargar tu
+  // contexto · sin detalle del servidor», atribuyéndole al servidor un error
+  // nuestro. Es el mismo modo de falla que el `active_layout_id: null` del 26.
+  //
+  // **Ninguna prueba podía verlo**: las de consola construyen su contexto con
+  // los campos que necesitan, así que el que se quedó atrás fue éste. Es la
+  // regla de siempre — lo que existe para mirarse, se abre.
+  //
+  // Los cuatro se copiaron de `GET /config/me` del servicio corriendo, medido
+  // ese día contra `f70cec2`, no de memoria.
+  // **Y los tres del multi-dashboard.** Sin ellos la consola cae al estado
+  // vacío —«este cliente todavía no tiene un dashboard»— con doce paneles
+  // compuestos detrás: la ausencia se lee igual que un dashboard sin componer.
+  // El segundo va SIN layout a propósito, que es el estado normal de uno recién
+  // creado y lo único que hace visible el selector de C6.
+  dashboards: [
+    { id: DASH_A, name: 'Overview', slug: 'overview', is_default: true },
+    { id: DASH_B, name: 'Marca', slug: 'marca', is_default: false },
+  ],
+  active_dashboard_id: DASH_A,
+  active_layout_id: LAYOUT_PUB,
+  period_grain: 'month',
+  periods_detail: [
+    { key: '2026-09', grain: 'month', start: '2026-09-01', end: '2026-10-01' },
+    { key: '2026-08', grain: 'month', start: '2026-08-01', end: '2026-09-01' },
+    { key: '2026-07', grain: 'month', start: '2026-07-01', end: '2026-08-01' },
+  ],
+  // **`multi_tenant` con DOS**, que es lo que hace visible el selector de
+  // cliente: con uno solo el adaptador ni emite `tenantsDisponibles`, así que
+  // un mock de un tenant deja ese control sin poder mirarse nunca.
+  scope: {
+    kind: 'multi_tenant',
+    tenants: tenants.map((t) => ({ id: t.id, name: t.name, label: t.label })),
+  },
   catalog_version: 4,
 }

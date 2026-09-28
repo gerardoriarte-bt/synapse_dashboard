@@ -113,7 +113,9 @@ export const context: WireContext = {
   // tiene sentido con `multi_tenant`.
   scope: {
     kind: 'single_tenant' as const,
-    tenants: [{ id: 't-1', name: 'Under Armour México' }],
+    // **`label` distinta de `name` a propósito**: el selector del navbar lee
+    // la corta, y un fixture donde las dos coinciden no distingue cuál se leyó.
+    tenants: [{ id: 't-1', name: 'Under Armour México', label: 'UA México' }],
   },
   catalog_version: 1,
   // ── MULTI-DASHBOARD · F5.1 · 2026-09-26 ──────────────────────────────────

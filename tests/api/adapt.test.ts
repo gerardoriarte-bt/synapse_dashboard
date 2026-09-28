@@ -54,7 +54,7 @@ const contexto: WireContext = {
   periods_detail: [
     { key: '2026-08', grain: 'month' as const, start: '2026-08-01', end: '2026-09-01' },
   ],
-  scope: { kind: 'single_tenant' as const, tenants: [{ id: 't-1', name: 'UA MX' }] },
+  scope: { kind: 'single_tenant' as const, tenants: [{ id: 't-1', name: 'UA MX', label: 'UA MX' }] },
   catalog_version: 7,
 }
 

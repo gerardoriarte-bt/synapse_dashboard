@@ -41,6 +41,18 @@ const mal = (mensaje: string, status: number) =>
  * llamadas. Que se pierda al recargar es correcto — nadie debería confundir
  * esto con una base.
  */
+/** El slug de una `key` de pestaña · como lo hace el servicio, medido el
+ *  2026-09-28: recorta, baja a minúsculas, **quita los acentos** y junta con
+ *  guiones. `"Visión General"` → `vision-general`. */
+const slug = (v: string) =>
+  v
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
 const estado = {
   layouts: structuredClone(layouts),
   detalles: new Map(layouts.map((l) => [l.id, structuredClone(detalle(l.id))])),
@@ -185,16 +197,27 @@ export const worker = setupWorker(
     const d = estado.detalles.get(LAYOUT_PUB)
     const t = d?.tabs.find((x) => x.tab.id === params['tabId'])
     if (t === undefined) return mal('tab not found', 404)
+    // **Este `map` copia campo por campo, y por eso silencia los nuevos.**
+    // `chart` y `key` existían en `datos.ts` y no llegaban a la consola porque
+    // acá no estaban escritos: el gráfico apilado se dibujaba como dos líneas,
+    // que es un dibujo equivocado y no un panel roto. Lo encontró abrirlo.
+    //
+    // Se deja el copiado explícito a propósito —un `...p` haría que el mock
+    // devolviera campos que el cable no declara, que es la otra forma de
+    // mentir— pero queda anotado: **un campo nuevo del cable se agrega acá
+    // también**, y el síntoma de olvidarlo es que se vea bien.
     return ok({
       tab: {
         id: t.tab.id,
         name: t.tab.name,
+        key: t.tab.key,
         operational_question: t.tab.operational_question,
         sort_order: t.tab.sort_order,
       },
       panels: t.panels.map((p) => ({
         id: p.id, metric_id: p.metric_id, type: p.type,
         col_start: p.col_start, col_span: p.col_span, row_span: p.row_span,
+        chart: p.chart, note: p.note,
       })),
     })
   }),
@@ -227,7 +250,22 @@ export const worker = setupWorker(
                 // modo existe para evitar. Se descubrió abriéndolo en el
                 // navegador por primera vez.
                 value: valorPara(formaDe(id), i),
-                ...(i % 4 === 2 ? { reason: 'Stale data: last materialization is older than 3 days' } : {}),
+                // **En español desde el 2026-09-28, porque el servicio lo
+                // cambió y nosotros no lo pedimos.** El copy medido contra
+                // `f70cec2`, textual — un mock que se queda con la frase vieja
+                // hace que el modo mock muestre un idioma que el producto ya no
+                // habla, y es lo que se ve al abrirlo.
+                //
+                // Va con `unlocks_with`, que el real también manda: §8 pide que
+                // un estado diga qué lo desbloquea, y sin las dos frases este
+                // modo no deja mirar la gramática completa.
+                ...(i % 4 === 2
+                  ? {
+                      reason:
+                        'Esta métrica todavía no se calculó con datos reales; el valor que se muestra es de referencia',
+                      unlocks_with: 'Falta registrar la fuente de datos de esta métrica',
+                    }
+                  : {}),
               },
         ]),
       ),
@@ -388,7 +426,7 @@ export const worker = setupWorker(
     if (layout?.status === 'published') return mal('layout is published', 409)
 
     const cuerpo = (await request.json()) as {
-      tabs: { id?: string; name: string; operational_question: string; sort_order: number; role_ids?: string[]; panels?: unknown[] }[]
+      tabs: { id?: string; name: string; key?: string; operational_question: string; sort_order: number; role_ids?: string[]; panels?: unknown[] }[]
     }
     await delay(300)
     const d = {
@@ -400,15 +438,30 @@ export const worker = setupWorker(
           id: t.id ?? crypto.randomUUID(),
           layout_version_id: id,
           name: t.name,
+          // **La `key` se SLUGIFICA, y omitirla la deriva del nombre.** Medido
+          // el 2026-09-28 contra `f70cec2`: `"  MI-Clave  "` se guarda como
+          // `mi-clave`, y `"Visión General"` sin key queda `vision-general` —
+          // los acentos se van. Su documento decía sólo «recortado».
+          //
+          // **El mock lo replica en vez de guardar lo que le llegó**, porque un
+          // mock que devuelve el valor tal cual esconde justo la transformación:
+          // el builder mandaría `"Visión General"` y vería `"Visión General"`,
+          // y el día que se compare contra el real no coincidiría.
+          key: slug(t.key ?? t.name),
           operational_question: t.operational_question,
           sort_order: t.sort_order,
           role_ids: t.role_ids ?? [],
         },
         panels: (t.panels ?? []).map((p) => {
-          const q = p as { id?: string; metric_id: string; type: string; col_start: number; col_span: number; row_span: number; options?: unknown }
+          const q = p as { id?: string; metric_id: string; type: string; col_start: number; col_span: number; row_span: number; options?: unknown; chart?: string; note?: string }
           return {
             id: q.id ?? crypto.randomUUID(), tab_id: t.id ?? '', metric_id: q.metric_id,
             type: q.type, col_start: q.col_start, col_span: q.col_span, row_span: q.row_span,
+            // **Recortado y en minúsculas**, medido: `"  Waterfall  "` →
+            // `waterfall`. Ausente queda cadena vacía, que es el gráfico por
+            // defecto del bloque y lo que salen los doce publicados.
+            chart: (q.chart ?? '').trim().toLowerCase(),
+            note: (q.note ?? '').trim(),
             ...(q.options === undefined ? {} : { options: q.options }),
           }
         }),

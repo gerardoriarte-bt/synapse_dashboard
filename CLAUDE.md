@@ -132,7 +132,7 @@ revés de lo que parecía**. Medido ese día contra las cuatro fuentes:
 | **El catálogo de Snowflake** · el real, firmado | **Español** · `Ingresos`, «Venta total del sitio medida por Adobe Analytics…» | Datos |
 | Nuestro chrome | Español | Nosotros |
 | La semilla del backend | **Inglés** · `Executive summary`, `ALL CHANNELS` | Backend |
-| El copy de estados · `reason`, `unlocks_with` | **Inglés** | Backend |
+| El copy de estados · `reason`, `unlocks_with` | ~~Inglés~~ · **ESPAÑOL desde `f70cec2`** · medido el 2026-09-28, y no lo pedimos | Backend |
 
 **El inglés que se ve en pantalla no es el producto: es la semilla, y está
 derivada del dibujo.** El `.pen` dice `Resumen ejecutivo` donde la semilla dice
@@ -501,7 +501,58 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-09-25 · el backend contestó todo el mismo día
+### ⇩ ACÁ SE PARÓ · 2026-09-28 · el gráfico ya viaja, y un aviso que no bajó al cable
+
+**`chart` llegó y la cadena está cerrada.** Los cuatro gráficos de esta semana
+—`control`, `interval`, `stackarea` y la caída a `UnknownPlotState`— tenían cuerpo
+y repertorio y no tenían por dónde llegarles el id. Ahora sale del layout en los
+dos cables, lo adapta `adapt.ts` y **hay una prueba que lo sigue por los cuatro
+saltos** · `tests/surfaces/console/graficoViaja.test.tsx`.
+
+**Esa prueba es la que faltaba, no una más.** Las nueve que había rinden el cuerpo
+directo —`render(<SeriesBody grafico="stackarea" />)`—, así que verificaban el
+cuerpo y dejaban sin cubrir lo único que podía romperse: que el id **llegue**. El
+camino tiene un spread condicional en cada salto y una prop mal nombrada compila.
+Tres mutaciones fieles, tres muertas.
+
+**Y una de las tres mutaciones murió primero por la razón equivocada** —`CONOCIDOS`
+no existía, así que fue un `ReferenceError` y no el filtrado que quería probar—.
+Se rehízo con una lista blanca de verdad y entonces falló **exactamente una** de
+las tres pruebas, la que predecía. Es la misma lección de siempre con una cara
+nueva: una mutación que no reproduce el defecto real miente en las dos
+direcciones.
+
+**UN CAMBIO ANUNCIADO NO ESTÁ TRANSCRIPTO HASTA QUE ESTÁ EN EL CABLE**, y es el
+hallazgo que vale para adelante. `request_from` decía `"administrator"` y el
+servicio manda `"admin"`. **No se escribió de memoria**: ellos lo cambiaron y nos
+lo avisaron por escrito el 2026-09-25, con el ejemplo de respuesta al lado. El
+aviso se archivó en prosa y nunca bajó al yaml, que es de donde sale el tipo.
+
+La regla «nada se escribe de memoria» no cubre esto, porque nadie adivinó. Lo
+encontró **`backend-drift` releyendo la ruta**, que es el único que podía: la
+prueba del adaptador suministra el literal y lo afirma, así que verifica el
+paso-a-través y nunca el valor.
+
+**Los estados pasaron de cuatro a cinco.** `FORBIDDEN` dejó de ser inalcanzable
+—el usuario `planner` existe y oculta tres métricas—, y su payload es
+`{status, request_from}` **y nada más**: sin `reason` ni `unlocks_with`, que es la
+gramática de §8 que los otros cinco traen. Y **`ERROR` cambió de razón**: el
+builder ahora rechaza un `gauge` sin `maximum` antes de guardar, así que el
+disparador que el criterio declara ya no existe. Preguntado con qué se prueba.
+
+**Lo que sigue es esperar**: el mensaje está en
+`docs/MENSAJE-2026-09-28-backend-lo-que-piden.md`, con los tres archivos que nos
+piden, el sí a `roles.tab_keys`, y tres pedidos chicos. `backend-drift` ✓ las nueve
+contra `f70cec2`.
+
+**Y el entorno local cambió de llave.** `dev/postgres/README.md` documentaba una
+`DATA_ENCRYPTION_KEY` que este binario rechaza —se lee como base64—. **La que
+descifra la base de acá vive en el `.env` del repositorio del backend**, y eso
+importa: las credenciales de Snowflake del tenant son las reales, las del chat del
+24. Poner otra no es un inconveniente, es perderlas. El síntoma engaña — el login
+anda, `/config/*` anda, y lo que se cae es `/admin/*`.
+
+### ⇩ el 2026-09-25 · el backend contestó todo el mismo día
 
 **Lo que costó descubrir está en las bitácoras**: `docs/BITACORA-2026-09-25.md`
 —el día que nuestra propia transcripción nos hizo acusar al backend—,

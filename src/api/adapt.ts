@@ -253,7 +253,15 @@ export function adaptContext(w: WireContext): AppContext {
     // ofrecer, y es la misma regla que el selector de dashboard de F5.1: un
     // control que no ofrece una elección es ruido.
     ...(w.scope.tenants.length > 1
-      ? { tenantsDisponibles: w.scope.tenants.map((x) => ({ id: x.id, etiqueta: x.name })) }
+      ? {
+          // **`label` y no `name`** · corregido el 2026-09-28. El selector de
+          // cliente vive en el navbar, que es exactamente para lo que la forma
+          // corta existe, y acá se leía el nombre largo mientras la cabecera de
+          // al lado ya leía el corto. **Se vio abriendo la aplicación**: la
+          // consola decía «UA México» arriba y «UNDER ARMOUR MÉXICO» en el
+          // selector, dos nombres para el mismo cliente en la misma barra.
+          tenantsDisponibles: w.scope.tenants.map((x) => ({ id: x.id, etiqueta: x.label })),
+        }
       : {}),
 
     user: {

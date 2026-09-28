@@ -63,16 +63,30 @@ describe('el rango del período · B1.1', () => {
 })
 
 describe('el alcance · B1.1', () => {
-  it('`multi_tenant` es `plataforma`, y trae la lista', () => {
+  it('`multi_tenant` es `plataforma`, y la lista trae la FORMA CORTA', () => {
+    // **Las dos son distintas a propósito, y por eso esta prueba sirve.** Hasta
+    // el 2026-09-28 el fixture mandaba sólo `name` y el adaptador leía `name`:
+    // la prueba pasaba y el navbar mostraba el nombre largo en el selector con
+    // la forma corta al lado, dos nombres para el mismo cliente en la misma
+    // barra. **Con `label === name` ninguna aserción distingue cuál se leyó.**
+    //
+    // Se vio abriendo la aplicación, no acá. Lo que esta prueba hace ahora es
+    // que no vuelva a pasar sin avisar.
     const ctx = adaptContext({
       ...base,
       periods: [],
-      scope: { kind: 'multi_tenant', tenants: [{ id: 'a', name: 'UA' }, { id: 'b', name: 'Terpel' }] },
+      scope: {
+        kind: 'multi_tenant',
+        tenants: [
+          { id: 'a', name: 'Under Armour México', label: 'UA México' },
+          { id: 'b', name: 'Terpel Colombia', label: 'Terpel' },
+        ],
+      },
     } as unknown as WireContext)
 
     expect(ctx.alcance).toBe('plataforma')
     expect(ctx.tenantsDisponibles).toEqual([
-      { id: 'a', etiqueta: 'UA' },
+      { id: 'a', etiqueta: 'UA México' },
       { id: 'b', etiqueta: 'Terpel' },
     ])
   })

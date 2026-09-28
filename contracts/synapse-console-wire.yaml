@@ -754,10 +754,27 @@ components:
               description: '**Nunca `null`** · lo declaran ellos.'
               items:
                 type: object
-                required: [id, name]
+                required: [id, name, label]
                 properties:
                   id: { type: string, format: uuid }
                   name: { type: string, examples: ['Under Armour México'] }
+                  label:
+                    type: string
+                    description: |
+                      **La forma corta, y acá es DONDE SE USA.** Llegó en
+                      `f70cec2` junto a `tenant.label` y el cable la declaraba
+                      sólo en el tenant activo — medido el 2026-09-28: el
+                      servicio la manda también en cada entrada de `tenants`.
+
+                      **El selector de cliente del navbar es el navbar**, que es
+                      para lo que la forma corta existe. Mientras el adaptador
+                      leyó `name` acá, el selector decía «UNDER ARMOUR MÉXICO»
+                      con la cabecera al lado diciendo la corta: se vio abriendo
+                      la aplicación, no en una prueba.
+
+                      El servicio la hace caer a `name` cuando el tenant no la
+                      define, así que se lee siempre y sin respaldo.
+                    examples: ['UA México']
 
     UserInfo:
       type: object

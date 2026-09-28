@@ -91,7 +91,7 @@ const contextoDe = (
   periods_detail: [
     { key: '2026-07', grain: 'month' as const, start: '2026-07-01', end: '2026-08-01' },
   ],
-  scope: { kind: 'single_tenant' as const, tenants: [{ id: `t-${tenant}`, name: tenant }] },
+  scope: { kind: 'single_tenant' as const, tenants: [{ id: `t-${tenant}`, name: tenant, label: tenant }] },
   catalog_version: 1,
   dashboards: [{ id: `d-${tenant}`, name: 'Overview', slug: 'overview', is_default: true }],
   active_dashboard_id: `d-${tenant}`,
