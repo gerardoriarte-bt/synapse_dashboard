@@ -4344,6 +4344,12 @@ desaparece al responder.
 
 **Lo que NO se pudo VER:** las dos composiciones responsive. La ventana del navegador no se achicó —está maximizada— así que se verificó la de escritorio en pantalla y las otras dos sólo contra el frame. Queda dicho en vez de darse por mirado.
 
+**MIRADAS EL 2026-09-28** · `docs/AUDITORIA-2026-09-28-pen-vs-responsive.md`. La barra a 768 coincide con el frame en los nueve números —alto 52, padding 20, sin fondo, borde 1, botón 28 / `$r-md` / `$elev` / sin borde / mono 9—, medidos con `getComputedStyle` y no a ojo. **Y apareció una divergencia de una línea**: la línea de contexto se pintaba en mono 10 en los tres anchos y el frame de 768 la dibuja en **9**. Corregida — `Note` abajo de 1280, `Label` arriba. Se veía bien: un punto de mono a ese tamaño no se nota mirando.
+
+**A 360 exactamente no se pudo medir**: Chrome no achica la ventana por debajo de ~500 en macOS. 500 cae en el mismo escalón `<768`, así que la composición es la misma; lo que queda sin comprobar es el ancho literal.
+
+**Y salió algo que NO es de esta tarea**: el `.pen` dibuja **tres navbars** y pintamos uno. A 360 el frame suelta el tenant, el rol, el período y el CTA, y convierte el menú de pestañas en un desplegable. **Planteado y sin tomar** — es una tarea con su propio criterio, y los renglones del registro de pantallas son de la sesión de diseño.
+
 **La hoja se ensanchó en vez de duplicarse**: `PanelChat` pasó a `ChatSheet` y toma una **unión** —panel o pestaña, nunca las dos—, porque el servicio devuelve 400 con ambos y con dos campos opcionales ese estado se podría escribir. Lo que el contexto de pestaña no tiene queda declarado: sin sugeridas —esa ruta cuelga de un panel— y sin cuerpo para la cifra, que es §7 de la propuesta del 22 y sigue abierta.
 
 **Y apareció una colisión de nombres accesibles.** Tres botones dicen «Preguntar» en la misma pantalla —el del navbar, el de cada panel y el de enviar—. El literal visible es el del dibujo y no se toca; lo que se agregó es el `aria-label` con el alcance: «Preguntar sobre esta pestaña», «Preguntar sobre {métrica}».
