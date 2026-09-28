@@ -73,8 +73,28 @@ ENV DOLLAR='$' \
     NGINX_PORT=8080 \
     API_ORIGIN=http://synapse-api:8080
 
-# **8080 y no 80**: sin privilegios, para poder correr como usuario no-root en
-# Kubernetes o en ECS sin pedir `NET_BIND_SERVICE`.
+# ── CORRE COMO NO-ROOT, Y ESO NO SALE SOLO ────────────────────────────────────
+#
+# **8080 y no 80** porque abajo de 1024 hace falta `NET_BIND_SERVICE`. Pero el
+# puerto sólo lo PERMITE: hasta el 2026-09-28 este archivo decía «para poder
+# correr como no-root» y la imagen **no podía** — se probó con `--user 101:101` y
+# nginx muere con `mkdir() "/var/cache/nginx/client_temp" failed (13: Permission
+# denied)`.
+#
+# Era una capacidad afirmada y no verificada, igual que la del buffering. Ahora
+# está puesta: los directorios que nginx escribe se crean y se le dan al uid 101,
+# que es el usuario `nginx` de la imagen oficial.
+#
+# **Importa para AWS**: muchas cuentas exigen tarea no-root, y con
+# `readonlyRootFilesystem` hay que montar `/var/cache/nginx` y `/tmp` como
+# volúmenes efímeros.
+RUN set -eux; \
+    mkdir -p /var/cache/nginx /var/run/nginx; \
+    chown -R 101:101 /var/cache/nginx /var/run/nginx /etc/nginx/conf.d /usr/share/nginx/html; \
+    sed -i 's!^pid .*!pid /var/run/nginx/nginx.pid;!' /etc/nginx/nginx.conf
+
+USER 101:101
+
 EXPOSE 8080
 
 # El chequeo mira `/`, que `try_files` resuelve siempre a `index.html`. **No

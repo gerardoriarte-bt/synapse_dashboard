@@ -123,6 +123,63 @@ Es una garantía, no un arreglo.
   construir la imagen.** Los mocks no llegan al bundle igual, porque `vite build`
   sólo empaqueta lo alcanzable desde `index.html` y `mocks-fuera` lo verifica.
 
+## Para AWS · lo que hay que saber antes
+
+Verificado el 2026-09-28 construyendo y corriendo, no deduciendo.
+
+### 1 · LA ARQUITECTURA · **esto es lo que rompe primero**
+
+`docker build` en una Mac con Apple Silicon produce **`arm64`**. **Fargate por
+defecto es x86**, y un `arm64` en una tarea x86 falla con `exec format error`, que
+no dice nada útil.
+
+```bash
+docker build --platform=linux/amd64 -t synapse-front .
+```
+
+Verificado: la imagen sale `amd64/linux` y pesa lo mismo. **O se corre en
+Graviton** y se deja el `arm64` — las dos sirven, lo que no sirve es no elegir.
+
+### 2 · No-root y raíz de sólo lectura · **andan, con esta receta**
+
+La imagen corre como **`uid=101(nginx)`**, no como root. Y con
+`readonlyRootFilesystem` funciona montando **cuatro** volúmenes efímeros **con
+dueño**:
+
+```
+/var/cache/nginx     uid=101,gid=101
+/var/run/nginx       uid=101,gid=101
+/tmp                 uid=101,gid=101
+/etc/nginx/conf.d    uid=101,gid=101
+```
+
+**El cuarto sorprende y es obligatorio:** `envsubst` escribe ahí el conf
+resuelto al arrancar. Sin él el contenedor sale con `exit 1` y
+`can't create /etc/nginx/conf.d/default.conf: Read-only file system`.
+
+**Sin el `uid` en el montaje tampoco arranca**: los `tmpfs` se crean de root y el
+101 no escribe. El error es `open() "/var/run/nginx/nginx.pid" failed (13)`.
+
+Probado entero: `/`, `/admin`, `/builder` y el proxy, los cuatro en **200**.
+
+### 3 · Salud y logs · sale gratis
+
+- **Health check del balanceador: `/`**, que `try_files` resuelve siempre. **No
+  apuntarlo a `/api/v1`**: si dependiera del backend, un backend caído reiniciaría
+  el front en bucle sin arreglar nada.
+- **Los logs ya van a stdout y stderr** —`access.log` y `error.log` son enlaces a
+  `/dev/stdout` y `/dev/stderr`—, así que CloudWatch funciona sin configurar nada.
+
+### 4 · Lo que NO está resuelto y NO es del front
+
+| | |
+|---|---|
+| **TLS** | Va detrás de un ALB o un ingress que lo termine |
+| **El backend** | `API_ORIGIN` tiene que apuntar a algo. **Hoy el servicio se levanta a mano en `:4010`** y no sabemos si hay un `f70cec2` desplegado |
+| **La base** | Hoy es un Postgres local en Docker. En AWS es RDS — y `DB_AUTO_MIGRATE=true` **sigue prohibido** contra una base compartida |
+| **Los secretos** | `DATA_ENCRYPTION_KEY`, `JWT_SECRET` y las credenciales de Snowflake por tenant van en Secrets Manager o Parameter Store, no en el task definition |
+| **Rotar credenciales** | Diferido por decisión humana el 2026-09-15 · `docs/backdocs/environments.txt` |
+
 ## Lo que este despliegue NO resuelve
 
 - **TLS.** Va detrás de un balanceador o un ingress que lo termine.
