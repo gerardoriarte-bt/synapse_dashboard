@@ -426,7 +426,7 @@ describe('§PEN:A1 · el navbar de admin pinta la identidad', () => {
       http.get(`${API}/config/me`, () =>
         ok({
           user: { id: 'u-9', first_name: 'Otra', last_name: 'Persona', email: 'o@p' },
-          tenant: { id: 't-1', name: 'Under Armour México' },
+          tenant: { id: 't-1', name: 'Under Armour México', label: 'Under Armour México' },
           role: { id: 'r-9', name: 'planner' },
           tabs: [],
           periods: ['2026-09'],

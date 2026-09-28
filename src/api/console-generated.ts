@@ -463,6 +463,19 @@ export interface components {
             theme: "light" | "dark";
         };
         TenantInfo: {
+            /**
+             * @description **La forma corta para el navbar** · pedida en B1.1 y llegó el
+             *     2026-09-28. El `.pen` pinta `UA MX` donde mostrábamos
+             *     `Under Armour México`.
+             *
+             *     **Si el tenant no la define vale `name`**, y eso lo hacen ellos: «pueden
+             *     pintar `label` siempre y olvidarse del fallback». Medido con el tenant
+             *     local, que no la definió: `label` y `name` traen lo mismo.
+             *
+             *     Sale también en cada `scope.tenants[].label`.
+             * @example UA MX
+             */
+            label: string;
             /** Format: uuid */
             id: string;
             /** @example Under Armour México */
@@ -515,6 +528,24 @@ export interface components {
             name: string;
             operational_question: string;
             sort_order: number;
+            /**
+             * @description **La identidad estable de la pestaña dentro del dashboard** · pedida
+             *     en B1.1 desde el principio, y llegó el 2026-09-28 por una segunda
+             *     razón que ellos levantaron.
+             *
+             *     `roles.tab_ids` guarda ids de FILA, y las filas se recrean en cada
+             *     versión publicada: **la primera publicación real desde el builder
+             *     dejaba sin pestañas a todo rol con restricción**. La `key` sobrevive
+             *     a las versiones, y la reversión la copia.
+             *
+             *     Es un slug, única por versión de layout. Ausente en el builder se
+             *     deriva del nombre —`Visión General` → `vision-general`—; repetida da
+             *     `422 VALIDATION_TAB_KEY`. Las existentes se rellenaron en la
+             *     migración: medido, la sembrada trae `overview`.
+             * @example overview
+             * @example marca
+             */
+            key: string;
             /**
              * @description **Cadena vacía cuando no hay**, no `null` · medido. La semilla no
              *     trae ninguno, así que hoy llega `""` en las tres rutas que sirven
@@ -728,6 +759,27 @@ export interface components {
             options?: {
                 [key: string]: unknown;
             };
+            /**
+             * @description **QUÉ VARIANTE dibuja este panel** · pedido el 2026-09-28 y llegó el
+             *     mismo día, medido contra `f70cec2` en los doce paneles.
+             *
+             *     `type` elige el CUERPO y esto el dibujo de adentro. Hacían falta los
+             *     dos porque **16 de los 49 gráficos sirven a más de una forma**.
+             *
+             *     **Cadena vacía = el gráfico por defecto del cuerpo**, que es lo que
+             *     los doce publicados hacen hoy. Por eso el campo es aditivo y no
+             *     migra ningún layout.
+             *
+             *     **Llega como `string` libre y lo cierra el adaptador**, igual que
+             *     `shape`, `family` y `layer`: ellos lo guardan en minúsculas y
+             *     recortado y **no lo validan contra el repertorio** —«eso es del
+             *     front, que tiene los 49 y sus mínimos»—, así que un id desconocido
+             *     puede llegar. El panel lo declara en vez de caer al de por defecto.
+             * @example
+             * @example waterfall
+             * @example control
+             */
+            chart: string;
             /**
              * @description La nota de lectura del panel · **B1.13, llegó el 2026-09-28**.
              *

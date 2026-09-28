@@ -99,7 +99,7 @@ tags:
 
 paths:
   /config/me:
-    x-verificado-en: 5924bf2b
+    x-verificado-en: f70cec2
     get:
       tags: [config]
       operationId: getMe
@@ -122,7 +122,7 @@ paths:
         '500': { $ref: '#/components/responses/ServerError' }
 
   /config/catalog:
-    x-verificado-en: 8633b10
+    x-verificado-en: f70cec2
     get:
       tags: [config]
       operationId: getCatalog
@@ -146,7 +146,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/blocks:
-    x-verificado-en: 8633b10
+    x-verificado-en: f70cec2
     get:
       tags: [config]
       operationId: getBlocks
@@ -170,7 +170,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/tabs/{tabId}:
-    x-verificado-en: 5924bf2b
+    x-verificado-en: f70cec2
     get:
       tags: [config]
       operationId: getTab
@@ -206,7 +206,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   /config/panels:batch:
-    x-verificado-en: 8633b10
+    x-verificado-en: f70cec2
     post:
       tags: [config]
       operationId: batchPanels
@@ -240,7 +240,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/me/preferences:
-    x-verificado-en: 8633b10
+    x-verificado-en: f70cec2
     put:
       tags: [config]
       operationId: updatePreferences
@@ -325,7 +325,7 @@ paths:
     #
     # **Las seis formas `ChatFrame*` siguen sin verse contra el servicio.** Eso
     # es cobertura que falta, y queda dicho acá y en la salida de `humo`.
-    x-verificado-en: 8633b10
+    x-verificado-en: f70cec2
     post:
       tags: [config]
       operationId: askChat
@@ -383,7 +383,7 @@ paths:
 
   # ── F3.7 · el historial de hilos · TRANSCRITO DE 82da946 ─────────────────
   /config/chat/threads:
-    x-verificado-en: 8633b10
+    x-verificado-en: f70cec2
     get:
       tags: [config]
       operationId: listChatThreads
@@ -446,7 +446,7 @@ paths:
 
   # ── B3.2 · las preguntas sugeridas · TRANSCRITO DE 82da946 ───────────────
   /config/panels/{panelId}/chat-suggestions:
-    x-verificado-en: 8633b10
+    x-verificado-en: f70cec2
     get:
       tags: [config]
       operationId: panelChatSuggestions
@@ -794,8 +794,21 @@ components:
       #
       # Los tres son `string` sin `omitempty`: vienen siempre, y **vacío** —no
       # `null`— cuando el tenant no los tiene cargados.
-      required: [id, name, locale, currency, timezone]
+      required: [id, name, locale, currency, timezone, label]
       properties:
+        label:
+          type: string
+          description: |
+            **La forma corta para el navbar** · pedida en B1.1 y llegó el
+            2026-09-28. El `.pen` pinta `UA MX` donde mostrábamos
+            `Under Armour México`.
+
+            **Si el tenant no la define vale `name`**, y eso lo hacen ellos: «pueden
+            pintar `label` siempre y olvidarse del fallback». Medido con el tenant
+            local, que no la definió: `label` y `name` traen lo mismo.
+
+            Sale también en cada `scope.tenants[].label`.
+          examples: ['UA MX']
         id: { type: string, format: uuid }
         name: { type: string, examples: ['Under Armour México'] }
         locale:
@@ -838,12 +851,29 @@ components:
         Entran por `PUT /admin/layouts/{id}` —se recortan, se descartan las
         vacías y **el máximo es 8**, más da `422 VALIDATION_CHAT_SUGGESTIONS`— y
         salen por acá.
-      required: [id, name, operational_question, sort_order, icon, chat_suggestions]
+      required: [id, name, operational_question, sort_order, icon, chat_suggestions, key]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
         operational_question: { type: string }
         sort_order: { type: integer }
+        key:
+          type: string
+          description: |
+            **La identidad estable de la pestaña dentro del dashboard** · pedida
+            en B1.1 desde el principio, y llegó el 2026-09-28 por una segunda
+            razón que ellos levantaron.
+
+            `roles.tab_ids` guarda ids de FILA, y las filas se recrean en cada
+            versión publicada: **la primera publicación real desde el builder
+            dejaba sin pestañas a todo rol con restricción**. La `key` sobrevive
+            a las versiones, y la reversión la copia.
+
+            Es un slug, única por versión de layout. Ausente en el builder se
+            deriva del nombre —`Visión General` → `vision-general`—; repetida da
+            `422 VALIDATION_TAB_KEY`. Las existentes se rellenaron en la
+            migración: medido, la sembrada trae `overview`.
+          examples: [overview, marca]
         icon:
           type: string
           description: |
@@ -1035,7 +1065,7 @@ components:
         el planner la traen. Es lo único que quedaba de ese pedido — el grande,
         «`presentation` para las siete formas que no son escalares», lo habíamos
         retirado nosotros al descubrir que la lee un solo cuerpo.
-      required: [id, metric_id, type, col_start, col_span, row_span, note]
+      required: [id, metric_id, type, col_start, col_span, row_span, note, chart]
       properties:
         id: { type: string, format: uuid }
         metric_id: { type: string, format: uuid }
@@ -1053,6 +1083,25 @@ components:
             mostrar, y los VALORES viajan en `presentation` del payload. El front
             hoy los busca acá, que es el bug de F1.40.
           additionalProperties: true
+        chart:
+          type: string
+          description: |
+            **QUÉ VARIANTE dibuja este panel** · pedido el 2026-09-28 y llegó el
+            mismo día, medido contra `f70cec2` en los doce paneles.
+
+            `type` elige el CUERPO y esto el dibujo de adentro. Hacían falta los
+            dos porque **16 de los 49 gráficos sirven a más de una forma**.
+
+            **Cadena vacía = el gráfico por defecto del cuerpo**, que es lo que
+            los doce publicados hacen hoy. Por eso el campo es aditivo y no
+            migra ningún layout.
+
+            **Llega como `string` libre y lo cierra el adaptador**, igual que
+            `shape`, `family` y `layer`: ellos lo guardan en minúsculas y
+            recortado y **no lo validan contra el repertorio** —«eso es del
+            front, que tiene los 49 y sus mínimos»—, así que un id desconocido
+            puede llegar. El panel lo declara en vez de caer al de por defecto.
+          examples: ['', 'waterfall', 'control']
         note:
           type: string
           description: |
@@ -1226,6 +1275,28 @@ components:
         thread_id:
           type: [integer, 'null']
           format: int64
+          x-nota-de-error: |
+            **ESTA RUTA NO TRADUCE SUS ERRORES DE BINDING**, y es la única de las
+            nueve que medimos así. Medido el 2026-09-28 contra `f70cec2`:
+
+                POST /config/chat  {}
+                → "solicitud inválida: Key: 'ddChatRequest.question'
+                   Error:Field validation for 'question' failed on the
+                   'required' tag"
+
+            Su respuesta del 2026-09-28 dice «Nunca aparece un nombre de struct
+            de Go ni un tag», y en `PUT /config/me/preferences` es cierto —ahí
+            sale `el campo 'theme' debe ser uno de: dark, light`—. **No es el
+            anidamiento**: falla igual con un campo de primer nivel.
+
+            Es por handler: `dd_chat_handler.go:52` manda
+            `SendError(..., "solicitud inválida: "+err.Error())` donde los
+            demás mandan `SendCodedError(..., BindingErrorMessage(err))`. De 32
+            sitios que enlazan JSON, 9 pasan por el traductor.
+
+            **Importa porque el front pinta este texto**: `ErrorState` muestra la
+            frase del servicio tal cual, decidido así porque un lector genérico
+            decía menos. Y cae justo en la ruta de F3.15.
           description: |
             **Es un ENTERO, no un uuid.** Sale del frame `thread_info` y es lo
             que continúa la conversación. Ausente en la primera pregunta.

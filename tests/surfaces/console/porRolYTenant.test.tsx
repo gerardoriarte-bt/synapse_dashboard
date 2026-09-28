@@ -77,13 +77,14 @@ const contextoDe = (
   tenant: {
     id: `t-${tenant}`,
     name: tenant,
+    label: tenant,
     locale: 'es-MX',
     currency: 'MXN',
     timezone: 'America/Mexico_City',
   },
   role: { id: `r-${rol}`, name: rol },
   tabs: [
-    { id: tab.id, name: tab.name, operational_question: tab.pregunta, sort_order: 1, icon: '', chat_suggestions: [] },
+    { id: tab.id, name: tab.name, key: tab.id, operational_question: tab.pregunta, sort_order: 1, icon: '', chat_suggestions: [] },
   ],
   periods: ['2026-07'],
   period_grain: 'month' as const,
@@ -166,6 +167,7 @@ describe('cambiar tenant/rol recompone el dashboard · §17 casilla 7', () => {
       col_start: 1,
       col_span: 8,
       row_span: 4,
+      chart: '',
       note: '',
     }
 

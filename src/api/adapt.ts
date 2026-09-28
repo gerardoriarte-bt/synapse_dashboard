@@ -285,8 +285,12 @@ export function adaptContext(w: WireContext): AppContext {
       // `etiqueta` es la forma corta para el navbar y el cable no la tiene.
       // Cae al nombre completo: es un FALLBACK visible —se ve largo— y no una
       // etiqueta inventada recortando el nombre, que se vería bien y sería
-      // nuestra invención.
-      etiqueta: w.tenant.name,
+      // **LLEGÓ el 2026-09-28** · B1.1. Acá caía a `name`, que es lo que hacía
+      // que el navbar dijera `Under Armour México` donde el `.pen` pinta
+      // `UA MX`. **No se hace el fallback acá**: el servicio ya lo hace —«si el
+      // tenant no la define, `label` es `name`»— y repetirlo sería un segundo
+      // lugar donde esa regla vive.
+      etiqueta: w.tenant.label,
       // `vertical` no llega y no se rellena.
       vertical: '',
       // ── LOS TRES DE F1.13b · desde `8633b10` · 2026-09-26 ────────────────
@@ -415,10 +419,17 @@ function granoDelId(id: string): 'dia' | 'semana' | 'mes' {
 function adaptTabMeta(t: W['TabMeta']): Tab {
   return {
     id: t.id,
-    // `key` es requerida por el contrato y el cable no la tiene. Cae al id:
-    // es estable y único, que es para lo que sirve. Un slug del nombre se
-    // rompería al renombrar la pestaña.
-    key: t.id,
+    // ── **LA `key` LLEGÓ** · 2026-09-28, medida: la sembrada trae `overview` ──
+    //
+    // Acá caía al `id` con su razón —«es estable y único»— y esa razón era
+    // falsa a medias: el id es estable dentro de una VERSIÓN y se recrea en la
+    // siguiente. Lo levantó el backend: `roles.tab_ids` guarda ids de fila, así
+    // que la primera publicación real dejaba sin pestañas a todo rol con
+    // restricción.
+    //
+    // **Sin fallback al id**: si el campo faltara, caer al id devolvería el
+    // defecto que esto arregla, y en silencio.
+    key: t.key,
     nombre: t.name,
     pregunta: t.operational_question,
     orden: t.sort_order,
@@ -638,6 +649,20 @@ function adaptPanel(p: WirePanel): PanelConfig {
     // `paramsDisponibles`; lo que cambia es que ahora los dos lados de esa
     // comparación hablan el mismo idioma.
     ...(p.options === undefined ? {} : { opciones: traducirParams(p.options) }),
+    // ── **`chart` → `grafico`** · llegó el 2026-09-28, medido en los doce ────
+    //
+    // **El cable lo manda como `string` libre y acá se cierra**, que es lo mismo
+    // que se hace con `shape`, `family` y `layer`. Ellos lo dicen explícito: «no
+    // validamos contra el repertorio, eso es del front, que tiene los 49».
+    //
+    // **Vacío se omite**: es el gráfico por defecto del cuerpo, y pasarlo como
+    // `''` obligaría a cada cuerpo a distinguirlo de «no declarado».
+    //
+    // **Y un id desconocido se PASA igual, no se descarta.** Es la decisión que
+    // importa: descartarlo acá haría que el panel cayera al de por defecto en
+    // silencio —una cascada dibujada como dona—, y lo que el producto decidió es
+    // que el panel lo declare. El cuerpo tiene `UnknownPlotState` para eso.
+    ...(p.chart === '' ? {} : { grafico: p.chart as NonNullable<PanelConfig['grafico']> }),
     // **La nota de lectura** · B1.13, llegó el 2026-09-28 · medida.
     //
     // **Vacía se OMITE**, igual que el icono de la pestaña: una nota de cadena

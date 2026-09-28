@@ -800,6 +800,24 @@ export interface components {
              */
             operational_question?: string;
             sort_order: number;
+            /**
+             * @description **La identidad estable de la pestaña dentro del dashboard** · llegó
+             *     en `f70cec2`, y es lo que faltaba para que una restricción de rol
+             *     sobreviva a una publicación: `dd_tabs.id` se recrea en cada versión
+             *     y `key` no.
+             *
+             *     Medido el 2026-09-28: la pestaña sembrada sale `overview`.
+             *
+             *     **Es único por versión de layout**, no por tenant.
+             */
+            key?: string;
+            /**
+             * @description Cadena vacía si no se puso. El mismo campo que el cable de consola
+             *     declara en `TabMeta.icon`.
+             */
+            icon?: string;
+            /** @description Las preguntas sugeridas de la pestaña. Arreglo vacío si no hay. */
+            chat_suggestions?: string[];
             /** @description Vacío significa «la ven todos los roles». */
             role_ids?: string[];
             /** Format: date-time */
@@ -822,6 +840,24 @@ export interface components {
             col_start: number;
             col_span: number;
             row_span: number;
+            /**
+             * @description **Cuál de los 49 gráficos dibuja el panel** · llegó en `f70cec2`,
+             *     pedido por nosotros. Va **junto a `type` y no en su lugar**: el
+             *     bloque decide la anatomía del cuerpo y el gráfico decide el dibujo,
+             *     y 16 de los 49 sirven más de una forma.
+             *
+             *     Cadena vacía = el gráfico por defecto del bloque. Los doce paneles
+             *     publicados salen así, medido el 2026-09-28.
+             *
+             *     **No lo validan contra el repertorio** —«eso es del front, que tiene
+             *     los 49 y sus mínimos»—, así que un id inventado llega tal cual y el
+             *     cuerpo lo declara con `UnknownPlotState`. Descartarlo en el
+             *     adaptador haría que el panel cayera al gráfico por defecto sin que
+             *     nadie se entere.
+             */
+            chart?: string;
+            /** @description La nota al pie del panel. Cadena vacía si no se puso. */
+            note?: string;
             /** @description Los nombres van en inglés · ver `PARAMS` del adaptador. */
             options?: {
                 [key: string]: unknown;
@@ -863,6 +899,19 @@ export interface components {
              */
             id?: string;
             name: string;
+            /**
+             * @description Opcional. **Se SLUGIFICA, que es más de lo que su documento dice**
+             *     —ahí figura «recortado»—. Medido el 2026-09-28 contra `f70cec2`:
+             *     `"  MI-Clave  "` se guarda como `mi-clave`.
+             *
+             *     **Omitirla la deriva del nombre**, quitando los acentos:
+             *     `"Visión General"` → `vision-general`.
+             *
+             *     **Repetida dentro del mismo layout es `422 VALIDATION_TAB_KEY`**, y
+             *     el mensaje nombra las dos pestañas: `tab "Otra": la key "repe" ya la
+             *     usa la pestaña "Una"`.
+             */
+            key?: string;
             operational_question?: string;
             /** @description Default si viene 0: el índice del arreglo + 1. */
             sort_order?: number;
@@ -875,6 +924,16 @@ export interface components {
             /** Format: uuid */
             metric_id: string;
             type: string;
+            /**
+             * @description Opcional · **se recorta y se baja a minúsculas**. Medido el
+             *     2026-09-28: `"  Waterfall  "` se guarda como `waterfall`.
+             *
+             *     Omitirlo deja cadena vacía, que es el gráfico por defecto del
+             *     bloque. **No se valida contra el repertorio** · ver `LayoutPanel`.
+             */
+            chart?: string;
+            /** @description Opcional · se recorta. Medido: `" una nota "` → `una nota`. */
+            note?: string;
             /** @description Default si viene 0: 1. */
             col_start?: number;
             /** @description Default si viene 0: 3. */

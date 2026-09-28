@@ -68,7 +68,7 @@ describe('sin el campo, no se afirma nada de ninguno', () => {
     // es una afirmación que nadie hizo.
     const ctx = adaptContext({
       user: { id: 'u', first_name: 'D', last_name: 'L', email: 'd@l' },
-      tenant: { id: 't', name: 'UA' },
+      tenant: { id: 't', name: 'UA', label: 'UA' },
       role: { id: 'r', name: 'admin' },
       tabs: [],
       periods: ['2026-09', '2026-08'],
@@ -85,7 +85,7 @@ describe('sin el campo, no se afirma nada de ninguno', () => {
   it('y con `open_period` marca ESE y ningún otro', () => {
     const ctx = adaptContext({
       user: { id: 'u', first_name: 'D', last_name: 'L', email: 'd@l' },
-      tenant: { id: 't', name: 'UA' },
+      tenant: { id: 't', name: 'UA', label: 'UA' },
       role: { id: 'r', name: 'admin' },
       tabs: [],
       periods: ['2026-09', '2026-08'],

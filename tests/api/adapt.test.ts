@@ -26,6 +26,7 @@ const contexto: WireContext = {
   tenant: {
     id: 't-1',
     name: 'Under Armour México',
+    label: 'Under Armour México',
     locale: 'es-CO',
     currency: 'COP',
     timezone: 'America/Bogota',
@@ -37,6 +38,7 @@ const contexto: WireContext = {
       name: 'Inventario',
       operational_question: '¿Tenemos stock?',
       sort_order: 2,
+      key: 'overview',
       icon: '',
       chat_suggestions: [],
     },
@@ -297,6 +299,7 @@ describe('pestaña con paneles', () => {
       name: 'Inventario',
       operational_question: '¿Stock?',
       sort_order: 1,
+      key: 'overview',
       icon: '',
       chat_suggestions: [],
     },
@@ -308,6 +311,7 @@ describe('pestaña con paneles', () => {
         col_start: 5,
         col_span: 4,
         row_span: 3,
+        chart: '',
         note: '',
         options: { comparative: true },
       },
@@ -343,7 +347,7 @@ describe('pestaña con paneles', () => {
     const sinOpciones: WireTabWithPanels = {
       tab: wire.tab,
       panels: [
-        { id: 'p-2', metric_id: 'm-1', type: 'kpi', col_start: 1, col_span: 3, row_span: 4, note: '' },
+        { id: 'p-2', metric_id: 'm-1', type: 'kpi', col_start: 1, col_span: 3, row_span: 4, note: '', chart: '' },
       ],
     }
     expect(adaptTab(sinOpciones).panels[0]).not.toHaveProperty('opciones')
@@ -671,9 +675,9 @@ describe('presentación', () => {
 
 describe('los nombres de los params · F1.41', () => {
   const panelConOpciones = (options: Record<string, unknown>): WireTabWithPanels => ({
-    tab: { id: 'tab-1', name: 'T', operational_question: '¿?', sort_order: 1, icon: '', chat_suggestions: [] },
+    tab: { id: 'tab-1', name: 'T', key: 't', operational_question: '¿?', sort_order: 1, icon: '', chat_suggestions: [] },
     panels: [
-      { id: 'p-1', metric_id: 'm-1', type: 'gauge', col_start: 1, col_span: 3, row_span: 4, options, note: '' },
+      { id: 'p-1', metric_id: 'm-1', type: 'gauge', col_start: 1, col_span: 3, row_span: 4, options, note: '', chart: '' },
     ],
   })
 

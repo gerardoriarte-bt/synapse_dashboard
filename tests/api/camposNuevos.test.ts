@@ -143,3 +143,75 @@ describe('la nota del panel · B1.13', () => {
     expect(adaptTab(conNota('Excluye devoluciones')).panels[0]?.nota).toBe('Excluye devoluciones')
   })
 })
+
+describe('el gráfico del panel · llegó el 2026-09-28', () => {
+  const conChart = (chart: string): WireTabWithPanels =>
+    ({
+      tab: {
+        id: 'tab-1',
+        name: 'T',
+        key: 't',
+        operational_question: '¿?',
+        sort_order: 1,
+        icon: '',
+        chat_suggestions: [],
+      },
+      panels: [
+        {
+          id: 'p-1',
+          metric_id: 'm-1',
+          type: 'composition',
+          col_start: 1,
+          col_span: 3,
+          row_span: 4,
+          note: '',
+          chart,
+        },
+      ],
+    }) as unknown as WireTabWithPanels
+
+  it('vacío se omite · es el gráfico por defecto del cuerpo', () => {
+    // Los doce paneles publicados llegan así, medido. Pasarlo como `''`
+    // obligaría a cada cuerpo a distinguirlo de «no declarado».
+    expect(adaptTab(conChart('')).panels[0]).not.toHaveProperty('grafico')
+  })
+
+  it('presente pasa', () => {
+    expect(adaptTab(conChart('waterfall')).panels[0]?.grafico).toBe('waterfall')
+  })
+
+  it('UNO DESCONOCIDO SE PASA IGUAL · no se descarta en silencio', () => {
+    // **Es la decisión que importa de este campo.** Ellos no lo validan contra
+    // el repertorio —«eso es del front, que tiene los 49»—, así que un id que
+    // no existe puede llegar.
+    //
+    // Descartarlo acá haría que el panel cayera al gráfico por defecto **sin que
+    // nadie se entere**: una cascada dibujada como dona se ve perfecta y miente.
+    // El producto decidió que el panel lo declare, y para eso el cuerpo tiene
+    // `UnknownPlotState` — pero sólo lo puede declarar si el valor le llega.
+    expect(adaptTab(conChart('inventado')).panels[0]?.grafico).toBe('inventado')
+  })
+})
+
+describe('la key de la pestaña · ya no cae al id', () => {
+  it('pasa la que el servicio manda', () => {
+    // Caía al `id` con la razón «es estable y único», y era falsa a medias: el
+    // id es estable dentro de una VERSIÓN y se recrea en la siguiente. Por eso
+    // un rol restringido perdía sus pestañas al publicar.
+    const t = adaptTab({
+      tab: {
+        id: 'uuid-de-fila',
+        key: 'overview',
+        name: 'T',
+        operational_question: '¿?',
+        sort_order: 1,
+        icon: '',
+        chat_suggestions: [],
+      },
+      panels: [],
+    } as unknown as WireTabWithPanels)
+
+    expect(t.tab.key).toBe('overview')
+    expect(t.tab.key).not.toBe('uuid-de-fila')
+  })
+})

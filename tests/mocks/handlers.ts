@@ -75,6 +75,7 @@ export const context: WireContext = {
   tenant: {
     id: 't-1',
     name: 'Under Armour México',
+    label: 'Under Armour México',
     locale: 'es-MX',
     currency: 'MXN',
     timezone: 'America/Mexico_City',
@@ -86,6 +87,9 @@ export const context: WireContext = {
       name: 'Inventory & Shopping',
       operational_question: '¿Tenemos stock y lo estamos mostrando?',
       sort_order: 1,
+      // **La identidad estable de la pestaña** · llegó en `f70cec2`. La semilla
+      // la rellenó con el slug del nombre.
+      key: 'inventory-shopping',
       // **Vacíos, como los emite el servicio** · medido el 2026-09-28: la
       // semilla no trae ninguno, y `chat_suggestions` llega lista y no `null`.
       icon: '',
@@ -171,6 +175,7 @@ export const kpiPanel: WirePanel = {
   col_start: 1,
   col_span: 4,
   row_span: 4,
+  chart: '',
   note: '',
 }
 
