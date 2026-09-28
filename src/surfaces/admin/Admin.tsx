@@ -20,8 +20,8 @@
  *  Una pantalla que se declara pendiente **no es lo mismo que una que no está**:
  *  la primera dice qué la desbloquea, que es lo que §8 pide de cualquier estado.
  */
-import { useNavigate } from 'react-router-dom'
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   useAgents,
   useFeeds,
@@ -140,8 +140,8 @@ export function Admin() {
 
   return (
     <AdminChrome
-      onVolver={() => void navegar('/')}
       activa={pantalla}
+      onSalir={(ruta) => void navegar(ruta)}
       onIr={setPantalla}
       tenants={lista}
       tenantActivo={activo}

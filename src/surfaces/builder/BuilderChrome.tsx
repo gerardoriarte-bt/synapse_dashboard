@@ -32,6 +32,7 @@
  *  **Y B5 no lleva chrome ninguno**: «SIN CHROME DE EDICIÓN · DATOS REALES · ASÍ
  *  SE PUBLICA». Su única banda es volver a editar, y la pinta ella.
  */
+import { IdentityBlock } from '../IdentityBlock'
 import { Label } from '../../render/primitives/Label'
 import { Wordmark } from '../console/Wordmark'
 import { PANTALLAS } from './pantallas'
@@ -79,7 +80,11 @@ type Props = {
   activa: PantallaId
   onIr: (id: PantallaId) => void
   /** Volver a la consola · `undefined` no pinta el control. */
-  onVolver?: () => void
+  /** Quién compone · el bloque de identidad de `B2`. Sin él no se pinta: el
+   *  chrome no inventa un nombre. */
+  identidad?: { rol: string; nombre: string } | undefined
+  /** Salir a otra superficie · la navegación es del contenedor. */
+  onSalir: (ruta: string) => void
   contexto: ContextoDeEdicion
   /** `null` cuando no hay nada que publicar todavía · la razón la da la pantalla. */
   onPublicar: (() => void) | null
@@ -92,7 +97,8 @@ type Props = {
 export function BuilderChrome({
   activa,
   onIr,
-  onVolver,
+  identidad,
+  onSalir,
   contexto,
   onPublicar,
   onGuardar,
@@ -124,24 +130,27 @@ export function BuilderChrome({
                   `pantallas.ts` y verificado ahí; lo que no existe es un lugar en
                   la UI donde decirlo, porque esa pantalla no tiene cabecera. */}
               <div className="flex items-center gap-4">
-                {/* **La vuelta a la consola.** El `.pen` no la dibuja —ninguna de las
-                  quince pantallas navega hacia otra superficie— y sin ella se
-                  entra acá y no se sale sin escribir la URL.
+                {/* ── EL PUNTO DE IDENTIDAD · §PEN «B2/Identidad» ─────────────
+                    **Acá había un «← Consola»**, puesto porque «el `.pen` no la
+                    dibuja y sin ella se entra y no se sale sin escribir la URL».
+                    Esa razón venció: `B2 · Canvas de composición` gana un bloque
+                    `Identidad` idéntico al de A1, y las tres superficies pasan a
+                    salir por el mismo lugar.
 
-                  **Es un callback y no un `useNavigate` acá adentro**, que es la
-                  regla que este archivo ya declaraba arriba: «la navegación es
-                  del contenedor, no del chrome». Escrito con el hook, además,
-                  rompía doce pruebas que montan el chrome sin router — y tenían
-                  razón en romperse. */}
-              {onVolver !== undefined && (
-                <button
-                  type="button"
-                  onClick={onVolver}
-                  className="font-mono text-label tracking-rotulo uppercase text-dim hover:text-ink cursor-pointer bg-transparent border-0 p-0"
-                >
-                  ← Consola
-                </button>
-              )}
+                    **Sigue siendo un callback y no un `useNavigate` adentro**,
+                    que es la regla de arriba: «la navegación es del contenedor,
+                    no del chrome». Escrito con el hook rompía doce pruebas que
+                    montan el chrome sin router, y tenían razón en romperse — por
+                    eso `IdentityBlock` también recibe `onIr`. */}
+                {identidad !== undefined && (
+                  <IdentityBlock
+                    rol={identidad.rol}
+                    nombre={identidad.nombre}
+                    desde="builder"
+                    esAdmin
+                    onIr={onSalir}
+                  />
+                )}
                 <Label>Ancho 1600 · lienzo 1:1 a 1200 más 300 de biblioteca</Label>
               </div>
             </div>

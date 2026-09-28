@@ -32,6 +32,7 @@ import {
   useLayouts,
   usePreview,
   usePublishLayout,
+  useMe,
   useRoles,
   useSaveLayout,
   useTenants,
@@ -101,6 +102,7 @@ const EN_OTRA_PANTALLA: Partial<Record<PantallaId, string>> = {
 
 export function Builder() {
   const navegar = useNavigate()
+  const yo = useMe()
   const [pantalla, setPantalla] = useState<PantallaId>('contexto')
   const [tenant, setTenant] = useState<string | null>(null)
   const [version, setVersion] = useState<string | null>(null)
@@ -222,7 +224,13 @@ export function Builder() {
 
   return (
     <BuilderChrome
-      onVolver={() => void navegar('/')}
+      // **La identidad sale del mismo `/config/me` que la consola y admin**:
+      // no hay una fuente de identidad por superficie. Sin contexto no se pinta
+      // el bloque — el chrome no inventa un nombre.
+      onSalir={(ruta) => void navegar(ruta)}
+      {...(yo.data === undefined
+        ? {}
+        : { identidad: { rol: yo.data.role.nombre, nombre: yo.data.user.nombre } })}
       activa={pantalla}
       onIr={setPantalla}
       contexto={{

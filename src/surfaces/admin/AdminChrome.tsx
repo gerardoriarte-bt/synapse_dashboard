@@ -29,6 +29,7 @@
  *  de paneles; **las tablas no son grillas** y perdían contenido en silencio
  *  (PS-5). Por eso acá no hay colapso: hay scroll horizontal, que es visible.
  */
+import { IdentityBlock } from '../IdentityBlock'
 import { Label } from '../../render/primitives/Label'
 import { Wordmark } from '../console/Wordmark'
 import { PANTALLAS } from './pantallas'
@@ -39,9 +40,11 @@ type Props = {
   activa: PantallaId
   /** Qué pantalla se pide. La navegación es del contenedor, no del chrome. */
   onIr: (id: PantallaId) => void
+  /** Salir a OTRA superficie · distinto de `onIr`, que navega entre las
+   *  pantallas de acá. La navegación es del contenedor y no del chrome. */
+  onSalir: (ruta: string) => void
   /** Volver a la consola · `undefined` no pinta el control, que es la regla del
    *  CTA sin manejador. */
-  onVolver?: () => void
   /** Quién está mirando · **§PEN:A1 lo dibuja**: el navbar de `A1 · Clientes y
    *  plataforma` lleva un bloque `Identidad` con el ROL en `$dim` y el NOMBRE en
    *  `$ink`, los dos en mono de 9. Hasta el 2026-09-25 no se pintaba, y nada en
@@ -60,11 +63,7 @@ type Props = {
   children: React.ReactNode
 }
 
-/** Mono 9 · el tamaño `nota` de §2.3, que es el que el dibujo usa acá. Mismo
- *  literal que `RoleCard`, que ya lo necesitaba. */
-const NOTA = 'font-mono text-nota leading-rotulo tracking-rotulo uppercase m-0'
-
-export function AdminChrome({ activa, onIr, onVolver, identidad, tenants, tenantActivo, onTenant, children }: Props) {
+export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantActivo, onTenant, children }: Props) {
   const pantalla = PANTALLAS.find((p) => p.id === activa) ?? PANTALLAS[0]
   const porTenant = pantalla.alcance === 'tenant'
 
@@ -102,20 +101,22 @@ export function AdminChrome({ activa, onIr, onVolver, identidad, tenants, tenant
               {/* La identidad va PRIMERO en la fila, como en el dibujo: el
                   navbar de A1 la pone antes que nada a la derecha. Y con
                   `gap-2` entre rol y nombre, que son los 7 del `.pen`. */}
+              {/* ── EL PUNTO DE IDENTIDAD · §PEN «A1/Identidad» ──────────────
+                  **Reemplaza al «← Consola»**, que era invención nuestra y, peor,
+                  asimétrica: desde la consola se salía por el panel de
+                  identidad, desde acá por una flecha, y desde el builder no se
+                  salía. Tres formas para la misma acción y una faltante.
+
+                  Ahora las tres superficies se salen por el mismo lugar, y qué
+                  se ofrece sale de `salidasDesde`, que excluye la que se mira. */}
               {identidad !== undefined && (
-                <span className="flex items-baseline gap-2">
-                  <span className={`${NOTA} text-dim`}>{identidad.rol}</span>
-                  <span className={`${NOTA} text-ink`}>{identidad.nombre}</span>
-                </span>
-              )}
-              {onVolver !== undefined && (
-                <button
-                  type="button"
-                  onClick={onVolver}
-                  className="font-mono text-label tracking-rotulo uppercase text-dim hover:text-ink cursor-pointer bg-transparent border-0 p-0"
-                >
-                  ← Consola
-                </button>
+                <IdentityBlock
+                  rol={identidad.rol}
+                  nombre={identidad.nombre}
+                  desde="admin"
+                  esAdmin
+                  onIr={onSalir}
+                />
               )}
               <Label>{porTenant ? 'Alcance · cliente' : 'Alcance · plataforma'}</Label>
               {porTenant ? (
