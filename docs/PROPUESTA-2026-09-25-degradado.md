@@ -26,11 +26,28 @@
 > aplica**: sus rellenos de datos son los de la familia, sin una sola barra en
 > `$w2`. Así que ni dentro del `.pen` está aplicada donde se vería.
 >
-> **3 · Y el badge pasa a neutro** —borde `$w4`, icono y texto en `$ink`, mono 9,
-> sin relleno—, resuelto el 2026-09-28 después de que la auditoría levantara la
-> tensión: §2.1 es regla dura, cierra los usos del naranja en cinco y un badge de
-> degradación no es ninguno. El dibujo lo tenía en `$acc`; ahí gana `design.md`.
-> `ink` sobre `panel` mide 14.89 y 17.38, así que de paso cierra la pregunta 13.
+> **3 · El badge SE QUEDA EN `$acc`** · decisión humana ratificada el 2026-09-28,
+> y acá quedó escrito el camino completo porque enseña algo.
+>
+> La auditoría levantó la tensión con §2.1 —regla dura, cinco usos del acento, y
+> un badge de degradación no es ninguno— y **yo la acepté y redibujé el badge a
+> neutro**: borde `$w4`, icono y texto en `$ink`. La medición era mejor —`ink`
+> sobre `panel` da 14.89 y 17.38 contra 4.91 y 5.43— y el razonamiento parecía
+> cerrado.
+>
+> **Estaba resolviendo la pregunta equivocada.** La pregunta no es cuánto
+> contrasta: es **qué es un panel degradado**. Si es una anotación, el neutro
+> tiene razón; si es algo que **reclama una acción**, el acento es su color, y
+> §2.1 lo permite por su propia razón declarada —«su exclusividad como color de
+> acción es lo que lo hace legible»—. Ganó lo segundo, y §8 lo respalda: un
+> degradado declara qué lo desbloquea.
+>
+> **Revertido en el `.pen` el 2026-09-28**: `V9PYxO` vuelve a borde, icono y texto
+> en `$acc`, mono 9, sin relleno — el dibujo original, intacto.
+>
+> **La consecuencia queda dicha de frente: la lista de §2.1 está incompleta**, y
+> escribir el sexto uso es de diseño sobre `design.md`, que no se edita desde acá.
+> Está pedido en `docs/PROPUESTA-2026-09-28-sexto-uso-del-naranja.md`.
 >
 > Con eso, la decisión: **el alcance de la trama son las formas con eje temporal**
 > —series, área, forecast—, y en las que no lo tienen la regla «obliga a fechar»

@@ -60,9 +60,16 @@ nodos quedaron retipeados: los tres velos a **`$shad`** y los dos radios a
 donde el hex era 80%— y eso es la consecuencia de la decisión, no un efecto
 colateral: es el único negro translúcido del sistema y se invierte con el tema.
 
-En el dibujo quedan **nueve hex** y ninguno es un bug: los chips de color del
-sistema de diseño, que muestran el valor del token y por eso son literales, y la
-pieza `Sobre claro` de Identidad, que va en tema claro sin importar el tema.
+En el dibujo quedan **nueve hex** y ninguno es un bug. **Los nueve viven en
+`Synapse · Identidad`**: siete en `Sec · Logo / Versiones / Sobre claro`, que es
+una pieza en tema claro sin importar el tema, y dos son los chips de
+`Sec · Naranja / Comparación`, que existen para mostrar el valor del naranja en
+cada tema y por eso son literales.
+
+La primera redacción decía «los chips de color del sistema de diseño», y está
+mal: la auditoría del 2026-09-28 los ubicó en Identidad y se remidió acá nodo por
+nodo, con su cadena de padres. Son colores de **marca**, que es justo lo que la
+auditoría pide que nadie «arregle».
 
 ## 2 · Dos tamaños más, del mismo modo de falla · A2 §9
 

@@ -25417,7 +25417,7 @@
               "reusable": true,
               "height": 18,
               "cornerRadius": "$r-xs",
-              "stroke": "$w4",
+              "stroke": "$acc",
               "strokeWidth": 1,
               "strokeAlignment": "inner",
               "gap": 5,
@@ -25435,12 +25435,12 @@
                   "height": 10,
                   "icon": "triangle-alert",
                   "library": "lucide",
-                  "fill": "$ink"
+                  "fill": "$acc"
                 },
                 {
                   "type": "text",
                   "id": "beRqE",
-                  "fill": "$ink",
+                  "fill": "$acc",
                   "content": "DEGRADADO · FEED HACE 31 H",
                   "fontFamily": "$font-mono",
                   "fontSize": 9,
