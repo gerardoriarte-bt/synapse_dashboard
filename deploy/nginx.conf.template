@@ -57,16 +57,31 @@ server {
         proxy_set_header   X-Forwarded-For   ${DOLLAR}proxy_add_x_forwarded_for;
         proxy_set_header   X-Forwarded-Proto ${DOLLAR}scheme;
 
-        # ── EL CHAT ES SSE, Y ESTO ES LO QUE LO SALVA ─────────────────────────
+        # ── EL CHAT ES SSE · Y ACÁ HAY UNA CORRECCIÓN MEDIDA ──────────────────
         #
         # `POST /config/chat` devuelve `text/event-stream` y el front lo lee como
         # stream con `getReader()` — no usa `EventSource` porque la pregunta va
         # en el cuerpo y `EventSource` sólo hace GET.
         #
-        # **nginx bufferea las respuestas proxeadas por default.** Con el buffer
-        # puesto, el chat NO se ve roto: se ve COLGADO, y al final vuelca toda la
-        # respuesta junta. Es peor que un error, porque parece lentitud del
-        # agente y manda a buscar el problema a Snowflake.
+        # **Acá decía que sin `proxy_buffering off` el chat se ve COLGADO y al
+        # final vuelca todo junto. Se midió contra Cortex real y ES FALSO.**
+        #
+        #   buffering off  →  79 trozos repartidos en 20,87 s
+        #   buffering on   → 119 trozos repartidos en 18,03 s
+        #
+        # Las dos veces llegó incremental. La respuesta entera son ~6-8 KB y
+        # **entra en los buffers por default** —8 × 4k— y aun así nginx la
+        # reenvía a medida que la lee, porque con el cliente siguiendo el ritmo
+        # no espera a completarla.
+        #
+        # **Se deja en `off` igual, y la razón ahora es la correcta:** quita la
+        # dependencia del tamaño de los buffers y del ritmo del cliente. Un
+        # cliente lento o una respuesta más larga que los 32k sí haría que nginx
+        # bufferee —incluso a disco—, y ahí el modo de falla descrito arriba
+        # aparecería. **`off` lo vuelve imposible en vez de improbable.**
+        #
+        # Lo que NO se puede decir es que sea lo que hace andar el chat: anda sin
+        # esto. Es una garantía, no un arreglo.
         proxy_buffering    off;
         proxy_cache        off;
 

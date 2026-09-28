@@ -81,17 +81,35 @@ y `$remote_addr` intactos, cero `${}` sin resolver, y `nginx -t` en verde.
 assets con hash que el deploy siguiente ya borró: pantalla en blanco, sin un solo
 error visible.
 
-## Lo que NO se verificó corriendo, y se dice
+### 5 · El SSE del chat · **corrido contra Cortex real, y corrigió una afirmación**
 
-**El SSE del chat a través del proxy.** `POST /config/chat` devuelve
-`text/event-stream` y el front lo lee como stream, así que el template lleva
-`proxy_buffering off` — **con el buffer puesto el chat no se ve roto, se ve
-COLGADO**, y al final vuelca todo junto, que manda a buscar el problema a
-Snowflake.
+Se ejercitó de verdad: dos preguntas al agente a través del contenedor, midiendo
+**cuándo** llega cada trozo, que es lo único que distingue un stream de un
+volcado.
 
-Se verificó que la directiva **está en el conf renderizado**. No se ejercitó una
-respuesta real porque cuesta una llamada a Cortex y escribe un hilo. **Queda dicho
-en vez de darse por probado.**
+| | Trozos | Reparto entre el primero y el último |
+|---|---|---|
+| `proxy_buffering off` | 79 | **20,87 s** |
+| `proxy_buffering on` | 119 | **18,03 s** |
+
+Los cuatro frames llegaron en los dos casos —`thread_info`, `thinking`, `delta`,
+`done`—.
+
+**Y eso desmiente lo que este archivo decía.** La versión anterior afirmaba que
+sin `proxy_buffering off` el chat «se ve COLGADO y al final vuelca todo junto».
+**Se midió y es falso**: con el buffer puesto llega incremental igual.
+
+La razón: la respuesta entera son ~6-8 KB, **entra en los buffers por default**
+—8 × 4k—, y aun así nginx la reenvía a medida que la lee, porque con el cliente
+siguiendo el ritmo no espera a completarla.
+
+**`off` se deja igual, con la razón correcta:** quita la dependencia del tamaño de
+los buffers y del ritmo del cliente. Una respuesta más larga o un cliente lento sí
+harían que nginx bufferee —incluso a disco—, y ahí el modo de falla descrito
+aparecería. **`off` lo vuelve imposible en vez de improbable.**
+
+Lo que no se puede decir es que sea lo que hace andar el chat: **anda sin esto.**
+Es una garantía, no un arreglo.
 
 ## Tres cosas que sorprenden, y están puestas a propósito
 
