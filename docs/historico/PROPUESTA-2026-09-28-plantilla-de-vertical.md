@@ -1,3 +1,23 @@
+> ## ⚠️ VENCIDA EL 2026-09-28, EL MISMO DÍA · leer esto antes que nada
+>
+> **La dirección de producto es otra, y la decidió un humano**: la plantilla
+> **se deriva de un dashboard ya construido** —admin da de alta, compone, y eso
+> se guarda como plantilla— y **no es exigencia hoy**. La prioridad son los
+> gráficos.
+>
+> **Guardar como plantilla es una COPIA, no una cascada.** No necesita catálogo
+> versionado, ni delta, ni «volver a heredar», ni resolución en el alta. Este
+> documento especifica la versión cara de un problema que todavía no existe, y
+> se equivocó de orden: supuso que la plantilla precede al dashboard.
+>
+> **Lo único que sobrevive, y conviene no volver a descubrirlo:** una plantilla
+> guardada **no puede llevar `metricId`** —son de cada tenant— así que ancla por
+> `metricKey` y se resuelve al aplicarla. Ese problema aparece igual en «guardar
+> como plantilla», porque es el problema de aplicarla a OTRO cliente. Está en
+> §3 de abajo.
+>
+> Lo que lo reemplaza: `docs/PROPUESTA-2026-09-28-identidad-del-grafico.md`.
+
 # La plantilla de vertical · especificación · 2026-09-28
 
 > **Para backend, producto y diseño.** §3.4 de `design.md` declara una cascada de
