@@ -71,6 +71,20 @@ salen crudos. **Es por handler**: `dd_chat_handler.go:52` manda
 `SendCodedError(c, 400, "VALIDATION_REQUEST", BindingErrorMessage(err))`. De los 32 sitios que
 enlazan JSON en `internal/adapters/handler/`, **9 pasan por el traductor**.
 
+**Y son DOS rutas, no una** · agregado el 2026-09-28 al revisar el alta de un tenant nuevo.
+`POST /admin/agents` hace lo mismo:
+
+```
+POST /api/v1/admin/agents   {}
+→ "solicitud inválida: Key: 'createAgentRequest.tenant_id' Error:Field validation
+   for 'tenant_id' failed on the 'required' tag…"
+```
+
+Ésa importa por otra razón: **es una de las rutas del alta de un cliente**, así que el error lo
+va a leer quien esté dando de alta, no un usuario final. `POST /admin/tenants`, en cambio, **sí
+está traducida** —«el campo 'name' es obligatorio; el campo 'snowflake_url' es obligatorio…»—,
+que es la prueba de que el traductor funciona y de que falta aplicarlo en estas dos.
+
 **Por qué insistimos con esta ruta y no con las otras 22:** `ErrorState` pinta la frase del
 servicio tal cual —decidido así porque un lector genérico decía menos— y ésta es la ruta de F3.15,
 el chat presente en la consola. Es la que un usuario va a ver.
