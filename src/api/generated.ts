@@ -820,6 +820,32 @@ export interface components {
             paramsDisponibles?: string[];
         };
         /**
+         * @description Los **49 gráficos de §5** de `design.md`, transcriptos el 2026-09-28.
+         *
+         *     **Es un enum cerrado de este lado.** En el cable llegará como `string`
+         *     libre, igual que `shape`, `family` y `layer`, y lo cierra el adaptador —
+         *     que es donde ya se cierran esos tres. Un id que no esté acá **no se
+         *     sustituye por el gráfico por defecto**: el panel lo declara con la
+         *     gramática de §8. Dibujar una cascada como dona se ve bien y miente.
+         *
+         *     ── **SEIS DE LOS 49 NO SON PLOTS, Y ESO NO ES UN HUECO** ──────────────
+         *
+         *     El `.pen` dibuja 43 en «Synapse · Plots». Los seis que no dibuja son
+         *     `kpi`, `list`, `matrix`, `prose`, `reco` y `table`, y **son cómo el
+         *     cuerpo dibuja SIN gráfico**: la cifra grande, la lista, la grilla
+         *     plana, el titular en prosa, la recomendación y la tabla.
+         *
+         *     Por eso son también **el valor por defecto de su forma**: un panel sin
+         *     `grafico` cae en uno de estos seis, que es exactamente lo que los doce
+         *     paneles publicados hacen hoy sin declarar nada.
+         *
+         *     Se cruzaron los 43 del dibujo contra los 49 de §5 y **mapean sin
+         *     sobras**: ni un título del `.pen` quedó sin id, ni un id sin dibujo
+         *     salvo esos seis.
+         * @enum {string}
+         */
+        GraficoId: "kpi" | "gauge" | "bullet" | "rings" | "spark" | "interval" | "forecast" | "tornado" | "columns" | "area" | "step" | "multiline" | "cycle" | "candle" | "control" | "stackarea" | "combo" | "smallmult" | "bump" | "slope" | "bars" | "lollipop" | "donut" | "treemap" | "radial" | "pareto" | "grouped" | "dumbbell" | "stacked" | "stacked100" | "marimekko" | "waterfall" | "funnel" | "heatmap" | "cohort" | "calendar" | "matrix" | "histogram" | "box" | "scatter" | "bubble" | "cuadrantes" | "sankey" | "network" | "list" | "table" | "prose" | "reco" | "radar";
+        /**
          * @description Cuánto dato necesita un gráfico para no engañar.
          *
          *     **La razón no es documentación: es lo que se muestra en pantalla.** Un
@@ -828,6 +854,21 @@ export interface components {
          *     estado, razón y qué lo desbloquea.
          */
         MinimoDeDatos: {
+            /**
+             * @description **A QUÉ FORMA aplica este mínimo, y no es redundante con
+             *     `Grafico.formas`** · agregado el 2026-09-28, al transcribir los 49.
+             *
+             *     Nueve gráficos sirven a dos formas con mínimos distintos, y nueve
+             *     veces el umbral cae sobre la MISMA variable: `bars` pide
+             *     `items < 2` como `categorica` y `items < 3` como `ranking`.
+             *
+             *     Sin este campo el consumidor ve dos `items < N` y **no puede saber
+             *     cuál aplica** — evaluar los dos deja ganando siempre al más
+             *     exigente, que rechazaría un ranking de dos donde la métrica es
+             *     categórica. El esquema se leía bien hasta que se lo llenó con los
+             *     datos reales.
+             */
+            forma: components["schemas"]["Forma"];
             /**
              * @description La condición, legible y evaluable sobre el valor. Misma forma que
              *     `tope.cuando`, para que las dos se lean juntas.
@@ -853,13 +894,10 @@ export interface components {
          *     adaptador del front— y por eso no se duplica en ninguno.
          */
         Grafico: {
+            id: components["schemas"]["GraficoId"];
             /**
-             * @example bars
-             * @example radar
-             * @example heatmap
-             */
-            id: string;
-            /**
+             * @description El título en español, **transcripto del `.pen`** para los 43 que
+             *     dibuja. Es copy de producto: lo pinta el selector de B3.
              * @example Barras
              * @example Radar
              */

@@ -162,6 +162,7 @@ decir qué rol cumple**, porque ahí empieza la superposición.
 | `docs/DECISIONES-*-*.md` | Decisiones ya **tomadas** sobre una spec, con lo que se midió para tomarlas y lo que se descartó. Es el par de `PROPUESTA-*`: aquella pregunta, ésta contesta — y no se edita después, porque la decisión tiene fecha |
 | `docs/F1.28-escala-tipografica.md` | La bitácora de una tarea que cambió el sistema |
 | `docs/FOLDER_STRUCTURE.md` | La estructura de `src/`, para quien llega |
+| `docs/REPERTORIO-*-*.md` | Una **transcripción** de una fuente normativa a forma implementable, con de dónde sale cada columna. La implementa OTRO equipo; el contrato declara su esquema y acá viven las filas |
 | `docs/INSTRUCCIONES-*-*.md` | Lo que **otra sesión** necesita saber para trabajar en paralelo sin pisarnos. Incluye las excepciones a `CLAUDE.md` que un humano autorizó, con fecha |
 | `docs/historico/*` | Documentos **vencidos**, con el aviso adentro. No se consultan para planificar |
 | `docs/backdocs/*` | Material del equipo de backend · **ignorado por git** |

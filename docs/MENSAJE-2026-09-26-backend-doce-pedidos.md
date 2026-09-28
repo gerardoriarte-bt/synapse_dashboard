@@ -1,5 +1,7 @@
 # Para el equipo de backend · qué queda, remedido · 2026-09-26
 
+> **ENVIADO** · confirmado el 2026-09-28. Esperando respuesta.
+>
 > Contesta su `RESPUESTA-2026-09-25-para-backend.md`. **Todo lo de acá se midió
 > contra `8633b10` con el servicio corriendo**, no contra su documento.
 
