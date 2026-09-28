@@ -28,6 +28,7 @@ marcador es una contradicción y el chequeo la reporta: si se cerró, ya no espe
 Códigos: 0 conforme · 1 hay marcadores en tareas cerradas · 2 BLOQUEADO.
 """
 import pathlib
+import os
 import re
 import subprocess
 import sys
@@ -41,16 +42,49 @@ ESPERA = re.compile(r"^\*\*Espera del backend\.\*\*\s*(.+)$")
 ESTADOS = {"✅": "hecho", "⚠️": "parcial", "⬜": "pendiente", "🕓": "diferida"}
 
 
-def rama_actual() -> str:
-    """La rama de verdad, no una escrita a mano.
+def rama_publicada() -> str:
+    """La rama que el BACKEND puede buscar, no la que está montada acá.
 
-    Decía `main` y el trabajo vive en otra: alguien iba a ir a mirar y no iba a
-    encontrar nada. Es el mismo modo de falla que el documento entero existe para
-    evitar — un dato que fue cierto una vez y se quedó escrito."""
-    r = subprocess.run(
+    Decía `main` y el trabajo vivía en otra: alguien iba a ir a mirar y no iba a
+    encontrar nada. Se cambió por la rama actual, y eso arregló ese caso y abrió
+    otro — **que apareció el 2026-09-28 al haber dos worktrees**.
+
+    La sesión que dibuja trabaja en `diseno-pen`, que es local. Si corriera
+    `npm run plan` desde ahí, este documento diría «están en la rama
+    `diseno-pen`» y el backend buscaría una rama que **no existe para ellos**. Es
+    el mismo modo de falla de siempre, sólo que con un dato cierto: cierto acá y
+    falso donde se lee.
+
+    **El criterio correcto no es "cuál está montada" sino "cuál pueden buscar"**,
+    y eso lo dice el upstream: una rama sin upstream no se publicó a ningún lado.
+
+    - Con upstream → se nombra la rama, sin el `origin/`.
+    - Sin upstream → **se dice que no está publicada** en vez de nombrarla. Un
+      documento que manda a buscar algo inexistente es peor que uno que avisa.
+    - `SYNAPSE_RAMA` lo fuerza, para el caso en que se genere desde un worktree
+      a propósito.
+    """
+    forzada = os.environ.get("SYNAPSE_RAMA", "").strip()
+    if forzada:
+        return forzada
+
+    actual = subprocess.run(
         ["git", "branch", "--show-current"], capture_output=True, text=True, cwd=RAIZ
+    ).stdout.strip()
+    if not actual:
+        return "(rama desconocida)"
+
+    arriba = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", f"{actual}@{{upstream}}"],
+        capture_output=True,
+        text=True,
+        cwd=RAIZ,
     )
-    return r.stdout.strip() or "(rama desconocida)"
+    if arriba.returncode != 0 or not arriba.stdout.strip():
+        return f"{actual} · SIN PUBLICAR, no la van a encontrar"
+    # `origin/Gerardo` → `Gerardo`: lo que el backend escribe después de `git
+    # fetch`, que no lleva el nombre del remoto.
+    return arriba.stdout.strip().split("/", 1)[-1]
 
 
 def recolectar(texto: str):
@@ -108,7 +142,7 @@ def render(tareas, hechas) -> str:
         o.append("\n---\n\n## Lo que ya está de nuestro lado\n")
         o.append(
             f"No hace falta que esperen nada de estas para probar: están en la rama\n"
-            f"`{rama_actual()}` del repositorio del front, con prueba y con la puerta en\n"
+            f"`{rama_publicada()}` del repositorio del front, con prueba y con la puerta en\n"
             "verde.\n"
         )
         for t in hechas:
