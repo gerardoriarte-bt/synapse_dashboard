@@ -507,7 +507,67 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-09-28 · el gráfico ya viaja, y un aviso que no bajó al cable
+### ⇩ ACÁ SE PARÓ · 2026-09-28 (noche) · el día que la prosa propia costó cinco pedidos falsos
+
+**Todo lo que costó descubrir está en `docs/BITACORA-2026-09-28.md`.** Lo de abajo
+es sólo dónde retomar.
+
+**EL FRONT ESTÁ PARA DESPLEGARSE EN PRUEBAS**, y el empaquetado se construyó,
+se corrió y se midió: `Dockerfile`, `deploy/nginx.conf.template` y
+`.dockerignore` · **77,3 MB**, sin Node adentro · `deploy/README.md`.
+
+`try_files` se comprobó **rompiéndolo**: sin él `/` sigue en 200 y `/admin` da
+404 — **por eso no se nota probando desde el login**. Y el SSE del chat se corrió
+contra Cortex real a través del proxy.
+
+**Lo que NO va a andar en pruebas está listado con su razón** en
+`docs/AUDITORIA-2026-09-28-barrido-y-despliegue.md`: seis candados de backend o
+datos, y **ninguno es una pantalla rota** — son pantallas que no existen todavía.
+
+**LOS PEDIDOS AL BACKEND SON ONCE, Y LOS ONCE DICEN CÓMO SE COMPROBARON.**
+`docs/PARA-BACKEND.md` se regenera; el mensaje redactado está en
+`docs/MENSAJE-2026-09-28-backend-todo-lo-que-falta.md` y **lo manda el humano** —
+se decidió así el 28, teniendo el PR del fork disponible.
+
+**El saldo del día en esto, que es lo que conviene no repetir:** el archivo
+mostraba 8 pedidos, faltaban 7 escritos sólo en mensajes, y **se cayeron 5 al
+validarlos contra su código**. Cinco de doce llevaban entre uno y cuatro días
+siendo falsos.
+
+**Y AHORA HAY CHEQUEO PARA ESO.** Cada pedido declara contra qué commit suyo se
+midió. `para-backend` **falla** si alguien escribe uno sin decirlo —error de
+autoría— y **avisa sin fallar** si envejeció, porque eso se vence cuando ellos
+trabajan y un chequeo que se pone rojo cada vez que empujan es uno que alguien
+apaga.
+
+**LA PREGUNTA QUE MÁS VALIÓ, Y NO LA HIZO NINGUNA HERRAMIENTA: «¿validaste contra
+el repositorio?».** Atajó tres de los cinco. Las otras dos las atajó
+`backend-drift` y una mutación que **sobrevivió**.
+
+**Lo que sigue mañana, por si sirve el orden:**
+
+1. **Nada del front está bloqueado por nosotros.** Las 15 tareas abiertas esperan
+   backend o datos, cada una con su candado medido el 28.
+2. **El responsive quedó diferido por decisión humana** · el `.pen` dibuja **tres
+   navbars** y pintamos uno · `docs/AUDITORIA-2026-09-28-pen-vs-responsive.md`.
+3. **`B1.26` sigue ⬜** —«decidir cómo escala el registro **antes del segundo
+   tenant**»— y es lo que más encarece dar de alta un cliente nuevo. El criterio
+   ya lo eligió de hecho —opción A— pero **su propio criterio pide que B quede con
+   fecha, y la fecha no la pone el front**.
+4. **Tres decisiones de las pantallas de alta** esperan a producto y diseño ·
+   `docs/PROPUESTA-2026-09-28-pantallas-de-alta.md`. Una ya se resolvió sola: el
+   `.pen` dibujó `B7 · Guardar como plantilla` el mismo 28.
+
+**DOS COSAS DEL ENTORNO LOCAL QUE CAMBIARON HOY:**
+
+- **La llave del `.env` del backend es la que descifra la base**, no la que
+  `dev/postgres/README.md` documentaba — ese valor ya no sirve, se lee como
+  base64. El síntoma engaña: el login anda, `/config/*` anda, y **lo que se cae es
+  `/admin/*`**. Y el puerto es `APP_PORT`, no `PORT`.
+- **«Marca» ya NO sirve como dashboard sin componer**: se publicó ahí para cerrar
+  B4.2. Cómo recuperarlo está en ese mismo README.
+
+### ⇩ el 2026-09-28 (mañana) · el gráfico ya viaja, y un aviso que no bajó al cable
 
 **`chart` llegó y la cadena está cerrada.** Los cuatro gráficos de esta semana
 —`control`, `interval`, `stackarea` y la caída a `UnknownPlotState`— tenían cuerpo
