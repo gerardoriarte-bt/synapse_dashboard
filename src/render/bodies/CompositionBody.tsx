@@ -6,6 +6,7 @@
  *  que §5 le pone a la dona, por la misma razón.
  */
 import { Label } from '../primitives/Label'
+import { Value } from '../primitives/Value'
 import { PlotComposition } from '../plots/PlotComposition'
 import type { BodyProps } from '../types'
 
@@ -18,8 +19,27 @@ export function CompositionBody({
   value,
   params,
   family,
+  unit,
   format,
 }: BodyProps<'composicion', CompositionParams>) {
+  // ── **EL TOTAL REPARTIDO** · §6 y §PEN «Cuerpo Composición» · 2026-09-28 ────
+  //
+  // §6 declara este tipo como «partes de un todo · **declara el total
+  // repartido**», y el dibujo lo pinta —«TOTAL REPARTIDO · USD 4.28M»—. **No
+  // estaba**: el cuerpo dibujaba el plot y nada más, así que una composición
+  // decía qué proporción tiene cada parte y no de cuánto.
+  //
+  // **Se suma acá y eso no rompe la regla del adaptador.** Lo que el contrato
+  // prohíbe derivar es `porcentaje`, y con razón escrita: la suma tiene que dar
+  // 100 y redondear en el cliente produce columnas que suman 99,9. Un total es
+  // otra cosa — es la suma de cifras que ya llegaron, sin redondeo intermedio, y
+  // es la misma clase que la conversión entre etapas de un flujo, que el
+  // contrato concede como presentación.
+  //
+  // **Sobre TODAS las partes, no las visibles.** Se agrupa a partir de la
+  // quinta, y sumar las cinco de la pantalla daría un total menor que el real —
+  // que es la clase de cifra que se ve bien y miente.
+  const total = value.partes.reduce((s, p) => s + p.v, 0)
   // Copia antes de ordenar: el arreglo viene del payload cacheado.
   const parts = params.orden === 'natural' ? value.partes : [...value.partes].sort((a, b) => b.v - a.v)
 
@@ -44,6 +64,9 @@ export function CompositionBody({
         family={family}
         format={(v) => format.number(v, { decimals: 1 })}
       />
+      <Value label="Total repartido" size="cell">
+        {format.withUnit(format.number(total, { abbreviate: true }), unit)}
+      </Value>
       {rest.length > 0 && (
         <Label>{`${rest.length} partes agrupadas · la rampa tiene cinco escalones`}</Label>
       )}

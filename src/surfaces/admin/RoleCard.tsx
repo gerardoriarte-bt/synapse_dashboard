@@ -37,15 +37,27 @@
  *   · **La razón en prosa** de las métricas que no recibe. Lo que sí es nuestro
  *     es la nota dura de §3.3, que es una regla y no un dato.
  *
- *  ── DOS TAMAÑOS QUE LA ESCALA NO PUEDE EMITIR ───────────────────────────────
+ *  ── LOS DOS TAMAÑOS CONVERGIERON · 2026-09-28 ───────────────────────────────
  *
- *  El `.pen` pone el nombre del rol en **17** y el de la pestaña en **12.5**, y
- *  la escala que el propio `.pen` emite no tiene ninguno de los dos: va de 15
- *  —`text-titulo`— a 20, y de 12 —`text-celda`— a 13. Se usan los tokens
- *  vecinos. Es el mismo caso que el radio 16 de la hoja del chat: **la autoridad
- *  del `.pen` no obliga a copiar un valor que el propio `.pen` no puede
- *  emitir**. Queda como propuesta de spec — `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` · §2, que es evidencia para
- *  la pregunta 9 de B0.9 y no una pregunta nueva.
+ *  Acá decía que el `.pen` ponía el nombre del rol en **17** y el de la pestaña
+ *  en **12.5**, que la escala no emitía ninguno de los dos, y que se usaban los
+ *  tokens vecinos «porque la autoridad del `.pen` no obliga a copiar un valor
+ *  que el propio `.pen` no puede emitir». Quedaba como propuesta de spec.
+ *
+ *  **El dibujo se movió al código, no al revés**: el nombre del rol pasó a **15**
+ *  —`text-titulo`— y el de la pestaña a **12** —`text-celda`—, que son
+ *  exactamente los dos tokens que este archivo ya usaba. Los 12.5 eran un
+ *  descuido repetido 134 veces, no un rol tipográfico.
+ *
+ *  Así que **no queda divergencia y §2 de
+ *  `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` se puede cerrar**. No
+ *  hubo que cambiar una línea acá — se verificó, que es distinto de suponerlo.
+ *
+ *  ── Y LA CIFRA DESTACADA ES `titulo-lg`, QUE PASÓ DE 20 A 26 ────────────────
+ *
+ *  El token medía mal: valía 20 con dos nodos en el `.pen`, contra 36 que
+ *  convergen en 26. **No hay que tocar nada acá**: la clase es la misma y el
+ *  valor llega con el token. Es lo que `token-drift` garantiza.
  */
 import { Label } from '../../render/primitives/Label'
 import type { Rol } from '../../api/admin'
