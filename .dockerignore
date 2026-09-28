@@ -1,0 +1,51 @@
+# Lo que NO entra al contexto de build.
+#
+# No es sólo velocidad: `COPY . .` mete todo lo que esté acá en una capa de la
+# imagen intermedia, y **una capa intermedia es recuperable aunque la final no la
+# tenga**. Por eso `docs/backdocs/` está primero.
+
+# ── SECRETOS · lo más importante de este archivo ─────────────────────────────
+docs/backdocs/
+.env
+.env.*
+*.pem
+*.key
+
+# Se reinstalan con `npm ci` dentro de la imagen; copiarlos además rompe cuando
+# el host es macOS y la imagen linux —los binarios nativos no son los mismos—.
+node_modules/
+dist/
+
+# Git y su historial: el build no lo necesita y pesa.
+.git/
+.gitignore
+
+# ── `tests/` Y `dev/` SE QUEDAN, Y NO ES UN DESCUIDO ─────────────────────────
+#
+# La primera versión de este archivo los excluía, con el argumento de que el
+# build no los toca. **Es falso y lo encontró construir la imagen**: `npm run
+# build` es `tsc -b`, y el `tsconfig.json` raíz referencia CUATRO proyectos —app,
+# node, test y dev—. Sin esas carpetas `tsc -b` no encuentra qué compilar.
+#
+# Se podría saltear el typecheck en la imagen. No se hace: que el build tipe es
+# lo que hace que una imagen construida sea una imagen que compila.
+#
+# **Los mocks no llegan al bundle igual**, y no por este archivo: `vite build`
+# sólo empaqueta lo alcanzable desde `index.html`, y `mocks-fuera` verifica en la
+# puerta que no exista ruta de import desde `src/`. La garantía es estructural.
+tools/
+.claude/
+
+# Documentación · 81 archivos que no cambian el bundle.
+docs/
+*.md
+!README.md
+
+# Las dos fuentes normativas las necesita `verify`, no el build.
+design/
+
+# Del editor y del sistema.
+.vscode/
+.idea/
+.DS_Store
+coverage/

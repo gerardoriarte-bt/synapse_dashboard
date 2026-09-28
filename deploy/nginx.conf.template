@@ -1,0 +1,97 @@
+# Synapse · el front servido como estático, con la API en el MISMO ORIGEN
+#
+# ── ES UN TEMPLATE, NO UN .conf ────────────────────────────────────────────────
+#
+# La imagen oficial de nginx corre `envsubst` sobre todo lo que esté en
+# `/etc/nginx/templates/*.template` al arrancar y lo escribe en `/etc/nginx/conf.d/`.
+# Por eso las variables de abajo se resuelven en el ARRANQUE del contenedor y no
+# en el build: el mismo artefacto sirve para pruebas y para producción.
+#
+#   API_ORIGIN    a dónde va `/api/v1` · ej. http://synapse-api:8080
+#   NGINX_PORT    en qué puerto escucha · default 8080
+#
+# **`envsubst` reemplaza TODO lo que parezca `$var`**, así que las variables de
+# nginx que queremos conservar van escapadas como `${DOLLAR}`, y `DOLLAR` se
+# define en el compose. Es el modo de falla clásico de este mecanismo: sin eso,
+# `$uri` y `$host` se sustituyen por vacío y nginx arranca sirviendo cualquier
+# cosa.
+
+server {
+    listen       ${NGINX_PORT};
+    server_name  _;
+    root         /usr/share/nginx/html;
+
+    # Sin esto el header dice la versión exacta de nginx.
+    server_tokens off;
+
+    gzip              on;
+    gzip_vary         on;
+    gzip_min_length   1024;
+    gzip_proxied      any;
+    gzip_types        text/plain text/css application/javascript application/json
+                      image/svg+xml font/woff2;
+
+    # ── LOS ASSETS · nombre con hash, así que son inmutables ───────────────────
+    #
+    # Vite les pone un hash de contenido —`index-DP5J1I-v.js`—, así que un cambio
+    # cambia el nombre. Cachearlos un año es correcto y es lo que hace que una
+    # recarga no vuelva a bajar 888 KB.
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files ${DOLLAR}uri =404;
+    }
+
+    # ── LA API · MISMO ORIGEN, y por eso no hay CORS que configurar ────────────
+    #
+    # `src/api/client.ts` resuelve `import.meta.env.VITE_API_URL ?? '/api/v1'`, y
+    # Vite lo hornea EN EL BUILD. Sirviendo la API acá, el default ya funciona y
+    # **el mismo bundle sirve en cualquier ambiente** — que es lo que evita tener
+    # que reconstruir por entorno.
+    location /api/v1 {
+        proxy_pass         ${API_ORIGIN};
+        proxy_http_version 1.1;
+
+        proxy_set_header   Host              ${DOLLAR}host;
+        proxy_set_header   X-Real-IP         ${DOLLAR}remote_addr;
+        proxy_set_header   X-Forwarded-For   ${DOLLAR}proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto ${DOLLAR}scheme;
+
+        # ── EL CHAT ES SSE, Y ESTO ES LO QUE LO SALVA ─────────────────────────
+        #
+        # `POST /config/chat` devuelve `text/event-stream` y el front lo lee como
+        # stream con `getReader()` — no usa `EventSource` porque la pregunta va
+        # en el cuerpo y `EventSource` sólo hace GET.
+        #
+        # **nginx bufferea las respuestas proxeadas por default.** Con el buffer
+        # puesto, el chat NO se ve roto: se ve COLGADO, y al final vuelca toda la
+        # respuesta junta. Es peor que un error, porque parece lentitud del
+        # agente y manda a buscar el problema a Snowflake.
+        proxy_buffering    off;
+        proxy_cache        off;
+
+        # El agente tarda. 90 s de lectura, que es más que cualquier respuesta
+        # que hayamos medido y menos que dejar una conexión colgada para siempre.
+        proxy_read_timeout 90s;
+        proxy_send_timeout 90s;
+
+        # Sin esto, un proxy intermedio puede bufferear igual aunque nginx no.
+        add_header X-Accel-Buffering no always;
+    }
+
+    # ── LA SPA · try_files, y ES LA LÍNEA QUE MÁS IMPORTA ─────────────────────
+    #
+    # `AppProviders` monta `BrowserRouter`, no `HashRouter`. Sin esto, entrar
+    # directo a `/admin` o **apretar F5 en cualquier pantalla que no sea `/`**
+    # devuelve un 404 DEL SERVIDOR, no de la aplicación.
+    #
+    # **No se nota probando desde el login**, porque ahí la ruta es `/`. Se nota
+    # cuando alguien comparte un enlace.
+    location / {
+        # `index.html` NO se cachea: es lo que apunta a los assets con hash, y
+        # uno viejo referencia archivos que el deploy nuevo ya borró — la pantalla
+        # queda en blanco sin un solo error visible.
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        try_files ${DOLLAR}uri ${DOLLAR}uri/ /index.html;
+    }
+}
