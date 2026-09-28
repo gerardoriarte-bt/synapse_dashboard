@@ -1060,6 +1060,898 @@
                   ]
                 }
               ]
+            },
+            {
+              "type": "frame",
+              "id": "qN5aA",
+              "name": "Escala declarada",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Lkdqs",
+                  "fill": "$dim",
+                  "content": "ESCALA DECLARADA · NUEVE TAMAÑOS Y NINGUNO MÁS",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 10,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.2
+                },
+                {
+                  "type": "frame",
+                  "id": "XrX5o",
+                  "name": "Fila · NOTA",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "AbktX",
+                      "name": "Celda",
+                      "width": 150,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "fJacb",
+                          "fill": "$ink",
+                          "content": "NOTA",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "bcyVw",
+                      "name": "Celda",
+                      "width": 120,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Tv2Xa",
+                          "fill": "$dim",
+                          "content": "MONO 9",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "f8PUk",
+                      "name": "Celda",
+                      "width": 100,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "zMx5i",
+                          "fill": "$dim",
+                          "content": "0.12EM",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Oggem",
+                      "name": "Celda",
+                      "width": 60,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "s4mye",
+                          "fill": "$dim",
+                          "content": "1.2",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "J5eazB",
+                  "name": "Fila · LABEL",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "PWods",
+                      "name": "Celda",
+                      "width": 150,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "u8GN4G",
+                          "fill": "$ink",
+                          "content": "LABEL",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "V6pgoo",
+                      "name": "Celda",
+                      "width": 120,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Q6sX1g",
+                          "fill": "$dim",
+                          "content": "MONO 10",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "eTNXs",
+                      "name": "Celda",
+                      "width": 100,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "RX6Dp",
+                          "fill": "$dim",
+                          "content": "0.12EM",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "cxU4K",
+                      "name": "Celda",
+                      "width": 60,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "A2NY6X",
+                          "fill": "$dim",
+                          "content": "1.2",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ovC3C",
+                  "name": "Fila · CIFRA",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Ujs7W",
+                      "name": "Celda",
+                      "width": 150,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "BRZU5",
+                          "fill": "$ink",
+                          "content": "CIFRA",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "MaSmV",
+                      "name": "Celda",
+                      "width": 120,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "DI05j",
+                          "fill": "$dim",
+                          "content": "MONO 11",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "HHKVY",
+                      "name": "Celda",
+                      "width": 100,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ISY5l",
+                          "fill": "$dim",
+                          "content": "—",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "SJjJZ",
+                      "name": "Celda",
+                      "width": 60,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "s9kXyq",
+                          "fill": "$dim",
+                          "content": "1.2",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "haM7R",
+                  "name": "Fila · CELDA",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "D1PCW",
+                      "name": "Celda",
+                      "width": 150,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "K0oWK",
+                          "fill": "$ink",
+                          "content": "CELDA",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "PqYRJ",
+                      "name": "Celda",
+                      "width": 120,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "HLBdd",
+                          "fill": "$dim",
+                          "content": "MONO 12",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "g3zg7I",
+                      "name": "Celda",
+                      "width": 100,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "JdVhD",
+                          "fill": "$dim",
+                          "content": "—",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "zrNbx",
+                      "name": "Celda",
+                      "width": 60,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Efdw8",
+                          "fill": "$dim",
+                          "content": "1.2",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "fe8t7",
+                  "name": "Fila · CUERPO",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ERD3W",
+                      "name": "Celda",
+                      "width": 150,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "F0gH4X",
+                          "fill": "$ink",
+                          "content": "CUERPO",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "zHQZd",
+                      "name": "Celda",
+                      "width": 120,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "H89ZT",
+                          "fill": "$dim",
+                          "content": "INTER 13",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "T0I6pr",
+                      "name": "Celda",
+                      "width": 100,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "OKcbo",
+                          "fill": "$dim",
+                          "content": "—",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "AU0Se",
+                      "name": "Celda",
+                      "width": 60,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "qfyCq",
+                          "fill": "$dim",
+                          "content": "1.5",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "BY4Mt",
+                  "name": "Fila · LEAD",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "X5QxjN",
+                      "name": "Celda",
+                      "width": 150,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "StWmb",
+                          "fill": "$ink",
+                          "content": "LEAD",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "vmMcg",
+                      "name": "Celda",
+                      "width": 120,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "a2uv7",
+                          "fill": "$dim",
+                          "content": "INTER 15",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "PUb8C",
+                      "name": "Celda",
+                      "width": 100,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "nWA28",
+                          "fill": "$dim",
+                          "content": "—",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "oOpPN",
+                      "name": "Celda",
+                      "width": 60,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "pAc7h",
+                          "fill": "$dim",
+                          "content": "1.5",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "uUiw8",
+                  "name": "Fila · TÍTULO",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "j7LFRz",
+                      "name": "Celda",
+                      "width": 150,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "PWBdn",
+                          "fill": "$ink",
+                          "content": "TÍTULO",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "dXfXp",
+                      "name": "Celda",
+                      "width": 120,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "k7yLq4",
+                          "fill": "$dim",
+                          "content": "GROTESK 15",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "x6N22",
+                      "name": "Celda",
+                      "width": 100,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "AAdcQ",
+                          "fill": "$dim",
+                          "content": "-0.02EM",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "pFVX4",
+                      "name": "Celda",
+                      "width": 60,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "vDr98",
+                          "fill": "$dim",
+                          "content": "1.2",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ObVgw",
+                  "name": "Fila · TÍTULO GRANDE",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ZXPch",
+                      "name": "Celda",
+                      "width": 150,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "K1MCy8",
+                          "fill": "$ink",
+                          "content": "TÍTULO GRANDE",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "FmJ4T",
+                      "name": "Celda",
+                      "width": 120,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "RGd10",
+                          "fill": "$dim",
+                          "content": "GROTESK 20",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "f3TCT",
+                      "name": "Celda",
+                      "width": 100,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Ka1rf",
+                          "fill": "$dim",
+                          "content": "-0.02EM",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "BtN3q",
+                      "name": "Celda",
+                      "width": 60,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "jSojU",
+                          "fill": "$dim",
+                          "content": "1.2",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "E0lqvd",
+                  "name": "Fila · CIFRA GRANDE",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "S0yJX",
+                      "name": "Celda",
+                      "width": 150,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "k5OH4",
+                          "fill": "$ink",
+                          "content": "CIFRA GRANDE",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ROrR8",
+                      "name": "Celda",
+                      "width": 120,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "vhDNX",
+                          "fill": "$dim",
+                          "content": "INTER 44",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "r8RzpS",
+                      "name": "Celda",
+                      "width": 100,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "a8JMgJ",
+                          "fill": "$dim",
+                          "content": "-0.0275EM",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ZWPG5",
+                      "name": "Celda",
+                      "width": 60,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "MsBJs",
+                          "fill": "$dim",
+                          "content": "1.05",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 9,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.08
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "k7umYj",
+          "name": "Sec · Foco",
+          "layout": "vertical",
+          "gap": 12,
+          "children": [
+            {
+              "type": "text",
+              "id": "v1irj",
+              "fill": "$dim",
+              "content": "FOCO",
+              "fontFamily": "$font-mono",
+              "fontSize": 10,
+              "fontWeight": "normal",
+              "letterSpacing": 1.2
+            },
+            {
+              "type": "frame",
+              "id": "jSwjB",
+              "name": "Especimen de foco",
+              "gap": 16,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "V1aMk",
+                  "name": "Botón · sin foco",
+                  "height": 32,
+                  "fill": "$acc",
+                  "cornerRadius": "$r-sm",
+                  "padding": [
+                    0,
+                    14
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "vgXht",
+                      "fill": "$on-acc",
+                      "content": "PUBLICAR",
+                      "fontFamily": "$font-mono",
+                      "fontSize": 10,
+                      "fontWeight": "normal",
+                      "letterSpacing": 1.2
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "SIljg",
+                  "name": "Botón · con foco",
+                  "cornerRadius": "$r-md",
+                  "stroke": "$acc",
+                  "strokeWidth": 2,
+                  "strokeAlignment": "outer",
+                  "padding": 2,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ZItey",
+                      "name": "Botón",
+                      "height": 32,
+                      "fill": "$acc",
+                      "cornerRadius": "$r-sm",
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "cqxLB",
+                          "fill": "$on-acc",
+                          "content": "PUBLICAR",
+                          "fontFamily": "$font-mono",
+                          "fontSize": 10,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1.2
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "obxMY",
+              "name": "Reglas de foco",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "adzgF",
+                  "fill": "$dim",
+                  "content": "ANILLO $ACC DE 2, POR FUERA, SEPARADO 2 DEL BORDE",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 9,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.08
+                },
+                {
+                  "type": "text",
+                  "id": "M12On",
+                  "fill": "$dim",
+                  "content": "VISIBLE CON TECLADO Y NO SOLO AL PASAR EL PUNTERO",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 9,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.08
+                },
+                {
+                  "type": "text",
+                  "id": "z09SKD",
+                  "fill": "$dim",
+                  "content": "ORDEN DE TABULACIÓN: NAVBAR, PESTAÑAS, PANELES, BARRA INFERIOR",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 9,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.08
+                },
+                {
+                  "type": "text",
+                  "id": "CVvsD",
+                  "fill": "$dim",
+                  "content": "DENTRO DE UN PANEL: CTA ANTES QUE CUERPO",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 9,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.08
+                },
+                {
+                  "type": "text",
+                  "id": "DyakX",
+                  "fill": "$dim",
+                  "content": "UN ESTADO QUE REEMPLAZA LA PANTALLA RECIBE EL FOCO EN SU SALIDA",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 9,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.08
+                }
+              ]
             }
           ]
         }
@@ -25125,7 +26017,7 @@
                   "fontFamily": "$font-body",
                   "fontSize": 44,
                   "fontWeight": "700",
-                  "letterSpacing": -0.88
+                  "letterSpacing": -1.2
                 },
                 {
                   "id": "b7wWL",

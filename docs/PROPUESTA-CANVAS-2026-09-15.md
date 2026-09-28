@@ -169,6 +169,18 @@ equivalente para la posición.
 orden de tabulación para ninguna superficie. Esta propuesta asume el foco del
 navegador; si diseño quiere otra cosa, es una pregunta aparte.
 
+**CONTESTADA el 2026-09-28, y ya no es el foco del navegador.** El `.pen` lo
+declara en `Synapse · Design System / Sec · Foco` (`k7umYj`), con especimen: un
+**anillo `$acc` de 2, por fuera y separado 2 del borde**, más cuatro reglas —
+visible con teclado y no sólo al pasar el puntero; orden de tabulación navbar,
+pestañas, paneles, barra inferior; dentro de un panel el CTA antes que el cuerpo;
+y un estado que reemplaza la pantalla entera recibe el foco en su salida, que es
+la regla de la salida propia aplicada al teclado.
+
+Era el pendiente de diseño peor registrado del repositorio: no tenía pregunta en
+B0.9 ni propuesta propia, sólo estas tres líneas. Implementarlo es trabajo de la
+sesión que construye.
+
 ### 5 · Dónde vive el estado
 
 **Propuesta.** El drop escribe en el **mismo borrador** de `borrador.ts` que ya

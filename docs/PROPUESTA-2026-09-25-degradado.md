@@ -4,6 +4,35 @@
 > encontraron al implementar §ANCLA:DEGRAD-1, y que **no se resolvieron en
 > silencio**. El agente no modifica `design.md` ni el `.pen`.
 
+> **CONTESTADA el 2026-09-28 · midiendo el dibujo, no razonando sobre §8.**
+>
+> **1 · El degradado NO lleva CTA, y el dibujo es más explícito que la spec.** En
+> `Estados §8 · C1 en degradación` hay doce paneles y **uno solo está degradado**
+> —`10 · Doce meses: eficiencia`—. Ese panel no tiene **ningún** CTA: ni
+> «SOLICITAR A ADMINISTRACIÓN», ni «REINTENTAR ESTE PANEL», ni «QUÉ LO
+> DESBLOQUEA», **ni siquiera «VER DETALLE»**, que tres paneles sanos de la misma
+> pantalla sí tienen. Medido resolviendo las instancias y salteando lo que está
+> apagado, que es lo que distingue un badge puesto de uno disponible.
+>
+> El CTA del principio 15 es del **bloqueado**: en esa misma pantalla, `12 ·
+> Decisiones de este mes` dibuja «QUÉ LO DESBLOQUEA» y `8 · Objetivos contra real`
+> dibuja «SOLICITAR A ADMINISTRACIÓN». **Lo implementado ya era correcto** y no
+> hay que tocar código. `design.md` no se edita desde acá; si diseño quiere que la
+> fila de §8 lo diga con palabras, es una precisión de redacción y no un cambio.
+>
+> **2 · La trama del tramo vencido se queda como intención y SE PIDE EL CAMPO.**
+> Medido: la trama existe sólo en la biblioteca —`ESTADO · Degradado`, ocho barras
+> en `$fam-demanda-1` y **dos en `$w2`**— y **el panel degradado de C1 no la
+> aplica**: sus rellenos de datos son los de la familia, sin una sola barra en
+> `$w2`. Así que ni dentro del `.pen` está aplicada donde se vería.
+>
+> Con eso, la decisión: **el alcance de la trama son las formas con eje temporal**
+> —series, área, forecast—, y en las que no lo tienen la regla «obliga a fechar»
+> la cumple la procedencia con su frescura, que ya se pinta en los seis estados.
+> Para implementarla hace falta **un campo que diga desde qué punto el dato está
+> vencido**; sin él no se dibuja, porque adivinar el tramo es inventar el dato.
+> Falta abrirle tarea en el plan: es un pedido al backend y no trabajo de diseño.
+
 ## De dónde sale
 
 El 2026-09-24 el backend hizo que una fila nunca materializada se sirva
