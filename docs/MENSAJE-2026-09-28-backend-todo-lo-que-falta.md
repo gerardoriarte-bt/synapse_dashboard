@@ -1,10 +1,13 @@
 # Para el equipo de backend · todo lo que falta, auditado de punta a punta · 2026-09-28 (noche)
 
 > Auditamos el plan entero para asegurarnos de que **`docs/PARA-BACKEND.md` los
-> tenga a todos**. No los tenía: pasó de **8 pedidos a 15**, y siete estaban
+> tenga a todos**. No los tenía: pasó de **8 pedidos a 12**, y cuatro estaban
 > escritos sólo en documentos que ustedes no leen.
 >
-> **La causa era nuestra y estructural**, así que va primero.
+> **La causa era nuestra y estructural**, así que va primero. Y antes de mandarlo
+> **validamos cada pedido nuevo contra su repositorio en `f70cec2`** — de siete
+> que habíamos escrito, **tres no se sostuvieron**. Van explicados abajo, porque
+> el error es instructivo y es nuestro.
 
 ## Por qué siete pedidos no les llegaban
 
@@ -22,51 +25,61 @@ escribimos. **No decidimos cuáles son suyos** — adivinarlo es un juicio y una
 herramienta que juzga se equivoca en silencio. Están listados para que lo
 descarten ustedes, que es más barato que se nos pase.
 
-## Los siete que no veían
+## Los cuatro que no veían, y tres que no existían
 
-### Los cuatro que ya habíamos hablado y no eran tarea
+### Los cuatro que sí se sostienen
 
-| | Qué | De dónde salió |
+| | Qué | Cómo se verificó |
 |---|---|---|
-| **B4.18** | **`roles.tab_keys`** · lo propusieron ustedes y dijimos que sí el mismo día | Su respuesta del 2026-09-28 |
-| **B2.15** | **Encender `DD_MATERIALIZE_PROSE_ENABLED` y avisar** · lo ofrecieron ustedes | Su respuesta §5 |
-| **B2.16** | **El materializador emite `presentation` y no la pisa** | `docs/MENSAJE-2026-09-24-materializador.md` |
-| **B4.19** | **La compuerta de `resolveLayout` rompe la vista previa por rol** | El rebase sobre `168a761` |
-
-**B2.16 es el defecto visible más viejo que queda**, y conviene decirlo claro:
-cuando el materializador corrió por primera vez, **los seis paneles `kpi`
-perdieron su medidor y sus comparativos** — la semilla los traía y el camino real
-no. El campo `presentation` llegó en `6e595e3` y está verificado de punta a punta;
-lo que falta es que el materializador lo produzca.
-
-**B4.19 no es un arreglo sino una decisión.** `168a761` agregó
-`if layout.Status != published && !isAdminRoleName(role.Name) { return nil, nil }`
-en `resolveLayout`. El preview pasa el rol **simulado**, que por definición no es
-admin, así que **un borrador se rechaza al previsualizarlo**. Confunde quién
-pregunta con a quién se simula. Lo encontró una prueba nuestra, no el compilador.
-
-### Los tres que salieron de la auditoría
-
-| | Qué falta |
-|---|---|
-| **B1.32** | **Qué significa `cut` en `series`** · el param existe en el cable y no está definido |
-| **B1.33** | **El patrón de `PeriodoId`** · medido: los períodos siguen siendo sólo `YYYY-MM` |
-| **B2.14** | **`/config/solicitudes`** · da 404 · y el payload `FORBIDDEN` es `{status, request_from}` **y nada más** |
-
-**B1.32 bloquea un defecto visible**: el orden de una tabla **se anuncia y no se
-aplica**. El panel dice cómo está ordenado y no lo está, que es peor que no
-decirlo.
-
-**Y los dos tienen una salida barata que no es código.** Si `cut` ya lo aplican al
-materializar y el front no debe hacer nada, **eso es la respuesta** y cierra la
-tarea. Si `YYYY-MM` es el único patrón que va a existir, **escribirlo cierra
-B1.33**: hoy es un supuesto nuestro.
+| **B4.18** | **`roles.tab_keys`** · lo propusieron ustedes y dijimos que sí el mismo día | `grep tab_keys` en `internal/` → **cero** |
+| **B2.15** | **Encender `DD_MATERIALIZE_PROSE_ENABLED` y avisar** · lo ofrecieron ustedes | El flag existe y su default es `false` · `dd_materializer_service.go:57` |
+| **B2.14** | **`/config/solicitudes`** · y el payload de `FORBIDDEN` | La ruta da **404**; el payload es `{status, request_from}` **y nada más**, medido con el token de `planner` |
+| **B1.32** | **Si `day` y `month` son todos los valores de `cut`** | Ver abajo · el pedido se achicó leyendo su código |
 
 **B2.14 son dos cosas y conviene no mezclarlas:** que `FORBIDDEN` traiga `reason` y
 `unlocks_with` como los otros cinco estados, y que exista dónde pedir el acceso.
 **Si deciden que no va a haber ruta de solicitud, eso también cierra la tarea** —
 con el estado declarado y sin CTA, porque un botón que devuelve 404 es peor que su
 ausencia.
+
+**B1.32 se achicó solo.** Íbamos a preguntar qué significa `cut`; leyendo su
+código quedó casi contestado: su semilla trae `{"cut": "day"}` y `{"cut":
+"month"}` —`dd_seed.go:113`—, `dd_seed_blocks.go:44` lo declara como
+`layout_param` de `series` junto a `normalization`, y **nadie lo lee**: no hay un
+consumidor de ninguno de los dos en `internal/core/`. Así que la pregunta que
+queda es chica: **¿son sólo esos dos valores, y confirman que lo aplica el
+front?** Bloquea un defecto visible — el orden de una tabla se anuncia y no se
+aplica.
+
+### LOS TRES QUE RETIRAMOS ANTES DE MANDARLOS
+
+Los habíamos escrito desde documentos NUESTROS. Al validarlos contra su
+repositorio **no se sostuvieron**, y preferimos decirlo a que lo descubran
+ustedes:
+
+**`presentation` del materializador.** Nuestro mensaje del 2026-09-24 decía que no
+la emitía y que al correr pisaba la de la semilla. **Era cierto ese día y dejó de
+serlo**: `materialize/presentation.go` define `PresentationFromRows`,
+`transform.go:31` la calcula y `dd_materializer_service.go:412` la escribe **sólo
+cuando no viene vacía**, que era justo la otra mitad del pedido. Medido en el
+batch: **los seis paneles `scalar` traen `presentation`** con medidor y
+comparativos.
+
+**La compuerta de `resolveLayout`.** Una nota nuestra del 2026-09-25 decía que
+`168a761` rompía el preview por rol usando `!isAdminRoleName(role.Name)`. **Su
+código dice `sel.CallerRole`** —`dd_config_service.go:498`—, que es exactamente la
+distinción que decíamos que faltaba. Medido el caso exacto: previsualizar un
+**borrador** con lente `planner` contesta **200** con `status: draft`.
+
+**El patrón de `PeriodoId`.** Íbamos a preguntarlo; `period.go` lo contesta
+—`expected YYYY-MM`— y sus ayudantes son por mes. No era un pedido: era algo que
+no habíamos leído.
+
+**Por qué lo contamos.** El 2026-09-25 les mandamos un mensaje equivocado por
+citar una transcripción nuestra como si fuera una medición. **Estos tres eran lo
+mismo otra vez**, y lo que los atajó fue una sola pregunta de nuestro lado: «¿lo
+validaste contra el repositorio?». Los tres quedan en nuestro plan como cerrados
+con la medición que los retiró, no borrados.
 
 ## Lo que ya sabían, y sigue
 

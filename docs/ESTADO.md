@@ -5,7 +5,7 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**131 de 221 tareas cerradas.** 14 parciales · 71 pendientes · 5 diferidas.
+**134 de 222 tareas cerradas.** 14 parciales · 69 pendientes · 5 diferidas.
 
 
 ## Front · 110 de 125
@@ -19,7 +19,7 @@
 | 4 · Admin y Builder | `█████████████████·····` | 19/24 | 0 | 5 |
 | 5 · Pruebas y pulido | `██████████████████····` | 15/18 | 0 | 2 |
 
-## Backend · 21 de 96
+## Backend · 24 de 97
 
 > ⚠️ **Este número está bajo y no refleja al backend.** El plan de acá
 > es la fuente del FRONT; el estado de las tareas `B*` solo se mueve
@@ -41,10 +41,10 @@
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██····················` | 1/10 | 2 | 7 |
-| 1 · API de consola | `████████··············` | 12/33 | 4 | 17 |
-| 2 · Materialización | `███···················` | 2/16 | 1 | 13 |
+| 1 · API de consola | `█████████·············` | 13/33 | 4 | 16 |
+| 2 · Materialización | `████··················` | 3/16 | 1 | 12 |
 | 3 · Chat contextual | `······················` | 0/11 | 2 | 9 |
-| 4 · Admin y Builder | `███████···············` | 6/19 | 1 | 12 |
+| 4 · Admin y Builder | `████████··············` | 7/20 | 1 | 12 |
 | 5 · Multi-dashboard y pulido | `······················` | 0/7 | 1 | 5 |
 
 ---
@@ -56,7 +56,7 @@ Nada del front está libre: todo lo pendiente espera algo.
 
 ---
 
-## Bloqueadas · 27
+## Bloqueadas · 24
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -86,14 +86,11 @@ Lo que el front espera del backend está detallado en
 - **B1.30** · sync-catalog como ruta HTTP
 - **B1.31** · La plataforma genera el par de claves del usuario de servicio
 - **B1.32** · Declarar qué es cut en una serie
-- **B1.33** · El patrón de PeriodoId · períodos que no son un mes
 - **B2.12** · Correr el materializador contra datos reales y verificar los seis estados
 - **B2.14** · /config/solicitudes · pedir acceso a una métrica que no se ve
 - **B2.15** · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar
-- **B2.16** · El materializador emite presentation y no la pisa
 - **B2.7** · Estado SIN_PERMISO en el batch
 - **B4.18** · roles.tab_keys · que una restricción de rol sobreviva a publicar
-- **B4.19** · La compuerta de resolveLayout rompe la vista previa por rol
 
 ---
 

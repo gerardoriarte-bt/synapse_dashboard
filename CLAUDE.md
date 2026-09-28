@@ -804,13 +804,21 @@ correr el formateador sobre un directorio en vez de sobre los archivos propios.
 **La colisión de `/roles` se resolvió como propusimos**: nuestro listado se corrió
 a `GET /admin/tenants/{tenantId}/roles/composition` y el suyo no se tocó.
 
-**Pero apareció una segunda colisión, y es de diseño.** `168a761` agregó en
-`resolveLayout` una compuerta —`if layout.Status != published &&
-!isAdminRoleName(role.Name) { return nil, nil }`— que **rompe el preview por
-rol**: el preview pasa el rol SIMULADO, que no es admin, así que un borrador se
-rechaza. Confunde quién pregunta con a quién se simula. No lo muestra el
-conflicto ni el compilador: lo encontró una prueba nuestra. **Es una decisión
-pendiente**, no un arreglo.
+**Y la «segunda colisión» que esta nota anunciaba NO EXISTE** · corregido el
+2026-09-28. Decía que `168a761` había agregado en `resolveLayout` una compuerta
+—`!isAdminRoleName(role.Name)`— que rompía el preview por rol, porque el preview
+pasa el rol SIMULADO.
+
+**Su código dice `sel.CallerRole`**, el rol de quien PREGUNTA —
+`dd_config_service.go:498`—, que es exactamente la distinción que la nota decía
+que faltaba. Y se midió el caso: previsualizar un **borrador** con lente
+`planner` contesta **200** con `status: draft`.
+
+**Cómo llegó acá, que es lo que importa:** se escribió leyendo un diff de rebase,
+quedó tres días, y el 28 casi se le manda al backend como pedido **sin volver a
+abrir su código**. Es la falla del 2026-09-25 otra vez — **citar una
+transcripción nuestra como si fuera una medición**. La atajó una sola pregunta:
+«¿validaste contra el repositorio?».
 
 **El rebase viejo sigue en `rebase-prueba`**, sobre `82da946`. Son dos hunks de
 adyacencia pura más un rompimiento que el conflicto no muestra: su commit agregó

@@ -1174,24 +1174,37 @@ Hoy `POST /admin/tenants` exige `private_key_pem`, así que por cada cliente **a
 - `private_key_pem` deja de ser obligatoria en el alta, o queda un orden declarado. **Cuál de las dos es decisión del backend**; el front no depende de la forma.
 
 #### ➕ B1.32 ⬜ Declarar qué es `cut` en una serie
-**Espera del backend.** **Qué significa `cut` en `series`** — el param existe en el cable y no está definido, así que el front no puede aplicarlo.
+**Espera del backend.** **Confirmar que `cut` lo aplica el FRONT** — el pedido se afinó el 2026-09-28 leyendo su código, y quedó mucho más chico de lo que iba a ser.
+
+**Lo que se averiguó solo:** su semilla ya muestra el vocabulario —`{"cut": "day"}` y `{"cut": "month"}` en `dd_seed.go:113`— y `dd_seed_blocks.go:44` lo declara como `layout_param` del bloque `series` junto a `normalization`. **Y nadie lo lee**: `grep` sobre `internal/core/` no encuentra un solo consumidor de `cut` ni de `normalization` fuera de la semilla.
+
+**Así que la pregunta ya no es qué significa, sino si son sólo esos dos valores.**
 
 **Bloquea F1.44**, que es un defecto visible: el orden de una tabla **se anuncia y no se aplica**. Hoy el panel dice cómo está ordenado y no lo está, que es peor que no decirlo.
 
 **Criterio de aceptación.**
-- El cable declara qué valores acepta `cut` y qué hace cada uno.
-- Queda dicho si es un corte de la serie —recortar el rango— o un agrupamiento, que son dos cosas y el nombre no distingue.
-- Si el backend ya lo aplica al materializar y el front no debe hacer nada, **eso también es una respuesta** y cierra la tarea.
+- Queda dicho si `day` y `month` son **todos** los valores o hay más.
+- Queda confirmado que el backend **no** lo aplica y que es del front · verificado por `grep`, falta que lo digan.
+- Lo mismo para `normalization`, que está en la misma situación y bloquea lo mismo.
 
-#### ➕ B1.33 ⬜ El patrón de `PeriodoId` · períodos que no son un mes
-**Espera del backend.** **Qué forma puede tener un `PeriodoId` además de `YYYY-MM`** — medido el 2026-09-28: `periods` sigue trayendo sólo meses y `periods_detail` sus bordes, pero nada declara qué otras formas son válidas.
+#### ➕ B1.33 ✅ El patrón de `PeriodoId` · es `YYYY-MM` y nada más
+**NO ERA UN PEDIDO · se contesta leyendo su código, y así se contestó el 2026-09-28** antes de mandarlo.
 
-**Bloquea F5.13**, los períodos libres del selector. Sin el patrón, el front no puede ni validar lo que recibe ni ofrecer un rango.
+Esta tarea se escribió para pedirles «qué forma puede tener un `PeriodoId` además de `YYYY-MM`». **Su propio criterio decía que si sólo existiera el mes, escribirlo cerraba la tarea** — y es el caso.
+
+`internal/core/dashboard/snowflake/period.go` lo declara sin ambigüedad:
+
+```go
+return Bounds{}, fmt.Errorf("invalid period %q: expected YYYY-MM", period)
+```
+
+y sus ayudantes son `CurrentPeriod` y `PreviousPeriod`, los dos **por mes**.
+
+**Así que «sólo meses» deja de ser un supuesto nuestro y pasa a ser un hecho leído.** Lo que F5.13 espera no es un patrón que exista y no conozcamos: es que el backend **soporte** otro grano, y eso es una tarea de ellos que todavía nadie pidió porque nadie la necesita.
 
 **Criterio de aceptación.**
-- El contrato declara el patrón —o la lista de patrones— que un `PeriodoId` puede tener.
-- Si por ahora **sólo** existe `YYYY-MM`, se declara eso y la tarea se cierra: un «sólo meses» escrito es una respuesta, y hoy es un supuesto.
-- `period_grain` y `periods_detail[].grain` ya distinguen el grano; queda dicho cómo se relacionan con el patrón.
+- Queda escrito qué patrones acepta hoy · **`YYYY-MM`, verificado en `period.go`**.
+- F5.13 deja de citar «el patrón de `PeriodoId`» como candado y pasa a citar lo que realmente espera: **soporte de otro grano**, que nadie pidió.
 
 ---
 
@@ -1977,12 +1990,26 @@ pendiente. Pedidas juntas en
 - `PUT /admin/roles/{id}` acepta `tab_keys` y `GET .../roles/composition` devuelve **las dos** — es lo que nos deja migrar sin una ventana en que la consola de roles muestre menos de lo que el rol ve.
 - **`tab_keys` valida contra las keys del layout publicado** y devuelve 422 nombrando la que no existe. Una key que no resuelve es una pestaña que el rol pierde en silencio, que es el defecto que se está cerrando.
 
-#### ➕ B4.19 ⬜ La compuerta de `resolveLayout` rompe la vista previa por rol
-**Espera del backend.** **Una decisión, no un arreglo** — encontrada el 2026-09-25 al rebasar sobre `168a761`.
+#### ➕ B4.19 ✅ La compuerta de `resolveLayout` y la vista previa por rol
+**EL PEDIDO NO HACÍA FALTA · verificado el 2026-09-28 contra `f70cec2`, antes de mandarlo.**
 
-Ese commit agregó en `resolveLayout` una compuerta: `if layout.Status != published && !isAdminRoleName(role.Name) { return nil, nil }`. **El preview pasa el rol SIMULADO**, que por definición no es admin, así que **un borrador se rechaza al previsualizarlo**.
+Esta tarea se escribió desde una nota nuestra del 2026-09-25 que decía que la compuerta de `resolveLayout` usaba `!isAdminRoleName(role.Name)` y que **el preview, al pasar el rol SIMULADO, rechazaba cualquier borrador**.
 
-**Confunde quién pregunta con a quién se simula**, y no lo muestra el conflicto ni el compilador: lo encontró una prueba nuestra.
+**Su código dice otra cosa.** `dd_config_service.go:498` lee
+`if layout.Status != domain.LayoutStatusPublished && !isAdminRoleName(sel.CallerRole)` — **`sel.CallerRole`, el rol de quien PREGUNTA**, que es exactamente la distinción que la nota decía que faltaba.
+
+Y se midió el caso exacto en vez de discutir el código: **previsualizar un BORRADOR con lente `planner`** contesta `200` con `status: draft` y el rol simulado en la respuesta.
+
+**Lo que enseña, y es lo caro:** la nota se escribió leyendo un diff de rebase y quedó en `CLAUDE.md` tres días. Al armar el informe de «todo lo que falta» se convirtió en tarea **sin volver a abrir su código**, que es la misma falla del 2026-09-25 — citar una transcripción nuestra como si fuera una medición.
+
+**Criterio de aceptación.**
+- Previsualizar un borrador con un lente no-admin devuelve el layout · **medido: 200**.
+- La compuerta distingue el solicitante del rol simulado · **verificado en `dd_config_service.go:498`**.
+
+#### ➕ B4.20 ⬜ (libre)
+**Descripción.** Identificador reservado para no reusar el de una tarea retirada.
+**Criterio de aceptación.**
+- No se asigna a otra cosa · `plan:ancestro` verifica que ningún identificador se reasigne.
 
 **Criterio de aceptación.**
 - La compuerta distingue el rol del **solicitante** —que es quien debe ser admin para ver un borrador— del rol **simulado**, que es el lente.
@@ -4020,15 +4047,23 @@ Hasta entonces los dos paneles de prosa se sirven con el valor de la semilla, **
 - Queda registrado contra qué corrida y con qué agente se verificó.
 - **Es lo último que le falta a B2.12** para dejar de tener dos paneles sirviendo maqueta.
 
-#### ➕ B2.16 ⬜ El materializador emite `presentation` y no la pisa
-**Espera del backend.** **Que el materializador emita `presentation`, y que al correr NO pise la que ya estaba** — pedido el 2026-09-24 en `docs/MENSAJE-2026-09-24-materializador.md`.
+#### ➕ B2.16 ✅ El materializador emite `presentation`
+**EL PEDIDO NO HACÍA FALTA · verificado el 2026-09-28 contra `f70cec2`, antes de mandarlo.**
 
-**Es el defecto visible más viejo que queda.** Cuando el materializador corrió por primera vez, los **seis paneles `kpi` quedaron como una cifra sola**: perdieron su medidor y sus comparativos, que la semilla sí traía. El campo llegó en `6e595e3` y se verificó de punta a punta; lo que falta es que el camino real lo produzca.
+Se escribió desde `docs/MENSAJE-2026-09-24-materializador.md`, que el 24 decía que el materializador no emitía `presentation` y que al correr pisaba la de la semilla, dejando **los seis paneles `kpi` como una cifra sola**.
+
+**Era cierto ese día y dejó de serlo.** Su código lo tiene: `materialize/presentation.go` define `PresentationFromRows`, `transform.go:31` la calcula y `dd_materializer_service.go:412` la escribe **sólo cuando no viene vacía** —`if len(mat.Presentation) > 0`—, que es justamente la otra mitad del pedido.
+
+Y el dato lo confirma · medido en `POST /config/panels:batch`: **los seis paneles `scalar` traen `presentation`**, con medidor y comparativos:
+
+```json
+{"label":"TOTAL","meter":{"percentage":81,"label":"% DE LA META","note":"2.6M DE 3.19M"},
+ "comparative":[{"label":"VS MES ANTERIOR","delta":134.3},{"label":"VS AÑO ANTERIOR","delta":-33.9}]}
+```
 
 **Criterio de aceptación.**
-- Un panel `kpi` materializado trae `presentation` con su medidor y sus comparativos.
-- Correr el materializador **no borra** una `presentation` existente cuando no puede calcular una nueva: el campo queda como estaba o el panel declara por qué no lo trae.
-- Se verifica contra un período recién materializado, no contra la semilla.
+- Un panel `kpi` materializado trae `presentation` con medidor y comparativos · **medido: 6 de 6**.
+- El materializador no la pisa con vacío · **verificado en `dd_materializer_service.go:412`**.
 
 ---
 

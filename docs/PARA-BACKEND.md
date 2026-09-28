@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 15 pedido(s)
+## Lo que esperamos · 12 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -158,19 +158,13 @@ Hoy `POST /admin/tenants` exige `private_key_pem`, así que por cada cliente **a
 *Estado de la tarea: pendiente.*
 
 
-**Qué significa `cut` en `series`** — el param existe en el cable y no está definido, así que el front no puede aplicarlo.
+**Confirmar que `cut` lo aplica el FRONT** — el pedido se afinó el 2026-09-28 leyendo su código, y quedó mucho más chico de lo que iba a ser.
+
+**Lo que se averiguó solo:** su semilla ya muestra el vocabulario —`{"cut": "day"}` y `{"cut": "month"}` en `dd_seed.go:113`— y `dd_seed_blocks.go:44` lo declara como `layout_param` del bloque `series` junto a `normalization`. **Y nadie lo lee**: `grep` sobre `internal/core/` no encuentra un solo consumidor de `cut` ni de `normalization` fuera de la semilla.
+
+**Así que la pregunta ya no es qué significa, sino si son sólo esos dos valores.**
 
 **Bloquea F1.44**, que es un defecto visible: el orden de una tabla **se anuncia y no se aplica**. Hoy el panel dice cómo está ordenado y no lo está, que es peor que no decirlo.
-
-
-### B1.33 · El patrón de PeriodoId · períodos que no son un mes
-
-*Estado de la tarea: pendiente.*
-
-
-**Qué forma puede tener un `PeriodoId` además de `YYYY-MM`** — medido el 2026-09-28: `periods` sigue trayendo sólo meses y `periods_detail` sus bordes, pero nada declara qué otras formas son válidas.
-
-**Bloquea F5.13**, los períodos libres del selector. Sin el patrón, el front no puede ni validar lo que recibe ni ofrecer un rango.
 
 
 ### B2.12 · Correr el materializador contra datos reales y verificar los seis estados
@@ -235,18 +229,6 @@ nuestro lado. · Bloquea **B2.12**.
 **El defecto que cierra:** `roles.tab_ids` apunta a `dd_tabs.id`, y **ese id se recrea en cada versión de layout**. Así que un rol restringido a dos pestañas **las pierde al publicar**. `key` ya viaja —medido el 2026-09-28: `overview`— y es estable por diseño.
 
 
-### B4.19 · La compuerta de resolveLayout rompe la vista previa por rol
-
-*Estado de la tarea: pendiente.*
-
-
-**Una decisión, no un arreglo** — encontrada el 2026-09-25 al rebasar sobre `168a761`.
-
-Ese commit agregó en `resolveLayout` una compuerta: `if layout.Status != published && !isAdminRoleName(role.Name) { return nil, nil }`. **El preview pasa el rol SIMULADO**, que por definición no es admin, así que **un borrador se rechaza al previsualizarlo**.
-
-**Confunde quién pregunta con a quién se simula**, y no lo muestra el conflicto ni el compilador: lo encontró una prueba nuestra.
-
-
 ### B2.14 · /config/solicitudes · pedir acceso a una métrica que no se ve
 
 *Estado de la tarea: pendiente.*
@@ -267,16 +249,6 @@ Ese commit agregó en `resolveLayout` una compuerta: `if layout.Status != publis
 **Que se encienda en dev y nos avisen** — lo ofrecieron ellos en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
 
 Hasta entonces los dos paneles de prosa se sirven con el valor de la semilla, **en inglés**, y salen `DEGRADED`.
-
-
-### B2.16 · El materializador emite presentation y no la pisa
-
-*Estado de la tarea: pendiente.*
-
-
-**Que el materializador emita `presentation`, y que al correr NO pise la que ya estaba** — pedido el 2026-09-24 en `docs/MENSAJE-2026-09-24-materializador.md`.
-
-**Es el defecto visible más viejo que queda.** Cuando el materializador corrió por primera vez, los **seis paneles `kpi` quedaron como una cifra sola**: perdieron su medidor y sus comparativos, que la semilla sí traía. El campo llegó en `6e595e3` y se verificó de punta a punta; lo que falta es que el camino real lo produzca.
 
 
 ---
