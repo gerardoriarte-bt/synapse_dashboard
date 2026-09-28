@@ -35,6 +35,12 @@ CHEQUEOS = [
     ("auth-drift", [sys.executable, "tools/contract-drift.py", "--auth"], True),
     ("console-drift", [sys.executable, "tools/contract-drift.py", "--console-wire"], True),
     ("admin-drift", [sys.executable, "tools/contract-drift.py", "--admin-wire"], True),
+    # **`plan --check` parsea sin escribir** · agregado el 2026-09-28. Estaba
+    # afuera, y un cierre de tarea mal empezado dejó el plan sin parsear con la
+    # puerta en verde: `PARA-BACKEND.md` no se podía regenerar y un pedido no
+    # llegaba al documento que el backend lee. Una regla que la puerta no
+    # comprueba no es una regla.
+    ("plan", [sys.executable, "tools/plan-a-csv.py", "--check"], True),
     ("plan-ancestro", [sys.executable, "tools/plan-ancestro.py"], True),
     ("para-backend", [sys.executable, "tools/para-backend.py"], True),
     ("pen-pantallas", [sys.executable, "tools/pen-pantallas.py"], True),

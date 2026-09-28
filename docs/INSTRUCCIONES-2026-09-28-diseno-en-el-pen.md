@@ -254,3 +254,21 @@ Snowflake— se llevó `design/Synapse_v2.pen` con 2.234 renglones,
 escribiéndose en paralelo. No se perdió nada, pero **el cambio del dibujo quedó
 bajo un mensaje que no lo nombra**, que es justamente lo que §6 existe para
 evitar.
+
+### Y con un archivo COMPARTIDO, nombrarlo no alcanza · 2026-09-28
+
+**Volvió a pasar cumpliendo la regla.** `b39bb4e` agregó `plan-de-trabajo.md`
+por nombre —explícito, como pide arriba— y se llevó igual una edición ajena,
+porque el archivo lo escriben las dos sesiones.
+
+**Antes de `git add` sobre un archivo compartido, se mira si tiene cambios que
+uno no hizo**:
+
+```sh
+git diff --stat plan-de-trabajo.md docs/B0.9-preguntas-abiertas.md
+```
+
+Si hay algo que no es tuyo, **no lo agregues**: avisá y que lo commitee quien lo
+escribió. Los compartidos hoy son `plan-de-trabajo.md`,
+`docs/B0.9-preguntas-abiertas.md`, `design/Synapse_v2.pen` y los generados que
+salen de ellos.
