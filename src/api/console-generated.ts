@@ -257,17 +257,70 @@ export interface components {
             /** @enum {boolean} */
             success: false;
             /**
+             * @description **El mensaje, y NO siempre en español** · remedido el 2026-09-28
+             *     contra `5924bf2b`.
+             *
+             *     Su respuesta de ese día dice que «`error` sigue siendo el mensaje en
+             *     español de siempre». **No lo es**, y este campo ya lo tenía
+             *     transcripto desde antes: los dos ejemplos de abajo son literales
+             *     medidos.
+             *
+             *     **No es una política, son handlers sueltos**: los errores del revert
+             *     salen redactados y en español —«el layout no tiene una versión
+             *     anterior a la que volver; indique to_layout_id»—.
+             *
+             *     **Y esto llega a la pantalla tal cual.** `client.ts` lo pasa sin
+             *     tocarlo —redactar el error del servidor sería el front inventando— y
+             *     `ErrorState` lo pinta como `phrase`. Un usuario puede ver el nombre
+             *     de un struct de Go y el tag de un validador. Va pedido.
              * @example tab not found
              * @example invalid request: Key: 'DDBatchRequest.PanelIDs' Error:Field validation for 'PanelIDs' failed on the 'required' tag
              */
             error: string;
+            /**
+             * @description **B0.4 · llegó el 2026-09-28**, y es lo que hace accionable un error.
+             *
+             *     Forma: `FAMILIA_DETALLE`. **Se decide por la FAMILIA** —el prefijo
+             *     hasta el primer `_`—: ellos suman detalles sin avisar, así que un
+             *     `switch` sobre el valor entero se rompe solo.
+             *
+             *     Familias: `VALIDATION` (400/422), `AUTH` (401/403), `NOT_FOUND`
+             *     (404), `CONFLICT` (409), `RATE_LIMIT` (429), `INTERNAL` (5xx).
+             *
+             *     **Medido en cuatro**, una llamada por familia: `AUTH_UNAUTHORIZED`
+             *     sin token, `NOT_FOUND_RESOURCE` con una pestaña inexistente,
+             *     `AUTH_FORBIDDEN` pegándole a `/admin/*` con token de planner, y
+             *     `VALIDATION_REQUEST` mandando `theme: "morado"`.
+             *
+             *     Si una ruta no fija un detalle propio sale el genérico de su familia.
+             * @example AUTH_UNAUTHORIZED
+             * @example NOT_FOUND_RESOURCE
+             * @example AUTH_FORBIDDEN
+             * @example VALIDATION_REQUEST
+             * @example CONFLICT_NOT_DRAFT
+             */
+            code: string;
         };
         /**
-         * @description `ports.DDContextResponse`. Comparado con el `Contexto` del contrato, le
-         *     faltan: `alcance`, `tenantsDisponibles`, `tenant.etiqueta`,
-         *     `tenant.vertical`, `role.puedeAprobar`, `user.capacidades`,
-         *     `user.preferencias.tema`, y en la pestaña `key`, `icono` y
-         *     `chatSugerencias`.
+         * @description `ports.DDContextResponse`.
+         *
+         *     ── **B1.1 LLEGÓ A MEDIAS** · medido campo por campo el 2026-09-28 contra
+         *     `5924bf2b` ────────────────────────────────────────────────────────────
+         *
+         *     El pedido tenía seis cosas. **Llegaron tres** —`scope` con sus tenants,
+         *     el grano de cada período, y `icon`/`chat_suggestions` en la pestaña— y
+         *     por eso B1.1 **sigue en ⚠️**: cerrarla sería el defecto de «el criterio
+         *     se cumple a medias y nadie lo bajó».
+         *
+         *     **Lo que sigue faltando**, medido sobre la respuesta real: `tenant`
+         *     trae `id`, `name`, `locale`, `currency` y `timezone` —no `etiqueta`—;
+         *     `role` trae `id` y `name` —no `puedeAprobar`—; `user` trae `id`,
+         *     `email`, nombre y `theme` —no `capacidades`—; y la pestaña no trae
+         *     `key`.
+         *
+         *     **`tenant.vertical` salió del pedido y no es un olvido**: §3.5 declara
+         *     `vertical` **y** `plantillaOrigen`, y ese mecanismo no existe de ninguno
+         *     de los dos lados · `docs/DECISIONES-2026-09-28-estado-y-vertical.md`.
          */
         ContextResponse: {
             user: components["schemas"]["UserInfo"];
@@ -343,6 +396,57 @@ export interface components {
              */
             active_layout_id?: string | null;
             catalog_version: number;
+            /**
+             * @description El grano de **todos** los `periods` · B1.1 · medido `"month"`.
+             *
+             *     `week` queda declarado para cuando exista dato semanal, y entonces
+             *     `periods_detail[].grain` lo dirá por período. **Hoy no se emite**:
+             *     está acá porque ellos lo declaran, no porque se haya visto.
+             * @enum {string}
+             */
+            period_grain: "month" | "week";
+            /**
+             * @description El mismo juego de `periods`, con sus bordes resueltos. `periods` no
+             *     cambió: esto se suma al lado.
+             *
+             *     **`[start, end)`** — el fin es exclusivo, y eso lo dice el dato
+             *     medido: `2026-09` va de `2026-09-01` a `2026-10-01`.
+             */
+            periods_detail: {
+                /** @example 2026-09 */
+                key: string;
+                /** @enum {string} */
+                grain: "month" | "week";
+                /**
+                 * Format: date
+                 * @example 2026-09-01
+                 */
+                start: string;
+                /**
+                 * Format: date
+                 * @example 2026-10-01
+                 */
+                end: string;
+            }[];
+            /**
+             * @description Qué clientes ve este usuario · lo que el contrato llama `alcance` con
+             *     `tenantsDisponibles`.
+             *
+             *     **Medido con los dos usuarios de la base local**: con el token de
+             *     `planner` sale `single_tenant` y un solo tenant; el selector de
+             *     cliente del navbar sólo tiene sentido con `multi_tenant`.
+             */
+            scope: {
+                /** @enum {string} */
+                kind: "single_tenant" | "multi_tenant";
+                /** @description **Nunca `null`** · lo declaran ellos. */
+                tenants: {
+                    /** Format: uuid */
+                    id: string;
+                    /** @example Under Armour México */
+                    name: string;
+                }[];
+            };
         };
         /** @description El nombre llega partido; el contrato lo pide junto. */
         UserInfo: {
@@ -393,12 +497,41 @@ export interface components {
             /** @example planner */
             name: string;
         };
+        /**
+         * @description ── **`icon` y `chat_suggestions` llegaron** · 2026-09-28, medidos contra
+         *     `5924bf2b` ────────────────────────────────────────────────────────────
+         *
+         *     Eran el pedido de **B4.4**, abierto desde el 2026-09-15 cuando F4.8
+         *     construyó el editor de pestañas: el builder los podía escribir y la
+         *     consola no los recibía.
+         *
+         *     Entran por `PUT /admin/layouts/{id}` —se recortan, se descartan las
+         *     vacías y **el máximo es 8**, más da `422 VALIDATION_CHAT_SUGGESTIONS`— y
+         *     salen por acá.
+         */
         TabMeta: {
             /** Format: uuid */
             id: string;
             name: string;
             operational_question: string;
             sort_order: number;
+            /**
+             * @description **Cadena vacía cuando no hay**, no `null` · medido. La semilla no
+             *     trae ninguno, así que hoy llega `""` en las tres rutas que sirven
+             *     `TabMeta`.
+             * @example
+             * @example box
+             */
+            icon: string;
+            /**
+             * @description **SIEMPRE lista, nunca `null`** · lo declaran ellos y se midió. Es lo
+             *     que permite que el riel las recorra sin guardia — y la diferencia con
+             *     `tabs`, que sí llega `null` en un dashboard sin componer.
+             *
+             *     **No se confunden con las de panel**, que siguen viniendo de
+             *     `GET /config/panels/{panelId}/chat-suggestions` y no cambiaron.
+             */
+            chat_suggestions: string[];
         };
         /**
          * @description `domain.DDCatalogMetric`, serializado con sus etiquetas `json:`.
@@ -570,6 +703,11 @@ export interface components {
         /**
          * @description `ports.DDPanelDTO`. En la base la columna es `block_type`; acá el campo
          *     es `type`. Mapea limpio al `PanelConfigurado` del contrato.
+         *
+         *     **`note` llegó el 2026-09-28** · B1.13 · medido: los nueve paneles que ve
+         *     el planner la traen. Es lo único que quedaba de ese pedido — el grande,
+         *     «`presentation` para las siete formas que no son escalares», lo habíamos
+         *     retirado nosotros al descubrir que la lee un solo cuerpo.
          */
         PanelDTO: {
             /** Format: uuid */
@@ -590,6 +728,22 @@ export interface components {
             options?: {
                 [key: string]: unknown;
             };
+            /**
+             * @description La nota de lectura del panel · **B1.13, llegó el 2026-09-28**.
+             *
+             *     La escribe el admin en el builder —`panels[].note` de
+             *     `PUT /admin/layouts/{id}`— y vive en el layout, no en el dato: por
+             *     eso viaja acá y no en el payload.
+             *
+             *     **Vacía cuando no hay**, no `null` · medido sobre los nueve paneles
+             *     del planner. Un rol puede reemplazarla con
+             *     `layout_overrides[tab_id][panel_id].note`.
+             *
+             *     **Y también aparece mezclada en `presentation.note`** del payload de
+             *     `panels:batch`: se une en lectura sin pisar `label`, `meter` ni
+             *     `comparative`, y no se guarda en `dd_panel_data`.
+             */
+            note: string;
         };
         BatchRequest: {
             panel_ids: string[];

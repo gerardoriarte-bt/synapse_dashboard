@@ -86,10 +86,31 @@ export const context: WireContext = {
       name: 'Inventory & Shopping',
       operational_question: '¿Tenemos stock y lo estamos mostrando?',
       sort_order: 1,
+      // **Vacíos, como los emite el servicio** · medido el 2026-09-28: la
+      // semilla no trae ninguno, y `chat_suggestions` llega lista y no `null`.
+      icon: '',
+      chat_suggestions: [],
     },
   ],
   // Cadenas sueltas, como las manda `availablePeriods()`.
   periods: ['2026-07'],
+  // ── B1.1 · los tres que llegaron el 2026-09-28 ──────────────────────────
+  //
+  // **Los bordes son `[start, end)`**, con el fin EXCLUSIVO: es lo que dio la
+  // medición —`2026-09` va de `2026-09-01` a `2026-10-01`— y escribirlo
+  // inclusivo acá haría que una prueba de rango pasara contra un fixture que
+  // el servicio no emite.
+  period_grain: 'month' as const,
+  periods_detail: [
+    { key: '2026-07', grain: 'month' as const, start: '2026-07-01', end: '2026-08-01' },
+  ],
+  // `single_tenant` porque el fixture es un usuario de un solo cliente, que es
+  // lo que midió el token de planner. El selector de cliente del navbar sólo
+  // tiene sentido con `multi_tenant`.
+  scope: {
+    kind: 'single_tenant' as const,
+    tenants: [{ id: 't-1', name: 'Under Armour México' }],
+  },
   catalog_version: 1,
   // ── MULTI-DASHBOARD · F5.1 · 2026-09-26 ──────────────────────────────────
   //
@@ -150,6 +171,7 @@ export const kpiPanel: WirePanel = {
   col_start: 1,
   col_span: 4,
   row_span: 4,
+  note: '',
 }
 
 export const handlers = [

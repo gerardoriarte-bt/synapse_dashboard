@@ -82,8 +82,15 @@ const contextoDe = (
     timezone: 'America/Mexico_City',
   },
   role: { id: `r-${rol}`, name: rol },
-  tabs: [{ id: tab.id, name: tab.name, operational_question: tab.pregunta, sort_order: 1 }],
+  tabs: [
+    { id: tab.id, name: tab.name, operational_question: tab.pregunta, sort_order: 1, icon: '', chat_suggestions: [] },
+  ],
   periods: ['2026-07'],
+  period_grain: 'month' as const,
+  periods_detail: [
+    { key: '2026-07', grain: 'month' as const, start: '2026-07-01', end: '2026-08-01' },
+  ],
+  scope: { kind: 'single_tenant' as const, tenants: [{ id: `t-${tenant}`, name: tenant }] },
   catalog_version: 1,
   dashboards: [{ id: `d-${tenant}`, name: 'Overview', slug: 'overview', is_default: true }],
   active_dashboard_id: `d-${tenant}`,
@@ -159,6 +166,7 @@ describe('cambiar tenant/rol recompone el dashboard · §17 casilla 7', () => {
       col_start: 1,
       col_span: 8,
       row_span: 4,
+      note: '',
     }
 
     servir(

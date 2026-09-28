@@ -274,6 +274,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/layouts/{layoutId}/revert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Volver a una versión anterior
+         * @description **B4.2 · llegó con `5924bf2b`.** Toma la versión destino —`to_layout_id`,
+         *     o por defecto el `previous_layout_id` de la última publicación—, **copia**
+         *     sus pestañas y paneles a un draft nuevo, lo valida contra el catálogo
+         *     actual y lo publica.
+         *
+         *     **Nunca se reactiva una versión archivada**, y es la decisión que hace
+         *     auditable el historial: la versión a la que se volvió sigue `archived`, y
+         *     en `GET /admin/layouts/{id}/publications` la vuelta aparece como una
+         *     publicación más con `action: "rollback"`, su actor y su
+         *     `previous_layout_id`.
+         *
+         *     Por eso también **puede fallar con 422**: una versión vieja puede ya no
+         *     validar contra el catálogo de hoy.
+         *
+         *     ── **LO QUE SE MIDIÓ Y LO QUE NO** ────────────────────────────────────
+         *
+         *     **Medidas, las dos compuertas**, sobre un tenant con un solo layout — que
+         *     es justo lo que deja probarlas sin tocar nada:
+         *
+         *         POST …/revert  {}                    → 409 CONFLICT_NO_PREVIOUS
+         *         POST …/revert  {to_layout_id: él}    → 409 CONFLICT_REVERT_SELF
+         *
+         *     Las dos con mensaje redactado y **en español**, que es lo que muestra que
+         *     los dos mensajes en inglés del cable de consola son handlers sueltos y no
+         *     una política.
+         *
+         *     **NO medida, la reversión en sí**: copia y publica, así que cambiaría el
+         *     layout que la consola está sirviendo. El `200` de abajo sale de su
+         *     documento y no de una respuesta vista — se mide cuando haya una segunda
+         *     versión que no sea la de nadie.
+         */
+        post: operations["revertLayout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/tenants/{tenantId}/agents": {
         parameters: {
             query?: never;
@@ -530,6 +579,27 @@ export interface components {
             /** @enum {boolean} */
             success: false;
             error: string;
+            /**
+             * @description **B0.4 · llegó con `5924bf2b`**, y acá es donde más rinde: las rutas
+             *     de administración son las que tienen reglas de negocio con estado.
+             *
+             *     `FAMILIA_DETALLE`, y **se decide por la familia** — ellos suman
+             *     detalles sin avisar. Ver el cable de consola para el juego completo.
+             *
+             *     Los de acá, declarados por ellos: `CONFLICT_NOT_DRAFT`,
+             *     `VALIDATION_LAYOUT`, `VALIDATION_CHAT_SUGGESTIONS`,
+             *     `NOT_FOUND_LAYOUT`, `NOT_FOUND_ROLE`, `AUTH_DRAFT_PREVIEW`,
+             *     `VALIDATION_THEME`, `VALIDATION_DASHBOARD_NOT_VISIBLE`,
+             *     `CONFLICT_NO_PREVIOUS`, `CONFLICT_REVERT_SELF`,
+             *     `NOT_FOUND_REVERT_TARGET`, `VALIDATION_REVERT_TARGET`.
+             *
+             *     **Medidos acá**: `AUTH_FORBIDDEN` con token de planner,
+             *     `CONFLICT_NO_PREVIOUS` y `CONFLICT_REVERT_SELF` en el revert.
+             * @example CONFLICT_NO_PREVIOUS
+             * @example AUTH_FORBIDDEN
+             * @example VALIDATION_LAYOUT
+             */
+            code: string;
         };
         /**
          * @description `ports.TenantAdminOption` · snake_case.
@@ -907,14 +977,28 @@ export interface components {
          *       `tabs[].panels`   —              · **no vienen**
          *       `without_payloads` —             · la ausencia no se declara
          *
-         *     **La diferencia que importa es `panels`.** Nuestra versión devolvía la
-         *     pestaña con sus paneles ya filtrados por `hidden_metric_ids`, que es lo
-         *     que deja ver «qué ve el CEO y qué ve el Planner» panel por panel. La
-         *     suya devuelve sólo QUÉ PESTAÑAS ve cada rol.
+         *     **La diferencia que importaba era `panels`, y se cerró** ·
+         *     2026-09-28, `5924bf2b`. Hasta acá decía que su preview devolvía sólo QUÉ
+         *     PESTAÑAS ve cada rol, y que eso era el techo de F4.12.
          *
-         *     **Y no hay otra ruta que lo dé**: `GET /config/tabs/{tabId}` resuelve el
-         *     rol desde el token y no acepta lente, así que un admin no puede pedir una
-         *     pestaña «con los ojos de otro rol». Es el techo de F4.12, medido.
+         *     **Ahora `tabs[]` trae `panels[]`**, filtrados exactamente como los vería
+         *     ese rol: sin las métricas de `hidden_metric_ids` y con los
+         *     `layout_overrides` aplicados. Es el mismo código que sirve
+         *     `GET /config/tabs/{tabId}`, así que no pueden divergir.
+         *
+         *     Medido con los dos lentes sobre el mismo layout publicado:
+         *
+         *       lente `admin`     1 pestaña · **12** paneles · `col_span` 12
+         *       lente `planner`   1 pestaña · **9** paneles · `col_span` **4**
+         *
+         *     Los 9 contra 12 son `hidden_metric_ids`; el `col_span` 4 contra 12 es un
+         *     override. **Las dos mitades de lo que F4.12 promete, en una sola
+         *     respuesta.**
+         *
+         *     **Lo que sigue sin existir es el lente en la consola**:
+         *     `GET /config/tabs/{tabId}` resuelve el rol desde el token y no lo acepta.
+         *     No hace falta para F4.12 — el preview ya lo da — y conviene no volver a
+         *     pedirlo.
          */
         Preview: {
             /** Format: uuid */
@@ -936,8 +1020,9 @@ export interface components {
                 name: string;
             };
             /**
-             * @description Sólo las que el rol puede ver, por `roles.tab_ids`. **Sin `panels`**
-             *     y sin envoltorio `{tab, panels}`: la pestaña va plana.
+             * @description Sólo las que el rol puede ver, por `roles.tab_ids`. Sin envoltorio
+             *     `{tab, panels}`: la pestaña va plana, **con sus paneles adentro**
+             *     desde el 2026-09-28.
              */
             tabs: {
                 /** Format: uuid */
@@ -945,6 +1030,44 @@ export interface components {
                 name: string;
                 operational_question: string;
                 sort_order: number;
+                /** @example  */
+                icon: string;
+                /** @description **Lista, nunca `null`** · igual que en el cable de consola. */
+                chat_suggestions: string[];
+                /**
+                 * @description **Los paneles COMO LOS VERÍA ESE ROL** · B4.9, medido el
+                 *     2026-09-28.
+                 *
+                 *     Ya vienen filtrados por `hidden_metric_ids` y con los
+                 *     `layout_overrides` aplicados —posición, `options`, `note`—, así
+                 *     que el front **no filtra ni recompone nada**: dibuja.
+                 *
+                 *     Es la misma forma que `PanelDTO` del cable de consola, y el
+                 *     mismo código las sirve.
+                 */
+                panels: {
+                    /** Format: uuid */
+                    id: string;
+                    /** Format: uuid */
+                    metric_id: string;
+                    /**
+                     * @example kpi
+                     * @example series
+                     * @example bars
+                     */
+                    type: string;
+                    col_start: number;
+                    /**
+                     * @example 4
+                     * @example 12
+                     */
+                    col_span: number;
+                    row_span: number;
+                    options?: {
+                        [key: string]: unknown;
+                    };
+                    note: string;
+                }[];
             }[];
         };
         /**
@@ -1415,6 +1538,73 @@ export interface operations {
                 };
             };
             422: components["responses"]["Unprocessable"];
+        };
+    };
+    revertLayout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                layoutId: components["parameters"]["layoutId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /**
+                     * Format: uuid
+                     * @description A qué versión volver. **Sin esto se usa el
+                     *     `previous_layout_id` de la última publicación**, y si no hay
+                     *     da `409 CONFLICT_NO_PREVIOUS`.
+                     */
+                    to_layout_id?: string;
+                    /**
+                     * @description El nombre de la versión nueva. Por defecto
+                     *     `rollback-<versión copiada>`.
+                     * @example rollback-v1
+                     */
+                    version_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description La versión nueva, ya publicada · **no medida** */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["LayoutVersion"];
+                    };
+                };
+            };
+            /** @description El destino no existe o es de otro dashboard · `NOT_FOUND_REVERT_TARGET` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /**
+             * @description `CONFLICT_NO_PREVIOUS` — no hay a qué volver y no mandaron destino ·
+             *     **medido** · `CONFLICT_REVERT_SELF` — el destino es este mismo layout ·
+             *     **medido** · `CONFLICT_REVERT_TO_DRAFT` — el destino es un borrador.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `VALIDATION_REVERT_TARGET` — la versión vieja ya no valida contra el catálogo actual */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     listAgents: {

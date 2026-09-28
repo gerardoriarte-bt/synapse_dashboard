@@ -62,6 +62,7 @@ const panels: WirePanel[] = PANELES.map((p) => ({
   col_start: p.colStart,
   col_span: 6,
   row_span: 4,
+  note: '',
 }))
 
 function montar() {

@@ -99,7 +99,7 @@ tags:
 
 paths:
   /config/me:
-    x-verificado-en: 8633b10
+    x-verificado-en: 5924bf2b
     get:
       tags: [config]
       operationId: getMe
@@ -170,7 +170,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/tabs/{tabId}:
-    x-verificado-en: 8633b10
+    x-verificado-en: 5924bf2b
     get:
       tags: [config]
       operationId: getTab
@@ -551,24 +551,74 @@ components:
         `{ codigo, mensaje, campo, desbloqueaCon }`. Leer esta cadena como objeto
         da `code: undefined` y `message: ""` — una pantalla de error sin una
         palabra. Es el mismo defecto por el que existe `api/auth.ts`.
-      required: [success, error]
+      required: [success, error, code]
       properties:
         success: { type: boolean, enum: [false] }
         error:
           type: string
+          description: |
+            **El mensaje, y NO siempre en español** · remedido el 2026-09-28
+            contra `5924bf2b`.
+
+            Su respuesta de ese día dice que «`error` sigue siendo el mensaje en
+            español de siempre». **No lo es**, y este campo ya lo tenía
+            transcripto desde antes: los dos ejemplos de abajo son literales
+            medidos.
+
+            **No es una política, son handlers sueltos**: los errores del revert
+            salen redactados y en español —«el layout no tiene una versión
+            anterior a la que volver; indique to_layout_id»—.
+
+            **Y esto llega a la pantalla tal cual.** `client.ts` lo pasa sin
+            tocarlo —redactar el error del servidor sería el front inventando— y
+            `ErrorState` lo pinta como `phrase`. Un usuario puede ver el nombre
+            de un struct de Go y el tag de un validador. Va pedido.
           examples: ['tab not found', 'invalid request: Key: ''DDBatchRequest.PanelIDs'' Error:Field validation for ''PanelIDs'' failed on the ''required'' tag']
+        code:
+          type: string
+          description: |
+            **B0.4 · llegó el 2026-09-28**, y es lo que hace accionable un error.
+
+            Forma: `FAMILIA_DETALLE`. **Se decide por la FAMILIA** —el prefijo
+            hasta el primer `_`—: ellos suman detalles sin avisar, así que un
+            `switch` sobre el valor entero se rompe solo.
+
+            Familias: `VALIDATION` (400/422), `AUTH` (401/403), `NOT_FOUND`
+            (404), `CONFLICT` (409), `RATE_LIMIT` (429), `INTERNAL` (5xx).
+
+            **Medido en cuatro**, una llamada por familia: `AUTH_UNAUTHORIZED`
+            sin token, `NOT_FOUND_RESOURCE` con una pestaña inexistente,
+            `AUTH_FORBIDDEN` pegándole a `/admin/*` con token de planner, y
+            `VALIDATION_REQUEST` mandando `theme: "morado"`.
+
+            Si una ruta no fija un detalle propio sale el genérico de su familia.
+          examples: [AUTH_UNAUTHORIZED, NOT_FOUND_RESOURCE, AUTH_FORBIDDEN, VALIDATION_REQUEST, CONFLICT_NOT_DRAFT]
 
     # ── /config/me ───────────────────────────────────────────────────────────
 
     ContextResponse:
       type: object
       description: |
-        `ports.DDContextResponse`. Comparado con el `Contexto` del contrato, le
-        faltan: `alcance`, `tenantsDisponibles`, `tenant.etiqueta`,
-        `tenant.vertical`, `role.puedeAprobar`, `user.capacidades`,
-        `user.preferencias.tema`, y en la pestaña `key`, `icono` y
-        `chatSugerencias`.
-      required: [user, tenant, role, tabs, periods, catalog_version]
+        `ports.DDContextResponse`.
+
+        ── **B1.1 LLEGÓ A MEDIAS** · medido campo por campo el 2026-09-28 contra
+        `5924bf2b` ────────────────────────────────────────────────────────────
+
+        El pedido tenía seis cosas. **Llegaron tres** —`scope` con sus tenants,
+        el grano de cada período, y `icon`/`chat_suggestions` en la pestaña— y
+        por eso B1.1 **sigue en ⚠️**: cerrarla sería el defecto de «el criterio
+        se cumple a medias y nadie lo bajó».
+
+        **Lo que sigue faltando**, medido sobre la respuesta real: `tenant`
+        trae `id`, `name`, `locale`, `currency` y `timezone` —no `etiqueta`—;
+        `role` trae `id` y `name` —no `puedeAprobar`—; `user` trae `id`,
+        `email`, nombre y `theme` —no `capacidades`—; y la pestaña no trae
+        `key`.
+
+        **`tenant.vertical` salió del pedido y no es un olvido**: §3.5 declara
+        `vertical` **y** `plantillaOrigen`, y ese mecanismo no existe de ninguno
+        de los dos lados · `docs/DECISIONES-2026-09-28-estado-y-vertical.md`.
+      required: [user, tenant, role, tabs, periods, catalog_version, period_grain, periods_detail, scope]
       properties:
         user: { $ref: '#/components/schemas/UserInfo' }
         tenant: { $ref: '#/components/schemas/TenantInfo' }
@@ -660,6 +710,54 @@ components:
             son el estado «existe pero no se compuso todavía».
 
         catalog_version: { type: integer }
+        period_grain:
+          type: string
+          enum: [month, week]
+          description: |
+            El grano de **todos** los `periods` · B1.1 · medido `"month"`.
+
+            `week` queda declarado para cuando exista dato semanal, y entonces
+            `periods_detail[].grain` lo dirá por período. **Hoy no se emite**:
+            está acá porque ellos lo declaran, no porque se haya visto.
+        periods_detail:
+          type: array
+          description: |
+            El mismo juego de `periods`, con sus bordes resueltos. `periods` no
+            cambió: esto se suma al lado.
+
+            **`[start, end)`** — el fin es exclusivo, y eso lo dice el dato
+            medido: `2026-09` va de `2026-09-01` a `2026-10-01`.
+          items:
+            type: object
+            required: [key, grain, start, end]
+            properties:
+              key: { type: string, examples: ['2026-09'] }
+              grain: { type: string, enum: [month, week] }
+              start: { type: string, format: date, examples: ['2026-09-01'] }
+              end: { type: string, format: date, examples: ['2026-10-01'] }
+        scope:
+          type: object
+          description: |
+            Qué clientes ve este usuario · lo que el contrato llama `alcance` con
+            `tenantsDisponibles`.
+
+            **Medido con los dos usuarios de la base local**: con el token de
+            `planner` sale `single_tenant` y un solo tenant; el selector de
+            cliente del navbar sólo tiene sentido con `multi_tenant`.
+          required: [kind, tenants]
+          properties:
+            kind:
+              type: string
+              enum: [single_tenant, multi_tenant]
+            tenants:
+              type: array
+              description: '**Nunca `null`** · lo declaran ellos.'
+              items:
+                type: object
+                required: [id, name]
+                properties:
+                  id: { type: string, format: uuid }
+                  name: { type: string, examples: ['Under Armour México'] }
 
     UserInfo:
       type: object
@@ -729,12 +827,40 @@ components:
 
     TabMeta:
       type: object
-      required: [id, name, operational_question, sort_order]
+      description: |
+        ── **`icon` y `chat_suggestions` llegaron** · 2026-09-28, medidos contra
+        `5924bf2b` ────────────────────────────────────────────────────────────
+
+        Eran el pedido de **B4.4**, abierto desde el 2026-09-15 cuando F4.8
+        construyó el editor de pestañas: el builder los podía escribir y la
+        consola no los recibía.
+
+        Entran por `PUT /admin/layouts/{id}` —se recortan, se descartan las
+        vacías y **el máximo es 8**, más da `422 VALIDATION_CHAT_SUGGESTIONS`— y
+        salen por acá.
+      required: [id, name, operational_question, sort_order, icon, chat_suggestions]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
         operational_question: { type: string }
         sort_order: { type: integer }
+        icon:
+          type: string
+          description: |
+            **Cadena vacía cuando no hay**, no `null` · medido. La semilla no
+            trae ninguno, así que hoy llega `""` en las tres rutas que sirven
+            `TabMeta`.
+          examples: ['', 'box']
+        chat_suggestions:
+          type: array
+          description: |
+            **SIEMPRE lista, nunca `null`** · lo declaran ellos y se midió. Es lo
+            que permite que el riel las recorra sin guardia — y la diferencia con
+            `tabs`, que sí llega `null` en un dashboard sin componer.
+
+            **No se confunden con las de panel**, que siguen viniendo de
+            `GET /config/panels/{panelId}/chat-suggestions` y no cambiaron.
+          items: { type: string }
 
     # ── /config/catalog ──────────────────────────────────────────────────────
 
@@ -904,7 +1030,12 @@ components:
       description: |
         `ports.DDPanelDTO`. En la base la columna es `block_type`; acá el campo
         es `type`. Mapea limpio al `PanelConfigurado` del contrato.
-      required: [id, metric_id, type, col_start, col_span, row_span]
+
+        **`note` llegó el 2026-09-28** · B1.13 · medido: los nueve paneles que ve
+        el planner la traen. Es lo único que quedaba de ese pedido — el grande,
+        «`presentation` para las siete formas que no son escalares», lo habíamos
+        retirado nosotros al descubrir que la lee un solo cuerpo.
+      required: [id, metric_id, type, col_start, col_span, row_span, note]
       properties:
         id: { type: string, format: uuid }
         metric_id: { type: string, format: uuid }
@@ -922,6 +1053,22 @@ components:
             mostrar, y los VALORES viajan en `presentation` del payload. El front
             hoy los busca acá, que es el bug de F1.40.
           additionalProperties: true
+        note:
+          type: string
+          description: |
+            La nota de lectura del panel · **B1.13, llegó el 2026-09-28**.
+
+            La escribe el admin en el builder —`panels[].note` de
+            `PUT /admin/layouts/{id}`— y vive en el layout, no en el dato: por
+            eso viaja acá y no en el payload.
+
+            **Vacía cuando no hay**, no `null` · medido sobre los nueve paneles
+            del planner. Un rol puede reemplazarla con
+            `layout_overrides[tab_id][panel_id].note`.
+
+            **Y también aparece mezclada en `presentation.note`** del payload de
+            `panels:batch`: se une en lectura sin pisar `label`, `meter` ni
+            `comparative`, y no se guarda en `dd_panel_data`.
 
     # ── /config/panels:batch ─────────────────────────────────────────────────
 

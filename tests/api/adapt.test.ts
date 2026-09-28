@@ -32,9 +32,27 @@ const contexto: WireContext = {
   },
   role: { id: 'r-1', name: 'Planner' },
   tabs: [
-    { id: 'tab-1', name: 'Inventario', operational_question: '¿Tenemos stock?', sort_order: 2 },
+    {
+      id: 'tab-1',
+      name: 'Inventario',
+      operational_question: '¿Tenemos stock?',
+      sort_order: 2,
+      icon: '',
+      chat_suggestions: [],
+    },
   ],
   periods: ['2026-08', '2026-W32', '2026-08-15'],
+  // ── B1.1 · los tres que llegaron el 2026-09-28 ────────────────────────────
+  //
+  // **Este fixture tiene tres períodos de granos distintos a propósito** —mes,
+  // semana y día—, y `period_grain` dice `month` porque es el grano de TODOS
+  // los `periods` según ellos. La contradicción es del servicio, no del
+  // fixture, y se deja a la vista: hoy `period_grain` siempre vale `month`.
+  period_grain: 'month' as const,
+  periods_detail: [
+    { key: '2026-08', grain: 'month' as const, start: '2026-08-01', end: '2026-09-01' },
+  ],
+  scope: { kind: 'single_tenant' as const, tenants: [{ id: 't-1', name: 'UA MX' }] },
   catalog_version: 7,
 }
 
@@ -274,7 +292,14 @@ describe('bloques', () => {
 
 describe('pestaña con paneles', () => {
   const wire: WireTabWithPanels = {
-    tab: { id: 'tab-1', name: 'Inventario', operational_question: '¿Stock?', sort_order: 1 },
+    tab: {
+      id: 'tab-1',
+      name: 'Inventario',
+      operational_question: '¿Stock?',
+      sort_order: 1,
+      icon: '',
+      chat_suggestions: [],
+    },
     panels: [
       {
         id: 'p-1',
@@ -283,6 +308,7 @@ describe('pestaña con paneles', () => {
         col_start: 5,
         col_span: 4,
         row_span: 3,
+        note: '',
         options: { comparative: true },
       },
     ],
@@ -317,7 +343,7 @@ describe('pestaña con paneles', () => {
     const sinOpciones: WireTabWithPanels = {
       tab: wire.tab,
       panels: [
-        { id: 'p-2', metric_id: 'm-1', type: 'kpi', col_start: 1, col_span: 3, row_span: 4 },
+        { id: 'p-2', metric_id: 'm-1', type: 'kpi', col_start: 1, col_span: 3, row_span: 4, note: '' },
       ],
     }
     expect(adaptTab(sinOpciones).panels[0]).not.toHaveProperty('opciones')
@@ -645,9 +671,9 @@ describe('presentación', () => {
 
 describe('los nombres de los params · F1.41', () => {
   const panelConOpciones = (options: Record<string, unknown>): WireTabWithPanels => ({
-    tab: { id: 'tab-1', name: 'T', operational_question: '¿?', sort_order: 1 },
+    tab: { id: 'tab-1', name: 'T', operational_question: '¿?', sort_order: 1, icon: '', chat_suggestions: [] },
     panels: [
-      { id: 'p-1', metric_id: 'm-1', type: 'gauge', col_start: 1, col_span: 3, row_span: 4, options },
+      { id: 'p-1', metric_id: 'm-1', type: 'gauge', col_start: 1, col_span: 3, row_span: 4, options, note: '' },
     ],
   })
 
