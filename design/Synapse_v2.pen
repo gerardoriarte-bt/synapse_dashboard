@@ -1805,7 +1805,7 @@
         {
           "type": "frame",
           "id": "k7umYj",
-          "name": "Sec · Foco",
+          "name": "Sec · Foco y estados de control",
           "layout": "vertical",
           "gap": 12,
           "children": [
@@ -1950,6 +1950,136 @@
                   "fontSize": 9,
                   "fontWeight": "normal",
                   "letterSpacing": 1.08
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Z1WGZ",
+              "name": "Reglas de superficie",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pP4sp",
+                  "fill": "$dim",
+                  "content": "SUPERFICIE DE HOVER Y ACTIVO",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 10,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.2
+                },
+                {
+                  "type": "text",
+                  "id": "boeiz",
+                  "fill": "$dim",
+                  "content": "HOVER Y ACTIVO: SUPERFICIE $ELEV, NUNCA UN WASH",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 9,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.08
+                },
+                {
+                  "type": "text",
+                  "id": "sRVvX",
+                  "fill": "$dim",
+                  "content": "LO DECLARA §2.1: PANEL-RAISED ES ACTIVO Y HOVER",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 9,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.08
+                },
+                {
+                  "type": "text",
+                  "id": "Tmv6C",
+                  "fill": "$dim",
+                  "content": "LABEL $DIM SOBRE $ELEV: 4.63 OSCURO Y 4.57 CLARO",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 9,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.08
+                },
+                {
+                  "type": "text",
+                  "id": "Mm24T",
+                  "fill": "$dim",
+                  "content": "EL MISMO LABEL SOBRE UN WASH CAE A 4.17 Y NO PASA",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 9,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.08
+                },
+                {
+                  "type": "text",
+                  "id": "UWR2d",
+                  "fill": "$dim",
+                  "content": "LOS WASH SON PARA SEPARAR ZONAS, NO PARA RESPONDER AL PUNTERO",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 9,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.08
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "MQyJT",
+              "name": "Especimen de hover",
+              "gap": 16,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "I81PD",
+                  "name": "Botón · reposo",
+                  "height": 26,
+                  "fill": "#00000000",
+                  "cornerRadius": "$r-sm",
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "pjCUQ",
+                      "fill": "$dim",
+                      "content": "REORDENAR",
+                      "fontFamily": "$font-mono",
+                      "fontSize": 10,
+                      "fontWeight": "normal",
+                      "letterSpacing": 1.2
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "zeBef",
+                  "name": "Botón · hover",
+                  "height": 26,
+                  "fill": "$elev",
+                  "cornerRadius": "$r-sm",
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Ogivw",
+                      "fill": "$dim",
+                      "content": "REORDENAR",
+                      "fontFamily": "$font-mono",
+                      "fontSize": 10,
+                      "fontWeight": "normal",
+                      "letterSpacing": 1.2
+                    }
+                  ]
                 }
               ]
             }
@@ -25287,7 +25417,7 @@
               "reusable": true,
               "height": 18,
               "cornerRadius": "$r-xs",
-              "stroke": "$acc",
+              "stroke": "$w4",
               "strokeWidth": 1,
               "strokeAlignment": "inner",
               "gap": 5,
@@ -25305,12 +25435,12 @@
                   "height": 10,
                   "icon": "triangle-alert",
                   "library": "lucide",
-                  "fill": "$acc"
+                  "fill": "$ink"
                 },
                 {
                   "type": "text",
                   "id": "beRqE",
-                  "fill": "$acc",
+                  "fill": "$ink",
                   "content": "DEGRADADO · FEED HACE 31 H",
                   "fontFamily": "$font-mono",
                   "fontSize": 9,
@@ -74017,7 +74147,7 @@
           "x": 0,
           "y": 0,
           "name": "Velo",
-          "fill": "#0B0B0CCC",
+          "fill": "$shad",
           "width": 1440,
           "height": 2329
         },
@@ -79615,7 +79745,7 @@
           "x": 0,
           "y": 0,
           "name": "Velo",
-          "fill": "#0B0B0CCC",
+          "fill": "$shad",
           "width": 1440,
           "height": 2329
         },
@@ -79631,10 +79761,10 @@
           "height": 2329,
           "fill": "$dock",
           "cornerRadius": [
-            16,
+            "$r-xl",
             0,
             0,
-            16
+            "$r-xl"
           ],
           "stroke": "$w3",
           "strokeWidth": 1,
@@ -83566,7 +83696,7 @@
           "x": 0,
           "y": 0,
           "name": "Velo",
-          "fill": "#0B0B0CCC",
+          "fill": "$shad",
           "width": 1440,
           "height": 2329
         },
@@ -83582,10 +83712,10 @@
           "height": 2329,
           "fill": "$dock",
           "cornerRadius": [
-            16,
+            "$r-xl",
             0,
             0,
-            16
+            "$r-xl"
           ],
           "stroke": "$w3",
           "strokeWidth": 1,

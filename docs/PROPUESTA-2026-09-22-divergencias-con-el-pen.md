@@ -49,6 +49,21 @@ correcta.
 Queda anotado para el día que alguien mire el dibujo y vea un 16: **el `.pen`
 ahí se pide a sí mismo algo que no puede emitir**, y quien manda es la escala.
 
+**EJECUTADA EN EL DIBUJO el 2026-09-28.** Hasta ese día la decisión vivía sólo del
+lado del código y el `.pen` seguía con los literales — así que quien abriera el
+dibujo veía el 16 y el hex, y la auditoría del 28 encontró que **el velo era hex en
+tres pantallas y no en una**: C2, C3 expandido y C3 colapsado.
+
+Con el permiso de `docs/INSTRUCCIONES-2026-09-28-diseno-en-el-pen.md`, los cinco
+nodos quedaron retipeados: los tres velos a **`$shad`** y los dos radios a
+**`[$r-xl, 0, 0, $r-xl]`**. El velo del dibujo se aclara —`$shad` es 55% de negro
+donde el hex era 80%— y eso es la consecuencia de la decisión, no un efecto
+colateral: es el único negro translúcido del sistema y se invierte con el tema.
+
+En el dibujo quedan **nueve hex** y ninguno es un bug: los chips de color del
+sistema de diseño, que muestran el valor del token y por eso son literales, y la
+pieza `Sobre claro` de Identidad, que va en tema claro sin importar el tema.
+
 ## 2 · Dos tamaños más, del mismo modo de falla · A2 §9
 
 **Quién decide** · diseño · **Bloquea** · nada

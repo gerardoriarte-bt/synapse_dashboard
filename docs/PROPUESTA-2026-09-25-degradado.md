@@ -26,6 +26,12 @@
 > aplica**: sus rellenos de datos son los de la familia, sin una sola barra en
 > `$w2`. Así que ni dentro del `.pen` está aplicada donde se vería.
 >
+> **3 · Y el badge pasa a neutro** —borde `$w4`, icono y texto en `$ink`, mono 9,
+> sin relleno—, resuelto el 2026-09-28 después de que la auditoría levantara la
+> tensión: §2.1 es regla dura, cierra los usos del naranja en cinco y un badge de
+> degradación no es ninguno. El dibujo lo tenía en `$acc`; ahí gana `design.md`.
+> `ink` sobre `panel` mide 14.89 y 17.38, así que de paso cierra la pregunta 13.
+>
 > Con eso, la decisión: **el alcance de la trama son las formas con eje temporal**
 > —series, área, forecast—, y en las que no lo tienen la regla «obliga a fechar»
 > la cumple la procedencia con su frescura, que ya se pinta en los seis estados.
