@@ -23545,6 +23545,159 @@
                   "letterSpacing": 1.08
                 }
               ]
+            },
+            {
+              "type": "rectangle",
+              "id": "SP0Xm",
+              "name": "Separador",
+              "fill": "$w2",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "mnNc6",
+              "name": "Tema",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 3,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "cCcRC",
+                  "fill": "$dim",
+                  "content": "TEMA",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 9,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.08
+                },
+                {
+                  "type": "frame",
+                  "id": "f8eQT8",
+                  "name": "Opciones",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "T9l2aG",
+                      "name": "Oscuro · activo",
+                      "fill": "$acc",
+                      "content": "OSCURO",
+                      "fontFamily": "$font-mono",
+                      "fontSize": 10,
+                      "fontWeight": "normal",
+                      "letterSpacing": 1.2
+                    },
+                    {
+                      "type": "text",
+                      "id": "kVMYt",
+                      "name": "Claro",
+                      "fill": "$dim",
+                      "content": "CLARO",
+                      "fontFamily": "$font-mono",
+                      "fontSize": 10,
+                      "fontWeight": "normal",
+                      "letterSpacing": 1.2
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "cEBZO",
+              "name": "Ir a",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "f42qU",
+                  "fill": "$dim",
+                  "content": "IR A",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 9,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.08
+                },
+                {
+                  "type": "frame",
+                  "id": "oPOL7",
+                  "name": "Salida · ADMINISTRACIÓN",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "p01TQ",
+                      "fill": "$ink",
+                      "content": "ADMINISTRACIÓN",
+                      "fontFamily": "$font-mono",
+                      "fontSize": 10,
+                      "fontWeight": "normal",
+                      "letterSpacing": 1.2
+                    },
+                    {
+                      "type": "frame",
+                      "id": "L9aKQ",
+                      "name": "Spacer",
+                      "width": "fill_container",
+                      "height": 1
+                    },
+                    {
+                      "type": "icon",
+                      "id": "noKtF",
+                      "name": "Ir",
+                      "width": 13,
+                      "height": 13,
+                      "icon": "arrow-right",
+                      "library": "lucide",
+                      "fill": "$dim"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "WaL99",
+                  "name": "Salida · BUILDER",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "cvqrh",
+                      "fill": "$ink",
+                      "content": "BUILDER",
+                      "fontFamily": "$font-mono",
+                      "fontSize": 10,
+                      "fontWeight": "normal",
+                      "letterSpacing": 1.2
+                    },
+                    {
+                      "type": "frame",
+                      "id": "d1OmT",
+                      "name": "Spacer",
+                      "width": "fill_container",
+                      "height": 1
+                    },
+                    {
+                      "type": "icon",
+                      "id": "tiloj",
+                      "name": "Ir",
+                      "width": 13,
+                      "height": 13,
+                      "icon": "arrow-right",
+                      "library": "lucide",
+                      "fill": "$dim"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         },
@@ -41306,6 +41459,52 @@
                   "fontSize": 10,
                   "fontWeight": "500",
                   "letterSpacing": 1.2
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ML5yb",
+              "name": "Identidad",
+              "height": 26,
+              "fill": "$elev",
+              "cornerRadius": "$r-md",
+              "gap": 7,
+              "padding": [
+                0,
+                10
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "fGH8A",
+                  "fill": "$dim",
+                  "content": "SUPER-ADMIN",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 9,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.08
+                },
+                {
+                  "type": "text",
+                  "id": "M6IeF",
+                  "fill": "$ink",
+                  "content": "MARÍA BENÍTEZ",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 9,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.08
+                },
+                {
+                  "type": "icon",
+                  "id": "mcMIB",
+                  "name": "Selector",
+                  "width": 13,
+                  "height": 13,
+                  "icon": "chevrons-up-down",
+                  "library": "lucide",
+                  "fill": "$dim"
                 }
               ]
             }
@@ -60036,6 +60235,16 @@
                   "fontSize": 9,
                   "fontWeight": "normal",
                   "letterSpacing": 1.08
+                },
+                {
+                  "type": "icon",
+                  "id": "q5Pswl",
+                  "name": "Selector",
+                  "width": 13,
+                  "height": 13,
+                  "icon": "chevrons-up-down",
+                  "library": "lucide",
+                  "fill": "$dim"
                 }
               ]
             }
@@ -103633,6 +103842,7 @@
               "type": "ref",
               "ref": "k7cfSY",
               "name": "Tab Product Sales",
+              "fill": "#00000000",
               "descendants": {
                 "pOFw9": {
                   "icon": "circle-dot",
@@ -103645,14 +103855,14 @@
                 "H9iWF": {
                   "enabled": false
                 }
-              },
-              "fill": "#00000000"
+              }
             },
             {
               "id": "mm086",
               "type": "ref",
               "ref": "k7cfSY",
               "name": "Tab Inventory & Shopping",
+              "fill": "#00000000",
               "descendants": {
                 "pOFw9": {
                   "icon": "box",
@@ -103665,8 +103875,7 @@
                 "H9iWF": {
                   "enabled": false
                 }
-              },
-              "fill": "#00000000"
+              }
             },
             {
               "id": "mm116",
@@ -103766,6 +103975,9 @@
                                 "eF2fr": {
                                   "content": "0.867"
                                 },
+                                "b7wWL": {
+                                  "enabled": false
+                                },
                                 "X0Uw17/XyPpI": {
                                   "content": "ERROR NORMALIZADO"
                                 },
@@ -103783,9 +103995,6 @@
                                 },
                                 "V74t2C/h5RbCs": {
                                   "content": "0.265"
-                                },
-                                "b7wWL": {
-                                  "enabled": false
                                 }
                               }
                             }
@@ -103840,6 +104049,9 @@
                                 "eF2fr": {
                                   "content": "17.2%"
                                 },
+                                "b7wWL": {
+                                  "enabled": false
+                                },
                                 "X0Uw17/XyPpI": {
                                   "content": "MAPE SIMPLE"
                                 },
@@ -103857,9 +104069,6 @@
                                 },
                                 "V74t2C/h5RbCs": {
                                   "content": "118"
-                                },
-                                "b7wWL": {
-                                  "enabled": false
                                 }
                               }
                             }
@@ -103914,6 +104123,9 @@
                                 "eF2fr": {
                                   "content": "147 d"
                                 },
+                                "b7wWL": {
+                                  "enabled": false
+                                },
                                 "X0Uw17/XyPpI": {
                                   "content": "EDAD DE LA CORRIDA"
                                 },
@@ -103931,9 +104143,6 @@
                                 },
                                 "V74t2C/h5RbCs": {
                                   "content": "90 D"
-                                },
-                                "b7wWL": {
-                                  "enabled": false
                                 }
                               }
                             }
@@ -103990,6 +104199,12 @@
                               "width": "fill_container",
                               "height": "fill_container",
                               "descendants": {
+                                "rjfSY": {
+                                  "content": "TOTAL REPARTIDO"
+                                },
+                                "S0mhH": {
+                                  "content": "100% DE LA VENTA"
+                                },
                                 "CFyLP": {
                                   "children": [
                                     {
@@ -104453,12 +104668,6 @@
                                       }
                                     }
                                   ]
-                                },
-                                "rjfSY": {
-                                  "content": "TOTAL REPARTIDO"
-                                },
-                                "S0mhH": {
-                                  "content": "100% DE LA VENTA"
                                 }
                               }
                             }

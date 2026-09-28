@@ -96,3 +96,28 @@ export function ceiling(values: readonly number[]): number {
   const step = niceStep(max / 5)
   return Math.ceil(max / step) * step
 }
+
+/** El dominio de una barra de rango · §PEN:Plot/INTERVALO
+ *
+ *  **El dominio de un intervalo NO arranca en cero, y eso lo fija el dibujo.**
+ *  El `.pen` dibuja `31–46` sobre un riel que va de 20 a 60: con base cero ese
+ *  rango sería una astilla contra el borde derecho y el gráfico no diría nada.
+ *  Por eso `ceiling`, que siempre parte de cero, no sirve acá.
+ *
+ *  **Lo que el dibujo NO fija es la regla**, y conviene decirlo: sus cuatro
+ *  filas tienen padding distinto —entre 0.43 y 0.93 del ancho del intervalo— así
+ *  que son números colocados a mano, no un algoritmo que se pueda leer. Acá se
+ *  elige **0.75 a cada lado**, que deja el intervalo ocupando ~40 % del riel; en
+ *  el dibujo ocupa entre 38 % y 53 %. Queda declarado como divergencia menor.
+ *
+ *  Después se redondea hacia AFUERA, por la misma razón que `ceiling` redondea
+ *  hacia arriba: un extremo que cae justo en el borde se ve cortado.
+ */
+export function envelope(lo: number, hi: number): [number, number] {
+  // Un intervalo de ancho cero es legítimo —una estimación sin incertidumbre no
+  // se publica, pero `lo === hi` puede llegar— y sin este piso el dominio
+  // colapsa y la división por su ancho da infinito.
+  const width = Math.max(hi - lo, Math.abs(hi) / 10, 1)
+  const step = niceStep(width / 2)
+  return [Math.floor((lo - width * 0.75) / step) * step, Math.ceil((hi + width * 0.75) / step) * step]
+}

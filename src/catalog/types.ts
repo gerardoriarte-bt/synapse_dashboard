@@ -9,7 +9,7 @@
  *  `render/` pueda importar `Family` o `PanelType` sin importar de `api/`, que
  *  es la frontera de §4.
  */
-export type { Block, Family, Layer, Metric, PanelConfig, PanelType, Shape } from '../api/types'
+export type { Block, ChartId, Family, Layer, Metric, PanelConfig, PanelType, Shape } from '../api/types'
 
 /** Dónde va un panel en la grilla. Es la parte de `PanelConfig` que `render/`
  *  necesita, sin `metricId` ni `opciones`: un componente de render no tiene por

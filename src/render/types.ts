@@ -5,7 +5,7 @@
  *  que permite que el mismo panel sirva en la consola, en el builder y en la
  *  vista previa por rol sin una rama.
  */
-import type { Actions, Family, Presentation, Value } from '../api/types'
+import type { Actions, ChartId, Family, Presentation, Value } from '../api/types'
 import type { Placement } from '../catalog/types'
 import type { Formatter } from './format'
 
@@ -26,6 +26,15 @@ export type BodyProps<F extends Value['forma'], P = Record<string, never>> = {
   /** Del catálogo. El cuerpo pinta con el hue que le llega y NO SABE CUÁL ES
    *  · regla dura 1: la familia se lee del catálogo, nunca se elige acá. */
   family: Family
+  /** **Qué VARIANTE dibujar** · del layout, no del dato · 2026-09-28.
+   *
+   *  `tipo` eligió este cuerpo; esto elige el dibujo de adentro. Hacen falta los
+   *  dos porque 16 de los 49 gráficos sirven a más de una forma.
+   *
+   *  **Ausente significa el gráfico por defecto del cuerpo**, que es lo que
+   *  hacen los paneles publicados hoy. Y uno que el cuerpo no sepa dibujar
+   *  **no cae al de por defecto**: se declara. Ver `UnknownPlotState`. */
+  grafico?: ChartId
   /** Rótulos y cifras de apoyo, redactados por el backend. Viajan con el dato y
    *  no con el layout porque dependen del período. */
   presentation?: Presentation

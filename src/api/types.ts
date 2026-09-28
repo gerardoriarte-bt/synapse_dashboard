@@ -34,6 +34,8 @@ export type PayloadState = Payload['estado']
 export type Value = Schemas['Valor']
 export type Shape = Schemas['Forma']
 export type PanelType = Schemas['TipoPanel']
+/** Los 49 de §5 · qué VARIANTE dibuja un panel, aparte de qué cuerpo lo lee. */
+export type ChartId = Schemas['GraficoId']
 export type Family = Schemas['Familia']
 export type Layer = Schemas['Capa']
 export type Governance = Schemas['Gobierno']

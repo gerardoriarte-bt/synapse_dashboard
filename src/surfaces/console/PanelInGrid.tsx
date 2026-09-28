@@ -98,6 +98,11 @@ export function PanelInGrid({
           params={params}
           span={panel}
           family={metric.familia}
+          // **Del LAYOUT, no del dato** · 2026-09-28. Qué gráfico se dibuja es
+          // una decisión de composición: la misma métrica puede verse como
+          // serie con banda en una pestaña y como barra de rango en otra. Por
+          // eso sale de `panel`, que es el layout, y no de `payload`.
+          {...(panel.grafico === undefined ? {} : { grafico: panel.grafico })}
           metric={metric.nombre}
           format={format}
           {...(metric.unidad == null ? {} : { unit: metric.unidad })}
