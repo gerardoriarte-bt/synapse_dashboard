@@ -5,7 +5,7 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**126 de 210 tareas cerradas.** 18 parciales · 61 pendientes · 5 diferidas.
+**129 de 210 tareas cerradas.** 16 parciales · 60 pendientes · 5 diferidas.
 
 
 ## Front · 109 de 125
@@ -19,7 +19,7 @@
 | 4 · Admin y Builder | `████████████████······` | 18/24 | 1 | 5 |
 | 5 · Pruebas y pulido | `██████████████████····` | 15/18 | 0 | 2 |
 
-## Backend · 17 de 85
+## Backend · 20 de 85
 
 > ⚠️ **Este número está bajo y no refleja al backend.** El plan de acá
 > es la fuente del FRONT; el estado de las tareas `B*` solo se mueve
@@ -40,11 +40,11 @@
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
-| 0 · Fundamentos | `██····················` | 1/10 | 1 | 8 |
-| 1 · API de consola | `█████████·············` | 11/27 | 5 | 11 |
+| 0 · Fundamentos | `██····················` | 1/10 | 2 | 7 |
+| 1 · API de consola | `██████████············` | 12/27 | 4 | 11 |
 | 2 · Materialización | `███···················` | 2/13 | 1 | 10 |
 | 3 · Chat contextual | `······················` | 0/11 | 2 | 9 |
-| 4 · Admin y Builder | `████··················` | 3/17 | 4 | 10 |
+| 4 · Admin y Builder | `██████················` | 5/17 | 2 | 10 |
 | 5 · Multi-dashboard y pulido | `······················` | 0/7 | 1 | 5 |
 
 ---
@@ -56,7 +56,7 @@ Nada del front está libre: todo lo pendiente espera algo.
 
 ---
 
-## Bloqueadas · 24
+## Bloqueadas · 21
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -80,8 +80,7 @@ Lo que el front espera del backend está detallado en
 **Backend**
 
 - **B0.4** · Middleware de auth y envelope
-- **B1.1** · GET /config/me
-- **B1.13** · Presentacion opcional
+- **B1.1** · GET /config/me · llegaron dos de seis
 - **B1.16** · Seed de demo: 1 tenant, 1 layout, 1 pestaña, 4–6 paneles
 - **B1.21** · Declarar los mínimos de datos por gráfico
 - **B1.6** · POST /config/panels:batch
@@ -89,8 +88,6 @@ Lo que el front espera del backend está detallado en
 - **B2.7** · Estado SIN_PERMISO en el batch
 - **B3.11** · Aplicar las migraciones de 82da946 sobre la base compartida
 - **B4.2** · GET /admin/tenants/{id}/layouts
-- **B4.4** · PUT /admin/layouts/{id} — editar pestañas y paneles
-- **B4.9** · Preview por rol · LA TOMARON, y más chica
 
 ---
 

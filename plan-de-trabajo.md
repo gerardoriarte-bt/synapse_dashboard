@@ -500,7 +500,7 @@ recibe todo resuelto en `/config/me`.
 ### B0.4 ⚠️ Middleware de auth y envelope
 **Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. **Todo error trae `code`**, medido en cuatro familias: `AUTH_UNAUTHORIZED`, `NOT_FOUND_RESOURCE`, `AUTH_FORBIDDEN` y `VALIDATION_REQUEST`. **Queda en ⚠️ y no en ✅ por el `error`**: dos handlers devuelven el mensaje crudo —«tab not found» y el volcado del validador de Go— y `ErrorState` lo pinta tal cual. Pedido, no nuestro.
 
-**Espera del backend.** **El envelope de error estructurado de §4.1.** Hoy `error` es una cadena, así que el front no puede distinguir «error de campo» de «regla de negocio» de «fallo técnico». La propuesta está en el yaml desde el 2026-09-03 y es barata: `FAMILIA_DETALLE`, con la familia como prefijo hasta el primer `_`. **El front solo necesita el prefijo**, nunca la lista completa, así que pueden agregar códigos sin que nos desincronicemos.
+**Espera del backend.** **Que el `error` esté redactado y en español**, que es lo único que queda de este pedido: el `code` llegó y se midió en cuatro familias. Dos handlers devuelven el crudo —«tab not found» y el volcado del validador de Go— y eso **se pinta en el panel tal cual**, porque el cliente lo pasa sin tocarlo. No es una política suya: los errores del revert salen redactados y en español.
 **Descripción.** Toda respuesta viaja como `{ success: true, data }` o
 `{ success: false, error: { codigo, mensaje, campo?, desbloqueaCon? } }`.
 **Criterio de aceptación.**
@@ -615,7 +615,14 @@ la ruta que lo emite.
 - **`Periodo` no declara su `grano`.** `periods` son doce cadenas sueltas —`"2026-09"`— y el criterio pide `dia | semana | mes`: «sin él el front sabe que una métrica es mensual pero no si `2026-W32` es una semana».
 - **`alcance` no existe**, y con él `tenantsDisponibles`. Por eso el adaptador fija `alcance: 'usuario'` con su razón escrita.
 
-**Espera del backend.** `tenant.etiqueta`, `role.puedeAprobar`, `user.capabilities` y la `key` de la pestaña.
+**Espera del backend.** `tenant.etiqueta` y la `key` de la pestaña.
+
+**Se retiraron DOS del pedido el 2026-09-28, y no por llegar: porque no los consume nadie.** Antes de reenviar se revisó cada uno contra su consumidor:
+
+- **`role.puedeAprobar`** · el adaptador lo fija en `false` y ninguna pantalla lo lee. La compuerta real de una acción sobre un panel es `payload.acciones`, que ya funciona. Pedirlo sería pedir un campo que nadie llena — lo mismo que les dijimos de `vertical`.
+- **`user.capabilities`** · ningún consumidor, hoy ni previsto.
+
+**Y la `key` dejó de ser sólo nuestra**: el backend avisó el 2026-09-28 que `roles.tab_ids` guarda ids de fila, que se recrean en cada versión publicada, así que **la primera publicación real desde el builder deja sin pestañas a todo rol con restricción**. Su salida propuesta —identidad de pestaña por `slug` dentro del dashboard— **es esta misma `key`**. Un campo contestando dos problemas.
 
 **Medido campo por campo el 2026-09-28 contra `5924bf2b`**, y por eso esta tarea NO pasa a ✅: el pedido tenía seis cosas y llegaron dos.
 
@@ -688,7 +695,7 @@ la ruta que lo emite.
 
 **`unlocks_with` en `BLOCKED` también está hecho**, leído el 2026-09-26 en `dd_materializer_service.go`: al bloquear escribe `blockedUnlocksWith` —«Se calcula en la próxima materialización cuando haya datos»— y `BatchPanels` lo pasa en **todos** los estados, no sólo al derivar `DEGRADED`. No se pudo medir en vivo porque ningún panel del tenant llega bloqueado.
 
-**Espera del backend.** **Una confirmación, no un campo**: si `request_from` constante es la decisión. Vale `"admin"` —era `"administrator"` cuando se pidió— y sigue siendo `forbiddenRequestFrom` en el código, pero el comentario de al lado dice que es a propósito: «el rol que decide sobre la visibilidad de la métrica». Si es eso, se cierra y lo anotamos.
+**Contestado el 2026-09-28.** Sí, `request_from` constante es la decisión: vale `"admin"`, es el nombre canónico del rol que edita `hidden_metric_ids`, y no depende de la métrica ni del tenant. Era **una confirmación, no un campo**: si `request_from` constante es la decisión. Vale `"admin"` —era `"administrator"` cuando se pidió— y sigue siendo `forbiddenRequestFrom` en el código, pero el comentario de al lado dice que es a propósito: «el rol que decide sobre la visibilidad de la métrica». Si es eso, se cierra y lo anotamos.
 **Descripción.** Un request por pestaña, no uno por panel. Body
 `{ panelIds, periodo }` → `{ [panelId]: Payload }`.
 **Criterio de aceptación.**
@@ -819,7 +826,7 @@ mínimas de §8 del documento.
 
 ### B1.16 ⚠️ Seed de demo: 1 tenant, 1 layout, 1 pestaña, 4–6 paneles
 **Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. El seed deja un layout publicado con **12 paneles y 6 tipos** —`prose`, `kpi`, `bars`, `series`, `table`, `reco`— sobre 12 métricas. Excede los 4–6 que pedía. **Parcial** solo por «Brand Momentum».
-**Espera del backend.** **La métrica «Brand Momentum»**, que esta tarea pide por nombre y el seed no incluye. Si el requisito quedó viejo, conviene sacarlo de `tareas-front-back.md` —que es de los dos equipos—: mientras esté escrito, el próximo que lea la tarea la va a dar por incompleta.
+**Cerrado el 2026-09-28.** Lo retiraron de `tareas-front-back` con su fecha y su motivo, que es lo que pedíamos. Era **la métrica «Brand Momentum»**, que esta tarea pide por nombre y el seed no incluye. Si el requisito quedó viejo, conviene sacarlo de `tareas-front-back.md` —que es de los dos equipos—: mientras esté escrito, el próximo que lea la tarea la va a dar por incompleta.
 ### ➕ B1.20 ⬜ Seed determinista para desarrollo del front
 **Descripción.** B1.16 pide datos de demo. Esto pide que sean **estables**: el
 front necesita que la misma llamada devuelva lo mismo para poder escribir
@@ -832,7 +839,9 @@ pruebas de integración contra HTTP.
   `BLOQUEADO`, `ERROR`. Sin eso, F2.1–F2.4 no se pueden probar contra el backend.
 
 ### ➕ B1.21 ⬜ Declarar los mínimos de datos por gráfico
-**NUESTRA MITAD ESTÁ HECHA** · 2026-09-26. El orden que habíamos propuesto era «1. el front declara los mínimos y los propone en el contrato · 2. el backend los sirve». **El paso 1 está**: el contrato declara `GET /config/plots`, `Grafico` y `MinimoDeDatos`, y la tabla que hay que implementar está en `docs/DECISIONES-2026-09-26-minimos-por-grafico.md`.
+**Espera del backend.** **`GET /config/plots`** con la tabla de 49, y **un campo `chart` en el panel del layout** — sin él ninguno de los 49 se puede elegir: `type` nombra familias de forma y §5 mapea siete gráficos sobre `composition` sola. Opcional, y ausente significa el de siempre, así que no migra ningún layout publicado. Pedidos el 2026-09-28.
+
+**NUESTRA MITAD ESTÁ HECHA** · 2026-09-26, y **el repertorio entero desde el 2026-09-28**: `docs/REPERTORIO-2026-09-28-los-49-graficos.md`. El orden que habíamos propuesto era «1. el front declara los mínimos y los propone en el contrato · 2. el backend los sirve». **El paso 1 está**: el contrato declara `GET /config/plots`, `Grafico` y `MinimoDeDatos`, y la tabla que hay que implementar está en `docs/DECISIONES-2026-09-26-minimos-por-grafico.md`.
 
 **La decisión de estructura, que es lo que más va a durar: el mínimo es de la FORMA, y un gráfico lo SUBE sólo si su geometría lo exige.** Es la simetría de `tope`, que baja el techo por gráfico. Un número elegido a mano para cada una de las 49 entradas serían 49 juicios, y la mayoría arbitrarios: `bars` y `lollipop` comen el mismo dato y fallan en el mismo punto.
 
@@ -1435,7 +1444,7 @@ warehouse, vistas semánticas permitidas y prompt base.
   reiniciar el servicio.
 
 ### ➕ B3.11 ⬜ Aplicar las migraciones de `82da946` sobre la base compartida
-**Espera del backend.** **Que corran las migraciones manuales de `82da946` sobre la base compartida** — pedido el 2026-09-21 en `docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md`, tarea 1. **Sigue en pie para la compartida**, pero ya no es lo que frena el chat: eso pasó a ser el agente, y va en `docs/MENSAJE-2026-09-22-backend-roles-y-hallazgo.md`.
+**Sale de la lista el 2026-09-28.** Las migraciones en los ambientes que no son el local **las corre el equipo de despliegue**, no ellos ni nosotros, y van con el deploy de `5924bf2b`: todas son `ADD COLUMN` y seeds idempotentes. Si al medir contra la compartida falta una columna nueva, es que ese deploy todavía no pasó. **No es un pedido de ninguno de los dos equipos.** Decía: **Que corran las migraciones manuales de `82da946` sobre la base compartida** — pedido el 2026-09-21 en `docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md`, tarea 1. **Sigue en pie para la compartida**, pero ya no es lo que frena el chat: eso pasó a ser el agente, y va en `docs/MENSAJE-2026-09-22-backend-roles-y-hallazgo.md`.
 
 Medido ese día contra la base compartida, con una consulta de sólo lectura sobre `information_schema`: **faltan las nueve columnas y el índice.** Las agrega `internal/adapters/repository/manual_migrations.go` y corren sólo con `DB_AUTO_MIGRATE=true`, que no activamos sobre esa base: es un cambio de esquema en una base compartida y la decisión no es nuestra.
 
@@ -1517,7 +1526,13 @@ en `2fafe82`. Ver `docs/ESTADO-backend-2026-09-22.md`.
 
 **Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **DOS DE LOS TRES LLEGARON.** `GET /admin/layouts/{layoutId}/publications` responde 200 y `DDLayoutPublication` trae `action`, `actor_user_id`, `actor_role`, `previous_layout_id`, `diff` y `created_at` — **quién, cuándo y qué cambió**, los tres que §7.2 nombra.
 
-**Espera del backend.** **La reversión**, que es el tercio que falta: no hay ruta de revertir ni de rollback en el router. `previous_layout_id` da con qué hacerlo y publicar el anterior con la ruta que ya existe sería el camino, pero eso es una decisión y no un hecho medido. El pedido original decía: **Autor, diferencia y reversión en `LayoutVersion`** — pedido el 2026-09-15, cuando F4.6 declaró B6.
+**Espera del backend.** **«Qué cambió»**, que es el tercio que queda.
+
+**La reversión llegó** · `POST /admin/layouts/{layoutId}/revert`, medidas sus dos compuertas el 2026-09-28. **El `200` no se midió y se dice**: copia y publica, así que cambiaría el layout que la consola sirve.
+
+**Y «quién» está pendiente de VERIFICAR, no de pedir**: dicen que vive en `GET /admin/layouts/{id}/publications` con su actor, y esa ruta responde `200` con `[]` porque la semilla publicó sin pasar por ahí. `LayoutVersion` sí se midió y trae sólo `created_at`, `dashboard_id`, `id`, `published_at`, `status`, `tenant_id`, `updated_at` y `version_id` — o sea **cuándo**.
+
+**Lo que falta es el diff**, y es lo que B6 dibuja y no se puede construir sin él. Lo que decía el pedido original: no hay ruta de revertir ni de rollback en el router. `previous_layout_id` da con qué hacerlo y publicar el anterior con la ruta que ya existe sería el camino, pero eso es una decisión y no un hecho medido. El pedido original decía: **Autor, diferencia y reversión en `LayoutVersion`** — pedido el 2026-09-15, cuando F4.6 declaró B6.
 
 §7.2 describe el historial de versiones en una línea: «**quién, cuándo, qué cambió. Permite revertir.** Sin esto, un error de composición en producción no tiene vuelta atrás». La respuesta de hoy trae **cuándo** y nada más.
 
@@ -3580,7 +3595,7 @@ nadie abriera el archivo.
 
 **Y no se puede derivar**, que es lo que el propio criterio prohíbe: «el texto sale de lo que el período declara, **no de comparar contra `new Date()`**». Tener `tenant.timezone` desde hoy no lo cambia — el reloj seguiría siendo el del navegador.
 
-**Espera del backend.** **Que cada período declare su cobertura** — qué parte del mes abarca el que está en curso. El `.pen` lo dibuja en B5: «PERÍODO · 1 – 31 JUL 2026». Hoy `periods` son doce cadenas y `open_period` dice **cuál** está abierto pero no **cuánto** lleva.
+**Cerrado el 2026-09-28 con `periods_detail`.** El `.pen` dibuja `1 – 31 JUL 2026`, que es exactamente `[start, end)`, y el `MTD CERRADO` de al lado sale de comparar contra `open_period`. Lo que falta es dibujarlo, y es nuestro. Pedía: **que cada período declare su cobertura** — qué parte del mes abarca el que está en curso. El `.pen` lo dibuja en B5: «PERÍODO · 1 – 31 JUL 2026». Hoy `periods` son doce cadenas y `open_period` dice **cuál** está abierto pero no **cuánto** lleva.
 
 **Este pedido no estaba registrado**: la tarea tenía `🔒` y ninguna `**Espera del backend.**`, así que su hueco nunca llegó a `PARA-BACKEND.md`. Es el segundo caso del día — el otro fue B4.9.
 
@@ -3712,7 +3727,7 @@ no del render—: el dibujo tiene **seis columnas** y el servicio manda cinco,
 falta **CPA**; y la participación se dibuja «39.6%» donde la celda sale «39.6»,
 porque la columna no declara unidad.
 
-**Espera del backend.** Qué significa `cut` en un panel `series`. El cable lo
+**Contestado el 2026-09-28.** `series.cut` es la granularidad declarada del panel y ningún código suyo la lee; el índice del pronóstico se renombró a **`horizon_cut`**, así que la ambigüedad desaparece. Era: qué significa `cut` en un panel `series`. El cable lo
 declara en `layout_params` de `series` y de `forecast`, y el layout sembrado
 manda `{"cut": "day"}` y `{"cut": "month"}`. En `forecast` es el punto donde
 termina lo observado y empieza la proyección —un índice— y así lo lee

@@ -33,53 +33,44 @@ verde.
 
 ---
 
-## Lo que esperamos · 13 pedido(s)
+## Lo que esperamos · 5 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
 
-*Estado de la tarea: pendiente.*
+*Estado de la tarea: parcial.*
 
 
-**El envelope de error estructurado de §4.1.** Hoy `error` es una cadena, así que el front no puede distinguir «error de campo» de «regla de negocio» de «fallo técnico». La propuesta está en el yaml desde el 2026-09-03 y es barata: `FAMILIA_DETALLE`, con la familia como prefijo hasta el primer `_`. **El front solo necesita el prefijo**, nunca la lista completa, así que pueden agregar códigos sin que nos desincronicemos.
+**Que el `error` esté redactado y en español**, que es lo único que queda de este pedido: el `code` llegó y se midió en cuatro familias. Dos handlers devuelven el crudo —«tab not found» y el volcado del validador de Go— y eso **se pinta en el panel tal cual**, porque el cliente lo pasa sin tocarlo. No es una política suya: los errores del revert salen redactados y en español.
 
 
-### B1.1 · GET /config/me
+### B1.1 · GET /config/me · llegaron dos de seis
 
 *Estado de la tarea: parcial.*
 
 
-El resto del contexto: `alcance` con `tenantsDisponibles`, el `grano` de cada período, `tenant.etiqueta` y `vertical`, `role.puedeAprobar`, `user.capabilities`, y en la pestaña `key`, `icon` y `chat_suggestions`.
+`tenant.etiqueta` y la `key` de la pestaña.
 
+**Se retiraron DOS del pedido el 2026-09-28, y no por llegar: porque no los consume nadie.** Antes de reenviar se revisó cada uno contra su consumidor:
 
-### B1.6 · POST /config/panels:batch
+- **`role.puedeAprobar`** · el adaptador lo fija en `false` y ninguna pantalla lo lee. La compuerta real de una acción sobre un panel es `payload.acciones`, que ya funciona. Pedirlo sería pedir un campo que nadie llena — lo mismo que les dijimos de `vertical`.
+- **`user.capabilities`** · ningún consumidor, hoy ni previsto.
 
-*Estado de la tarea: parcial.*
+**Y la `key` dejó de ser sólo nuestra**: el backend avisó el 2026-09-28 que `roles.tab_ids` guarda ids de fila, que se recrean en cada versión publicada, así que **la primera publicación real desde el builder deja sin pestañas a todo rol con restricción**. Su salida propuesta —identidad de pestaña por `slug` dentro del dashboard— **es esta misma `key`**. Un campo contestando dos problemas.
 
+**Medido campo por campo el 2026-09-28 contra `5924bf2b`**, y por eso esta tarea NO pasa a ✅: el pedido tenía seis cosas y llegaron dos.
 
-**Una confirmación, no un campo**: si `request_from` constante es la decisión. Vale `"admin"` —era `"administrator"` cuando se pidió— y sigue siendo `forbiddenRequestFrom` en el código, pero el comentario de al lado dice que es a propósito: «el rol que decide sobre la visibilidad de la métrica». Si es eso, se cierra y lo anotamos.
+| Pedido | Estado |
+|---|---|
+| `alcance` con `tenantsDisponibles` | ✅ llegó como `scope` · `{kind, tenants[]}` |
+| El `grano` de cada período | ✅ `period_grain` y `periods_detail[].grain` |
+| `icon` y `chat_suggestions` en la pestaña | ✅ · y las sugerencias como lista, nunca `null` |
+| `tenant.etiqueta` | ✗ · `tenant` trae `id`, `name`, `locale`, `currency`, `timezone` |
+| `role.puedeAprobar` | ✗ · `role` trae `id` y `name` |
+| `user.capabilities` | ✗ · `user` trae `id`, `email`, nombre y `theme` |
+| La `key` de la pestaña | ✗ |
 
-
-### B1.13 · Presentacion opcional
-
-*Estado de la tarea: parcial.*
-
-
-**Solo la `nota` de panel.** El pedido grande que había acá —«`presentation` para las siete formas que no son escalares»— **se retira: estaba mal**, y lo corrigió leer nuestro propio código el 2026-09-15.
-
-**`presentation` la lee UN solo cuerpo: `KpiBody`.** Ningún otro la toca — verificado con un grep sobre `src/render/bodies/`. Y no es un olvido: los demás sacan sus rótulos **del propio valor**. `BarsBody` hace `value.items.map(i => i.etiqueta)`; cada ítem viaja con su etiqueta. **«Ningún número desnudo» lo cumple la estructura del dato, no `presentation`.**
-
-Así que `PresentationFromRows` devolviendo `nil` para las otras siete **es correcto**, y pedirlas habría sido pedir un campo que nadie lee — el mismo modo de falla de `BodyProps.presentation`, que existió meses sin un solo consumidor.
-
-Lo que sí falta es la **`nota` de panel** —la lectura al pie, distinta de la `note` que va dentro del `medidor`—: el contrato la declara y el cable no la trae. Es un campo, no siete.
-
-
-### B1.16 · Seed de demo: 1 tenant, 1 layout, 1 pestaña, 4–6 paneles
-
-*Estado de la tarea: parcial.*
-
-
-**La métrica «Brand Momentum»**, que esta tarea pide por nombre y el seed no incluye. Si el requisito quedó viejo, conviene sacarlo de `tareas-front-back.md` —que es de los dos equipos—: mientras esté escrito, el próximo que lea la tarea la va a dar por incompleta.
+**Y `tenant.vertical` se RETIRA del pedido**, que es nuestro y no suyo: §3.5 declara `vertical` **y** `plantillaOrigen`, y el mecanismo no existe de ningún lado · `docs/DECISIONES-2026-09-28-estado-y-vertical.md`. Pedir la columna sin la plantilla les haría escribir un campo que nadie llena.
 
 
 ### B1.21 · Declarar los mínimos de datos por gráfico
@@ -87,7 +78,19 @@ Lo que sí falta es la **`nota` de panel** —la lectura al pie, distinta de la 
 *Estado de la tarea: pendiente.*
 
 
-**Servir `GET /config/plots`** con la tabla del documento, con la misma figura que `/config/blocks`: global, no por tenant. Medido el 2026-09-26: **404**. Bloquea F1.31 y F4.21.
+**`GET /config/plots`** con la tabla de 49, y **un campo `chart` en el panel del layout** — sin él ninguno de los 49 se puede elegir: `type` nombra familias de forma y §5 mapea siete gráficos sobre `composition` sola. Opcional, y ausente significa el de siempre, así que no migra ningún layout publicado. Pedidos el 2026-09-28.
+
+**NUESTRA MITAD ESTÁ HECHA** · 2026-09-26, y **el repertorio entero desde el 2026-09-28**: `docs/REPERTORIO-2026-09-28-los-49-graficos.md`. El orden que habíamos propuesto era «1. el front declara los mínimos y los propone en el contrato · 2. el backend los sirve». **El paso 1 está**: el contrato declara `GET /config/plots`, `Grafico` y `MinimoDeDatos`, y la tabla que hay que implementar está en `docs/DECISIONES-2026-09-26-minimos-por-grafico.md`.
+
+**La decisión de estructura, que es lo que más va a durar: el mínimo es de la FORMA, y un gráfico lo SUBE sólo si su geometría lo exige.** Es la simetría de `tope`, que baja el techo por gráfico. Un número elegido a mano para cada una de las 49 entradas serían 49 juicios, y la mayoría arbitrarios: `bars` y `lollipop` comen el mismo dato y fallan en el mismo punto.
+
+Sólo tres suben el de su forma —`treemap`, `pareto` y `waterfall`, a 3— y están marcados aparte porque son juicio y no geometría.
+
+**Y la razón se PINTA.** `MinimoDeDatos` la declara obligatoria: un panel que se apaga sin decir por qué manda a buscar un error donde hay una regla.
+
+**Los tres mínimos que ya estaban escritos** en el criterio de abajo —«una serie de un punto, una composición de una parte y un ranking de dos ítems»— se respetaron, y de ahí sale que `ranking` sea 3 y no 2.
+
+**Espera del backend.** **Servir `GET /config/plots`** con la tabla del documento, con la misma figura que `/config/blocks`: global, no por tenant. Medido el 2026-09-26: **404**. Bloquea F1.31 y F4.21.
 
 **NO depende de Snowflake.** No toca datos: es una tabla de reglas y un endpoint.
 
@@ -146,30 +149,18 @@ su razón. El front ya pinta `DEGRADED` con su badge, su razón y su
 nuestro lado. · Bloquea **B2.12**.
 
 
-### B3.11 · Aplicar las migraciones de 82da946 sobre la base compartida
-
-*Estado de la tarea: pendiente.*
-
-
-**Que corran las migraciones manuales de `82da946` sobre la base compartida** — pedido el 2026-09-21 en `docs/MENSAJE-2026-09-21-dos-tareas-del-chat.md`, tarea 1. **Sigue en pie para la compartida**, pero ya no es lo que frena el chat: eso pasó a ser el agente, y va en `docs/MENSAJE-2026-09-22-backend-roles-y-hallazgo.md`.
-
-Medido ese día contra la base compartida, con una consulta de sólo lectura sobre `information_schema`: **faltan las nueve columnas y el índice.** Las agrega `internal/adapters/repository/manual_migrations.go` y corren sólo con `DB_AUTO_MIGRATE=true`, que no activamos sobre esa base: es un cambio de esquema en una base compartida y la decisión no es nuestra.
-
-Sin ellas `POST /config/chat` no puede guardar el hilo, y eso se ve como un **500, no como un 404**: la ruta existe, lo que falta es la columna.
-
-| Tabla | Columnas | De qué tarea son |
-|---|---|---|
-| `user_threads` | `panel_id`, `period`, `deleted_at` | B3.1 y B3.10 |
-| `agents` | `is_active`, `semantic_views`, `system_prompt_base` | B3.3 y B3.9 |
-| `dd_panel_data` | `last_error`, `last_error_at`, `last_success_at` + índice `idx_dd_panel_data_tenant_metric_period` | Materialización · B2.12 |
-
-
 ### B4.2 · GET /admin/tenants/{id}/layouts
 
 *Estado de la tarea: parcial.*
 
 
-**La reversión**, que es el tercio que falta: no hay ruta de revertir ni de rollback en el router. `previous_layout_id` da con qué hacerlo y publicar el anterior con la ruta que ya existe sería el camino, pero eso es una decisión y no un hecho medido. El pedido original decía: **Autor, diferencia y reversión en `LayoutVersion`** — pedido el 2026-09-15, cuando F4.6 declaró B6.
+**«Qué cambió»**, que es el tercio que queda.
+
+**La reversión llegó** · `POST /admin/layouts/{layoutId}/revert`, medidas sus dos compuertas el 2026-09-28. **El `200` no se midió y se dice**: copia y publica, así que cambiaría el layout que la consola sirve.
+
+**Y «quién» está pendiente de VERIFICAR, no de pedir**: dicen que vive en `GET /admin/layouts/{id}/publications` con su actor, y esa ruta responde `200` con `[]` porque la semilla publicó sin pasar por ahí. `LayoutVersion` sí se midió y trae sólo `created_at`, `dashboard_id`, `id`, `published_at`, `status`, `tenant_id`, `updated_at` y `version_id` — o sea **cuándo**.
+
+**Lo que falta es el diff**, y es lo que B6 dibuja y no se puede construir sin él. Lo que decía el pedido original: no hay ruta de revertir ni de rollback en el router. `previous_layout_id` da con qué hacerlo y publicar el anterior con la ruta que ya existe sería el camino, pero eso es una decisión y no un hecho medido. El pedido original decía: **Autor, diferencia y reversión en `LayoutVersion`** — pedido el 2026-09-15, cuando F4.6 declaró B6.
 
 §7.2 describe el historial de versiones en una línea: «**quién, cuándo, qué cambió. Permite revertir.** Sin esto, un error de composición en producción no tiene vuelta atrás». La respuesta de hoy trae **cuándo** y nada más.
 
@@ -182,91 +173,6 @@ Sin ellas `POST /config/chat` no puede guardar el hilo, y eso se ve como un **50
 **Medido el 2026-09-22 · autor y diff siguen faltando.** `82da946` devuelve
 `{ID, TenantID, Status, VersionID, PublishedAt, CreatedAt, UpdatedAt}`. `PublishedBy`,
 `PublishedByEmail` y la ruta `/admin/layouts/{layoutId}/diff` son **nuestras**, de `2fafe82`.
-
-
-### B4.4 · PUT /admin/layouts/{id} — editar pestañas y paneles
-
-*Estado de la tarea: parcial.*
-
-
-**`chat_suggestions` e `icon` en la pestaña** — pedido el 2026-09-15, cuando F4.8 construyó el editor.
-
-Los dos están en el modelo de §2 de `design.md` y en `Pestana` del contrato, y no están en `DDTab` ni en `TabInput`: **no hay dónde escribirlos ni de dónde leerlos**. `chatSugerencias[]` es lo que C3 pinta como «chips de consulta sugerida por pestaña», así que sin el campo el chat abre en un vacío sin sugerencias. `icono` es menor y va de paso, porque es la misma línea.
-
-**Y una pregunta que es de ustedes, no un pedido.** `OperationalQuestion` no es requerido y el servicio acepta la cadena vacía. El producto dice lo contrario —«una pestaña que no contesta una pregunta no se compone», §7.2 y la descripción de `Pestana`—, así que hoy **la regla la sostiene el front solo**: el editor marca la pestaña, la cuenta y no la deja componer. Si además la rechazara el `validate` o el `publish`, la regla dejaría de depender de qué cliente haga el PUT. Es B4.15 quien decidiría.
-
-
-### B4.9 · Preview por rol · LA TOMARON, y más chica
-
-*Estado de la tarea: parcial.*
-
-
-**Los paneles de cada pestaña en el preview.** Hoy `GET /admin/layouts/{layoutId}/preview?role_id=` devuelve `tabs[]` con `id`, `name`, `operational_question` y `sort_order`, y nada más — medido el 2026-09-26.
-
-Sin ellos el preview contesta **qué pestañas** ve un rol y no **qué paneles**, que es la mitad que `hidden_metric_ids` recorta y la razón por la que §7.2 pide esta pantalla. **No hay otra ruta que lo dé**: `GET /config/tabs/{tabId}` resuelve el rol desde el token y no acepta lente, así que un admin no puede pedir una pestaña con los ojos de otro rol.
-
-Nuestra versión del fork devolvía `tabs[].panels[]` ya filtrados, reusando `GetTab`. Si prefieren no tocar el preview, la alternativa es aceptar un `role_id` en `GET /config/tabs/{tabId}` bajo la compuerta de admin — que es lo que su propio comentario ya describe como si existiera.
-
-**Lo de abajo quedó como registro**: se implementó en el fork el 2026-09-15 y ya no hace falta.
-
-### Cómo se decidió implementarla en el front · 2026-09-15
-**Decidido el 2026-09-15 (humano), junto con B4.8** y por la misma razón: son
-vecinas, tienen la misma forma, y las dos bloquean superficie de admin que hoy no
-se puede empezar. El antecedente y el alcance de la excepción están escritos en
-B4.8 y no se repiten acá. **Sale de `docs/PARA-BACKEND.md`.**
-
-**Qué hay que implementar.** Una forma de resolver una pestaña *como la vería otro
-rol*, bajo `AdminOnlyMiddleware`. Dos caminos y conviene elegir con cuidado:
-
-| | |
-|---|---|
-| `GET /admin/layouts/:layoutId/preview?roleId=` | Ruta propia. Más explícita, y no toca `/config/*` |
-| `GET /config/tabs/:tabId?asRoleId=` | Un parámetro en la ruta que ya existe. Menos código, **pero mete una capacidad de admin en el namespace de la consola** |
-
-**La recomendación es la primera**, y no por gusto: `/config/*` lo sirve
-`RequireUser` y su invariante es «lo que ves es lo tuyo». Un parámetro que lo
-rompa es la clase de cosa que un día se llama sin `AdminOnlyMiddleware` delante.
-
-**Y la propiedad que hace que esto sirva o no sirva:**
-
-> **El preview tiene que pasar por el MISMO código de filtrado que la consola.**
-
-`GetTab` ya aplica `roles.tab_ids`, `hidden_metric_ids` y `layout_overrides`. El
-preview resuelve el rol de otra forma —del parámetro y no del JWT— y **de ahí en
-adelante es la misma función**. Reimplementar el filtrado en paralelo es cómo el
-preview termina mostrando algo que la consola no muestra, y un preview que miente
-es peor que no tenerlo: se publica confiando en él.
-
-Es la misma razón por la que F4.12 dice que no se puede simular en el cliente —
-«filtrar en el front lo que ya se tiene probaría el filtro del front, que no
-existe».
-
-
-### F1.42 · El mes en curso está incompleto y el selector no lo dice
-
-*Estado de la tarea: parcial.*
-
-
-**Que cada período declare su cobertura** — qué parte del mes abarca el que está en curso. El `.pen` lo dibuja en B5: «PERÍODO · 1 – 31 JUL 2026». Hoy `periods` son doce cadenas y `open_period` dice **cuál** está abierto pero no **cuánto** lleva.
-
-**Este pedido no estaba registrado**: la tarea tenía `🔒` y ninguna `**Espera del backend.**`, así que su hueco nunca llegó a `PARA-BACKEND.md`. Es el segundo caso del día — el otro fue B4.9.
-
-
-### F1.44 · El orden de una tabla se anuncia, no se aplica
-
-*Estado de la tarea: parcial.*
-
-
-Qué significa `cut` en un panel `series`. El cable lo
-declara en `layout_params` de `series` y de `forecast`, y el layout sembrado
-manda `{"cut": "day"}` y `{"cut": "month"}`. En `forecast` es el punto donde
-termina lo observado y empieza la proyección —un índice— y así lo lee
-`ForecastBody`; en `series` parece granularidad, que es otra cosa con el mismo
-nombre. **Y el dato no permite deducirlo**: los dos paneles traen las mismas
-ocho estampas mensuales —`jan`, `feb`, `mar`…— sin importar el `cut`, así que el
-que declara `31 DAYS` en su BASE **dibuja ocho puntos mensuales**. Eso es una
-segunda cosa que revisar, y hasta que alguna de las dos se aclare el param se
-descarta con aviso en vez de leerse mal. · Bloquea **F1.44**.
 
 
 ---
