@@ -512,6 +512,38 @@ nunca, ni cuando el código está mal.
 **Todo lo que costó descubrir está en `docs/BITACORA-2026-09-28.md`.** Lo de abajo
 es sólo dónde retomar.
 
+---
+
+## ⇨ POR ACÁ SE SIGUE · ¿HAY UN BACKEND DESPLEGADO?
+
+**Decidido el 2026-09-28 (noche, humano): es lo primero de mañana.**
+
+Es la pregunta que decide si el front puede subir, y **no la podemos contestar
+desde acá**: todo lo verificado esta semana vale contra el binario que
+**levantamos nosotros** en `:4010` desde un clone de su repositorio.
+
+**Lo que hay que averiguar, en este orden:**
+
+1. **¿Existe un servicio de Synapse corriendo en algún AWS?** Si no existe, el
+   front no tiene a dónde apuntar y todo lo demás es teórico.
+2. **¿En qué commit está?** Si no es `f70cec2`, **nada de lo medido esta semana
+   vale ahí**: hay que correr `SYNAPSE_EMAIL=… SYNAPSE_PASSWORD=… npm run humo`
+   contra **ese** servicio, que es exactamente para lo que existe.
+3. **¿Contra qué base?** La RDS compartida dejó de responder desde acá el 22, y
+   `DB_AUTO_MIGRATE=true` **sigue prohibido** contra una base compartida.
+4. **¿Quién lo despliega y con qué?** El front ya tiene su `Dockerfile` y su
+   `nginx.conf.template`, probados incluso con raíz de sólo lectura. Lo que falta
+   saber es si hay un pipeline donde meterlos o hay que escribirlo.
+
+**Y una trampa registrada que aplica de nuevo acá:** antes de medir cualquier
+cosa, **mirar qué binario está corriendo**. El 2026-09-22 medir con el fork
+levantado hizo que seis campos nuestros se vieran como avance de ellos.
+
+**La pregunta 1 no es nuestra**: se la hacemos al backend o a quien opere la
+cuenta. Las otras tres se contestan solas una vez que haya una URL.
+
+---
+
 **EL FRONT ESTÁ PARA DESPLEGARSE EN PRUEBAS**, y el empaquetado se construyó,
 se corrió y se midió: `Dockerfile`, `deploy/nginx.conf.template` y
 `.dockerignore` · **77,3 MB**, sin Node adentro · `deploy/README.md`.
