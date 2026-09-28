@@ -197,7 +197,7 @@ B4.1,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,GET /admin/
 • Editar nunca muta la versión publicada.",hecho,no,,equipo:backend fase:4 estado:hecho
 B4.2,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,GET /admin/tenants/{id}/layouts,,"• Solo accesibles con aud: platform; con token de usuario devuelven 403.
 • Publicar genera versionId, sella publishedAt, registra quién publicó e invalida la cache del tenant.
-• Editar nunca muta la versión publicada.",parcial,no,,equipo:backend fase:4 estado:parcial bloqueada
+• Editar nunca muta la versión publicada.",hecho,no,,equipo:backend fase:4 estado:hecho
 B4.3,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,POST /admin/tenants/{id}/layouts — crear borrador,,"• Solo accesibles con aud: platform; con token de usuario devuelven 403.
 • Publicar genera versionId, sella publishedAt, registra quién publicó e invalida la cache del tenant.
 • Editar nunca muta la versión publicada.",pendiente,no,,equipo:backend fase:4 estado:pendiente

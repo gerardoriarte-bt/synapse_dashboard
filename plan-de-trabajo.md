@@ -1600,16 +1600,28 @@ vistazo qué cliente tiene el feed más atrasado es la mitad de para qué existe
 `user_count` y `last_published_at` se ven **sólo con el fork corriendo**: los escribimos nosotros
 en `2fafe82`. Ver `docs/ESTADO-backend-2026-09-22.md`.
 
-### B4.2 ⚠️ `GET /admin/tenants/{id}/layouts`
+### B4.2 ✅ `GET /admin/tenants/{id}/layouts`
 **Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. **La reversión existe** · `POST /admin/layouts/{layoutId}/revert`. Se midieron sus dos compuertas sin mutar nada —`409 CONFLICT_NO_PREVIOUS` y `409 CONFLICT_REVERT_SELF`, las dos con mensaje en español—. **Sigue en ⚠️ porque la reversión en sí no se probó**: copia y publica, así que cambiaría el layout que la consola sirve. Se mide cuando haya una segunda versión.
 
 **Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **DOS DE LOS TRES LLEGARON.** `GET /admin/layouts/{layoutId}/publications` responde 200 y `DDLayoutPublication` trae `action`, `actor_user_id`, `actor_role`, `previous_layout_id`, `diff` y `created_at` — **quién, cuándo y qué cambió**, los tres que §7.2 nombra.
 
-**Espera del backend.** **«Qué cambió»**, que es el tercio que queda.
+**CERRADA EL 2026-09-28 · los cuatro de §7.2 medidos contra `f70cec2`.** Faltaban «qué cambió» y el `200` de la reversión, y los dos se cerraron el mismo día **sin tocar el dashboard que la consola sirve**: se hizo todo sobre el segundo dashboard del tenant —«Marca»—, que no tenía layout.
 
-**La reversión llegó** · `POST /admin/layouts/{layoutId}/revert`, medidas sus dos compuertas el 2026-09-28. **El `200` no se midió y se dice**: copia y publica, así que cambiaría el layout que la consola sirve.
+**Por qué antes salía `[]` y no era un defecto suyo:** la semilla escribe `dd_layout_versions` directo, sin pasar por `publish`, así que no deja fila de auditoría. Lo dijeron y era cierto — **la forma de comprobarlo era publicar, no volver a preguntar.**
 
-**Y «quién» está pendiente de VERIFICAR, no de pedir**: dicen que vive en `GET /admin/layouts/{id}/publications` con su actor, y esa ruta responde `200` con `[]` porque la semilla publicó sin pasar por ahí. `LayoutVersion` sí se midió y trae sólo `created_at`, `dashboard_id`, `id`, `published_at`, `status`, `tenant_id`, `updated_at` y `version_id` — o sea **cuándo**.
+Tres publicaciones generadas y leídas:
+
+| `action` | `previous_layout_id` | `diff.summary` |
+|---|---|---|
+| `publish` | — | `tabs_added 1 · panels_added 1` |
+| `publish` | el anterior | `tabs_added 1 · panels_added 1 · panels_changed 3` |
+| `rollback` | el anterior | `tabs_removed 1 · panels_removed 1 · panels_changed 3` |
+
+Las tres con `actor_user_id` y `actor_role: admin`, o sea **quién**. Y `POST /admin/layouts/{layoutId}/revert` contestó **200**, devolviendo un layout con `version_id: rollback-v-1…`.
+
+**Dos detalles de forma para quien construya B6**, y conviene no perderlos: `tabs_added` trae la **`key`** de la pestaña y no su id —consistente con que la identidad estable sea la key—, y las colecciones vacías del diff vuelven como **`null`, no `[]`**, que es distinto de lo que su documento del 28 dibujaba.
+
+**La ruta NO está transcripta al cable**, a propósito: nadie la llama todavía. Se transcribe cuando se construya B6, que es la regla — una ruta transcrita que nadie llama envejece sin que nadie lo note. `LayoutVersion` sí se midió y trae sólo `created_at`, `dashboard_id`, `id`, `published_at`, `status`, `tenant_id`, `updated_at` y `version_id` — o sea **cuándo**.
 
 **Lo que falta es el diff**, y es lo que B6 dibuja y no se puede construir sin él. Lo que decía el pedido original: no hay ruta de revertir ni de rollback en el router. `previous_layout_id` da con qué hacerlo y publicar el anterior con la ruta que ya existe sería el camino, pero eso es una decisión y no un hecho medido. El pedido original decía: **Autor, diferencia y reversión en `LayoutVersion`** — pedido el 2026-09-15, cuando F4.6 declaró B6.
 

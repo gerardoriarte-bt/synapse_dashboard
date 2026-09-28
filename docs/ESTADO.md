@@ -5,7 +5,7 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**130 de 214 tareas cerradas.** 15 parciales · 64 pendientes · 5 diferidas.
+**131 de 214 tareas cerradas.** 14 parciales · 64 pendientes · 5 diferidas.
 
 
 ## Front · 110 de 125
@@ -19,7 +19,7 @@
 | 4 · Admin y Builder | `█████████████████·····` | 19/24 | 0 | 5 |
 | 5 · Pruebas y pulido | `██████████████████····` | 15/18 | 0 | 2 |
 
-## Backend · 20 de 89
+## Backend · 21 de 89
 
 > ⚠️ **Este número está bajo y no refleja al backend.** El plan de acá
 > es la fuente del FRONT; el estado de las tareas `B*` solo se mueve
@@ -44,7 +44,7 @@
 | 1 · API de consola | `█████████·············` | 12/31 | 4 | 15 |
 | 2 · Materialización | `███···················` | 2/13 | 1 | 10 |
 | 3 · Chat contextual | `······················` | 0/11 | 2 | 9 |
-| 4 · Admin y Builder | `██████················` | 5/17 | 2 | 10 |
+| 4 · Admin y Builder | `████████··············` | 6/17 | 1 | 10 |
 | 5 · Multi-dashboard y pulido | `······················` | 0/7 | 1 | 5 |
 
 ---
@@ -56,7 +56,7 @@ Nada del front está libre: todo lo pendiente espera algo.
 
 ---
 
-## Bloqueadas · 21
+## Bloqueadas · 20
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -87,7 +87,6 @@ Lo que el front espera del backend está detallado en
 - **B1.31** · La plataforma genera el par de claves del usuario de servicio
 - **B2.12** · Correr el materializador contra datos reales y verificar los seis estados
 - **B2.7** · Estado SIN_PERMISO en el batch
-- **B4.2** · GET /admin/tenants/{id}/layouts
 
 ---
 

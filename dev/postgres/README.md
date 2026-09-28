@@ -139,7 +139,18 @@ El valor que este archivo documentaba antes era
 poder verificar F5.1: con un solo dashboard el selector no aparece —es su propio
 criterio— así que no había nada que mirar.
 
-**No tiene layout publicado, y eso es lo que lo hace útil.** Es el estado normal
+**⚠️ DESDE EL 2026-09-28 SÍ TIENE LAYOUT, y hay que saberlo.** Se publicaron dos
+versiones y se revirtió una para cerrar B4.2 —era la única forma de generar filas
+de auditoría sin tocar el dashboard que la consola sirve—. **Así que el caso «sin
+componer» que este párrafo describe ya no está disponible en esta base.**
+
+Para recuperarlo: crear un tercer dashboard con
+`POST /admin/tenants/{tenantId}/dashboards`, o recrear el contenedor —que es para
+lo que es descartable—.
+
+Lo que sigue describe para qué existía, y sigue siendo la razón de tenerlo:
+
+**No tenía layout publicado, y eso es lo que lo hacía útil.** Es el estado normal
 de uno recién creado, y el que destapó dos defectos: el servicio devuelve
 `active_layout_id: null` **y `tabs: null`**, el adaptador tiraba, y la consola
 decía «No se pudo cargar tu contexto · sin detalle del servidor» — atribuyéndole

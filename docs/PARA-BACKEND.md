@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 9 pedido(s)
+## Lo que esperamos · 8 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -201,32 +201,6 @@ Alcanza con que `preserved` —o `last_success_at IS NULL`— también degrade, 
 su razón. El front ya pinta `DEGRADED` con su badge, su razón y su
 `desbloqueaCon`: está cubierto por las pruebas de F2.1 y no hace falta nada de
 nuestro lado. · Bloquea **B2.12**.
-
-
-### B4.2 · GET /admin/tenants/{id}/layouts
-
-*Estado de la tarea: parcial.*
-
-
-**«Qué cambió»**, que es el tercio que queda.
-
-**La reversión llegó** · `POST /admin/layouts/{layoutId}/revert`, medidas sus dos compuertas el 2026-09-28. **El `200` no se midió y se dice**: copia y publica, así que cambiaría el layout que la consola sirve.
-
-**Y «quién» está pendiente de VERIFICAR, no de pedir**: dicen que vive en `GET /admin/layouts/{id}/publications` con su actor, y esa ruta responde `200` con `[]` porque la semilla publicó sin pasar por ahí. `LayoutVersion` sí se midió y trae sólo `created_at`, `dashboard_id`, `id`, `published_at`, `status`, `tenant_id`, `updated_at` y `version_id` — o sea **cuándo**.
-
-**Lo que falta es el diff**, y es lo que B6 dibuja y no se puede construir sin él. Lo que decía el pedido original: no hay ruta de revertir ni de rollback en el router. `previous_layout_id` da con qué hacerlo y publicar el anterior con la ruta que ya existe sería el camino, pero eso es una decisión y no un hecho medido. El pedido original decía: **Autor, diferencia y reversión en `LayoutVersion`** — pedido el 2026-09-15, cuando F4.6 declaró B6.
-
-§7.2 describe el historial de versiones en una línea: «**quién, cuándo, qué cambió. Permite revertir.** Sin esto, un error de composición en producción no tiene vuelta atrás». La respuesta de hoy trae **cuándo** y nada más.
-
-- **Quién.** El criterio compartido de B4.2–B4.7 ya dice que publicar «registra quién publicó», así que el dato existe del lado de ustedes; lo que falta es que salga en la respuesta.
-- **Qué cambió.** Contra la versión publicada anterior. No hace falta un diff estructural: alcanza con qué pestañas y qué paneles se agregaron, se quitaron o se movieron.
-- **Revertir.** No hay ruta. `POST /admin/tenants/{id}/layouts` acepta un `version_id` de origen, así que puede que ya alcance con documentar que duplicar una versión vieja **es** revertir — si es así, es una línea de documentación y no código.
-
-**No bloquea el builder**, bloquea B6. Y B6 es la pantalla que hace reversible un error de composición en producción: sin ella, la única salida es recomponer a mano.
-
-**Medido el 2026-09-22 · autor y diff siguen faltando.** `82da946` devuelve
-`{ID, TenantID, Status, VersionID, PublishedAt, CreatedAt, UpdatedAt}`. `PublishedBy`,
-`PublishedByEmail` y la ruta `/admin/layouts/{layoutId}/diff` son **nuestras**, de `2fafe82`.
 
 
 ---

@@ -17,7 +17,7 @@ Fase 1 es portar el motor de panel desde el repositorio archivado.
 | Fuente | Define | Autoridad |
 |---|---|---|
 | `nuevo-desarrollo.md` | Arquitectura del front dinámico | **Normativo** |
-| `plan-de-trabajo.md` | Las 170 tareas con fase, estado y criterio | **Fuente del plan** |
+| `plan-de-trabajo.md` | Las tareas con fase, estado y criterio · **el conteo sale de `docs/ESTADO.md`** | **Fuente del plan** |
 | `contracts/synapse-api.yaml` | Forma de las respuestas del backend | **El contrato**, y su casa |
 | `.cursorrules` | Idioma, estructura, convenciones de componente | Normativo |
 | `tareas-front-back.md` | El desglose original del backend | Histórico · lo extiende `plan-de-trabajo.md` |
@@ -142,7 +142,8 @@ servirse desde la semilla, el inglés se va casi solo.
 
 Pasar todo a inglés costaría que **datos recure las diez métricas que acaba de
 firmar**, que **el `.pen` se retraduzca** —y es normativo, no lo tocamos—, ~189
-cadenas en 63 archivos nuestros con sus pruebas, y 43 documentos. A cambio
+cadenas en 63 archivos nuestros con sus pruebas, y 43 documentos —**medido el
+2026-09-25; hoy son más**—. A cambio
 arreglaría **dos cosas que son del backend** y que ya están pedidas en
 `docs/MENSAJE-2026-09-25-backend-chat-y-rebase.md`.
 
@@ -427,7 +428,7 @@ construyeron F3.3, F3.7, F3.13 y F4.4 encima, y no se abrió ninguna. La hoja de
 chat mide 480 donde el `.pen` dibuja 940, con riel lateral y estado colapsado.
 
 **Una advertencia que no se puede comprobar no es una regla**, así que desde el
-2026-09-21 hay un chequeo: `npm run pen-pantallas`, en la puerta. Lista las 33
+2026-09-21 hay un chequeo: `npm run pen-pantallas`, en la puerta. Lista las
 pantallas del `.pen` y **falla con cualquiera que no esté declarada** en el
 registro del plan, con el archivo que la implementa o la razón por la que
 todavía no. El archivo lleva el ancla `§PEN:<id>`, que se escribe mirando el
