@@ -1186,9 +1186,36 @@ components:
         request_from:
           type: string
           description: |
-            Solo en `FORBIDDEN`, y es **la constante `"administrator"`** escrita
-            en el código, no el rol que decide sobre la métrica.
-          examples: ['administrator']
+            Solo en `FORBIDDEN`, y es **la constante `"admin"`** escrita en el
+            código, no el rol que decide sobre la métrica.
+
+            **Acá decía `"administrator"`, y no se había inventado: se
+            VENCIÓ.** Ellos lo cambiaron y NOS LO AVISARON —
+            `docs/RESPUESTA-2026-09-25-para-backend.md` §B1.6: «Hoy
+            `request_from` en `FORBIDDEN` pasa de `"administrator"` a `"admin"`»,
+            con su ejemplo de respuesta al lado. Se anotó en el documento y
+            **nunca bajó al cable**, que es de donde sale el tipo.
+
+            **Es un modo de falla distinto al de escribir de memoria y conviene
+            tenerlo aparte**: nadie adivinó nada, el aviso llegó, se guardó en
+            prosa, y la prosa no la lee `openapi-typescript`. Un cambio anunciado
+            no está transcripto hasta que está en el cable.
+
+            Medido el 2026-09-28 pidiéndole al token de `planner` los tres
+            paneles que su rol oculta: los tres contestan
+            `{"status":"FORBIDDEN","request_from":"admin"}` y nada más.
+            `dd_config_service.go:726` lo declara —`const forbiddenRequestFrom =
+            "admin"`—.
+
+            **Es un literal, no un rol resuelto.** Si el rol de administración de
+            un tenant se llamara `owner` o `Administrador`, el servicio seguiría
+            diciendo `admin`. El adaptador lo pasa tal cual igual: redactarlo
+            sería el front inventando a quién pedirle.
+
+            **Y el payload de `FORBIDDEN` no trae nada más** — ni `reason` ni
+            `unlocks_with`, que es la gramática de §8 que los otros estados sí
+            traen. Pedido.
+          examples: ['admin']
 
     Governance:
       type: object

@@ -94,14 +94,44 @@ hacerlo. **El valor con el que se escribe tiene que ser el mismo con el que se
 lee.** Si mañana levantás con otro, lo guardado no descifra y el error no va a
 decir eso: va a parecer una credencial mal cargada.
 
-En local alcanza con fijarla y no volver a tocarla:
+**Y desde `f70cec2` este valor NO SIRVE** · medido el 2026-09-28. La variable se
+lee como **base64**, así que esos 32 caracteres decodifican a 24 bytes y el
+servicio se planta:
 
 ```
-DATA_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef
+DATA_ENCRYPTION_KEY debe decodificar a 32 bytes (AES-256), got 24
 ```
 
-**No es un secreto real** —es una base descartable— pero anotarla acá evita
-perder media hora persiguiendo un fantasma.
+**El mensaje ahora sí dice qué pasa**, que es lo contrario de lo que esta sección
+advertía —«el error no va a decir eso»—. Lo declara
+`internal/core/crypto/atrest/atrest.go:39`.
+
+**La llave que descifra la base de acá vive en el `.env` del repositorio del
+backend**, no en este archivo, porque las credenciales de Snowflake del tenant
+están cifradas con ella y **son las reales**: son las que hicieron andar el chat
+contra Cortex el 2026-09-24. Poner otra llave no es un inconveniente, es perder
+el acceso a Snowflake de la base local.
+
+Así que el arranque es:
+
+```
+cd ~/Documents/GitHub/synapse-api-go && set -a && . ./.env && set +a
+DB_HOST=localhost DB_PORT=5433 DB_USER=synapse DB_PASSWORD=synapse \
+DB_NAME=synapse DB_SSLMODE=disable APP_PORT=4010 ./el-binario
+```
+
+**El puerto es `APP_PORT`, no `PORT`** —`internal/bootstrap/app.go:186`—, y
+equivocarse no da error: arranca en `:8080` y el proxy de Vite pega a `:4010`, así
+que parece que el servicio no está.
+
+**El síntoma de la llave equivocada es engañoso y conviene reconocerlo**: el
+login funciona y `/config/*` también, porque no descifran nada. Lo que se cae es
+`/admin/*`, con `TenantRepository.FindByID: decrypt SnowflakeURL`. Si `/admin`
+falla y la consola anda, es la llave.
+
+El valor que este archivo documentaba antes era
+`0123456789abcdef0123456789abcdef`, en texto plano. **No es un secreto real**
+—era una base descartable— pero ya no es el que hay que usar.
 
 ## Y un SEGUNDO dashboard, sin componer · desde el 2026-09-26
 

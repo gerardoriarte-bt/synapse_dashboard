@@ -500,7 +500,7 @@ recibe todo resuelto en `/config/me`.
 ### B0.4 ⚠️ Middleware de auth y envelope
 **Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. **Todo error trae `code`**, medido en cuatro familias: `AUTH_UNAUTHORIZED`, `NOT_FOUND_RESOURCE`, `AUTH_FORBIDDEN` y `VALIDATION_REQUEST`. **Queda en ⚠️ y no en ✅ por el `error`**: dos handlers devuelven el mensaje crudo —«tab not found» y el volcado del validador de Go— y `ErrorState` lo pinta tal cual. Pedido, no nuestro.
 
-**Espera del backend.** **Que el `error` esté redactado y en español**, que es lo único que queda de este pedido: el `code` llegó y se midió en cuatro familias. Dos handlers devuelven el crudo —«tab not found» y el volcado del validador de Go— y eso **se pinta en el panel tal cual**, porque el cliente lo pasa sin tocarlo. No es una política suya: los errores del revert salen redactados y en español.
+**Espera del backend.** **Que el `error` esté redactado y en español · queda UNA ruta, no dos.** Remedido el 2026-09-28 contra `f70cec2`: de los dos handlers crudos, el de «tab not found» se arregló —sale `pestaña no encontrada`— y los 400 de binding pasan por un traductor por campo, medido en `PUT /config/me/preferences`: `el campo 'theme' debe ser uno de: dark, light`. **`POST /config/chat` sigue volcando el validador de Go**, y su respuesta afirma lo contrario —«Nunca aparece un nombre de struct de Go ni un tag»—. Medido: `Key: 'ddChatRequest.question' Error:Field validation for 'question' failed on the 'required' tag`. **No es el anidamiento**: falla igual con un campo de primer nivel. Es por handler — `dd_chat_handler.go:52` manda `err.Error()` donde los demás mandan `BindingErrorMessage(err)`, y de 32 sitios que enlazan JSON sólo 9 pasan por el traductor. `ErrorState` lo pinta tal cual, y cae justo en la ruta de F3.15.
 **Descripción.** Toda respuesta viaja como `{ success: true, data }` o
 `{ success: false, error: { codigo, mensaje, campo?, desbloqueaCon? } }`.
 **Criterio de aceptación.**
@@ -839,7 +839,7 @@ pruebas de integración contra HTTP.
   `BLOQUEADO`, `ERROR`. Sin eso, F2.1–F2.4 no se pueden probar contra el backend.
 
 ### ➕ B1.21 ⬜ Declarar los mínimos de datos por gráfico
-**Espera del backend.** **`GET /config/plots`** con la tabla de 49, y **un campo `chart` en el panel del layout** — sin él ninguno de los 49 se puede elegir: `type` nombra familias de forma y §5 mapea siete gráficos sobre `composition` sola. Opcional, y ausente significa el de siempre, así que no migra ningún layout publicado. Pedidos el 2026-09-28.
+**Espera del backend.** **Queda `GET /config/plots`; `chart` YA LLEGÓ** · el mismo día que se pidió, en `f70cec2`. Medido el 2026-09-28 contra el servicio: sale en `DDPanelDTO.chart` y en `DDLayoutPanel.chart`, lo escribe el builder recortado y en minúsculas —`"  Waterfall  "` → `waterfall`— y los doce paneles publicados quedaron con `''`, así que no migró ningún layout. Transcripto en los dos cables y adaptado, con prueba de que **un id desconocido se pasa igual**: descartarlo haría caer el panel al gráfico por defecto sin que nadie se entere. **Lo que falta es la ruta del repertorio**, y para escribirla piden tres archivos nuestros que no están en su repo — contestado en `docs/MENSAJE-2026-09-28-backend-lo-que-piden.md`.
 
 **NUESTRA MITAD ESTÁ HECHA** · 2026-09-26, y **el repertorio entero desde el 2026-09-28**: `docs/REPERTORIO-2026-09-28-los-49-graficos.md`. El orden que habíamos propuesto era «1. el front declara los mínimos y los propone en el contrato · 2. el backend los sirve». **El paso 1 está**: el contrato declara `GET /config/plots`, `Grafico` y `MinimoDeDatos`, y la tabla que hay que implementar está en `docs/DECISIONES-2026-09-26-minimos-por-grafico.md`.
 
@@ -1225,6 +1225,28 @@ verificados —`DISPONIBLE`, `DEGRADADO`, `BLOQUEADO` y `CARGANDO`— y los dos 
 faltan **no son alcanzables hoy, con su razón**: `SIN_PERMISO` necesita un
 usuario no-admin y `GET /admin/users` da 404 —es **B4.17**—, y `ERROR` pide
 componer un `gauge` sin `maximum`, y ninguno de los doce paneles lo es.
+
+**Remedido el 2026-09-28 contra `f70cec2` · quedan CINCO de seis, y el sexto
+cambió de razón.**
+
+`SIN_PERMISO` **dejó de ser inalcanzable**: el usuario `planner` existe en la
+base local y oculta tres métricas, así que `/config/tabs` le devuelve nueve
+paneles en vez de doce. Pidiéndole al lote los tres que le faltan contesta
+`FORBIDDEN` en los tres. El payload es `{status, request_from}` y nada más — sin
+`reason` ni `unlocks_with`, que es la gramática de §8 que los otros estados sí
+traen. **Anotado como pedido, no como defecto nuestro**: el adaptador pasa
+`request_from` tal cual porque redactarlo acá sería el front inventando a quién
+pedirle.
+
+**`ERROR` pasó de «no hay ninguno» a «el servicio lo impide».** Se compuso un
+`gauge` sin `maximum` en un borrador —que la consola no ve— y el builder lo
+rechaza antes de guardar: `400 VALIDATION_LAYOUT · el bloque gauge necesita
+options.maximum`. Es lo correcto de su parte, y deja el criterio **inalcanzable
+por construcción con el disparador que declara**: ese estado necesita otro, y
+cuál es una pregunta abierta.
+
+**Un borrador de prueba quedó en la base local** —el del tenant, con una sola
+pestaña— y es descartable con la base.
 
 **Y de las once formas del contrato llegan cinco**, por dos razones distintas
 que conviene no mezclar. `escalarConIntervalo`, `serieTemporal`, `ranking` y

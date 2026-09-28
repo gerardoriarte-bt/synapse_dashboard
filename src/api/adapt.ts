@@ -701,10 +701,20 @@ export function adaptPayload(w: WirePayload): NetworkPayload {
     case 'FORBIDDEN':
       return {
         estado: 'SIN_PERMISO',
-        // Hoy el servicio manda la constante `"administrator"` escrita en el
-        // código, no el rol que decide sobre la métrica. Se pasa tal cual: es
-        // lo único que hay, y sustituirlo por algo mejor redactado sería el
-        // front inventando a quién pedirle · §4 ask 5.
+        // Hoy el servicio manda la constante `"admin"` escrita en el código,
+        // no el rol que decide sobre la métrica. Se pasa tal cual: es lo único
+        // que hay, y sustituirlo por algo mejor redactado sería el front
+        // inventando a quién pedirle · §4 ask 5.
+        //
+        // **Acá decía `"administrator"`, y no se había inventado: se venció.**
+        // Ellos lo cambiaron a `"admin"` y nos lo avisaron por escrito el
+        // 2026-09-25 · §B1.6 de `docs/RESPUESTA-2026-09-25-para-backend.md`. El
+        // aviso se guardó en prosa y no bajó ni acá ni al cable.
+        //
+        // Medido el 2026-09-28 con el token de `planner`: los tres paneles que
+        // su rol oculta contestan `request_from: "admin"`. Es un literal y no un
+        // rol resuelto — un tenant cuyo rol de administración se llame distinto
+        // recibe `admin` igual.
         solicitarA: w.request_from ?? '',
       }
 

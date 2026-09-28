@@ -410,10 +410,19 @@ describe('los cinco estados del cable → las cinco variantes del contrato', () 
   })
 
   it('FORBIDDEN pasa `request_from` tal cual, aunque sea una constante', () => {
-    // Hoy el servicio manda `"administrator"` escrito en el código y no el rol
-    // que decide. Mejorarlo acá sería el front inventando a quién pedirle.
-    const p = adaptPayload({ status: 'FORBIDDEN', request_from: 'administrator' } as WirePayload)
-    expect(p).toEqual({ estado: 'SIN_PERMISO', solicitarA: 'administrator' })
+    // Hoy el servicio manda `"admin"` escrito en el código y no el rol que
+    // decide. Mejorarlo acá sería el front inventando a quién pedirle.
+    //
+    // **Esta prueba decía `"administrator"` y NO PODÍA detectar el cambio**, y
+    // eso no es un defecto suyo: suministra el literal y lo afirma, así que
+    // verifica el paso-a-través y nada más. Es correcto que lo haga —es lo único
+    // que el adaptador promete acá— pero deja escrito quién sí puede detectarlo:
+    // `backend-drift`, releyendo la ruta. Lo encontró el 2026-09-28.
+    //
+    // Por eso el valor es el MEDIDO y no uno cualquiera: si mañana vuelve a
+    // moverse, esta línea queda como el registro de contra qué se leyó.
+    const p = adaptPayload({ status: 'FORBIDDEN', request_from: 'admin' } as WirePayload)
+    expect(p).toEqual({ estado: 'SIN_PERMISO', solicitarA: 'admin' })
   })
 
   it('ERROR conserva el mensaje del servicio', () => {
