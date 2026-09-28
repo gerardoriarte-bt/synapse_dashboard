@@ -461,7 +461,12 @@ def l15(ruta, texto):
     for n, linea in lineas(texto):
         if re.search(r"<label[\s>]", linea):
             yield n, "<label> nativo · el label del producto es <Label>"
-        if "Label" in texto:
+        # **`Note` cuenta igual que `Label`** · 2026-09-28. §2.3 declara CUATRO
+        # tamaños mono y `Label` cubre uno: el de 10. El badge de degradado
+        # necesitaba el de 9 y armó las utilidades a mano, que es exactamente lo
+        # que esta regla persigue — y tenía razón. Lo que faltaba no era una
+        # excepción para ese archivo sino la primitiva del otro rol.
+        if "Label" in texto or "Note" in texto:
             continue
         if "font-mono" in linea and ("uppercase" in linea or "tracking-rotulo" in linea):
             yield n, "arma un label inline con utilidades en vez de importar <Label>"

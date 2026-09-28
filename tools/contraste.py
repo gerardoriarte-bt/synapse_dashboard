@@ -55,19 +55,28 @@ PREFIJO = "--color-"
 # la próxima desviación se ve sola. Esta es la primera, y la encontró el port en
 # su primera corrida.
 #
-# **`dim` sobre `w3` sobre `panel`, tema oscuro: 4.17 contra 4.5.** Es el badge
-# de `DegradedBadge`, que es un `<Label>` —mono 10px, `dim`— sobre `bg-w3` en la
-# cabecera del panel.
+# **`dim` sobre `w3` sobre `panel`, tema oscuro: 4.17 contra 4.5.**
 #
 # Lo importante es POR QUÉ no se veía: `dim` sobre `panel` da 5.04 y pasa. Es el
 # wash lo que lo hunde, y el chequeo de v2 medía contra la superficie sin la
 # capa encima, así que habría dicho «conforme». En tema claro da 4.60, que pasa
 # raspando.
 #
-# NO se arregla acá ni en `tokens.css`: los tokens salen del `.pen`. Las salidas
-# son subir la luminosidad de `dim`, bajar el alfa de `w3`, o que el badge deje
-# de usar `dim`. Las tres son decisiones de diseño y las tres tocan más cosas
-# que este badge. Abierta como pregunta 13 de B0.9.
+# ── **CAMBIÓ DE DUEÑO EL 2026-09-28, Y NO SE RESOLVIÓ SOLA** ──────────────────
+#
+# Era `DegradedBadge`, y **el badge dejó de ser el caso**: el `.pen` lo dibuja
+# como un chip SIN relleno —borde y texto en `$acc`, mono 9— y el `bg-w3` era
+# invención nuestra. Con el dibujo puesto, el par del badge pasa a ser `acc`
+# sobre `panel`, que da 4.91 y pasa.
+#
+# **Eso contesta la pregunta 13 de B0.9 sin ninguna de sus tres salidas
+# escritas** —subir la luminosidad de `dim`, bajar el alfa de `w3`, o que el
+# badge deje de usar `dim`—: no hubo que elegir, porque el wash no estaba
+# dibujado. Lo encontró la sesión que dibuja, auditando en paralelo.
+#
+# **Pero el par sigue existiendo, con otro dueño**: `TabEditor` pinta
+# `text-dim hover:bg-w3` en los botones del builder. Borrar la desviación habría
+# escondido un par que se sigue pintando — el número no se movió, se mudó.
 REGISTRADAS: dict[tuple[str, str, str], float] = {
     ("oscuro", "dim", "w3/panel"): 4.17,
 }
@@ -85,15 +94,18 @@ PARES: list[tuple[str, str | list[str], str]] = [
     # El logotipo se pinta con `ink` por máscara, así que su contraste se mide
     # como el de cualquier otro elemento y no es una excepción de marca.
     ("ink", "dock", "Logotipo del navbar"),
-    ("acc", "panel", "CTA, enlaces y cifras resaltadas sobre panel"),
+    # Desde el 2026-09-28 mide también el `DegradedBadge`, que el `.pen` dibuja
+    # con borde y texto en `acc` sobre el panel, sin wash.
+    ("acc", "panel", "CTA, enlaces, cifras resaltadas y el badge de degradado"),
     ("acc", "dock", "CTA del navbar"),
     ("on-acc", "acc", "Texto dentro del botón naranja"),
     # Un estado hover que no se lee es tan inservible como uno que no se ve: el
     # cursor está encima justo cuando hay que leerlo.
     ("acc-hover", "panel", "«Ver detalle» del panel, con el cursor encima"),
     # El caso que §1.4 persigue de verdad: mono 10px, en `dim`, sobre un wash.
-    # `DegradedBadge` es `<Label>` sobre `bg-w3` en la cabecera del panel.
-    ("dim", ["w3", "panel"], "Badge de degradado · mono 10px sobre wash"),
+    # **Ya no es el badge** · 2026-09-28. Hoy lo pinta `TabEditor`, que usa
+    # `text-dim hover:bg-w3` en los botones de pestaña del builder.
+    ("dim", ["w3", "panel"], "Botón del builder con el cursor encima · dim sobre wash"),
     # Los activos del producto, todos sobre un wash. Ver la cabecera.
     ("ink", ["w2", "dock"], "Pestaña activa · texto sobre wash sobre el navbar"),
     ("ink", ["w2", "elev"], "Hilo activo del riel · texto sobre wash"),
