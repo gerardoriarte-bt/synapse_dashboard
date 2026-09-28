@@ -101,6 +101,37 @@ se lo llenó: es la misma lección que «un fixture inventado verifica el fixtur
 | 48 | `reco` ᴺ | RECO | `prosa` |  | — | — |
 | 49 | `radar` | RADAR | `perfilMultiatributo` |  | `perfilMultiatributo` → `atributos < 3` | `perfiles > 3` |
 
+## TRES GRÁFICOS CUELGAN DE UNA FORMA QUE NO PUEDE LLEVARLOS
+
+**Encontrado el 2026-09-28, al preparar el pedido a datos.** §5 mapea
+`DISPERSIÓN`, `BURBUJAS` y `CUADRANTES` a la forma **`distribucion`**, y el
+objeto de esa forma es:
+
+```
+ValorDistribucion { forma, cortes: [{ etiqueta, v }] }
+```
+
+**Eso es un histograma o una caja.** Una dispersión necesita pares `(x, y)`; una
+burbuja, `(x, y, r)`; y `cuadrantes`, lo mismo más el rótulo de cada zona.
+
+**Ninguna de las dieciséis formas del contrato lleva pares `(x, y)`** ·
+verificado sobre los diecisiete esquemas `Valor*`. Así que estos tres **no se
+pueden dibujar hoy aunque se construya el componente**: no hay dónde poner el
+dato.
+
+**No es un error de la transcripción: es del mapa.** §5 los agrupó por la
+pregunta que contestan —«qué forma tiene esto»— y no por el objeto que
+necesitan. Los otros dos de esa fila, `histogram` y `box`, sí comen `cortes`.
+
+**Y pega donde duele**: los tres son gráficos de MMM, y `CUADRANTES` es el que el
+`.pen` dibuja con `INVERTIR · REVISAR PRECIO · ESCALAR · DEFENDER`, o sea el que
+convierte el análisis en una decisión.
+
+**Es una propuesta de spec, no un arreglo**: o `distribucion` gana una variante,
+o nace una forma nueva. No se resuelve acá y **no se le pidió a datos** una
+métrica para esto — pedirla sería pedir una forma que no sabemos recibir. Está
+dicho en `docs/snowflake/PEDIDO-2026-09-28-metricas-mmm-y-forecast.md` §3.
+
 ## Lo que NO se transcribió, y por qué
 
 **§5 tiene una tercera regla de tope que no se declara**: «`categorica` con
