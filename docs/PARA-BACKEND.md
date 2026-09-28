@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 12 pedido(s)
+## Lo que esperamos · 11 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -44,35 +44,6 @@ verde.
 **Que el `error` esté redactado y en español · queda UNA ruta, no dos.** Remedido el 2026-09-28 contra `f70cec2`: de los dos handlers crudos, el de «tab not found» se arregló —sale `pestaña no encontrada`— y los 400 de binding pasan por un traductor por campo, medido en `PUT /config/me/preferences`: `el campo 'theme' debe ser uno de: dark, light`. **`POST /config/chat` sigue volcando el validador de Go**, y su respuesta afirma lo contrario —«Nunca aparece un nombre de struct de Go ni un tag»—. Medido: `Key: 'ddChatRequest.question' Error:Field validation for 'question' failed on the 'required' tag`. **No es el anidamiento**: falla igual con un campo de primer nivel. Es por handler — `dd_chat_handler.go:52` manda `err.Error()` donde los demás mandan `BindingErrorMessage(err)`, y de 32 sitios que enlazan JSON sólo 9 pasan por el traductor. `ErrorState` lo pinta tal cual, y cae justo en la ruta de F3.15.
 
 **Y SON DOS RUTAS, NO UNA** · encontrado el 2026-09-28 revisando el alta de un tenant. `POST /admin/agents` hace lo mismo: `Key: 'createAgentRequest.tenant_id' Error:Field validation for 'tenant_id' failed on the 'required' tag`. Ésa importa por otra razón — **es una ruta del ALTA de un cliente**, así que el error lo lee quien está dando de alta. `POST /admin/tenants` sí está traducida, que es la prueba de que el traductor anda y de que falta aplicarlo en esas dos.
-
-
-### B1.1 · GET /config/me · llegaron dos de seis
-
-*Estado de la tarea: parcial.*
-
-
-`tenant.etiqueta` y la `key` de la pestaña.
-
-**Se retiraron DOS del pedido el 2026-09-28, y no por llegar: porque no los consume nadie.** Antes de reenviar se revisó cada uno contra su consumidor:
-
-- **`role.puedeAprobar`** · el adaptador lo fija en `false` y ninguna pantalla lo lee. La compuerta real de una acción sobre un panel es `payload.acciones`, que ya funciona. Pedirlo sería pedir un campo que nadie llena — lo mismo que les dijimos de `vertical`.
-- **`user.capabilities`** · ningún consumidor, hoy ni previsto.
-
-**Y la `key` dejó de ser sólo nuestra**: el backend avisó el 2026-09-28 que `roles.tab_ids` guarda ids de fila, que se recrean en cada versión publicada, así que **la primera publicación real desde el builder deja sin pestañas a todo rol con restricción**. Su salida propuesta —identidad de pestaña por `slug` dentro del dashboard— **es esta misma `key`**. Un campo contestando dos problemas.
-
-**Medido campo por campo el 2026-09-28 contra `5924bf2b`**, y por eso esta tarea NO pasa a ✅: el pedido tenía seis cosas y llegaron dos.
-
-| Pedido | Estado |
-|---|---|
-| `alcance` con `tenantsDisponibles` | ✅ llegó como `scope` · `{kind, tenants[]}` |
-| El `grano` de cada período | ✅ `period_grain` y `periods_detail[].grain` |
-| `icon` y `chat_suggestions` en la pestaña | ✅ · y las sugerencias como lista, nunca `null` |
-| `tenant.etiqueta` | ✗ · `tenant` trae `id`, `name`, `locale`, `currency`, `timezone` |
-| `role.puedeAprobar` | ✗ · `role` trae `id` y `name` |
-| `user.capabilities` | ✗ · `user` trae `id`, `email`, nombre y `theme` |
-| La `key` de la pestaña | ✗ |
-
-**Y `tenant.vertical` se RETIRA del pedido**, que es nuestro y no suyo: §3.5 declara `vertical` **y** `plantillaOrigen`, y el mecanismo no existe de ningún lado · `docs/DECISIONES-2026-09-28-estado-y-vertical.md`. Pedir la columna sin la plantilla les haría escribir un campo que nadie llena.
 
 
 ### B1.21 · Declarar los mínimos de datos por gráfico
@@ -172,8 +143,19 @@ Hoy `POST /admin/tenants` exige `private_key_pem`, así que por cada cliente **a
 *Estado de la tarea: parcial.*
 
 
-**Los paneles de prosa los genera el AGENTE, y hoy no hay
-camino.** Decidido el 2026-09-24 por producto: `executive_summary` y `decisions`
+**EL CAMINO YA EXISTE · corregido el 2026-09-28 leyendo su repositorio.**
+
+Esto decía «los paneles de prosa los genera el AGENTE, y hoy no hay camino», y era
+cierto cuando se escribió. **Lo construyeron:** `internal/core/services/dd_prose_generator.go`
+implementa `DDProseGenerator`, `bootstrap/app.go:155` lo cablea al materializador
+—«Fase 6: prosa por agente»— y queda detrás de `DD_MATERIALIZE_PROSE_ENABLED`,
+cuyo default es `false` · `dd_materializer_service.go:57`.
+
+**Así que lo que queda de este pedido es encender el flag**, que es `B2.15`, más
+la pregunta abierta de con qué se provoca `ERROR`. Lo de abajo se conserva porque
+es el razonamiento de producto que lo originó y sigue valiendo.
+
+Decidido el 2026-09-24 por producto: `executive_summary` y `decisions`
 no son métricas sino **interpretación** —el resumen y las propuestas sobre los
 datos del período—, así que no se curan en Snowflake, y **es el materializador
 quien llama al agente**. Las otras dos opciones se pesaron y se descartaron: una

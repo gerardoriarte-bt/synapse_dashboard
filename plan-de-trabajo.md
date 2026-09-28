@@ -607,18 +607,31 @@ la ruta que lo emite.
 
 ## Fase 1 — API de consola
 
-### B1.1 ⚠️ `GET /config/me` · llegaron dos de seis
+### B1.1 ✅ `GET /config/me` · los seis, o retirados con razón
 **Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. Llegan `period_grain: "month"`, `periods_detail` con `[start, end)` por período, y `scope` —`kind: single_tenant` con el token de planner, y `tenants` nunca `null`—.
 
 **Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `GET /config/me` responde con `user`, `tenant`, `role`, `tabs`, `periods` y `catalog_version`. **Parcial** porque faltan `theme` —el campo existe en `users` y el `PUT` lo escribe— y el resto del contexto que declara el contrato.
 **Medido el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **`theme` LLEGÓ** — `user.theme: "light"` en `/config/me`—, y con él `tenant.locale`, `tenant.currency` y `tenant.timezone`, que no estaban pedidos acá y son los que desbloquean F1.13b.
 
-**Sigue en ⚠️ por dos bullets del criterio que no se cumplen**, y conviene que estén separados del `theme` para que nadie la cierre de más:
+**CERRADA EL 2026-09-28 · los dos que faltaban llegaron ese día en `f70cec2`.**
 
-- **`Periodo` no declara su `grano`.** `periods` son doce cadenas sueltas —`"2026-09"`— y el criterio pide `dia | semana | mes`: «sin él el front sabe que una métrica es mensual pero no si `2026-W32` es una semana».
-- **`alcance` no existe**, y con él `tenantsDisponibles`. Por eso el adaptador fija `alcance: 'usuario'` con su razón escrita.
+Medido campo por campo contra el servicio corriendo:
 
-**Espera del backend.** `tenant.etiqueta` y la `key` de la pestaña.
+```
+tenant : currency id label locale name timezone      ← label ✓
+tab    : chat_suggestions icon id key name …         ← key ✓ 'overview'
+scope  : multi_tenant · 2 tenants                    ← alcance ✓
+grano  : period_grain 'month' · periods_detail[].grain ✓
+```
+
+**Los dos bullets que esta tarea listaba como incumplidos ya no lo están**, y la
+tabla de abajo lo decía desde el 26 mientras la prosa seguía diciendo lo
+contrario. Es el modo de falla de siempre: una tarea que se actualiza por partes
+termina contradiciéndose a sí misma, y **quien la lee rápido lee la prosa**.
+
+**Y los dos que quedan sin llegar están retirados a propósito, no pendientes:**
+`role.puedeAprobar` y `user.capabilities` no los consume nadie, hoy ni previsto.
+Pedir un campo que nadie llena es lo mismo que les señalamos de `vertical`.
 
 **Se retiraron DOS del pedido el 2026-09-28, y no por llegar: porque no los consume nadie.** Antes de reenviar se revisó cada uno contra su consumidor:
 
@@ -634,9 +647,10 @@ la ruta que lo emite.
 | `alcance` con `tenantsDisponibles` | ✅ llegó como `scope` · `{kind, tenants[]}` |
 | El `grano` de cada período | ✅ `period_grain` y `periods_detail[].grain` |
 | `icon` y `chat_suggestions` en la pestaña | ✅ · y las sugerencias como lista, nunca `null` |
-| `tenant.etiqueta` | ✗ · `tenant` trae `id`, `name`, `locale`, `currency`, `timezone` |
-| `role.puedeAprobar` | ✗ · `role` trae `id` y `name` |
-| `user.capabilities` | ✗ · `user` trae `id`, `email`, nombre y `theme` |
+| `tenant.etiqueta` | ✅ llegó como `label` en `f70cec2` · medido el 2026-09-28 |
+| La `key` de la pestaña | ✅ llegó en `f70cec2` · `'overview'` |
+| `role.puedeAprobar` | **retirado** · nadie lo consume · 2026-09-28 |
+| `user.capabilities` | **retirado** · nadie lo consume · 2026-09-28 |
 | La `key` de la pestaña | ✗ |
 
 **Y `tenant.vertical` se RETIRA del pedido**, que es nuestro y no suyo: §3.5 declara `vertical` **y** `plantillaOrigen`, y el mecanismo no existe de ningún lado · `docs/DECISIONES-2026-09-28-estado-y-vertical.md`. Pedir la columna sin la plantilla les haría escribir un campo que nadie llena.
@@ -1382,8 +1396,19 @@ Sin esto un KPI pierde el medidor y los comparativos, que es lo que el `.pen`
 dibuja y lo que hace que una cifra se lea contra algo en vez de sola. · Bloquea
 **B2.12**.
 
-**Espera del backend.** **Los paneles de prosa los genera el AGENTE, y hoy no hay
-camino.** Decidido el 2026-09-24 por producto: `executive_summary` y `decisions`
+**Espera del backend.** **EL CAMINO YA EXISTE · corregido el 2026-09-28 leyendo su repositorio.**
+
+Esto decía «los paneles de prosa los genera el AGENTE, y hoy no hay camino», y era
+cierto cuando se escribió. **Lo construyeron:** `internal/core/services/dd_prose_generator.go`
+implementa `DDProseGenerator`, `bootstrap/app.go:155` lo cablea al materializador
+—«Fase 6: prosa por agente»— y queda detrás de `DD_MATERIALIZE_PROSE_ENABLED`,
+cuyo default es `false` · `dd_materializer_service.go:57`.
+
+**Así que lo que queda de este pedido es encender el flag**, que es `B2.15`, más
+la pregunta abierta de con qué se provoca `ERROR`. Lo de abajo se conserva porque
+es el razonamiento de producto que lo originó y sigue valiendo.
+
+Decidido el 2026-09-24 por producto: `executive_summary` y `decisions`
 no son métricas sino **interpretación** —el resumen y las propuestas sobre los
 datos del período—, así que no se curan en Snowflake, y **es el materializador
 quien llama al agente**. Las otras dos opciones se pesaron y se descartaron: una

@@ -27,10 +27,10 @@ B0.9,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e
 B0.10,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e infraestructura,Endpoint de login,"tareas-front-back.md pide en F0.5 «login → guardar JWT → redirigir», y ninguna tarea de backend lo expone. B0.3 define el JWT pero no la ruta que lo emite.","• Existe POST /api/v1/auth/login (o la ruta que el backend decida) declarado en el yaml, con su forma de request y de respuesta.
 • Declara qué pasa con credenciales inválidas y con cuenta bloqueada, con codigo estable.
 • El front puede implementar F0.5 sin inventar la forma del request.",pendiente,si,,equipo:backend fase:0 estado:pendiente nueva
-B1.1,Backend · Fase 1 — API de consola,Backend,1,API de consola,GET /config/me · llegaron dos de seis,"Contexto de arranque: user (con capacidades y preferencias), tenant, role (con puedeAprobar), tabs sin paneles, periodos, catalogVersion, alcance y —si hay más de uno— layouts.","• Las pestañas llegan ya filtradas por el rol del token y en su orden.
+B1.1,Backend · Fase 1 — API de consola,Backend,1,API de consola,"GET /config/me · los seis, o retirados con razón","Contexto de arranque: user (con capacidades y preferencias), tenant, role (con puedeAprobar), tabs sin paneles, periodos, catalogVersion, alcance y —si hay más de uno— layouts.","• Las pestañas llegan ya filtradas por el rol del token y en su orden.
 • Cada Periodo declara su grano (dia | semana | mes): sin él el front sabe que una métrica es mensual pero no si 2026-W32 es una semana.
 • No incluye paneles: pedirlos es GET /config/tabs/{tabId}.
-• Con alcance: plataforma incluye tenantsDisponibles; con usuario, no.",parcial,no,,equipo:backend fase:1 estado:parcial bloqueada
+• Con alcance: plataforma incluye tenantsDisponibles; con usuario, no.",hecho,no,,equipo:backend fase:1 estado:hecho
 B1.2,Backend · Fase 1 — API de consola,Backend,1,API de consola,GET /config/catalog,Las métricas del tenant filtradas por el rol del token.,"• Una métrica oculta para el rol no aparece, ni siquiera con estado restringido: ocultar no es permitir, pero tampoco es mostrar el nombre.
 • Cada métrica trae base obligatorio (ver D6), familia, forma, capa, fuente, ventana, granoMinimo, dimensiones y catalogVersion.
 • direccionSemantica viene solo en las compuestas, y es la frase que se pinta.",hecho,no,,equipo:backend fase:1 estado:hecho

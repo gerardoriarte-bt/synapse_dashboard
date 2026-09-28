@@ -1,13 +1,23 @@
 # Para el equipo de backend · todo lo que falta, auditado de punta a punta · 2026-09-28 (noche)
 
 > Auditamos el plan entero para asegurarnos de que **`docs/PARA-BACKEND.md` los
-> tenga a todos**. No los tenía: pasó de **8 pedidos a 12**, y cuatro estaban
-> escritos sólo en documentos que ustedes no leen.
+> tenga a todos**. No los tenía, y al revisar aparecieron huecos en las dos
+> direcciones: faltaban pedidos que sólo vivían en documentos, **y sobraban cinco
+> que ya no eran ciertos**.
 >
-> **La causa era nuestra y estructural**, así que va primero. Y antes de mandarlo
-> **validamos cada pedido nuevo contra su repositorio en `f70cec2`** — de siete
-> que habíamos escrito, **tres no se sostuvieron**. Van explicados abajo, porque
-> el error es instructivo y es nuestro.
+> **Validamos LOS ONCE contra su repositorio en `f70cec2` antes de mandar nada.**
+> Ninguno de los que quedan sale de una transcripción nuestra: cada uno dice cómo
+> se comprobó. Los cinco retirados van explicados, porque el error es nuestro y
+> es instructivo.
+
+## El saldo, en una línea
+
+| | |
+|---|---|
+| Pedidos que el archivo generado mostraba | **8** |
+| Los que faltaban, escritos sólo en mensajes | **+7** |
+| **Los que se cayeron al validarlos contra su código** | **−5** |
+| **Vigentes, cada uno con su verificación** | **11** |
 
 ## Por qué siete pedidos no les llegaban
 
@@ -51,7 +61,7 @@ queda es chica: **¿son sólo esos dos valores, y confirman que lo aplica el
 front?** Bloquea un defecto visible — el orden de una tabla se anuncia y no se
 aplica.
 
-### LOS TRES QUE RETIRAMOS ANTES DE MANDARLOS
+### LOS CINCO QUE RETIRAMOS ANTES DE MANDARLOS
 
 Los habíamos escrito desde documentos NUESTROS. Al validarlos contra su
 repositorio **no se sostuvieron**, y preferimos decirlo a que lo descubran
@@ -75,11 +85,31 @@ distinción que decíamos que faltaba. Medido el caso exacto: previsualizar un
 —`expected YYYY-MM`— y sus ayudantes son por mes. No era un pedido: era algo que
 no habíamos leído.
 
+**Y DOS MÁS que ya estaban en el archivo desde antes**, y que nadie había vuelto
+a mirar:
+
+**`GET /config/me` · «llegaron dos de seis».** De los seis que pedía, **cuatro
+llegaron y dos los retiramos nosotros** —`role.puedeAprobar` y
+`user.capabilities`, porque no los consume nadie—. Los dos últimos, `tenant.label`
+y la `key` de la pestaña, **llegaron en `f70cec2`**, o sea el mismo día que
+escribimos que faltaban. Medido: los dos presentes. **Cerrada.**
+
+Y su propio texto se contradecía: la tabla del final decía ✅ desde el 26 mientras
+la prosa de arriba seguía listando los dos bullets como incumplidos. **Quien la
+lee rápido lee la prosa.**
+
+**La prosa por agente de B2.12** decía «hoy no hay camino». **Lo construyeron**:
+`dd_prose_generator.go` implementa `DDProseGenerator`, `bootstrap/app.go:155` lo
+cablea al materializador —«Fase 6: prosa por agente»— y queda detrás de
+`DD_MATERIALIZE_PROSE_ENABLED`, cuyo default es `false`. **Así que ese pedido se
+reduce a encender el flag**, que es B2.15.
+
 **Por qué lo contamos.** El 2026-09-25 les mandamos un mensaje equivocado por
-citar una transcripción nuestra como si fuera una medición. **Estos tres eran lo
+citar una transcripción nuestra como si fuera una medición. **Estos cinco eran lo
 mismo otra vez**, y lo que los atajó fue una sola pregunta de nuestro lado: «¿lo
-validaste contra el repositorio?». Los tres quedan en nuestro plan como cerrados
-con la medición que los retiró, no borrados.
+validaste contra el repositorio?». Los cinco quedan en nuestro plan cerrados con
+la medición que los retiró, no borrados — así nadie los vuelve a escribir dentro
+de un mes.
 
 ## Lo que ya sabían, y sigue
 
