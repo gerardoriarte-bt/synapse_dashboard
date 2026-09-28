@@ -108375,6 +108375,936 @@
       "width": 760,
       "height": 0,
       "content": "C6 · SELECTOR DE DASHBOARD\nC6 · Selector de dashboard\n\nContesta las cuatro preguntas de la propuesta del 2026-09-26. El dashboard NO es un noveno control del navbar: §7.1 ya avisa que de ocho elementos a 768 no entra. Lo abre el chevron del bloque de cliente, que ya estaba dibujado, y por eso el navbar no crece.\n\nUn dashboard es contexto, igual que el cliente: por eso el panel cuelga de ese bloque y no del punto de identidad, donde viven la persona, su rol, el tema y las salidas a las otras superficies.\n\nLA PALABRA QUEDA FIJADA. Dashboard es lo que se elige; layout es su composición publicada. El rótulo dice DASHBOARD y ninguna pantalla dice layout.\n\nUN DASHBOARD SIN LAYOUT PUBLICADO NO ES UN ERROR. Se lista con su estado —TODAVÍA NO SE COMPUSO— y al entrar, la consola muestra el vacío con su razón y con salida propia.\n\nEl velo es $shad y no un literal, que es la decisión del 2026-09-22: se usan los tokens que ya hay. El velo de C3 sigue siendo un hex, y ésa es la divergencia §1 de esa misma propuesta.\n\nA 768 y a 360 el panel no cambia de forma: mantiene sus 300 de ancho, que entran en los 360 con los 16 de margen. Lo que se achica es el bloque de cliente, no el panel.\n\n[1440 × 2329]"
+    },
+    {
+      "type": "frame",
+      "id": "i8Vls",
+      "x": 36476,
+      "y": 670,
+      "name": "Consola · C1 · Forecast",
+      "theme": {
+        "Mode": "Dark"
+      },
+      "clip": true,
+      "width": 1440,
+      "fill": "$bg",
+      "layout": "vertical",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "frame",
+          "id": "nWTB1",
+          "name": "Navbar",
+          "width": "fill_container",
+          "height": 60,
+          "fill": "$dock",
+          "stroke": "$w2",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "strokeAlignment": "inner",
+          "gap": 14,
+          "padding": [
+            0,
+            24
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "fqRFf",
+              "name": "Logo",
+              "gap": 9,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "rectangle",
+                  "cornerRadius": "$r-xs",
+                  "id": "n4CC4f",
+                  "name": "Mark",
+                  "fill": "$acc",
+                  "width": 10,
+                  "height": 10
+                },
+                {
+                  "type": "text",
+                  "id": "B9FTL",
+                  "name": "Wordmark",
+                  "fill": "$ink",
+                  "content": "Synapse",
+                  "fontFamily": "$font-display",
+                  "fontSize": 15,
+                  "fontWeight": "500",
+                  "letterSpacing": -0.3
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "B2xmE",
+              "name": "Divider",
+              "fill": "$w3",
+              "width": 1,
+              "height": 26
+            },
+            {
+              "type": "frame",
+              "id": "QXC0S",
+              "name": "Tenant",
+              "gap": 10,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "x1ygz5",
+                  "name": "Avatar",
+                  "width": 30,
+                  "height": 30,
+                  "fill": "$elev",
+                  "cornerRadius": "$r-md",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "O2rBUu",
+                      "fill": "$ink",
+                      "content": "UA",
+                      "fontFamily": "$font-mono",
+                      "fontSize": 10,
+                      "fontWeight": "normal",
+                      "letterSpacing": 1.2
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "UB8F6",
+                  "name": "Names",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "D8XGu",
+                      "name": "Name",
+                      "fill": "$ink",
+                      "content": "Under Armour",
+                      "fontFamily": "$font-body",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "wdn3y",
+                      "fill": "$dim",
+                      "content": "UA PERFORMANCE · MÉXICO · ROL CEO",
+                      "fontFamily": "$font-mono",
+                      "fontSize": 9,
+                      "fontWeight": "normal",
+                      "letterSpacing": 1.08
+                    }
+                  ]
+                },
+                {
+                  "type": "icon",
+                  "id": "lucFj",
+                  "name": "Selector",
+                  "width": 13,
+                  "height": 13,
+                  "icon": "chevrons-up-down",
+                  "library": "lucide",
+                  "fill": "$dim"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "fSszX",
+              "name": "Spacer",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "id": "sGUvf",
+              "type": "ref",
+              "ref": "mCRjP",
+              "name": "Tema",
+              "descendants": {
+                "toICZ": {
+                  "icon": "sun"
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "JZCw7",
+              "name": "Selector de período",
+              "height": 32,
+              "cornerRadius": "$r-lg",
+              "stroke": "$w3",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 9,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "FHkNB",
+                  "name": "Icon",
+                  "width": 14,
+                  "height": 14,
+                  "icon": "calendar",
+                  "library": "lucide",
+                  "fill": "$dim"
+                },
+                {
+                  "type": "text",
+                  "id": "Ybrf4",
+                  "fill": "$ink",
+                  "content": "JUL 2026",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 10,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.2
+                },
+                {
+                  "type": "icon",
+                  "id": "i0jRXP",
+                  "name": "Chevron",
+                  "width": 13,
+                  "height": 13,
+                  "icon": "chevron-down",
+                  "library": "lucide",
+                  "fill": "$dim"
+                }
+              ]
+            },
+            {
+              "id": "ed3P4",
+              "type": "ref",
+              "ref": "mCRjP",
+              "name": "Notificaciones"
+            },
+            {
+              "type": "frame",
+              "id": "D6RQd4",
+              "name": "CTA Synapse",
+              "height": 32,
+              "fill": "$acc",
+              "cornerRadius": "$r-lg",
+              "gap": 8,
+              "padding": [
+                0,
+                14
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "R9uMTq",
+                  "name": "Icon",
+                  "width": 14,
+                  "height": 14,
+                  "icon": "sparkles",
+                  "library": "lucide",
+                  "fill": "$on-acc"
+                },
+                {
+                  "type": "text",
+                  "id": "T89r4",
+                  "fill": "$on-acc",
+                  "content": "PREGUNTAR",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 10,
+                  "fontWeight": "500",
+                  "letterSpacing": 1.2
+                }
+              ]
+            },
+            {
+              "id": "FkQrL",
+              "type": "ref",
+              "ref": "RoRGj",
+              "name": "Usuario"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "WrOyO",
+          "name": "Header",
+          "width": 1200,
+          "height": 96,
+          "gap": 16,
+          "padding": [
+            0,
+            32
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "dgWEZ",
+              "name": "Titles",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "N3NuB",
+                  "fill": "$dim",
+                  "content": "UA MX · FORECAST",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 10,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.2
+                },
+                {
+                  "type": "text",
+                  "id": "t2mfjQ",
+                  "name": "Question",
+                  "fill": "$ink",
+                  "content": "¿Qué va a pasar si no cambiamos nada?",
+                  "fontFamily": "$font-display",
+                  "fontSize": 26,
+                  "fontWeight": "500",
+                  "letterSpacing": -0.7
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "C6Udp",
+              "name": "Rango",
+              "layout": "vertical",
+              "gap": 5,
+              "alignItems": "end",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tfaNF",
+                  "fill": "$dim",
+                  "content": "PERÍODO",
+                  "textAlign": "right",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 10,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.2
+                },
+                {
+                  "type": "text",
+                  "id": "iNuZV",
+                  "fill": "$ink",
+                  "content": "PROYECCIÓN A 8 SEMANAS · INTERVALO 80%",
+                  "textAlign": "right",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 10,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "RIlFV",
+          "name": "Chapter Tabs",
+          "width": 1200,
+          "height": 52,
+          "stroke": "#00000000",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "strokeAlignment": "inner",
+          "gap": 6,
+          "padding": [
+            0,
+            32
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "BB0zH",
+              "type": "ref",
+              "ref": "k7cfSY",
+              "name": "Tab eCommerce Overview",
+              "fill": "#00000000",
+              "descendants": {
+                "pOFw9": {
+                  "icon": "layout-grid",
+                  "fill": "$dim"
+                },
+                "w5n6O": {
+                  "content": "eCommerce Overview",
+                  "fill": "$dim"
+                },
+                "H9iWF": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "id": "lGy7a",
+              "type": "ref",
+              "ref": "k7cfSY",
+              "name": "Tab Brand Momentum",
+              "fill": "#00000000",
+              "descendants": {
+                "pOFw9": {
+                  "icon": "tag",
+                  "fill": "$dim"
+                },
+                "w5n6O": {
+                  "content": "Brand Momentum",
+                  "fill": "$dim"
+                },
+                "H9iWF": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "id": "ugJJS",
+              "type": "ref",
+              "ref": "k7cfSY",
+              "name": "Tab Product Sales",
+              "fill": "#00000000",
+              "descendants": {
+                "pOFw9": {
+                  "icon": "circle-dot",
+                  "fill": "$dim"
+                },
+                "w5n6O": {
+                  "content": "Product Sales",
+                  "fill": "$dim"
+                },
+                "H9iWF": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "id": "KPSVu",
+              "type": "ref",
+              "ref": "k7cfSY",
+              "name": "Tab Inventory & Shopping",
+              "fill": "#00000000",
+              "descendants": {
+                "pOFw9": {
+                  "icon": "box",
+                  "fill": "$dim"
+                },
+                "w5n6O": {
+                  "content": "Inventory & Shopping",
+                  "fill": "$dim"
+                },
+                "H9iWF": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "id": "O94Y9v",
+              "type": "ref",
+              "ref": "k7cfSY",
+              "name": "Tab Media Mix",
+              "fill": "#00000000",
+              "descendants": {
+                "pOFw9": {
+                  "icon": "git-branch",
+                  "fill": "$ink"
+                },
+                "w5n6O": {
+                  "content": "Media Mix",
+                  "fill": "$ink"
+                },
+                "H9iWF": {
+                  "enabled": false,
+                  "width": 67
+                }
+              }
+            },
+            {
+              "id": "paRZp",
+              "type": "ref",
+              "ref": "k7cfSY",
+              "name": "Tab Forecast",
+              "fill": "$elev",
+              "descendants": {
+                "pOFw9": {
+                  "icon": "trending-up",
+                  "library": "lucide",
+                  "fill": "$ink"
+                },
+                "w5n6O": {
+                  "content": "Forecast",
+                  "fill": "$ink"
+                },
+                "H9iWF": {
+                  "enabled": true
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "aXNtv",
+          "name": "Regla",
+          "width": "fill_container",
+          "height": 1,
+          "fill": "$w2"
+        },
+        {
+          "type": "frame",
+          "id": "meLRP",
+          "name": "Body",
+          "width": "fill_container",
+          "justifyContent": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "M0Q92U",
+              "name": "Canvas",
+              "width": 1200,
+              "layout": "vertical",
+              "gap": 16,
+              "padding": 32,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "HDkCz",
+                  "name": "Row 1",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "id": "up1i5",
+                      "type": "ref",
+                      "ref": "PqkQX",
+                      "name": "F1 · Cierre proyectado del mes",
+                      "width": 368,
+                      "height": 368,
+                      "context": "metricId=revenue_forecast_close tipo=forecast forma=escalarConIntervalo",
+                      "descendants": {
+                        "gkLo2": {
+                          "fill": "$fam-demanda-1"
+                        },
+                        "OoPTR": {
+                          "content": "Cierre proyectado del mes"
+                        },
+                        "ifQki": {
+                          "content": "BASE · MES EN CURSO · INTERVALO 80%"
+                        },
+                        "jIKJX/X3lMb": {
+                          "content": "GOLD"
+                        },
+                        "jIKJX/oWz0A": {
+                          "content": "ML FORECAST"
+                        },
+                        "jIKJX/UiKX2": {
+                          "content": "HACE 2 H"
+                        },
+                        "h93e8j": {
+                          "children": [
+                            {
+                              "id": "x22Mq",
+                              "type": "ref",
+                              "ref": "xO3wz",
+                              "name": "Cuerpo",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "descendants": {
+                                "Fe2HF": {
+                                  "content": "USD 4.9M"
+                                },
+                                "G03jG": {
+                                  "content": "RANGO 4.4 – 5.3M · INTERVALO 80%"
+                                },
+                                "uFMRe": {
+                                  "content": "USD 4.1M"
+                                },
+                                "Z1qhE": {
+                                  "content": "USD 5.6M"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "NwkOW": {
+                          "content": "MÁS ALTO = MEJOR"
+                        }
+                      }
+                    },
+                    {
+                      "id": "Emwp2",
+                      "type": "ref",
+                      "ref": "PqkQX",
+                      "name": "F2 · Unidades proyectadas",
+                      "width": 368,
+                      "height": 368,
+                      "context": "metricId=units_forecast_close tipo=forecast forma=escalarConIntervalo",
+                      "descendants": {
+                        "gkLo2": {
+                          "fill": "$fam-demanda-1"
+                        },
+                        "OoPTR": {
+                          "content": "Unidades proyectadas"
+                        },
+                        "ifQki": {
+                          "content": "BASE · MES EN CURSO · INTERVALO 80%"
+                        },
+                        "jIKJX/X3lMb": {
+                          "content": "GOLD"
+                        },
+                        "jIKJX/oWz0A": {
+                          "content": "ML FORECAST"
+                        },
+                        "jIKJX/UiKX2": {
+                          "content": "HACE 2 H"
+                        },
+                        "h93e8j": {
+                          "children": [
+                            {
+                              "id": "rqR2A",
+                              "type": "ref",
+                              "ref": "xO3wz",
+                              "name": "Cuerpo",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "descendants": {
+                                "Fe2HF": {
+                                  "content": "58.4K u"
+                                },
+                                "G03jG": {
+                                  "content": "RANGO 52 – 64K · INTERVALO 80%"
+                                },
+                                "uFMRe": {
+                                  "content": "48K u"
+                                },
+                                "Z1qhE": {
+                                  "content": "68K u"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "NwkOW": {
+                          "content": "MÁS ALTO = MEJOR"
+                        }
+                      }
+                    },
+                    {
+                      "id": "ZGi6z",
+                      "type": "ref",
+                      "ref": "PqkQX",
+                      "name": "F3 · Antigüedad del pronóstico",
+                      "width": 368,
+                      "height": 368,
+                      "context": "metricId=forecast_edad tipo=kpi forma=escalar",
+                      "descendants": {
+                        "gkLo2": {
+                          "fill": "$fam-demanda-1"
+                        },
+                        "OoPTR": {
+                          "content": "Antigüedad del pronóstico"
+                        },
+                        "ifQki": {
+                          "content": "BASE · DESDE LA ÚLTIMA CORRIDA"
+                        },
+                        "jIKJX/X3lMb": {
+                          "content": "GOLD"
+                        },
+                        "jIKJX/oWz0A": {
+                          "content": "ML FORECAST"
+                        },
+                        "jIKJX/UiKX2": {
+                          "content": "HACE 2 H"
+                        },
+                        "h93e8j": {
+                          "children": [
+                            {
+                              "id": "GfEZ9",
+                              "type": "ref",
+                              "ref": "KsiLk",
+                              "name": "Cuerpo",
+                              "width": "fill_container",
+                              "gap": 12,
+                              "descendants": {
+                                "CHOaa": {
+                                  "enabled": true,
+                                  "content": "HORAS · MÁS BAJO = MEJOR"
+                                },
+                                "eF2fr": {
+                                  "content": "2 h"
+                                },
+                                "b7wWL": {
+                                  "enabled": false
+                                },
+                                "X0Uw17/XyPpI": {
+                                  "content": "EDAD DE LA CORRIDA"
+                                },
+                                "X0Uw17/h5RbCs": {
+                                  "content": "2 H"
+                                },
+                                "gWyTm/XyPpI": {
+                                  "content": "NIVEL DECLARADO"
+                                },
+                                "gWyTm/h5RbCs": {
+                                  "content": "80%"
+                                },
+                                "V74t2C/XyPpI": {
+                                  "content": "CADENCIA ESPERADA"
+                                },
+                                "V74t2C/h5RbCs": {
+                                  "content": "24 H"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "NwkOW": {
+                          "content": "MÁS BAJO = MEJOR"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "r1QO6",
+                  "name": "Row 2",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "id": "r6HKW",
+                      "type": "ref",
+                      "ref": "nolZa",
+                      "name": "F4 · Venta proyectada con intervalo",
+                      "width": 752,
+                      "height": 464,
+                      "context": "metricId=revenue_forecast tipo=forecast forma=serieConBanda",
+                      "descendants": {
+                        "CDiFi": {
+                          "fill": "$fam-demanda-1"
+                        },
+                        "cl8pI": {
+                          "content": "Venta proyectada con intervalo"
+                        },
+                        "MMtXs": {
+                          "content": "BASE · 8 SEMANAS HACIA ADELANTE · INTERVALO 80%"
+                        },
+                        "PNEUG/X3lMb": {
+                          "content": "GOLD"
+                        },
+                        "PNEUG/oWz0A": {
+                          "content": "ML FORECAST"
+                        },
+                        "PNEUG/UiKX2": {
+                          "content": "HACE 2 H"
+                        },
+                        "KKnfd": {
+                          "children": [
+                            {
+                              "id": "LgNDU",
+                              "type": "ref",
+                              "ref": "wmWUG",
+                              "name": "Cuerpo",
+                              "width": "fill_container",
+                              "height": "fill_container"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "N8p10Y",
+                  "name": "Row 3",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "id": "zdDgY",
+                      "type": "ref",
+                      "ref": "nolZa",
+                      "name": "F5 · Conversión con banda de control",
+                      "width": 752,
+                      "height": 464,
+                      "context": "metricId=conversion_control tipo=forecast forma=serieConBanda estado=BLOQUEADO",
+                      "descendants": {
+                        "CDiFi": {
+                          "fill": "$fam-demanda-1"
+                        },
+                        "cl8pI": {
+                          "content": "Conversión con banda de control"
+                        },
+                        "MMtXs": {
+                          "content": "BASE · 13 SEMANAS · BANDA DE CONTROL A 2 SIGMA"
+                        },
+                        "PNEUG/X3lMb": {
+                          "content": "GOLD"
+                        },
+                        "PNEUG/oWz0A": {
+                          "content": "ML FORECAST"
+                        },
+                        "PNEUG/UiKX2": {
+                          "content": "SIN CORRIDA"
+                        },
+                        "KKnfd": {
+                          "children": [
+                            {
+                              "id": "osYZI",
+                              "type": "ref",
+                              "ref": "TMvbd",
+                              "name": "Cuerpo",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "descendants": {
+                                "KgCFp": {
+                                  "content": "BLOQUEADO"
+                                },
+                                "R7I2v": {
+                                  "content": "SIN VALOR APROXIMADO"
+                                },
+                                "YezGz": {
+                                  "content": "Ningún modelo publicó un pronóstico para este período. SNOWFLAKE.ML.FORECAST no está habilitado y el MMM sólo tiene semanas pasadas."
+                                },
+                                "JXMxn": {
+                                  "content": "QUÉ LO DESBLOQUEA"
+                                },
+                                "C8tnw": {
+                                  "content": "Habilitar el pronóstico o materializar la salida de un modelo externo, con su nivel de confianza declarado."
+                                },
+                                "oh0uW": {
+                                  "content": "PEDIR A DATOS"
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "R06OsK",
+          "name": "Barra inferior",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "$dock",
+          "stroke": "$w2",
+          "strokeWidth": {
+            "top": 1
+          },
+          "strokeAlignment": "inner",
+          "gap": 10,
+          "padding": [
+            0,
+            24
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "dUmoX",
+              "name": "PREGUNTAR A SYNAPSE",
+              "height": 32,
+              "cornerRadius": "$r-lg",
+              "stroke": "$w3",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 8,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "y31G2",
+                  "name": "Icon",
+                  "width": 14,
+                  "height": 14,
+                  "icon": "sparkles",
+                  "library": "lucide",
+                  "fill": "$dim"
+                },
+                {
+                  "type": "text",
+                  "id": "reLKV",
+                  "fill": "$ink",
+                  "content": "PREGUNTAR A SYNAPSE",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 10,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.2
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "xL1Eo",
+              "name": "Spacer",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "Y6rge",
+              "name": "Contexto",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "ellipse",
+                  "id": "FyxCZ",
+                  "name": "Dot",
+                  "fill": "$fam-medios-1",
+                  "width": 7,
+                  "height": 7
+                },
+                {
+                  "type": "text",
+                  "id": "alaNG",
+                  "fill": "$dim",
+                  "content": "CONTEXTO · UA MX · MEDIA MIX · JUL 2026 · 5 PANELES",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 10,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.2
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "note",
+      "id": "erJgR",
+      "x": 36476,
+      "y": 340,
+      "name": "Nota · C1 · Forecast",
+      "width": 760,
+      "height": 0,
+      "content": "C1 · FORECAST\nConsola · C1 · Forecast\n\nES UN CAPÍTULO, NO UN DASHBOARD APARTE. Media Mix ya es una pestaña de C1 y esto es del mismo orden: la consola contesta cómo va el negocio y esta pestaña contesta qué va a pasar si no cambiamos nada. El selector de dashboard de C6 es para composiciones distintas —otra audiencia, otro rol—, no para capítulos de la misma conversación.\n\nNINGUNA CIFRA SIN INTERVALO, Y EL NIVEL SE DECLARA. Es regla dura: un pronóstico sin banda no se publica. Los tres paneles que muestran números llevan su rango y su nivel escrito —80%— y ninguno lo supone: si el modelo entrega al 95, el panel dice 95.\n\nF5 ESTÁ BLOQUEADO A PROPÓSITO, y es lo único verificado de esta pantalla. Medido el 2026-09-28: SHOW FUNCTIONS LIKE FORECAST IN SCHEMA SNOWFLAKE.ML devuelve cero filas, y las 138 semanas del MMM son todas pasadas. Hoy no hay pronóstico publicado para ningún período, así que el panel lo dice con su razón y con qué lo desbloquea.\n\nY muestra la otra regla de §8 de paso: el estado reemplaza el cuerpo y nunca el shell. Título, BASE y procedencia siguen visibles; lo que desaparece es la cifra que no existe.\n\nLAS CIFRAS SON DATO MOCK. Lo que no es mock es la ausencia del modelo. Para construir esta pestaña hacen falta dos filas de catálogo —series_with_band y scalar_with_interval— pedidas en docs/snowflake/PEDIDO-2026-09-28-metricas-mmm-y-forecast.md.\n\nCada panel se ancla a un metricId en su context, nunca a una consulta. Las alturas son rowSpan: 368 es 4 y 464 es 5, con la fórmula 96·N − 16.\n\n[1440 × 1657]"
     }
   ],
   "themes": {

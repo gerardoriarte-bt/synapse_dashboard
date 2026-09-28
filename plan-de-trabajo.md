@@ -104,6 +104,7 @@ que su resultado esté escrito.
 | `Consola · C1 · Product Sales` | ídem |
 | `Consola · C1 · Inventory & Shopping` | ídem |
 | `Consola · C1 · Media Mix` | ídem · el módulo MMM propio es F3.11, diferida por D3 |
+| `Consola · C1 · Forecast` | **No construida** · dibujada el 2026-09-28 · es una pestaña más del layout, así que la pinta la misma `Console`. **Espera dos filas de catálogo** —`series_with_band` y `scalar_with_interval`—, pedidas en `docs/snowflake/PEDIDO-2026-09-28-metricas-mmm-y-forecast.md`. Su panel F5 está dibujado `BLOQUEADO` a propósito: hoy no hay pronóstico publicado |
 | `C1 · 768 · seis columnas` | `src/render/useColumns.ts` · el colapso se resuelve en JS · F1.30 |
 | `C1 · 360 · una columna` | ídem · el mínimo son 360 y no 768 · PS-12 |
 | `Consola · C2 · Drill-down de panel` | **No construida** · F3.9, diferida por D3 |
