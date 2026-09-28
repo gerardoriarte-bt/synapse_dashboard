@@ -67,12 +67,33 @@ Cada uno tiene su propuesta escrita, con lo que se midió y lo que se descartó.
 
 **Y dos que no tienen propuesta porque son nuevas del 2026-09-28:**
 
-- **Los dashboards de MMM y de forecast.** No están mapeados. Los **gráficos**
-  están; lo que no existe es la pantalla que los compone — qué pestañas, qué
-  paneles, en qué orden.
+- **El dashboard de forecast.** Existen el tipo de panel —`Sec · Tipo forecast`—
+  y el plot `INTERVALO`, pero **ninguna pantalla que los componga**.
 - **«Guardar como plantilla».** La dirección nueva es que el admin da de alta,
   compone el dashboard, y **eso** se guarda como plantilla. No hay pantalla ni
   flujo dibujado.
+
+> ### ⚠️ CORRECCIÓN · 2026-09-28 · **el dashboard de MMM YA ESTÁ DIBUJADO**
+>
+> Esta hoja decía que «los dashboards de MMM y forecast no están mapeados».
+> **Del de MMM era falso**: existe `Consola · C1 · Media Mix`, con su pestaña
+> sumada al menú de capítulos y cinco paneles —29 ajuste del modelo, 30 error de
+> predicción, 31 antigüedad del modelo, 32 aporte por canal, 33 retorno por canal
+> con banda—. **Y ya estaba declarado en el registro del plan**, como F3.11,
+> diferida por D3.
+>
+> **Lo encontró la sesión que dibuja, no yo, y el error es el de siempre:** miré
+> «Synapse · Plots» y las pantallas que ya conocía en vez de listar los **97
+> nodos raíz** del archivo. Armar la consulta desde lo que espero encontrar, otra
+> vez.
+>
+> **Antes de decir que algo no está dibujado, se listan los 97**, no un subconjunto:
+>
+> ```python
+> import json, pathlib
+> d = json.loads(pathlib.Path('design/Synapse_v2.pen').read_text())
+> [c['name'] for c in d['children']]
+> ```
 
 ## 3 · Las reglas duras que la auditoría va a revisar
 
@@ -171,3 +192,15 @@ Con esto alcanza, en el mensaje del commit o en un comentario:
 
 **Un commit por cambio coherente** vale más que uno grande: la auditoría se
 hace sobre lo que cambió, no releyendo 43 frames cada vez.
+
+### Y una regla que sale de haberla roto · 2026-09-28
+
+**Nadie usa `git add -A` ni `git add .` en este repositorio mientras seamos dos
+sesiones.** Se agregan **rutas explícitas**.
+
+No es teórico: el commit `90294ea` de la sesión de código —que hablaba de
+Snowflake— se llevó `design/Synapse_v2.pen` con 2.234 renglones,
+`docs/B0.9-preguntas-abiertas.md` y la fila del registro del plan, que estaban
+escribiéndose en paralelo. No se perdió nada, pero **el cambio del dibujo quedó
+bajo un mensaje que no lo nombra**, que es justamente lo que §6 existe para
+evitar.
