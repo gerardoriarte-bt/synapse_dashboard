@@ -60,7 +60,7 @@ export function PublishBar({
           type="button"
           onClick={onValidar}
           disabled={sucio || validando || publicada}
-          className="font-mono text-label tracking-rotulo uppercase rounded-md px-4 py-2 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w3 disabled:opacity-40"
+          className="font-mono text-label tracking-rotulo uppercase rounded-md px-4 py-2 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-elev disabled:opacity-40"
         >
           {validando ? 'Validando…' : 'Validar en el servidor'}
         </button>

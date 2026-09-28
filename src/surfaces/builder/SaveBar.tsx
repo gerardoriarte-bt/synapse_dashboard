@@ -57,7 +57,7 @@ export function SaveBar({ problemas, publicada, error, onDuplicar, duplicando }:
             type="button"
             onClick={onDuplicar}
             disabled={duplicando}
-            className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w3 disabled:opacity-40"
+            className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-elev disabled:opacity-40"
           >
             {duplicando ? 'Creando…' : 'Crear borrador desde esta versión'}
           </button>

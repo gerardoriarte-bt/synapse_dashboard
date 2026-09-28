@@ -170,7 +170,7 @@ export function RoleCard({
         <button
           type="button"
           onClick={onEditar}
-          className="font-mono text-label leading-rotulo tracking-rotulo uppercase px-2 py-1 rounded-sm cursor-pointer border-0 bg-transparent text-dim hover:bg-w3"
+          className="font-mono text-label leading-rotulo tracking-rotulo uppercase px-2 py-1 rounded-sm cursor-pointer border-0 bg-transparent text-dim hover:bg-elev"
         >
           Editar
         </button>
@@ -179,7 +179,7 @@ export function RoleCard({
             type="button"
             onClick={onBorrar}
             aria-label={`Borrar ${rol.nombre}`}
-            className="font-mono text-label leading-rotulo tracking-rotulo uppercase px-2 py-1 rounded-sm cursor-pointer border-0 bg-transparent text-acc hover:bg-w3"
+            className="font-mono text-label leading-rotulo tracking-rotulo uppercase px-2 py-1 rounded-sm cursor-pointer border-0 bg-transparent text-acc hover:bg-elev"
           >
             Borrar
           </button>

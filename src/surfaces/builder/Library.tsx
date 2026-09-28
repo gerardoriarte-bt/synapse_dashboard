@@ -50,7 +50,7 @@ function Item({
       onDragEnd={() => onArrastrar(null)}
       className={
         'flex flex-col gap-1 rounded-sm px-3 py-2 cursor-grab ' +
-        (activo ? 'bg-w3' : 'bg-w2 hover:bg-w3')
+        (activo ? 'bg-w3' : 'bg-w2 hover:bg-elev')
       }
     >
       <span className="text-ink text-celda">{b.tipo}</span>

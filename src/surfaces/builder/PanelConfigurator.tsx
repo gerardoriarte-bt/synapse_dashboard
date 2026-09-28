@@ -140,7 +140,7 @@ export function PanelConfigurator({
         <button
           type="button"
           onClick={onQuitar}
-          className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-acc hover:bg-w3 ml-auto"
+          className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-acc hover:bg-elev ml-auto"
         >
           Quitar panel
         </button>
@@ -196,7 +196,7 @@ export function PanelConfigurator({
                   aria-pressed={m.id === panel.metricId}
                   className={
                     'w-full text-left text-celda px-3 py-2 rounded-sm ' +
-                    (m.id === panel.metricId ? 'bg-w3 text-ink' : 'text-dim hover:bg-w3')
+                    (m.id === panel.metricId ? 'bg-w3 text-ink' : 'text-dim hover:bg-elev')
                   }
                 >
                   {m.nombre} <Label>{`${m.forma} · ${m.capa} · ${m.fuente}`}</Label>

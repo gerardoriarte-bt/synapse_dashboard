@@ -56,6 +56,50 @@ divergencia**: un badge sin relleno, sin borde y en gris no es un chip, es un
 rótulo más en la cabecera del panel, y deja de leerse como marca de estado. La
 mitad del dibujo no es un compromiso: es un tercer diseño que nadie dibujó.
 
+## RATIFICADA EL MISMO DÍA, CONTRA EL MEJOR ARGUMENTO EN CONTRA
+
+**Este documento dice arriba que existe «para que no se corrija citando §2.1», y
+se corrigió citando §2.1 — a las pocas horas.** Conviene que quede acá, porque un
+documento que no sobrevive a su propio caso no sirve.
+
+**Qué pasó.** La auditoría levantó la tensión; la sesión que dibuja la aceptó y
+**redibujó el badge a neutro** —`d1c5ac8`—: borde `$acc` → `$w4`, icono y texto
+`$acc` → `$ink`. Su razonamiento, textual:
+
+> «Donde el dibujo y `design.md` difieren, el dibujo gana en lo visual y
+> `design.md` en las reglas duras: ésta lo es, así que **el que se corrige es el
+> dibujo**.»
+
+**El argumento es bueno y la medición también.** `ink` sobre `panel` da **14.89 y
+17.38**, contra 4.91 y 5.43 del naranja: en contraste el neutro gana por lejos. Y
+la analogía es exacta —los deltas de este producto van en color neutro porque el
+signo comunica la dirección, no el color—.
+
+**Y aun así queda en naranja · decisión humana del 2026-09-28, sostenida.**
+
+La pregunta de fondo no es de contraste ni de sintaxis de la regla: es **qué es un
+panel degradado**. Si es una anotación —«ojo, este dato tiene una limitación»—
+entonces el neutro tiene razón. Si es **algo que reclama una acción**, el acento
+es exactamente su color, y §2.1 lo permite por su propia razón declarada: «su
+exclusividad como color de **acción**».
+
+**Se decidió que es lo segundo**, y §8 lo respalda: un estado degradado no se
+limita a informar, declara **qué lo desbloquea** y el shell le pinta un CTA
+debajo. Un panel que pide que hagas algo, marcado con el color de las cosas que
+piden que hagas algo.
+
+### La consecuencia, que hay que decir de frente
+
+**Entonces la lista de §2.1 está incompleta, y ése es el pedido a diseño.** No se
+está ignorando la regla dura: se está diciendo que le falta un sexto uso —«marca
+de estado que reclama acción»— y que `design.md` es quien lo escribe. Nosotros no
+lo tocamos.
+
+**Mientras tanto el código y el dibujo divergen**, y la divergencia es del dibujo:
+`V9PYxO` está en `$w4`/`$ink` y el código en `$acc`. **Lo que hay que ajustar es
+el `.pen`, no `src/`** — junto con el párrafo «el color del badge tampoco es
+`$acc`» de la pregunta 13 de `docs/B0.9-preguntas-abiertas.md`.
+
 ## Lo que esta decisión NO autoriza
 
 **No abre el acento a otros estados.** `BLOQUEADO`, `SIN_PERMISO` y `ERROR`

@@ -74,12 +74,22 @@ PREFIJO = "--color-"
 # badge deje de usar `dim`—: no hubo que elegir, porque el wash no estaba
 # dibujado. Lo encontró la sesión que dibuja, auditando en paralelo.
 #
-# **Pero el par sigue existiendo, con otro dueño**: `TabEditor` pinta
-# `text-dim hover:bg-w3` en los botones del builder. Borrar la desviación habría
-# escondido un par que se sigue pintando — el número no se movió, se mudó.
-REGISTRADAS: dict[tuple[str, str, str], float] = {
-    ("oscuro", "dim", "w3/panel"): 4.17,
-}
+# **Y después se cerró de verdad, el mismo día.** Al sacar el wash del badge el
+# par no desapareció: se mudó al hover de los botones del builder, que pintaban
+# `text-dim hover:bg-w3`. **El número no se había movido, se había mudado.**
+#
+# La respuesta estaba escrita y nadie la había leído: la tabla de §2.1 declara
+# `--panel-raised` para «activo, hover», y ese token es `$elev`. **Los wash
+# separan zonas; no responden al puntero.** `dim` sobre `elev` da 4.63 y 4.57,
+# así que las dieciséis ocurrencias de `hover:bg-w3` pasaron a `hover:bg-elev`.
+#
+# **El par sale de `PARES` porque el producto dejó de pintarlo**, no porque se
+# acepte: esta lista son los pares que se dibujan, y medir uno que no existe
+# reportaría un rojo permanente de algo que nadie ve.
+#
+# Vacío otra vez, que es como estaba en v2 y es la forma correcta de tenerlo: así
+# la próxima desviación se ve sola.
+REGISTRADAS: dict[tuple[str, str, str], float] = {}
 
 # (frente, fondo, qué es). El fondo puede ser una pila: `['w2', 'elev']` es w2
 # sobre elev, de arriba hacia abajo, que es como se lee en el JSX.
@@ -102,10 +112,10 @@ PARES: list[tuple[str, str | list[str], str]] = [
     # Un estado hover que no se lee es tan inservible como uno que no se ve: el
     # cursor está encima justo cuando hay que leerlo.
     ("acc-hover", "panel", "«Ver detalle» del panel, con el cursor encima"),
-    # El caso que §1.4 persigue de verdad: mono 10px, en `dim`, sobre un wash.
-    # **Ya no es el badge** · 2026-09-28. Hoy lo pinta `TabEditor`, que usa
-    # `text-dim hover:bg-w3` en los botones de pestaña del builder.
-    ("dim", ["w3", "panel"], "Botón del builder con el cursor encima · dim sobre wash"),
+    # Acá estuvo `dim` sobre `w3` sobre `panel` desde el 2026-09-04, primero como
+    # el badge y después como el hover del builder. **Ya no lo pinta nadie**: el
+    # badge no lleva wash y el hover es `elev`. Ver las desviaciones, arriba.
+    ("dim", "elev", "Botón del builder con el cursor encima · §2.1 lo llama `--panel-raised`"),
     # Los activos del producto, todos sobre un wash. Ver la cabecera.
     ("ink", ["w2", "dock"], "Pestaña activa · texto sobre wash sobre el navbar"),
     ("ink", ["w2", "elev"], "Hilo activo del riel · texto sobre wash"),

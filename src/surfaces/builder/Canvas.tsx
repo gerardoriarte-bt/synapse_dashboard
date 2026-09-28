@@ -362,7 +362,7 @@ export function Canvas({
                         e.stopPropagation()
                         onRedimensionar(c.indice, campo, delta)
                       }}
-                      className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-dim hover:bg-w3"
+                      className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-dim hover:bg-elev"
                     >
                       {texto}
                     </button>

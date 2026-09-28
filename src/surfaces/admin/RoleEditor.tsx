@@ -248,14 +248,14 @@ export function RoleEditor({
             <button
               type="submit"
               disabled={nombre.trim() === '' || guardando}
-              className="font-mono text-label tracking-rotulo uppercase rounded-md px-4 py-2 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w3 disabled:opacity-40"
+              className="font-mono text-label tracking-rotulo uppercase rounded-md px-4 py-2 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-elev disabled:opacity-40"
             >
               {guardando ? 'Guardando…' : 'Guardar rol'}
             </button>
             <button
               type="button"
               onClick={() => setEditando(null)}
-              className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-dim hover:bg-w3"
+              className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-dim hover:bg-elev"
             >
               Cancelar
             </button>

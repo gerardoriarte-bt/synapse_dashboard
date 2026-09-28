@@ -97,7 +97,7 @@ export function TabEditor({
                   onClick={() => onMover(i, -1)}
                   disabled={i === 0}
                   aria-label={`Subir ${t.nombre}`}
-                  className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-dim hover:bg-w3 disabled:opacity-40"
+                  className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-dim hover:bg-elev disabled:opacity-40"
                 >
                   Subir
                 </button>
@@ -106,7 +106,7 @@ export function TabEditor({
                   onClick={() => onMover(i, 1)}
                   disabled={i === tabs.length - 1}
                   aria-label={`Bajar ${t.nombre}`}
-                  className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-dim hover:bg-w3 disabled:opacity-40"
+                  className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-dim hover:bg-elev disabled:opacity-40"
                 >
                   Bajar
                 </button>
@@ -133,7 +133,7 @@ export function TabEditor({
                   <button
                     type="button"
                     onClick={() => onComponer(i)}
-                    className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-ink border border-w4 hover:bg-w3 ml-auto"
+                    className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-ink border border-w4 hover:bg-elev ml-auto"
                   >
                     {`Componer ${t.nombre}`}
                   </button>
@@ -142,7 +142,7 @@ export function TabEditor({
                   type="button"
                   onClick={() => onQuitar(i)}
                   aria-label={`Quitar ${t.nombre}`}
-                  className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-acc hover:bg-w3"
+                  className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-acc hover:bg-elev"
                 >
                   Quitar
                 </button>
@@ -189,7 +189,7 @@ export function TabEditor({
                       'text-label tracking-rotulo uppercase px-2 py-1 rounded-sm ' +
                       (seleccion?.tab === i && seleccion.panel === j
                         ? 'bg-w3 text-ink'
-                        : 'text-dim hover:bg-w3')
+                        : 'text-dim hover:bg-elev')
                     }
                   >
                     {/* El tipo y no el nombre de la métrica: el nombre vive en el
@@ -207,7 +207,7 @@ export function TabEditor({
                   type="button"
                   onClick={() => onAgregarPanel(i)}
                   aria-label={`Agregar panel a ${t.nombre}`}
-                  className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm border border-w4 text-ink hover:bg-w3"
+                  className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm border border-w4 text-ink hover:bg-elev"
                 >
                   Agregar panel
                 </button>
