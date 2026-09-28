@@ -13,7 +13,6 @@ import { Wordmark } from './Wordmark'
 import { PeriodPicker } from './PeriodPicker'
 import { Tabs } from './Tabs'
 import { UserMenu } from './UserMenu'
-import { ThemeToggle } from './ThemeToggle'
 import type { Formatter } from '../../render/format'
 import type { Theme } from '../../tokens/theme'
 import type { AppContext, Metric, Tab } from '../../api/types'
@@ -193,8 +192,15 @@ export function Topbar({
             Preguntar
           </button>
         )}
-        <UserMenu context={context} />
-        <ThemeToggle {...(onChangeTheme === undefined ? {} : { onChange: onChangeTheme })} />
+        {/* **El tema se fue adentro del panel de usuario** · 2026-09-28,
+            §PEN «Console/Panel de usuario». Estaba suelto acá al lado y el
+            dibujo lo pone entre la identidad y las salidas: es una preferencia
+            de la persona, igual que su rol y las superficies a las que entra.
+            Y de paso el navbar baja de ocho elementos a siete. */}
+        <UserMenu
+          context={context}
+          {...(onChangeTheme === undefined ? {} : { onChangeTheme })}
+        />
       </div>
 
       {/* ── HEADER · 96px · §PEN:C1 ────────────────────────────────────────

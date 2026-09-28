@@ -63,8 +63,14 @@ describe('el panel de identidad · lo que design.md declara', () => {
 
     // «nombre, correo, rol con su descripción y cliente» · §7.1.
     expect(screen.getByText('maria@lobueno.co')).toBeInTheDocument()
-    expect(screen.getByText('Rol · CEO')).toBeInTheDocument()
-    expect(screen.getByText('Cliente · Under Armour México')).toBeInTheDocument()
+    // **Rótulo arriba y valor abajo** · §PEN «Console/Panel de usuario». Era
+    // `Rol · CEO` en una línea; el dibujo los separa porque el rótulo es nota y
+    // el valor es celda — en una sola línea el rótulo compartía el tamaño del
+    // valor, que es un rol tipográfico que no le toca.
+    expect(screen.getByText('Rol')).toBeInTheDocument()
+    expect(screen.getByText('CEO')).toBeInTheDocument()
+    expect(screen.getByText('Cliente')).toBeInTheDocument()
+    expect(screen.getByText('Under Armour México')).toBeInTheDocument()
   })
 
   it('se cierra con Escape', async () => {

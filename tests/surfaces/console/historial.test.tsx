@@ -352,9 +352,14 @@ describe('§PEN:C3 · las sugeridas son chips que preguntan', () => {
 })
 
 describe('§PEN:C1 · el chrome son tres bandas, no un bloque', () => {
-  it('el tema y el usuario viven en el NAVBAR, con el logotipo', async () => {
-    // **Son de la PLATAFORMA**: no cambian con la pestaña ni con el período.
-    // Al lado del título parecían parte de la pantalla.
+  it('la identidad vive en el NAVBAR, con el logotipo', async () => {
+    // **Es de la PLATAFORMA**: no cambia con la pestaña ni con el período. Al
+    // lado del título parecía parte de la pantalla.
+    //
+    // **El tema ya no está acá** · 2026-09-28. Estaba suelto al lado y §PEN
+    // «Console/Panel de usuario» lo pone ADENTRO del panel de identidad, entre
+    // el rol y las salidas: es una preferencia de la persona. Con eso el navbar
+    // baja de ocho elementos a siete, que es lo que §7.1 venía advirtiendo.
     laConsola([])
     montar()
     await screen.findByRole('heading', { name: 'Venta diaria' })
@@ -362,7 +367,8 @@ describe('§PEN:C1 · el chrome son tres bandas, no un bloque', () => {
     const navbar = screen.getByRole('img', { name: 'Synapse' }).closest('div')
     expect(navbar).not.toBeNull()
     expect(within(navbar!).getByRole('button', { name: /Prueba Uno/ })).toBeInTheDocument()
-    expect(within(navbar!).getByRole('button', { name: /tema/i })).toBeInTheDocument()
+    // Y el control suelto ya no existe en ningún lado de la barra.
+    expect(within(navbar!).queryByRole('button', { name: /^tema$/i })).toBeNull()
   })
 
   it('el título de la pantalla NO está en el navbar', async () => {

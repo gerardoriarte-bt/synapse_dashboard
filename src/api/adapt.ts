@@ -271,7 +271,7 @@ export function adaptContext(w: WireContext): AppContext {
       // No se rellena todavía porque **nadie lo consumiría**. `tokens/theme.ts`
       // declara quién debería —«el valor inicial llega en `/config/me` y lo
       // aplica la superficie»— y ninguna superficie lo hace: `applyTheme` sólo
-      // se llama desde `ThemeToggle`. Un campo poblado sin consumidor es el
+      // se llama desde `ThemeOptions`. Un campo poblado sin consumidor es el
       // defecto de `BodyProps.presentation`, que existió meses documentado y sin
       // que nadie lo pasara.
       //
