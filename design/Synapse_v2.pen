@@ -972,7 +972,7 @@
                       "width": "fill_container",
                       "content": "¿Cómo va el negocio?",
                       "fontFamily": "$font-display",
-                      "fontSize": 30,
+                      "fontSize": 26,
                       "fontWeight": "normal",
                       "letterSpacing": -0.6
                     },
@@ -1672,7 +1672,7 @@
                           "type": "text",
                           "id": "RGd10",
                           "fill": "$dim",
-                          "content": "GROTESK 20",
+                          "content": "GROTESK 26",
                           "fontFamily": "$font-mono",
                           "fontSize": 9,
                           "fontWeight": "normal",
@@ -21566,7 +21566,7 @@
                   "content": "Librería de gráficos",
                   "lineHeight": 1.1,
                   "fontFamily": "$font-display",
-                  "fontSize": 30,
+                  "fontSize": 26,
                   "fontWeight": "500",
                   "letterSpacing": -0.6
                 }
@@ -28748,7 +28748,7 @@
                           "fill": "$ink",
                           "content": "72",
                           "fontFamily": "$font-body",
-                          "fontSize": 56,
+                          "fontSize": 44,
                           "fontWeight": "700",
                           "letterSpacing": -1.6
                         },
@@ -29164,7 +29164,7 @@
                       "fill": "$ink",
                       "content": "USD 38K",
                       "fontFamily": "$font-body",
-                      "fontSize": 40,
+                      "fontSize": 44,
                       "fontWeight": "700",
                       "letterSpacing": -1.1
                     },
@@ -29858,8 +29858,8 @@
                       "name": "Total",
                       "fill": "$ink",
                       "content": "USD 4.28M",
-                      "fontFamily": "$font-display",
-                      "fontSize": 20,
+                      "fontFamily": "$font-body",
+                      "fontSize": 13,
                       "fontWeight": "500",
                       "letterSpacing": -0.4
                     }
@@ -30813,7 +30813,7 @@
       "name": "Nota · Synapse · Design System",
       "width": 760,
       "height": 104,
-      "content": "FUNDAMENTOS\nSynapse · Design System\n\nMuestrario de §2: superficies, washes, las cinco familias semánticas y la tipografía. No se instancia — es referencia.\n\n[VIGENTE]   1680 × 688 px"
+      "content": "FUNDAMENTOS\nSynapse · Design System\n\nMuestrario de §2: superficies, washes, las cinco familias semánticas y la tipografía. No se instancia — es referencia.\n\nLA ESCALA DECLARADA MANDA, Y DESDE EL 2026-09-28 EL DIBUJO LA CUMPLE. Se retiparon 197 nodos y quedan CERO fuera de escala sobre los 1858 de interfaz. Antes había veinte tamaños sueltos, entre ellos 134 en 12.5 y 36 en los heros de 24, 28 y 30.\n\nY UN TOKEN ESTABA MAL, no los nodos: titulo-lg valía 20 con DOS nodos, mientras la pregunta operativa de la consola se dibuja en 26 en quince pantallas. Pasó a 26. El código lo usa en un solo lugar —el h1 de Topbar—, así que ahí la consola crece seis píxeles y queda igual al dibujo.\n\nEL ALCANCE DE LA ESCALA ES LA INTERFAZ, y estas tres zonas quedan afuera a propósito:\n\n· LOS 43 PLOTS · 456 nodos. Son composiciones vectoriales dibujadas a mano y sus rótulos internos son parte del dibujo. Cuando un plot se construye, el código usa los tokens de todas formas.\n\n· EL WORDMARK · 43 nodos en display 14, 16 y 17. Es marca, no texto de interfaz, igual que los nueve hex que quedan en Synapse · Identidad.\n\n· LA CABECERA DE ESTA PÁGINA · 2 nodos en 30. Es el título del lienzo, no del producto.\n\n[VIGENTE]   1680 × 688 px"
     },
     {
       "type": "note",
@@ -48124,7 +48124,7 @@
                       "fill": "$ink",
                       "content": "Elegir métrica",
                       "fontFamily": "$font-display",
-                      "fontSize": 19,
+                      "fontSize": 15,
                       "fontWeight": "500",
                       "letterSpacing": -0.4
                     },
@@ -51934,7 +51934,7 @@
                       "fill": "$ink",
                       "content": "Elegir gráfico",
                       "fontFamily": "$font-display",
-                      "fontSize": 19,
+                      "fontSize": 15,
                       "fontWeight": "500",
                       "letterSpacing": -0.4
                     },
@@ -52771,7 +52771,7 @@
                               "fill": "$ink",
                               "content": "Under Armour México",
                               "fontFamily": "$font-body",
-                              "fontSize": 14,
+                              "fontSize": 13,
                               "fontWeight": "normal"
                             },
                             {
@@ -52891,7 +52891,7 @@
                               "fill": "$ink",
                               "content": "CEO",
                               "fontFamily": "$font-body",
-                              "fontSize": 14,
+                              "fontSize": 13,
                               "fontWeight": "normal"
                             },
                             {
@@ -53096,7 +53096,7 @@
                           "fill": "$ink",
                           "content": "eCommerce Overview",
                           "fontFamily": "$font-body",
-                          "fontSize": 14,
+                          "fontSize": 13,
                           "fontWeight": "normal"
                         },
                         {
@@ -61396,7 +61396,7 @@
                       "fill": "$ink",
                       "content": "Clientes y plataforma",
                       "fontFamily": "$font-display",
-                      "fontSize": 24,
+                      "fontSize": 26,
                       "fontWeight": "500",
                       "letterSpacing": -0.3
                     },
@@ -61796,7 +61796,7 @@
                               "content": "Under Armour México",
                               "lineHeight": 1.5,
                               "fontFamily": "$font-body",
-                              "fontSize": 13.5,
+                              "fontSize": 13,
                               "fontWeight": "normal"
                             },
                             {
@@ -61920,7 +61920,7 @@
                               "content": "14",
                               "lineHeight": 1.5,
                               "fontFamily": "$font-body",
-                              "fontSize": 13.5,
+                              "fontSize": 13,
                               "fontWeight": "normal"
                             },
                             {
@@ -62534,7 +62534,7 @@
                                       "content": "Root de plataforma",
                                       "lineHeight": 1.5,
                                       "fontFamily": "$font-body",
-                                      "fontSize": 13.5,
+                                      "fontSize": 13,
                                       "fontWeight": "normal"
                                     },
                                     {
@@ -63402,7 +63402,7 @@
                       "fill": "$ink",
                       "content": "Salud de feeds",
                       "fontFamily": "$font-display",
-                      "fontSize": 24,
+                      "fontSize": 26,
                       "fontWeight": "500",
                       "letterSpacing": -0.3
                     },
@@ -63855,7 +63855,7 @@
                                   "content": "Merchant Center",
                                   "lineHeight": 1.5,
                                   "fontFamily": "$font-body",
-                                  "fontSize": 13.5,
+                                  "fontSize": 13,
                                   "fontWeight": "normal"
                                 },
                                 {
@@ -63981,7 +63981,7 @@
                                   "content": "31 h",
                                   "lineHeight": 1.5,
                                   "fontFamily": "$font-body",
-                                  "fontSize": 13.5,
+                                  "fontSize": 13,
                                   "fontWeight": "normal"
                                 },
                                 {
@@ -64098,7 +64098,7 @@
                                   "content": "4",
                                   "lineHeight": 1.5,
                                   "fontFamily": "$font-body",
-                                  "fontSize": 13.5,
+                                  "fontSize": 13,
                                   "fontWeight": "normal"
                                 },
                                 {
@@ -65583,7 +65583,7 @@
                       "fill": "$ink",
                       "content": "Under Armour México",
                       "fontFamily": "$font-display",
-                      "fontSize": 24,
+                      "fontSize": 26,
                       "fontWeight": "500",
                       "letterSpacing": -0.3
                     },
@@ -66016,7 +66016,7 @@
                                   "fill": "$ink",
                                   "content": "CEO",
                                   "fontFamily": "$font-display",
-                                  "fontSize": 17,
+                                  "fontSize": 15,
                                   "fontWeight": "500",
                                   "letterSpacing": -0.3
                                 },
@@ -66045,8 +66045,8 @@
                                   "id": "u1c9wq",
                                   "fill": "$ink",
                                   "content": "28",
-                                  "fontFamily": "$font-display",
-                                  "fontSize": 20,
+                                  "fontFamily": "$font-body",
+                                  "fontSize": 13,
                                   "fontWeight": "500",
                                   "letterSpacing": -0.3
                                 },
@@ -67491,7 +67491,7 @@
                           "fill": "$ink",
                           "content": "Grupo Axo",
                           "fontFamily": "$font-display",
-                          "fontSize": 24,
+                          "fontSize": 26,
                           "fontWeight": "500",
                           "letterSpacing": -0.3
                         },
@@ -68521,7 +68521,7 @@
                       "fill": "$ink",
                       "content": "Usuarios",
                       "fontFamily": "$font-display",
-                      "fontSize": 24,
+                      "fontSize": 26,
                       "fontWeight": "500",
                       "letterSpacing": -0.3
                     },
@@ -69013,7 +69013,7 @@
                               "content": "Sofía Marín",
                               "lineHeight": 1.5,
                               "fontFamily": "$font-body",
-                              "fontSize": 13.5,
+                              "fontSize": 13,
                               "fontWeight": "normal"
                             },
                             {
@@ -70157,7 +70157,7 @@
                       "fill": "$ink",
                       "content": "Catálogo de métricas",
                       "fontFamily": "$font-display",
-                      "fontSize": 24,
+                      "fontSize": 26,
                       "fontWeight": "500",
                       "letterSpacing": -0.3
                     },
@@ -70620,7 +70620,7 @@
                                   "content": "Top sellers fuera del feed",
                                   "lineHeight": 1.5,
                                   "fontFamily": "$font-body",
-                                  "fontSize": 13.5,
+                                  "fontSize": 13,
                                   "fontWeight": "normal"
                                 },
                                 {
@@ -70841,7 +70841,7 @@
                                   "content": "2",
                                   "lineHeight": 1.5,
                                   "fontFamily": "$font-body",
-                                  "fontSize": 13.5,
+                                  "fontSize": 13,
                                   "fontWeight": "normal"
                                 },
                                 {
@@ -74299,7 +74299,7 @@
                       "fill": "$ink",
                       "content": "Ventas",
                       "fontFamily": "$font-display",
-                      "fontSize": 20,
+                      "fontSize": 15,
                       "fontWeight": "500",
                       "letterSpacing": -0.3
                     },
@@ -76647,7 +76647,7 @@
                   "fill": "$ink",
                   "content": "Criteo canibalizaba búsqueda de marca",
                   "fontFamily": "$font-display",
-                  "fontSize": 28,
+                  "fontSize": 26,
                   "fontWeight": "500",
                   "letterSpacing": -0.6
                 }
@@ -77088,7 +77088,7 @@
                               "fill": "$ink",
                               "content": "Observado contra estimado",
                               "fontFamily": "$font-display",
-                              "fontSize": 17,
+                              "fontSize": 15,
                               "fontWeight": "500",
                               "letterSpacing": -0.3
                             },
@@ -77181,7 +77181,7 @@
                               "fill": "$ink",
                               "content": "USD 112K",
                               "fontFamily": "$font-body",
-                              "fontSize": 40,
+                              "fontSize": 44,
                               "fontWeight": "700",
                               "letterSpacing": -1.1
                             },
@@ -77220,7 +77220,7 @@
                               "fill": "$ink",
                               "content": "USD 96K",
                               "fontFamily": "$font-body",
-                              "fontSize": 40,
+                              "fontSize": 44,
                               "fontWeight": "700",
                               "letterSpacing": -1.1
                             },
@@ -77259,7 +77259,7 @@
                               "fill": "$ink",
                               "content": "−14%",
                               "fontFamily": "$font-body",
-                              "fontSize": 40,
+                              "fontSize": 44,
                               "fontWeight": "700",
                               "letterSpacing": -1.1
                             },
@@ -80044,7 +80044,7 @@
                               "content": "Por qué subió el ROAS si la inversión está plana",
                               "lineHeight": 1.45,
                               "fontFamily": "$font-body",
-                              "fontSize": 11.5,
+                              "fontSize": 12,
                               "fontWeight": "normal"
                             },
                             {
@@ -80100,7 +80100,7 @@
                               "content": "Qué campañas bajan el ROAS",
                               "lineHeight": 1.45,
                               "fontFamily": "$font-body",
-                              "fontSize": 11.5,
+                              "fontSize": 12,
                               "fontWeight": "normal"
                             },
                             {
@@ -80190,7 +80190,7 @@
                               "content": "Cuánto pesa Shopping en el crecimiento",
                               "lineHeight": 1.45,
                               "fontFamily": "$font-body",
-                              "fontSize": 11.5,
+                              "fontSize": 12,
                               "fontWeight": "normal"
                             },
                             {
@@ -80246,7 +80246,7 @@
                               "content": "Qué estilos cayeron más de 20%",
                               "lineHeight": 1.45,
                               "fontFamily": "$font-body",
-                              "fontSize": 11.5,
+                              "fontSize": 12,
                               "fontWeight": "normal"
                             },
                             {
@@ -80363,7 +80363,7 @@
                               "content": "Cuánto perdemos si no repongo los 312 SKU",
                               "lineHeight": 1.45,
                               "fontFamily": "$font-body",
-                              "fontSize": 11.5,
+                              "fontSize": 12,
                               "fontWeight": "normal"
                             },
                             {
@@ -80446,7 +80446,7 @@
                               "content": "Por qué cayó la conversión en móvil",
                               "lineHeight": 1.45,
                               "fontFamily": "$font-body",
-                              "fontSize": 11.5,
+                              "fontSize": 12,
                               "fontWeight": "normal"
                             },
                             {
@@ -80743,7 +80743,7 @@
                           "content": "El ROAS subió porque las ventas crecieron 6.4% con la inversión casi plana: +1.8%. El crecimiento vino de tráfico, no de ticket.",
                           "lineHeight": 1.6,
                           "fontFamily": "$font-body",
-                          "fontSize": 14,
+                          "fontSize": 13,
                           "fontWeight": "normal"
                         },
                         {
@@ -80777,7 +80777,7 @@
                                   "fill": "$ink",
                                   "content": "4.1x",
                                   "fontFamily": "$font-body",
-                                  "fontSize": 38,
+                                  "fontSize": 44,
                                   "fontWeight": "700",
                                   "letterSpacing": -1
                                 },
@@ -84133,7 +84133,7 @@
                           "content": "El ROAS subió porque las ventas crecieron 6.4% con la inversión casi plana: +1.8%. El crecimiento vino de tráfico, no de ticket.",
                           "lineHeight": 1.6,
                           "fontFamily": "$font-body",
-                          "fontSize": 14,
+                          "fontSize": 13,
                           "fontWeight": "normal"
                         },
                         {
@@ -84167,7 +84167,7 @@
                                   "fill": "$ink",
                                   "content": "4.1x",
                                   "fontFamily": "$font-body",
-                                  "fontSize": 38,
+                                  "fontSize": 44,
                                   "fontWeight": "700",
                                   "letterSpacing": -1
                                 },
@@ -85399,7 +85399,7 @@
                   "fill": "$ink",
                   "content": "Este panel no llega a tu rol",
                   "fontFamily": "$font-display",
-                  "fontSize": 28,
+                  "fontSize": 26,
                   "fontWeight": "500",
                   "letterSpacing": -0.6
                 }
@@ -86782,7 +86782,7 @@
                   "fill": "$ink",
                   "content": "Reponer no recupera la venta perdida",
                   "fontFamily": "$font-display",
-                  "fontSize": 28,
+                  "fontSize": 26,
                   "fontWeight": "500",
                   "letterSpacing": -0.6
                 }
@@ -87223,7 +87223,7 @@
                               "fill": "$ink",
                               "content": "Observado contra estimado",
                               "fontFamily": "$font-display",
-                              "fontSize": 17,
+                              "fontSize": 15,
                               "fontWeight": "500",
                               "letterSpacing": -0.3
                             },
@@ -87316,7 +87316,7 @@
                               "fill": "$ink",
                               "content": "USD 148K",
                               "fontFamily": "$font-body",
-                              "fontSize": 40,
+                              "fontSize": 44,
                               "fontWeight": "700",
                               "letterSpacing": -1.1
                             },
@@ -87355,7 +87355,7 @@
                               "fill": "$ink",
                               "content": "USD 61K",
                               "fontFamily": "$font-body",
-                              "fontSize": 40,
+                              "fontSize": 44,
                               "fontWeight": "700",
                               "letterSpacing": -1.1
                             },
@@ -87394,7 +87394,7 @@
                               "fill": "$ink",
                               "content": "−59%",
                               "fontFamily": "$font-body",
-                              "fontSize": 40,
+                              "fontSize": 44,
                               "fontWeight": "700",
                               "letterSpacing": -1.1
                             },
@@ -90014,7 +90014,7 @@
                       "fill": "$ink",
                       "content": "Clientes y plataforma",
                       "fontFamily": "$font-display",
-                      "fontSize": 24,
+                      "fontSize": 26,
                       "fontWeight": "500",
                       "letterSpacing": -0.3
                     },
@@ -91155,7 +91155,7 @@
                       "fill": "$ink",
                       "content": "Usuarios",
                       "fontFamily": "$font-display",
-                      "fontSize": 24,
+                      "fontSize": 26,
                       "fontWeight": "500",
                       "letterSpacing": -0.3
                     },
@@ -92106,7 +92106,7 @@
                       "fill": "$ink",
                       "content": "Catálogo de métricas",
                       "fontFamily": "$font-display",
-                      "fontSize": 24,
+                      "fontSize": 26,
                       "fontWeight": "500",
                       "letterSpacing": -0.3
                     },
@@ -93018,7 +93018,7 @@
                       "fill": "$ink",
                       "content": "Salud de feeds",
                       "fontFamily": "$font-display",
-                      "fontSize": 24,
+                      "fontSize": 26,
                       "fontWeight": "500",
                       "letterSpacing": -0.3
                     },
@@ -93830,7 +93830,7 @@
                       "fill": "$ink",
                       "content": "Clientes y plataforma",
                       "fontFamily": "$font-display",
-                      "fontSize": 24,
+                      "fontSize": 26,
                       "fontWeight": "500",
                       "letterSpacing": -0.3
                     },
@@ -95592,7 +95592,7 @@
                   "fill": "$ink",
                   "content": "Este panel no llega a tu rol",
                   "fontFamily": "$font-display",
-                  "fontSize": 28,
+                  "fontSize": 26,
                   "fontWeight": "500",
                   "letterSpacing": -0.6
                 }
@@ -99304,7 +99304,7 @@
                       "fill": "$ink",
                       "content": "Elegir gráfico",
                       "fontFamily": "$font-display",
-                      "fontSize": 19,
+                      "fontSize": 15,
                       "fontWeight": "500",
                       "letterSpacing": -0.4
                     },
@@ -100659,7 +100659,7 @@
                   "fill": "$ink",
                   "content": "¿Cómo va el negocio?",
                   "fontFamily": "$font-display",
-                  "fontSize": 24,
+                  "fontSize": 26,
                   "fontWeight": "medium",
                   "letterSpacing": -0.5
                 }
@@ -101639,7 +101639,7 @@
                   "fill": "$ink",
                   "content": "¿Cómo va el negocio?",
                   "fontFamily": "$font-display",
-                  "fontSize": 24,
+                  "fontSize": 26,
                   "fontWeight": "medium",
                   "letterSpacing": -0.5
                 }
@@ -102850,7 +102850,7 @@
                       "fill": "$ink",
                       "content": "Cola de accionables",
                       "fontFamily": "$font-display",
-                      "fontSize": 24,
+                      "fontSize": 26,
                       "fontWeight": "500",
                       "letterSpacing": -0.3
                     },
@@ -103165,7 +103165,7 @@
                               "fill": "$ink",
                               "content": "Subir 15% el presupuesto de Google Brand",
                               "fontFamily": "$font-body",
-                              "fontSize": 13.5,
+                              "fontSize": 13,
                               "fontWeight": "normal"
                             },
                             {
@@ -103310,7 +103310,7 @@
                               "fill": "$ink",
                               "content": "+9,4%",
                               "fontFamily": "$font-body",
-                              "fontSize": 13.5,
+                              "fontSize": 13,
                               "fontWeight": "normal"
                             },
                             {
@@ -103384,7 +103384,7 @@
                               "fill": "$ink",
                               "content": "Mover 15% de Meta a TikTok",
                               "fontFamily": "$font-body",
-                              "fontSize": 13.5,
+                              "fontSize": 13,
                               "fontWeight": "normal"
                             },
                             {
@@ -103529,7 +103529,7 @@
                               "fill": "$ink",
                               "content": "-1,1%",
                               "fontFamily": "$font-body",
-                              "fontSize": 13.5,
+                              "fontSize": 13,
                               "fontWeight": "normal"
                             },
                             {
@@ -103603,7 +103603,7 @@
                               "fill": "$ink",
                               "content": "Reponer los 312 SKU críticos de running",
                               "fontFamily": "$font-body",
-                              "fontSize": 13.5,
+                              "fontSize": 13,
                               "fontWeight": "normal"
                             },
                             {
@@ -103748,7 +103748,7 @@
                               "fill": "$ink",
                               "content": "-33%",
                               "fontFamily": "$font-body",
-                              "fontSize": 13.5,
+                              "fontSize": 13,
                               "fontWeight": "normal"
                             },
                             {
@@ -103822,7 +103822,7 @@
                               "fill": "$ink",
                               "content": "Pausar pauta de los SKU sin stock",
                               "fontFamily": "$font-body",
-                              "fontSize": 13.5,
+                              "fontSize": 13,
                               "fontWeight": "normal"
                             },
                             {
@@ -103967,7 +103967,7 @@
                               "fill": "$ink",
                               "content": "—",
                               "fontFamily": "$font-body",
-                              "fontSize": 13.5,
+                              "fontSize": 13,
                               "fontWeight": "normal"
                             },
                             {
@@ -104041,7 +104041,7 @@
                               "fill": "$ink",
                               "content": "Corregir el feed de 87 top sellers",
                               "fontFamily": "$font-body",
-                              "fontSize": 13.5,
+                              "fontSize": 13,
                               "fontWeight": "normal"
                             },
                             {
@@ -104186,7 +104186,7 @@
                               "fill": "$ink",
                               "content": "—",
                               "fontFamily": "$font-body",
-                              "fontSize": 13.5,
+                              "fontSize": 13,
                               "fontWeight": "normal"
                             },
                             {
@@ -104257,7 +104257,7 @@
                               "fill": "$ink",
                               "content": "Ampliar Criteo a catálogo completo",
                               "fontFamily": "$font-body",
-                              "fontSize": 13.5,
+                              "fontSize": 13,
                               "fontWeight": "normal"
                             },
                             {
@@ -104402,7 +104402,7 @@
                               "fill": "$ink",
                               "content": "—",
                               "fontFamily": "$font-body",
-                              "fontSize": 13.5,
+                              "fontSize": 13,
                               "fontWeight": "normal"
                             },
                             {
@@ -113568,7 +113568,7 @@
     },
     "ts-titulo-lg": {
       "type": "number",
-      "value": 20
+      "value": 26
     },
     "ts-kpi": {
       "type": "number",

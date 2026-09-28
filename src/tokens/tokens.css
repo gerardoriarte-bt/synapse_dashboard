@@ -50,7 +50,7 @@
   --text-cuerpo: 13px;
   --text-lead: 15px;
   --text-titulo: 15px;
-  --text-titulo-lg: 20px;
+  --text-titulo-lg: 26px;
   --text-kpi: 44px;
 
   /* Tracking en `em` y no en px, que es lo que lo hace un token y no una
