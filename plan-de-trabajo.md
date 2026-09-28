@@ -502,6 +502,8 @@ recibe todo resuelto en `/config/me`.
 **Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. **Todo error trae `code`**, medido en cuatro familias: `AUTH_UNAUTHORIZED`, `NOT_FOUND_RESOURCE`, `AUTH_FORBIDDEN` y `VALIDATION_REQUEST`. **Queda en ⚠️ y no en ✅ por el `error`**: dos handlers devuelven el mensaje crudo —«tab not found» y el volcado del validador de Go— y `ErrorState` lo pinta tal cual. Pedido, no nuestro.
 
 **Espera del backend.** **Que el `error` esté redactado y en español · queda UNA ruta, no dos.** Remedido el 2026-09-28 contra `f70cec2`: de los dos handlers crudos, el de «tab not found» se arregló —sale `pestaña no encontrada`— y los 400 de binding pasan por un traductor por campo, medido en `PUT /config/me/preferences`: `el campo 'theme' debe ser uno de: dark, light`. **`POST /config/chat` sigue volcando el validador de Go**, y su respuesta afirma lo contrario —«Nunca aparece un nombre de struct de Go ni un tag»—. Medido: `Key: 'ddChatRequest.question' Error:Field validation for 'question' failed on the 'required' tag`. **No es el anidamiento**: falla igual con un campo de primer nivel. Es por handler — `dd_chat_handler.go:52` manda `err.Error()` donde los demás mandan `BindingErrorMessage(err)`, y de 32 sitios que enlazan JSON sólo 9 pasan por el traductor. `ErrorState` lo pinta tal cual, y cae justo en la ruta de F3.15.
+
+**Y SON DOS RUTAS, NO UNA** · encontrado el 2026-09-28 revisando el alta de un tenant. `POST /admin/agents` hace lo mismo: `Key: 'createAgentRequest.tenant_id' Error:Field validation for 'tenant_id' failed on the 'required' tag`. Ésa importa por otra razón — **es una ruta del ALTA de un cliente**, así que el error lo lee quien está dando de alta. `POST /admin/tenants` sí está traducida, que es la prueba de que el traductor anda y de que falta aplicarlo en esas dos.
 **Descripción.** Toda respuesta viaja como `{ success: true, data }` o
 `{ success: false, error: { codigo, mensaje, campo?, desbloqueaCon? } }`.
 **Criterio de aceptación.**
@@ -1170,6 +1172,26 @@ Hoy `POST /admin/tenants` exige `private_key_pem`, así que por cada cliente **a
 - El servicio genera el par, guarda la privada cifrada como ya hace con la que recibe, y devuelve **sólo la pública** en formato PEM.
 - **El ciclo se cierra con lo que ya existe**: generar → el cliente registra la pública en su usuario de servicio → `GET /agents/ping` confirma que funciona.
 - `private_key_pem` deja de ser obligatoria en el alta, o queda un orden declarado. **Cuál de las dos es decisión del backend**; el front no depende de la forma.
+
+#### ➕ B1.32 ⬜ Declarar qué es `cut` en una serie
+**Espera del backend.** **Qué significa `cut` en `series`** — el param existe en el cable y no está definido, así que el front no puede aplicarlo.
+
+**Bloquea F1.44**, que es un defecto visible: el orden de una tabla **se anuncia y no se aplica**. Hoy el panel dice cómo está ordenado y no lo está, que es peor que no decirlo.
+
+**Criterio de aceptación.**
+- El cable declara qué valores acepta `cut` y qué hace cada uno.
+- Queda dicho si es un corte de la serie —recortar el rango— o un agrupamiento, que son dos cosas y el nombre no distingue.
+- Si el backend ya lo aplica al materializar y el front no debe hacer nada, **eso también es una respuesta** y cierra la tarea.
+
+#### ➕ B1.33 ⬜ El patrón de `PeriodoId` · períodos que no son un mes
+**Espera del backend.** **Qué forma puede tener un `PeriodoId` además de `YYYY-MM`** — medido el 2026-09-28: `periods` sigue trayendo sólo meses y `periods_detail` sus bordes, pero nada declara qué otras formas son válidas.
+
+**Bloquea F5.13**, los períodos libres del selector. Sin el patrón, el front no puede ni validar lo que recibe ni ofrecer un rango.
+
+**Criterio de aceptación.**
+- El contrato declara el patrón —o la lista de patrones— que un `PeriodoId` puede tener.
+- Si por ahora **sólo** existe `YYYY-MM`, se declara eso y la tarea se cierra: un «sólo meses» escrito es una respuesta, y hoy es un supuesto.
+- `period_grain` y `periods_detail[].grain` ya distinguen el grano; queda dicho cómo se relacionan con el patrón.
 
 ---
 
@@ -1942,6 +1964,30 @@ pendiente. Pedidas juntas en
 - El rol viene identificado, no sólo con su nombre: A3 enlaza a la ficha.
 - **El último acceso es un instante, nunca «hace X»** — la presentación es del
   front y depende del huso del navegador · la regla de las dos zonas horarias.
+
+
+#### ➕ B4.18 ⬜ `roles.tab_keys` · que una restricción de rol sobreviva a publicar
+**Espera del backend.** **Lo propusieron ellos y les dijimos que sí** · `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` y nuestra respuesta del mismo día. Está sin tomar de su lado.
+
+**El defecto que cierra:** `roles.tab_ids` apunta a `dd_tabs.id`, y **ese id se recrea en cada versión de layout**. Así que un rol restringido a dos pestañas **las pierde al publicar**. `key` ya viaja —medido el 2026-09-28: `overview`— y es estable por diseño.
+
+**Criterio de aceptación.**
+- `roles.tab_keys` es la fuente de verdad y `roleCanSeeTab` resuelve por `key` contra el layout que se está sirviendo.
+- `tab_ids` sigue leyéndose como respaldo mientras esté vacío `tab_keys`, así que nada cambia hasta que migremos.
+- `PUT /admin/roles/{id}` acepta `tab_keys` y `GET .../roles/composition` devuelve **las dos** — es lo que nos deja migrar sin una ventana en que la consola de roles muestre menos de lo que el rol ve.
+- **`tab_keys` valida contra las keys del layout publicado** y devuelve 422 nombrando la que no existe. Una key que no resuelve es una pestaña que el rol pierde en silencio, que es el defecto que se está cerrando.
+
+#### ➕ B4.19 ⬜ La compuerta de `resolveLayout` rompe la vista previa por rol
+**Espera del backend.** **Una decisión, no un arreglo** — encontrada el 2026-09-25 al rebasar sobre `168a761`.
+
+Ese commit agregó en `resolveLayout` una compuerta: `if layout.Status != published && !isAdminRoleName(role.Name) { return nil, nil }`. **El preview pasa el rol SIMULADO**, que por definición no es admin, así que **un borrador se rechaza al previsualizarlo**.
+
+**Confunde quién pregunta con a quién se simula**, y no lo muestra el conflicto ni el compilador: lo encontró una prueba nuestra.
+
+**Criterio de aceptación.**
+- La compuerta distingue el rol del **solicitante** —que es quien debe ser admin para ver un borrador— del rol **simulado**, que es el lente.
+- Previsualizar un borrador con el lente de un rol no-admin devuelve el layout, porque quien pregunta sí es admin.
+- **Si la decisión es que un borrador no se previsualiza nunca**, eso también cierra la tarea — y entonces B4.9 y F4.12 quedan acotadas a layouts publicados, con su razón escrita.
 
 ### B4.10 ⚠️ Asignación de layout publicado a roles
 **Medido el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **Las tres etiquetas `json:` llegaron** en `8633b10` y el `json:"-"` en `a643cfe`. Con eso el cable de admin deja de mezclar dos convenciones — y **romperlo fue lo que nos enteró**: el front leía quince campos en PascalCase que pasaron a `undefined`, y `ESTADOS[w.Status] ?? 'borrador'` afirmaba que todo layout era borrador.
@@ -3951,6 +3997,38 @@ intersecta solo en los dos estados con cifra—, así que si la BASE sigue en
 pantalla con un payload que no la trae, es porque salió del catálogo. Eso es D6
 verificada y no declarada. La prueba además **afirma que el fixture no trae
 `base` ni `capa`**, para que agregárselos no la deje verde sin verificar nada.
+
+#### ➕ B2.14 ⬜ `/config/solicitudes` · pedir acceso a una métrica que no se ve
+**Espera del backend.** **La ruta no existe** · medido el 2026-09-28: `GET /config/solicitudes` da **404**.
+
+**Bloquea F2.3.** Y el hueco tiene una forma concreta: el payload `FORBIDDEN` es hoy `{status, request_from}` **y nada más** —medido pidiéndole al token de `planner` los tres paneles que su rol oculta—. Sin `reason` ni `unlocks_with`, que es la gramática de §8 que los otros cinco estados sí traen.
+
+**Así que son dos cosas y conviene no mezclarlas:** que el estado declare qué lo desbloquea, y que exista dónde pedirlo.
+
+**Criterio de aceptación.**
+- `FORBIDDEN` trae `reason` y `unlocks_with`, redactados, como los otros estados.
+- La redacción **no promete una acción que no existe**: mientras no haya ruta de solicitud, `unlocks_with` dice a quién pedirle, no «solicitá acceso».
+- Si se decide que no va a haber ruta de solicitud, **eso cierra F2.3** con el estado declarado y sin CTA — un botón que devuelve 404 es peor que su ausencia.
+
+#### ➕ B2.15 ⬜ Encender `DD_MATERIALIZE_PROSE_ENABLED` y avisar
+**Espera del backend.** **Que se encienda en dev y nos avisen** — lo ofrecieron ellos en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
+
+Hasta entonces los dos paneles de prosa se sirven con el valor de la semilla, **en inglés**, y salen `DEGRADED`.
+
+**Criterio de aceptación.**
+- Los dos paneles traen `governance.source = agent:<nombre>` y un `headline`, no el valor de la semilla.
+- Queda registrado contra qué corrida y con qué agente se verificó.
+- **Es lo último que le falta a B2.12** para dejar de tener dos paneles sirviendo maqueta.
+
+#### ➕ B2.16 ⬜ El materializador emite `presentation` y no la pisa
+**Espera del backend.** **Que el materializador emita `presentation`, y que al correr NO pise la que ya estaba** — pedido el 2026-09-24 en `docs/MENSAJE-2026-09-24-materializador.md`.
+
+**Es el defecto visible más viejo que queda.** Cuando el materializador corrió por primera vez, los **seis paneles `kpi` quedaron como una cifra sola**: perdieron su medidor y sus comparativos, que la semilla sí traía. El campo llegó en `6e595e3` y se verificó de punta a punta; lo que falta es que el camino real lo produzca.
+
+**Criterio de aceptación.**
+- Un panel `kpi` materializado trae `presentation` con su medidor y sus comparativos.
+- Correr el materializador **no borra** una `presentation` existente cuando no puede calcular una nueva: el campo queda como estaba o el panel declara por qué no lo trae.
+- Se verifica contra un período recién materializado, no contra la semilla.
 
 ---
 

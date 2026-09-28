@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 8 pedido(s)
+## Lo que esperamos · 15 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -42,6 +42,8 @@ verde.
 
 
 **Que el `error` esté redactado y en español · queda UNA ruta, no dos.** Remedido el 2026-09-28 contra `f70cec2`: de los dos handlers crudos, el de «tab not found» se arregló —sale `pestaña no encontrada`— y los 400 de binding pasan por un traductor por campo, medido en `PUT /config/me/preferences`: `el campo 'theme' debe ser uno de: dark, light`. **`POST /config/chat` sigue volcando el validador de Go**, y su respuesta afirma lo contrario —«Nunca aparece un nombre de struct de Go ni un tag»—. Medido: `Key: 'ddChatRequest.question' Error:Field validation for 'question' failed on the 'required' tag`. **No es el anidamiento**: falla igual con un campo de primer nivel. Es por handler — `dd_chat_handler.go:52` manda `err.Error()` donde los demás mandan `BindingErrorMessage(err)`, y de 32 sitios que enlazan JSON sólo 9 pasan por el traductor. `ErrorState` lo pinta tal cual, y cae justo en la ruta de F3.15.
+
+**Y SON DOS RUTAS, NO UNA** · encontrado el 2026-09-28 revisando el alta de un tenant. `POST /admin/agents` hace lo mismo: `Key: 'createAgentRequest.tenant_id' Error:Field validation for 'tenant_id' failed on the 'required' tag`. Ésa importa por otra razón — **es una ruta del ALTA de un cliente**, así que el error lo lee quien está dando de alta. `POST /admin/tenants` sí está traducida, que es la prueba de que el traductor anda y de que falta aplicarlo en esas dos.
 
 
 ### B1.1 · GET /config/me · llegaron dos de seis
@@ -151,6 +153,26 @@ Hoy `POST /admin/tenants` exige `private_key_pem`, así que por cada cliente **a
 **Es más fácil y además más seguro**, que es la combinación que no obliga a elegir: la privada nunca sale del servicio y lo que circula es la pública.
 
 
+### B1.32 · Declarar qué es cut en una serie
+
+*Estado de la tarea: pendiente.*
+
+
+**Qué significa `cut` en `series`** — el param existe en el cable y no está definido, así que el front no puede aplicarlo.
+
+**Bloquea F1.44**, que es un defecto visible: el orden de una tabla **se anuncia y no se aplica**. Hoy el panel dice cómo está ordenado y no lo está, que es peor que no decirlo.
+
+
+### B1.33 · El patrón de PeriodoId · períodos que no son un mes
+
+*Estado de la tarea: pendiente.*
+
+
+**Qué forma puede tener un `PeriodoId` además de `YYYY-MM`** — medido el 2026-09-28: `periods` sigue trayendo sólo meses y `periods_detail` sus bordes, pero nada declara qué otras formas son válidas.
+
+**Bloquea F5.13**, los períodos libres del selector. Sin el patrón, el front no puede ni validar lo que recibe ni ofrecer un rango.
+
+
 ### B2.12 · Correr el materializador contra datos reales y verificar los seis estados
 
 *Estado de la tarea: parcial.*
@@ -201,6 +223,87 @@ Alcanza con que `preserved` —o `last_success_at IS NULL`— también degrade, 
 su razón. El front ya pinta `DEGRADED` con su badge, su razón y su
 `desbloqueaCon`: está cubierto por las pruebas de F2.1 y no hace falta nada de
 nuestro lado. · Bloquea **B2.12**.
+
+
+### B4.18 · roles.tab_keys · que una restricción de rol sobreviva a publicar
+
+*Estado de la tarea: pendiente.*
+
+
+**Lo propusieron ellos y les dijimos que sí** · `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` y nuestra respuesta del mismo día. Está sin tomar de su lado.
+
+**El defecto que cierra:** `roles.tab_ids` apunta a `dd_tabs.id`, y **ese id se recrea en cada versión de layout**. Así que un rol restringido a dos pestañas **las pierde al publicar**. `key` ya viaja —medido el 2026-09-28: `overview`— y es estable por diseño.
+
+
+### B4.19 · La compuerta de resolveLayout rompe la vista previa por rol
+
+*Estado de la tarea: pendiente.*
+
+
+**Una decisión, no un arreglo** — encontrada el 2026-09-25 al rebasar sobre `168a761`.
+
+Ese commit agregó en `resolveLayout` una compuerta: `if layout.Status != published && !isAdminRoleName(role.Name) { return nil, nil }`. **El preview pasa el rol SIMULADO**, que por definición no es admin, así que **un borrador se rechaza al previsualizarlo**.
+
+**Confunde quién pregunta con a quién se simula**, y no lo muestra el conflicto ni el compilador: lo encontró una prueba nuestra.
+
+
+### B2.14 · /config/solicitudes · pedir acceso a una métrica que no se ve
+
+*Estado de la tarea: pendiente.*
+
+
+**La ruta no existe** · medido el 2026-09-28: `GET /config/solicitudes` da **404**.
+
+**Bloquea F2.3.** Y el hueco tiene una forma concreta: el payload `FORBIDDEN` es hoy `{status, request_from}` **y nada más** —medido pidiéndole al token de `planner` los tres paneles que su rol oculta—. Sin `reason` ni `unlocks_with`, que es la gramática de §8 que los otros cinco estados sí traen.
+
+**Así que son dos cosas y conviene no mezclarlas:** que el estado declare qué lo desbloquea, y que exista dónde pedirlo.
+
+
+### B2.15 · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar
+
+*Estado de la tarea: pendiente.*
+
+
+**Que se encienda en dev y nos avisen** — lo ofrecieron ellos en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
+
+Hasta entonces los dos paneles de prosa se sirven con el valor de la semilla, **en inglés**, y salen `DEGRADED`.
+
+
+### B2.16 · El materializador emite presentation y no la pisa
+
+*Estado de la tarea: pendiente.*
+
+
+**Que el materializador emita `presentation`, y que al correr NO pise la que ya estaba** — pedido el 2026-09-24 en `docs/MENSAJE-2026-09-24-materializador.md`.
+
+**Es el defecto visible más viejo que queda.** Cuando el materializador corrió por primera vez, los **seis paneles `kpi` quedaron como una cifra sola**: perdieron su medidor y sus comparativos, que la semilla sí traía. El campo llegó en `6e595e3` y se verificó de punta a punta; lo que falta es que el camino real lo produzca.
+
+
+---
+
+## Y esto frena al front · 11 tarea(s)
+
+**No todo lo de acá es suyo**, y por eso no está arriba: son los
+bloqueos que las tareas del front declaran en su título, tal cual
+los escribieron. Se listan enteros **por si alguno lo es** —es más
+barato que lo descarten ustedes a que se nos pase—.
+
+Lo de arriba son pedidos; esto es información.
+
+
+| Tarea | Qué la frena |
+|---|---|
+| **F1.31** · Registro de gráficos y verificación de mínimos | `/config/plots` da 404 |
+| **F1.42** · El mes en curso está incompleto y el selector no lo dice | el período no declara QUÉ PARTE del mes cubre |
+| **F1.44** · El orden de una tabla se anuncia, no se aplica | falta qué es `cut` en `series` |
+| **F2.3** · SIN_PERMISO · B0.9 (línea 1171) contestada | `/config/solicitudes` da 404 |
+| **F4.21** · Selector de gráfico en el builder | `/config/plots` da 404 |
+| **F4.17** · ComparisonBody + ComparePlot | ninguna métrica declara `categoricaComparada` |
+| **F4.18** · MatrixBody + HeatmapPlot | ninguna métrica declara `matriz` |
+| **F4.19** · GraphBody + GraphPlot | ninguna métrica declara `grafo` ni `flujo` |
+| **F4.20** · Registrar los tres con carga diferida | espera a F4.17–F4.19 |
+| **F5.3** · Completar los plots que falten | espera a F4.17–F4.19 |
+| **F5.13** · Períodos libres en el selector | espera el patrón de `PeriodoId` |
 
 
 ---

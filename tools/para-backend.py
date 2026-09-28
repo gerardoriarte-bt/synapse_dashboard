@@ -110,6 +110,17 @@ def recolectar(texto: str):
                 "estado": ESTADOS[m.group(3)],
                 "titulo": re.sub(r"`|\*\*", "", m.group(4)).split(" · 🔒")[0].strip(),
                 "lado": "backend" if m.group(2)[0] == "B" else "front",
+                # **El candado del título también se lleva, y antes se tiraba.**
+                # Auditado el 2026-09-28: había ONCE tareas cuyo bloqueo estaba
+                # escrito como `🔒` en el encabezado y no como `**Espera del
+                # backend.**`, así que **este archivo no las veía** — cuatro de
+                # ellas eran pedidos al backend que sólo existían en documentos.
+                #
+                # Se emiten aparte y sin interpretarlas: decidir cuáles son suyos
+                # es un juicio, y una herramienta que lo adivine se equivoca en
+                # silencio. Listarlos todos deja que lo decida quien sabe.
+                "candado": (m.group(4).split(" · 🔒")[1].strip()
+                            if " · 🔒" in m.group(4) else ""),
                 "esperas": [],
             }
             tareas.append(actual)
@@ -119,10 +130,10 @@ def recolectar(texto: str):
             acumulando = [e.group(1).strip()]
     if acumulando is not None and actual is not None:
         actual["esperas"].append("\n".join(acumulando).strip())
-    return [t for t in tareas if t["esperas"]]
+    return tareas
 
 
-def render(tareas, hechas) -> str:
+def render(tareas, hechas, todas=()) -> str:
     o = []
     o.append("# Lo que el front necesita del backend\n")
     o.append(
@@ -158,6 +169,32 @@ def render(tareas, hechas) -> str:
         for e in t["esperas"]:
             o.append(f"\n{e}\n")
 
+    # ── LOS CANDADOS DEL FRONT · la sección que faltaba ──────────────────────
+    #
+    # Agregada el 2026-09-28 después de auditar por qué había pedidos al backend
+    # que no llegaban acá. La causa era estructural: este archivo lee
+    # `**Espera del backend.**` y **once tareas tenían su bloqueo escrito como
+    # `🔒` en el encabezado**, que nadie leía.
+    #
+    # No se interpreta cuáles son suyos, y eso es deliberado: adivinarlo es un
+    # juicio, y una herramienta que juzga se equivoca en silencio. Se listan
+    # todos y lo decide quien sabe.
+    frenados = [t for t in todas
+                if t["lado"] == "front" and t["candado"] and t["estado"] != "hecho"]
+    if frenados:
+        o.append(
+            f"\n---\n\n## Y esto frena al front · {len(frenados)} tarea(s)\n\n"
+            "**No todo lo de acá es suyo**, y por eso no está arriba: son los\n"
+            "bloqueos que las tareas del front declaran en su título, tal cual\n"
+            "los escribieron. Se listan enteros **por si alguno lo es** —es más\n"
+            "barato que lo descarten ustedes a que se nos pase—.\n\n"
+            "Lo de arriba son pedidos; esto es información.\n"
+        )
+        o.append("\n| Tarea | Qué la frena |\n|---|---|")
+        for t in frenados:
+            o.append(f"| **{t['id']}** · {t['titulo']} | {t['candado']} |")
+        o.append("")
+
     o.append(
         "\n---\n\n## Cómo avisar que algo llegó\n\n"
         "No hace falta tocar este archivo. Con decirlo alcanza: el front quita el\n"
@@ -173,7 +210,11 @@ def main() -> int:
         return 2
 
     texto = PLAN.read_text(encoding="utf-8")
-    tareas = recolectar(texto)
+    todas = recolectar(texto)
+    # **Dos listas y no una** · desde el 2026-09-28. `tareas` son las que piden
+    # algo —las que el backend tiene que leer— y `todas` incluye las que sólo
+    # declaran un candado en su título, que van en la sección de información.
+    tareas = [t for t in todas if t["esperas"]]
 
     # Una tarea cerrada que sigue pidiendo algo es una contradicción: o no estaba
     # cerrada, o el pedido ya se cumplió y nadie lo sacó. Las dos se arreglan acá
@@ -187,7 +228,7 @@ def main() -> int:
         if (m := ENCABEZADO.match(l)) and m.group(3) == "✅" and re.fullmatch(r"F1\.(3[2-9]|4[01])", m.group(2))
     ]
 
-    DESTINO.write_text(render(tareas, hechas), encoding="utf-8")
+    DESTINO.write_text(render(tareas, hechas, todas), encoding="utf-8")
 
     if contradictorias:
         print(f"para-backend ✗ {len(contradictorias)} tarea(s) cerradas que siguen pidiendo algo")
