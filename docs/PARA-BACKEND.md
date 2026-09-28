@@ -43,6 +43,8 @@ verde.
 
 **Que el `error` esté redactado y en español · queda UNA ruta, no dos.** Remedido el 2026-09-28 contra `f70cec2`: de los dos handlers crudos, el de «tab not found» se arregló —sale `pestaña no encontrada`— y los 400 de binding pasan por un traductor por campo, medido en `PUT /config/me/preferences`: `el campo 'theme' debe ser uno de: dark, light`. **`POST /config/chat` sigue volcando el validador de Go**, y su respuesta afirma lo contrario —«Nunca aparece un nombre de struct de Go ni un tag»—. Medido: `Key: 'ddChatRequest.question' Error:Field validation for 'question' failed on the 'required' tag`. **No es el anidamiento**: falla igual con un campo de primer nivel. Es por handler — `dd_chat_handler.go:52` manda `err.Error()` donde los demás mandan `BindingErrorMessage(err)`, y de 32 sitios que enlazan JSON sólo 9 pasan por el traductor. `ErrorState` lo pinta tal cual, y cae justo en la ruta de F3.15.
 
+**Medido contra `f70cec2` el 2026-09-28** · las dos rutas contestan con el volcado del validador de Go, y `PUT /config/me/preferences` con texto redactado.
+
 **Y SON DOS RUTAS, NO UNA** · encontrado el 2026-09-28 revisando el alta de un tenant. `POST /admin/agents` hace lo mismo: `Key: 'createAgentRequest.tenant_id' Error:Field validation for 'tenant_id' failed on the 'required' tag`. Ésa importa por otra razón — **es una ruta del ALTA de un cliente**, así que el error lo lee quien está dando de alta. `POST /admin/tenants` sí está traducida, que es la prueba de que el traductor anda y de que falta aplicarlo en esas dos.
 
 
@@ -52,6 +54,8 @@ verde.
 
 
 **Queda `GET /config/plots`; `chart` YA LLEGÓ** · el mismo día que se pidió, en `f70cec2`. Medido el 2026-09-28 contra el servicio: sale en `DDPanelDTO.chart` y en `DDLayoutPanel.chart`, lo escribe el builder recortado y en minúsculas —`"  Waterfall  "` → `waterfall`— y los doce paneles publicados quedaron con `''`, así que no migró ningún layout. Transcripto en los dos cables y adaptado, con prueba de que **un id desconocido se pasa igual**: descartarlo haría caer el panel al gráfico por defecto sin que nadie se entere. **Lo que falta es la ruta del repertorio**, y para escribirla piden tres archivos nuestros que no están en su repo — contestado en `docs/MENSAJE-2026-09-28-backend-lo-que-piden.md`.
+
+**Medido contra `f70cec2` el 2026-09-28** · `GET /config/plots` → **404**.
 
 **NUESTRA MITAD ESTÁ HECHA** · 2026-09-26, y **el repertorio entero desde el 2026-09-28**: `docs/REPERTORIO-2026-09-28-los-49-graficos.md`. El orden que habíamos propuesto era «1. el front declara los mínimos y los propone en el contrato · 2. el backend los sirve». **El paso 1 está**: el contrato declara `GET /config/plots`, `Grafico` y `MinimoDeDatos`, y la tabla que hay que implementar está en `docs/DECISIONES-2026-09-26-minimos-por-grafico.md`.
 
@@ -77,6 +81,8 @@ Sólo tres suben el de su forma —`treemap`, `pareto` y `waterfall`, a 3— y e
 
 **Un campo en `PayloadDegradado` que diga desde dónde el dato dejó de ser fresco** — pedido el 2026-09-28, al cerrar la propuesta del degradado.
 
+**Medido contra `f70cec2` el 2026-09-28** · el payload de un panel degradado trae `governance message reason status unlocks_with value` · ninguna clave de tramo.
+
 Hoy el cable manda `reason` y `unlocks_with` como texto redactado, que sirve para la nota pero no para el cuerpo: **no dice qué tramo de la serie está vencido.**
 
 **Lo pide el dibujo, no nosotros.** `Librería de gráficos / ESTADO · Degradado` dibuja una serie con las **dos últimas barras en `$w2`** en vez del color de familia, y su nota lo declara: «DEGRADADO NO BLOQUEA: OBLIGA A FECHAR. **LA TRAMA MARCA EL TRAMO VENCIDO**».
@@ -93,6 +99,8 @@ Hoy el cable manda `reason` y `unlocks_with` como texto redactado, que sirve par
 
 **Una ruta que compare el `db.schema` del tenant contra el contrato de esquema** — pedido el 2026-09-28 en `docs/MENSAJE-2026-09-28-backend-tres-del-alta.md`.
 
+**Medido contra `f70cec2` el 2026-09-28** · `schema-check` → **404** · y se comprobó que `GET /agents/ping` y `GET /admin/tenants/{id}/catalog/health`, que sí existen, contestan otra cosa.
+
 **El problema que cierra es un SILENCIO**, y es el que más encarece un alta: hoy una columna que falta hace que el panel salga `BLOCKED` **sin razón** — no dice qué columna, ni que el problema sea de esquema. Se descubre al final, después de crear todo.
 
 **Media pieza YA EXISTE y no la conocíamos** · `GET /agents/ping` firma el JWT con las credenciales del tenant y corre `SELECT 1` contra Snowflake —medido el 2026-09-28 contra `f70cec2`: `status: ok`, 898 ms—. Eso cubre la mitad **credencial**. Y `GET /admin/tenants/{tenantId}/catalog/health`, que tampoco conocíamos, contesta **frescura de feeds por métrica**, que es otra pregunta.
@@ -107,6 +115,8 @@ Lo que falta es la mitad de **esquema**, y son dos `DESCRIBE` y una comparación
 
 **La simétrica de `materialize`** — pedido el 2026-09-28.
 
+**Medido contra `f70cec2` el 2026-09-28** · `sync-catalog` → **404** · su hermana `materialize` → **202**.
+
 Medido ese día contra `f70cec2`: `POST /admin/tenants/{tenantId}/materialize` contesta **202** y `POST /admin/tenants/{tenantId}/sync-catalog` da **404**. Sólo existe `make sync-catalog TENANT_ID=<uuid>`.
 
 **Es lo único en toda el alta que obliga a entrar a la máquina del backend.** Crear el tenant, crear el agente y materializar ya tienen ruta.
@@ -119,6 +129,8 @@ Medido ese día contra `f70cec2`: `POST /admin/tenants/{tenantId}/materialize` c
 
 **Que el servicio genere el par RSA y devuelva sólo la pública** — pedido el 2026-09-28.
 
+**Medido contra `f70cec2` el 2026-09-28** · sin un solo `rsa.GenerateKey` en `internal/`.
+
 Hoy `POST /admin/tenants` exige `private_key_pem`, así que por cada cliente **alguien genera un par a mano y transporta una clave privada** hasta donde se haga el alta. Verificado ese día: no hay `rsa.GenerateKey` en `internal/`.
 
 **Es más fácil y además más seguro**, que es la combinación que no obliga a elegir: la privada nunca sale del servicio y lo que circula es la pública.
@@ -130,6 +142,8 @@ Hoy `POST /admin/tenants` exige `private_key_pem`, así que por cada cliente **a
 
 
 **Confirmar que `cut` lo aplica el FRONT** — el pedido se afinó el 2026-09-28 leyendo su código, y quedó mucho más chico de lo que iba a ser.
+
+**Medido contra `f70cec2` el 2026-09-28** · `cut` aparece en su semilla con `day` y `month`, y **ningún consumidor** en `internal/core/`.
 
 **Lo que se averiguó solo:** su semilla ya muestra el vocabulario —`{"cut": "day"}` y `{"cut": "month"}` en `dd_seed.go:113`— y `dd_seed_blocks.go:44` lo declara como `layout_param` del bloque `series` junto a `normalization`. **Y nadie lo lee**: `grep` sobre `internal/core/` no encuentra un solo consumidor de `cut` ni de `normalization` fuera de la semilla.
 
@@ -144,6 +158,8 @@ Hoy `POST /admin/tenants` exige `private_key_pem`, así que por cada cliente **a
 
 
 **EL CAMINO YA EXISTE · corregido el 2026-09-28 leyendo su repositorio.**
+
+**Medido contra `f70cec2` el 2026-09-28** · `DD_MATERIALIZE_PROSE_ENABLED` existe con default `false` · `dd_materializer_service.go:57`.
 
 Esto decía «los paneles de prosa los genera el AGENTE, y hoy no hay camino», y era
 cierto cuando se escribió. **Lo construyeron:** `internal/core/services/dd_prose_generator.go`
@@ -208,6 +224,8 @@ nuestro lado. · Bloquea **B2.12**.
 
 **Lo propusieron ellos y les dijimos que sí** · `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` y nuestra respuesta del mismo día. Está sin tomar de su lado.
 
+**Medido contra `f70cec2` el 2026-09-28** · sin una sola aparición de `tab_keys` en `internal/`.
+
 **El defecto que cierra:** `roles.tab_ids` apunta a `dd_tabs.id`, y **ese id se recrea en cada versión de layout**. Así que un rol restringido a dos pestañas **las pierde al publicar**. `key` ya viaja —medido el 2026-09-28: `overview`— y es estable por diseño.
 
 
@@ -217,6 +235,8 @@ nuestro lado. · Bloquea **B2.12**.
 
 
 **La ruta no existe** · medido el 2026-09-28: `GET /config/solicitudes` da **404**.
+
+**Medido contra `f70cec2` el 2026-09-28** · `GET /config/solicitudes` → **404** · y el payload `FORBIDDEN` es `{status, request_from}` y nada más.
 
 **Bloquea F2.3.** Y el hueco tiene una forma concreta: el payload `FORBIDDEN` es hoy `{status, request_from}` **y nada más** —medido pidiéndole al token de `planner` los tres paneles que su rol oculta—. Sin `reason` ni `unlocks_with`, que es la gramática de §8 que los otros cinco estados sí traen.
 
@@ -229,6 +249,8 @@ nuestro lado. · Bloquea **B2.12**.
 
 
 **Que se encienda en dev y nos avisen** — lo ofrecieron ellos en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
+
+**Medido contra `f70cec2` el 2026-09-28** · `ProseGeneratorEnabledFromEnv` lee el flag con default `false`.
 
 Hasta entonces los dos paneles de prosa se sirven con el valor de la semilla, **en inglés**, y salen `DEGRADED`.
 

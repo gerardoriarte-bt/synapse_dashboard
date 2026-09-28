@@ -39,6 +39,37 @@ DESTINO = RAIZ / "docs" / "PARA-BACKEND.md"
 
 ENCABEZADO = re.compile(r"^#{3,4} (➕ )?([BF]\d+\.\d+[a-j]?) (✅|⚠️|⬜|🕓) (.+)$")
 ESPERA = re.compile(r"^\*\*Espera del backend\.\*\*\s*(.+)$")
+
+# **La marca de verificación de un PEDIDO** · agregada el 2026-09-28.
+MEDIDO = re.compile(r"\*\*Medido contra `([0-9a-f]{7,40})` el (\d{4}-\d{2}-\d{2})\*\*")
+
+CABLE_REF = pathlib.Path("contracts/synapse-console-wire.yaml")
+
+
+def commit_de_referencia() -> "str | None":
+    """Contra qué commit leímos el backend la última vez · `None` si no se sabe.
+
+    **Sale del cable y no de la red**, a propósito: esta herramienta corre en la
+    puerta, y una puerta que necesita internet falla en un avión y en un runner
+    sin credenciales. `backend-drift` sí pregunta al remoto —ese es su trabajo— y
+    deja su conclusión escrita acá, en el `x-verificado-en` de cada ruta.
+
+    **Sólo el cable de CONSOLA, y sólo si sus rutas coinciden.** Las dos cosas se
+    aprendieron rompiendo el chequeo a propósito el 2026-09-28:
+
+    - Mirar los tres cables juntaba shas viejos —el de admin tiene rutas en
+      `8633b10`— y con eso **un pedido medido contra `8633b10` pasaba por
+      vigente**, que es justo lo que este chequeo existe para atajar.
+    - Si las rutas del cable NO coinciden, `backend-drift` está en rojo y **no
+      hay contra qué comparar**. Devolver la más común sería inventar una
+      referencia: se devuelve `None` y se dice que no se sabe, que es la
+      convención de esta casa —⊘ BLOQUEADO antes que un verde que miente—.
+    """
+    if not CABLE_REF.exists():
+        return None
+    vistos = set(re.findall(r"x-verificado-en:\s*([0-9a-f]{7,40})",
+                            CABLE_REF.read_text(encoding="utf-8")))
+    return vistos.pop() if len(vistos) == 1 else None
 ESTADOS = {"✅": "hecho", "⚠️": "parcial", "⬜": "pendiente", "🕓": "diferida"}
 
 
@@ -101,6 +132,13 @@ def recolectar(texto: str):
                 actual["esperas"].append("\n".join(acumulando).strip())
                 acumulando = None
             else:
+                # **La marca se busca ACÁ y no después**, y eso lo encontró
+                # correr el chequeo: mientras acumula, el bucle hace `continue`
+                # y ninguna línea del bloque llega al final. Buscarla sólo abajo
+                # daba «los once sin marca» con los once marcados.
+                mm = MEDIDO.search(linea)
+                if mm:
+                    actual["medido"] = (mm.group(1), mm.group(2))
                 acumulando.append(linea)
                 continue
         m = ENCABEZADO.match(linea)
@@ -121,6 +159,7 @@ def recolectar(texto: str):
                 # silencio. Listarlos todos deja que lo decida quien sabe.
                 "candado": (m.group(4).split(" · 🔒")[1].strip()
                             if " · 🔒" in m.group(4) else ""),
+                "medido": None,
                 "esperas": [],
             }
             tareas.append(actual)
@@ -128,12 +167,18 @@ def recolectar(texto: str):
         e = ESPERA.match(linea)
         if e and actual is not None:
             acumulando = [e.group(1).strip()]
+            continue
+        # La marca puede venir en cualquier línea del bloque de espera; se
+        # guarda aparte para juzgarla sin tocar el texto que el backend lee.
+        mm = MEDIDO.search(linea)
+        if mm and actual is not None:
+            actual["medido"] = (mm.group(1), mm.group(2))
     if acumulando is not None and actual is not None:
         actual["esperas"].append("\n".join(acumulando).strip())
     return tareas
 
 
-def render(tareas, hechas, todas=()) -> str:
+def render(tareas, hechas, todas=(), viejos=()) -> str:
     o = []
     o.append("# Lo que el front necesita del backend\n")
     o.append(
@@ -179,6 +224,23 @@ def render(tareas, hechas, todas=()) -> str:
     # No se interpreta cuáles son suyos, y eso es deliberado: adivinarlo es un
     # juicio, y una herramienta que juzga se equivoca en silencio. Se listan
     # todos y lo decide quien sabe.
+    if viejos:
+        o.append(
+            f"\n---\n\n## ⚠️ {len(viejos)} pedido(s) sin reverificar\n\n"
+            "**Estos se midieron contra un commit suyo que ya no es el último.**\n"
+            "No quiere decir que sigan faltando: quiere decir que **no lo\n"
+            "sabemos**, y un pedido que no sabemos si sigue vigente no debería\n"
+            "hacerles perder tiempo.\n\n"
+            "El 2026-09-28 revalidamos los doce que había y **cinco ya estaban\n"
+            "resueltos** — llevaban días acá diciendo que faltaban. Por eso esta\n"
+            "sección existe.\n"
+        )
+        o.append("\n| Pedido | Medido contra | Cuándo |\n|---|---|---|")
+        for t in viejos:
+            sha, fecha = t["medido"]
+            o.append(f"| **{t['id']}** · {t['titulo']} | `{sha}` | {fecha} |")
+        o.append("")
+
     frenados = [t for t in todas
                 if t["lado"] == "front" and t["candado"] and t["estado"] != "hecho"]
     if frenados:
@@ -228,7 +290,23 @@ def main() -> int:
         if (m := ENCABEZADO.match(l)) and m.group(3) == "✅" and re.fullmatch(r"F1\.(3[2-9]|4[01])", m.group(2))
     ]
 
-    DESTINO.write_text(render(tareas, hechas, todas), encoding="utf-8")
+    # ── ¿ALGÚN PEDIDO ENVEJECIÓ? ─────────────────────────────────────────────
+    #
+    # Agregado el 2026-09-28 después de que **cinco de doce pedidos resultaran
+    # falsos** al validarlos contra el repositorio del backend. Ninguno era
+    # reciente: llevaban entre uno y cuatro días sin ser ciertos, y este archivo
+    # los mostraba como pendientes.
+    #
+    # `backend-drift` vigila que el CABLE no envejezca. Nada vigilaba que un
+    # PEDIDO no envejeciera, y son dos cosas: el cable describe lo que hay, un
+    # pedido afirma lo que NO hay — **y lo segundo se vence solo cuando ellos
+    # trabajan.**
+    ref = commit_de_referencia()
+    sin_marca = [t for t in tareas if not t["medido"]]
+    viejos = [t for t in tareas
+              if t["medido"] and ref and t["medido"][0] != ref]
+
+    DESTINO.write_text(render(tareas, hechas, todas, viejos), encoding="utf-8")
 
     if contradictorias:
         print(f"para-backend ✗ {len(contradictorias)} tarea(s) cerradas que siguen pidiendo algo")
@@ -237,11 +315,43 @@ def main() -> int:
         print("  O la tarea no estaba cerrada, o el pedido ya se cumplió y quedó el marcador.")
         return 1
 
+    # ── UN PEDIDO SIN MARCA ES ROJO · uno VIEJO no ──────────────────────────
+    #
+    # La distinción es deliberada y costó pensarla.
+    #
+    # **Sin marca es un error de autoría**: quien escribió el pedido no dijo
+    # contra qué lo midió, y eso se arregla en el momento y sin depender de
+    # nadie. Por eso sale con 1.
+    #
+    # **Viejo NO es un error nuestro**: se vence solo cuando el backend trabaja,
+    # y hacerlo rojo dejaría la puerta en rojo permanente cada vez que ellos
+    # empujan. Es exactamente el defecto que `backend-drift` tuvo ocho días —«la
+    # única forma de ponerlo en verde era mentir»— y no se repite. Se cuenta, se
+    # lista y **el número baja de a uno**.
+    if sin_marca:
+        print(f"para-backend ✗ {len(sin_marca)} pedido(s) sin decir contra qué se midieron")
+        for t in sin_marca:
+            print(f"  {t['id']:8} {t['titulo'][:56]}")
+        print()
+        print("  Un pedido afirma que algo NO existe, y eso se vence cuando ellos")
+        print("  trabajan. Sin la marca no hay forma de saber si sigue vigente:")
+        print("  el 2026-09-28, cinco de doce ya estaban resueltos.")
+        print()
+        print("  Agregá al bloque de espera:")
+        print("    **Medido contra `<sha>` el <YYYY-MM-DD>** · <cómo se comprobó>.")
+        return 1
+
+    estado = "✓" if not viejos else "⚠"
     print(
-        f"para-backend ✓ {len(tareas)} tarea(s) esperan al backend"
+        f"para-backend {estado} {len(tareas)} tarea(s) esperan al backend"
         f" · {sum(len(t['esperas']) for t in tareas)} pedido(s)"
         f" · {len(hechas)} de integración cerradas"
     )
+    if viejos:
+        print(f"  {len(viejos)} sin reverificar · el cable de consola está en {ref}")
+        for t in viejos:
+            print(f"    {t['id']:8} medido contra {t['medido'][0]} el {t['medido'][1]}")
+        print("  No es rojo: se vence cuando ellos trabajan, no por un error nuestro.")
     print(f"  → {DESTINO.relative_to(RAIZ)}")
     return 0
 
