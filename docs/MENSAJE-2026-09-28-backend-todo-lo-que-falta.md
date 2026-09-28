@@ -117,12 +117,15 @@ de un mes.
 
 | | |
 |---|---|
-| **B0.4** | El `error` en español · **queda UNA ruta, y ahora son dos**: `/config/chat` y `POST /admin/agents`. `POST /admin/tenants` **sí** está traducida, que es la prueba de que el traductor anda |
-| **B1.1** | `/config/me` · dos de seis campos |
+| **B0.4** | El `error` en español · **son DOS rutas**: `/config/chat` y `POST /admin/agents`. `POST /admin/tenants` **sí** está traducida, que es la prueba de que el traductor anda |
 | **B1.21** | `GET /config/plots` con la tabla de 49 · **les pasamos los tres archivos** el 2026-09-28 |
 | **B1.28** | `PayloadDegradado` no dice desde qué punto el dato está vencido |
 | **B1.29 · B1.30 · B1.31** | Los tres del alta de un cliente · `schema-check`, `sync-catalog` como ruta y el par RSA |
-| **B2.12** | Los seis estados · **cinco medidos**; `ERROR` quedó sin disparador conocido y es una pregunta |
+| **B2.12** | Los seis estados · **cinco medidos**; el sexto, `ERROR`, quedó **sin disparador conocido** — el builder ahora rechaza un `gauge` sin `maximum`, que era el que el criterio usaba. **Es una pregunta: ¿con qué se provoca hoy?** |
+
+**`B1.1` salió de esta lista.** Decía «dos de seis» y los seis están: cuatro
+llegaron —los dos últimos en `f70cec2`— y dos los retiramos nosotros porque no los
+consume nadie.
 
 ## Lo que cerramos esta semana, para que no lo trabajen de nuevo
 
@@ -163,5 +166,37 @@ sin ser cierto.
 ## Cómo avisar
 
 **No hace falta tocar `PARA-BACKEND.md`.** Con decirlo alcanza: quitamos el
-marcador de la tarea y el documento se regenera sin ese punto. **Si un pedido
-sigue ahí, es que sigue faltando.**
+marcador de la tarea y el documento se regenera sin ese punto.
+
+**Y desde hoy «si sigue ahí es que sigue faltando» ya no es una promesa nuestra:
+es un chequeo.** Cada pedido lleva escrito contra qué commit suyo se midió y
+cuándo, y la herramienta:
+
+- **falla** si alguien escribe un pedido sin decir contra qué lo midió;
+- **avisa**, sin fallar, cuando un pedido se midió contra un commit suyo que ya
+  no es el último — y los lista en el propio `PARA-BACKEND.md`.
+
+Lo segundo no es rojo a propósito: se vence cuando **ustedes** trabajan, no por un
+error nuestro. Un chequeo que se pone rojo cada vez que empujan es un chequeo que
+alguien apaga.
+
+**Hoy los once están medidos contra `f70cec2`**, que es donde el cable está
+parado. Si empujan algo nuevo, el archivo va a decir cuáles hay que remedir antes
+de que les hagan perder tiempo.
+
+---
+
+## Si tuviéramos que elegir tres
+
+No es nuestra decisión, pero por si sirve el orden que a nosotros nos destraba
+más, medido en cuánto ahorra dividido por lo que cuesta:
+
+1. **B1.29 · `schema-check`** — dos `DESCRIBE` y un `diff` sobre piezas que ya
+   tienen. Convierte un día de depuración en un minuto **por cada cliente nuevo**.
+2. **B1.30 · `sync-catalog` como ruta** — una ruta sobre un comando que ya existe,
+   y es lo único en toda el alta que obliga a entrar a la máquina.
+3. **B0.4 · el traductor en las dos rutas** — un cambio de una línea en cada una,
+   y una de las dos la lee quien está dando de alta un cliente.
+
+Los tres son chicos, ninguno cambia el modelo de datos y **ninguno depende de los
+otros dos**.
