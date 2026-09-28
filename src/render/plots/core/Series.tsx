@@ -126,6 +126,42 @@ export function Area({
   )
 }
 
+/** La franja entre DOS curvas · para apilar · 2026-09-28
+ *
+ *  **No es `Area` ni es `Band`, y las dos razones importan.**
+ *
+ *  `Area` cierra contra una base PLANA, así que sólo sirve para la serie de
+ *  abajo: la segunda de un apilado arranca donde termina la primera, y esa
+ *  frontera se mueve en cada punto.
+ *
+ *  `Band` dibuja exactamente esta geometría **y no se reusa a propósito**: es la
+ *  banda de intervalo de la regla dura 6, y `L10` del lint la busca por nombre.
+ *  Prestarla para apilar haría que el lint contara bandas de intervalo donde hay
+ *  tramos de una composición.
+ *
+ *  **Va al 0.9 y no al 0.16 de `Area`.** Las áreas apiladas no se superponen
+ *  —ése es el punto— así que la transparencia no revela nada y sí apaga los
+ *  escalones de la rampa, que es lo único que distingue un tramo del siguiente.
+ */
+export function Ribbon({
+  points,
+  x,
+  y,
+  ...color
+}: {
+  points: readonly { x: number; lo: number; hi: number }[]
+  x: LinearScale
+  y: LinearScale
+} & SeriesColor) {
+  if (points.length === 0) return null
+  const top = points.map((p) => `${x(p.x)},${y(p.hi)}`).join(' L')
+  const bottom = [...points]
+    .reverse()
+    .map((p) => `${x(p.x)},${y(p.lo)}`)
+    .join(' L')
+  return <path d={`M${top} L${bottom} Z`} fill={hue(color)} fillOpacity={0.9} />
+}
+
 /** Dispersión y burbujas. Es la cuarta marca y completa el juego cartesiano. */
 export function Dots({
   points,
