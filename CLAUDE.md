@@ -593,7 +593,7 @@ no volver a pedirlo.
 |---|---|---|
 | **A1 · las cinco columnas** | `GET /admin/tenants` devuelve `id` y `name` · B4.1, **escrita en nuestro fork** | Que la tomen |
 | **A3 · alcance de plataforma** | No hay ruta que liste usuarios de todos los clientes; `/admin/users` da 404 | Backend |
-| **F3.15 · el chat presente** | Que `POST /config/chat` acepte contexto de pestaña | Backend · pedido |
+| **F3.15 · el chat presente** | ~~Que `POST /config/chat` acepte contexto de pestaña~~ · **EL CANDADO VENCIÓ** · `tab_context` existe y se midió el 2026-09-28 contra `f70cec2`: pide `tab_id` (uuid) y `period`. **Anotado y NO tomado** — un bloqueo escrito no se razona por encima, se dice y se pregunta | Nuestro · falta decidir si se toma |
 | **F4.17–F4.19** | `Valor` no declara `matriz`, `grafo`, `flujo` ni las otras dos · **y B5.3 pide que el dato exista**, que no existe | Las dos condiciones, verificadas el 2026-09-25 |
 | **Seis filas de `SEMANTIC_DIRECTION`** | Traen el código en vez del texto | Datos |
 
