@@ -25,6 +25,7 @@
     "para-backend": "python3 tools/para-backend.py",
     "estado": "python3 tools/estado.py",
     "pen-pantallas": "python3 tools/pen-pantallas.py",
+    "pen-graficos": "python3 tools/pen-graficos.py",
     "docs-registro": "python3 tools/docs-registro.py",
     "afirmaciones": "python3 tools/afirmaciones.py",
     "mocks-fuera": "python3 tools/mocks-fuera.py",
