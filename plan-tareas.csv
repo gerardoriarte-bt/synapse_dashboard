@@ -118,6 +118,17 @@ B1.26,Backend · Fase 1 — API de consola,Backend,1,API de consola,"Decidir có
 B1.28,Backend · Fase 1 — API de consola,Backend,1,API de consola,PayloadDegradado dice DESDE QUÉ PUNTO el dato está vencido,,"• El payload degradado declara el punto desde el cual el dato está vencido, en la misma unidad del eje: si la serie es semanal, una semana.
 • El front no lo calcula. Sin el campo no se dibuja la trama, porque adivinar cuál es el tramo es inventar el dato.
 • Una forma sin eje temporal no lo necesita y el campo queda ausente, no en cero.",pendiente,si,,equipo:backend fase:1 estado:pendiente nueva bloqueada
+B1.29,Backend · Fase 1 — API de consola,Backend,1,API de consola,schema-check · decir qué le falta al cliente ANTES de intentar,,"• Dice si existen los dos objetos Gold en <agent.db>.<agent.schema> y qué columnas de las quince faltan en cada uno.
+• Dice si existe la vista de catálogo y cuáles de sus doce columnas faltan.
+• Trae afecta: qué métricas quedan sin poder materializarse por cada columna ausente. Es el campo que convierte el chequeo en una decisión — «falta BUDGET_TARGET» no le dice nada a nadie, «no vas a poder tener goal_attainment» sí. El mapa de qué query usa qué columna es suyo, no nuestro.
+• Trae claves_sin_query: las METRIC_KEY del catálogo del cliente que no caen en MetricRegistry ni por alias. Cierra el segundo silencio y es un diff contra las doce claves de keys.go.
+• No crea ni modifica nada: es de sólo lectura y se puede correr antes de dar de alta.",pendiente,si,,equipo:backend fase:1 estado:pendiente nueva bloqueada
+B1.30,Backend · Fase 1 — API de consola,Backend,1,API de consola,sync-catalog como ruta HTTP,,"• POST /admin/tenants/{tenantId}/sync-catalog contesta como su hermana: 202 y el trabajo por detrás.
+• El resultado se puede consultar después: cuántas métricas entraron y en qué catalog_version quedó.
+• No reemplaza al comando, que sigue sirviendo para correrlo a mano.",pendiente,si,,equipo:backend fase:1 estado:pendiente nueva bloqueada
+B1.31,Backend · Fase 1 — API de consola,Backend,1,API de consola,La plataforma genera el par de claves del usuario de servicio,,"• El servicio genera el par, guarda la privada cifrada como ya hace con la que recibe, y devuelve sólo la pública en formato PEM.
+• El ciclo se cierra con lo que ya existe: generar → el cliente registra la pública en su usuario de servicio → GET /agents/ping confirma que funciona.
+• private_key_pem deja de ser obligatoria en el alta, o queda un orden declarado. Cuál de las dos es decisión del backend; el front no depende de la forma.",pendiente,si,,equipo:backend fase:1 estado:pendiente nueva bloqueada
 B2.1,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y cache,Tabla panel_data,"El snapshot materializado con gobierno completo por (tenant_id, metric_id, periodo). Es la fuente del batch y sobrevive reinicios.","• Guarda el Valor ya transformado a su forma, no el resultado crudo de la query.
 • Guarda frescura como el instante de materialización.
 • Se puede auditar: qué había en un panel el mes pasado es consultable.",pendiente,no,,equipo:backend fase:2 estado:pendiente

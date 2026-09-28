@@ -1131,6 +1131,46 @@ Hoy el cable manda `reason` y `unlocks_with` como texto redactado, que sirve par
   cuál es el tramo es inventar el dato.
 - Una forma sin eje temporal no lo necesita y el campo queda ausente, no en cero.
 
+#### ➕ B1.29 ⬜ `schema-check` · decir qué le falta al cliente ANTES de intentar
+**Espera del backend.** **Una ruta que compare el `db.schema` del tenant contra el contrato de esquema** — pedido el 2026-09-28 en `docs/MENSAJE-2026-09-28-backend-tres-del-alta.md`.
+
+**El problema que cierra es un SILENCIO**, y es el que más encarece un alta: hoy una columna que falta hace que el panel salga `BLOCKED` **sin razón** — no dice qué columna, ni que el problema sea de esquema. Se descubre al final, después de crear todo.
+
+**Media pieza YA EXISTE y no la conocíamos** · `GET /agents/ping` firma el JWT con las credenciales del tenant y corre `SELECT 1` contra Snowflake —medido el 2026-09-28 contra `f70cec2`: `status: ok`, 898 ms—. Eso cubre la mitad **credencial**. Y `GET /admin/tenants/{tenantId}/catalog/health`, que tampoco conocíamos, contesta **frescura de feeds por métrica**, que es otra pregunta.
+
+Lo que falta es la mitad de **esquema**, y son dos `DESCRIBE` y una comparación de listas.
+
+**Criterio de aceptación.**
+- Dice si existen los dos objetos Gold en `<agent.db>.<agent.schema>` y **qué columnas de las quince faltan** en cada uno.
+- Dice si existe la vista de catálogo y cuáles de sus doce columnas faltan.
+- **Trae `afecta`: qué métricas quedan sin poder materializarse por cada columna ausente.** Es el campo que convierte el chequeo en una decisión — «falta `BUDGET_TARGET`» no le dice nada a nadie, «no vas a poder tener `goal_attainment`» sí. El mapa de qué query usa qué columna es suyo, no nuestro.
+- **Trae `claves_sin_query`: las `METRIC_KEY` del catálogo del cliente que no caen en `MetricRegistry` ni por alias.** Cierra el segundo silencio y es un `diff` contra las doce claves de `keys.go`.
+- No crea ni modifica nada: es de sólo lectura y se puede correr antes de dar de alta.
+
+#### ➕ B1.30 ⬜ `sync-catalog` como ruta HTTP
+**Espera del backend.** **La simétrica de `materialize`** — pedido el 2026-09-28.
+
+Medido ese día contra `f70cec2`: `POST /admin/tenants/{tenantId}/materialize` contesta **202** y `POST /admin/tenants/{tenantId}/sync-catalog` da **404**. Sólo existe `make sync-catalog TENANT_ID=<uuid>`.
+
+**Es lo único en toda el alta que obliga a entrar a la máquina del backend.** Crear el tenant, crear el agente y materializar ya tienen ruta.
+
+**Criterio de aceptación.**
+- `POST /admin/tenants/{tenantId}/sync-catalog` contesta como su hermana: 202 y el trabajo por detrás.
+- El resultado se puede consultar después: cuántas métricas entraron y en qué `catalog_version` quedó.
+- **No reemplaza al comando**, que sigue sirviendo para correrlo a mano.
+
+#### ➕ B1.31 ⬜ La plataforma genera el par de claves del usuario de servicio
+**Espera del backend.** **Que el servicio genere el par RSA y devuelva sólo la pública** — pedido el 2026-09-28.
+
+Hoy `POST /admin/tenants` exige `private_key_pem`, así que por cada cliente **alguien genera un par a mano y transporta una clave privada** hasta donde se haga el alta. Verificado ese día: no hay `rsa.GenerateKey` en `internal/`.
+
+**Es más fácil y además más seguro**, que es la combinación que no obliga a elegir: la privada nunca sale del servicio y lo que circula es la pública.
+
+**Criterio de aceptación.**
+- El servicio genera el par, guarda la privada cifrada como ya hace con la que recibe, y devuelve **sólo la pública** en formato PEM.
+- **El ciclo se cierra con lo que ya existe**: generar → el cliente registra la pública en su usuario de servicio → `GET /agents/ping` confirma que funciona.
+- `private_key_pem` deja de ser obligatoria en el alta, o queda un orden declarado. **Cuál de las dos es decisión del backend**; el front no depende de la forma.
+
 ---
 
 ## Fase 2 — Materialización y cache

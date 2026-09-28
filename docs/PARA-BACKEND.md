@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 6 pedido(s)
+## Lo que esperamos · 9 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -111,6 +111,44 @@ Hoy el cable manda `reason` y `unlocks_with` como texto redactado, que sirve par
 **Medido el 2026-09-28**: la trama existe sólo en la biblioteca y **el panel degradado de C1 no la aplica** —sus rellenos de datos son los de la familia, sin una sola barra en `$w2`—, así que ni dentro del `.pen` está puesta donde se vería.
 
 **Alcance decidido ese día**, en `docs/PROPUESTA-2026-09-25-degradado.md`: la trama es para las **formas con eje temporal** —serie, área, forecast—; en las que no lo tienen, «obliga a fechar» lo cumple la procedencia con su frescura, que ya se pinta en los seis estados.
+
+
+### B1.29 · schema-check · decir qué le falta al cliente ANTES de intentar
+
+*Estado de la tarea: pendiente.*
+
+
+**Una ruta que compare el `db.schema` del tenant contra el contrato de esquema** — pedido el 2026-09-28 en `docs/MENSAJE-2026-09-28-backend-tres-del-alta.md`.
+
+**El problema que cierra es un SILENCIO**, y es el que más encarece un alta: hoy una columna que falta hace que el panel salga `BLOCKED` **sin razón** — no dice qué columna, ni que el problema sea de esquema. Se descubre al final, después de crear todo.
+
+**Media pieza YA EXISTE y no la conocíamos** · `GET /agents/ping` firma el JWT con las credenciales del tenant y corre `SELECT 1` contra Snowflake —medido el 2026-09-28 contra `f70cec2`: `status: ok`, 898 ms—. Eso cubre la mitad **credencial**. Y `GET /admin/tenants/{tenantId}/catalog/health`, que tampoco conocíamos, contesta **frescura de feeds por métrica**, que es otra pregunta.
+
+Lo que falta es la mitad de **esquema**, y son dos `DESCRIBE` y una comparación de listas.
+
+
+### B1.30 · sync-catalog como ruta HTTP
+
+*Estado de la tarea: pendiente.*
+
+
+**La simétrica de `materialize`** — pedido el 2026-09-28.
+
+Medido ese día contra `f70cec2`: `POST /admin/tenants/{tenantId}/materialize` contesta **202** y `POST /admin/tenants/{tenantId}/sync-catalog` da **404**. Sólo existe `make sync-catalog TENANT_ID=<uuid>`.
+
+**Es lo único en toda el alta que obliga a entrar a la máquina del backend.** Crear el tenant, crear el agente y materializar ya tienen ruta.
+
+
+### B1.31 · La plataforma genera el par de claves del usuario de servicio
+
+*Estado de la tarea: pendiente.*
+
+
+**Que el servicio genere el par RSA y devuelva sólo la pública** — pedido el 2026-09-28.
+
+Hoy `POST /admin/tenants` exige `private_key_pem`, así que por cada cliente **alguien genera un par a mano y transporta una clave privada** hasta donde se haga el alta. Verificado ese día: no hay `rsa.GenerateKey` en `internal/`.
+
+**Es más fácil y además más seguro**, que es la combinación que no obliga a elegir: la privada nunca sale del servicio y lo que circula es la pública.
 
 
 ### B2.12 · Correr el materializador contra datos reales y verificar los seis estados
