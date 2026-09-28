@@ -6176,6 +6176,14 @@ cliente, el nombre que deja de abrir y Escape que no cierra. Mueren las nueve.
 ## Fase 5 — Multi-dashboard, pruebas y pulido
 
 ### F5.1 ✅ Selector de dashboard cuando hay más de uno
+
+**AJUSTADA AL DIBUJO EL 2026-09-28** · §PEN:C6. F5.1 puso un `<select>` en el navbar con la pregunta de dónde iba **abierta como propuesta de spec**, y C6 la contestó: no va ahí, porque «de ocho elementos a 768 el navbar no entra». Lo abre el chevron del bloque de cliente, **que ya estaba dibujado, y por eso el navbar no crece**.
+
+Con eso quedan contestadas las cuatro preguntas de `docs/PROPUESTA-2026-09-26-selector-de-dashboard.md`, incluida la del nombre: **dashboard es lo que se elige, layout es su composición publicada**, y ninguna pantalla dice layout.
+
+**Sin velo, y eso lo decidió mirarlo**: la primera versión del dibujo copió el patrón de la hoja de C3 y al abrir el render se vio que «un velo oscurece la aplicación entera y eso dice MODAL, que es lo que una hoja es y un desplegable no». El panel se separa con su sombra.
+
+**Y la sublínea del dibujo no se puede pintar entera**: pide «4 PESTAÑAS · 12 PANELES» y `Contexto.dashboards` trae `{id, nombre, esDefault}`. De los dashboards que no son el activo no se sabe ni cuántas pestañas tienen ni si están compuestos, así que se pinta lo que se sabe y el hueco se declara.
 **Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **El ciclo entero, en pantalla**: el selector lista «Overview» y «Marca», cambiar a «Marca» muestra «todavía no se compuso», y «Volver a Overview» devuelve a la consola compuesta.
 
 **Para poder verificarlo se creó el segundo dashboard** con `POST /admin/tenants/{tenantId}/dashboards`, en vez de esperar — igual que el usuario restringido de B1.19. Con uno solo no hay selector, que es su propio criterio, así que no había nada que mirar. Queda documentado en `dev/postgres/README.md`.

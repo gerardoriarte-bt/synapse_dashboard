@@ -80,6 +80,13 @@ function montar() {
   )
 }
 
+/** Abre el panel · §PEN:C6. **Era un `<select>` hasta el 2026-09-28** y ahora es
+ *  un panel que cuelga del chevron del bloque de cliente, porque «de ocho
+ *  elementos a 768 el navbar no entra». Lo que se afirma abajo no cambió: lo que
+ *  cambió es cómo se llega. */
+const abrir = async () =>
+  userEvent.click(await screen.findByRole('button', { name: 'Cambiar de dashboard' }))
+
 describe('con UNO solo no hay selector', () => {
   it('no se ofrece una elección que no existe', async () => {
     // Es el primer bullet del criterio, y la misma regla que el selector de
@@ -88,7 +95,7 @@ describe('con UNO solo no hay selector', () => {
     montar()
     await screen.findByRole('heading', { level: 2 })
 
-    expect(screen.queryByLabelText('Dashboard')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Cambiar de dashboard' })).toBeNull()
   })
 })
 
@@ -98,10 +105,77 @@ describe('con DOS aparece, y cambiarlo escribe la preferencia', () => {
   it('lista los dos y marca el activo', async () => {
     laConsola(conDos)
     montar()
+    await abrir()
 
-    const selector = await screen.findByLabelText('Dashboard')
-    expect(selector).toHaveValue('d-1')
-    expect(screen.getByRole('option', { name: 'Marca' })).toBeInTheDocument()
+    // **El activo se marca con `aria-current`**, no sólo con el punto naranja:
+    // el punto va `aria-hidden` porque el color no puede ser el único portador.
+    expect(screen.getByRole('button', { name: /Overview/ })).toHaveAttribute('aria-current', 'true')
+    expect(screen.getByRole('button', { name: /Marca/ })).not.toHaveAttribute('aria-current')
+  })
+
+  it('el clic AFUERA también cierra · es la otra salida de un desplegable', async () => {
+    // La nota lo dice: «correcto para un control del que se puede salir haciendo
+    // clic afuera». Y se escucha `mousedown` y no `click`, porque con `click` el
+    // botón que abrió recibe el evento después y lo vuelve a abrir — un panel
+    // que no cierra nunca se ve como un panel que parpadea.
+    laConsola(conDos)
+    montar()
+    await abrir()
+    expect(screen.getByRole('button', { name: /Marca/ })).toBeVisible()
+
+    await userEvent.click(await screen.findByRole('heading', { level: 2 }))
+    expect(screen.queryByRole('button', { name: /Marca/ })).toBeNull()
+  })
+
+  it('volver a apretar el chevron lo CIERRA · el caso que obliga a `mousedown`', async () => {
+    // **El defecto que esto previene.** Con `click` en vez de `mousedown`, el
+    // listener del documento corre DESPUÉS del `onClick` de React: el botón
+    // alterna a cerrado y el documento vuelve a cerrarlo — o peor, el orden se
+    // invierte y el panel se reabre solo. Se ve como un panel que parpadea y no
+    // como un error.
+    laConsola(conDos)
+    montar()
+    const chevron = await screen.findByRole('button', { name: 'Cambiar de dashboard' })
+    await userEvent.click(chevron)
+    expect(screen.getByRole('button', { name: /Marca/ })).toBeVisible()
+
+    await userEvent.click(chevron)
+    expect(screen.queryByRole('button', { name: /Marca/ })).toBeNull()
+  })
+
+  it('elegir CIERRA el panel · no se queda abierto sobre el dashboard nuevo', async () => {
+    laConsola(conDos)
+    montar()
+    await abrir()
+    await userEvent.click(screen.getByRole('button', { name: /Marca/ }))
+
+    expect(screen.queryByRole('button', { name: /Overview/ })).toBeNull()
+  })
+
+  it('el punto naranja NO es el único portador · regla dura 3', async () => {
+    // «El color no carga el juicio»: quien no distingue el naranja tiene que
+    // poder saber cuál está activo. Por eso el punto va `aria-hidden` y lo dice
+    // `aria-current` — si el punto se anunciara, sería ruido duplicado; si fuera
+    // lo único, no habría forma de saberlo sin verlo.
+    laConsola(conDos)
+    const { container } = montar()
+    await abrir()
+
+    const punto = container.querySelector('.bg-acc')
+    expect(punto).not.toBeNull()
+    expect(punto).toHaveAttribute('aria-hidden')
+  })
+
+  it('el panel se cierra con Escape · es un desplegable, no una hoja', async () => {
+    // La nota del dibujo lo decide: «un velo dice MODAL, que es lo que una hoja
+    // es y un desplegable no». Sin velo, la salida es Escape o clic afuera.
+    laConsola(conDos)
+    montar()
+    await abrir()
+    expect(screen.getByRole('button', { name: /Marca/ })).toBeVisible()
+
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('button', { name: /Marca/ })).toBeNull()
   })
 
   it('cambiarlo manda `preferred_dashboard_id` · NO es un parámetro de consulta', async () => {
@@ -112,7 +186,8 @@ describe('con DOS aparece, y cambiarlo escribe la preferencia', () => {
     const { puts } = laConsola(conDos)
     montar()
 
-    await userEvent.selectOptions(await screen.findByLabelText('Dashboard'), 'd-2')
+    await abrir()
+    await userEvent.click(screen.getByRole('button', { name: /Marca/ }))
 
     await waitFor(() => expect(puts).toHaveLength(1))
     expect(puts[0]).toMatchObject({ preferred_dashboard_id: 'd-2' })
@@ -124,7 +199,8 @@ describe('con DOS aparece, y cambiarlo escribe la preferencia', () => {
     const { puts } = laConsola(conDos)
     montar()
 
-    await userEvent.selectOptions(await screen.findByLabelText('Dashboard'), 'd-2')
+    await abrir()
+    await userEvent.click(screen.getByRole('button', { name: /Marca/ }))
 
     await waitFor(() => expect(puts).toHaveLength(1))
     expect(puts[0]).toHaveProperty('theme')
@@ -151,7 +227,8 @@ describe('con DOS aparece, y cambiarlo escribe la preferencia', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Medios' }))
     expect(screen.getByRole('button', { name: 'Medios' })).toHaveAttribute('aria-current', 'page')
 
-    await userEvent.selectOptions(screen.getByLabelText('Dashboard'), 'd-2')
+    await abrir()
+    await userEvent.click(screen.getByRole('button', { name: /Marca/ }))
     await waitFor(() => expect(puts).toHaveLength(1))
 
     // Vuelve a la primera, que es la que el contexto nuevo trae de default.
