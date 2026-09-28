@@ -11762,8 +11762,8 @@
             {
               "type": "text",
               "id": "MJtYw",
-              "x": 376.9,
-              "y": 46.2,
+              "x": 300,
+              "y": 20,
               "name": "t14",
               "fill": "$ink",
               "textGrowth": "fixed-width-height",
@@ -108238,17 +108238,6 @@
           ]
         },
         {
-          "type": "rectangle",
-          "id": "g9kB2",
-          "layoutPosition": "absolute",
-          "x": 0,
-          "y": 0,
-          "name": "Velo",
-          "fill": "$shad",
-          "width": 1440,
-          "height": 2329
-        },
-        {
           "type": "frame",
           "id": "GcvkH",
           "layoutPosition": "absolute",
@@ -108261,6 +108250,16 @@
           "stroke": "$w3",
           "strokeWidth": 1,
           "strokeAlignment": "inner",
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "$shad",
+            "offset": {
+              "x": 0,
+              "y": 8
+            },
+            "blur": 24
+          },
           "layout": "vertical",
           "gap": 12,
           "padding": 16,
@@ -108399,7 +108398,7 @@
       "name": "Nota · C6 · Selector de dashboard",
       "width": 760,
       "height": 0,
-      "content": "C6 · SELECTOR DE DASHBOARD\nC6 · Selector de dashboard\n\nContesta las cuatro preguntas de la propuesta del 2026-09-26. El dashboard NO es un noveno control del navbar: §7.1 ya avisa que de ocho elementos a 768 no entra. Lo abre el chevron del bloque de cliente, que ya estaba dibujado, y por eso el navbar no crece.\n\nUn dashboard es contexto, igual que el cliente: por eso el panel cuelga de ese bloque y no del punto de identidad, donde viven la persona, su rol, el tema y las salidas a las otras superficies.\n\nLA PALABRA QUEDA FIJADA. Dashboard es lo que se elige; layout es su composición publicada. El rótulo dice DASHBOARD y ninguna pantalla dice layout.\n\nUN DASHBOARD SIN LAYOUT PUBLICADO NO ES UN ERROR. Se lista con su estado —TODAVÍA NO SE COMPUSO— y al entrar, la consola muestra el vacío con su razón y con salida propia.\n\nEl velo es $shad y no un literal, que es la decisión del 2026-09-22: se usan los tokens que ya hay. El velo de C3 sigue siendo un hex, y ésa es la divergencia §1 de esa misma propuesta.\n\nA 768 y a 360 el panel no cambia de forma: mantiene sus 300 de ancho, que entran en los 360 con los 16 de margen. Lo que se achica es el bloque de cliente, no el panel.\n\n[1440 × 2329]"
+      "content": "C6 · SELECTOR DE DASHBOARD\nC6 · Selector de dashboard\n\nContesta las cuatro preguntas de la propuesta del 2026-09-26. El dashboard NO es un noveno control del navbar: §7.1 ya avisa que de ocho elementos a 768 no entra. Lo abre el chevron del bloque de cliente, que ya estaba dibujado, y por eso el navbar no crece.\n\nUn dashboard es contexto, igual que el cliente: por eso el panel cuelga de ese bloque y no del punto de identidad, donde viven la persona, su rol, el tema y las salidas a las otras superficies.\n\nLA PALABRA QUEDA FIJADA. Dashboard es lo que se elige; layout es su composición publicada. El rótulo dice DASHBOARD y ninguna pantalla dice layout.\n\nUN DASHBOARD SIN LAYOUT PUBLICADO NO ES UN ERROR. Se lista con su estado —TODAVÍA NO SE COMPUSO— y al entrar, la consola muestra el vacío con su razón y con salida propia.\n\nSIN VELO, Y ESO SE CORRIGIÓ MIRÁNDOLO. La primera versión copió el patrón de la hoja de C3: velo de pantalla completa en $shad. Al abrir el render se vio el problema: un velo oscurece la aplicación entera y eso dice MODAL, que es lo que una hoja es y un desplegable no. El panel se separa con su sombra —$shad, 8 de desplazamiento y 24 de difuminado— y el dashboard de atrás queda legible, que es lo correcto para un control del que se puede salir haciendo clic afuera.\n\nA 768 y a 360 el panel no cambia de forma: mantiene sus 300 de ancho, que entran en los 360 con los 16 de margen. Lo que se achica es el bloque de cliente, no el panel.\n\n[1440 × 2329]"
     },
     {
       "type": "frame",
@@ -108911,12 +108910,12 @@
                   "gap": 16,
                   "children": [
                     {
-                      "id": "up1i5",
+                      "id": "qk4Jn",
                       "type": "ref",
                       "ref": "PqkQX",
                       "name": "F1 · Cierre proyectado del mes",
-                      "width": 368,
-                      "height": 368,
+                      "width": 560,
+                      "height": 464,
                       "context": "metricId=revenue_forecast_close tipo=forecast forma=escalarConIntervalo",
                       "descendants": {
                         "gkLo2": {
@@ -108940,7 +108939,7 @@
                         "h93e8j": {
                           "children": [
                             {
-                              "id": "x22Mq",
+                              "id": "hRzs2",
                               "type": "ref",
                               "ref": "xO3wz",
                               "name": "Cuerpo",
@@ -108958,6 +108957,55 @@
                                 },
                                 "Z1qhE": {
                                   "content": "USD 5.6M"
+                                },
+                                "b6ygQ": {
+                                  "children": [
+                                    {
+                                      "id": "PBV7E",
+                                      "type": "ref",
+                                      "ref": "gXFNZ",
+                                      "name": "MÉTODO",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "VogqD": {
+                                          "content": "MÉTODO"
+                                        },
+                                        "PVJlo": {
+                                          "content": "Proyección del cierre del mes con las últimas 8 semanas, con intervalo al 80%."
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "Men3k",
+                                      "type": "ref",
+                                      "ref": "gXFNZ",
+                                      "name": "ALCANCE",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "VogqD": {
+                                          "content": "ALCANCE"
+                                        },
+                                        "PVJlo": {
+                                          "content": "Todos los canales de UA MX. No incluye tienda física."
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "w36EMm",
+                                      "type": "ref",
+                                      "ref": "gXFNZ",
+                                      "name": "LÍMITE",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "VogqD": {
+                                          "content": "LÍMITE"
+                                        },
+                                        "PVJlo": {
+                                          "content": "No modela promociones sin declarar ni quiebres de stock futuros."
+                                        }
+                                      }
+                                    }
+                                  ]
                                 }
                               }
                             }
@@ -108969,12 +109017,12 @@
                       }
                     },
                     {
-                      "id": "Emwp2",
+                      "id": "OzKhc",
                       "type": "ref",
                       "ref": "PqkQX",
                       "name": "F2 · Unidades proyectadas",
-                      "width": 368,
-                      "height": 368,
+                      "width": 560,
+                      "height": 464,
                       "context": "metricId=units_forecast_close tipo=forecast forma=escalarConIntervalo",
                       "descendants": {
                         "gkLo2": {
@@ -108998,7 +109046,7 @@
                         "h93e8j": {
                           "children": [
                             {
-                              "id": "rqR2A",
+                              "id": "SW1vh",
                               "type": "ref",
                               "ref": "xO3wz",
                               "name": "Cuerpo",
@@ -109016,6 +109064,55 @@
                                 },
                                 "Z1qhE": {
                                   "content": "68K u"
+                                },
+                                "b6ygQ": {
+                                  "children": [
+                                    {
+                                      "id": "Hq29Y",
+                                      "type": "ref",
+                                      "ref": "gXFNZ",
+                                      "name": "MÉTODO",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "VogqD": {
+                                          "content": "MÉTODO"
+                                        },
+                                        "PVJlo": {
+                                          "content": "Proyección de unidades del mes con el mismo modelo, al 80% de confianza."
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "lPnQN",
+                                      "type": "ref",
+                                      "ref": "gXFNZ",
+                                      "name": "ALCANCE",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "VogqD": {
+                                          "content": "ALCANCE"
+                                        },
+                                        "PVJlo": {
+                                          "content": "Piezas vendidas en los canales de UA MX, sin devoluciones."
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "IFZD0",
+                                      "type": "ref",
+                                      "ref": "gXFNZ",
+                                      "name": "LÍMITE",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "VogqD": {
+                                          "content": "LÍMITE"
+                                        },
+                                        "PVJlo": {
+                                          "content": "No reparte por talla ni color: el modelo trabaja al nivel de estilo."
+                                        }
+                                      }
+                                    }
+                                  ]
                                 }
                               }
                             }
@@ -109025,9 +109122,113 @@
                           "content": "MÁS ALTO = MEJOR"
                         }
                       }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "r1QO6",
+                  "name": "Row 2",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "id": "XML04",
+                      "type": "ref",
+                      "ref": "nolZa",
+                      "name": "F4 · Venta proyectada con intervalo",
+                      "width": 752,
+                      "height": 368,
+                      "context": "metricId=revenue_forecast tipo=forecast forma=serieConBanda",
+                      "descendants": {
+                        "CDiFi": {
+                          "fill": "$fam-demanda-1"
+                        },
+                        "cl8pI": {
+                          "content": "Venta proyectada con intervalo"
+                        },
+                        "MMtXs": {
+                          "content": "BASE · 8 SEMANAS HACIA ADELANTE · INTERVALO 80%"
+                        },
+                        "PNEUG/X3lMb": {
+                          "content": "GOLD"
+                        },
+                        "PNEUG/oWz0A": {
+                          "content": "ML FORECAST"
+                        },
+                        "PNEUG/UiKX2": {
+                          "content": "HACE 2 H"
+                        },
+                        "KKnfd": {
+                          "children": [
+                            {
+                              "id": "K5eyTr",
+                              "type": "ref",
+                              "ref": "lTY6j",
+                              "name": "Cuerpo",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "descendants": {
+                                "ZQJM0": {
+                                  "children": [
+                                    {
+                                      "id": "QhQ9c",
+                                      "type": "ref",
+                                      "ref": "k2o97P",
+                                      "name": "REAL",
+                                      "descendants": {
+                                        "rMFgt": {
+                                          "fill": "$fam-demanda-1"
+                                        },
+                                        "Q5VKe4": {
+                                          "content": "REAL"
+                                        },
+                                        "L4061O": {
+                                          "content": "USD 1.01M"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "lbFwP",
+                                      "type": "ref",
+                                      "ref": "k2o97P",
+                                      "name": "PROYECCIÓN",
+                                      "descendants": {
+                                        "rMFgt": {
+                                          "fill": "$fam-demanda-0"
+                                        },
+                                        "Q5VKe4": {
+                                          "content": "PROYECCIÓN · 80%"
+                                        },
+                                        "L4061O": {
+                                          "content": "USD 1.05M"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                "I6wHqy": {
+                                  "children": [
+                                    {
+                                      "id": "wsvGW",
+                                      "type": "ref",
+                                      "ref": "wmWUG",
+                                      "name": "Plot",
+                                      "width": 580,
+                                      "height": 204,
+                                      "x": 0,
+                                      "y": 0
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
                     },
                     {
-                      "id": "ZGi6z",
+                      "id": "zpjk9",
                       "type": "ref",
                       "ref": "PqkQX",
                       "name": "F3 · Antigüedad del pronóstico",
@@ -109056,7 +109257,7 @@
                         "h93e8j": {
                           "children": [
                             {
-                              "id": "GfEZ9",
+                              "id": "X2eXN",
                               "type": "ref",
                               "ref": "KsiLk",
                               "name": "Cuerpo",
@@ -109104,68 +109305,18 @@
                 },
                 {
                   "type": "frame",
-                  "id": "r1QO6",
-                  "name": "Row 2",
-                  "width": "fill_container",
-                  "gap": 16,
-                  "children": [
-                    {
-                      "id": "r6HKW",
-                      "type": "ref",
-                      "ref": "nolZa",
-                      "name": "F4 · Venta proyectada con intervalo",
-                      "width": 752,
-                      "height": 464,
-                      "context": "metricId=revenue_forecast tipo=forecast forma=serieConBanda",
-                      "descendants": {
-                        "CDiFi": {
-                          "fill": "$fam-demanda-1"
-                        },
-                        "cl8pI": {
-                          "content": "Venta proyectada con intervalo"
-                        },
-                        "MMtXs": {
-                          "content": "BASE · 8 SEMANAS HACIA ADELANTE · INTERVALO 80%"
-                        },
-                        "PNEUG/X3lMb": {
-                          "content": "GOLD"
-                        },
-                        "PNEUG/oWz0A": {
-                          "content": "ML FORECAST"
-                        },
-                        "PNEUG/UiKX2": {
-                          "content": "HACE 2 H"
-                        },
-                        "KKnfd": {
-                          "children": [
-                            {
-                              "id": "LgNDU",
-                              "type": "ref",
-                              "ref": "wmWUG",
-                              "name": "Cuerpo",
-                              "width": "fill_container",
-                              "height": "fill_container"
-                            }
-                          ]
-                        }
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
                   "id": "N8p10Y",
                   "name": "Row 3",
                   "width": "fill_container",
                   "gap": 16,
                   "children": [
                     {
-                      "id": "zdDgY",
+                      "id": "Xj0WM",
                       "type": "ref",
                       "ref": "nolZa",
                       "name": "F5 · Conversión con banda de control",
-                      "width": 752,
-                      "height": 464,
+                      "width": 1136,
+                      "height": 272,
                       "context": "metricId=conversion_control tipo=forecast forma=serieConBanda estado=BLOQUEADO",
                       "descendants": {
                         "CDiFi": {
@@ -109189,12 +109340,13 @@
                         "KKnfd": {
                           "children": [
                             {
-                              "id": "osYZI",
+                              "id": "RSw6n",
                               "type": "ref",
                               "ref": "TMvbd",
                               "name": "Cuerpo",
                               "width": "fill_container",
                               "height": "fill_container",
+                              "justifyContent": "center",
                               "descendants": {
                                 "KgCFp": {
                                   "content": "BLOQUEADO"
@@ -109309,7 +109461,7 @@
                   "type": "text",
                   "id": "alaNG",
                   "fill": "$dim",
-                  "content": "CONTEXTO · UA MX · MEDIA MIX · JUL 2026 · 5 PANELES",
+                  "content": "CONTEXTO · UA MX · FORECAST · JUL 2026 · 5 PANELES",
                   "fontFamily": "$font-mono",
                   "fontSize": 10,
                   "fontWeight": "normal",
@@ -109329,7 +109481,7 @@
       "name": "Nota · C1 · Forecast",
       "width": 760,
       "height": 0,
-      "content": "C1 · FORECAST\nConsola · C1 · Forecast\n\nES UN CAPÍTULO, NO UN DASHBOARD APARTE. Media Mix ya es una pestaña de C1 y esto es del mismo orden: la consola contesta cómo va el negocio y esta pestaña contesta qué va a pasar si no cambiamos nada. El selector de dashboard de C6 es para composiciones distintas —otra audiencia, otro rol—, no para capítulos de la misma conversación.\n\nNINGUNA CIFRA SIN INTERVALO, Y EL NIVEL SE DECLARA. Es regla dura: un pronóstico sin banda no se publica. Los tres paneles que muestran números llevan su rango y su nivel escrito —80%— y ninguno lo supone: si el modelo entrega al 95, el panel dice 95.\n\nF5 ESTÁ BLOQUEADO A PROPÓSITO, y es lo único verificado de esta pantalla. Medido el 2026-09-28: SHOW FUNCTIONS LIKE FORECAST IN SCHEMA SNOWFLAKE.ML devuelve cero filas, y las 138 semanas del MMM son todas pasadas. Hoy no hay pronóstico publicado para ningún período, así que el panel lo dice con su razón y con qué lo desbloquea.\n\nY muestra la otra regla de §8 de paso: el estado reemplaza el cuerpo y nunca el shell. Título, BASE y procedencia siguen visibles; lo que desaparece es la cifra que no existe.\n\nLAS CIFRAS SON DATO MOCK. Lo que no es mock es la ausencia del modelo. Para construir esta pestaña hacen falta dos filas de catálogo —series_with_band y scalar_with_interval— pedidas en docs/snowflake/PEDIDO-2026-09-28-metricas-mmm-y-forecast.md.\n\nCada panel se ancla a un metricId en su context, nunca a una consulta. Las alturas son rowSpan: 368 es 4 y 464 es 5, con la fórmula 96·N − 16.\n\n[1440 × 1657]"
+      "content": "C1 · FORECAST\nConsola · C1 · Forecast\n\nES UN CAPÍTULO, NO UN DASHBOARD APARTE. Media Mix ya es una pestaña de C1 y esto es del mismo orden: la consola contesta cómo va el negocio y esta pestaña contesta qué va a pasar si no cambiamos nada. El selector de dashboard de C6 es para composiciones distintas —otra audiencia, otro rol—, no para capítulos de la misma conversación.\n\nNINGUNA CIFRA SIN INTERVALO, Y EL NIVEL SE DECLARA. Es regla dura: un pronóstico sin banda no se publica. Los tres paneles que muestran números llevan su rango y su nivel escrito —80%— y ninguno lo supone: si el modelo entrega al 95, el panel dice 95.\n\nF5 ESTÁ BLOQUEADO A PROPÓSITO, y es lo único verificado de esta pantalla. Medido el 2026-09-28: SHOW FUNCTIONS LIKE FORECAST IN SCHEMA SNOWFLAKE.ML devuelve cero filas, y las 138 semanas del MMM son todas pasadas. Hoy no hay pronóstico publicado para ningún período, así que el panel lo dice con su razón y con qué lo desbloquea.\n\nY muestra la otra regla de §8 de paso: el estado reemplaza el cuerpo y nunca el shell. Título, BASE y procedencia siguen visibles; lo que desaparece es la cifra que no existe.\n\nLAS MEDIDAS SALIERON DE MIRAR EL RENDER, no de calcularlas. La primera versión puso F1 y F2 a 4×4 con el slot de base metodológica VACÍO —el editor lo dibuja como una caja violeta— y el plot estirado, que descoloca su punto y sus rótulos porque es vector dibujado a mano. Corregido: F1 y F2 a 6×5 con MÉTODO, ALCANCE y LÍMITE llenos, como el forecast armado del sistema; el plot a su tamaño natural dentro del cuerpo de series, con su leyenda; F3 y F4 a 5 de alto; y F5 a 3, que es exactamente lo que mide su contenido.\n\nLAS CIFRAS SON DATO MOCK. Lo que no es mock es la ausencia del modelo. Para construir esta pestaña hacen falta dos filas de catálogo —series_with_band y scalar_with_interval— pedidas en docs/snowflake/PEDIDO-2026-09-28-metricas-mmm-y-forecast.md.\n\nCada panel se ancla a un metricId en su context, nunca a una consulta. Las alturas son rowSpan: 272 es 3, 368 es 4 y 464 es 5, con la fórmula 96·N − 16.\n\n[1440 × 1465]"
     },
     {
       "type": "frame",

@@ -67,8 +67,10 @@ Cada uno tiene su propuesta escrita, con lo que se midió y lo que se descartó.
 
 **Y dos que no tienen propuesta porque son nuevas del 2026-09-28:**
 
-- **El dashboard de forecast.** Existen el tipo de panel —`Sec · Tipo forecast`—
-  y el plot `INTERVALO`, pero **ninguna pantalla que los componga**.
+- ~~**El dashboard de forecast.**~~ **Dibujado el 2026-09-28** como
+  `Consola · C1 · Forecast`, y declarado en el registro con su razón: espera dos
+  filas de catálogo y su panel F5 va `BLOQUEADO` a propósito. La hoja decía que
+  faltaba y la sesión que dibuja lo tomó — funcionó como se esperaba.
 - **«Guardar como plantilla».** La dirección nueva es que el admin da de alta,
   compone el dashboard, y **eso** se guarda como plantilla. No hay pantalla ni
   flujo dibujado.
