@@ -113,6 +113,7 @@ que su resultado esté escrito.
 | `Consola · C4 · Hallazgo fuera de banda` | **No construida** · ídem |
 | `Consola · C5 · Sin permiso` | `src/render/states/ForbiddenState.tsx` |
 | `C5 · Sin permiso · sin alternativas que ofrecer` | La misma: sin manejador no se pinta el CTA · la regla del CTA muerto |
+| `C6 · Selector de dashboard` | **No construida** · dibujada el 2026-09-28 para contestar `docs/PROPUESTA-2026-09-26-selector-de-dashboard.md`. F5.1 puso un `<select>` en el navbar y el dibujo lo reemplaza por un panel que abre el chevron del bloque de cliente: **lo construido diverge del dibujo y la tarea de ajuste no está tomada** |
 | `A1 · Clientes y plataforma` | `src/surfaces/admin/TenantList.tsx` |
 | `A1 · Clientes · sin ningún cliente` | `src/surfaces/admin/EmptyRow.tsx` |
 | `A1 · Clientes · cargando` | `src/surfaces/admin/SkeletonRows.tsx` |

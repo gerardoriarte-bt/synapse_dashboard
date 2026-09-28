@@ -105119,6 +105119,2240 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "OsG8K",
+      "x": 34616,
+      "y": 1000,
+      "name": "C6 · Selector de dashboard",
+      "context": "metricId:prueba",
+      "theme": {
+        "Mode": "Dark"
+      },
+      "clip": true,
+      "width": 1440,
+      "fill": "$bg",
+      "layout": "vertical",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "frame",
+          "id": "bxRTu",
+          "name": "Navbar",
+          "width": "fill_container",
+          "height": 60,
+          "fill": "$dock",
+          "stroke": "$w2",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "strokeAlignment": "inner",
+          "gap": 14,
+          "padding": [
+            0,
+            24
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "qRbwA",
+              "name": "Logo",
+              "gap": 9,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "rectangle",
+                  "cornerRadius": "$r-xs",
+                  "id": "ttVKL",
+                  "name": "Mark",
+                  "fill": "$acc",
+                  "width": 10,
+                  "height": 10
+                },
+                {
+                  "type": "text",
+                  "id": "aliVL",
+                  "name": "Wordmark",
+                  "fill": "$ink",
+                  "content": "Synapse",
+                  "fontFamily": "$font-display",
+                  "fontSize": 15,
+                  "fontWeight": "500",
+                  "letterSpacing": -0.3
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "uAMK2",
+              "name": "Divider",
+              "fill": "$w3",
+              "width": 1,
+              "height": 26
+            },
+            {
+              "type": "frame",
+              "id": "SXNdj",
+              "name": "Tenant",
+              "gap": 10,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "fBPPi",
+                  "name": "Avatar",
+                  "width": 30,
+                  "height": 30,
+                  "fill": "$elev",
+                  "cornerRadius": "$r-md",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "HUoSl",
+                      "fill": "$ink",
+                      "content": "UA",
+                      "fontFamily": "$font-mono",
+                      "fontSize": 10,
+                      "fontWeight": "normal",
+                      "letterSpacing": 1.2
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "P6gGrh",
+                  "name": "Names",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "v1od1",
+                      "name": "Name",
+                      "fill": "$ink",
+                      "content": "Under Armour",
+                      "fontFamily": "$font-body",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "M7iIUi",
+                      "fill": "$dim",
+                      "content": "UA PERFORMANCE · MÉXICO · ROL CEO",
+                      "fontFamily": "$font-mono",
+                      "fontSize": 9,
+                      "fontWeight": "normal",
+                      "letterSpacing": 1.08
+                    }
+                  ]
+                },
+                {
+                  "type": "icon",
+                  "id": "HA1OD",
+                  "name": "Selector",
+                  "width": 13,
+                  "height": 13,
+                  "icon": "chevrons-up-down",
+                  "library": "lucide",
+                  "fill": "$acc"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "QpmEg",
+              "name": "Spacer",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "id": "Jj76E",
+              "type": "ref",
+              "ref": "mCRjP",
+              "name": "Tema",
+              "descendants": {
+                "toICZ": {
+                  "icon": "sun"
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "VOkFK",
+              "name": "Selector de período",
+              "height": 32,
+              "cornerRadius": "$r-lg",
+              "stroke": "$w3",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 9,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "w3SSD",
+                  "name": "Icon",
+                  "width": 14,
+                  "height": 14,
+                  "icon": "calendar",
+                  "library": "lucide",
+                  "fill": "$dim"
+                },
+                {
+                  "type": "text",
+                  "id": "ebinn",
+                  "fill": "$ink",
+                  "content": "JUL 2026",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 10,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.2
+                },
+                {
+                  "type": "icon",
+                  "id": "PYDYL",
+                  "name": "Chevron",
+                  "width": 13,
+                  "height": 13,
+                  "icon": "chevron-down",
+                  "library": "lucide",
+                  "fill": "$dim"
+                }
+              ]
+            },
+            {
+              "id": "F95nS",
+              "type": "ref",
+              "ref": "mCRjP",
+              "name": "Notificaciones"
+            },
+            {
+              "type": "frame",
+              "id": "Jyb7q",
+              "name": "CTA Synapse",
+              "height": 32,
+              "fill": "$acc",
+              "cornerRadius": "$r-lg",
+              "gap": 8,
+              "padding": [
+                0,
+                14
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "tj8O3",
+                  "name": "Icon",
+                  "width": 14,
+                  "height": 14,
+                  "icon": "sparkles",
+                  "library": "lucide",
+                  "fill": "$on-acc"
+                },
+                {
+                  "type": "text",
+                  "id": "OiDYe",
+                  "fill": "$on-acc",
+                  "content": "PREGUNTAR",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 10,
+                  "fontWeight": "500",
+                  "letterSpacing": 1.2
+                }
+              ]
+            },
+            {
+              "id": "t21HB",
+              "type": "ref",
+              "ref": "RoRGj",
+              "name": "Usuario"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "WtWV0",
+          "name": "Header",
+          "width": 1200,
+          "height": 96,
+          "gap": 16,
+          "padding": [
+            0,
+            32
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "EYRex",
+              "name": "Titles",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tqSSC",
+                  "fill": "$dim",
+                  "content": "UA MX · ECOMMERCE OVERVIEW",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 10,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.2
+                },
+                {
+                  "type": "text",
+                  "id": "ZfMzM",
+                  "name": "Question",
+                  "fill": "$ink",
+                  "content": "¿Cómo va el negocio?",
+                  "fontFamily": "$font-display",
+                  "fontSize": 26,
+                  "fontWeight": "500",
+                  "letterSpacing": -0.7
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "bDKZt",
+              "name": "Rango",
+              "layout": "vertical",
+              "gap": 5,
+              "alignItems": "end",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "U7IIkB",
+                  "fill": "$dim",
+                  "content": "PERÍODO",
+                  "textAlign": "right",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 10,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.2
+                },
+                {
+                  "type": "text",
+                  "id": "K7nflP",
+                  "fill": "$ink",
+                  "content": "1 – 31 JUL 2026 · MTD CERRADO",
+                  "textAlign": "right",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 10,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "VLPDN",
+          "name": "Chapter Tabs",
+          "width": 1200,
+          "height": 52,
+          "stroke": "#00000000",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "strokeAlignment": "inner",
+          "gap": 6,
+          "padding": [
+            0,
+            32
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "XOmkw",
+              "type": "ref",
+              "ref": "k7cfSY",
+              "name": "Tab eCommerce Overview",
+              "fill": "$elev",
+              "descendants": {
+                "pOFw9": {
+                  "icon": "layout-grid",
+                  "fill": "$ink"
+                },
+                "w5n6O": {
+                  "content": "eCommerce Overview",
+                  "fill": "$ink"
+                },
+                "H9iWF": {
+                  "enabled": true,
+                  "width": 113
+                }
+              }
+            },
+            {
+              "id": "mcTDb",
+              "type": "ref",
+              "ref": "k7cfSY",
+              "name": "Tab Brand Momentum",
+              "descendants": {
+                "pOFw9": {
+                  "icon": "tag",
+                  "fill": "$dim"
+                },
+                "w5n6O": {
+                  "content": "Brand Momentum",
+                  "fill": "$dim"
+                },
+                "H9iWF": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "id": "v86qp",
+              "type": "ref",
+              "ref": "k7cfSY",
+              "name": "Tab Product Sales",
+              "descendants": {
+                "pOFw9": {
+                  "icon": "circle-dot",
+                  "fill": "$dim"
+                },
+                "w5n6O": {
+                  "content": "Product Sales",
+                  "fill": "$dim"
+                },
+                "H9iWF": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "id": "inDuF",
+              "type": "ref",
+              "ref": "k7cfSY",
+              "name": "Tab Inventory & Shopping",
+              "descendants": {
+                "pOFw9": {
+                  "icon": "box",
+                  "fill": "$dim"
+                },
+                "w5n6O": {
+                  "content": "Inventory & Shopping",
+                  "fill": "$dim"
+                },
+                "H9iWF": {
+                  "enabled": false
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "n17MA7",
+          "name": "Regla",
+          "width": "fill_container",
+          "height": 1,
+          "fill": "$w2"
+        },
+        {
+          "type": "frame",
+          "id": "lDBpj",
+          "name": "Body",
+          "width": "fill_container",
+          "justifyContent": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "ujgkE",
+              "name": "Canvas",
+              "width": 1200,
+              "layout": "vertical",
+              "gap": 16,
+              "padding": 32,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Wd5wl",
+                  "name": "Row 1",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "id": "h4icNS",
+                      "type": "ref",
+                      "ref": "nolZa",
+                      "name": "1 · Resumen ejecutivo",
+                      "width": 1136,
+                      "height": 368,
+                      "context": "metricId=exec_resumen tipo=prose forma=prosa",
+                      "descendants": {
+                        "CDiFi": {
+                          "fill": "$fam-demanda-1"
+                        },
+                        "cl8pI": {
+                          "content": "Resumen ejecutivo"
+                        },
+                        "MMtXs": {
+                          "content": "BASE · MES EN CURSO VS MES ANTERIOR Y VS MISMO MES 2025"
+                        },
+                        "PNEUG/X3lMb": {
+                          "content": "GOLD"
+                        },
+                        "PNEUG/oWz0A": {
+                          "content": "ERP + Ads API"
+                        },
+                        "PNEUG/UiKX2": {
+                          "content": "HACE 4 H"
+                        },
+                        "KKnfd": {
+                          "children": [
+                            {
+                              "id": "U9rnB",
+                              "type": "ref",
+                              "ref": "NP1FZ",
+                              "name": "Cuerpo",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "justifyContent": "space_between",
+                              "descendants": {
+                                "FsUFt": {
+                                  "content": "Las ventas del mes cerraron en USD 4.28M, 6.4% arriba de junio y 11.2% arriba del mismo mes de 2025. El crecimiento viene de tráfico, no de ticket: las visitas suben 9.8% y el AOV se mantiene plano. La restricción está en existencias: 312 SKU quedan con menos de 3 unidades de profundidad y concentran USD 38K de venta diaria."
+                                },
+                                "HDotn": {
+                                  "children": [
+                                    {
+                                      "id": "dhSht",
+                                      "type": "ref",
+                                      "ref": "usne9",
+                                      "name": "VENTAS",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "u8dn7Z": {
+                                          "content": "VENTAS"
+                                        },
+                                        "z2PCQ": {
+                                          "content": "USD 4.28M"
+                                        },
+                                        "KwkZf": {
+                                          "content": "+6.4% VS JUN · +11.2% YOY"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "pN11s",
+                                      "type": "ref",
+                                      "ref": "usne9",
+                                      "name": "ROAS",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "u8dn7Z": {
+                                          "content": "ROAS"
+                                        },
+                                        "z2PCQ": {
+                                          "content": "4.1x"
+                                        },
+                                        "KwkZf": {
+                                          "content": "COS 24.4% · MÁS ALTO = MEJOR"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "KqLhz",
+                                      "type": "ref",
+                                      "ref": "usne9",
+                                      "name": "EXISTENCIAS",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "u8dn7Z": {
+                                          "content": "EXISTENCIAS"
+                                        },
+                                        "z2PCQ": {
+                                          "content": "18 días"
+                                        },
+                                        "KwkZf": {
+                                          "content": "PROFUNDIDAD MEDIA 7.4 U./SKU"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "p06std": {
+                          "content": "LECTURA CEO · LAS TRES CIFRAS SOSTIENEN EL TITULAR"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "vguVS",
+                  "name": "Row 2",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "id": "zxE4M",
+                      "type": "ref",
+                      "ref": "PqkQX",
+                      "name": "2 · Ventas",
+                      "width": 272,
+                      "height": 368,
+                      "context": "metricId=revenue tipo=kpi forma=escalar",
+                      "descendants": {
+                        "gkLo2": {
+                          "fill": "$fam-demanda-1"
+                        },
+                        "OoPTR": {
+                          "content": "Ventas"
+                        },
+                        "ifQki": {
+                          "content": "BASE · TODOS LOS CANALES · MES"
+                        },
+                        "jIKJX/X3lMb": {
+                          "content": "GOLD"
+                        },
+                        "jIKJX/oWz0A": {
+                          "content": "ERP"
+                        },
+                        "jIKJX/UiKX2": {
+                          "content": "HACE 4 H"
+                        },
+                        "h93e8j": {
+                          "children": [
+                            {
+                              "id": "AOrP5",
+                              "type": "ref",
+                              "ref": "KsiLk",
+                              "name": "Cuerpo",
+                              "width": "fill_container",
+                              "gap": 12,
+                              "descendants": {
+                                "CHOaa": {
+                                  "enabled": true,
+                                  "content": "USD · TOTAL"
+                                },
+                                "eF2fr": {
+                                  "content": "4.28M"
+                                },
+                                "b7wWL/k0qtV": {
+                                  "content": "PESO DE PERFORMANCE"
+                                },
+                                "b7wWL/dwH2k": {
+                                  "content": "61%"
+                                },
+                                "b7wWL/yTKM8": {
+                                  "width": 190,
+                                  "fill": "$fam-demanda-1"
+                                },
+                                "b7wWL/CXPZW": {
+                                  "enabled": false
+                                },
+                                "b7wWL/aPgKE": {
+                                  "content": "USD 2.61M DE USD 4.28M"
+                                },
+                                "X0Uw17/XyPpI": {
+                                  "content": "ÓRDENES"
+                                },
+                                "X0Uw17/h5RbCs": {
+                                  "content": "38.4K"
+                                },
+                                "gWyTm/XyPpI": {
+                                  "content": "VS MES ANTERIOR"
+                                },
+                                "gWyTm/h5RbCs": {
+                                  "content": "+6.4%"
+                                },
+                                "V74t2C/XyPpI": {
+                                  "content": "VS AÑO ANTERIOR"
+                                },
+                                "V74t2C/h5RbCs": {
+                                  "content": "+11.2%"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "NwkOW": {
+                          "content": "MÁS ALTO = MEJOR"
+                        }
+                      }
+                    },
+                    {
+                      "id": "mhHES",
+                      "type": "ref",
+                      "ref": "PqkQX",
+                      "name": "3 · Inversión publicitaria",
+                      "width": 272,
+                      "height": 368,
+                      "context": "metricId=spend tipo=kpi forma=escalar",
+                      "descendants": {
+                        "gkLo2": {
+                          "fill": "$fam-medios-1"
+                        },
+                        "OoPTR": {
+                          "content": "Inversión"
+                        },
+                        "ifQki": {
+                          "content": "BASE · GROSS SPEND · MES"
+                        },
+                        "jIKJX/X3lMb": {
+                          "content": "GOLD"
+                        },
+                        "jIKJX/oWz0A": {
+                          "content": "Ads API"
+                        },
+                        "jIKJX/UiKX2": {
+                          "content": "HACE 4 H"
+                        },
+                        "h93e8j": {
+                          "children": [
+                            {
+                              "id": "JB0Nh",
+                              "type": "ref",
+                              "ref": "KsiLk",
+                              "name": "Cuerpo",
+                              "width": "fill_container",
+                              "gap": 12,
+                              "descendants": {
+                                "CHOaa": {
+                                  "enabled": true,
+                                  "content": "USD · TOTAL"
+                                },
+                                "eF2fr": {
+                                  "content": "1.04M"
+                                },
+                                "b7wWL/k0qtV": {
+                                  "content": "PESO DE SHOPPING + META"
+                                },
+                                "b7wWL/dwH2k": {
+                                  "content": "70%"
+                                },
+                                "b7wWL/yTKM8": {
+                                  "width": 218,
+                                  "fill": "$fam-medios-1"
+                                },
+                                "b7wWL/CXPZW": {
+                                  "enabled": false
+                                },
+                                "b7wWL/aPgKE": {
+                                  "content": "USD 730K DE USD 1.04M"
+                                },
+                                "X0Uw17/XyPpI": {
+                                  "content": "CPA"
+                                },
+                                "X0Uw17/h5RbCs": {
+                                  "content": "USD 27.1"
+                                },
+                                "gWyTm/XyPpI": {
+                                  "content": "VS MES ANTERIOR"
+                                },
+                                "gWyTm/h5RbCs": {
+                                  "content": "+1.8%"
+                                },
+                                "V74t2C/XyPpI": {
+                                  "content": "COS"
+                                },
+                                "V74t2C/h5RbCs": {
+                                  "content": "24.4%"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "NwkOW": {
+                          "content": "SIN DIRECCIÓN · PESO ALTO CONCENTRA RIESGO"
+                        }
+                      }
+                    },
+                    {
+                      "id": "RITN6",
+                      "type": "ref",
+                      "ref": "PqkQX",
+                      "name": "4 · ROAS",
+                      "width": 272,
+                      "height": 368,
+                      "context": "metricId=roas tipo=kpi forma=escalar",
+                      "descendants": {
+                        "gkLo2": {
+                          "fill": "$fam-medios-1"
+                        },
+                        "OoPTR": {
+                          "content": "ROAS"
+                        },
+                        "ifQki": {
+                          "content": "BASE · VENTA ÷ GASTO · MES"
+                        },
+                        "jIKJX/X3lMb": {
+                          "content": "GOLD"
+                        },
+                        "jIKJX/oWz0A": {
+                          "content": "ERP + Ads API"
+                        },
+                        "jIKJX/UiKX2": {
+                          "content": "HACE 4 H"
+                        },
+                        "h93e8j": {
+                          "children": [
+                            {
+                              "id": "D6VL0",
+                              "type": "ref",
+                              "ref": "KsiLk",
+                              "name": "Cuerpo",
+                              "width": "fill_container",
+                              "gap": 12,
+                              "descendants": {
+                                "CHOaa": {
+                                  "enabled": true,
+                                  "content": "TOTAL"
+                                },
+                                "eF2fr": {
+                                  "content": "4.1x"
+                                },
+                                "b7wWL/k0qtV": {
+                                  "content": "CAMPAÑAS SOBRE 4.0x"
+                                },
+                                "b7wWL/dwH2k": {
+                                  "content": "62%"
+                                },
+                                "b7wWL/yTKM8": {
+                                  "width": 193,
+                                  "fill": "$fam-medios-1"
+                                },
+                                "b7wWL/CXPZW": {
+                                  "enabled": false
+                                },
+                                "b7wWL/aPgKE": {
+                                  "content": "5 DE 8 CAMPAÑAS ACTIVAS"
+                                },
+                                "X0Uw17/XyPpI": {
+                                  "content": "COS"
+                                },
+                                "X0Uw17/h5RbCs": {
+                                  "content": "24.4%"
+                                },
+                                "gWyTm/XyPpI": {
+                                  "content": "VS MES ANTERIOR"
+                                },
+                                "gWyTm/h5RbCs": {
+                                  "content": "+0.2x"
+                                },
+                                "V74t2C/XyPpI": {
+                                  "content": "VS AÑO ANTERIOR"
+                                },
+                                "V74t2C/h5RbCs": {
+                                  "content": "−0.3x"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "NwkOW": {
+                          "content": "MÁS ALTO = MEJOR"
+                        }
+                      }
+                    },
+                    {
+                      "id": "p5tgd",
+                      "type": "ref",
+                      "ref": "PqkQX",
+                      "name": "5 · Órdenes",
+                      "width": 272,
+                      "height": 368,
+                      "context": "metricId=orders tipo=kpi forma=escalar",
+                      "descendants": {
+                        "gkLo2": {
+                          "fill": "$fam-demanda-1"
+                        },
+                        "OoPTR": {
+                          "content": "Órdenes"
+                        },
+                        "ifQki": {
+                          "content": "BASE · COMPLETADAS · MES"
+                        },
+                        "jIKJX/X3lMb": {
+                          "content": "GOLD"
+                        },
+                        "jIKJX/oWz0A": {
+                          "content": "ERP"
+                        },
+                        "jIKJX/UiKX2": {
+                          "content": "HACE 4 H"
+                        },
+                        "h93e8j": {
+                          "children": [
+                            {
+                              "id": "RgLHP",
+                              "type": "ref",
+                              "ref": "KsiLk",
+                              "name": "Cuerpo",
+                              "width": "fill_container",
+                              "gap": 12,
+                              "descendants": {
+                                "CHOaa": {
+                                  "enabled": true,
+                                  "content": "TOTAL"
+                                },
+                                "eF2fr": {
+                                  "content": "38.4K"
+                                },
+                                "b7wWL/k0qtV": {
+                                  "content": "PESO DE CLIENTE NUEVO"
+                                },
+                                "b7wWL/dwH2k": {
+                                  "content": "38%"
+                                },
+                                "b7wWL/yTKM8": {
+                                  "width": 118,
+                                  "fill": "$fam-demanda-1"
+                                },
+                                "b7wWL/CXPZW": {
+                                  "enabled": false
+                                },
+                                "b7wWL/aPgKE": {
+                                  "content": "14.6K DE 38.4K ÓRDENES"
+                                },
+                                "X0Uw17/XyPpI": {
+                                  "content": "AOV"
+                                },
+                                "X0Uw17/h5RbCs": {
+                                  "content": "USD 111.5"
+                                },
+                                "gWyTm/XyPpI": {
+                                  "content": "VS MES ANTERIOR"
+                                },
+                                "gWyTm/h5RbCs": {
+                                  "content": "+4.2%"
+                                },
+                                "V74t2C/XyPpI": {
+                                  "content": "CONVERSIÓN"
+                                },
+                                "V74t2C/h5RbCs": {
+                                  "content": "2.1%"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "NwkOW": {
+                          "content": "MÁS ALTO = MEJOR"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Z87NCg",
+                  "name": "Row 3",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "id": "ZYdFK",
+                      "type": "ref",
+                      "ref": "nolZa",
+                      "name": "8 · Objetivos contra real",
+                      "width": 560,
+                      "height": 368,
+                      "context": "metricId=goal_attainment tipo=bars forma=categorica",
+                      "descendants": {
+                        "CDiFi": {
+                          "fill": "$fam-demanda-1"
+                        },
+                        "cl8pI": {
+                          "content": "Objetivos contra real"
+                        },
+                        "MMtXs": {
+                          "content": "BASE · MES EN CURSO · CIERRE PROYECTADO"
+                        },
+                        "PNEUG/X3lMb": {
+                          "content": "GOLD"
+                        },
+                        "PNEUG/oWz0A": {
+                          "content": "Planeación + ERP"
+                        },
+                        "PNEUG/UiKX2": {
+                          "content": "HACE 4 H"
+                        },
+                        "KKnfd": {
+                          "children": [
+                            {
+                              "id": "TLiPp",
+                              "type": "ref",
+                              "ref": "t7MBw",
+                              "name": "Cuerpo",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "children": [
+                                {
+                                  "id": "dvHOc",
+                                  "type": "ref",
+                                  "ref": "SqTHH",
+                                  "name": "Ventas contra objetivo",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "k0qtV": {
+                                      "content": "Ventas contra objetivo",
+                                      "fontFamily": "$font-body",
+                                      "fontSize": 13,
+                                      "letterSpacing": 0,
+                                      "fill": "$ink"
+                                    },
+                                    "dwH2k": {
+                                      "content": "103%"
+                                    },
+                                    "yTKM8": {
+                                      "width": 494,
+                                      "fill": "$fam-demanda-1"
+                                    },
+                                    "CXPZW": {
+                                      "enabled": true,
+                                      "x": 480
+                                    },
+                                    "aPgKE": {
+                                      "content": "USD 4.28M DE USD 4.15M"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "xyOQK",
+                                  "type": "ref",
+                                  "ref": "SqTHH",
+                                  "name": "Órdenes contra objetivo",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "k0qtV": {
+                                      "content": "Órdenes contra objetivo",
+                                      "fontFamily": "$font-body",
+                                      "fontSize": 13,
+                                      "letterSpacing": 0,
+                                      "fill": "$ink"
+                                    },
+                                    "dwH2k": {
+                                      "content": "97%"
+                                    },
+                                    "yTKM8": {
+                                      "width": 466,
+                                      "fill": "$fam-demanda-0"
+                                    },
+                                    "CXPZW": {
+                                      "enabled": true,
+                                      "x": 480
+                                    },
+                                    "aPgKE": {
+                                      "content": "38.4K DE 39.6K"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "VUKlo",
+                                  "type": "ref",
+                                  "ref": "SqTHH",
+                                  "name": "Inversión contra presupuesto",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "k0qtV": {
+                                      "content": "Inversión contra presupuesto",
+                                      "fontFamily": "$font-body",
+                                      "fontSize": 13,
+                                      "letterSpacing": 0,
+                                      "fill": "$ink"
+                                    },
+                                    "dwH2k": {
+                                      "content": "96%"
+                                    },
+                                    "yTKM8": {
+                                      "width": 461,
+                                      "fill": "$fam-medios-1"
+                                    },
+                                    "CXPZW": {
+                                      "enabled": true,
+                                      "x": 480
+                                    },
+                                    "aPgKE": {
+                                      "content": "USD 1.04M DE USD 1.09M"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "gUxab",
+                                  "type": "ref",
+                                  "ref": "SqTHH",
+                                  "name": "ROAS contra objetivo",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "k0qtV": {
+                                      "content": "ROAS contra objetivo",
+                                      "fontFamily": "$font-body",
+                                      "fontSize": 13,
+                                      "letterSpacing": 0,
+                                      "fill": "$ink"
+                                    },
+                                    "dwH2k": {
+                                      "content": "95%"
+                                    },
+                                    "yTKM8": {
+                                      "width": 456,
+                                      "fill": "$fam-medios-2"
+                                    },
+                                    "CXPZW": {
+                                      "enabled": true,
+                                      "x": 480
+                                    },
+                                    "aPgKE": {
+                                      "content": "4.1x DE 4.3x"
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        "p06std": {
+                          "content": "CERCA DEL 100% = MEJOR · LA MARCA ES EL OBJETIVO"
+                        }
+                      }
+                    },
+                    {
+                      "id": "k81nl",
+                      "type": "ref",
+                      "ref": "PqkQX",
+                      "name": "6 · Visitas",
+                      "width": 272,
+                      "height": 368,
+                      "context": "metricId=sessions tipo=kpi forma=escalar",
+                      "descendants": {
+                        "gkLo2": {
+                          "fill": "$fam-demanda-0"
+                        },
+                        "OoPTR": {
+                          "content": "Visitas"
+                        },
+                        "ifQki": {
+                          "content": "BASE · SESIONES ÚNICAS · MES"
+                        },
+                        "jIKJX/X3lMb": {
+                          "content": "GOLD"
+                        },
+                        "jIKJX/oWz0A": {
+                          "content": "GA4"
+                        },
+                        "jIKJX/UiKX2": {
+                          "content": "HACE 4 H"
+                        },
+                        "h93e8j": {
+                          "children": [
+                            {
+                              "id": "O3MxZU",
+                              "type": "ref",
+                              "ref": "KsiLk",
+                              "name": "Cuerpo",
+                              "width": "fill_container",
+                              "gap": 12,
+                              "descendants": {
+                                "CHOaa": {
+                                  "enabled": true,
+                                  "content": "TOTAL"
+                                },
+                                "eF2fr": {
+                                  "content": "1.82M"
+                                },
+                                "b7wWL/k0qtV": {
+                                  "content": "PESO DE ORGÁNICO"
+                                },
+                                "b7wWL/dwH2k": {
+                                  "content": "44%"
+                                },
+                                "b7wWL/yTKM8": {
+                                  "width": 137,
+                                  "fill": "$fam-demanda-0"
+                                },
+                                "b7wWL/CXPZW": {
+                                  "enabled": false
+                                },
+                                "b7wWL/aPgKE": {
+                                  "content": "801K DE 1.82M SESIONES"
+                                },
+                                "X0Uw17/XyPpI": {
+                                  "content": "VS MES ANTERIOR"
+                                },
+                                "X0Uw17/h5RbCs": {
+                                  "content": "+9.8%"
+                                },
+                                "gWyTm/XyPpI": {
+                                  "content": "REBOTE"
+                                },
+                                "gWyTm/h5RbCs": {
+                                  "content": "41.2%"
+                                },
+                                "V74t2C/XyPpI": {
+                                  "content": "SESIÓN MEDIA"
+                                },
+                                "V74t2C/h5RbCs": {
+                                  "content": "2m 14s"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "NwkOW": {
+                          "content": "MÁS ALTO = MEJOR"
+                        }
+                      }
+                    },
+                    {
+                      "id": "DPCl4",
+                      "type": "ref",
+                      "ref": "PqkQX",
+                      "name": "7 · Unidades",
+                      "width": 272,
+                      "height": 368,
+                      "context": "metricId=units tipo=kpi forma=escalar",
+                      "descendants": {
+                        "gkLo2": {
+                          "fill": "$fam-demanda-1"
+                        },
+                        "OoPTR": {
+                          "content": "Unidades"
+                        },
+                        "ifQki": {
+                          "content": "BASE · PIEZAS VENDIDAS · MES"
+                        },
+                        "jIKJX/X3lMb": {
+                          "content": "GOLD"
+                        },
+                        "jIKJX/oWz0A": {
+                          "content": "ERP"
+                        },
+                        "jIKJX/UiKX2": {
+                          "content": "HACE 4 H"
+                        },
+                        "h93e8j": {
+                          "children": [
+                            {
+                              "id": "qVZFD",
+                              "type": "ref",
+                              "ref": "KsiLk",
+                              "name": "Cuerpo",
+                              "width": "fill_container",
+                              "gap": 12,
+                              "descendants": {
+                                "CHOaa": {
+                                  "enabled": true,
+                                  "content": "TOTAL"
+                                },
+                                "eF2fr": {
+                                  "content": "70.7K"
+                                },
+                                "b7wWL/k0qtV": {
+                                  "content": "ESTILOS CON VENTA"
+                                },
+                                "b7wWL/dwH2k": {
+                                  "content": "61%"
+                                },
+                                "b7wWL/yTKM8": {
+                                  "width": 190,
+                                  "fill": "$fam-demanda-1"
+                                },
+                                "b7wWL/CXPZW": {
+                                  "enabled": false
+                                },
+                                "b7wWL/aPgKE": {
+                                  "content": "1.284 DE 2.106 ACTIVOS"
+                                },
+                                "X0Uw17/XyPpI": {
+                                  "content": "POR ORDEN"
+                                },
+                                "X0Uw17/h5RbCs": {
+                                  "content": "1.84"
+                                },
+                                "gWyTm/XyPpI": {
+                                  "content": "AUR"
+                                },
+                                "gWyTm/h5RbCs": {
+                                  "content": "USD 60.5"
+                                },
+                                "V74t2C/XyPpI": {
+                                  "content": "VS MES ANTERIOR"
+                                },
+                                "V74t2C/h5RbCs": {
+                                  "content": "+5.1%"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "NwkOW": {
+                          "content": "MÁS ALTO = MEJOR"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "CGqcO",
+                  "name": "Row 4",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "id": "xSs25",
+                      "type": "ref",
+                      "ref": "nolZa",
+                      "name": "9 · Tendencia diaria",
+                      "width": 656,
+                      "height": 368,
+                      "context": "metricId=daily_trend tipo=series forma=seriesMultiples",
+                      "descendants": {
+                        "CDiFi": {
+                          "fill": "$fam-demanda-1"
+                        },
+                        "cl8pI": {
+                          "content": "Tendencia diaria"
+                        },
+                        "MMtXs": {
+                          "content": "BASE · 31 DÍAS · ESCALAS INDEPENDIENTES"
+                        },
+                        "PNEUG/X3lMb": {
+                          "content": "GOLD"
+                        },
+                        "PNEUG/oWz0A": {
+                          "content": "ERP + GA4"
+                        },
+                        "PNEUG/UiKX2": {
+                          "content": "HACE 4 H"
+                        },
+                        "KKnfd": {
+                          "children": [
+                            {
+                              "id": "DeyeU",
+                              "type": "ref",
+                              "ref": "lTY6j",
+                              "name": "Cuerpo",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "descendants": {
+                                "ZQJM0": {
+                                  "children": [
+                                    {
+                                      "id": "n1ktTz",
+                                      "type": "ref",
+                                      "ref": "k2o97P",
+                                      "name": "VENTAS",
+                                      "descendants": {
+                                        "rMFgt": {
+                                          "fill": "$fam-demanda-1"
+                                        },
+                                        "Q5VKe4": {
+                                          "content": "VENTAS"
+                                        },
+                                        "L4061O": {
+                                          "content": "USD 152K"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "k0viy",
+                                      "type": "ref",
+                                      "ref": "k2o97P",
+                                      "name": "INVERSIÓN",
+                                      "descendants": {
+                                        "rMFgt": {
+                                          "fill": "$fam-medios-1"
+                                        },
+                                        "Q5VKe4": {
+                                          "content": "INVERSIÓN"
+                                        },
+                                        "L4061O": {
+                                          "content": "USD 36K"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "nScrJ",
+                                      "type": "ref",
+                                      "ref": "k2o97P",
+                                      "name": "VISITAS",
+                                      "descendants": {
+                                        "rMFgt": {
+                                          "fill": "$fam-demanda-0"
+                                        },
+                                        "Q5VKe4": {
+                                          "content": "VISITAS"
+                                        },
+                                        "L4061O": {
+                                          "content": "101K"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                "I6wHqy": {
+                                  "children": [
+                                    {
+                                      "id": "vqIcn",
+                                      "type": "ref",
+                                      "ref": "V5Dww",
+                                      "name": "Plot",
+                                      "width": 600,
+                                      "height": 176,
+                                      "x": 0,
+                                      "y": 0,
+                                      "descendants": {
+                                        "ot8Z1": {
+                                          "width": 600,
+                                          "height": 176
+                                        },
+                                        "TLzwn": {
+                                          "width": 600,
+                                          "height": 176
+                                        },
+                                        "e10iK": {
+                                          "width": 600,
+                                          "height": 176
+                                        },
+                                        "sFxJD": {
+                                          "width": 600,
+                                          "height": 176
+                                        },
+                                        "rGc9c": {
+                                          "width": 600,
+                                          "height": 176
+                                        },
+                                        "YsHb2": {
+                                          "width": 600,
+                                          "height": 176
+                                        },
+                                        "iqUWl": {
+                                          "width": 600,
+                                          "height": 176
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "p06std": {
+                          "content": "CADA SERIE NORMALIZADA A SU PROPIO RANGO"
+                        }
+                      }
+                    },
+                    {
+                      "id": "B8r4kn",
+                      "type": "ref",
+                      "ref": "PqkQX",
+                      "name": "10 · Doce meses: eficiencia",
+                      "width": 464,
+                      "height": 368,
+                      "context": "metricId=media_efficiency_12m tipo=series forma=seriesMultiples",
+                      "descendants": {
+                        "gkLo2": {
+                          "fill": "$fam-medios-1"
+                        },
+                        "OoPTR": {
+                          "content": "Doce meses: eficiencia"
+                        },
+                        "ifQki": {
+                          "content": "BASE · 12 MESES · ROAS, CPA E INVERSIÓN"
+                        },
+                        "jIKJX/X3lMb": {
+                          "content": "GOLD"
+                        },
+                        "jIKJX/oWz0A": {
+                          "content": "ERP + Ads API"
+                        },
+                        "jIKJX/UiKX2": {
+                          "content": "HACE 4 H"
+                        },
+                        "h93e8j": {
+                          "children": [
+                            {
+                              "id": "KLICq",
+                              "type": "ref",
+                              "ref": "lTY6j",
+                              "name": "Cuerpo",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "descendants": {
+                                "ZQJM0": {
+                                  "children": [
+                                    {
+                                      "id": "X6Ocf",
+                                      "type": "ref",
+                                      "ref": "k2o97P",
+                                      "name": "ROAS",
+                                      "descendants": {
+                                        "rMFgt": {
+                                          "fill": "$fam-medios-1"
+                                        },
+                                        "Q5VKe4": {
+                                          "content": "ROAS"
+                                        },
+                                        "L4061O": {
+                                          "content": "4.1x"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "JTP5m",
+                                      "type": "ref",
+                                      "ref": "k2o97P",
+                                      "name": "CPA",
+                                      "descendants": {
+                                        "rMFgt": {
+                                          "fill": "$fam-medios-3"
+                                        },
+                                        "Q5VKe4": {
+                                          "content": "CPA"
+                                        },
+                                        "L4061O": {
+                                          "content": "USD 27.1"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "WKSEy",
+                                      "type": "ref",
+                                      "ref": "k2o97P",
+                                      "name": "INVERSIÓN",
+                                      "descendants": {
+                                        "rMFgt": {
+                                          "fill": "$fam-medios-2"
+                                        },
+                                        "Q5VKe4": {
+                                          "content": "INVERSIÓN"
+                                        },
+                                        "L4061O": {
+                                          "content": "USD 1.04M"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                "I6wHqy": {
+                                  "children": [
+                                    {
+                                      "id": "VlcC2",
+                                      "type": "ref",
+                                      "ref": "f5UNc",
+                                      "name": "Plot",
+                                      "width": 408,
+                                      "height": 176,
+                                      "x": 0,
+                                      "y": 0,
+                                      "descendants": {
+                                        "c5mi3E": {
+                                          "width": 408,
+                                          "height": 176
+                                        },
+                                        "IUXg3": {
+                                          "width": 408,
+                                          "height": 176
+                                        },
+                                        "jEyvo": {
+                                          "width": 408,
+                                          "height": 176
+                                        },
+                                        "UFBHu": {
+                                          "width": 408,
+                                          "height": 176
+                                        },
+                                        "B8pXa": {
+                                          "width": 408,
+                                          "height": 176
+                                        },
+                                        "rqlEx": {
+                                          "width": 408,
+                                          "height": 176
+                                        },
+                                        "Q0L7G": {
+                                          "width": 408,
+                                          "height": 176
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "NwkOW": {
+                          "content": "CADA SERIE A SU PROPIO RANGO"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "m9uaxa",
+                  "name": "Row 5",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "id": "j5LAQy",
+                      "type": "ref",
+                      "ref": "nolZa",
+                      "name": "11 · Inversión y retorno por plataforma",
+                      "width": 656,
+                      "height": 464,
+                      "context": "metricId=platform_return tipo=table forma=tabular",
+                      "descendants": {
+                        "CDiFi": {
+                          "fill": "$fam-medios-1"
+                        },
+                        "cl8pI": {
+                          "content": "Inversión y retorno por plataforma"
+                        },
+                        "MMtXs": {
+                          "content": "BASE · MES · ORDENADO POR INVERSIÓN"
+                        },
+                        "PNEUG/X3lMb": {
+                          "content": "GOLD"
+                        },
+                        "PNEUG/oWz0A": {
+                          "content": "Ads API"
+                        },
+                        "PNEUG/UiKX2": {
+                          "content": "HACE 4 H"
+                        },
+                        "KKnfd": {
+                          "children": [
+                            {
+                              "id": "YFjdo",
+                              "type": "ref",
+                              "ref": "R6RiF7",
+                              "name": "Cuerpo",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "descendants": {
+                                "a1a24U": {
+                                  "content": "PLATAFORMA"
+                                },
+                                "ktGAi": {
+                                  "content": "INVERSIÓN",
+                                  "width": 85
+                                },
+                                "IqmxB": {
+                                  "content": "VENTAS",
+                                  "width": 85
+                                },
+                                "kkYTM": {
+                                  "content": "ROAS",
+                                  "width": 55
+                                },
+                                "vudRc": {
+                                  "content": "CPA",
+                                  "width": 75
+                                },
+                                "mlC8g": {
+                                  "content": "PARTICIP.",
+                                  "width": 95
+                                },
+                                "P9FGAG": {
+                                  "children": [
+                                    {
+                                      "id": "F9RA1L",
+                                      "type": "ref",
+                                      "ref": "N63bi",
+                                      "name": "Meta",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "Kh5Yk": {
+                                          "content": "Meta",
+                                          "fill": "$ink"
+                                        },
+                                        "ij5d5": {
+                                          "content": "USD 412K",
+                                          "width": 85
+                                        },
+                                        "kVUzF": {
+                                          "content": "USD 1.71M",
+                                          "width": 85
+                                        },
+                                        "ohVvt": {
+                                          "content": "4.2x",
+                                          "width": 55
+                                        },
+                                        "CpHje": {
+                                          "content": "USD 25.8",
+                                          "width": 75
+                                        },
+                                        "QvVUo": {
+                                          "content": "39.6%",
+                                          "width": 95
+                                        },
+                                        "N3VgN": {
+                                          "enabled": true,
+                                          "fill": "$fam-medios-1"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "i4kPDG",
+                                      "type": "ref",
+                                      "ref": "N63bi",
+                                      "name": "Google Shopping",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "Kh5Yk": {
+                                          "content": "Google Shopping",
+                                          "fill": "$ink"
+                                        },
+                                        "ij5d5": {
+                                          "content": "USD 318K",
+                                          "width": 85
+                                        },
+                                        "kVUzF": {
+                                          "content": "USD 1.44M",
+                                          "width": 85
+                                        },
+                                        "ohVvt": {
+                                          "content": "4.5x",
+                                          "width": 55
+                                        },
+                                        "CpHje": {
+                                          "content": "USD 23.1",
+                                          "width": 75
+                                        },
+                                        "QvVUo": {
+                                          "content": "30.6%",
+                                          "width": 95
+                                        },
+                                        "N3VgN": {
+                                          "enabled": true,
+                                          "fill": "$fam-medios-2"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "DHZYo",
+                                      "type": "ref",
+                                      "ref": "N63bi",
+                                      "name": "Criteo",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "Kh5Yk": {
+                                          "content": "Criteo",
+                                          "fill": "$ink"
+                                        },
+                                        "ij5d5": {
+                                          "content": "USD 148K",
+                                          "width": 85
+                                        },
+                                        "kVUzF": {
+                                          "content": "USD 512K",
+                                          "width": 85
+                                        },
+                                        "ohVvt": {
+                                          "content": "3.5x",
+                                          "width": 55
+                                        },
+                                        "CpHje": {
+                                          "content": "USD 31.4",
+                                          "width": 75
+                                        },
+                                        "QvVUo": {
+                                          "content": "14.2%",
+                                          "width": 95
+                                        },
+                                        "N3VgN": {
+                                          "enabled": true,
+                                          "fill": "$fam-medios-3"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "MsTFa",
+                                      "type": "ref",
+                                      "ref": "N63bi",
+                                      "name": "TikTok",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "Kh5Yk": {
+                                          "content": "TikTok",
+                                          "fill": "$ink"
+                                        },
+                                        "ij5d5": {
+                                          "content": "USD 96K",
+                                          "width": 85
+                                        },
+                                        "kVUzF": {
+                                          "content": "USD 289K",
+                                          "width": 85
+                                        },
+                                        "ohVvt": {
+                                          "content": "3.0x",
+                                          "width": 55
+                                        },
+                                        "CpHje": {
+                                          "content": "USD 36.2",
+                                          "width": 75
+                                        },
+                                        "QvVUo": {
+                                          "content": "9.2%",
+                                          "width": 95
+                                        },
+                                        "N3VgN": {
+                                          "enabled": true,
+                                          "fill": "$fam-medios-0"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "eHJpD",
+                                      "type": "ref",
+                                      "ref": "N63bi",
+                                      "name": "Email · ciclo de vida",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "Kh5Yk": {
+                                          "content": "Email · ciclo de vida",
+                                          "fill": "$ink"
+                                        },
+                                        "ij5d5": {
+                                          "content": "USD 41K",
+                                          "width": 85
+                                        },
+                                        "kVUzF": {
+                                          "content": "USD 218K",
+                                          "width": 85
+                                        },
+                                        "ohVvt": {
+                                          "content": "5.3x",
+                                          "width": 55
+                                        },
+                                        "CpHje": {
+                                          "content": "USD 18.9",
+                                          "width": 75
+                                        },
+                                        "QvVUo": {
+                                          "content": "3.9%",
+                                          "width": 95
+                                        },
+                                        "N3VgN": {
+                                          "enabled": true,
+                                          "fill": "$fam-cliente-1"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "tvApN",
+                                      "type": "ref",
+                                      "ref": "N63bi",
+                                      "name": "Afiliados",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "Kh5Yk": {
+                                          "content": "Afiliados",
+                                          "fill": "$ink"
+                                        },
+                                        "ij5d5": {
+                                          "content": "USD 25K",
+                                          "width": 85
+                                        },
+                                        "kVUzF": {
+                                          "content": "USD 62K",
+                                          "width": 85
+                                        },
+                                        "ohVvt": {
+                                          "content": "2.5x",
+                                          "width": 55
+                                        },
+                                        "CpHje": {
+                                          "content": "USD 44.6",
+                                          "width": 75
+                                        },
+                                        "QvVUo": {
+                                          "content": "2.4%",
+                                          "width": 95
+                                        },
+                                        "N3VgN": {
+                                          "enabled": true,
+                                          "fill": "$fam-medios-4"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "p06std": {
+                          "content": "ORDENADA POR INVERSIÓN · LA PARTICIPACIÓN SUMA 100%"
+                        }
+                      }
+                    },
+                    {
+                      "id": "codlk",
+                      "type": "ref",
+                      "ref": "PqkQX",
+                      "name": "12 · Decisiones de este mes",
+                      "width": 464,
+                      "height": 464,
+                      "context": "metricId=month_decisions tipo=reco forma=prosa",
+                      "descendants": {
+                        "gkLo2": {
+                          "fill": "$fam-medios-1"
+                        },
+                        "OoPTR": {
+                          "content": "Decisiones de este mes"
+                        },
+                        "ifQki": {
+                          "content": "BASE · PRIORIZADO POR IMPACTO × VENTANA"
+                        },
+                        "jIKJX/X3lMb": {
+                          "content": "GOLD"
+                        },
+                        "jIKJX/oWz0A": {
+                          "content": "Geo-lift + ERP"
+                        },
+                        "jIKJX/UiKX2": {
+                          "content": "HACE 6 H"
+                        },
+                        "h93e8j": {
+                          "children": [
+                            {
+                              "id": "Fv4o4",
+                              "type": "ref",
+                              "ref": "c5jBJy",
+                              "name": "Cuerpo",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "children": [
+                                {
+                                  "id": "svEid",
+                                  "type": "ref",
+                                  "ref": "K4v9O",
+                                  "name": "Reco",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "YyJr9": {
+                                      "content": "Mover USD 60K de Criteo y afiliados a Google Shopping antes del cierre de la semana."
+                                    },
+                                    "a52k8/h5RbCs": {
+                                      "content": "HASTA VIE 14 AGO"
+                                    },
+                                    "SJzGY/h5RbCs": {
+                                      "content": "USD 148K · 112–186K"
+                                    },
+                                    "n9lmnE/h5RbCs": {
+                                      "content": "GEO-LIFT 6 SEM · 4 CELDAS"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "oeNw9",
+                                  "type": "ref",
+                                  "ref": "K4v9O",
+                                  "name": "Reco",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "YyJr9": {
+                                      "content": "Reponer los 312 SKU con profundidad menor a 3 unidades, que salen del feed al agotarse."
+                                    },
+                                    "a52k8/h5RbCs": {
+                                      "content": "HASTA MAR 11 AGO"
+                                    },
+                                    "SJzGY/h5RbCs": {
+                                      "content": "USD 38K DIARIOS"
+                                    },
+                                    "n9lmnE/h5RbCs": {
+                                      "content": "VENTA MEDIA 30D DE ESOS SKU"
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        "NwkOW": {
+                          "content": "ORDENADAS POR VENTANA · LA PRIMERA VENCE ANTES"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "TRHlC",
+          "name": "Barra inferior",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "$dock",
+          "stroke": "$w2",
+          "strokeWidth": {
+            "top": 1
+          },
+          "strokeAlignment": "inner",
+          "gap": 10,
+          "padding": [
+            0,
+            24
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "nq802",
+              "name": "PREGUNTAR A SYNAPSE",
+              "height": 32,
+              "cornerRadius": "$r-lg",
+              "stroke": "$w3",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 8,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "D6pSQ",
+                  "name": "Icon",
+                  "width": 14,
+                  "height": 14,
+                  "icon": "sparkles",
+                  "library": "lucide",
+                  "fill": "$dim"
+                },
+                {
+                  "type": "text",
+                  "id": "P9OD1K",
+                  "fill": "$ink",
+                  "content": "PREGUNTAR A SYNAPSE",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 10,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.2
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "fjLda",
+              "name": "Spacer",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "M5qkg",
+              "name": "Contexto",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "ellipse",
+                  "id": "mkrsY",
+                  "name": "Dot",
+                  "fill": "$fam-medios-1",
+                  "width": 7,
+                  "height": 7
+                },
+                {
+                  "type": "text",
+                  "id": "zofim",
+                  "fill": "$dim",
+                  "content": "CONTEXTO · UA MX · ECOMMERCE OVERVIEW · JUL 2026 · 12 PANELES",
+                  "fontFamily": "$font-mono",
+                  "fontSize": 10,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1.2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "g9kB2",
+          "layoutPosition": "absolute",
+          "x": 0,
+          "y": 0,
+          "name": "Velo",
+          "fill": "$shad",
+          "width": 1440,
+          "height": 2329
+        },
+        {
+          "type": "frame",
+          "id": "GcvkH",
+          "layoutPosition": "absolute",
+          "x": 130,
+          "y": 68,
+          "name": "Panel de dashboard",
+          "width": 300,
+          "fill": "$panel",
+          "cornerRadius": "$r-xl",
+          "stroke": "$w3",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "WQ9fK",
+              "fill": "$dim",
+              "content": "DASHBOARD",
+              "fontFamily": "$font-mono",
+              "fontSize": 9,
+              "fontWeight": "normal",
+              "letterSpacing": 1.08
+            },
+            {
+              "type": "frame",
+              "id": "B0FdES",
+              "name": "Opción · eCommerce · activa",
+              "width": "fill_container",
+              "fill": "$elev",
+              "cornerRadius": "$r-md",
+              "gap": 8,
+              "padding": [
+                8,
+                10
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "mVPsl",
+                  "name": "Textos",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "WkOUO",
+                      "fill": "$ink",
+                      "content": "eCommerce",
+                      "fontFamily": "$font-body",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "lvmia",
+                      "fill": "$dim",
+                      "content": "4 PESTAÑAS · 12 PANELES",
+                      "fontFamily": "$font-mono",
+                      "fontSize": 9,
+                      "fontWeight": "normal",
+                      "letterSpacing": 1.08
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "jIg6P",
+                  "name": "Spacer",
+                  "width": "fill_container",
+                  "height": 1
+                },
+                {
+                  "type": "icon",
+                  "id": "f8oK7",
+                  "name": "Activo",
+                  "width": 13,
+                  "height": 13,
+                  "icon": "check",
+                  "library": "lucide",
+                  "fill": "$acc"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vWkrz",
+              "name": "Opción · Marca",
+              "width": "fill_container",
+              "fill": "#00000000",
+              "cornerRadius": "$r-md",
+              "gap": 8,
+              "padding": [
+                8,
+                10
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "mHfPu",
+                  "name": "Textos",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "f7NZOh",
+                      "fill": "$ink",
+                      "content": "Marca",
+                      "fontFamily": "$font-body",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "HcDMS",
+                      "fill": "$dim",
+                      "content": "TODAVÍA NO SE COMPUSO",
+                      "fontFamily": "$font-mono",
+                      "fontSize": 9,
+                      "fontWeight": "normal",
+                      "letterSpacing": 1.08
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "W9GyDX",
+                  "name": "Spacer",
+                  "width": "fill_container",
+                  "height": 1
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "note",
+      "id": "cAhUt",
+      "x": 34616,
+      "y": 670,
+      "name": "Nota · C6 · Selector de dashboard",
+      "width": 760,
+      "height": 0,
+      "content": "C6 · SELECTOR DE DASHBOARD\nC6 · Selector de dashboard\n\nContesta las cuatro preguntas de la propuesta del 2026-09-26. El dashboard NO es un noveno control del navbar: §7.1 ya avisa que de ocho elementos a 768 no entra. Lo abre el chevron del bloque de cliente, que ya estaba dibujado, y por eso el navbar no crece.\n\nUn dashboard es contexto, igual que el cliente: por eso el panel cuelga de ese bloque y no del punto de identidad, donde viven la persona, su rol, el tema y las salidas a las otras superficies.\n\nLA PALABRA QUEDA FIJADA. Dashboard es lo que se elige; layout es su composición publicada. El rótulo dice DASHBOARD y ninguna pantalla dice layout.\n\nUN DASHBOARD SIN LAYOUT PUBLICADO NO ES UN ERROR. Se lista con su estado —TODAVÍA NO SE COMPUSO— y al entrar, la consola muestra el vacío con su razón y con salida propia.\n\nEl velo es $shad y no un literal, que es la decisión del 2026-09-22: se usan los tokens que ya hay. El velo de C3 sigue siendo un hex, y ésa es la divergencia §1 de esa misma propuesta.\n\nA 768 y a 360 el panel no cambia de forma: mantiene sus 300 de ancho, que entran en los 360 con los 16 de margen. Lo que se achica es el bloque de cliente, no el panel.\n\n[1440 × 2329]"
     }
   ],
   "themes": {

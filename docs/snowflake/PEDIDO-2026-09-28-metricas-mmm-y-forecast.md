@@ -83,9 +83,15 @@ v, lo, hi, nivel
 
 ### La pregunta que decide este bloque
 
-**¿De dónde sale la banda?** No lo afirmamos porque no lo sabemos: puede ser
-`SNOWFLAKE.ML.FORECAST` dentro de su cuenta, un modelo afuera cuyo resultado se
-materialice, o algo ya existente que no conocemos.
+**¿De dónde sale la banda?** Lo miramos antes de preguntar, y el camino obvio
+parece cerrado: **`SHOW FUNCTIONS LIKE 'FORECAST' IN SCHEMA SNOWFLAKE.ML`
+devuelve cero filas** · 2026-09-28. Puede ser que la cuenta no tenga habilitadas
+las ML Functions, o que el rol con el que miramos no alcance ese esquema — **no
+lo distinguimos y no lo forzamos**, porque averiguarlo pide ejecutar y eso ya no
+es leer.
+
+Así que la pregunta es suya: ¿se habilita `SNOWFLAKE.ML.FORECAST`, se
+materializa la salida de un modelo de afuera, o hay algo que no vimos?
 
 Lo que sí sabemos es que **`nivel` tiene que venir declarado**, no supuesto. Si
 el modelo produce un intervalo al 80 %, el panel lo dice; inventarlo del lado
@@ -93,49 +99,66 @@ nuestro sería afirmar una confianza que nadie calculó.
 
 ---
 
-## 2 · MMM · una forma, y una pregunta más grande
+## 2 · MMM · el modelo YA EXISTE, y eso achica el pedido a casi nada
 
-### `composition` · partes de un todo, con el total declarado
+**Esta sección se reescribió el 2026-09-28 después de mirar el esquema.** Decía
+que un dashboard de MMM presupone un modelo de atribución y que no sabíamos si
+existía, y que si no existía era un proyecto y no un pedido de catálogo.
 
-Alimenta `CASCADA` —la descomposición del crecimiento, que es **el** gráfico de
-MMM—, `MARIMEKKO`, y de paso `DONA`, `TREEMAP`, `APILADO`, `APILADO 100%` y
-`EMBUDO`, todos ya dibujados.
+**Existe, corrido con Robyn, y con intervalos.** Leído en sólo lectura sobre
+`DB_BT_UA.BT_UA_MART_ANALYTICS`:
 
-```
-partes: [{ etiqueta, v, porcentaje }]
-```
+| Tabla | Qué trae |
+|---|---|
+| `MMM_RESULTS_WEEKLY` | 138 semanas · `REVENUE`, `PREDICTED`, `RESIDUAL`, `BASELINE_CONTRIB` y `CONTRIB_<canal>` por semana |
+| `MMM_RESULTS_CHANNELS` | 7 canales · `ROAS_ADJUSTED`, `CONTRIBUTION_USD`, `CONTRIBUTION_PCT` y **`BOOTSTRAP_P025 / P50 / P975`** |
+| `MMM_RESULTS_CALIBRATION` | El cruce contra conversion lift de Meta |
+| `MMM_MODEL_PARAMS_APPLY` | `BETA`, `THETA`, `ALPHA`, `GAMMA` para scorear semanas nuevas |
+| `GLD_ECOMM_DAILY_PERFORMANCE` | El insumo · 91 columnas, gasto diario pivoteado por plataforma junto a ventas |
 
-**`porcentaje` lo calcula quien produce el dato, no el front.** Redondear en el
-cliente da columnas que suman 99,9 %, y el contrato lo dice explícitamente.
+**Así que no pedimos que se construya nada: pedimos filas de catálogo sobre lo
+que ya está.** Y dos de las tres se pueden curar hoy con formas que el front ya
+dibuja:
 
-**Candidata inmediata y de bajo costo**: *inversión por plataforma*. El `.pen`
-la dibuja con sus cifras —META, GOOGLE, CRITEO, TIKTOK y OTROS, con su
-porcentaje y su total— así que la pantalla ya sabe cómo se ve.
+| Fila que pedimos | `SHAPE` | Sobre | Estado del front |
+|---|---|---|---|
+| **Real contra predicho**, por semana | `multi_series` | `MMM_RESULTS_WEEKLY` · `REVENUE` y `PREDICTED` | **Cuerpo construido** · misma unidad, un solo eje |
+| **Contribución por canal en el tiempo** | `multi_series` | `MMM_RESULTS_WEEKLY` · las siete `CONTRIB_*` más `BASELINE_CONTRIB` | **Cuerpo construido** |
+| **Contribución por canal, con su intervalo** | — | `MMM_RESULTS_CHANNELS` | **Ninguna forma la lleva** · ver §3 |
 
-### `categorical` y `multi_series` · ya existen, y alcanzan
+### Lo que el modelo dice de sí mismo, y que el dashboard tiene que declarar
 
-`PARETO` come `categorical` —hay 3 filas— y `ÁREA APILADA` y `COMBINADO` comen
-`multi_series` —hay 4—. **Para estos tres no pedimos nada**, salvo que las que
-existan sirvan al eje del dashboard: contribución por canal a lo largo del
-tiempo.
+**No es un detalle técnico: cambia qué se puede publicar.** `MMM_ALERTAS` tiene
+**seis alertas sin resolver**, y las dos clases importan:
 
-### La pregunta que este pedido NO puede contestar
+- **`FRESCURA`, severidad CRÍTICA**, del 2026-08-24: «Modelo MMM vencido — última
+  semana modelada tiene 147 días». Acción registrada: reentrenar.
+- **`CONFIANZA`**, repetida cinco semanas seguidas: **4 de 7 canales tienen el
+  intervalo inferior en cero**, sobre 1.5M de inversión. Acción registrada:
+  correr holdout o geo test antes de escalar.
 
-**Un dashboard de MMM presupone un modelo de atribución**, y no sabemos si
-existe. «Descomposición del crecimiento» significa repartir un delta entre
-canales, y ese reparto **es la salida de un modelo**, no una agregación.
+Medido fila por fila, los cuatro son `Google_Brand`, `Criteo`, `TikTok` y
+`FB_Brand` — y `FB_Brand` da contribución **0** con intervalo `[0, 0.34]`.
 
-- **Si el modelo existe**, lo que pedimos es curar sus salidas como filas de
-  catálogo con `SHAPE = 'composition'`, y es barato.
-- **Si no existe**, esto no es un pedido de catálogo sino un proyecto, y
-  conviene decirlo ahora y no cuando la pantalla esté construida.
+**Esto choca de frente con dos reglas nuestras**, y por eso se dice acá y no se
+descubre en pantalla:
 
-**Lo de forecast y lo de MMM no van juntos por esto.** El primero puede ser un
-`GROUP BY` con una función de Snowflake; el segundo puede ser un trimestre de
-modelado. Si hay que elegir uno, **empiecen por forecast**: sus tres gráficos
-están dibujados, su cuerpo construido, y la regla de la banda ya está escrita.
+1. **«Prohibida la estimación puntual sin intervalo».** Publicar «Criteo aportó
+   USD 264K» cuando su intervalo de ROAS va de **0 a 17.96** es publicar un
+   número que el propio modelo no distingue de cero.
+2. **«Degradación declarada»**: un feed vencido no muestra un número aproximado,
+   muestra estado, razón y qué lo desbloquea. Un modelo vencido es lo mismo, y
+   `MMM_ALERTAS` ya trae las tres cosas escritas.
 
----
+**Lo que pedimos entonces no es sólo la métrica: es que la fila del catálogo
+pueda declarar que su modelo está vencido.** Es una conversación de producto y
+datos, no una columna — y nosotros ya tenemos dónde pintarla.
+
+### Lo que sigue faltando de MMM
+
+**El pronóstico forward.** Las 138 filas de `MMM_RESULTS_WEEKLY` son in-sample:
+`REVENUE` contra `PREDICTED` sobre semanas que ya pasaron, de 2024-01-01 a
+2026-08-17. **No hay filas futuras**, así que no hay proyección que dibujar.
 
 ## 3 · Lo que NO les pedimos, porque el hueco es NUESTRO
 
@@ -150,6 +173,23 @@ nuestras dieciséis formas los lleva.**
 Así que pedirles una métrica «de dispersión» sería pedir una forma que nuestro
 propio contrato no sabe recibir. **Primero lo arreglamos nosotros**, y después
 viene el pedido con la forma exacta, como los de arriba.
+
+### Y el dato real destapó un segundo hueco, que es el que más duele
+
+**`MMM_RESULTS_CHANNELS` es N categorías, cada una con su intervalo** —siete
+canales con `BOOTSTRAP_P025`, `P50` y `P975`—. Es el corazón del dashboard de
+MMM: cuánto aportó cada canal y con cuánta certeza.
+
+**Ninguna de nuestras dieciséis formas lo lleva.** `escalarConIntervalo` es UNA
+cifra con rango; `categoricaComparada` tiene N ítems pero **sin `lo` ni `hi`**.
+
+Y no es una necesidad hipotética: **el `.pen` ya la dibuja**. El frame
+`Plot/INTERVALO · Estimaciones con rango` tiene **cuatro filas**, cada una con su
+etiqueta, su cifra y su rango. Cuando lo leímos supusimos que la biblioteca
+repetía el componente; con `MMM_RESULTS_CHANNELS` enfrente se lee distinto —
+**es exactamente esta forma**.
+
+**También lo arreglamos nosotros antes de pedirles nada.**
 
 ---
 
@@ -176,7 +216,11 @@ Las mismas columnas de gobierno de siempre: `NAME`, `SHAPE`, `FAMILY`, `LAYER`,
 |---|---|---|---|
 | **1** | `series_with_band` | Forecast · 3 gráficos | Depende de dónde salga la banda |
 | **2** | `scalar_with_interval` | Forecast · 2 gráficos | Ídem |
-| **3** | `composition` | MMM · 7 gráficos | Bajo **si** existe el modelo de atribución |
+| **3** | `multi_series` · real contra predicho | MMM | **Bajo** · `MMM_RESULTS_WEEKLY` ya lo tiene |
+| **4** | `multi_series` · contribución por canal en el tiempo | MMM | **Bajo** · ídem |
+| **5** | `composition` | MMM · 7 gráficos | Bajo · sobre `MMM_RESULTS_CHANNELS` |
+| **6** | Que la fila pueda declarar **modelo vencido** | MMM | Decisión de producto · `MMM_ALERTAS` ya lo detecta |
+| — | Contribución por canal **con intervalo** | MMM | **No pedido** · ninguna forma la lleva · §3 |
 | — | `distribution` para dispersión | MMM · 3 gráficos | **No pedido** · hueco nuestro, lo arreglamos primero |
 | — | Las seis de `SEMANTIC_DIRECTION` | Ya pendiente | Bajo |
 
