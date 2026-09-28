@@ -165,6 +165,54 @@ Corré `npm run verify` después de cada cambio. Dos chequeos dependen del dibuj
 chequeo.** `pen-pantallas` reconoce `A*`, `B*` y `C*`. Si agregás, cambiás o
 sacás un gráfico, **la puerta no se entera** — avisalo a mano.
 
+## 4b · MIRAR EL DIBUJO ANTES DE COMMITEAR · y cómo se mira
+
+**Decidido con un humano el 2026-09-28**, después de que la primera tanda se
+commiteara sin ver nada. Al exportar las pantallas aparecieron **cinco defectos
+en una sola**, y ninguno lo había visto la puerta, ni la verificación de recortes,
+ni la auditoría: un slot de base metodológica vacío que el editor pinta como una
+caja violeta, dos paneles con la medida equivocada por eso mismo, un plot estirado
+con su punto flotando fuera de la línea, un rótulo ilegible por contraste y una
+barra inferior que seguía diciendo `MEDIA MIX` heredado de la copia.
+
+**La regla: ninguna pantalla nueva se commitea sin haberla exportado y visto.**
+La estructura se verifica con `ctx.problems` y las medidas con `ctx.bounds`, y eso
+**no alcanza**: los cinco defectos pasaban las dos cosas.
+
+### La receta
+
+**El CLI instalado global —0.3.2— NO exporta imagen.** Ni él ni el MCP tienen
+`screenshot`, `export`, `render` ni `preview`; el `--enable-preview` sólo escribe
+una miniatura del lienzo entero, ilegible. **La 0.3.9 sí**: trae `Export` y
+`TakeScreenshot` dentro de `execute`.
+
+```bash
+cp design/Synapse_v2.pen "$TMP/ver.pen"          # 1 · SIEMPRE sobre una copia
+printf 'execute({ input: %s })\nexit()\n' \
+  "'Export([\"<nodeId>\"], \"png\", \"$TMP/exp\")'" > "$TMP/e.txt"
+npx -y @pen.dev/cli@latest interactive --in "$TMP/ver.pen" --out "$TMP/ver.pen" < "$TMP/e.txt"
+```
+
+Después se abre el PNG con la herramienta de lectura de archivos, que lo renderiza.
+
+**NO CORRER EL CLI NUEVO CONTRA `design/Synapse_v2.pen`.** La primera corrida se
+hizo así y **migró el archivo de la versión 2.17 a la 2.18**, moviendo de paso la
+`y` de dos notas — y después de eso **el 0.3.2 dejó de encontrar nodos por id** en
+su propio archivo. Se revirtió con `git restore`. De ahí la copia del paso 1.
+
+### Qué mirar en el render
+
+- **Cajas con borde violeta**: son slots sin llenar. Buscá el componente armado
+  del sistema —`Sec · <tipo> armado`— y copiá cómo los llena.
+- **Huecos grandes**: el panel está más alto que su contenido. La altura sale de
+  lo que el cuerpo mide, no de lo que parece prolijo en la grilla.
+- **Plots**: van a su tamaño natural. Estirarlos mueve los paths y deja atrás el
+  punto, el rótulo y los ejes, que son nodos aparte.
+- **Texto sobre una banda de datos**: dos claros no contrastan. Si el rótulo cae
+  sobre el área de la serie, movelo afuera antes de cambiarle el color.
+- **Textos heredados de la copia**: la barra inferior, la cabecera y el contexto
+  traen el nombre de la pantalla que copiaste.
+
 ## 5 · Cuando el dibujo y `design.md` no coinciden
 
 Pasa, y hay una regla:
