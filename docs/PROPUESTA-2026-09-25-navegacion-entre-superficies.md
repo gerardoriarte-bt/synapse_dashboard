@@ -4,6 +4,26 @@
 > quince pantallas, y lo que hay hoy lo inventamos nosotros. El agente no
 > modifica el `.pen` ni `design.md`.
 
+> **CONTESTADA el 2026-09-28 · dibujando**, con permiso escrito para modificar el
+> `.pen` —`docs/INSTRUCCIONES-2026-09-28-diseno-en-el-pen.md`—. Las cuatro
+> preguntas se resolvieron con una decisión sola: **todo vive DENTRO del punto de
+> identidad**, que es la opción 1 de la pregunta 1 y la sugerencia de la 3.
+>
+> 1. `Console/Panel de usuario` gana dos secciones: **TEMA** —oscuro y claro, el
+>    activo en `$acc`— e **IR A**, con las otras superficies. Ningún control nuevo
+>    en el navbar.
+> 2. **La navegación es simétrica**: la sección lista las superficies que no son
+>    la actual, así que desde administración y desde el builder se llega a las
+>    dos, no sólo a la consola.
+> 3. **El tema vive en las tres**, dentro del punto de identidad y no al lado:
+>    las preferencias que vengan después no agregan un control cada vez.
+> 4. **El builder muestra identidad.** `B2 · Canvas de composición` gana el mismo
+>    bloque que `A1`, con su chevron, y sigue siendo distinto del contexto que
+>    compone: ahí dice el rol que se está componiendo, no quién compone.
+>
+> El «← Consola» que esta propuesta pedía no tocar queda **reemplazado por la
+> sección IR A**. La tarea de ajuste del código no está tomada.
+
 ## De dónde sale
 
 Se levantó mirando las tres superficies juntas: **admin y builder no dicen quién

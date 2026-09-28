@@ -4,6 +4,18 @@
 > dibuja este control. Lo que se hizo está descrito abajo y es reversible; lo
 > que se pide es dónde va y qué forma tiene.
 
+> **CONTESTADA el 2026-09-28 · dibujando.** Las cuatro preguntas quedaron
+> resueltas en el `.pen`, en la pantalla `C6 · Selector de dashboard` y su nota:
+> **no va en el navbar** —lo abre el chevron del bloque de cliente, que ya
+> estaba dibujado, así que el navbar no pasa de ocho elementos—, **no es un
+> `<select>`** sino un panel, **a 768 y a 360 no cambia de forma** porque sus 300
+> de ancho entran en los 360 con los 16 de margen, y **la palabra queda fijada**:
+> dashboard es lo que se elige, layout es su composición publicada.
+>
+> **Lo construido diverge del dibujo** y la tarea de ajuste no está tomada: hoy
+> el selector es un `<select>` en el navbar. Queda declarado en el registro de
+> pantallas de `plan-de-trabajo.md`.
+
 ## El hueco
 
 **Ni el `.pen` ni `design.md` lo dibujan**, y no es un olvido: el
