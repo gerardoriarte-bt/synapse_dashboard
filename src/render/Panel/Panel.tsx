@@ -108,6 +108,8 @@ export function Panel({
         return (
           <ForbiddenState
             requestTo={payload.solicitarA}
+            reason={payload.razon}
+            unlocksWith={payload.desbloqueaCon}
             {...(onRequestAccess === undefined ? {} : { onRequest: onRequestAccess })}
           />
         )

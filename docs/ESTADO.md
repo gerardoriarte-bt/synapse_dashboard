@@ -5,16 +5,16 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**167 de 222 tareas cerradas.** 16 parciales · 34 pendientes · 5 diferidas.
+**168 de 222 tareas cerradas.** 15 parciales · 34 pendientes · 5 diferidas.
 
 
-## Front · 110 de 125
+## Front · 111 de 125
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██████████████████████` | 16/16 | 0 | 0 |
 | 1 · Consola y render/ | `█████████████████████·` | 43/46 | 2 | 1 |
-| 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
+| 2 · Estados | `██████████████████████` | 6/6 | 0 | 0 |
 | 3 · Chat contextual | `██████████████████····` | 12/15 | 0 | 0 |
 | 4 · Admin y Builder | `█████████████████·····` | 19/24 | 0 | 5 |
 | 5 · Pruebas y pulido | `██████████████████····` | 15/18 | 0 | 2 |
@@ -61,7 +61,7 @@ Nada del front está libre: todo lo pendiente espera algo.
 
 ---
 
-## Bloqueadas · 18
+## Bloqueadas · 17
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -72,7 +72,6 @@ Lo que el front espera del backend está detallado en
 - **F1.31** · Registro de gráficos y verificación de mínimos
 - **F1.42** · El mes en curso está incompleto y el selector no lo dice
 - **F1.44** · El orden de una tabla se anuncia, no se aplica
-- **F2.3** · SIN_PERMISO · B0.9 (línea 1171) contestada
 - **F4.17** · ComparisonBody + ComparePlot
 - **F4.18** · MatrixBody + HeatmapPlot
 - **F4.19** · GraphBody + GraphPlot

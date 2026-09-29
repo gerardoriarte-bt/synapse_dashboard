@@ -6,8 +6,8 @@
  *  son las que se pueden equivocar sin que nada falle.
  */
 import { describe, expect, it } from 'vitest'
-import { adaptContext, adaptTab } from '@/api/adapt'
-import type { WireContext, WireTabWithPanels } from '@/api/adapt'
+import { adaptContext, adaptPayload, adaptTab } from '@/api/adapt'
+import type { WireContext, WirePayload, WireTabWithPanels } from '@/api/adapt'
 
 const base = {
   user: { id: 'u', first_name: 'D', last_name: 'L', email: 'd@l' },
@@ -227,5 +227,39 @@ describe('la key de la pestaña · ya no cae al id', () => {
 
     expect(t.tab.key).toBe('overview')
     expect(t.tab.key).not.toBe('uuid-de-fila')
+  })
+})
+
+describe('`SIN_PERMISO` pinta el copy DEL SERVICIO · 2026-09-29', () => {
+  it('pasa `reason` y `unlocks_with` en vez de una frase nuestra', () => {
+    // **Se pidieron, llegaron en `de881e1`, y estuvimos un día sin usarlas.**
+    // `ForbiddenState` pintaba «Esta métrica no está disponible para tu rol»,
+    // escrita por nosotros — y la regla dice que el dueño del texto que describe
+    // datos es quien los emite, no el adaptador.
+    //
+    // **El modo de falla era invisible**: el campo llega, el front lo ignora, y
+    // la pantalla se ve bien. Sólo se nota comparando con lo que el servicio
+    // manda, que es lo que esta prueba hace.
+    const p = adaptPayload({
+      status: 'FORBIDDEN',
+      request_from: 'admin',
+      reason: 'Tu rol no tiene acceso a esta métrica',
+      unlocks_with: 'Pedile al administrador del tenant que la habilite para tu rol',
+    } as WirePayload)
+
+    expect(p).toEqual({
+      estado: 'SIN_PERMISO',
+      solicitarA: 'admin',
+      razon: 'Tu rol no tiene acceso a esta métrica',
+      desbloqueaCon: 'Pedile al administrador del tenant que la habilite para tu rol',
+    })
+  })
+
+  it('un servicio que NO las manda no deja el panel mudo', () => {
+    // Un backend más viejo o un fixture sin los campos: caen a cadena vacía y
+    // `ForbiddenState` usa su frase de respaldo. **Un panel sin frase no dice
+    // nada**, que es peor que decirlo con nuestras palabras.
+    const p = adaptPayload({ status: 'FORBIDDEN', request_from: 'admin' } as WirePayload)
+    expect(p).toEqual({ estado: 'SIN_PERMISO', solicitarA: 'admin', razon: '', desbloqueaCon: '' })
   })
 })

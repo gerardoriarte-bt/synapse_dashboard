@@ -4194,7 +4194,21 @@ La prueba de «sin aproximación» no busca un texto: busca que no haya **ningun
 forma de cifra** en el panel —ni `USD `, ni `4.28M`, ni miles con separador—,
 porque un número aproximado que se cuele no va a llamarse como el fixture.
 
-### F2.3 ⚠️ `SIN_PERMISO` · B0.9 (línea 1171) contestada · 🔒 `/config/solicitudes` da 404
+### F2.3 ✅ `SIN_PERMISO` · con el copy del servicio y sin CTA
+**CERRADA EL 2026-09-29 · y se cerró resolviendo NOSOTROS, no esperando.**
+
+El candado decía que `/config/solicitudes` daba 404. **Sigue dando 404 y ya no importa**: el backend contestó ese día que **la ruta no está planeada**, y que mientras tanto el estado se pinta sin CTA. Es lo que este repositorio ya proponía — «un botón que se aprieta y devuelve 403 es peor que un botón ausente».
+
+**Y al mirarlo apareció que la mitad que sí había llegado estaba sin usar.** Pedimos `reason` y `unlocks_with` para `FORBIDDEN`, llegaron en `de881e1`, y `ForbiddenState` seguía pintando una frase **nuestra** escrita a mano: «Esta métrica no está disponible para tu rol». Eso es el adaptador inventando copy de producto, que la regla prohíbe — el dueño del texto que describe datos es quien los emite.
+
+**El modo de falla no avisa**: el campo llega, el front lo ignora, y la pantalla se ve bien. Un día entero así.
+
+Cableado de punta a punta —contrato, adaptador, `Panel`, estado— con la frase nuestra degradada a **respaldo** para un servicio que no las mande.
+
+**Y la mutación encontró el hueco de las pruebas.** Revertir el adaptador mataba una prueba; **revertir el ESTADO a su frase fija pasaba las 53**: se verificaba que el campo viajara y ninguna que se pintara. Es el mismo modo de falla que la cadena de `chart`. Se agregó la que faltaba, y ahora mueren las tres mutaciones.
+
+**Lo único que no se hace es el CTA**, y queda dicho por qué: no hay a dónde llevar.
+
 **Criterio de aceptación.** Muestra `solicitarA` y ofrece pedir acceso. Si D3
 resuelve conservar el viaje de solicitud, se cablea contra
 `/config/solicitudes`: la solicitud ya hecha sale del servidor y **no de estado

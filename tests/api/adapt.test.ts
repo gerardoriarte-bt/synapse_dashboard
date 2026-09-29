@@ -422,7 +422,18 @@ describe('los cinco estados del cable → las cinco variantes del contrato', () 
     // Por eso el valor es el MEDIDO y no uno cualquiera: si mañana vuelve a
     // moverse, esta línea queda como el registro de contra qué se leyó.
     const p = adaptPayload({ status: 'FORBIDDEN', request_from: 'admin' } as WirePayload)
-    expect(p).toEqual({ estado: 'SIN_PERMISO', solicitarA: 'admin' })
+    // **`razon` y `desbloqueaCon` entran vacíos y eso es correcto** · 2026-09-29.
+    // Este fixture no las manda, así que el estado cae a su frase de respaldo.
+    //
+    // **Y que esta prueba haya fallado al agregarlas es su mérito**: `toEqual`
+    // es estricto, así que un campo nuevo en el adaptador la rompe y obliga a
+    // mirarlo. Un `toMatchObject` habría dejado pasar el cambio en silencio.
+    expect(p).toEqual({
+      estado: 'SIN_PERMISO',
+      solicitarA: 'admin',
+      razon: '',
+      desbloqueaCon: '',
+    })
   })
 
   it('ERROR conserva el mensaje del servicio', () => {

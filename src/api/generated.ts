@@ -1163,6 +1163,29 @@ export interface components {
              */
             estado: "SIN_PERMISO";
             /**
+             * @description **Por qué este rol no lo ve, redactado por el servicio** · llegó en
+             *     `de881e1` el 2026-09-29, y con él `desbloqueaCon`.
+             *
+             *     **Acá el front escribía su propia frase** —«Esta métrica no está
+             *     disponible para tu rol»— y eso era el adaptador inventando copy de
+             *     producto, que la regla prohíbe: el dueño del texto que describe datos
+             *     es quien los emite. Se pidió, llegó, y se reemplazó.
+             * @example Tu rol no tiene acceso a esta métrica
+             */
+            razon: string;
+            /**
+             * @description **A quién pedirle**, redactado. Completa la gramática de §8 —estado,
+             *     razón y qué lo desbloquea— que este estado era el único en no tener
+             *     entera junto con `BLOQUEADO`.
+             *
+             *     **No promete una acción que no existe:** dice a quién pedirle, no
+             *     «solicitá acceso». El backend confirmó el 2026-09-29 que una ruta de
+             *     solicitud **no está planeada**, así que el estado se pinta sin CTA —
+             *     un botón que devuelve 404 es peor que su ausencia.
+             * @example Pedile al administrador del tenant que la habilite para tu rol
+             */
+            desbloqueaCon: string;
+            /**
              * @description Qué rol decide sobre esta métrica.
              * @example CMO
              */

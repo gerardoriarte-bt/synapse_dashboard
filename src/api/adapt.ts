@@ -724,6 +724,17 @@ export function adaptPayload(w: WirePayload): NetworkPayload {
         // rol resuelto — un tenant cuyo rol de administración se llame distinto
         // recibe `admin` igual.
         solicitarA: w.request_from ?? '',
+        // **Las dos frases las escribe el SERVICIO, no nosotros** · llegaron en
+        // `de881e1`. Hasta el 2026-09-29 `ForbiddenState` pintaba una frase
+        // nuestra escrita a mano —«Esta métrica no está disponible para tu
+        // rol»—, que es exactamente lo que la regla del adaptador prohíbe: el
+        // dueño del texto que describe datos es quien los emite.
+        //
+        // **Se pidieron, llegaron, y estuvimos un día sin usarlas.** El campo
+        // llega y el front sigue pintando lo suyo es un modo de falla que no
+        // avisa: la pantalla se ve bien.
+        razon: w.reason ?? '',
+        desbloqueaCon: w.unlocks_with ?? '',
       }
 
     case 'BLOCKED':

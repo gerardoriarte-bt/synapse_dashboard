@@ -1728,9 +1728,32 @@ components:
 
     PayloadSinPermiso:
       type: object
-      required: [estado, solicitarA]
+      required: [estado, solicitarA, razon, desbloqueaCon]
       properties:
         estado: { type: string, enum: [SIN_PERMISO] }
+        razon:
+          type: string
+          description: |
+            **Por qué este rol no lo ve, redactado por el servicio** · llegó en
+            `de881e1` el 2026-09-29, y con él `desbloqueaCon`.
+
+            **Acá el front escribía su propia frase** —«Esta métrica no está
+            disponible para tu rol»— y eso era el adaptador inventando copy de
+            producto, que la regla prohíbe: el dueño del texto que describe datos
+            es quien los emite. Se pidió, llegó, y se reemplazó.
+          examples: ['Tu rol no tiene acceso a esta métrica']
+        desbloqueaCon:
+          type: string
+          description: |
+            **A quién pedirle**, redactado. Completa la gramática de §8 —estado,
+            razón y qué lo desbloquea— que este estado era el único en no tener
+            entera junto con `BLOQUEADO`.
+
+            **No promete una acción que no existe:** dice a quién pedirle, no
+            «solicitá acceso». El backend confirmó el 2026-09-29 que una ruta de
+            solicitud **no está planeada**, así que el estado se pinta sin CTA —
+            un botón que devuelve 404 es peor que su ausencia.
+          examples: ['Pedile al administrador del tenant que la habilite para tu rol']
         solicitarA:
           type: string
           description: Qué rol decide sobre esta métrica.
