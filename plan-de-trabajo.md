@@ -3440,7 +3440,48 @@ regla dice: mientras el campo no exista, dos paneles con el mismo `colStart`
 dependen de un orden que el contrato no promete estable. **Propuesta de spec para
 B0.9.**
 
-#### ➕ F1.31 ⬜ Registro de gráficos y verificación de mínimos · 🔒 `/config/plots` da 404
+#### ➕ F1.31 ⚠️ Registro de gráficos y verificación de mínimos · 🔒 falta aplicarlo en el cuerpo
+**EL CANDADO VENCIÓ PORQUE LA RUTA LA ESCRIBIMOS NOSOTROS** · 2026-09-29 ·
+B1.21, `b6f0e09`. Con la tabla llegando, la mitad de esta tarea se pudo tomar.
+
+**`catalog/plots.ts` está hecho**, con la figura de `blocks.ts` y sin la tabla
+adentro: `plotTable`, `acceptsShape`, `supportsBand`, `evaluar` e
+`invalidPlotReason`. Verificado contra la **respuesta real capturada** de la
+ruta —`tests/api/real/plotsReales.test.ts`, las 49 atravesando el adaptador— y
+con 15 pruebas propias.
+
+**Evaluar `cuando` era la parte delicada, y los sustantivos no se inventaron**:
+son campos del contrato —`items` de `ValorCategorica`, `partes` de
+`ValorComposicion`, `filas` y `columnas` de `ValorMatriz`—. El único que no es de
+primer nivel es `atributos`, que vive en `perfiles[].atributos` y se cuenta del
+primero **porque el contrato declara que todos comparten los ejes**.
+
+**Tres decisiones que las mutaciones obligaron a afinar:**
+
+1. **El mínimo se busca POR FORMA y no se toma el primero de la lista.** Nueve de
+   los 49 sirven dos formas con umbrales distintos —`treemap` pide 2 en
+   `categorica` y 3 en `composicion`—, así que tomar el primero acierta en
+   cuarenta y falla en nueve, y el que falla se ve bien.
+2. **Un sustantivo desconocido devuelve `null`, no `false`.** `false` diría «la
+   condición no se cumple, el gráfico pasa» y apagaría una regla en silencio el
+   día que el repertorio sume un sustantivo que este build no cuenta. Lo mismo
+   con una cuenta que **no aplica** a la forma: contar cero diría «llegaron
+   cero» donde lo cierto es que esa cuenta no existe.
+3. **`indeterminado` NO apaga el panel.** Castigar al usuario por una deriva
+   entre el repertorio y el front sería peor que dibujar; se reporta, igual que
+   `adaptPanelParams` con un param desconocido.
+
+**Y una mutación SOBREVIVIÓ, que es lo que más enseñó.** La prueba de «el mínimo
+se evalúa antes que el tope» usaba la dona, donde `partes < 2` y `partes > 5`
+**se excluyen**: invertir el orden daba el mismo resultado. La condición
+discriminante existe sólo en `radar`, que cuenta **ejes** para el mínimo y
+**perfiles** para el tope. Con el caso bueno la mutación muere.
+
+**Lo que FALTA, y por eso queda en ⚠️:** nada de esto se aplica todavía en el
+cuerpo del panel. `invalidPlotReason` existe y nadie lo llama — un `bars` con un
+ítem sigue dibujando una barra sola. El siguiente paso es el `EmptyState` con su
+razón en `Panel`, y ahí sí se cierran los cinco bullets del criterio.
+
 **Descripción.** D2 lo resolvió a favor. Dos piezas: `catalog/plots.ts` con los
 validadores sobre el repertorio que llega de `/config/plots` —la misma figura que
 `catalog/blocks.ts`, sin la tabla escrita adentro—, y

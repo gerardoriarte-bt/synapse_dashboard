@@ -43,6 +43,10 @@ export type Presentation = Schemas['Presentacion']
 export type Actions = Schemas['Acciones']
 export type Metric = Schemas['Metrica']
 export type Block = Schemas['Bloque']
+/** Una entrada del repertorio · llega en `GET /config/plots`, que escribimos
+ *  nosotros el 2026-09-29. La tabla NO vive en el front: esto es su forma. */
+export type Plot = Schemas['Grafico']
+export type PlotMinimum = Schemas['MinimoDeDatos']
 export type PanelConfig = Schemas['PanelConfigurado']
 export type Tab = Schemas['Pestana']
 export type TabWithPanels = Schemas['PestanaConPaneles']

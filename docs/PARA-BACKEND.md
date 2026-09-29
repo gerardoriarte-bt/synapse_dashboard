@@ -345,7 +345,7 @@ Lo de arriba son pedidos; esto es información.
 
 | Tarea | Qué la frena |
 |---|---|
-| **F1.31** · Registro de gráficos y verificación de mínimos | `/config/plots` da 404 |
+| **F1.31** · Registro de gráficos y verificación de mínimos | falta aplicarlo en el cuerpo |
 | **F1.42** · El mes en curso está incompleto y el selector no lo dice | el período no declara QUÉ PARTE del mes cubre |
 | **F1.44** · El orden de una tabla se anuncia, no se aplica | `cut` de `series` no lo lee nadie |
 | **F4.21** · Selector de gráfico en el builder | `/config/plots` da 404 |

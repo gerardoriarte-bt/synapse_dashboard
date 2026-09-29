@@ -7,6 +7,7 @@
 import { ApiError, SIN_CODIGO } from './types'
 import {
   adaptBlocks,
+  adaptPlots,
   adaptCatalog,
   adaptContext,
   adaptPayload,
@@ -17,6 +18,7 @@ import {
 import type {
   AdaptedCatalog,
   WireBlock,
+  WirePlot,
   WireChatSuggestion,
   WireChatThread,
   WireContext,
@@ -29,6 +31,7 @@ import type {
   Block,
   Envelope,
   Payload,
+  Plot,
   TabWithPanels,
 } from './types'
 import { currentToken } from '../app/auth/session'
@@ -110,6 +113,11 @@ export const api = {
    *  valide una composición sin llevar la tabla escrita adentro.
    *
    *  También llega como arreglo desnudo. */
+  /** El repertorio · global, no por tenant. `data` es un arreglo desnudo, igual
+   *  que `blocks`: así se escribió la ruta, a propósito, para que las dos se
+   *  consuman con el mismo idioma. */
+  plots: async (): Promise<Plot[]> => adaptPlots(await request<WirePlot[]>('/config/plots')),
+
   blocks: async (): Promise<{ blocks: Block[] }> => ({
     blocks: adaptBlocks(await request<WireBlock[]>('/config/blocks')),
   }),

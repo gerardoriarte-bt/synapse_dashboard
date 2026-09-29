@@ -53,12 +53,13 @@ import type {
   Metric,
   NetworkPayload,
   PanelConfig,
+  Plot,
   Presentation,
   Shape,
   Tab,
   TabWithPanels,
-  Value,
   ThreadSummary,
+  Value,
 } from './types'
 
 type W = wire['schemas']
@@ -66,6 +67,7 @@ type W = wire['schemas']
 export type WireContext = W['ContextResponse']
 export type WireMetric = W['CatalogMetric']
 export type WireBlock = W['BlockRule']
+export type WirePlot = W['PlotRule']
 export type WireTabWithPanels = W['TabWithPanels']
 export type WirePanel = W['PanelDTO']
 
@@ -619,6 +621,40 @@ const DIBUJABLES: readonly Shape[] = [
  *  con su razón. Si entrara, `acceptsShape` y `spanInRange` opinarían sobre un
  *  tipo que ningún cuerpo puede dibujar — y el builder lo ofrecería. */
 export type AdaptedBlocks = { blocks: Block[]; rejected: RejectedMetric[] }
+
+/** El repertorio · `GET /config/plots`, la ruta que escribimos el 2026-09-29.
+ *
+ *  **Renombra y traduce formas; no calcula y no redacta.** `razon` y la del
+ *  `tope` son copy de producto que viene del repertorio y se pinta tal cual.
+ *
+ *  **Una forma que este contrato no conoce descarta el gráfico entero**, y no
+ *  sólo esa forma: un `treemap` al que le faltara `composicion` se vería
+ *  correcto aceptando una forma menos, que es la clase de error que no falla.
+ *  Descartarlo lo hace visible — el id cae en `UnknownPlotState`, que lo nombra. */
+export function adaptPlots(rows: readonly WirePlot[]): Plot[] {
+  const out: Plot[] = []
+  for (const p of rows) {
+    const formas = p.shapes.map((f) => FORMAS[f])
+    if (formas.some((f) => f === undefined)) continue
+    out.push({
+      id: p.id as Plot['id'],
+      nombre: p.name,
+      formas: formas as Shape[],
+      soportaBanda: p.supports_band,
+      // **`minimums` nunca llega `null`** —el servicio lo normaliza, medido el
+      // 2026-09-29—, pero el `?? []` queda: el día que alguien sirva la tabla
+      // desde otro lado, una lista ausente no puede leerse como «sin mínimo».
+      minimos: (p.minimums ?? []).flatMap((m) => {
+        const forma = FORMAS[m.shape]
+        return forma === undefined ? [] : [{ forma, cuando: m.when, razon: m.reason }]
+      }),
+      ...(p.cap === undefined || p.cap === null
+        ? {}
+        : { tope: { cuando: p.cap.when, razon: p.cap.reason } }),
+    })
+  }
+  return out
+}
 
 export function adaptBlocks(rows: readonly WireBlock[]): Block[] {
   return adaptBlocksConRechazo(rows).blocks

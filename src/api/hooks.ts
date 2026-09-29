@@ -20,6 +20,7 @@ export const keys = {
   me: ['config', 'me'] as const,
   catalog: ['config', 'catalog'] as const,
   blocks: ['config', 'blocks'] as const,
+  plots: ['config', 'plots'] as const,
   tab: (tabId: string, layoutId?: string) => ['config', 'tab', tabId, layoutId ?? null] as const,
   panels: (tabId: string, period: string) => ['panels', tabId, period] as const,
   // **La clave lleva de QUÉ es el contexto, no sólo su id** · F3.15. Un panel y
@@ -69,6 +70,15 @@ export function useCatalog() {
 
 export function useBlocks() {
   return useQuery({ queryKey: keys.blocks, queryFn: api.blocks })
+}
+
+/** El repertorio de gráficos · F1.31.
+ *
+ *  **Misma vida de caché que los bloques**: es una tabla global que cambia
+ *  cuando cambia el diseño, no cuando cambia el dato. Pedirla por período o por
+ *  pestaña sería re-pedir 49 filas que no se mueven. */
+export function usePlots() {
+  return useQuery({ queryKey: keys.plots, queryFn: api.plots })
 }
 
 /** El layout de la pestaña. **No lleva el período en la clave** — es la mitad de
