@@ -1199,8 +1199,8 @@ Hoy `POST /admin/tenants` exige `private_key_pem`, así que por cada cliente **a
 - **El ciclo se cierra con lo que ya existe**: generar → el cliente registra la pública en su usuario de servicio → `GET /agents/ping` confirma que funciona.
 - `private_key_pem` deja de ser obligatoria en el alta, o queda un orden declarado. **Cuál de las dos es decisión del backend**; el front no depende de la forma.
 
-#### ➕ B1.32 ⬜ Declarar qué es `cut` en una serie
-**Espera del backend.** **Confirmar que `cut` lo aplica el FRONT** — el pedido se afinó el 2026-09-28 leyendo su código, y quedó mucho más chico de lo que iba a ser.
+#### ➕ B1.32 ✅ `cut` es `day` o `month`, y lo aplica el front
+**Lo que fue este pedido, y cuánto se achicó antes de mandarse.** Iba a ser «qué significa `cut`»; leyendo su código quedó en «confirmen que lo aplica el front», y la confirmación llegó el mismo día.
 
 **Medido contra `f70cec2` el 2026-09-28** · `cut` aparece en su semilla con `day` y `month`, y **ningún consumidor** en `internal/core/`.
 
@@ -1210,10 +1210,16 @@ Hoy `POST /admin/tenants` exige `private_key_pem`, así que por cada cliente **a
 
 **Bloquea F1.44**, que es un defecto visible: el orden de una tabla **se anuncia y no se aplica**. Hoy el panel dice cómo está ordenado y no lo está, que es peor que no decirlo.
 
+**CONTESTADA EL 2026-09-28 · `docs/RESPUESTA-2026-09-28-todo-lo-que-falta.md`.** Y es la clase de respuesta que cierra una tarea sin una línea de código de nadie:
+
+> «Sí: los únicos valores son `day` y `month`, y **lo aplica el front**. Ningún código del backend lee `cut` ni `normalization` (ni `order` de tablas): son `layout_params` declarativos que viajan en `options` del panel y los honra quien dibuja.»
+
+**Coincide con lo que habíamos medido** —ningún consumidor en `internal/core/`—, así que es una segunda fuente de verdad y no una transcripción de la misma. Y agregan uno que no habíamos preguntado: **el `order` de las tablas también es nuestro**, que es exactamente lo que F1.44 necesitaba saber.
+
 **Criterio de aceptación.**
-- Queda dicho si `day` y `month` son **todos** los valores o hay más.
-- Queda confirmado que el backend **no** lo aplica y que es del front · verificado por `grep`, falta que lo digan.
-- Lo mismo para `normalization`, que está en la misma situación y bloquea lo mismo.
+- Queda dicho si `day` y `month` son todos los valores · **sí, contestado**.
+- Queda confirmado que el backend no lo aplica · **confirmado, y ellos lo dicen**.
+- Lo mismo para `normalization` · **confirmado**, y de paso el `order` de tablas.
 
 #### ➕ B1.33 ✅ El patrón de `PeriodoId` · es `YYYY-MM` y nada más
 **NO ERA UN PEDIDO · se contesta leyendo su código, y así se contestó el 2026-09-28** antes de mandarlo.
@@ -1341,6 +1347,13 @@ paneles en vez de doce. Pidiéndole al lote los tres que le faltan contesta
 traen. **Anotado como pedido, no como defecto nuestro**: el adaptador pasa
 `request_from` tal cual porque redactarlo acá sería el front inventando a quién
 pedirle.
+
+**Y CON QUÉ SE PROVOCA `ERROR` quedó contestado el 2026-09-28**, que era la pregunta abierta. Dan dos caminos, y el segundo es el que sirve:
+
+1. **Materialización fallida sin `AVAILABLE` previo** · apuntando `DD_SNOWFLAKE_ECOMM_TABLE` a una tabla inexistente y materializando un período nunca materializado. **Si ya había `AVAILABLE`, la regla lo preserva y sale `DEGRADED`** — que es por qué no aparecía.
+2. **`options` inválidas en un panel YA PUBLICADO** · `gauge` sin `maximum`, `forecast` sin `horizon`, JSON roto. El builder lo rechaza al validar, «así que sólo pasa con layouts publicados antes de esa validación o editados por fuera».
+
+**El segundo explica lo que medimos.** No era que el estado no existiera: era que el camino que el criterio usaba —componer un `gauge` sin `maximum`— dejó de estar disponible cuando agregaron la validación. **El estado es alcanzable; el disparador cambió de lugar.**
 
 **`ERROR` pasó de «no hay ninguno» a «el servicio lo impide».** Se compuso un
 `gauge` sin `maximum` en un borrador —que la consola no ve— y el builder lo
@@ -4081,6 +4094,10 @@ verificada y no declarada. La prueba además **afirma que el fixture no trae
 - `FORBIDDEN` trae `reason` y `unlocks_with`, redactados, como los otros estados.
 - La redacción **no promete una acción que no existe**: mientras no haya ruta de solicitud, `unlocks_with` dice a quién pedirle, no «solicitá acceso».
 - Si se decide que no va a haber ruta de solicitud, **eso cierra F2.3** con el estado declarado y sin CTA — un botón que devuelve 404 es peor que su ausencia.
+
+**CONTESTADO EN PARTE EL 2026-09-28.** Sobre la ruta: *«Es decisión de producto y la llevamos. Mientras tanto el estado ya viene declarado, así que pueden pintarlo **sin CTA**; si producto dice que sí, la ruta sería `POST /config/access-requests` reusando el flujo de `access_requests` que ya existe».*
+
+**Coincide con lo que habíamos propuesto**, así que el camino de F2.3 queda claro: pintar el estado sin CTA. **Pero la mitad que lo desbloquea NO llegó**: dicen que `FORBIDDEN` ya trae `reason` y `unlocks_with`, y **medido el 2026-09-29 sigue siendo `{request_from, status}` y nada más** — ver `docs/MENSAJE-2026-09-29-backend-no-podemos-verificar.md`. Sin esas dos frases no hay qué pintar.
 
 #### ➕ B2.15 ⬜ Encender `DD_MATERIALIZE_PROSE_ENABLED` y avisar
 **Espera del backend.** **Que se encienda en dev y nos avisen** — lo ofrecieron ellos en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».

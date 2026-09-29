@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Lo que esperamos · 11 pedido(s)
+## Lo que esperamos · 10 pedido(s)
 
 
 ### B0.4 · Middleware de auth y envelope
@@ -134,22 +134,6 @@ Medido ese día contra `f70cec2`: `POST /admin/tenants/{tenantId}/materialize` c
 Hoy `POST /admin/tenants` exige `private_key_pem`, así que por cada cliente **alguien genera un par a mano y transporta una clave privada** hasta donde se haga el alta. Verificado ese día: no hay `rsa.GenerateKey` en `internal/`.
 
 **Es más fácil y además más seguro**, que es la combinación que no obliga a elegir: la privada nunca sale del servicio y lo que circula es la pública.
-
-
-### B1.32 · Declarar qué es cut en una serie
-
-*Estado de la tarea: pendiente.*
-
-
-**Confirmar que `cut` lo aplica el FRONT** — el pedido se afinó el 2026-09-28 leyendo su código, y quedó mucho más chico de lo que iba a ser.
-
-**Medido contra `f70cec2` el 2026-09-28** · `cut` aparece en su semilla con `day` y `month`, y **ningún consumidor** en `internal/core/`.
-
-**Lo que se averiguó solo:** su semilla ya muestra el vocabulario —`{"cut": "day"}` y `{"cut": "month"}` en `dd_seed.go:113`— y `dd_seed_blocks.go:44` lo declara como `layout_param` del bloque `series` junto a `normalization`. **Y nadie lo lee**: `grep` sobre `internal/core/` no encuentra un solo consumidor de `cut` ni de `normalization` fuera de la semilla.
-
-**Así que la pregunta ya no es qué significa, sino si son sólo esos dos valores.**
-
-**Bloquea F1.44**, que es un defecto visible: el orden de una tabla **se anuncia y no se aplica**. Hoy el panel dice cómo está ordenado y no lo está, que es peor que no decirlo.
 
 
 ### B2.12 · Correr el materializador contra datos reales y verificar los seis estados
