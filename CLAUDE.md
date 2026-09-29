@@ -507,7 +507,55 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-09-28 (noche) · el día que la prosa propia costó cinco pedidos falsos
+### ⇩ ACÁ SE PARÓ · 2026-09-29 · el día que escribimos lo que veníamos pidiendo
+
+**Lo que costó descubrir está en `docs/BITACORA-2026-09-29.md`.** Lo de acá es
+dónde retomar.
+
+**TRES MENSAJES ESCRITOS Y SIN ENVIAR**, los tres medidos, y **los tres los manda
+el humano**:
+
+| Archivo | A quién | Qué pide |
+|---|---|---|
+| `MENSAJE-2026-09-29-backend-el-despliegue.md` | Backend | **Tres preguntas y una entrega** · si existe el servicio, en qué commit, contra qué base · y el empaquetado del front, que es de ellos desplegar |
+| `MENSAJE-2026-09-29-datos-formas-sin-metrica.md` | Datos | La fila del catálogo y **el esquema de Gold** · el SQL lo escribimos nosotros |
+| `MENSAJE-2026-09-29-backend-tenant-colombiano.md` | Backend | El tenant de México está en `es-CO`/`COP`/`America/Bogota` por un **default de columna** |
+
+**Y una especificación que reemplaza pedir métricas de a una**:
+`docs/snowflake/COMO-ENTREGAR-UNA-METRICA.md`. Su tesis es del humano y conviene
+no perderla: **casi todas las decisiones de qué se grafica salen de saber qué
+hay**, así que el primer entregable no es una métrica sino **el inventario de
+Gold** — con el **grano** y la **cardinalidad** de cada dimensión, que son los dos
+que no se leen de un `DESCRIBE`.
+
+**LA PREGUNTA QUE DECIDE LO QUE SIGUE NO ES UNA TAREA: ¿hay un backend
+desplegado?** Todo lo verificado —la consola, el chat, los trece gráficos,
+`/config/plots`, la prosa por agente— está medido contra un binario que
+**levantamos nosotros**. Ya está preguntado; lo que sigue es esperar.
+
+**ESCRIBIMOS `GET /config/plots`** · `b6f0e09` en `feature/config-plots` del fork,
+sobre `de881e1` limpio. Estuvo pedido **tres veces** y no llegaba; al medir, la
+tabla era nuestra entera y lo único que faltaba era la ruta. **Las 49 filas las
+genera `tools/gen-plots.py`** desde cuatro fuentes — pedirles transcribir 49 filas
+de una tabla markdown era el modo de falla que ya costó quince filas mal.
+
+**LOS TRECE GRÁFICOS CON DATO REAL ESTÁN DIBUJANDO**, y F1.31 y F4.21 cerradas.
+Lo que enseñó está en la bitácora; en corto: **los 13 que faltaban eran
+exactamente los 13 que se dibujaban como otra cosa**, y dos cosas andaban de
+casualidad —el multi-dashboard y el `chart` del builder, que **borraba** al
+guardar—.
+
+**LA PROSA POR AGENTE ANDA**, probada acá con el flag prendido: los dos paneles
+pasan de `DEGRADED` con el texto de la semilla a `AVAILABLE` en español y con las
+cifras del período. B2.15 queda en ⚠️ porque lo que pide es encenderla **en dev**.
+
+**Y DOS PREGUNTAS DEL HUMANO ATAJARON DOS PEDIDOS EQUIVOCADOS EN DOS DÍAS.** El 28
+fue «¿validaste contra el repositorio?» y cayeron cinco de doce. El 29 fue «¿no
+podemos definirlos nosotros?» y movió medio pedido de datos a nuestra mesa.
+**Ninguna herramienta las hizo**, y es la clase de control que conviene pedir
+antes de mandar algo.
+
+### ⇩ el 2026-09-28 (noche) · el día que la prosa propia costó cinco pedidos falsos
 
 **Todo lo que costó descubrir está en `docs/BITACORA-2026-09-28.md`.** Lo de abajo
 es sólo dónde retomar.
