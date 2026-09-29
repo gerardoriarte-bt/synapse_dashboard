@@ -152,6 +152,7 @@ decir qué rol cumple**, porque ahí empieza la superposición.
 |---|---|
 | `docs/ESTADO.md` | **GENERADO** · el estado del proyecto. **Lo que se consulta y se reenvía** |
 | `docs/PARA-BACKEND.md` | **GENERADO** · lo que el front espera del backend |
+| `docs/ESTADO-BACKEND.md` | **GENERADO** · **contra qué commit suyo está verificada cada `B*`**, y cuáles quedaron contra uno anterior. No dice cuánto hizo el backend: dice qué sabemos nosotros y desde cuándo |
 | `docs/snowflake/*` | Entregable a **ingeniería de datos**, no al backend. Instrucción y SQL |
 | `docs/PLAN-INTEGRACION-*.md` | El **análisis** que fundamenta los pedidos, campo por campo |
 | `docs/ESTADO-*-*.md` | Un **corte** verificado contra el servicio, con fecha. No se actualiza: se reemplaza |
@@ -621,6 +622,8 @@ la ruta que lo emite.
 ## Fase 1 — API de consola
 
 ### B1.1 ✅ `GET /config/me` · los seis, o retirados con razón
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `GET /config/me` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. Llegan `period_grain: "month"`, `periods_detail` con `[start, end)` por período, y `scope` —`kind: single_tenant` con el token de planner, y `tenants` nunca `null`—.
 
 **Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `GET /config/me` responde con `user`, `tenant`, `role`, `tabs`, `periods` y `catalog_version`. **Parcial** porque faltan `theme` —el campo existe en `users` y el `PUT` lo escribe— y el resto del contexto que declara el contrato.
@@ -678,6 +681,8 @@ Pedir un campo que nadie llena es lo mismo que les señalamos de `vertical`.
 - Con `alcance: plataforma` incluye `tenantsDisponibles`; con `usuario`, no.
 
 ### B1.2 ✅ `GET /config/catalog`
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `GET /config/catalog` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `GET /config/catalog` devuelve 12 métricas con sus quince campos. El filtrado por rol es B1.19 y se audita aparte.
 **Descripción.** Las métricas del tenant filtradas por el rol del token.
 **Criterio de aceptación.**
@@ -688,6 +693,8 @@ Pedir un campo que nadie llena es lo mismo que les señalamos de `vertical`.
 - `direccionSemantica` viene solo en las compuestas, y es la frase que se pinta.
 
 ### B1.3 ✅ `GET /config/blocks`
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `GET /config/blocks` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `GET /config/blocks` devuelve **los quince tipos** —de `kpi` a `graph`— con `accepted_shapes`, los cuatro rangos de span y `layout_params`.
 **Descripción.** La tabla tipo ↔ formas aceptadas ↔ rangos de `colSpan` y
 `rowSpan`, para los 15 tipos.
@@ -698,6 +705,8 @@ Pedir un campo que nadie llena es lo mismo que les señalamos de `vertical`.
   reescribir la tabla del lado del cliente.
 
 ### B1.4 ✅ `PUT /config/me/preferencias`
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `PUT /config/me/preferences` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `PUT /config/me/preferences` responde **200** con `{ theme }`. Lo que falta —leerlo de vuelta en `/config/me`— es B1.1.
 **Descripción.** Persistir el tema del usuario.
 **Criterio de aceptación.**
@@ -707,6 +716,8 @@ Pedir un campo que nadie llena es lo mismo que les señalamos de `vertical`.
 - El valor inicial vuelve en `/config/me` → `user.preferencias.tema`.
 
 ### B1.5 ✅ `GET /config/tabs/{tabId}`
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `GET /config/tabs/{tabId}` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `GET /config/tabs/{tabId}` devuelve la pestaña y sus **12 paneles**, con `col_start`, `col_span`, `row_span` y `options`.
 **Descripción.** `{ tab, panels[] }` — el layout, sin datos. Acepta
 `?layoutId=` para multi-dashboard.
@@ -718,6 +729,8 @@ Pedir un campo que nadie llena es lo mismo que les señalamos de `vertical`.
   `opciones?`.
 
 ### B1.6 ⚠️ `POST /config/panels:batch`
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `POST /config/panels:batch` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `POST /config/panels:batch` devuelve los 12 payloads y la consola los pinta. **Parcial** por `unlocks_with` vacío en `BLOCKED` y `request_from` como constante.
 **Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`, con el usuario `planner` recién creado. **`request_from` llega y vale `"admin"`** — era `"administrator"` cuando se escribió este pedido. **Sigue siendo una constante**, `forbiddenRequestFrom` en `dd_config_service.go`, pero su comentario dice que es deliberado: «el rol que decide sobre la visibilidad de la métrica». O sea que **puede estar contestado por decisión y no por olvido**, y conviene preguntarlo así en vez de volver a pedirlo.
 
@@ -1540,6 +1553,8 @@ nuestro lado. · Bloquea **B2.12**.
 
 
 #### ➕ B2.13 ✅ Salud de feeds por fuente · de acá sale el ESTADO de cada métrica
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `GET /admin/tenants/{tenantId}/feeds` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **Cierra su propia condición**: quedaba en ⚠️ «hasta que A5 la consuma y se vea en pantalla», y A5 se abrió contra el servicio real — cuatro fuentes con su cadencia, tolerancia, frescura y métricas afectadas, las cuatro en `SIN CARGA`, que es el dato verdadero. Se agregó también `GET /admin/tenants/{tenantId}/catalog/health`, que mapea métrica → fuentes y que todavía no consumimos.
 **SERVIDA el 2026-09-25 · `1e080ee` · `GET /admin/tenants/{tenantId}/feeds` → 200.**
 Verificada contra el servicio corriendo, cuatro fuentes, y **trae todo lo que el
@@ -1794,6 +1809,14 @@ Los dos están en el modelo de §2 de `design.md` y en `Pestana` del contrato, y
 
 ### B4.5 ⬜ `POST /admin/layouts/{id}/publish`
 ### B4.7 ⬜ `GET /admin/tenants/{id}/catalog`
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó **campo por campo** las rutas de cuatro de las seis: `GET /admin/tenants` (B4.1), `GET /admin/tenants/{tenantId}/layouts` (B4.2), `PUT /admin/layouts/{layoutId}` (B4.4) y `GET /admin/layouts/{layoutId}/validate` (B4.6). Los requeridos están y no sobra ninguno sin declarar.
+
+**Va acá y no en cada encabezado, y la razón es del parser:** estas seis comparten este bloque, y meter una línea **en cualquiera de sus encabezados** —probado con B4.1, B4.2 y B4.4— parte el grupo y deja a cuatro sin criterio. `plan --check` lo atajó las dos veces que se intentó.
+
+**Consecuencia que conviene saber al leer `docs/ESTADO-BACKEND.md`:** esas tareas figuran ahí **contra su commit anterior**, no contra `de881e1`. Y está bien que así sea: lo que se remidió el 29 fue la **forma de sus rutas**, no sus criterios. Quien vaya a reverificarlas encuentra las dos cosas.
+
+**Es la FORMA de las rutas, no el criterio de las seis.** Dice que las respuestas no cambiaron, no que las tareas se hayan vuelto a auditar.
+
 **Criterio de aceptación (los seis).**
 - Solo accesibles con `aud: platform`; con token de usuario devuelven `403`.
 - Publicar genera `versionId`, sella `publishedAt`, registra quién publicó e
@@ -1816,6 +1839,8 @@ la replica para dar feedback inmediato, pero **el servidor es el que decide**.
 - La regla dura de `serieConBanda` se verifica: solo gráficos con banda.
 
 ### B4.8 ✅ CRUD de roles por tenant · lo tomaron el 2026-09-25
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `GET /admin/tenants/{tenantId}/roles/composition` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **SERVIDA · `GET /admin/tenants/{tenantId}/roles/composition` → 200**, verificado
 contra `1e080ee` con el servicio corriendo. **Tomaron la ruta que propusimos**
 —nos habíamos corrido a `/composition` para no pisar la suya— así que la colisión
@@ -1912,6 +1937,8 @@ de la regla: «les saca la decisión de las manos».
   verde— y se vuelve a rebasar antes de proponer el código de vuelta. Un fork
   escrito sobre una base vieja no se puede integrar sin rehacerlo.
 ### B4.9 ✅ Preview por rol · con los paneles
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `GET /admin/layouts/{layoutId}/preview` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. **El preview trae `tabs[].panels[]`.** Medido con los dos lentes sobre el mismo layout: `admin` → 12 paneles con `col_span` 12; `planner` → **9 paneles con `col_span` 4**, o sea el override aplicado. **Esto destraba F4.12.**
 
 **Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **`GET /admin/layouts/{layoutId}/preview` responde 200** y con eso el fork queda absorbido entero. **Y resolvieron la colisión de diseño como propusimos**: la compuerta de borradores mira `sel.CallerRole` —quién pregunta— y no el rol simulado.
@@ -2059,6 +2086,8 @@ rutas de admin hace falta además **un usuario `admin`**, que sigue siendo el
 mismo pedido que dejó `synapse-admin-wire.yaml` sin confirmar.
 
 ### B4.17 ✅ Una ruta que liste usuarios · A3 no se puede empezar sin ella
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `GET /admin/tenants/{tenantId}/users` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **`GET /admin/users` existe desde `6e521cc`** y devuelve `{total, tenants, users}` con `tenant_name` por usuario. Es el alcance de plataforma que A3 dibuja, y **los dos conteos los cuenta el servicio** — que es exactamente lo que pedía la razón por la que no se compensaba desde el front: «un total armado acá se leería como un número de plataforma y sería una suma nuestra». A3 se abrió contra el servicio con la columna `CLIENTE`.
 **SERVIDA el 2026-09-25 · `1e080ee`**, el mismo día que se pidió.
 `GET /admin/tenants/{tenantId}/users` → 200, y trae lo que §7.3 le pide a A3:

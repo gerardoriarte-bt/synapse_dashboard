@@ -37,6 +37,11 @@
 > que mirar ahí, no acá** — y para cruzarlo, la tabla de equivalencias
 > de `docs/ESTADO-B1.13-B1.19-2026-09-14.md`, porque los
 > identificadores no coinciden.
+>
+> **Y para RE-verificar está `docs/ESTADO-BACKEND.md`**, que dice
+> contra qué commit suyo se verificó cada `B*` y cuáles quedaron
+> contra uno anterior. Este número dice cuántas; ése dice **desde
+> cuándo**, que es lo que hace falta para volver a medirlas.
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
