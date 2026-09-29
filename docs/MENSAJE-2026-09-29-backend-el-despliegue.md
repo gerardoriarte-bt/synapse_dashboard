@@ -3,8 +3,8 @@
 > **Histórico.** Un mensaje mandado, con fecha: qué se pidió y con qué evidencia.
 > No se actualiza.
 
-Hola. Este mensaje tiene **una sola pregunta de fondo** y tres que dependen de
-ella. No pide código.
+Hola. **Tres preguntas y una entrega.** Ninguna pide código: el despliegue lo
+hacen ustedes y lo nuestro es darles todo armado, que es lo que va en el punto 4.
 
 ---
 
@@ -26,7 +26,7 @@ a escala de ambiente.
 
 ---
 
-## Las cuatro preguntas
+## Tres preguntas y una entrega
 
 ### 1 · ¿Existe un servicio de Synapse corriendo en algún AWS?
 
@@ -60,21 +60,57 @@ Preguntamos por dos razones concretas:
 - **`DB_AUTO_MIGRATE=true` contra una base compartida sigue estando prohibido de
   nuestro lado**, y queremos saber quién las corre allá y cuándo, no correrlas.
 
-### 4 · ¿Quién despliega, y con qué?
+### 4 · Esta no es una pregunta: es la entrega
 
-**El front ya está empaquetado y medido**, así que la pregunta es dónde meterlo,
-no si está listo:
+Está listo y medido. Lo que sigue es la lista para que no tengan que deducir
+nada.
 
-| | |
+**Los tres archivos**, en la raíz del repositorio del front:
+
+| Archivo | Qué es |
 |---|---|
-| Imagen | `Dockerfile` de dos etapas · **77,3 MB**, sin Node adentro · el bundle son 888 KB |
-| Servidor | `nginx` con `try_files`, probado **rompiéndolo**: sin él `/` sigue en 200 y `/admin` da 404, que es por qué no se nota probando desde el login |
-| Raíz de sólo lectura | Funciona, con **cuatro** `tmpfs` montados con `uid=101` · la receta exacta está en `deploy/README.md` |
-| Arquitectura | Construida en Apple Silicon sale **`arm64`** y Fargate por defecto es x86 · hay que elegir, y las dos sirven |
-| `VITE_API_URL` | **Se hornea en el build.** Si la API vive en otro dominio, es una imagen por ambiente y CORS del lado de ustedes |
+| `Dockerfile` | Dos etapas · construye con Node 22 y sirve con nginx. **La imagen final no lleva Node** |
+| `deploy/nginx.conf.template` | Se resuelve con `envsubst` **al arrancar** el contenedor, no al construirlo |
+| `.dockerignore` | **`tests/` y `dev/` entran a propósito**: `tsc -b` los necesita para compilar |
 
-Lo que necesitamos saber es si hay un pipeline donde enchufar esto o si hay que
-escribirlo, y de quién es.
+**La receta completa está en `deploy/README.md`**, y ahí está lo que no se
+deduce mirando los archivos.
+
+#### Las variables, y cuándo se leen
+
+| Variable | Cuándo | Por defecto |
+|---|---|---|
+| `API_ORIGIN` | **Arranque** · a dónde manda `/api/v1` | `http://synapse-api:8080` |
+| `NGINX_PORT` | Arranque | `8080` |
+| `DOLLAR` | Arranque · **no se toca** · es el escape de `envsubst` | `$` |
+| `VITE_API_URL` | **BUILD** · sólo si la API no es del mismo origen | vacío |
+| `VITE_BUDGET` | Build · `=1` enciende el presupuesto de render | vacío |
+
+**`VITE_API_URL` se hornea en el BUILD, y ésa es la que puede morder.** Vite la
+resuelve al compilar: si la API vive en otro dominio y no se puede proxear, es
+**una imagen por ambiente** y CORS del lado de ustedes. Si va en el mismo origen
+—que es lo que el `nginx` ya resuelve con `API_ORIGIN`— se deja vacía y una sola
+imagen sirve para todos.
+
+#### Cuatro cosas medidas que conviene saber antes
+
+1. **Peso: 77,3 MB**, de los cuales el bundle son 888 KB. El resto es nginx.
+2. **`try_files` está probado ROMPIÉNDOLO.** Sin él `/` sigue devolviendo 200 y
+   `/admin` da **404** — por eso no se nota probando desde el login, y por eso lo
+   decimos: es el error que se descubre cuando alguien recarga en una ruta
+   interna.
+3. **La raíz de sólo lectura funciona**, con **cuatro** `tmpfs` montados **con
+   `uid=101`** —incluido `/etc/nginx/conf.d`, que es el que sorprende—. Sin el
+   `uid` en el montaje no arranca: los `tmpfs` se crean de root y el proceso
+   corre sin privilegios. La receta exacta está en el README.
+4. **La arquitectura hay que elegirla.** Construida en Apple Silicon sale
+   `arm64`, y Fargate por defecto es x86: un `arm64` en una tarea x86 falla con
+   `exec format error`. O `--platform=linux/amd64` al construir, o se corre en
+   Graviton. Las dos sirven; lo que no sirve es no elegir.
+
+**Lo que no hicimos**: no construimos la imagen para un registry de ustedes ni
+elegimos la arquitectura, porque las dos decisiones dependen de dónde corre y eso
+lo saben ustedes. Si nos dicen registry y plataforma, la publicamos nosotros.
 
 ---
 
@@ -95,7 +131,9 @@ cosas degradan bien —no bloquean nada— pero tampoco hacen nada.
 ## Lo que NO estamos pidiendo
 
 - No pedimos que desplieguen hoy.
-- No pedimos acceso a la cuenta.
+- No pedimos acceso a la cuenta ni participar del despliegue: es de ustedes y
+  está bien así. Lo que pedimos es **saber contra qué quedó corriendo**, para
+  poder medirlo y decir «anda» con la misma vara que usamos acá.
 - Si la respuesta a la 1 es «no hay», **es una respuesta completa** y nos deja
   seguir: dejamos de hablar de «listo para pruebas» y lo llamamos por su nombre.
 
