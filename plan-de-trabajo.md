@@ -6793,10 +6793,39 @@ tareas cerradas de esta fase.
 ### F4.20 ⬜ Registrar los tres con carga diferida · 🔒 espera a F4.17–F4.19
 **PEDIDO A DATOS EL 2026-09-29** · `docs/MENSAJE-2026-09-29-datos-formas-sin-metrica.md`.
 
-**Espera de datos.** **Una métrica de cada forma del grupo A** —
-`compared_categorical`, `multi_attribute_profile`, `matrix`, `graph` y `flow`—.
-**Medido contra `de881e1` el 2026-09-29**: la cadena está completa salvo el
-último eslabón.
+**Espera de datos.** **La fila del catálogo y el esquema de Gold** · el SQL lo
+escribimos nosotros. **Medido contra `de881e1` el 2026-09-29.**
+
+**CORREGIDO ANTES DE MANDAR EL PEDIDO, y la corrección es la mitad de esto.** El
+mensaje decía «nada del backend» y era falso: al leer `queries.go` apareció que
+**la consulta de cada métrica NO vive en Snowflake** sino en `MetricRegistry`, un
+mapa en el Go del backend, con `Shape` y `BuildSQL func(t Tables, b Bounds) string`.
+Una métrica nueva necesita su entrada ahí — **y esa entrada la sabemos escribir**:
+es lo mismo que hicimos con `/config/plots`.
+
+**Tres de las cuatro formas salen del dato que YA existe**, leído de las
+consultas que el backend tiene escritas:
+
+| Forma | De dónde sale |
+|---|---|
+| `compared_categorical` | `goals_vs_actual` devolviendo `v` y `ref` por separado en vez del cociente `real/objetivo` |
+| `matrix` | `FUENTE × mes` de `GLD_PAID_MEDIA`, o día-de-semana × semana de la diaria |
+| `flow` | El embudo `VISITS → SESSIONS → ORDERS` de la diaria · tres etapas |
+
+**`graph` no sale** —ninguna columna de las dos Gold tiene aristas origen→destino—
+y **`multi_attribute_profile` tampoco** mientras los atributos no compartan
+unidad, que es una regla de nuestro contrato: un radar con pesos en un eje y
+porcentaje en otro dibuja un área que depende del orden de los ejes.
+
+**Lo de datos son dos cosas y ninguna es la consulta:**
+
+1. **La fila en `SYNAPSE_METRIC_CATALOG` con su copy** — `NAME`, `BASE`,
+   `SOURCE`, `MEASUREMENT_WINDOW`, `SEMANTIC_DIRECTION` y el `SHAPE`. Los cinco
+   primeros **se pintan textuales en pantalla**, así que es copy de producto y su
+   dueño es el catálogo.
+2. **El esquema de las dos tablas Gold.** Hoy lo conocemos de forma **indirecta**:
+   las columnas las dedujimos de las consultas del backend, no de mirarlo.
+   `schema-check` no sirve — verifica que los objetos existan, no lista columnas.
 
 | Pieza | Estado |
 |---|---|

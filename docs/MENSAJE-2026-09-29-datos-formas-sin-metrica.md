@@ -1,119 +1,145 @@
-# Para el equipo de datos · las once formas que no tienen métrica · 2026-09-29
+# Para el equipo de datos · cuatro métricas nuevas · el SQL lo escribimos nosotros · 2026-09-29
 
 > **Histórico.** Un mensaje mandado, con fecha: qué se pidió y con qué evidencia.
 > No se actualiza.
 
-Hola. Este pedido **empezó siendo para el equipo de backend y la medición lo
-mandó para acá**, así que va con la corrección adelante.
+Hola. **Este pedido se reescribió dos veces antes de mandarse**, y las dos
+correcciones cambian qué les toca, así que van adelante:
 
-**Lo que creíamos:** que faltaba que el backend materializara cinco formas de
-dato. **Lo medido hoy contra `de881e1`:** el backend las materializa todas, y lo
-que falta es que exista **una métrica que las declare**.
+1. Empezó siendo para el equipo de **backend** —«que materialicen cinco formas de
+   dato»— y al medirlo resultó que las materializa **todas**.
+2. Después iba a pedirles a ustedes **la métrica completa**, y al leer el código
+   apareció que **la consulta SQL vive en el Go del backend, no en Snowflake**.
+   Así que el SQL lo escribimos nosotros.
 
----
-
-## 1 · Lo que ya está, y por eso el pedido es corto
-
-Las cuatro piezas de la cadena, medidas una por una:
-
-| Pieza | Estado | Cómo se midió |
-|---|---|---|
-| El transformador del backend | **Las 16 formas** | `TransformValue` de `materialize/transform.go` tiene quince `case` y cubre las dieciséis —`categorical` y `ranking` comparten uno—. **Sin lista blanca**: `Materialize` transforma lo que le llegue |
-| Nuestro contrato | **Las 16** | Los dieciséis objetos `Valor*` de `contracts/synapse-api.yaml`, incluidos `ValorMatriz`, `ValorGrafo` y `ValorFlujo` |
-| `GET /config/blocks` | **Las 16** | Las `accepted_shapes` de la tabla de bloques, contra el servicio corriendo |
-| **El catálogo de métricas** | **5 de 16** | `GET /config/catalog` · las 18 métricas del tenant declaran `scalar`, `multi_series`, `categorical`, `prose` y `tabular`. Y nada más |
-
-**El hueco está en el último renglón, y es el único.** Tres capas saben recibir
-once formas que ninguna métrica emite.
+**Lo que queda para ustedes es chico, y es lo que sólo ustedes pueden dar.** Está
+en el punto 3.
 
 ---
 
-## 2 · Las once formas sin una sola métrica
+## 1 · Por qué hacen falta cuatro métricas nuevas
 
-Están en dos grupos, y la diferencia importa para priorizar:
+Nuestro repertorio tiene 49 gráficos. **Veintiuno se pueden dibujar hoy y los
+otros veintiocho no** — y no por falta de código: **porque ninguna métrica del
+catálogo declara la forma de dato que necesitan.**
 
-### A · Cuatro que BLOQUEAN pantallas sin construir
+Medido contra el servicio corriendo:
 
-Sin una métrica de estas formas no hay contra qué construir el cuerpo del panel,
-y sin ese cuerpo el gráfico correspondiente del repertorio no se puede dibujar
-aunque esté declarado.
-
-| Forma | Qué desbloquea | Gráficos que esperan |
-|---|---|---|
-| `compared_categorical` | `ComparisonBody` | `TORNADO`, `COLUMNAS AGRUPADAS`, `DUMBBELL`, `PENDIENTE` |
-| `multi_attribute_profile` | el mismo cuerpo | `RADAR` |
-| `matrix` | `MatrixBody` | `MAPA DE CALOR`, `COHORTES`, `CALENDARIO` |
-| `graph` y `flow` | `GraphBody` | `GRAFO`, `FLUJO`, `EMBUDO` |
-
-### B · Siete que ya tienen cuerpo construido y nunca se ejercitaron con dato real
-
-Éstas **sí se dibujan** —el cuerpo existe y tiene pruebas—, pero sólo contra
-mocks. Una métrica real de cada una convertiría «probado» en «visto».
-
-`scalar_with_interval` · `series_with_band` · `time_series` · `ranking` ·
-`composition` · `distribution`
-
-**Y eso no es una formalidad.** En una tarde de la semana pasada el dato real
-contradijo cuatro cosas que dábamos por cerradas contra mocks.
-
----
-
-## 3 · Qué columnas tiene que devolver la consulta de cada forma
-
-**Esto es lo que más sirve de este mensaje**, y está leído del transformador del
-backend —`materialize/transform.go` y `transform_v11.go` en `de881e1`—, no de
-nuestra documentación.
-
-**Acepta alias en español y en inglés** para casi todas las claves, que es una
-generosidad que conviene conocer antes de pelearse con un nombre.
-
-| Forma | Claves que la consulta debe traer |
+| Pieza de la cadena | Estado |
 |---|---|
-| `scalar` | `v` |
-| `scalar_with_interval` | `v`, `lo`, `hi`, `level` |
-| `categorical` · `ranking` | `label`, `v`, y `position` para el ranking |
-| `time_series` | `t`, `v` |
-| `multi_series` | `series`, `t`, `v` |
-| `composition` | `label`, `v`, `percentage` |
-| `distribution` | `bin`/`label`, `v`/`count`, y `lo`/`hi` —o `min`/`max`, o `desde`/`hasta`— |
-| `series_with_band` | `t`/`date`/`fecha`/`period`, `v`, `lo`/`lower`/`inferior`, `hi`/`upper`/`superior`, y `level`/`nivel`/`confidence` |
-| `compared_categorical` | `label`/`etiqueta`, `v`/`valor`/`value`, `ref`/`reference`/`referencia`, `delta` |
-| `multi_attribute_profile` | `profile`/`perfil`, `attribute`/`atributo`/`clave`/`key`, `v`/`valor`/`value` |
-| `matrix` | `row`/`fila`, `column`/`col`/`columna`, `v`/`valor`/`value` |
-| `graph` | los nodos con `id` y `label`; las aristas con `from`/`source`/`desde`/`origen`, `to`/`target`/`hacia`/`destino` y `weight`/`peso`/`v` |
-| `flow` | igual que `graph`, más `stages`/etapas · los enlaces llevan las mismas claves |
-| `tabular` | las columnas se declaran aparte, en la configuración del panel |
-| `prose` | `headline`, y por pilar `pillar_label`, `pillar_value`, `pillar_note` |
+| El transformador del backend | **Las 16 formas** · sin lista blanca: transforma lo que le llegue |
+| Nuestro contrato | **Las 16** |
+| `GET /config/blocks` | **Las 16** |
+| **El catálogo de métricas** | **5 de 16** · `scalar`, `multi_series`, `categorical`, `prose`, `tabular` |
+
+Tres capas saben recibir once formas que ninguna métrica emite.
 
 ---
 
-## 4 · Lo que pedimos, en orden
+## 2 · Lo que hacemos NOSOTROS · el SQL
 
-1. **Una métrica de cada una de las cuatro del grupo A.** Con una alcanza para
-   construir el cuerpo: no hace falta la familia entera.
-2. **Después, las siete del grupo B**, para poder mirar contra dato del negocio
-   lo que hoy sólo está probado contra mocks.
+La consulta de cada métrica es una entrada en `MetricRegistry`, de
+`internal/core/dashboard/snowflake/queries.go`:
 
-**No pedimos que sean métricas definitivas.** Una que devuelva el cruce que ya
-existe en Gold, con las columnas de arriba, alcanza para desbloquear el trabajo;
-la métrica que el producto necesite se define después y el cuerpo ya está.
+```go
+"goals_vs_actual": {
+    Shape:    "categorical",
+    BuildSQL: func(t Tables, b Bounds) string { /* el SELECT, escrito en Go */ },
+},
+```
+
+**Eso lo escribimos nosotros y se lo devolvemos al backend en un fork**, que es
+como venimos trabajando — la ruta `GET /config/plots` salió así esta semana.
+
+**Y tres de las cuatro salen del dato que YA existe**, leído de las consultas que
+el backend ya tiene escritas:
+
+| Forma nueva | De dónde sale | Qué gráficos abre |
+|---|---|---|
+| `compared_categorical` | Lo mismo que `goals_vs_actual`, devolviendo **`v` y `ref` por separado** en vez del cociente `real/objetivo` | TORNADO, DUMBBELL, COLUMNAS AGRUPADAS, PENDIENTE |
+| `matrix` | `FUENTE × mes` de `GLD_PAID_MEDIA`, o día-de-semana × semana de la diaria | MAPA DE CALOR, COHORTES, CALENDARIO |
+| `flow` | `VISITS_TOTAL → SESSIONS → ORDERS_TOTAL` de la diaria · tres etapas | EMBUDO, FLUJO |
+
+**Las otras dos no salen, y lo decimos ahora para no pedirlas mal:**
+
+- **`graph`** necesita aristas origen→destino y en las dos tablas Gold no hay
+  ninguna columna que las tenga. Si ese cruce existe en algún lado, es lo único
+  de esta lista que sí sería un pedido de dato nuevo.
+- **`multi_attribute_profile`** —el RADAR— exige que **todos los atributos
+  compartan la unidad**. Lo declara nuestro contrato, y la razón es que un radar
+  con pesos en un eje y porcentaje en otro dibuja un polígono cuya área no
+  significa nada: depende de en qué orden se pusieron los ejes. Mezclar inversión
+  con ROAS no sirve. Con **`% de cumplimiento` por indicador** sí saldría, si hay
+  meta por plataforma.
 
 ---
 
-## 5 · Y dos cosas que NO pedimos, para que no se busquen
+## 3 · Lo que necesitamos de USTEDES · dos cosas
 
-- **Nada del backend.** Su transformador cubre las dieciséis y no tiene compuerta
-  por forma. Si algo falla al materializar una de éstas, es un dato que no
-  corresponde a las claves de la tabla de arriba, no una forma sin soporte.
-- **Nada del contrato.** Las dieciséis `Valor*` están declaradas de nuestro lado
-  desde antes de este mensaje.
+### a) La fila en `SYNAPSE_METRIC_CATALOG`, con su copy
+
+Una por métrica nueva. **No es metadata interna: son los textos que el usuario
+lee en pantalla.** Así se ve hoy una métrica del catálogo, con sus valores reales:
+
+| Columna | Valor de `revenue` hoy | Dónde se pinta |
+|---|---|---|
+| `NAME` | `Ingresos` | El título del panel |
+| `BASE` | `Venta total del sitio medida por Adobe Analytics, en USD, sumada sobre los días del mes` | La línea de BASE |
+| `SOURCE` | `Reporte diario de ecommerce del cliente · venta medida por Adobe Analytics` | La procedencia |
+| `MEASUREMENT_WINDOW` | `Mes calendario seleccionado` | La ventana de medición |
+| `SEMANTIC_DIRECTION` | `HIGHER = BETTER` | La dirección |
+| `SHAPE` | `scalar` | **Lo que decide qué panel puede dibujarla** |
+
+**Ese copy es de ustedes y no lo escribimos nosotros**, y la razón es concreta: si
+lo escribiéramos acá, el día que cambie el texto de origen habría una tabla de
+traducción en el front que nadie mantiene. **Un texto que describe un dato lo
+redacta quien es dueño del dato.**
+
+Las cuatro nuevas necesitan, además del copy, su `SHAPE`:
+`compared_categorical`, `matrix`, `flow` y —si se puede— `multi_attribute_profile`.
+
+### b) El esquema de las dos tablas Gold
+
+**Nuestra vista de Gold es indirecta**: las columnas que conocemos las dedujimos
+de las consultas que el backend ya escribió, no de mirar el esquema. Hoy vemos
+esto y nada más:
+
+```
+GLD_ECOMM_DAILY_PERFORMANCE   DATE · REV_TOTAL/REV_TARGET · ORDERS_TOTAL/ORDERS_TARGET
+                              UNITS_TOTAL/UNITS_TARGET · VISITS_TOTAL/VISITS_TARGET
+                              SESSIONS · SPEND_TARGET · BUDGET_TARGET
+GLD_PAID_MEDIA                FUENTE · COST_USD · INGRESOS_USD · GROSS_SPEND
+```
+
+**Con la lista completa de columnas de las dos, el SQL de las cuatro lo
+escribimos sin volver a preguntar** — y es probable que descubramos cruces que no
+estamos usando.
+
+`schema-check` no sirve para esto: verifica que los objetos existan, no lista
+columnas.
 
 ---
 
-## 6 · Lo que sigue abierto del mensaje anterior
+## 4 · El orden que proponemos
+
+1. **Ustedes nos mandan el esquema de las dos Gold.** Es lo más barato y
+   desbloquea todo lo demás.
+2. **Nosotros escribimos las cuatro entradas de `MetricRegistry`** y las
+   devolvemos en el fork.
+3. **Ustedes curan las cuatro filas del catálogo**, con su copy y su `SHAPE`.
+4. Corre `sync-catalog`, corre el materializador, y nosotros construimos los tres
+   cuerpos de panel que faltan.
+
+**Con una métrica de cada forma alcanza.** No hace falta la familia entera ni que
+sean las definitivas: la que el producto necesite se define después y el cuerpo
+del panel ya va a estar hecho.
+
+---
+
+## 5 · Lo que sigue abierto del mensaje anterior
 
 Las **seis filas con `SEMANTIC_DIRECTION` como código** en vez de texto
-redactado, medidas hoy sobre el catálogo recién sincronizado:
+redactado, medidas sobre el catálogo recién sincronizado:
 
 ```
 goal_attainment · orders · revenue · roas · sessions · units   → HIGHER_IS_BETTER
@@ -123,10 +149,9 @@ Las otras ocho traen `HIGHER = BETTER`, que es lo correcto. Sale en pantalla con
 guiones bajos.
 
 **Y una que apareció hoy**, del mismo tipo: `daily_trend` declara
-`MIN_GRAIN = month` y viene de Snowflake con fuente «Reporte **diario** de
-ecommerce del cliente», y su panel sirve 28 puntos diarios. Hoy no se ve porque
-todos los períodos son mensuales; se va a ver el día que haya un selector de
-rango. Las dieciocho métricas declaran `month`, así que conviene mirar si la
-columna se está llenando con un valor por defecto.
+`MIN_GRAIN = month` y viene con fuente «Reporte **diario** de ecommerce del
+cliente», y su panel sirve 28 puntos diarios. Las dieciocho métricas declaran
+`month`, así que conviene mirar si la columna se está llenando con un valor por
+defecto en vez del grano real.
 
 Gracias.

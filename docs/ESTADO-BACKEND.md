@@ -116,7 +116,7 @@ esperan algo de ellos: **3**, y salen en `PARA-BACKEND.md`.
 | ✅ | **B2.13** ➕ · Salud de feeds por fuente | `de881e1` | 2026-09-29 |
 | ⬜ | **B2.14** ➕ · /config/solicitudes | `de881e1` | 2026-09-29 |
 | ⚠️ | **B2.15** ➕ · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | `de881e1` | 2026-09-29 |
-| ✅ | **B2.16** ➕ · El materializador emite presentation | `de881e1` | 2026-09-29 |
+| ✅ | **B2.16** ➕ · El materializador emite presentation | `f70cec2` | 2026-09-28 |
 
 
 ### Fase 3 · Chat — 3 de 11
