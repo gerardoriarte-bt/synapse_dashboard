@@ -2,7 +2,20 @@
 import { Label } from '../primitives/Label'
 import { Value } from '../primitives/Value'
 import { hue } from '../plots/core/seriesColor'
+import { UnknownPlotState } from '../states/UnknownPlotState'
 import type { BodyProps } from '../types'
+
+/** Los gráficos que este cuerpo sabe dibujar HOY.
+ *
+ *  **`kpi` es de los seis que no son plots**: es cómo el cuerpo dibuja SIN
+ *  gráfico —la cifra grande—, y por eso es también el valor por defecto de
+ *  `escalar`. Declararlo no es redundante: hace que pedirlo explícitamente y no
+ *  pedir nada dibujen lo mismo, que es lo único coherente.
+ *
+ *  Los otros cuatro de `escalar` —`gauge`, `bullet`, `rings`, `spark`— se
+ *  declaran. **El medidor de `presentation` no es `gauge`**: es una barra de
+ *  progreso de 1px que acompaña a la cifra, y el arco lo dibuja `GaugeBody`. */
+const DIBUJA = ['kpi'] as const
 
 /** **Interruptores, no datos** · F1.40.
  *
@@ -28,9 +41,18 @@ export function KpiBody({
   params,
   presentation,
   family,
+  grafico,
   unit,
   format,
 }: BodyProps<'escalar', KpiParams>) {
+  // La comprobación va ANTES de dibujar, no dentro de una rama · mismo idioma
+  // que `SeriesBody` y `ForecastBody`: resuelta abajo, la rama que se olvide se
+  // ve bien.
+  const conocidos: readonly string[] = DIBUJA
+  if (grafico !== undefined && !conocidos.includes(grafico)) {
+    return <UnknownPlotState grafico={grafico} />
+  }
+
   // **El rótulo y las cifras de apoyo salen del PAYLOAD** · F1.40. Del layout
   // salen solo los interruptores.
   const label = presentation?.label ?? 'Total'

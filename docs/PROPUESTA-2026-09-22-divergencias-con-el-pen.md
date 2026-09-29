@@ -388,6 +388,53 @@ se ve es lo que la instrucción de alta pide con sus marcadores `⟨REVISAR⟩`.
 
 ---
 
+## 9 · `MICRO TENDENCIA` no es un sparkline · lo encontró abrirlo · 2026-09-29
+
+**El plot se construyó el 2026-09-29 y pasó su QA. Después se abrió el modo mock
+y el dibujo decía otra cosa.**
+
+`Plot/MICRO TENDENCIA · Indicadores con sparkline` —580×200— no dibuja **un**
+sparkline. Dibuja **cuatro filas de indicador**, a 48 px una de otra, y cada fila
+tiene cinco piezas:
+
+| Pieza | Dónde, en el frame |
+|---|---|
+| El rótulo | `x: 0`, `$dim` · `VENTAS`, `ROAS`, `CONVERSIÓN`, `COBERTURA` |
+| El sparkline | de `x: 152` a `x: 400` · 248 de ancho sobre una banda de ~34 |
+| El punto de familia | `x: 396.4`, ⌀7.2 · uno por familia: `$fam-demanda-1`, `$fam-medios-1`, `$fam-cliente-1`, `$fam-inventario-1` |
+| La cifra | `x: 444`, `$ink` · `USD 4.28M`, `4.1x`, `1.31%`, `18 días` |
+| El delta | `x: 478–500`, `$dim` · `+6.4%`, `+0.2x`, `-0.04 pp`, `-1 día` |
+
+**`PlotSpark` dibuja sólo la línea, a alto de panel completo.** Sin rótulo, sin
+cifra, sin delta y sin punto — y ocupando cuatro veces la banda que el dibujo le
+da.
+
+**Las dos lecturas posibles, y por eso es propuesta y no arreglo:**
+
+1. **El frame es una HOJA que muestra el patrón aplicado a cuatro métricas**, y
+   el plot es **una fila**. Encaja con que el repertorio le dé `escalar` y
+   `serieTemporal`: una cifra con su micro tendencia al lado.
+2. **El frame es el plot entero**, y `spark` dibuja varias métricas juntas.
+
+**La segunda no se puede recibir.** Cuatro métricas con serie, cifra y delta cada
+una no es ninguna de las dieciséis formas del contrato — es exactamente el
+problema que §3 de `docs/ENTREGA-2026-09-29-repertorio-de-graficos.md` levanta
+para `DISPERSIÓN`, `BURBUJAS` y `CUADRANTES`: el mapa agrupó por la pregunta que
+contesta y no por el objeto que necesita.
+
+**Y la primera deja a `spark` sin poder dibujarse sobre `escalar`**, que es una
+de las dos formas que el repertorio le asigna: `ValorEscalar` es `{ forma, v }`
+y un sparkline necesita puntos. Hoy sólo se sostiene sobre `serieTemporal`, que
+es sobre lo que se lo miró.
+
+**Lo que esto enseña, que vale más que el gráfico:** el plot tenía pruebas, tenía
+su mutación muerta y `pen-graficos` salía verde — y las tres cosas son ciegas
+acá. Las pruebas leen los números **ya transcriptos** del frame al componente,
+así que si la transcripción es mala las dos capas coinciden igual; y
+`pen-graficos` verifica que el dibujo no cambió sin declararse, no que el
+componente se parezca al dibujo. Es el mismo hueco que la hoja del chat de 480
+contra 940, y lo encontró lo mismo: abrirlo.
+
 ## Dónde vive cada una de las demás
 
 Para que este documento no crezca hasta pisar a los otros:

@@ -3350,6 +3350,22 @@ Lo primero que hay que construir **no es el selector, es la verificación de
 mínimos**: cuántos puntos, categorías o partes necesita un gráfico para no
 engañar. Sirve desde hoy, aun con un gráfico por tipo — hoy nada impide que
 `bars` reciba un ítem y dibuje una barra sola.
+**LOS NUEVE SE MIRARON CORRIENDO · 2026-09-29, y eso encontró tres cosas que la
+puerta no ve.** La auditoría del lote los dejó verificados «contra pruebas y
+contra el dibujo transcripto, no contra una pantalla», y lo dijo con esas
+palabras. Se cerró agregando al modo mock una pestaña de muestrario con los nueve
+—`TAB_C`, misma razón por la que `stackarea` entró el 28— y abriéndola.
+
+| Qué apareció | Qué era |
+|---|---|
+| El BULLET decía «SIN MÁXIMO DECLARADO» | **El handler de `/config/tabs` del mock nunca copió `options`.** Su propio comentario lo había predicho para `chart` —«un campo nuevo del cable se agrega acá también, y el síntoma de olvidarlo es que se vea bien»— y volvió a pasar. Mientras faltó, **ningún panel del modo mock recibió un solo param de layout**: ni `meter`, ni `comparative`, ni `cut`, ni `order`. Lo destapó el bullet porque es el único que dice por qué no dibuja; los demás params se pierden en silencio |
+| Dos de los nueve no se veían | La rotación de estados del batch manda uno de cada cuatro a `BLOCKED`. Con nueve paneles eso tapa dos gráficos y **no hay orden que los salve a todos**. El muestrario quedó exento, con la razón escrita: los estados se miran en las dos pestañas de negocio, que siguen con la rotación intacta |
+| `spark` no se parece a su dibujo | `MICRO TENDENCIA` son **cuatro filas de indicador** —rótulo, sparkline de 248×34, punto de familia, cifra y delta— y `PlotSpark` dibuja sólo la línea a alto de panel. Es propuesta de spec, no un arreglo: ver §9 de `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` |
+
+**Los otros ocho se ven como el dibujo**: `bullet` con su marca de objetivo,
+`columns`, `lollipop`, `donut` con su total al centro, `radial`, `pareto` con su
+acumulado en 42 / 75 / 100 %, `bump` y `slope`.
+
 **Criterio de aceptación.**
 - Ausente `plot` en el layout se dibuja **exactamente** lo que se dibuja hoy: el
   cambio no mueve ninguna pantalla existente.
@@ -3362,6 +3378,54 @@ engañar. Sirve desde hoy, aun con un gráfico por tipo — hoy nada impide que
   no se dibuja mal ni se cambia por otro en silencio.
 - La regla dura se sostiene: `serieConBanda` solo admite gráficos con banda.
 - La tabla no está en el front: llega por API, igual que los bloques.
+
+**TRECE PLOTS CONSTRUIDOS Y NUEVE CABLEADOS · 2026-09-29, y F1.31 SIGUE ⬜.**
+
+El lote agregó trece componentes a `src/render/plots/` —`PlotBullet`,
+`PlotRings`, `PlotSpark`, `PlotColumns`, `PlotLollipop`, `PlotDonut`,
+`PlotTreemap`, `PlotRadial`, `PlotPareto`, `PlotCombo`, `PlotSmallMult`,
+`PlotBump` y `PlotSlope`— cada uno medido nodo por nodo contra su frame de
+«Synapse · Plots», con su batería de pruebas y su QA por mutación. **Nueve se
+cablearon** en el cuerpo que les toca:
+
+| Cuerpo | Ids que dibuja desde hoy |
+|---|---|
+| `GaugeBody` · `escalar` | `bullet` |
+| `SeriesBody` · `serieTemporal` | `spark` |
+| `SeriesBody` · `seriesMultiples` | `bump`, `slope` |
+| `BarsBody` · `categorica` | `columns`, `lollipop`, `donut`, `radial`, `pareto` |
+| `BarsBody` · `ranking` | `lollipop` |
+
+**Y no cierra ni un criterio de F1.31**, que es lo que conviene no confundir: lo
+que se construyó son DIBUJOS, y esta tarea es el REGISTRO y la verificación de
+mínimos. No existe `catalog/plots.ts`, no existe `render/plots/registry.ts`, no
+hay `plotFor(id)` con `lazy` —los plots viajan estáticamente dentro del chunk de
+su cuerpo, que es lo que `carga-diferida` verifica—, y **ningún mínimo se
+verifica**: un `bars` con un ítem sigue dibujando una barra sola y una dona con
+ocho partes sigue pasando su `tope` de cinco. La tabla tampoco llega por API,
+porque `/config/plots` sigue en 404. El único criterio que se cumple es el
+primero, y se cumple por otra razón: **ausente `grafico` se dibuja exactamente lo
+que se dibujaba antes**, con prueba propia.
+
+**CUATRO NO SE CABLEARON, y los cuatro están escritos con su razón.**
+
+`rings`, `treemap`, `combo` y `smallmult` **no aprobaron su QA** y por eso el
+cableado no los tomó: hoy los cuatro caen en `UnknownPlotState`, que dice el id
+en pantalla. Tres de los cuatro son huecos de PRUEBA y no defectos del
+componente; el cuarto, `rings`, tiene además un candado de forma que ninguna
+lista de ids arregla —`PlotRings` pide una lista de anillos y `ValorEscalar` es
+`{ forma, v }`—. El detalle por gráfico está en el informe de la auditoría del
+2026-09-29.
+
+**Y queda un param sin alcanzar, que es pedido y no hueco.** `PlotColumns`
+acepta `destacado` —la etiqueta de la columna a resaltar, que es lo único que el
+dibujo distingue entre las doce— y el cuerpo **no lo pasa**: `validateParams`
+cruza todo param contra `paramsDisponibles` de `/config/blocks`, que lo declara
+el backend, así que un nombre escrito sólo de este lado se descarta como
+desconocido. La rama del plot está construida y probada; se enciende cuando el
+servicio liste `destacado` entre los params de `bars`. **No se anotó como
+`Espera del backend` todavía porque falta medirlo contra su commit**, que es lo
+que `para-backend` exige.
 
 ### La integración con el backend real · 2026-09-11
 
@@ -5805,6 +5869,14 @@ la forma de la métrica elegida**, no los 49. Consume `/config/plots` vía
 - Con `serieConBanda`, solo aparecen gráficos con `soportaBanda`.
 - No elegir nada es válido: el panel usa el gráfico por defecto de su tipo.
 
+**EL CABLEADO DEL 2026-09-29 NO DESTRABA ESTO Y AGRANDÓ SU HUECO.** Ahora hay
+quince ids con dibujo de los 49, y el builder **sigue ofreciendo los 49 sin
+saber cuáles existen**: no se tocó `src/surfaces/builder/`. Un admin puede
+guardar un panel con un id que esta versión declara en vez de dibujar, y lo que
+verá en la consola es `UnknownPlotState` con el id adentro — que es honesto pero
+llega después de publicar. El feedback inmediato del front todavía no distingue
+«no compatible» de «no construido», y esa distinción es de `/config/plots`.
+
 ### F4.12 parcial el 2026-09-15 · la composición, no las cifras
 
 `RolePreview` y el cableado de `usePreview`. **604 pruebas**, doce nuevas, once
@@ -6832,6 +6904,13 @@ variables y solo una estaba sostenida. Se agregó la cuarta prueba y muere.
 **Criterio de aceptación.**
 - Cada uno acepta `PlotProps<F>` y compone primitivas de `core/`. Si necesita algo
   que no está en `core/`, **falta una primitiva, no sobra un componente a medida**.
+
+**LOS TRECE PLOTS DEL 2026-09-29 NO SON DE ESTA TAREA**, y decirlo evita cerrarla
+por error: son gráficos de los cuerpos que YA existen —`escalar`, `serieTemporal`,
+`seriesMultiples`, `categorica`— y su registro está bajo F1.31. Lo que esta tarea
+espera son los plots de `matriz`, `grafo` y `flujo`, que no tienen cuerpo todavía:
+F4.17–F4.19 siguen ⬜ porque `Valor` no declara esas formas **y** B5.3 pide que el
+dato exista.
 
 ### F5.4 🕓 Overlay de drill-down
 **Estado: diferida** (D3). No se descarta ni se planifica todavía; entra cuando el backend llegue a ese tramo. El contrato ya la cubre, así que lo que falta es el servicio, no el diseño.

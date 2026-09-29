@@ -28,7 +28,7 @@
  */
 import { http, HttpResponse, delay } from 'msw'
 import { setupWorker } from 'msw/browser'
-import { LAYOUT_PUB, bloques, catalogo, contexto, detalle, layouts, roles, tenants, usuario } from './datos'
+import { LAYOUT_PUB, bloques, catalogo, contexto, detalle, layouts, roles, tenants, usuario, PANELES_MUESTRARIO } from './datos'
 
 const API = '*/api/v1'
 const ok = <T,>(data: T) => HttpResponse.json({ success: true, data })
@@ -218,6 +218,20 @@ export const worker = setupWorker(
         id: p.id, metric_id: p.metric_id, type: p.type,
         col_start: p.col_start, col_span: p.col_span, row_span: p.row_span,
         chart: p.chart, note: p.note,
+        // **`options` FALTABA, y con él todos los params de layout** · agregado
+        // el 2026-09-29. El aviso de arriba acertó dos veces: la primera con
+        // `chart`, y ésta. Mientras no estuvo, **ningún panel del modo mock
+        // recibió un solo param** —ni `meter`, ni `comparative`, ni `cut`, ni
+        // `order`—, así que todo lo que un param cambia se veía con el default
+        // y parecía correcto.
+        //
+        // Lo destapó el BULLET, que sin `maximum` cae a «sin máximo declarado»:
+        // un panel que dice por qué no dibuja es lo único que hace ruido cuando
+        // el param se pierde. Los demás params se pierden en silencio.
+        //
+        // El servicio real lo manda siempre, vacío incluido — medido contra
+        // `de881e1`: el panel de prosa trae `"options": {}`.
+        options: p.options,
       })),
     })
   }),
@@ -231,7 +245,23 @@ export const worker = setupWorker(
       Object.fromEntries(
         panel_ids.map((id, i) => [
           id,
-          i % 4 === 3
+          // **El muestrario queda fuera de la rotación** · ver
+          // `PANELES_MUESTRARIO`. La rotación existe para mirar los estados y
+          // esa pestaña existe para mirar dibujos; dejarla adentro escondía dos
+          // de sus nueve gráficos y ninguno de los dos propósitos se cumplía.
+          PANELES_MUESTRARIO.has(id)
+            ? {
+                status: 'AVAILABLE',
+                governance: {
+                  base: '312 SKU críticos sobre 18.240 activos',
+                  layer: 'GOLD',
+                  source: 'ERP',
+                  freshness: new Date().toISOString(),
+                  catalog_version: 4,
+                },
+                value: valorPara(formaDe(id), i),
+              }
+            : i % 4 === 3
             ? { status: 'BLOCKED', reason: 'Su fuente tiene 31 h y se refresca cada hora', unlocks_with: 'Esperar la próxima materialización' }
             : {
                 status: i % 4 === 2 ? 'DEGRADED' : 'AVAILABLE',
@@ -462,7 +492,11 @@ export const worker = setupWorker(
             // defecto del bloque y lo que salen los doce publicados.
             chart: (q.chart ?? '').trim().toLowerCase(),
             note: (q.note ?? '').trim(),
-            ...(q.options === undefined ? {} : { options: q.options }),
+            // **Siempre va, vacío si no hay** · alineado el 2026-09-29 con lo
+            // medido: el servicio manda `"options": {}` en el panel de prosa,
+            // no omite la clave. El spread condicional de antes hacía que el
+            // tipo saliera opcional acá y requerido en `datos.ts`.
+            options: (q.options ?? {}) as Record<string, unknown>,
           }
         }),
       })),

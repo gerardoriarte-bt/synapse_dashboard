@@ -34,8 +34,18 @@
 import { Label } from '../primitives/Label'
 import { Value } from '../primitives/Value'
 import { hue } from '../plots/core/seriesColor'
+import { UnknownPlotState } from '../states/UnknownPlotState'
 import type { NumberOptions } from '../format'
 import type { BodyProps } from '../types'
+
+/** Los gráficos que este cuerpo sabe dibujar HOY.
+ *
+ *  **`table` es de los seis que no son plots** y es el único que §5 le da a
+ *  `tabular`, así que la lista es corta por el repertorio y no por lo
+ *  construido. Se declara igual: hace que pedirlo y no pedir nada dibujen lo
+ *  mismo, y que cualquier otro id —uno de `ranking`, que es la otra forma a la
+ *  que `table` sirve— caiga en el estado y no en esta tabla. */
+const DIBUJA = ['table'] as const
 
 export type TableParams = {
   /** Qué columnas mostrar, en orden. Sin esto se muestran todas. */
@@ -45,7 +55,21 @@ export type TableParams = {
 const ABBREVIATE_FROM = 1000
 const MAX_DECIMALS = 2
 
-export function TableBody({ value, params, family, format }: BodyProps<'tabular', TableParams>) {
+export function TableBody({
+  value,
+  params,
+  family,
+  grafico,
+  format,
+}: BodyProps<'tabular', TableParams>) {
+  // La comprobación va ANTES de dibujar, no dentro de una rama · mismo idioma
+  // que `SeriesBody` y `ForecastBody`: resuelta abajo, la rama que se olvide se
+  // ve bien.
+  const conocidos: readonly string[] = DIBUJA
+  if (grafico !== undefined && !conocidos.includes(grafico)) {
+    return <UnknownPlotState grafico={grafico} />
+  }
+
   const { columnas: requested } = params
 
   const columns =

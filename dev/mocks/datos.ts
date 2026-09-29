@@ -32,9 +32,23 @@ export const DASH_B = '44444444-4444-4444-4444-4444444444bb'
 export const LAYOUT_DRAFT = '22222222-2222-2222-2222-333333333333'
 export const TAB_A = '33333333-3333-3333-3333-333333333333'
 export const TAB_B = '33333333-3333-3333-3333-444444444444'
+export const TAB_C = '33333333-3333-3333-3333-555555555555'
 
 const M = (n: number) => `44444444-4444-4444-4444-4444444444${String(n).padStart(2, '0')}`
 const P = (n: number) => `55555555-5555-5555-5555-5555555555${String(n).padStart(2, '0')}`
+
+/** Los paneles del muestrario de gráficos · TAB_C.
+ *
+ *  **Existen para ver DIBUJOS, y la rotación de estados los tapa.** El batch
+ *  manda uno de cada cuatro a `BLOCKED` y otro a `DEGRADED`, que es lo que hace
+ *  mirables los siete estados de §8 — y con nueve paneles eso esconde dos de los
+ *  nueve gráficos, sin ningún orden que los salve a todos.
+ *
+ *  Son dos propósitos distintos y por eso se separan: **los estados se miran en
+ *  las dos pestañas de negocio**, que siguen con la rotación intacta, y los
+ *  dibujos acá. Exceptuar la pestaña del muestrario no es maquillar la demo —
+ *  lo sería si la excepción tapara un estado que no se ve en otro lado. */
+export const PANELES_MUESTRARIO = new Set([20, 21, 22, 23, 24, 25, 26, 27, 28].map(P))
 const R = (n: number) => `66666666-6666-6666-6666-6666666666${String(n).padStart(2, '0')}`
 
 export const usuario = {
@@ -168,10 +182,16 @@ export const tenants = [
 const panel = (
   n: number, metric: number, tab: string, colStart: number, colSpan: number, tipo: string,
   chart = '',
+  // **`options` se agregó para poder mirar el BULLET** · 2026-09-29. Sin
+  // `maximum` el gauge cae a su estado de «sin objetivo», que es correcto y no
+  // deja ver el dibujo: un avance contra objetivo sin objetivo es la misma cifra
+  // desnuda que un arco sin máximo. Va acá y no cableado adentro porque el
+  // servicio lo manda en `options`, igual que `meter` o `cut`.
+  options: Record<string, unknown> = {},
 ) => ({
   id: P(n), tab_id: tab, metric_id: M(metric), type: tipo,
   col_start: colStart, col_span: colSpan, row_span: 4,
-  chart, note: '',
+  chart, note: '', options,
 })
 
 export const layouts = [
@@ -211,6 +231,38 @@ const tabsDe = (layout: string) => [
       // Va sobre `multi_series` —M(8)— porque apilar una serie contra nada es el
       // área que ya existe, y el cuerpo lo rechaza declarándolo.
       panel(8, 8, TAB_B, 7, 6, 'series', 'stackarea'),
+    ],
+  },
+  {
+    // ── LOS NUEVE DEL LOTE DEL 2026-09-29, PARA PODER MIRARLOS ──────────────
+    //
+    // **Esta pestaña existe por la misma razón que `stackarea`** y el precedente
+    // está escrito diez líneas más arriba: se construyeron nueve gráficos con
+    // prueba y con el dibujo del `.pen` transcripto, y **no se podían ver en
+    // ningún lado**. El servicio manda `chart: ''` en los doce paneles
+    // publicados, así que sin esto la única verificación posible era la que no
+    // alcanza — las pruebas leen los números que ya están transcriptos del frame
+    // al componente, y si la transcripción fuera mala las dos capas coincidirían.
+    //
+    // **Van en una pestaña aparte y no mezclados en las dos de negocio.** Las
+    // otras dos imitan un dashboard real y meterles nueve paneles de muestrario
+    // les quita justamente eso. Acá el muestrario es el punto, y el nombre lo
+    // dice.
+    //
+    // Cada uno va sobre una métrica de la forma que su cuerpo acepta: el bullet
+    // sobre `scalar` con su `maximum`, el spark sobre `time_series`, `bump` y
+    // `slope` sobre `multi_series`, y los cinco de barras sobre `categorical`.
+    tab: { id: TAB_C, layout_version_id: layout, name: 'Repertorio de gráficos', key: 'repertorio', operational_question: '¿Se ve como el dibujo?', sort_order: 3, role_ids: [] },
+    panels: [
+      panel(20, 2, TAB_C, 1, 4, 'gauge', 'bullet', { maximum: 100 }),
+      panel(21, 7, TAB_C, 5, 5, 'series', 'spark'),
+      panel(22, 10, TAB_C, 10, 3, 'bars', 'donut'),
+      panel(23, 10, TAB_C, 1, 4, 'bars', 'columns'),
+      panel(24, 11, TAB_C, 5, 4, 'bars', 'lollipop'),
+      panel(25, 11, TAB_C, 9, 4, 'bars', 'radial'),
+      panel(26, 10, TAB_C, 1, 4, 'bars', 'pareto'),
+      panel(27, 9, TAB_C, 5, 5, 'series', 'bump'),
+      panel(28, 9, TAB_C, 10, 5, 'series', 'slope'),
     ],
   },
 ]

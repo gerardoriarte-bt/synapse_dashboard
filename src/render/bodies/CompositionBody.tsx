@@ -8,7 +8,21 @@
 import { Label } from '../primitives/Label'
 import { Value } from '../primitives/Value'
 import { PlotComposition } from '../plots/PlotComposition'
+import { UnknownPlotState } from '../states/UnknownPlotState'
 import type { BodyProps } from '../types'
+
+/** Los gráficos que este cuerpo sabe dibujar HOY.
+ *
+ *  **Uno de los siete que §5 le da a `composicion`.** `PlotComposition` dibuja
+ *  una barra apilada al 100%, que es exactamente `stacked100`; `stacked`,
+ *  `donut`, `treemap`, `marimekko`, `waterfall` y `funnel` no tienen dibujo
+ *  todavía y se declaran.
+ *
+ *  **`donut` es el caso que más engaña**: reparte igual —el mismo prefijo
+ *  acumulado que usa `<Arc>`— así que sustituirlo por la barra daría un panel
+ *  creíble con la geometría equivocada. Y `stacked` tampoco es esto: apila
+ *  valores absolutos, y acá el reparto es sobre `porcentaje`. */
+const DIBUJA = ['stacked100'] as const
 
 export type CompositionParams = { orden?: 'desc' | 'natural' }
 
@@ -19,9 +33,18 @@ export function CompositionBody({
   value,
   params,
   family,
+  grafico,
   unit,
   format,
 }: BodyProps<'composicion', CompositionParams>) {
+  // La comprobación va ANTES de dibujar, no dentro de una rama · mismo idioma
+  // que `SeriesBody` y `ForecastBody`: resuelta abajo, la rama que se olvide se
+  // ve bien.
+  const conocidos: readonly string[] = DIBUJA
+  if (grafico !== undefined && !conocidos.includes(grafico)) {
+    return <UnknownPlotState grafico={grafico} />
+  }
+
   // ── **EL TOTAL REPARTIDO** · §6 y §PEN «Cuerpo Composición» · 2026-09-28 ────
   //
   // §6 declara este tipo como «partes de un todo · **declara el total
