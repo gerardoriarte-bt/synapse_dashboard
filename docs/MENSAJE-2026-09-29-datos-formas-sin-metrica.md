@@ -98,7 +98,7 @@ redacta quien es dueño del dato.**
 Las cuatro nuevas necesitan, además del copy, su `SHAPE`:
 `compared_categorical`, `matrix`, `flow` y —si se puede— `multi_attribute_profile`.
 
-### b) El esquema de las dos tablas Gold
+### b) El esquema de las dos tablas Gold · **y es lo que va primero**
 
 **Nuestra vista de Gold es indirecta**: las columnas que conocemos las dedujimos
 de las consultas que el backend ya escribió, no de mirar el esquema. Hoy vemos
@@ -115,8 +115,24 @@ GLD_PAID_MEDIA                FUENTE · COST_USD · INGRESOS_USD · GROSS_SPEND
 escribimos sin volver a preguntar** — y es probable que descubramos cruces que no
 estamos usando.
 
-`schema-check` no sirve para esto: verifica que los objetos existan, no lista
-columnas.
+`schema-check` no alcanza para esto: verifica que existan **las columnas que el
+backend ya conoce** —y hoy contesta `ok: true`— pero no puede descubrir una que
+nadie sepa que está.
+
+**Y es lo que va primero, por una razón que conviene decir:** casi todas las
+decisiones de qué se grafica salen de saber qué hay. Un panel se elige cuando se
+sabe que el cruce existe; un gráfico, cuando se sabe cuántas categorías tiene la
+dimensión; un mínimo se verifica cuando se sabe cuántas filas devuelve el corte
+más chico. **Sin la biblioteca a la vista, cada una de esas decisiones es una
+suposición** — y acá una suposición se paga construyendo un panel que después no
+tiene con qué dibujarse.
+
+**Escribimos la especificación completa de lo que pedimos y en qué formato**:
+`docs/snowflake/COMO-ENTREGAR-UNA-METRICA.md`. Ahí está qué campos necesitamos de
+cada tabla —incluidos el **grano** y la **cardinalidad de cada dimensión**, que
+son los dos que no se leen de un `DESCRIBE` y son los que deciden— y la tabla de
+qué forma puede dar cada cruce, para que puedan decirnos qué sale sin esperar a
+que preguntemos métrica por métrica.
 
 ---
 
