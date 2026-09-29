@@ -3440,7 +3440,62 @@ regla dice: mientras el campo no exista, dos paneles con el mismo `colStart`
 dependen de un orden que el contrato no promete estable. **Propuesta de spec para
 B0.9.**
 
-#### ➕ F1.31 ⚠️ Registro de gráficos y verificación de mínimos · 🔒 falta aplicarlo en el cuerpo
+#### ➕ F1.31 ✅ Registro de gráficos y verificación de mínimos
+**CERRADA EL 2026-09-29 contra el servicio corriendo y contra MSW.** Los seis
+bullets del criterio se cumplen, y uno **en otro lugar del que el criterio
+decía** — está abajo, no se resolvió en silencio.
+
+**El camino quedó así**, y el idioma lo eligió el archivo que lo recibe:
+`usePlots` → `plotProblemOf` en el contenedor → `Console` → `PanelInGrid` →
+`EmptyState` con la razón del repertorio. **Mismo idioma que `payloadOf` y
+`paramsOf`**: la decisión llega resuelta y la superficie sólo la pinta, que es lo
+que `api/params.ts` declara en su cabecera —«un cuerpo no valida su entrada,
+porque si validara tendría que decidir qué hacer cuando falla, y esa decisión es
+de la superficie»—.
+
+**El bullet 4 dice «se rechaza en el ADAPTADOR» y quedó en la SUPERFICIE.** La
+razón: la tabla del repertorio llega de `/config/plots`, que es **otra consulta**,
+y juntarla con el layout dentro de `adaptTab` acoplaría dos cachés con vidas
+distintas —el layout cambia al publicar, el repertorio cuando cambia el diseño—.
+La garantía se cumple igual: un gráfico incompatible con la forma no llega al
+cuerpo. **Lo que esto implica para F4.21**: el builder no pasa por
+`ConsoleContainer`, así que tiene que llamar a `invalidPlotReason` por su cuenta.
+
+**El bullet 5 —«`serieConBanda` sólo admite gráficos con banda»— lo sostiene la
+estructura y no un chequeo aparte**: las únicas entradas cuyas `formas` incluyen
+`serieConBanda` son las tres que declaran `soportaBanda: true`, así que la
+comprobación de forma ya lo cierra. `supportsBand` queda exportada para el
+selector de F4.21, que sí necesita preguntarlo antes de ofrecer.
+
+**Tres decisiones del camino, y las tres son «no apagar de más»:**
+
+1. **Sin repertorio no se bloquea nada.** `/config/plots` puede fallar sola; un
+   panel apagado por una tabla que no cargó es peor que uno dibujado sin
+   verificar — el segundo es lo que hacía ayer, el primero el usuario no lo
+   distingue de un fallo de datos.
+2. **`indeterminado` no llega a la pantalla.** Se avisa en desarrollo, igual que
+   un param desconocido, y el panel se dibuja: castigar al usuario por una
+   deriva entre el repertorio y el front no es suyo.
+3. **El mínimo se evalúa antes que el tope**, porque «falta dato» se arregla y
+   «sobra» manda a recortar lo que no es el problema.
+
+**CUATRO MUTACIONES, Y UNA SOBREVIVIÓ.** Murieron las tres del camino —el
+contenedor que no propaga, `PanelInGrid` que ignora el problema, y **la prop mal
+nombrada en el spread de `Console`, que compila**, que es el modo de falla que
+este repositorio ya tuvo cuatro veces—. **Sobrevivió la de la guarda del
+repertorio vacío**: la prueba afirmaba «hay un `img`» y sin la guarda el panel
+también se apaga por `incompatible`, así que no distinguía. Con la aserción
+sobre el texto exacto —«no está en el repertorio»— muere.
+
+**Y el hook rompió la consola entera antes de la primera prueba.** `usePlots()`
+quedó puesto junto a su lógica, o sea **después de los retornos tempranos** del
+contenedor: React lo marcó como cambio en el orden de los hooks y nada montaba.
+No lo vio el compilador — lo vio la primera prueba que lo ejercitó.
+
+**Con dato real la regla no se dispara**, y está bien: los seis paneles
+categóricos del muestrario traen 5 ítems contra umbrales de 2 y 3. Lo que se
+verificó en pantalla es que nada se apagó de más.
+
 **EL CANDADO VENCIÓ PORQUE LA RUTA LA ESCRIBIMOS NOSOTROS** · 2026-09-29 ·
 B1.21, `b6f0e09`. Con la tabla llegando, la mitad de esta tarea se pudo tomar.
 

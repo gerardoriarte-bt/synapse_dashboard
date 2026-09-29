@@ -187,4 +187,15 @@ export const handlers = [
   // `SendSuccess(c, 200, metrics)` en Go.
   http.get(`${API}/config/catalog`, () => ok(metrics)),
   http.get(`${API}/config/blocks`, () => ok(blocks)),
+  // **`/config/plots` va en el PISO, y no es opcional** · F1.31, 2026-09-29.
+  //
+  // Sin él `usePlots` queda en error y el contenedor no monta: la consola entera
+  // deja de renderizar por una tabla que ni siquiera bloquea nada. Lo encontró
+  // agregar el hook — cinco pruebas que no lo mencionan se pusieron rojas.
+  //
+  // **Vacío a propósito.** El piso es «el contexto mínimo con el que la app
+  // arranca», y sin repertorio la consola dibuja sin verificar, que es
+  // exactamente lo que hace contra un servicio que todavía no sirve la ruta. La
+  // prueba que necesita la tabla la sirve con `server.use`.
+  http.get(`${API}/config/plots`, () => ok([])),
 ]

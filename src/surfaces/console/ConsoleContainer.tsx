@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   useBlocks,
+  usePlots,
   useCatalog,
   useMe,
   usePanelsBatch,
@@ -18,7 +19,10 @@ import {
   useTab,
 } from '../../api/hooks'
 import { adaptPanelParams } from '../../api/params'
+import { hasValue } from '../../render/state'
 import { blockTable } from '../../catalog/blocks'
+import { invalidPlotReason, plotTable } from '../../catalog/plots'
+import type { PlotProblem } from '../../catalog/plots'
 import { applyTheme } from '../../tokens/theme'
 import { preloadBodies } from '../../render/bodies/registry'
 import { createFormat, LOCALE_POR_DEFECTO } from '../../render/format'
@@ -61,6 +65,13 @@ export function ConsoleContainer() {
   // La tabla de bloques trae `paramsDisponibles`: es la mitad del esquema de
   // params que sí declara el contrato · F1.29.
   const blocks = useBlocks()
+  // **Arriba con los demás hooks, y no abajo donde se usa.** Puesto junto a su
+  // lógica quedaba DESPUÉS de los retornos tempranos del contenedor —el estado
+  // de carga, el dashboard sin componer— así que en unos renders se llamaba y en
+  // otros no: React lo marcó como cambio en el orden de los hooks y el
+  // contenedor entero dejó de montar. No lo vio el compilador; lo vio la primera
+  // prueba que lo ejercitó.
+  const plots = usePlots()
   const saveTheme = useSaveTheme()
   const selectDashboard = useSelectDashboard()
 
@@ -248,6 +259,45 @@ export function ConsoleContainer() {
     return adaptPanelParams(panel, blocks.data?.blocks)
   }
 
+  /* ── F1.31 · el repertorio decide si el gráfico puede dibujar ──────────── */
+
+  const repertorio = plotTable(plots.data ?? [])
+
+  /** Por qué el gráfico de un panel no puede dibujar su valor. `undefined` si
+   *  puede, o si todavía no hay con qué decidir.
+   *
+   *  **Mientras el repertorio no llegó, NO se bloquea nada.** `/config/plots` es
+   *  una consulta aparte y puede fallar sola —igual que `/config/blocks`—, y un
+   *  panel apagado por una tabla que no cargó es peor que uno dibujado sin
+   *  verificar: el segundo es lo que hacía ayer, el primero es una regresión que
+   *  el usuario no puede distinguir de un fallo de datos.
+   *
+   *  **`indeterminado` tampoco se propaga.** `invalidPlotReason` lo devuelve
+   *  para que se vea en desarrollo, y apagar un panel porque este build no sabe
+   *  contar un sustantivo nuevo del repertorio sería castigar al usuario por una
+   *  deriva entre las dos mitades. Se avisa y se dibuja. */
+  const plotProblemOf = (panelId: string): PlotProblem | undefined => {
+    const panel = panels.find((p) => p.id === panelId)
+    if (panel === undefined || panel.grafico === undefined) return undefined
+    if (repertorio.size === 0) return undefined
+    const payload = payloadOf(panelId)
+    if (!hasValue(payload)) return undefined
+
+    const problema = invalidPlotReason(repertorio, panel.grafico, payload.valor)
+    if (problema === null) return undefined
+    if (problema.clase === 'indeterminado') {
+      // Mismo trato y mismo lugar que el aviso de params desconocidos: es de
+      // DESARROLLO. En producción el panel se dibujó igual, y llenar la consola
+      // del navegador con algo que sólo puede resolver quien compone el
+      // repertorio no le sirve a nadie.
+      if (import.meta.env.DEV) {
+        console.warn(`[synapse] panel ${panelId} (${panel.grafico}): ${problema.razon}`)
+      }
+      return undefined
+    }
+    return problema
+  }
+
   /** Un param inválido DEGRADA el panel, no se ignora ni se reemplaza por el
    *  default. Ignorarlo es el defecto que F1.29 arregla; reemplazarlo en
    *  silencio es peor, porque el panel se ve bien mostrando otra cosa.
@@ -290,6 +340,7 @@ export function ConsoleContainer() {
       metricsById={byId}
       payloadOf={payloadWithParams}
       paramsOf={(id) => paramsOf(id).params}
+      plotProblemOf={plotProblemOf}
       rejectedMetrics={rejectedMetrics}
       format={format}
       onSelectTab={setTabId}

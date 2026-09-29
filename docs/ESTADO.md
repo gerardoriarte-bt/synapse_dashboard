@@ -5,15 +5,15 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**170 de 223 tareas cerradas.** 15 parciales · 33 pendientes · 5 diferidas.
+**171 de 223 tareas cerradas.** 14 parciales · 33 pendientes · 5 diferidas.
 
 
-## Front · 111 de 125
+## Front · 112 de 125
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██████████████████████` | 16/16 | 0 | 0 |
-| 1 · Consola y render/ | `█████████████████████·` | 43/46 | 3 | 0 |
+| 1 · Consola y render/ | `█████████████████████·` | 44/46 | 2 | 0 |
 | 2 · Estados | `██████████████████████` | 6/6 | 0 | 0 |
 | 3 · Chat contextual | `██████████████████····` | 12/15 | 0 | 0 |
 | 4 · Admin y Builder | `█████████████████·····` | 19/24 | 0 | 5 |
@@ -61,7 +61,7 @@ Nada del front está libre: todo lo pendiente espera algo.
 
 ---
 
-## Bloqueadas · 16
+## Bloqueadas · 15
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -69,7 +69,6 @@ Lo que el front espera del backend está detallado en
 
 **Front**
 
-- **F1.31** · Registro de gráficos y verificación de mínimos
 - **F1.42** · El mes en curso está incompleto y el selector no lo dice
 - **F1.44** · El orden de una tabla se anuncia, no se aplica
 - **F4.17** · ComparisonBody + ComparePlot

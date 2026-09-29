@@ -16,6 +16,7 @@ import { COLUMNS, gridStyle, readingOrder } from '../../render/grid'
 import { useColumns } from '../../render/useColumns'
 import { measureLayoutCommit, measureLayoutPainted } from '../../render/budget'
 import { PanelInGrid } from './PanelInGrid'
+import type { PlotProblem } from '../../catalog/plots'
 import { Topbar } from './Topbar'
 import { ConsoleDock } from './ConsoleDock'
 import type { Formatter } from '../../render/format'
@@ -37,6 +38,13 @@ type Props = {
   /** Los params YA validados · F1.29. La superficie no los lee: solo los pasa.
    *  Quien valida es el adaptador de `api/`. */
   paramsOf: (panelId: string) => Record<string, unknown>
+  /** Por qué el gráfico de un panel no puede dibujar su valor · F1.31.
+   *
+   *  **Mismo idioma que `payloadOf` y `paramsOf`**: llega resuelto y esta
+   *  superficie sólo lo pasa. Quien decide es el contenedor, que es el que tiene
+   *  la tabla del repertorio. Ausente —o `undefined` para un panel— significa
+   *  que se dibuja. */
+  plotProblemOf?: (panelId: string) => PlotProblem | undefined
   format: Formatter
   onSelectTab: (id: string) => void
   onSelectPeriod: (id: string) => void
@@ -67,6 +75,7 @@ export function Console({
   metricsById,
   payloadOf,
   paramsOf,
+  plotProblemOf,
   rejectedMetrics,
   format,
   onSelectTab,
@@ -182,6 +191,7 @@ export function Console({
               now={now}
               {...(onRetryPanel === undefined ? {} : { onRetry: () => onRetryPanel(panel.id) })}
               {...(onAskPanel === undefined ? {} : { onChat: () => onAskPanel(panel.id) })}
+              {...(plotProblemOf?.(panel.id) === undefined ? {} : { plotProblem: plotProblemOf(panel.id) as PlotProblem })}
             />
           )
         })}
