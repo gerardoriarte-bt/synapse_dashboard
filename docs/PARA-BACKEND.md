@@ -319,10 +319,63 @@ montados a mano— y ni una vez de punta a punta. Eso es
 
 ### B2.15 · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar
 
-*Estado de la tarea: pendiente.* · **Lo tiene: DESPLIEGUE**
+*Estado de la tarea: parcial.* · **Lo tiene: DESPLIEGUE**
 
 
-**Que se encienda en dev y nos avisen** — lo ofrecieron ellos en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
+**Corregir `locale`, `currency` y `timezone` del tenant de
+UA MX**, que hoy son colombianos —`es-CO`, `COP`, `America/Bogota`— por el
+**default de la columna** en `internal/core/domain/tenant.go`. **Medido contra
+`de881e1` el 2026-09-29** al probar la prosa: el agente redactó el resumen del
+mes en **pesos colombianos para un cliente mexicano**.
+
+**El caro es el huso**, no la moneda: el corte del día del negocio sale del
+tenant, y un tenant mexicano cerrando el día en Bogotá produce cifras plausibles
+y no auditables — que es justo lo que la regla de las dos zonas horarias existe
+para impedir. Y el `locale` mete el separador de miles colombiano en TODAS las
+cifras de la consola, no sólo en la prosa.
+
+Pedido en `docs/MENSAJE-2026-09-29-backend-tenant-colombiano.md`, con la
+propuesta de que los tres pasen a ser obligatorios al crear el tenant: **un
+default que nombra un país es una decisión sobre el próximo cliente que nadie va
+a tomar a conciencia.** · Bloquea nada, **ensucia todo**.
+
+**PROBADO ACÁ EL 2026-09-29, Y ANDA.** No hacía falta esperar al despliegue para
+saber si funciona: el flag es del binario y el agente de Cortex contesta desde el
+24. Levantado con `DD_MATERIALIZE_PROSE_ENABLED=true` contra `de881e1` y con
+`POST /admin/tenants/{id}/materialize` sobre `2026-09`:
+
+```
+run: available 18 · blocked 0 · errors 0 · preserved 0 · 45 s
+executive_summary → AVAILABLE · «En septiembre de 2026 los ingresos alcanzaron
+  COP 1.144.876, un avance de 24,6% frente al mes anterior (COP 918.978)…»
+decisions         → AVAILABLE · con pilares · «Frenar: erosión…», «Vigilar:
+  brecha en órdenes», con su nota cada uno
+```
+
+**Resuelve las tres cosas que estaban mal en esos dos paneles:**
+
+| Antes | Ahora |
+|---|---|
+| El texto de la semilla, en **inglés** | En **español**, porque el generador recibe el `Locale` del tenant |
+| **La misma cifra en todos los períodos** —«USD 4.28M»— | Las del período materializado, con su comparación contra el mes anterior y el mismo mes del año pasado |
+| `DEGRADED` con dato de tres semanas | `AVAILABLE` con la frescura de la corrida |
+
+**Y la prosa NO pasa por el registro de consultas de Snowflake**, que es lo que
+hacía que estas dos salieran `BLOCKED · No Snowflake query registered` en los
+demás períodos: `dd_materializer_service.go:139` evalúa la rama de prosa **antes**
+del bloqueo, así que con el generador puesto el `Blocked: true` de `exec_resumen`
+y `month_decisions` no aplica.
+
+**Queda en ⚠️ y no en ✅** porque lo que la tarea pide es que se encienda **en
+dev**, y eso sigue siendo del equipo de despliegue. Lo que cambia es que ya no es
+una apuesta: está medido.
+
+**UNA MEDICIÓN FLOJA, ANOTADA PORQUE ES BARATA DE REPETIR.** La primera lectura
+dijo que `executive_summary` no se había regenerado. Era falso: la ruta devuelve
+**202 y corre asíncrono**, y se consultó antes de que terminara. El `status` de la
+corrida —`/admin/materialize/runs`— es lo que dice cuándo mirar.
+
+**Espera del backend.** **Que se encienda en dev y nos avisen** — lo ofrecieron ellos en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
 
 **Lo tiene: DESPLIEGUE** · prender el flag en dev después del próximo despliegue. **Fecha, no código.**
 

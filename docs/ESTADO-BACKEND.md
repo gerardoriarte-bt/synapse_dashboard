@@ -15,9 +15,9 @@ falta para re-verificar. Para su avance real está
 | | |
 |---|---|
 | Tareas `B*` en el plan | **98** |
-| Verificadas por nosotros · ✅ o ⚠️ | **71** |
+| Verificadas por nosotros · ✅ o ⚠️ | **72** |
 | De ésas, **contra el último commit** | **0** |
-| ⬜ Esperando algo de ellos | **4** |
+| ⬜ Esperando algo de ellos | **3** |
 | ⬜ **Que NUNCA verificamos** | **22** |
 | El último commit que leímos | **no se sabe** · el cable no coincide consigo mismo |
 
@@ -35,7 +35,7 @@ identificadores no coinciden, así que los números no se restan; pero
 la distancia dice de qué lado está el trabajo pendiente.
 
 **El número que sí es nuestro y sí es un compromiso** son las que
-esperan algo de ellos: **4**, y salen en `PARA-BACKEND.md`.
+esperan algo de ellos: **3**, y salen en `PARA-BACKEND.md`.
 
 
 ## Todas, por fase
@@ -115,7 +115,7 @@ esperan algo de ellos: **4**, y salen en `PARA-BACKEND.md`.
 | ⚠️ | **B2.12** ➕ · Correr el materializador contra datos reales y verificar los seis estados | `de881e1` | 2026-09-29 |
 | ✅ | **B2.13** ➕ · Salud de feeds por fuente | `de881e1` | 2026-09-29 |
 | ⬜ | **B2.14** ➕ · /config/solicitudes | `de881e1` | 2026-09-29 |
-| ⬜ | **B2.15** ➕ · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | `de881e1` | 2026-09-29 |
+| ⚠️ | **B2.15** ➕ · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | `de881e1` | 2026-09-29 |
 | ✅ | **B2.16** ➕ · El materializador emite presentation | `de881e1` | 2026-09-29 |
 
 

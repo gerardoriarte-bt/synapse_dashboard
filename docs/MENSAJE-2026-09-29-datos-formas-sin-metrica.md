@@ -3,8 +3,6 @@
 > **Histórico.** Un mensaje mandado, con fecha: qué se pidió y con qué evidencia.
 > No se actualiza.
 
-Hola. Este pedido **empezó siendo para el equipo de backend y la medición lo
-mandó para acá**, así que va con la corrección adelante.
 
 **Lo que creíamos:** que faltaba que el backend materializara cinco formas de
 dato. **Lo medido hoy contra `de881e1`:** el backend las materializa todas, y lo
