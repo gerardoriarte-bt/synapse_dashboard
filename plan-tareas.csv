@@ -12,7 +12,7 @@ B0.3,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e
 • Ningún endpoint devuelve tenant_id como identificador que el front deba reenviar: la pertenencia se resuelve del token.",pendiente,no,,equipo:backend fase:0 estado:pendiente
 B0.4,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e infraestructura,Middleware de auth y envelope,"Toda respuesta viaja como { success: true, data } o { success: false, error: { codigo, mensaje, campo?, desbloqueaCon? } }.","• No hay endpoint que devuelva el objeto pelado sin envelope.
 • mensaje está escrito desde el lado del usuario. §8 de design.md: los errores no se disculpan y nunca son vagos — «El feed de inventario tiene 31 horas», no «Error al obtener snapshot».
-• codigo es estable y sirve para decidir en código.",parcial,no,,equipo:backend fase:0 estado:parcial bloqueada
+• codigo es estable y sirve para decidir en código.",hecho,no,,equipo:backend fase:0 estado:hecho
 B0.5,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e infraestructura,Contrato de consola,"contracts/synapse-api.yaml ya existe y cubre los endpoints de consola: me, catalog, blocks, tabs/{tabId}, panels:batch, chat, chat/hilos, me/preferencias, más decisiones, accionables y solicitudes. Fue escrito por el front derivándolo de §4 y de lo que C1 consume.","• El backend lo revisa y lo adopta, o marca las diferencias en el propio archivo.
 • Al adoptarse deja de ser propuesta del front y pasa a ser fuente de los dos lados (T1).",hecho,no,,equipo:backend fase:0 estado:hecho
 B0.6,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e infraestructura,Extender el contrato con admin y builder,"Agregar al yaml los endpoints de §5: /admin/tenants, /admin/tenants/{id}/layouts, /admin/layouts/{id}, .../publish, .../validate, /admin/tenants/{id}/catalog, /admin/tenants/{id}/agents.","• Los esquemas de admin reutilizan PanelConfigurado, Metrica y Bloque; no se declaran versiones paralelas.
@@ -117,18 +117,18 @@ B1.26,Backend · Fase 1 — API de consola,Backend,1,API de consola,"Decidir có
 • La decisión nombra quién es dueño de la vista por tenant: hoy sync-catalog asume que existe y falla sin decir que falta.",pendiente,si,,equipo:backend fase:1 estado:pendiente nueva
 B1.28,Backend · Fase 1 — API de consola,Backend,1,API de consola,PayloadDegradado dice DESDE QUÉ PUNTO el dato está vencido,,"• El payload degradado declara el punto desde el cual el dato está vencido, en la misma unidad del eje: si la serie es semanal, una semana.
 • El front no lo calcula. Sin el campo no se dibuja la trama, porque adivinar cuál es el tramo es inventar el dato.
-• Una forma sin eje temporal no lo necesita y el campo queda ausente, no en cero.",pendiente,si,,equipo:backend fase:1 estado:pendiente nueva bloqueada
+• Una forma sin eje temporal no lo necesita y el campo queda ausente, no en cero.",hecho,si,,equipo:backend fase:1 estado:hecho nueva
 B1.29,Backend · Fase 1 — API de consola,Backend,1,API de consola,schema-check · decir qué le falta al cliente ANTES de intentar,,"• Dice si existen los dos objetos Gold en <agent.db>.<agent.schema> y qué columnas de las quince faltan en cada uno.
 • Dice si existe la vista de catálogo y cuáles de sus doce columnas faltan.
 • Trae afecta: qué métricas quedan sin poder materializarse por cada columna ausente. Es el campo que convierte el chequeo en una decisión — «falta BUDGET_TARGET» no le dice nada a nadie, «no vas a poder tener goal_attainment» sí. El mapa de qué query usa qué columna es suyo, no nuestro.
 • Trae claves_sin_query: las METRIC_KEY del catálogo del cliente que no caen en MetricRegistry ni por alias. Cierra el segundo silencio y es un diff contra las doce claves de keys.go.
-• No crea ni modifica nada: es de sólo lectura y se puede correr antes de dar de alta.",pendiente,si,,equipo:backend fase:1 estado:pendiente nueva bloqueada
+• No crea ni modifica nada: es de sólo lectura y se puede correr antes de dar de alta.",parcial,si,,equipo:backend fase:1 estado:parcial nueva bloqueada
 B1.30,Backend · Fase 1 — API de consola,Backend,1,API de consola,sync-catalog como ruta HTTP,,"• POST /admin/tenants/{tenantId}/sync-catalog contesta como su hermana: 202 y el trabajo por detrás.
 • El resultado se puede consultar después: cuántas métricas entraron y en qué catalog_version quedó.
-• No reemplaza al comando, que sigue sirviendo para correrlo a mano.",pendiente,si,,equipo:backend fase:1 estado:pendiente nueva bloqueada
+• No reemplaza al comando, que sigue sirviendo para correrlo a mano.",parcial,si,,equipo:backend fase:1 estado:parcial nueva bloqueada
 B1.31,Backend · Fase 1 — API de consola,Backend,1,API de consola,La plataforma genera el par de claves del usuario de servicio,,"• El servicio genera el par, guarda la privada cifrada como ya hace con la que recibe, y devuelve sólo la pública en formato PEM.
 • El ciclo se cierra con lo que ya existe: generar → el cliente registra la pública en su usuario de servicio → GET /agents/ping confirma que funciona.
-• private_key_pem deja de ser obligatoria en el alta, o queda un orden declarado. Cuál de las dos es decisión del backend; el front no depende de la forma.",pendiente,si,,equipo:backend fase:1 estado:pendiente nueva bloqueada
+• private_key_pem deja de ser obligatoria en el alta, o queda un orden declarado. Cuál de las dos es decisión del backend; el front no depende de la forma.",parcial,si,,equipo:backend fase:1 estado:parcial nueva bloqueada
 B1.32,Backend · Fase 1 — API de consola,Backend,1,API de consola,"cut es day o month, y lo aplica el front",,"• Queda dicho si day y month son todos los valores · sí, contestado.
 • Queda confirmado que el backend no lo aplica · confirmado, y ellos lo dicen.
 • Lo mismo para normalization · confirmado, y de paso el order de tablas.",hecho,si,,equipo:backend fase:1 estado:hecho nueva
@@ -256,7 +256,7 @@ B4.17,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Una ruta q
 B4.18,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,roles.tab_keys · que una restricción de rol sobreviva a publicar,,"• roles.tab_keys es la fuente de verdad y roleCanSeeTab resuelve por key contra el layout que se está sirviendo.
 • tab_ids sigue leyéndose como respaldo mientras esté vacío tab_keys, así que nada cambia hasta que migremos.
 • PUT /admin/roles/{id} acepta tab_keys y GET .../roles/composition devuelve las dos — es lo que nos deja migrar sin una ventana en que la consola de roles muestre menos de lo que el rol ve.
-• tab_keys valida contra las keys del layout publicado y devuelve 422 nombrando la que no existe. Una key que no resuelve es una pestaña que el rol pierde en silencio, que es el defecto que se está cerrando.",pendiente,si,,equipo:backend fase:4 estado:pendiente nueva bloqueada
+• tab_keys valida contra las keys del layout publicado y devuelve 422 nombrando la que no existe. Una key que no resuelve es una pestaña que el rol pierde en silencio, que es el defecto que se está cerrando.",hecho,si,,equipo:backend fase:4 estado:hecho nueva
 B4.19,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,La compuerta de resolveLayout y la vista previa por rol,,"• Previsualizar un borrador con un lente no-admin devuelve el layout · medido: 200.
 • La compuerta distingue el solicitante del rol simulado · verificado en dd_config_service.go:498.",hecho,si,,equipo:backend fase:4 estado:hecho nueva
 B4.20,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,(libre),Identificador reservado para no reusar el de una tarea retirada.,"• No se asigna a otra cosa · plan:ancestro verifica que ningún identificador se reasigne.

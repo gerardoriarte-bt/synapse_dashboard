@@ -99,7 +99,7 @@ tags:
 
 paths:
   /config/me:
-    x-verificado-en: f70cec2
+    x-verificado-en: de881e1
     get:
       tags: [config]
       operationId: getMe
@@ -122,7 +122,7 @@ paths:
         '500': { $ref: '#/components/responses/ServerError' }
 
   /config/catalog:
-    x-verificado-en: f70cec2
+    x-verificado-en: de881e1
     get:
       tags: [config]
       operationId: getCatalog
@@ -146,7 +146,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/blocks:
-    x-verificado-en: f70cec2
+    x-verificado-en: de881e1
     get:
       tags: [config]
       operationId: getBlocks
@@ -170,7 +170,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/tabs/{tabId}:
-    x-verificado-en: f70cec2
+    x-verificado-en: de881e1
     get:
       tags: [config]
       operationId: getTab
@@ -206,7 +206,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   /config/panels:batch:
-    x-verificado-en: f70cec2
+    x-verificado-en: de881e1
     post:
       tags: [config]
       operationId: batchPanels
@@ -240,7 +240,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/me/preferences:
-    x-verificado-en: f70cec2
+    x-verificado-en: de881e1
     put:
       tags: [config]
       operationId: updatePreferences
@@ -325,7 +325,7 @@ paths:
     #
     # **Las seis formas `ChatFrame*` siguen sin verse contra el servicio.** Eso
     # es cobertura que falta, y queda dicho acá y en la salida de `humo`.
-    x-verificado-en: f70cec2
+    x-verificado-en: de881e1
     post:
       tags: [config]
       operationId: askChat
@@ -383,7 +383,7 @@ paths:
 
   # ── F3.7 · el historial de hilos · TRANSCRITO DE 82da946 ─────────────────
   /config/chat/threads:
-    x-verificado-en: f70cec2
+    x-verificado-en: de881e1
     get:
       tags: [config]
       operationId: listChatThreads
@@ -446,7 +446,7 @@ paths:
 
   # ── B3.2 · las preguntas sugeridas · TRANSCRITO DE 82da946 ───────────────
   /config/panels/{panelId}/chat-suggestions:
-    x-verificado-en: f70cec2
+    x-verificado-en: de881e1
     get:
       tags: [config]
       operationId: panelChatSuggestions

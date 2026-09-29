@@ -1,3 +1,17 @@
+> ## ⚠ ESTE MENSAJE QUEDÓ OBSOLETO EL MISMO DÍA · NO SE ENVÍA
+>
+> Se escribió a la mañana, cuando su respuesta describía código que no estaba en
+> el repositorio. **Empujaron a la tarde** —`e1037d9` y `de881e1`— y todo lo que
+> acá se dice «no está» pasó a estar.
+>
+> **Se conserva sin editar**, que es la regla de esta casa para los mensajes: lo
+> que reemplaza es `docs/MENSAJE-2026-09-29-backend-todo-medido.md`, con lo
+> medido contra `de881e1`.
+>
+> **Lo que sí sirvió de acá**: que el documento llegara antes que el commit, y
+> que no cerráramos nada contra él. Si lo hubiéramos hecho, habríamos cerrado
+> diez pedidos el 28 y el 29 no habría habido nada que medir.
+
 # Para el equipo de backend · no podemos verificar el commit que describen · 2026-09-29
 
 > Contesta su `RESPUESTA-2026-09-28-todo-lo-que-falta.md`. **Ustedes mismos

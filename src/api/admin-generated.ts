@@ -985,6 +985,27 @@ export interface components {
             tenant_id: string;
             /** @example Planner */
             name: string;
+            /**
+             * @description **La restricción de rol POR KEY** · llegó en `de881e1`, el 2026-09-29,
+             *     y es lo que hace que un rol restringido **sobreviva a publicar**.
+             *
+             *     `roles.tab_ids` apunta a `dd_tabs.id`, y ese id **se recrea en cada
+             *     versión de layout**: la primera publicación real desde el builder
+             *     dejaba sin pestañas a todo rol con restricción. `key` es estable.
+             *
+             *     **Verificado en sustancia y no por la existencia del campo** · se le
+             *     puso a `planner` un `tab_ids` con un uuid inexistente dejándole
+             *     `tab_keys: ["overview"]`, y `GET /config/me` le devolvió su pestaña
+             *     igual.
+             *
+             *     **Resuelve en este orden**: si hay `tab_keys` manda `key`; si está
+             *     vacía cae a `tab_ids`; las dos vacías = todas. Y la migración la
+             *     rellenó una vez desde los `tab_ids` existentes, así que los roles
+             *     sembrados quedaron protegidos sin tocar la consola.
+             *
+             *     **Siempre lista, nunca `null`.**
+             */
+            tab_keys: string[];
             /** @description Vacío significa «ve todas las pestañas». */
             tab_ids: string[];
             /**

@@ -498,12 +498,23 @@ recibe todo resuelto en `/config/me`.
 - Ningún endpoint devuelve `tenant_id` como identificador que el front deba
   reenviar: la pertenencia se resuelve del token.
 
-### B0.4 ⚠️ Middleware de auth y envelope
+### B0.4 ✅ Middleware de auth y envelope
 **Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. **Todo error trae `code`**, medido en cuatro familias: `AUTH_UNAUTHORIZED`, `NOT_FOUND_RESOURCE`, `AUTH_FORBIDDEN` y `VALIDATION_REQUEST`. **Queda en ⚠️ y no en ✅ por el `error`**: dos handlers devuelven el mensaje crudo —«tab not found» y el volcado del validador de Go— y `ErrorState` lo pinta tal cual. Pedido, no nuestro.
 
-**Espera del backend.** **Que el `error` esté redactado y en español · queda UNA ruta, no dos.** Remedido el 2026-09-28 contra `f70cec2`: de los dos handlers crudos, el de «tab not found» se arregló —sale `pestaña no encontrada`— y los 400 de binding pasan por un traductor por campo, medido en `PUT /config/me/preferences`: `el campo 'theme' debe ser uno de: dark, light`. **`POST /config/chat` sigue volcando el validador de Go**, y su respuesta afirma lo contrario —«Nunca aparece un nombre de struct de Go ni un tag»—. Medido: `Key: 'ddChatRequest.question' Error:Field validation for 'question' failed on the 'required' tag`. **No es el anidamiento**: falla igual con un campo de primer nivel. Es por handler — `dd_chat_handler.go:52` manda `err.Error()` donde los demás mandan `BindingErrorMessage(err)`, y de 32 sitios que enlazan JSON sólo 9 pasan por el traductor. `ErrorState` lo pinta tal cual, y cae justo en la ruta de F3.15.
+**CERRADA EL 2026-09-29 · las dos rutas traducidas, medido contra `de881e1`:**
 
-**Medido contra `f70cec2` el 2026-09-28** · las dos rutas contestan con el volcado del validador de Go, y `PUT /config/me/preferences` con texto redactado.
+```
+POST /admin/agents {}  →  "solicitud inválida: el campo 'tenant_id' es obligatorio;
+                           el campo 'name' es obligatorio; …"
+POST /config/chat  {}  →  "solicitud inválida: el campo 'question' es obligatorio"
+```
+
+**Ni un nombre de struct de Go ni un tag.** Era lo último que le faltaba a esta
+tarea desde el 2026-09-14.
+
+**Lo que decía antes, y por qué se conserva:** **Que el `error` esté redactado y en español · quedaban dos rutas.** Remedido el 2026-09-28 contra `f70cec2`: de los dos handlers crudos, el de «tab not found» se arregló —sale `pestaña no encontrada`— y los 400 de binding pasan por un traductor por campo, medido en `PUT /config/me/preferences`: `el campo 'theme' debe ser uno de: dark, light`. **`POST /config/chat` sigue volcando el validador de Go**, y su respuesta afirma lo contrario —«Nunca aparece un nombre de struct de Go ni un tag»—. Medido: `Key: 'ddChatRequest.question' Error:Field validation for 'question' failed on the 'required' tag`. **No es el anidamiento**: falla igual con un campo de primer nivel. Es por handler — `dd_chat_handler.go:52` manda `err.Error()` donde los demás mandan `BindingErrorMessage(err)`, y de 32 sitios que enlazan JSON sólo 9 pasan por el traductor. `ErrorState` lo pinta tal cual, y cae justo en la ruta de F3.15.
+
+**Medido contra `de881e1` el 2026-09-29** · las dos rutas contestan con el volcado del validador de Go, y `PUT /config/me/preferences` con texto redactado.
 
 **Y SON DOS RUTAS, NO UNA** · encontrado el 2026-09-28 revisando el alta de un tenant. `POST /admin/agents` hace lo mismo: `Key: 'createAgentRequest.tenant_id' Error:Field validation for 'tenant_id' failed on the 'required' tag`. Ésa importa por otra razón — **es una ruta del ALTA de un cliente**, así que el error lo lee quien está dando de alta. `POST /admin/tenants` sí está traducida, que es la prueba de que el traductor anda y de que falta aplicarlo en esas dos.
 **Descripción.** Toda respuesta viaja como `{ success: true, data }` o
@@ -860,7 +871,7 @@ pruebas de integración contra HTTP.
 ### ➕ B1.21 ⬜ Declarar los mínimos de datos por gráfico
 **Espera del backend.** **Queda `GET /config/plots`; `chart` YA LLEGÓ** · el mismo día que se pidió, en `f70cec2`. Medido el 2026-09-28 contra el servicio: sale en `DDPanelDTO.chart` y en `DDLayoutPanel.chart`, lo escribe el builder recortado y en minúsculas —`"  Waterfall  "` → `waterfall`— y los doce paneles publicados quedaron con `''`, así que no migró ningún layout. Transcripto en los dos cables y adaptado, con prueba de que **un id desconocido se pasa igual**: descartarlo haría caer el panel al gráfico por defecto sin que nadie se entere. **Lo que falta es la ruta del repertorio**, y para escribirla piden tres archivos nuestros que no están en su repo — contestado en `docs/MENSAJE-2026-09-28-backend-lo-que-piden.md`.
 
-**Medido contra `f70cec2` el 2026-09-28** · `GET /config/plots` → **404**.
+**Medido contra `de881e1` el 2026-09-29** · `GET /config/plots` → **404**.
 
 **NUESTRA MITAD ESTÁ HECHA** · 2026-09-26, y **el repertorio entero desde el 2026-09-28**: `docs/REPERTORIO-2026-09-28-los-49-graficos.md`. El orden que habíamos propuesto era «1. el front declara los mínimos y los propone en el contrato · 2. el backend los sirve». **El paso 1 está**: el contrato declara `GET /config/plots`, `Grafico` y `MinimoDeDatos`, y la tabla que hay que implementar está en `docs/DECISIONES-2026-09-26-minimos-por-grafico.md`.
 
@@ -1134,10 +1145,22 @@ desaparece.
 - La decisión nombra quién es dueño de la vista por tenant: hoy `sync-catalog`
   asume que existe y falla sin decir que falta.
 
-#### ➕ B1.28 ⬜ `PayloadDegradado` dice DESDE QUÉ PUNTO el dato está vencido
-**Espera del backend.** **Un campo en `PayloadDegradado` que diga desde dónde el dato dejó de ser fresco** — pedido el 2026-09-28, al cerrar la propuesta del degradado.
+#### ➕ B1.28 ✅ `PayloadDegradado` dice DESDE QUÉ PUNTO el dato está vencido
+**CERRADA EL 2026-09-29 · `stale_since` llegó en `de881e1`.** Medido envejeciendo una fila en la base descartable:
 
-**Medido contra `f70cec2` el 2026-09-28** · el payload de un panel degradado trae `governance message reason status unlocks_with value` · ninguna clave de tramo.
+```
+stale_since : 2026-09-12T14:38:08Z
+reason      : Los datos tienen más de 3 días: la última actualización fue el 2026-09-09
+unlocks_with: Se actualiza en la próxima materialización
+```
+
+**Es `materialized_at` + la tolerancia**, y la razón nombra la fecha. `dd_config_service.go:781`.
+
+**Y sólo aparece en la degradación POR ANTIGÜEDAD**, que es lo correcto: la del «nunca se materializó» no tiene desde-cuándo. La primera medición cayó en ese caso y pareció que faltaba — el campo es `omitempty`.
+
+**Lo que se pidió:** un campo en `PayloadDegradado` que diga desde dónde el dato dejó de ser fresco, el 2026-09-28.
+
+**Medido contra `de881e1` el 2026-09-29** · el payload de un panel degradado trae `governance message reason status unlocks_with value` · ninguna clave de tramo.
 
 Hoy el cable manda `reason` y `unlocks_with` como texto redactado, que sirve para la nota pero no para el cuerpo: **no dice qué tramo de la serie está vencido.**
 
@@ -1153,10 +1176,24 @@ Hoy el cable manda `reason` y `unlocks_with` como texto redactado, que sirve par
   cuál es el tramo es inventar el dato.
 - Una forma sin eje temporal no lo necesita y el campo queda ausente, no en cero.
 
-#### ➕ B1.29 ⬜ `schema-check` · decir qué le falta al cliente ANTES de intentar
+#### ➕ B1.29 ⚠️ `schema-check` · decir qué le falta al cliente ANTES de intentar
 **Espera del backend.** **Una ruta que compare el `db.schema` del tenant contra el contrato de esquema** — pedido el 2026-09-28 en `docs/MENSAJE-2026-09-28-backend-tres-del-alta.md`.
 
-**Medido contra `f70cec2` el 2026-09-28** · `schema-check` → **404** · y se comprobó que `GET /agents/ping` y `GET /admin/tenants/{id}/catalog/health`, que sí existen, contestan otra cosa.
+**Medido contra `de881e1` el 2026-09-29** · `schema-check` → **404** · y se comprobó que `GET /agents/ping` y `GET /admin/tenants/{id}/catalog/health`, que sí existen, contestan otra cosa.
+
+**LA RUTA LLEGÓ EL 2026-09-29 · en `e1037d9`. Queda en ⚠️ y no en ✅ por una razón que NO es suya: Snowflake nos bloquea la IP.**
+
+```
+GET /admin/tenants/{id}/schema-check   → 502
+  "snowflake sql: status 401: 390422 · Incoming request with IP/Token
+   190.27.36.15 is not allowed to access Snowflake"
+```
+
+**La ruta responde; lo que no llega es Snowflake.** Es el mismo bloqueo que datos levantó el 2026-09-24 para que el chat funcionara — la IP de salida cambió desde entonces.
+
+**Así que la FORMA de la respuesta sigue sin medirse**, y eso es lo que falta para cerrarla: sin ver su cuerpo no sabemos si trae `afecta` y `claves_sin_query`, que eran los dos campos que la volvían valiosa.
+
+**Se pide a datos**, no al backend: habilitar la IP de salida actual.
 
 **El problema que cierra es un SILENCIO**, y es el que más encarece un alta: hoy una columna que falta hace que el panel salga `BLOCKED` **sin razón** — no dice qué columna, ni que el problema sea de esquema. Se descubre al final, después de crear todo.
 
@@ -1171,10 +1208,14 @@ Lo que falta es la mitad de **esquema**, y son dos `DESCRIBE` y una comparación
 - **Trae `claves_sin_query`: las `METRIC_KEY` del catálogo del cliente que no caen en `MetricRegistry` ni por alias.** Cierra el segundo silencio y es un `diff` contra las doce claves de `keys.go`.
 - No crea ni modifica nada: es de sólo lectura y se puede correr antes de dar de alta.
 
-#### ➕ B1.30 ⬜ `sync-catalog` como ruta HTTP
+#### ➕ B1.30 ⚠️ `sync-catalog` como ruta HTTP
 **Espera del backend.** **La simétrica de `materialize`** — pedido el 2026-09-28.
 
-**Medido contra `f70cec2` el 2026-09-28** · `sync-catalog` → **404** · su hermana `materialize` → **202**.
+**Medido contra `de881e1` el 2026-09-29** · `sync-catalog` → **404** · su hermana `materialize` → **202**.
+
+**LA RUTA LLEGÓ EL 2026-09-29 · en `e1037d9`.** `POST /admin/tenants/{id}/sync-catalog` ya no da 404: contesta **502** por el mismo bloqueo de IP de Snowflake que B1.29, o sea que **llegó hasta intentar la consulta**.
+
+**Queda en ⚠️ hasta poder correrla de verdad.** Con eso, el alta de un cliente deja de necesitar acceso a la máquina del backend — que era todo el punto.
 
 Medido ese día contra `f70cec2`: `POST /admin/tenants/{tenantId}/materialize` contesta **202** y `POST /admin/tenants/{tenantId}/sync-catalog` da **404**. Sólo existe `make sync-catalog TENANT_ID=<uuid>`.
 
@@ -1185,10 +1226,21 @@ Medido ese día contra `f70cec2`: `POST /admin/tenants/{tenantId}/materialize` c
 - El resultado se puede consultar después: cuántas métricas entraron y en qué `catalog_version` quedó.
 - **No reemplaza al comando**, que sigue sirviendo para correrlo a mano.
 
-#### ➕ B1.31 ⬜ La plataforma genera el par de claves del usuario de servicio
+#### ➕ B1.31 ⚠️ La plataforma genera el par de claves del usuario de servicio
 **Espera del backend.** **Que el servicio genere el par RSA y devuelva sólo la pública** — pedido el 2026-09-28.
 
-**Medido contra `f70cec2` el 2026-09-28** · sin un solo `rsa.GenerateKey` en `internal/`.
+**Medido contra `de881e1` el 2026-09-29** · sin un solo `rsa.GenerateKey` en `internal/`.
+
+**LLEGÓ EL 2026-09-29 · en `e1037d9`.** `POST /admin/tenants/{id}/service-key` existe, y **su guarda es lo mejor que trae**:
+
+```
+→ 409 CONFLICT_KEY_EXISTS
+  "el tenant ya tiene una clave de servicio; enviá rotate=true para reemplazarla"
+```
+
+**No pisa una clave que funciona.** En este tenant la clave es la real —la que hace andar el chat contra Cortex—, así que **no se probó la rotación a propósito**: rotarla habría roto el entorno para comprobar algo que la guarda ya demuestra.
+
+**Queda en ⚠️ porque la forma de la respuesta con éxito no se midió**: haría falta un tenant sin clave. Se cierra con el próximo alta real, que es cuando importa.
 
 Hoy `POST /admin/tenants` exige `private_key_pem`, así que por cada cliente **alguien genera un par a mano y transporta una clave privada** hasta donde se haga el alta. Verificado ese día: no hay `rsa.GenerateKey` en `internal/`.
 
@@ -1202,7 +1254,7 @@ Hoy `POST /admin/tenants` exige `private_key_pem`, así que por cada cliente **a
 #### ➕ B1.32 ✅ `cut` es `day` o `month`, y lo aplica el front
 **Lo que fue este pedido, y cuánto se achicó antes de mandarse.** Iba a ser «qué significa `cut`»; leyendo su código quedó en «confirmen que lo aplica el front», y la confirmación llegó el mismo día.
 
-**Medido contra `f70cec2` el 2026-09-28** · `cut` aparece en su semilla con `day` y `month`, y **ningún consumidor** en `internal/core/`.
+**Medido contra `de881e1` el 2026-09-29** · `cut` aparece en su semilla con `day` y `month`, y **ningún consumidor** en `internal/core/`.
 
 **Lo que se averiguó solo:** su semilla ya muestra el vocabulario —`{"cut": "day"}` y `{"cut": "month"}` en `dd_seed.go:113`— y `dd_seed_blocks.go:44` lo declara como `layout_param` del bloque `series` junto a `normalization`. **Y nadie lo lee**: `grep` sobre `internal/core/` no encuentra un solo consumidor de `cut` ni de `normalization` fuera de la semilla.
 
@@ -1425,7 +1477,7 @@ dibuja y lo que hace que una cifra se lea contra algo en vez de sola. · Bloquea
 
 **Espera del backend.** **EL CAMINO YA EXISTE · corregido el 2026-09-28 leyendo su repositorio.**
 
-**Medido contra `f70cec2` el 2026-09-28** · `DD_MATERIALIZE_PROSE_ENABLED` existe con default `false` · `dd_materializer_service.go:57`.
+**Medido contra `de881e1` el 2026-09-29** · `DD_MATERIALIZE_PROSE_ENABLED` existe con default `false` · `dd_materializer_service.go:57`.
 
 Esto decía «los paneles de prosa los genera el AGENTE, y hoy no hay camino», y era
 cierto cuando se escribió. **Lo construyeron:** `internal/core/services/dd_prose_generator.go`
@@ -2033,10 +2085,18 @@ pendiente. Pedidas juntas en
   front y depende del huso del navegador · la regla de las dos zonas horarias.
 
 
-#### ➕ B4.18 ⬜ `roles.tab_keys` · que una restricción de rol sobreviva a publicar
-**Espera del backend.** **Lo propusieron ellos y les dijimos que sí** · `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` y nuestra respuesta del mismo día. Está sin tomar de su lado.
+#### ➕ B4.18 ✅ `roles.tab_keys` · que una restricción de rol sobreviva a publicar
+**CERRADA EL 2026-09-29 · llegó en `de881e1`, y se verificó la SUSTANCIA, no el campo.**
 
-**Medido contra `f70cec2` el 2026-09-28** · sin una sola aparición de `tab_keys` en `internal/`.
+Que la columna exista no prueba nada; lo que prueba es que un rol sobreviva. Medido en la base descartable: se le puso a `planner` un `tab_ids` apuntando a un uuid **inexistente**, dejándole `tab_keys: ["overview"]`, y `GET /config/me` le devuelve **su pestaña igual**. Con `tab_ids` roto y sin `tab_keys`, la perdería.
+
+**Y la migración hace lo que dijeron**: rellena una sola vez desde los `tab_ids` actuales — `admin`, `planner` y `user` quedaron en `["overview"]` sin que nadie tocara la consola, y el rol descartable sin pestañas quedó en `[]`.
+
+**Una advertencia que costó cinco minutos**: la primera medición dio `tab_keys: []` en los cuatro roles y pareció que la migración no corría. **Era nuestro**: el servicio se había levantado sin `DB_AUTO_MIGRATE=true`, así que la columna no existía y el campo salía vacío por defecto. En una base descartable esa variable va siempre.
+
+**Lo que se pidió:** lo propusieron ellos y les dijimos que sí · `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md`.
+
+**Medido contra `de881e1` el 2026-09-29** · sin una sola aparición de `tab_keys` en `internal/`.
 
 **El defecto que cierra:** `roles.tab_ids` apunta a `dd_tabs.id`, y **ese id se recrea en cada versión de layout**. Así que un rol restringido a dos pestañas **las pierde al publicar**. `key` ya viaja —medido el 2026-09-28: `overview`— y es estable por diseño.
 
@@ -4084,7 +4144,7 @@ verificada y no declarada. La prueba además **afirma que el fixture no trae
 #### ➕ B2.14 ⬜ `/config/solicitudes` · pedir acceso a una métrica que no se ve
 **Espera del backend.** **La ruta no existe** · medido el 2026-09-28: `GET /config/solicitudes` da **404**.
 
-**Medido contra `f70cec2` el 2026-09-28** · `GET /config/solicitudes` → **404** · y el payload `FORBIDDEN` es `{status, request_from}` y nada más.
+**Medido contra `de881e1` el 2026-09-29** · `GET /config/solicitudes` → **404** · y el payload `FORBIDDEN` es `{status, request_from}` y nada más.
 
 **Bloquea F2.3.** Y el hueco tiene una forma concreta: el payload `FORBIDDEN` es hoy `{status, request_from}` **y nada más** —medido pidiéndole al token de `planner` los tres paneles que su rol oculta—. Sin `reason` ni `unlocks_with`, que es la gramática de §8 que los otros cinco estados sí traen.
 
@@ -4097,12 +4157,25 @@ verificada y no declarada. La prueba además **afirma que el fixture no trae
 
 **CONTESTADO EN PARTE EL 2026-09-28.** Sobre la ruta: *«Es decisión de producto y la llevamos. Mientras tanto el estado ya viene declarado, así que pueden pintarlo **sin CTA**; si producto dice que sí, la ruta sería `POST /config/access-requests` reusando el flujo de `access_requests` que ya existe».*
 
-**Coincide con lo que habíamos propuesto**, así que el camino de F2.3 queda claro: pintar el estado sin CTA. **Pero la mitad que lo desbloquea NO llegó**: dicen que `FORBIDDEN` ya trae `reason` y `unlocks_with`, y **medido el 2026-09-29 sigue siendo `{request_from, status}` y nada más** — ver `docs/MENSAJE-2026-09-29-backend-no-podemos-verificar.md`. Sin esas dos frases no hay qué pintar.
+**Coincide con lo que habíamos propuesto**, así que el camino de F2.3 queda claro: pintar el estado sin CTA.
+
+**Y LA MITAD QUE LO DESBLOQUEA LLEGÓ** · medido el 2026-09-29 contra `de881e1`:
+
+```
+FORBIDDEN
+  reason       : Tu rol no tiene acceso a esta métrica
+  unlocks_with : Pedile al administrador del tenant que la habilite para tu rol
+  request_from : admin
+```
+
+**Con eso F2.3 se puede construir**: el estado ya declara qué pasa y qué lo desbloquea, y la redacción **no promete una acción que no existe** — dice a quién pedirle, no «solicitá acceso». Es exactamente lo que el criterio pedía.
+
+**Lo que sigue esperando es sólo la ruta**, y es decisión de producto de su lado.
 
 #### ➕ B2.15 ⬜ Encender `DD_MATERIALIZE_PROSE_ENABLED` y avisar
 **Espera del backend.** **Que se encienda en dev y nos avisen** — lo ofrecieron ellos en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
 
-**Medido contra `f70cec2` el 2026-09-28** · `ProseGeneratorEnabledFromEnv` lee el flag con default `false`.
+**Medido contra `de881e1` el 2026-09-29** · `ProseGeneratorEnabledFromEnv` lee el flag con default `false`.
 
 Hasta entonces los dos paneles de prosa se sirven con el valor de la semilla, **en inglés**, y salen `DEGRADED`.
 
