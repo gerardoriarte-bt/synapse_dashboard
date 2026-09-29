@@ -17,11 +17,11 @@ const detalle: LayoutDetalle = {
   layout: { id: 'l-1', tenantId: 't-1', estado: 'publicado', versionId: 'v3', publicadoEn: null },
   tabs: [
     {
-      tab: { id: 'tab-a', nombre: 'Resumen', pregunta: '¿?', orden: 1, roles: [] },
+      tab: { id: 'tab-a', clave: 'tab-a-key', nombre: 'Resumen', pregunta: '¿?', orden: 1, roles: [] },
       panels: [panel('p-1', 'm-1'), panel('p-2', 'm-1'), panel('p-3', 'm-2')],
     },
     {
-      tab: { id: 'tab-b', nombre: 'Inventario', pregunta: '¿?', orden: 2, roles: [] },
+      tab: { id: 'tab-b', clave: 'tab-b-key', nombre: 'Inventario', pregunta: '¿?', orden: 2, roles: [] },
       panels: [panel('p-4', 'm-1')],
     },
   ],
@@ -64,7 +64,7 @@ describe('qué roles la ven · la regla que se aplica mal', () => {
   })
 
   it('un rol con pestañas ve solo las suyas', () => {
-    const roles = [rol('r-1', 'CEO', ['tab-a', 'tab-b']), rol('r-2', 'Planner', ['tab-a'])]
+    const roles = [rol('r-1', 'CEO', ['tab-a-key', 'tab-b-key']), rol('r-2', 'Planner', ['tab-a-key'])]
     const uso = usoPorMetrica(detalle, roles)
     // `m-2` solo está en Resumen, que los dos ven.
     expect(uso.get('m-2')?.roles).toEqual(['CEO', 'Planner'])
@@ -74,13 +74,13 @@ describe('qué roles la ven · la regla que se aplica mal', () => {
   })
 
   it('un rol que no ve ninguna de sus pestañas NO aparece', () => {
-    const roles = [rol('r-1', 'CEO', ['tab-a']), rol('r-3', 'Solo otra', ['tab-z'])]
+    const roles = [rol('r-1', 'CEO', ['tab-a-key']), rol('r-3', 'Solo otra', ['tab-z-key'])]
     const uso = usoPorMetrica(detalle, roles)
     expect(uso.get('m-2')?.roles).toEqual(['CEO'])
   })
 
   it('no repite un rol que ve la métrica en dos pestañas', () => {
-    const uso = usoPorMetrica(detalle, [rol('r-1', 'CEO', ['tab-a', 'tab-b'])])
+    const uso = usoPorMetrica(detalle, [rol('r-1', 'CEO', ['tab-a-key', 'tab-b-key'])])
     expect(uso.get('m-1')?.roles).toEqual(['CEO'])
   })
 })

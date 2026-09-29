@@ -65,6 +65,9 @@ import type { Rol } from '../../api/admin'
 /** Una pestaña del layout publicado, con lo que hace falta para desglosarla. */
 export type PestanaDeRol = {
   id: string
+  /** **Con lo que el rol la restringe** · estable entre versiones, a diferencia
+   *  del `id`. Ver el filtro de abajo. */
+  clave: string
   nombre: string
   /** La pregunta operativa · es lo que vuelve legible el nombre. */
   pregunta: string
@@ -97,7 +100,12 @@ export function RoleCard({
   onVerCatalogo,
 }: Props) {
   // **Acá vive la regla.** Vacío = todas.
-  const suyas = rol.pestanas.length === 0 ? pestanas : pestanas.filter((t) => rol.pestanas.includes(t.id))
+  // **Se compara por CLAVE, no por id** · 2026-09-29. `rol.pestanas` pasó a
+  // guardar `tab_keys`, que sobreviven a publicar; el `id` se recrea en cada
+  // versión. Comparar por id acá dejaba la ficha en blanco después de la primera
+  // publicación real, con el rol correctamente restringido por detrás.
+  const suyas =
+    rol.pestanas.length === 0 ? pestanas : pestanas.filter((t) => rol.pestanas.includes(t.clave))
   const paneles = suyas.reduce((n, t) => n + t.paneles, 0)
 
   return (

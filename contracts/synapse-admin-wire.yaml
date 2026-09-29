@@ -1139,7 +1139,7 @@ components:
     LayoutTab:
       type: object
       description: '`domain.DDTab`, también en snake_case desde `8633b10`.'
-      required: [id, layout_version_id, name, sort_order]
+      required: [id, layout_version_id, name, key, sort_order]
       properties:
         id: { type: string, format: uuid }
         layout_version_id: { type: string, format: uuid }
@@ -1429,6 +1429,25 @@ components:
       required: [name]
       properties:
         name: { type: string }
+        tab_keys:
+          type: array
+          description: |
+            **La restricción por KEY, y es la que hay que escribir** · aceptada
+            desde `de881e1`, medido el 2026-09-29 creando un rol descartable:
+            `POST` con `tab_keys: ["overview"]` devuelve **201** y el rol vuelve
+            con `tab_keys: ["overview"]` y `tab_ids: []`.
+
+            **`tab_ids` sigue aceptándose y NO hay que mandarlo**: apunta a
+            `dd_tabs.id`, que se recrea en cada versión publicada, así que un rol
+            restringido por id **pierde sus pestañas en la primera publicación
+            real desde el builder**. Por eso la consola escribe keys.
+
+            **Una key inexistente se rechaza nombrándola** · medido:
+            `400 VALIDATION_REQUEST · la pestaña con key "no-existe" no existe en
+            ningún layout del tenant`. Valida contra **todos** los layouts del
+            tenant, borradores incluidos, para poder preparar un rol antes de
+            publicar.
+          items: { type: string, examples: [overview] }
         tab_ids:
           type: array
           items: { type: string, format: uuid }

@@ -96,7 +96,7 @@ describe('§7.2 · guardado explícito', () => {
           tabs: [
             {
               tab: {
-                id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen',
+                id: 'tab-a', key: 'tab-a-key', layout_version_id: 'l-2', name: 'Resumen',
                 operational_question: '¿Cómo vamos?', sort_order: 1,
                 role_ids: ['r-1'],
               },
@@ -143,7 +143,7 @@ describe('§7.2 · guardado explícito', () => {
             ...tabDe(borrador, 'tab-a', 'Resumen').tabs,
             {
               tab: {
-                id: 'tab-nueva', layout_version_id: 'l-2', name: 'Pestaña nueva',
+                id: 'tab-nueva', key: 'tab-nueva-key', layout_version_id: 'l-2', name: 'Pestaña nueva',
                 operational_question: '¿?', sort_order: 2, role_ids: [],
               },
               panels: [],
@@ -202,7 +202,7 @@ describe('§7.2 · guardado explícito', () => {
           tabs: [
             {
               tab: {
-                id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen',
+                id: 'tab-a', key: 'tab-a-key', layout_version_id: 'l-2', name: 'Resumen',
                 operational_question: '', sort_order: 1, role_ids: [],
               },
               panels: [],

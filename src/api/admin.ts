@@ -192,6 +192,9 @@ export type LayoutVersion = {
 
 export type TabDeLayout = {
   id: string
+  /** **La identidad ESTABLE de la pestaña** · el `id` se recrea en cada versión
+   *  publicada y esto no. Es con lo que la consola de roles restringe. */
+  clave: string
   nombre: string
   pregunta: string
   orden: number
@@ -284,6 +287,7 @@ export function adaptarDetalle(w: WireLayoutDetail): LayoutDetalle {
     tabs: w.tabs.map((t) => ({
       tab: {
         id: t.tab.id,
+        clave: t.tab.key,
         nombre: t.tab.name,
         pregunta: t.tab.operational_question ?? '',
         orden: t.tab.sort_order,
@@ -394,7 +398,18 @@ function adaptarRol(w: WireRole): Rol {
     id: w.id,
     tenantId: w.tenant_id,
     nombre: w.name,
-    pestanas: w.tab_ids,
+    // ── LA RESTRICCIÓN SE LEE POR CLAVE, CON RESPALDO ──────────────────────
+    //
+    // **`tab_ids` apunta a `dd_tabs.id`, que se recrea en cada versión
+    // publicada**, así que un rol restringido por id pierde sus pestañas en la
+    // primera publicación real desde el builder. `tab_keys` es estable.
+    //
+    // **El respaldo no es cortesía, es el orden del backend**: su regla es «si
+    // hay `tab_keys` manda la key; si está vacía cae a `tab_ids`». Leerlo al
+    // revés dejaría sin restricción a un rol que todavía no migró.
+    //
+    // Lo que el front escribe es **siempre `tab_keys`** · ver `cuerpoDeRol`.
+    pestanas: (w.tab_keys ?? []).length > 0 ? w.tab_keys : w.tab_ids,
     metricasOcultas: w.hidden_metric_ids,
     overrides: (w.layout_overrides ?? {}) as Record<string, unknown>,
     usuarios: w.user_count,
@@ -419,6 +434,7 @@ function adaptarPreview(w: WirePreview): PreviewDeRol {
     tabs: w.tabs.map((t) => ({
       tab: {
         id: t.id,
+        clave: t.key,
         nombre: t.name,
         pregunta: t.operational_question ?? '',
         orden: t.sort_order,
@@ -441,7 +457,13 @@ function adaptarPreview(w: WirePreview): PreviewDeRol {
 
 const cuerpoDeRol = (r: RolParaGuardar): A['RoleInput'] => ({
   name: r.nombre,
-  tab_ids: r.pestanas,
+  // **Se escribe `tab_keys` y NO `tab_ids`** · desde el 2026-09-29, cuando el
+  // backend lo habilitó en `de881e1`. Mandar ids era escribir una restricción
+  // con fecha de vencimiento: la próxima publicación los recrea.
+  //
+  // **No se mandan los dos.** El backend prioriza `tab_keys`, así que un
+  // `tab_ids` al lado sería ruido que alguien va a leer como la fuente.
+  tab_keys: r.pestanas,
   hidden_metric_ids: r.metricasOcultas,
   ...(r.overrides === undefined ? {} : { layout_overrides: r.overrides }),
 })

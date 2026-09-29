@@ -219,8 +219,8 @@ export function RoleEditor({
                 <label key={t.id} className="flex items-center gap-2 text-ink text-celda">
                   <input
                     type="checkbox"
-                    checked={elegidas.includes(t.id)}
-                    onChange={() => alternar(elegidas, setElegidas, t.id)}
+                    checked={elegidas.includes(t.clave)}
+                    onChange={() => alternar(elegidas, setElegidas, t.clave)}
                   />
                   {t.nombre}
                 </label>

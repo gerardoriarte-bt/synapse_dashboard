@@ -166,6 +166,7 @@ export function Admin() {
           pestanas={
             detalle.data?.tabs.map((t) => ({
               id: t.tab.id,
+              clave: t.tab.clave,
               nombre: t.tab.nombre,
               pregunta: t.tab.pregunta,
               paneles: t.panels.length,

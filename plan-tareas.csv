@@ -253,7 +253,7 @@ B4.17,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Una ruta q
 • Por usuario, lo que §7.3 le pide a A3: el usuario, su rol, su último acceso y su estado.
 • El rol viene identificado, no sólo con su nombre: A3 enlaza a la ficha.
 • El último acceso es un instante, nunca «hace X» — la presentación es del front y depende del huso del navegador · la regla de las dos zonas horarias.",hecho,no,,equipo:backend fase:4 estado:hecho
-B4.18,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,roles.tab_keys · que una restricción de rol sobreviva a publicar,,"• roles.tab_keys es la fuente de verdad y roleCanSeeTab resuelve por key contra el layout que se está sirviendo.
+B4.18,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,roles.tab_keys · la consola YA escribe por clave,,"• roles.tab_keys es la fuente de verdad y roleCanSeeTab resuelve por key contra el layout que se está sirviendo.
 • tab_ids sigue leyéndose como respaldo mientras esté vacío tab_keys, así que nada cambia hasta que migremos.
 • PUT /admin/roles/{id} acepta tab_keys y GET .../roles/composition devuelve las dos — es lo que nos deja migrar sin una ventana en que la consola de roles muestre menos de lo que el rol ve.
 • tab_keys valida contra las keys del layout publicado y devuelve 422 nombrando la que no existe. Una key que no resuelve es una pestaña que el rol pierde en silencio, que es el defecto que se está cerrando.",hecho,si,,equipo:backend fase:4 estado:hecho nueva

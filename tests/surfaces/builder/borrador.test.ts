@@ -29,13 +29,13 @@ const detalle: LayoutDetalle = {
     {
       // A propósito fuera de orden: `sembrar` ordena por `orden`, no por el
       // arreglo — confiar en el arreglo es confiar en el servidor.
-      tab: { id: 'tab-b', nombre: 'Inventario', pregunta: '¿Hay stock?', orden: 2, roles: ['r-1'] },
+      tab: { id: 'tab-b', clave: 'tab-b-key', nombre: 'Inventario', pregunta: '¿Hay stock?', orden: 2, roles: ['r-1'] },
       panels: [
         { id: 'p-1', tipo: 'kpi', metricId: 'm-1', colStart: 1, colSpan: 3, rowSpan: 4 },
       ],
     },
     {
-      tab: { id: 'tab-a', nombre: 'Resumen', pregunta: '¿Cómo vamos?', orden: 1, roles: [] },
+      tab: { id: 'tab-a', clave: 'tab-a-key', nombre: 'Resumen', pregunta: '¿Cómo vamos?', orden: 1, roles: [] },
       panels: [
         { id: 'p-2', tipo: 'series', metricId: 'm-2', colStart: 1, colSpan: 6, rowSpan: 4 },
         { id: 'p-3', tipo: 'table', metricId: 'm-3', colStart: 7, colSpan: 6, rowSpan: 4 },

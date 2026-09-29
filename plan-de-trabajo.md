@@ -2198,7 +2198,15 @@ pendiente. Pedidas juntas en
   front y depende del huso del navegador · la regla de las dos zonas horarias.
 
 
-#### ➕ B4.18 ✅ `roles.tab_keys` · que una restricción de rol sobreviva a publicar
+#### ➕ B4.18 ✅ `roles.tab_keys` · la consola YA escribe por clave
+**Y LA CONSOLA YA MIGRÓ** · el mismo 2026-09-29, que era lo que ellos pedían: «la consola de roles puede pasar a escribir `tab_keys` y dejar de mandar `tab_ids`».
+
+`adaptarRol` **lee** `tab_keys` con respaldo a `tab_ids` —el orden es el suyo, y al revés dejaría **sin restricción** a un rol sin migrar, que es un error que ABRE acceso— y `cuerpoDeRol` **escribe sólo `tab_keys`**: mandar los dos sería ruido que alguien va a leer como la fuente.
+
+**Y aparecieron DOS lugares más que comparaban por id**, que nadie había mirado: `RoleCard` —la ficha quedaba en blanco después de publicar— y `uso.ts` —el desglose decía «0 rol(es)» y se leía como un dato—. Los dos fallaban **sin romper nada visible**.
+
+**La mutación encontró el caso que faltaba en las pruebas.** Invertir el orden de lectura pasaba: los fixtures tenían o una o la otra, nunca las dos. **Después de su migración los roles tienen LAS DOS** —`tab_keys` se rellenó desde `tab_ids`— y los ids quedan apuntando a la versión vieja. Se agregó ese caso y ahora muere.
+
 **CERRADA EL 2026-09-29 · llegó en `de881e1`, y se verificó la SUSTANCIA, no el campo.**
 
 Que la columna exista no prueba nada; lo que prueba es que un rol sobreviva. Medido en la base descartable: se le puso a `planner` un `tab_ids` apuntando a un uuid **inexistente**, dejándole `tab_keys: ["overview"]`, y `GET /config/me` le devuelve **su pestaña igual**. Con `tab_ids` roto y sin `tab_keys`, la perdería.

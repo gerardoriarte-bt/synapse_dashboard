@@ -822,7 +822,7 @@ export interface components {
              *
              *     **Es único por versión de layout**, no por tenant.
              */
-            key?: string;
+            key: string;
             /**
              * @description Cadena vacía si no se puso. El mismo campo que el cable de consola
              *     declara en `TabMeta.icon`.
@@ -1045,6 +1045,24 @@ export interface components {
         };
         RoleInput: {
             name: string;
+            /**
+             * @description **La restricción por KEY, y es la que hay que escribir** · aceptada
+             *     desde `de881e1`, medido el 2026-09-29 creando un rol descartable:
+             *     `POST` con `tab_keys: ["overview"]` devuelve **201** y el rol vuelve
+             *     con `tab_keys: ["overview"]` y `tab_ids: []`.
+             *
+             *     **`tab_ids` sigue aceptándose y NO hay que mandarlo**: apunta a
+             *     `dd_tabs.id`, que se recrea en cada versión publicada, así que un rol
+             *     restringido por id **pierde sus pestañas en la primera publicación
+             *     real desde el builder**. Por eso la consola escribe keys.
+             *
+             *     **Una key inexistente se rechaza nombrándola** · medido:
+             *     `400 VALIDATION_REQUEST · la pestaña con key "no-existe" no existe en
+             *     ningún layout del tenant`. Valida contra **todos** los layouts del
+             *     tenant, borradores incluidos, para poder preparar un rol antes de
+             *     publicar.
+             */
+            tab_keys?: string[];
             tab_ids?: string[];
             hidden_metric_ids?: string[];
             /** @description Ausente se escribe como `{}`: «sin overrides» es un estado, no una omisión. */

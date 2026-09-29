@@ -25,7 +25,7 @@ const panel = (id: string, colStart: number, colSpan: number) => ({
   rowSpan: 4,
 })
 
-const tab = { id: 'tab-a', nombre: 'Resumen', pregunta: '¿Cómo vamos?', orden: 1, roles: [] }
+const tab = { id: 'tab-a', clave: 'tab-a-key', nombre: 'Resumen', pregunta: '¿Cómo vamos?', orden: 1, roles: [] }
 
 /** El rol ve dos de los tres: falta el del medio, de 5 columnas. */
 const preview: PreviewDeRol = {

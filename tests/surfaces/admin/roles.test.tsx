@@ -39,7 +39,10 @@ const roles = [
     id: 'r-2',
     tenant_id: 't-1',
     name: 'Planner',
-    tab_ids: ['tab-a'],
+    // **Por KEY**, que es lo que la consola escribe desde el 2026-09-29:
+    // `tab_ids` apunta a `dd_tabs.id`, que se recrea al publicar.
+    tab_keys: ['tab-a-key'],
+    tab_ids: [],
     hidden_metric_ids: ['m-2'],
     layout_overrides: {},
     user_count: 0,
@@ -58,11 +61,11 @@ const detalle = {
   layout: layouts[1],
   tabs: [
     {
-      tab: { id: 'tab-a', layout_version_id: 'l-1', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+      tab: { id: 'tab-a', key: 'tab-a-key', layout_version_id: 'l-1', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
       panels: [],
     },
     {
-      tab: { id: 'tab-b', layout_version_id: 'l-1', name: 'Inventario', operational_question: '¿?', sort_order: 2, role_ids: [] },
+      tab: { id: 'tab-b', key: 'tab-b-key', layout_version_id: 'l-1', name: 'Inventario', operational_question: '¿?', sort_order: 2, role_ids: [] },
       panels: [],
     },
   ],
@@ -243,7 +246,7 @@ describe('crear y editar', () => {
     await waitFor(() => expect(cuerpos).toHaveLength(1))
     expect(cuerpos[0]).toEqual({
       name: 'Analista',
-      tab_ids: ['tab-b'],
+      tab_keys: ['tab-b-key'],
       hidden_metric_ids: ['m-1'],
     })
   })
@@ -272,7 +275,7 @@ describe('crear y editar', () => {
     await waitFor(() => expect(cuerpos).toHaveLength(1))
     expect(cuerpos[0]).toEqual({
       name: 'Planner',
-      tab_ids: ['tab-a'],
+      tab_keys: ['tab-a-key'],
       hidden_metric_ids: ['m-2'],
     })
   })
@@ -299,7 +302,7 @@ describe('las pestañas que se ofrecen salen del layout PUBLICADO', () => {
             layout: layouts[0],
             tabs: [
               {
-                tab: { id: 'tab-z', layout_version_id: 'l-2', name: 'Borrador', operational_question: '¿?', sort_order: 1, role_ids: [] },
+                tab: { id: 'tab-z', key: 'tab-z-key', layout_version_id: 'l-2', name: 'Borrador', operational_question: '¿?', sort_order: 1, role_ids: [] },
                 panels: [],
               },
             ],
@@ -381,7 +384,7 @@ describe('A4 · la columna USO · divergencia 6', () => {
     layout: layouts[1],
     tabs: [
       {
-        tab: { id: 'tab-a', layout_version_id: 'l-1', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+        tab: { id: 'tab-a', key: 'tab-a-key', layout_version_id: 'l-1', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
         panels: [
           { id: 'p-1', tab_id: 'tab-a', metric_id: 'm-1', type: 'kpi', col_start: 1, col_span: 3, row_span: 4 },
           { id: 'p-2', tab_id: 'tab-a', metric_id: 'm-1', type: 'kpi', col_start: 4, col_span: 3, row_span: 4 },
@@ -475,7 +478,7 @@ describe('el desglose de §9, desde la superficie · A2 §9', () => {
           tabs: [
             {
               tab: {
-                id: 'tab-a', layout_version_id: 'l-1', name: 'Resumen',
+                id: 'tab-a', key: 'tab-a-key', layout_version_id: 'l-1', name: 'Resumen',
                 operational_question: '¿Cómo va el negocio?', sort_order: 1, role_ids: [],
               },
               panels: [{ id: 'p-1' }, { id: 'p-2' }, { id: 'p-3' }],

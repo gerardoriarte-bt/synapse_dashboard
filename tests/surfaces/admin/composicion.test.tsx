@@ -14,10 +14,10 @@ import type { PestanaDeRol } from '@/surfaces/admin/RoleCard'
 import type { Rol } from '@/api/admin'
 
 const PESTANAS: PestanaDeRol[] = [
-  { id: 't1', nombre: 'eCommerce Overview', pregunta: '¿Cómo va el negocio?', paneles: 12 },
-  { id: 't2', nombre: 'Brand Momentum', pregunta: '¿La marca crece o solo pauta?', paneles: 4 },
-  { id: 't3', nombre: 'Product Sales', pregunta: '¿Qué producto empuja?', paneles: 4 },
-  { id: 't4', nombre: 'Inventory & Shopping', pregunta: '¿Qué frena la venta?', paneles: 8 },
+  { id: 't1', clave: 't1-key', nombre: 'eCommerce Overview', pregunta: '¿Cómo va el negocio?', paneles: 12 },
+  { id: 't2', clave: 't2-key', nombre: 'Brand Momentum', pregunta: '¿La marca crece o solo pauta?', paneles: 4 },
+  { id: 't3', clave: 't3-key', nombre: 'Product Sales', pregunta: '¿Qué producto empuja?', paneles: 4 },
+  { id: 't4', clave: 't4-key', nombre: 'Inventory & Shopping', pregunta: '¿Qué frena la venta?', paneles: 8 },
 ]
 
 /** El fixture se escribe desde el tipo, no de memoria: `Rol` pide los siete
@@ -66,7 +66,7 @@ describe('vacío significa TODAS, y acá es aritmética', () => {
   })
 
   it('un rol acotado suma SOLO las suyas', () => {
-    const { container } = montar(rol({ nombre: 'Planner', pestanas: ['t3', 't4'] }))
+    const { container } = montar(rol({ nombre: 'Planner', pestanas: ['t3-key', 't4-key'] }))
 
     expect(container.textContent).toContain('12')
     expect(screen.getByText('Paneles · 2 pestaña(s)')).toBeInTheDocument()
@@ -78,7 +78,7 @@ describe('vacío significa TODAS, y acá es aritmética', () => {
 
 describe('la pregunta operativa, que es lo que vuelve legible el nombre', () => {
   it('cada pestaña va con la suya', () => {
-    montar(rol({ pestanas: ['t1'] }))
+    montar(rol({ pestanas: ['t1-key'] }))
     expect(screen.getByText('eCommerce Overview')).toBeInTheDocument()
     expect(screen.getByText('¿Cómo va el negocio?')).toBeInTheDocument()
     expect(screen.getByText('12 paneles')).toBeInTheDocument()
@@ -153,7 +153,7 @@ describe('borrar sigue dependiendo de los usuarios', () => {
 
 describe('el resumen de la cabecera · en RoleEditor', () => {
   it('la cifra grande lleva su rótulo pegado · ningún número desnudo', () => {
-    const { container } = montar(rol({ pestanas: ['t1'] }))
+    const { container } = montar(rol({ pestanas: ['t1-key'] }))
     const cifra = within(container).getByText('12')
     // El rótulo es el hermano inmediato, que es lo que el `.pen` dibuja: la
     // cifra arriba y «PANELES · N PESTAÑAS» debajo.

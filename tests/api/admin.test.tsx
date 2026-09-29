@@ -49,6 +49,7 @@ const detalle = {
     {
       tab: {
         id: 'tab-1',
+        key: 'tab-1-key',
         layout_version_id: 'l-1',
         name: 'Resumen',
         operational_question: '¿Qué movió el negocio?',
@@ -107,7 +108,7 @@ describe('el PascalCase del dominio se absorbe acá', () => {
 
     expect(d.tabs[0]?.tab).toEqual({
       id: 'tab-1',
-      nombre: 'Resumen',
+      clave: 'tab-1-key', nombre: 'Resumen',
       pregunta: '¿Qué movió el negocio?',
       orden: 1,
       roles: [],
@@ -438,5 +439,59 @@ describe('los usuarios · A3 · F4.3', () => {
     // dos mitades y quien las junta tiene que ser uno solo.
     expect(u?.nombre).toBe('Sofía Marín')
     expect(u?.rolId).toBe('r-1')
+  })
+})
+
+describe('la restricción de rol viaja por CLAVE · 2026-09-29', () => {
+  it('LEE `tab_keys` cuando están, y cae a `tab_ids` cuando no', async () => {
+    // **El orden no es cortesía: es el del backend.** Su regla es «si hay
+    // `tab_keys` manda la key; si está vacía cae a `tab_ids`». Leerlo al revés
+    // dejaría **sin restricción** a un rol que todavía no migró — y un rol sin
+    // restricción ve todo, así que el error abre acceso en vez de cerrarlo.
+    server.use(
+      http.get(`${API}/admin/tenants/:id/roles/composition`, () =>
+        ok([
+          { id: 'r-1', tenant_id: 't-1', name: 'Migrado', tab_keys: ['overview'], tab_ids: [],
+            hidden_metric_ids: [], layout_overrides: {}, user_count: 0 },
+          { id: 'r-2', tenant_id: 't-1', name: 'Sin migrar', tab_keys: [], tab_ids: ['tab-viejo'],
+            hidden_metric_ids: [], layout_overrides: {}, user_count: 0 },
+          // **El caso que importa y que faltaba**: después de SU migración los
+          // roles tienen LAS DOS pobladas —`tab_keys` se rellenó desde
+          // `tab_ids`— y los ids quedan apuntando a la versión vieja. Si se
+          // leyeran primero, la consola mostraría una restricción caduca **sin
+          // romper nada**: los dos campos existen y los dos parecen válidos.
+          //
+          // Lo encontró una mutación que sobrevivió con sólo los dos primeros.
+          { id: 'r-3', tenant_id: 't-1', name: 'Con las dos', tab_keys: ['overview'],
+            tab_ids: ['id-de-una-version-vieja'],
+            hidden_metric_ids: [], layout_overrides: {}, user_count: 0 },
+        ]),
+      ),
+    )
+    const roles = await adminApi.roles('t-1')
+
+    expect(roles[0]?.pestanas).toEqual(['overview'])
+    expect(roles[1]?.pestanas).toEqual(['tab-viejo'])
+    // Con las dos, manda la key.
+    expect(roles[2]?.pestanas).toEqual(['overview'])
+  })
+
+  it('ESCRIBE `tab_keys` y NO manda `tab_ids`', async () => {
+    // **No se mandan los dos.** El backend prioriza `tab_keys`, así que un
+    // `tab_ids` al lado sería ruido que alguien va a leer como la fuente — y
+    // mandar sólo ids era escribir una restricción con fecha de vencimiento: la
+    // próxima publicación los recrea y el rol pierde sus pestañas.
+    let cuerpo: Record<string, unknown> | undefined
+    server.use(
+      http.post(`${API}/admin/tenants/:id/roles`, async ({ request }) => {
+        cuerpo = (await request.json()) as Record<string, unknown>
+        return ok({ id: 'r-9', tenant_id: 't-1', name: 'Nuevo', tab_keys: ['overview'],
+          tab_ids: [], hidden_metric_ids: [], layout_overrides: {}, user_count: 0 })
+      }),
+    )
+    await adminApi.crearRol('t-1', { nombre: 'Nuevo', pestanas: ['overview'], metricasOcultas: [] })
+
+    expect(cuerpo?.['tab_keys']).toEqual(['overview'])
+    expect(cuerpo).not.toHaveProperty('tab_ids')
   })
 })
