@@ -84,7 +84,7 @@ esperan algo de ellos: **5**, y salen en `PARA-BACKEND.md`.
 | ✅ | **B0.10** ➕ · Endpoint de login | `de881e1` | 2026-09-29 |
 
 
-### Fase 1 · Catálogo y materialización — 20 de 34
+### Fase 1 · Catálogo y materialización — 22 de 34
 
 | | Tarea | Verificada contra | Cuándo |
 |---|---|---|---|
@@ -116,8 +116,8 @@ esperan algo de ellos: **5**, y salen en `PARA-BACKEND.md`.
 | ⬜ | **B1.26** ➕ · Decidir cómo escala el registro, antes del segundo tenant | — | — |
 | ✅ | **B1.27** ➕ · El período declara si está cerrado | `8633b10` ⚠ | 2026-09-26 |
 | ✅ | **B1.28** ➕ · PayloadDegradado dice DESDE QUÉ PUNTO el dato está vencido | `de881e1` | 2026-09-29 |
-| ⚠️ | **B1.29** ➕ · schema-check | `de881e1` | 2026-09-29 |
-| ⚠️ | **B1.30** ➕ · sync-catalog como ruta HTTP | `de881e1` | 2026-09-29 |
+| ✅ | **B1.29** ➕ · schema-check | `de881e1` | 2026-09-29 |
+| ✅ | **B1.30** ➕ · sync-catalog como ruta HTTP | `de881e1` | 2026-09-29 |
 | ⚠️ | **B1.31** ➕ · La plataforma genera el par de claves del usuario de servicio | `de881e1` | 2026-09-29 |
 | ✅ | **B1.32** ➕ · cut es day o month, y lo aplica el front | `de881e1` | 2026-09-29 |
 | ✅ | **B1.33** ➕ · El patrón de PeriodoId | — | — |

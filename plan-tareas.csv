@@ -122,10 +122,10 @@ B1.29,Backend · Fase 1 — API de consola,Backend,1,API de consola,schema-check
 • Dice si existe la vista de catálogo y cuáles de sus doce columnas faltan.
 • Trae afecta: qué métricas quedan sin poder materializarse por cada columna ausente. Es el campo que convierte el chequeo en una decisión — «falta BUDGET_TARGET» no le dice nada a nadie, «no vas a poder tener goal_attainment» sí. El mapa de qué query usa qué columna es suyo, no nuestro.
 • Trae claves_sin_query: las METRIC_KEY del catálogo del cliente que no caen en MetricRegistry ni por alias. Cierra el segundo silencio y es un diff contra las doce claves de keys.go.
-• No crea ni modifica nada: es de sólo lectura y se puede correr antes de dar de alta.",parcial,si,,equipo:backend fase:1 estado:parcial nueva bloqueada
+• No crea ni modifica nada: es de sólo lectura y se puede correr antes de dar de alta.",hecho,si,,equipo:backend fase:1 estado:hecho nueva
 B1.30,Backend · Fase 1 — API de consola,Backend,1,API de consola,sync-catalog como ruta HTTP,,"• POST /admin/tenants/{tenantId}/sync-catalog contesta como su hermana: 202 y el trabajo por detrás.
 • El resultado se puede consultar después: cuántas métricas entraron y en qué catalog_version quedó.
-• No reemplaza al comando, que sigue sirviendo para correrlo a mano.",parcial,si,,equipo:backend fase:1 estado:parcial nueva bloqueada
+• No reemplaza al comando, que sigue sirviendo para correrlo a mano.",hecho,si,,equipo:backend fase:1 estado:hecho nueva
 B1.31,Backend · Fase 1 — API de consola,Backend,1,API de consola,La plataforma genera el par de claves del usuario de servicio,,"• El servicio genera el par, guarda la privada cifrada como ya hace con la que recibe, y devuelve sólo la pública en formato PEM.
 • El ciclo se cierra con lo que ya existe: generar → el cliente registra la pública en su usuario de servicio → GET /agents/ping confirma que funciona.
 • private_key_pem deja de ser obligatoria en el alta, o queda un orden declarado. Cuál de las dos es decisión del backend; el front no depende de la forma.",parcial,si,,equipo:backend fase:1 estado:parcial nueva bloqueada

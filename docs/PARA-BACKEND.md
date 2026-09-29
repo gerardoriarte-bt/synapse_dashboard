@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Antes de leer: 3 de 10 son del backend
+## Antes de leer: 3 de 8 son del backend
 
 **El resto está acá porque nos frena a NOSOTROS, no porque haya que
 construirlo del lado del backend.** Se listan igual —una tarea trabada
@@ -45,14 +45,13 @@ tiempo buscando qué implementar.
 |---|---|
 | **BACKEND** · código | 3 |
 | NOSOTROS | 2 |
-| DATOS | 2 |
 | DESPLIEGUE | 2 |
 | PRODUCTO | 1 |
 
 
 ---
 
-## Lo que esperamos · 10 pedido(s)
+## Lo que esperamos · 8 pedido(s)
 
 
 ### B1.21 · Declarar los mínimos de datos por gráfico
@@ -83,62 +82,6 @@ Sólo tres suben el de su forma —`treemap`, `pareto` y `waterfall`, a 3— y e
 **NO depende de Snowflake.** No toca datos: es una tabla de reglas y un endpoint.
 
 **Sirve desde el primer día aunque haya un gráfico por tipo**, que es por qué está en Fase 1 y no en Fase 4: hoy nada impide que `bars` reciba un ítem y dibuje una barra sola.
-
-
-### B1.29 · schema-check · decir qué le falta al cliente ANTES de intentar
-
-*Estado de la tarea: parcial.* · **Lo tiene: DATOS**
-
-
-**Una ruta que compare el `db.schema` del tenant contra el contrato de esquema** — pedido el 2026-09-28 en `docs/MENSAJE-2026-09-28-backend-tres-del-alta.md`.
-
-**Lo tiene: DATOS** · habilitar la IP de salida en Snowflake. **La ruta está entregada** y ellos la midieron desde su red con `200`.
-
-**Medido contra `de881e1` el 2026-09-29** · `schema-check` → **404** · y se comprobó que `GET /agents/ping` y `GET /admin/tenants/{id}/catalog/health`, que sí existen, contestan otra cosa.
-
-**LA RUTA LLEGÓ EL 2026-09-29 · en `e1037d9`. Queda en ⚠️ y no en ✅ por una razón que NO es suya: Snowflake nos bloquea la IP.**
-
-```
-GET /admin/tenants/{id}/schema-check   → 502
-  "snowflake sql: status 401: 390422 · Incoming request with IP/Token
-   190.27.36.15 is not allowed to access Snowflake"
-```
-
-**La ruta responde; lo que no llega es Snowflake.** Es el mismo bloqueo que datos levantó el 2026-09-24 para que el chat funcionara — la IP de salida cambió desde entonces.
-
-**Así que la FORMA de la respuesta sigue sin medirse**, y eso es lo que falta para cerrarla: sin ver su cuerpo no sabemos si trae `afecta` y `claves_sin_query`, que eran los dos campos que la volvían valiosa.
-
-**Se pide a datos**, no al backend · `docs/MENSAJE-2026-09-29-datos-habilitar-ip.md`, mandado el 2026-09-29.
-
-**Y el pedido lleva una pregunta de fondo, porque la IP ya cambió una vez:** el 2026-09-24 Snowflake veía `201.244.209.190` —la habilitaron y el chat funcionó— y hoy ve `190.27.36.15`. **Cinco días, dos direcciones.** Habilitar ésta desbloquea hoy y es razonable esperar que vuelva a cortar.
-
-**Un detalle que hace perder una tarde si no se sabe:** la salida a Snowflake **no es la misma que la salida general**. En el mismo instante, Snowflake ve `190.27.36.15` y un «cuál es mi IP» genérico ve `186.31.4.152`. **La única que sirve es la que Snowflake reporta en el error** — habilitar la otra no funciona y parece que la política no se aplicó.
-
-**El problema que cierra es un SILENCIO**, y es el que más encarece un alta: hoy una columna que falta hace que el panel salga `BLOCKED` **sin razón** — no dice qué columna, ni que el problema sea de esquema. Se descubre al final, después de crear todo.
-
-**Media pieza YA EXISTE y no la conocíamos** · `GET /agents/ping` firma el JWT con las credenciales del tenant y corre `SELECT 1` contra Snowflake —medido el 2026-09-28 contra `f70cec2`: `status: ok`, 898 ms—. Eso cubre la mitad **credencial**. Y `GET /admin/tenants/{tenantId}/catalog/health`, que tampoco conocíamos, contesta **frescura de feeds por métrica**, que es otra pregunta.
-
-Lo que falta es la mitad de **esquema**, y son dos `DESCRIBE` y una comparación de listas.
-
-
-### B1.30 · sync-catalog como ruta HTTP
-
-*Estado de la tarea: parcial.* · **Lo tiene: DATOS**
-
-
-**La simétrica de `materialize`** — pedido el 2026-09-28.
-
-**Lo tiene: DATOS** · habilitar la IP de salida en Snowflake. **La ruta está entregada.**
-
-**Medido contra `de881e1` el 2026-09-29** · `sync-catalog` → **404** · su hermana `materialize` → **202**.
-
-**LA RUTA LLEGÓ EL 2026-09-29 · en `e1037d9`.** `POST /admin/tenants/{id}/sync-catalog` ya no da 404: contesta **502** por el mismo bloqueo de IP de Snowflake que B1.29, o sea que **llegó hasta intentar la consulta**.
-
-**Queda en ⚠️ hasta poder correrla de verdad.** Con eso, el alta de un cliente deja de necesitar acceso a la máquina del backend — que era todo el punto.
-
-Medido ese día contra `f70cec2`: `POST /admin/tenants/{tenantId}/materialize` contesta **202** y `POST /admin/tenants/{tenantId}/sync-catalog` da **404**. Sólo existe `make sync-catalog TENANT_ID=<uuid>`.
-
-**Es lo único en toda el alta que obliga a entrar a la máquina del backend.** Crear el tenant, crear el agente y materializar ya tienen ruta.
 
 
 ### B1.31 · La plataforma genera el par de claves del usuario de servicio

@@ -1212,10 +1212,33 @@ Hoy el cable manda `reason` y `unlocks_with` como texto redactado, que sirve par
   cuál es el tramo es inventar el dato.
 - Una forma sin eje temporal no lo necesita y el campo queda ausente, no en cero.
 
-#### ➕ B1.29 ⚠️ `schema-check` · decir qué le falta al cliente ANTES de intentar
-**Espera del backend.** **Una ruta que compare el `db.schema` del tenant contra el contrato de esquema** — pedido el 2026-09-28 en `docs/MENSAJE-2026-09-28-backend-tres-del-alta.md`.
+#### ➕ B1.29 ✅ `schema-check` · decir qué le falta al cliente ANTES de intentar
+**CERRADA CONTRA SNOWFLAKE REAL · 2026-09-29, tarde.** Datos habilitó la IP y el
+bloqueo venció. Verificado en el orden que el propio backend indicó —primero el
+ping, después la ruta—, contra `de881e1` y con la base local:
 
-**Lo tiene: DATOS** · habilitar la IP de salida en Snowflake. **La ruta está entregada** y ellos la midieron desde su red con `200`.
+```
+GET /agents/ping                              → 200 · status "ok" · latency_ms 894
+GET /admin/tenants/e65f81ae-…/schema-check    → 200 · ok: true      (2,5 s)
+    GLD_ECOMM_DAILY_PERFORMANCE  table  exists: true   missing: []
+    GLD_PAID_MEDIA               table  exists: true   missing: []
+    SYNAPSE_METRIC_CATALOG       view   exists: true   missing: []
+    affected_metrics: []   keys_without_query: []   catalog_source: "view"
+```
+
+**Lo que hace que esto valga es `ok: true` CON los tres objetos enumerados**, y
+no el 200 a secas: la ruta existe para decir **qué falta**, así que una que
+contestara 200 sin mirar nada se vería igual. Los tres objetos nombrados, con su
+`kind` y su `missing` vacío, son la prueba de que consultó el esquema.
+
+**La IP de salida era `201.244.209.190`**, la misma del 2026-09-24 y no la
+`190.27.36.15` que dio 502 esa mañana. Conviene no perderlo: **la IP de salida de
+acá cambia**, así que un 502 de Snowflake se mira contra `curl checkip.amazonaws.com`
+antes de escribirle a nadie.
+
+**Lo pedido, y ya entregado y medido.** Una ruta que compare el `db.schema` del tenant contra el contrato de esquema — pedido el 2026-09-28 en `docs/MENSAJE-2026-09-28-backend-tres-del-alta.md`.
+
+**Lo tuvo DATOS y ya está hecho** · la IP quedó habilitada el 2026-09-29. La ruta está entregada y ellos la midieron desde su red con `200`.
 
 **Medido contra `de881e1` el 2026-09-29** · `schema-check` → **404** · y se comprobó que `GET /agents/ping` y `GET /admin/tenants/{id}/catalog/health`, que sí existen, contestan otra cosa.
 
@@ -1250,10 +1273,29 @@ Lo que falta es la mitad de **esquema**, y son dos `DESCRIBE` y una comparación
 - **Trae `claves_sin_query`: las `METRIC_KEY` del catálogo del cliente que no caen en `MetricRegistry` ni por alias.** Cierra el segundo silencio y es un `diff` contra las doce claves de `keys.go`.
 - No crea ni modifica nada: es de sólo lectura y se puede correr antes de dar de alta.
 
-#### ➕ B1.30 ⚠️ `sync-catalog` como ruta HTTP
-**Espera del backend.** **La simétrica de `materialize`** — pedido el 2026-09-28.
+#### ➕ B1.30 ✅ `sync-catalog` como ruta HTTP
+**CERRADA CONTRA SNOWFLAKE REAL · 2026-09-29, tarde**, contra `de881e1`:
 
-**Lo tiene: DATOS** · habilitar la IP de salida en Snowflake. **La ruta está entregada.**
+```
+catalog_version antes                         → 3
+POST /admin/tenants/e65f81ae-…/sync-catalog   → 200   (0,95 s)
+    created 0 · updated 0 · unchanged 10 · view_name SYNAPSE_METRIC_CATALOG
+catalog_version después                       → 3
+```
+
+**Lo verificado NO es que contestara 200: es que sea IDEMPOTENTE.** La corrida del
+2026-09-24 dio `created=6 updated=4 catalog_version=2`; ésta, sobre el mismo
+catálogo sin cambios, deja las diez en `unchanged` y **no mueve la versión**. Una
+ruta que subiera `catalog_version` en cada llamada invalidaría la caché del front
+cada vez que un admin toca el botón, y el síntoma sería un parpadeo que nadie
+atribuiría a esto.
+
+Con esto el alta de un cliente deja de necesitar acceso a la máquina del backend,
+que era todo el punto.
+
+**Lo pedido, y ya entregado y medido.** La simétrica de `materialize` — pedido el 2026-09-28.
+
+**Lo tuvo DATOS y ya está hecho** · la IP quedó habilitada el 2026-09-29. La ruta está entregada.
 
 **Medido contra `de881e1` el 2026-09-29** · `sync-catalog` → **404** · su hermana `materialize` → **202**.
 
