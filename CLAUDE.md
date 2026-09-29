@@ -518,6 +518,10 @@ es sólo dónde retomar.
 
 **Decidido el 2026-09-28 (noche, humano): es lo primero de mañana.**
 
+**PREGUNTADO EL 2026-09-29** · `docs/MENSAJE-2026-09-29-backend-el-despliegue.md`,
+con las cuatro preguntas de abajo y el empaquetado del front ya medido. **Lo que
+sigue es esperar respuesta, no volver a preguntarlo.**
+
 Es la pregunta que decide si el front puede subir, y **no la podemos contestar
 desde acá**: todo lo verificado esta semana vale contra el binario que
 **levantamos nosotros** en `:4010` desde un clone de su repositorio.
