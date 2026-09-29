@@ -3388,6 +3388,45 @@ validadores sobre el repertorio que llega de `/config/plots` —la misma figura 
 `render/plots/registry.ts` con `lazy` + `memo` y `plotFor(id)`, igual que el
 registro de cuerpos.
 
+**«IGUAL QUE EL REGISTRO DE CUERPOS» YA NO SE SOSTIENE · medido el 2026-09-29.**
+Es una premisa de esta descripción y hay que corregirla antes de construir contra
+ella, no después.
+
+El registro de cuerpos funciona **porque los once cuerpos comparten
+`BodyProps`**: `registry.ts` ancha `value` a `Value` y `params` a `unknown`, y
+todo lo demás conserva su tipo — su propia cabecera explica que ésa es la razón
+de no usar `ComponentType<any>`.
+
+**Los plots no comparten forma de props, y ya son mitad y mitad.** Censados los
+22 de `src/render/plots/` ese día:
+
+| | Cuántos | Ejemplos |
+|---|---|---|
+| Toman `PlotProps<F>`, con o sin extras | **11** | `PlotBars`, `PlotTreemap`, `PlotDonut` (+`totalLabel`), `PlotColumns` (+`destacado`) |
+| **No lo toman** | **11** | `PlotCombo` pide `columns` y `line` **por separado**; `PlotRings` una lista de anillos; `PlotGauge` un `number` y no un `Value`; `PlotSmallMult` una lista de facetas |
+
+Un `plotFor(id)` que devuelva un componente **no puede alimentar a los once
+segundos**: la adaptación es del cuerpo y depende del gráfico —`treemap` recibe la
+lista sin recortar, `combo` la parte en dos, `smallmult` la recibe normalizada—.
+Eso es exactamente lo que el cableado del 2026-09-29 escribió trece veces, y no
+es repetición que un registro pueda absorber: **es trece decisiones distintas**,
+cada una con su razón en el código.
+
+**Lo que sí queda de la pieza**, y hay que decidirlo aparte: la carga diferida.
+Hoy cada plot se importa estático dentro de su cuerpo y viaja en el chunk de ese
+cuerpo —`carga-diferida` mide 12 cuerpos en 12 chunks—. Con 49 gráficos eso mete
+en un chunk los que un tenant no usa. Es una decisión de empaquetado, no un
+registro de despacho, y son dos cosas que esta descripción juntó en una.
+
+**Y `catalog/plots.ts` SÍ se puede escribir hoy tal como está descripto** —son
+funciones puras sobre la tabla, sin la tabla adentro, igual que `blocks.ts`, y el
+contrato ya declara `Grafico` y `MinimoDeDatos` con `contract-drift` mirándolos—.
+**No se escribió, y la razón es que su entrada ES la tabla**: con `/config/plots`
+en 404 no tendría un solo llamador, y `Grafico` es una propuesta NUESTRA que el
+backend todavía no implementó. Validadores escritos contra un esquema sin
+implementar son validadores escritos contra una propuesta; el orden que destraba
+es mandar el repertorio primero.
+
 Lo primero que hay que construir **no es el selector, es la verificación de
 mínimos**: cuántos puntos, categorías o partes necesita un gráfico para no
 engañar. Sirve desde hoy, aun con un gráfico por tipo — hoy nada impide que
