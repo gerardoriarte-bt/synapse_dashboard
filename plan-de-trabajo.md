@@ -154,6 +154,8 @@ decir qué rol cumple**, porque ahí empieza la superposición.
 | `docs/PARA-BACKEND.md` | **GENERADO** · lo que el front espera del backend |
 | `docs/ESTADO-BACKEND.md` | **GENERADO** · **contra qué commit suyo está verificada cada `B*`**, y cuáles quedaron contra uno anterior. No dice cuánto hizo el backend: dice qué sabemos nosotros y desde cuándo |
 | `docs/snowflake/*` | Entregable a **ingeniería de datos**, no al backend. Instrucción y SQL |
+| `docs/repertorio-de-graficos.json` | **GENERADO** · las 49 entradas de `SYNAPSE_PLOTS`, desde sus cuatro fuentes. Para leerlo y para diffearlo |
+| `docs/backend/*` | **GENERADO** · código Go que emitimos para el fork y que **no se edita a mano**. Hoy el seed de los 49 gráficos |
 | `docs/PLAN-INTEGRACION-*.md` | El **análisis** que fundamenta los pedidos, campo por campo |
 | `docs/ESTADO-*-*.md` | Un **corte** verificado contra el servicio, con fecha. No se actualiza: se reemplaza |
 | `docs/BITACORA-*.md` | **Histórico.** Lo que costó descubrir. No se tocan |
@@ -900,7 +902,53 @@ pruebas de integración contra HTTP.
 - El seed cubre al menos un panel por cada estado: `DISPONIBLE`, `DEGRADADO`,
   `BLOQUEADO`, `ERROR`. Sin eso, F2.1–F2.4 no se pueden probar contra el backend.
 
-### ➕ B1.21 ⬜ Declarar los mínimos de datos por gráfico
+### ➕ B1.21 ⚠️ Declarar los mínimos de datos por gráfico
+**LA ESCRIBIMOS NOSOTROS · 2026-09-29.** Estuvo pedida **tres veces** y no
+llegaba. Al mirar qué faltaba de verdad, la tabla era nuestra entera —las cuatro
+columnas, con cuatro dueños, todos de este lado— así que lo único que faltaba era
+la ruta.
+
+`GET /config/plots` vive en `b6f0e09`, rama `feature/config-plots` del fork,
+**sobre `de881e1` limpio** y no sobre el rebase. Medida ese día contra el
+servicio corriendo: **200 con 49 entradas en 5 ms**.
+
+| | |
+|---|---|
+| Churn en archivos de ELLOS | **+18 −1**, cinco archivos, todo aditivo · el único borrado es la llamada a `SetupRouter` reescrita |
+| Firmas existentes cambiadas | **ninguna** |
+| Pruebas suyas tocadas | **ninguna** · `go test ./...` pasa **sin una sola falla** |
+| `go build`, `go vet`, `gofmt -l` | limpios · el formateador **no se corrió sobre archivos de ellos** |
+
+**Las 49 filas están GENERADAS, y ésa es la mitad que más vale.**
+`tools/gen-plots.py` las emite desde cuatro fuentes con dueños distintos —el
+repertorio legible por máquina de v2, el `.pen` para los nombres, la decisión del
+2026-09-26 para los mínimos, y `NOMBRE_DE_FORMA` del adaptador para el mapa al
+idioma del cable—. Pedirles transcribir 49 filas de una tabla markdown era **el
+modo de falla que ya costó quince filas mal** en la tabla de bloques del modo
+mock, con más superficie y con la mitad del daño invisible: un `tope` equivocado
+deshabilita un gráfico que debería estar y nadie lo atribuye a esto.
+
+**Tres decisiones que quedaron escritas en el código:**
+
+1. **`data` es el arreglo PELADO**, como `GetBlocks`. Envolverlo en `{"plots":
+   [...]}` era más prolijo y obligaba a un segundo adaptador para dos rutas que
+   son la misma cosa.
+2. **`minimums` nunca llega `null`, y vacío es legítimo.** Seis de los 49 salen
+   `[]` y son exactamente los de `scalar` y `prose`: una cifra es una cifra. Un
+   `null` obliga a cada consumidor a distinguir «sin mínimo» de «no se sabe», y
+   el día que alguien no lo haga, un gráfico sin mínimo se lee como uno sin
+   verificar.
+3. **Servicio propio y no un método en `ddConfigService`**, que es lo que evitó
+   el churn: agregarle el repositorio cambia la firma de `NewDDConfigService` y
+   **ocho archivos de sus tests la construyen**.
+
+**Queda en ⚠️ y no en ✅** porque la regla es que una `B*` pasa a ✅ verificada
+**contra el servicio desplegado**, y esto corre contra el binario que levantamos
+acá. Transcripta en el cable con `x-verificado-en: b6f0e09`.
+
+**Lo que sigue es nuestro y no de ellos**: `catalog/plots.ts` con los
+validadores. Ahora sí tiene de dónde leer la tabla.
+
 **Espera del backend.** **Queda `GET /config/plots`; `chart` YA LLEGÓ** · el mismo día que se pidió, en `f70cec2`. Medido el 2026-09-28 contra el servicio: sale en `DDPanelDTO.chart` y en `DDLayoutPanel.chart`, lo escribe el builder recortado y en minúsculas —`"  Waterfall  "` → `waterfall`— y los doce paneles publicados quedaron con `''`, así que no migró ningún layout. Transcripto en los dos cables y adaptado, con prueba de que **un id desconocido se pasa igual**: descartarlo haría caer el panel al gráfico por defecto sin que nadie se entere. **Lo que falta es la ruta del repertorio**, y para escribirla piden tres archivos nuestros que no están en su repo — contestado en `docs/MENSAJE-2026-09-28-backend-lo-que-piden.md`.
 
 **Lo tiene: NOSOTROS** · mandarles `docs/ENTREGA-2026-09-29-repertorio-de-graficos.md`. **Lo pidieron dos veces**, y las dos se les contestó con una ruta de NUESTRO repositorio, que no ven.

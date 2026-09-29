@@ -169,6 +169,44 @@ paths:
                         items: { $ref: '#/components/schemas/BlockRule' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
+  /config/plots:
+    x-verificado-en: b6f0e09
+    get:
+      tags: [config]
+      operationId: getPlots
+      summary: El repertorio de gráficos, con sus mínimos y sus topes
+      description: |
+        **B1.21 · LA ESCRIBIMOS NOSOTROS** · `b6f0e09` en
+        `feature/config-plots` del fork, medida el 2026-09-29: **200 con 49
+        entradas en 5 ms**. Estuvo pedida tres veces y no llegaba; la tabla era
+        nuestra entera, así que lo que faltaba era la ruta.
+
+        Catálogo **GLOBAL, no por tenant** —qué puede dibujar un gráfico no
+        depende del cliente— y `data` es un **arreglo desnudo**, igual que
+        `blocks`. Eso último fue una decisión al escribirla: envolverlo en
+        `{"plots": [...]}` era más prolijo y obligaba a un segundo adaptador
+        para dos rutas que son la misma cosa.
+
+        Las 49 filas están **generadas y no transcritas** —`tools/gen-plots.py`,
+        desde el repertorio de v2, el `.pen`, la decisión de los mínimos y el
+        mapa de formas del adaptador—. Pedirle al backend transcribir 49 filas
+        de una tabla markdown era el modo de falla que ya costó quince filas mal
+        en otra tabla.
+      responses:
+        '200':
+          description: El repertorio entero, en el orden de §5
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/PlotRule' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
   /config/tabs/{tabId}:
     x-verificado-en: de881e1
     get:
@@ -1026,6 +1064,67 @@ components:
         updated_at: { type: string, format: date-time }
 
     # ── /config/blocks ───────────────────────────────────────────────────────
+
+    PlotRule:
+      type: object
+      description: |
+        Una entrada del repertorio · la tabla `plots`.
+
+        **Las formas van en el idioma del CABLE** —`scalar`, `time_series`—,
+        igual que `accepted_shapes` de `BlockRule`, y el adaptador las traduce
+        con el mismo mapa.
+      required: [id, name, shapes, supports_band, minimums]
+      properties:
+        id: { type: string, examples: ['donut', 'treemap'] }
+        name:
+          type: string
+          description: |
+            El título en mayúsculas, **transcripto del `.pen`** para los 43 que
+            dibuja. Es copy de producto: lo pinta el selector del builder.
+          examples: ['DONA', 'PARETO']
+        shapes:
+          type: array
+          items: { type: string }
+          description: Qué formas de dato sabe dibujar, en el idioma del cable.
+        supports_band:
+          type: boolean
+          description: |
+            Regla dura 6 · `series_with_band` sólo admite gráficos con esto en
+            `true`. Un pronóstico sin banda no se publica.
+        minimums:
+          type: array
+          description: |
+            Cuántos datos necesita para no engañar, **por forma**.
+
+            **Vacío es un valor legítimo y NUNCA llega `null`** · medido el
+            2026-09-29: seis de los 49 salen `[]` y son exactamente los de
+            `scalar` y `prose`. Vacío significa «no exige un mínimo» —una cifra
+            es una cifra—, que es distinto de «no se sabe»; el servicio lo
+            normaliza para que ningún consumidor tenga que distinguirlos.
+          items:
+            type: object
+            required: [shape, when, reason]
+            properties:
+              shape: { type: string, examples: ['categorical'] }
+              when:
+                type: string
+                description: La condición, legible y evaluable sobre el valor.
+                examples: ['items < 2', 'puntos < 2', 'filas < 2 o columnas < 2']
+              reason:
+                type: string
+                description: |
+                  **Copy de producto, se pinta tal cual.** Viene redactada de
+                  `design.md`; el front no la traduce ni la compone.
+                examples: ['una barra sola no compara nada']
+        cap:
+          type: ['object', 'null']
+          description: |
+            El techo que lo deshabilita, con su razón. `null` cuando no tiene —
+            medido: sólo cuatro de los 49 lo llevan.
+          required: [when, reason]
+          properties:
+            when: { type: string, examples: ['partes > 5'] }
+            reason: { type: string, examples: ['más de cinco partes, ilegible en dona'] }
 
     BlockRule:
       type: object

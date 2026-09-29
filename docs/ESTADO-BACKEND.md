@@ -15,38 +15,11 @@ falta para re-verificar. Para su avance real está
 | | |
 |---|---|
 | Tareas `B*` en el plan | **98** |
-| Verificadas por nosotros · ✅ o ⚠️ | **70** |
-| De ésas, **contra el último commit** | **33** |
-| ⬜ Esperando algo de ellos | **5** |
+| Verificadas por nosotros · ✅ o ⚠️ | **71** |
+| De ésas, **contra el último commit** | **0** |
+| ⬜ Esperando algo de ellos | **4** |
 | ⬜ **Que NUNCA verificamos** | **22** |
-| El último commit que leímos | `de881e1` |
-
-
-## ⚠️ 16 verificadas contra un commit anterior
-
-**No quiere decir que estén mal: quiere decir que no lo sabemos.**
-Una tarea `B*` afirma algo del servicio, y el servicio cambia.
-Re-verificar una es leer su criterio y medirlo de nuevo.
-
-
-| Tarea | | Verificada contra | Cuándo |
-|---|---|---|---|
-| **B1.12** · Gobierno obligatorio en DISPONIBLE y DEGRADADO | ✅ | `733c13c` | 2026-09-14 |
-| **B1.13** · Presentacion opcional | ✅ | `5924bf2b` | 2026-09-28 |
-| **B1.14** · Transformar a las formas de Valor | ✅ | `8633b10` | 2026-09-26 |
-| **B1.15** · Validar reglas mínimas por forma antes de enviar | ✅ | `8633b10` | 2026-09-26 |
-| **B1.16** · Seed de demo: 1 tenant, 1 layout, 1 pestaña, 4–6 paneles | ⚠️ | `733c13c` | 2026-09-14 |
-| **B1.17** · Modelo Metrica | ✅ | `8633b10` | 2026-09-26 |
-| **B1.25** · ventana de punta a punta | ✅ | `8633b10` | 2026-09-26 |
-| **B1.27** · El período declara si está cerrado | ✅ | `8633b10` | 2026-09-26 |
-| **B2.5** · Estado DEGRADADO | ✅ | `733c13c` | 2026-09-14 |
-| **B2.16** · El materializador emite presentation | ✅ | `f70cec2` | 2026-09-28 |
-| **B3.1** · POST /config/chat con SSE | ⚠️ | `8633b10` | 2026-09-26 |
-| **B4.1** · GET /admin/tenants | ✅ | `8633b10` | 2026-09-26 |
-| **B4.2** · GET /admin/tenants/{id}/layouts | ✅ | `5924bf2b` | 2026-09-28 |
-| **B4.4** · PUT /admin/layouts/{id} — editar pestañas y paneles | ✅ | `5924bf2b` | 2026-09-28 |
-| **B4.19** · La compuerta de resolveLayout y la vista previa por rol | ✅ | `f70cec2` | 2026-09-28 |
-| **B5.1** · Varios layouts por tenant | ⚠️ | `8633b10` | 2026-09-26 |
+| El último commit que leímos | **no se sabe** · el cable no coincide consigo mismo |
 
 
 ## ⬜ 22 que nunca verificamos · y NO quiere decir que falten
@@ -62,7 +35,7 @@ identificadores no coinciden, así que los números no se restan; pero
 la distancia dice de qué lado está el trabajo pendiente.
 
 **El número que sí es nuestro y sí es un compromiso** son las que
-esperan algo de ellos: **5**, y salen en `PARA-BACKEND.md`.
+esperan algo de ellos: **4**, y salen en `PARA-BACKEND.md`.
 
 
 ## Todas, por fase
@@ -99,22 +72,22 @@ esperan algo de ellos: **5**, y salen en `PARA-BACKEND.md`.
 | ✅ | **B1.9** · Filtrar paneles por hiddenMetricIds — ocultar ≠ permitir | — | — |
 | ✅ | **B1.10** · Aplicar layoutOverrides por rol | `de881e1` | 2026-09-29 |
 | ✅ | **B1.11** · Unión discriminada de Payload | `de881e1` | 2026-09-29 |
-| ✅ | **B1.12** · Gobierno obligatorio en DISPONIBLE y DEGRADADO | `733c13c` ⚠ | 2026-09-14 |
-| ✅ | **B1.13** · Presentacion opcional | `5924bf2b` ⚠ | 2026-09-28 |
-| ✅ | **B1.14** · Transformar a las formas de Valor | `8633b10` ⚠ | 2026-09-26 |
-| ✅ | **B1.15** · Validar reglas mínimas por forma antes de enviar | `8633b10` ⚠ | 2026-09-26 |
-| ⚠️ | **B1.16** · Seed de demo: 1 tenant, 1 layout, 1 pestaña, 4–6 paneles | `733c13c` ⚠ | 2026-09-14 |
-| ✅ | **B1.17** · Modelo Metrica | `8633b10` ⚠ | 2026-09-26 |
+| ✅ | **B1.12** · Gobierno obligatorio en DISPONIBLE y DEGRADADO | `733c13c` | 2026-09-14 |
+| ✅ | **B1.13** · Presentacion opcional | `5924bf2b` | 2026-09-28 |
+| ✅ | **B1.14** · Transformar a las formas de Valor | `8633b10` | 2026-09-26 |
+| ✅ | **B1.15** · Validar reglas mínimas por forma antes de enviar | `8633b10` | 2026-09-26 |
+| ⚠️ | **B1.16** · Seed de demo: 1 tenant, 1 layout, 1 pestaña, 4–6 paneles | `733c13c` | 2026-09-14 |
+| ✅ | **B1.17** · Modelo Metrica | `8633b10` | 2026-09-26 |
 | ✅ | **B1.18** · Sincronizar el catálogo con las semantic views de Snowflake | — | — |
-| ⬜ | **B1.19** · Filtrar el catálogo por permisos de rol | `8633b10` ⚠ | 2026-09-26 |
+| ⬜ | **B1.19** · Filtrar el catálogo por permisos de rol | `8633b10` | 2026-09-26 |
 | ⬜ | **B1.20** ➕ · Seed determinista para desarrollo del front | — | — |
-| ⬜ | **B1.21** ➕ · Declarar los mínimos de datos por gráfico | `de881e1` | 2026-09-29 |
+| ⚠️ | **B1.21** ➕ · Declarar los mínimos de datos por gráfico | `de881e1` | 2026-09-29 |
 | ⚠️ | **B1.22** ➕ · Crear el catálogo de métricas en Snowflake | — | — |
 | ⬜ | **B1.23** ➕ · Escribir el gobierno de las métricas | — | — |
 | ⬜ | **B1.24** ➕ · Alinear las claves del catálogo con el registro de queries | — | — |
-| ✅ | **B1.25** ➕ · ventana de punta a punta | `8633b10` ⚠ | 2026-09-26 |
+| ✅ | **B1.25** ➕ · ventana de punta a punta | `8633b10` | 2026-09-26 |
 | ⬜ | **B1.26** ➕ · Decidir cómo escala el registro, antes del segundo tenant | — | — |
-| ✅ | **B1.27** ➕ · El período declara si está cerrado | `8633b10` ⚠ | 2026-09-26 |
+| ✅ | **B1.27** ➕ · El período declara si está cerrado | `8633b10` | 2026-09-26 |
 | ✅ | **B1.28** ➕ · PayloadDegradado dice DESDE QUÉ PUNTO el dato está vencido | `de881e1` | 2026-09-29 |
 | ✅ | **B1.29** ➕ · schema-check | `de881e1` | 2026-09-29 |
 | ✅ | **B1.30** ➕ · sync-catalog como ruta HTTP | `de881e1` | 2026-09-29 |
@@ -132,7 +105,7 @@ esperan algo de ellos: **5**, y salen en `PARA-BACKEND.md`.
 | ⬜ | **B2.2** · Job de materialización | — | — |
 | ✅ | **B2.3** · El batch lee de panel_data, no de Snowflake | — | — |
 | ⬜ | **B2.4** · Redis opcional encima de Postgres | `de881e1` | 2026-09-29 |
-| ✅ | **B2.5** · Estado DEGRADADO | `733c13c` ⚠ | 2026-09-14 |
+| ✅ | **B2.5** · Estado DEGRADADO | `733c13c` | 2026-09-14 |
 | ⚠️ | **B2.6** · Estado BLOQUEADO | `de881e1` | 2026-09-29 |
 | ✅ | **B2.7** · Estado SIN_PERMISO en el batch | — | — |
 | ⬜ | **B2.8** · Invalidar cache al publicar layout | — | — |
@@ -143,14 +116,14 @@ esperan algo de ellos: **5**, y salen en `PARA-BACKEND.md`.
 | ✅ | **B2.13** ➕ · Salud de feeds por fuente | `de881e1` | 2026-09-29 |
 | ⬜ | **B2.14** ➕ · /config/solicitudes | `de881e1` | 2026-09-29 |
 | ⬜ | **B2.15** ➕ · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | `de881e1` | 2026-09-29 |
-| ✅ | **B2.16** ➕ · El materializador emite presentation | `f70cec2` ⚠ | 2026-09-28 |
+| ✅ | **B2.16** ➕ · El materializador emite presentation | `f70cec2` | 2026-09-28 |
 
 
 ### Fase 3 · Chat — 3 de 11
 
 | | Tarea | Verificada contra | Cuándo |
 |---|---|---|---|
-| ⚠️ | **B3.1** · POST /config/chat con SSE | `8633b10` ⚠ | 2026-09-26 |
+| ⚠️ | **B3.1** · POST /config/chat con SSE | `8633b10` | 2026-09-26 |
 | ✅ | **B3.2** · GET /config/chat/hilos — historial | — | — |
 | ✅ | **B3.3** · Modelo AgenteTenant | — | — |
 | ⬜ | **B3.4** · Resolver el agente del tenant desde el JWT | `de881e1` | 2026-09-29 |
@@ -167,10 +140,10 @@ esperan algo de ellos: **5**, y salen en `PARA-BACKEND.md`.
 
 | | Tarea | Verificada contra | Cuándo |
 |---|---|---|---|
-| ✅ | **B4.1** · GET /admin/tenants | `8633b10` ⚠ | 2026-09-26 |
-| ✅ | **B4.2** · GET /admin/tenants/{id}/layouts | `5924bf2b` ⚠ | 2026-09-28 |
+| ✅ | **B4.1** · GET /admin/tenants | `8633b10` | 2026-09-26 |
+| ✅ | **B4.2** · GET /admin/tenants/{id}/layouts | `5924bf2b` | 2026-09-28 |
 | ✅ | **B4.3** · POST /admin/tenants/{id}/layouts — crear borrador | — | — |
-| ✅ | **B4.4** · PUT /admin/layouts/{id} — editar pestañas y paneles | `5924bf2b` ⚠ | 2026-09-28 |
+| ✅ | **B4.4** · PUT /admin/layouts/{id} — editar pestañas y paneles | `5924bf2b` | 2026-09-28 |
 | ✅ | **B4.5** · POST /admin/layouts/{id}/publish | — | — |
 | ✅ | **B4.6** · POST /admin/layouts/{id}/validate | — | — |
 | ✅ | **B4.7** · GET /admin/tenants/{id}/catalog | `de881e1` | 2026-09-29 |
@@ -185,7 +158,7 @@ esperan algo de ellos: **5**, y salen en `PARA-BACKEND.md`.
 | ✅ | **B4.16** ➕ · Declarar el gráfico en el layout | `de881e1` | 2026-09-29 |
 | ✅ | **B4.17** · Una ruta que liste usuarios | `de881e1` | 2026-09-29 |
 | ✅ | **B4.18** ➕ · roles.tab_keys | `de881e1` | 2026-09-29 |
-| ✅ | **B4.19** ➕ · La compuerta de resolveLayout y la vista previa por rol | `f70cec2` ⚠ | 2026-09-28 |
+| ✅ | **B4.19** ➕ · La compuerta de resolveLayout y la vista previa por rol | `f70cec2` | 2026-09-28 |
 | ⬜ | **B4.20** ➕ · (libre) | — | — |
 
 
@@ -193,7 +166,7 @@ esperan algo de ellos: **5**, y salen en `PARA-BACKEND.md`.
 
 | | Tarea | Verificada contra | Cuándo |
 |---|---|---|---|
-| ⚠️ | **B5.1** · Varios layouts por tenant | `8633b10` ⚠ | 2026-09-26 |
+| ⚠️ | **B5.1** · Varios layouts por tenant | `8633b10` | 2026-09-26 |
 | ✅ | **B5.2** · Asignar layout por rol, o dejar elegir si el usuario tiene varios | `de881e1` | 2026-09-29 |
 | ⬜ | **B5.3** · Formas v1.1 cuando haya datos | — | — |
 | 🕓 | **B5.4** · Endpoint de drill-down bajo demanda | — | — |

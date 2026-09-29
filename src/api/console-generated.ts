@@ -67,6 +67,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/config/plots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * El repertorio de gráficos, con sus mínimos y sus topes
+         * @description **B1.21 · LA ESCRIBIMOS NOSOTROS** · `b6f0e09` en
+         *     `feature/config-plots` del fork, medida el 2026-09-29: **200 con 49
+         *     entradas en 5 ms**. Estuvo pedida tres veces y no llegaba; la tabla era
+         *     nuestra entera, así que lo que faltaba era la ruta.
+         *
+         *     Catálogo **GLOBAL, no por tenant** —qué puede dibujar un gráfico no
+         *     depende del cliente— y `data` es un **arreglo desnudo**, igual que
+         *     `blocks`. Eso último fue una decisión al escribirla: envolverlo en
+         *     `{"plots": [...]}` era más prolijo y obligaba a un segundo adaptador
+         *     para dos rutas que son la misma cosa.
+         *
+         *     Las 49 filas están **generadas y no transcritas** —`tools/gen-plots.py`,
+         *     desde el repertorio de v2, el `.pen`, la decisión de los mínimos y el
+         *     mapa de formas del adaptador—. Pedirle al backend transcribir 49 filas
+         *     de una tabla markdown era el modo de falla que ya costó quince filas mal
+         *     en otra tabla.
+         */
+        get: operations["getPlots"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/config/tabs/{tabId}": {
         parameters: {
             query?: never;
@@ -706,6 +741,70 @@ export interface components {
             /** Format: date-time */
             updated_at?: string;
         };
+        /**
+         * @description Una entrada del repertorio · la tabla `plots`.
+         *
+         *     **Las formas van en el idioma del CABLE** —`scalar`, `time_series`—,
+         *     igual que `accepted_shapes` de `BlockRule`, y el adaptador las traduce
+         *     con el mismo mapa.
+         */
+        PlotRule: {
+            /**
+             * @example donut
+             * @example treemap
+             */
+            id: string;
+            /**
+             * @description El título en mayúsculas, **transcripto del `.pen`** para los 43 que
+             *     dibuja. Es copy de producto: lo pinta el selector del builder.
+             * @example DONA
+             * @example PARETO
+             */
+            name: string;
+            /** @description Qué formas de dato sabe dibujar, en el idioma del cable. */
+            shapes: string[];
+            /**
+             * @description Regla dura 6 · `series_with_band` sólo admite gráficos con esto en
+             *     `true`. Un pronóstico sin banda no se publica.
+             */
+            supports_band: boolean;
+            /**
+             * @description Cuántos datos necesita para no engañar, **por forma**.
+             *
+             *     **Vacío es un valor legítimo y NUNCA llega `null`** · medido el
+             *     2026-09-29: seis de los 49 salen `[]` y son exactamente los de
+             *     `scalar` y `prose`. Vacío significa «no exige un mínimo» —una cifra
+             *     es una cifra—, que es distinto de «no se sabe»; el servicio lo
+             *     normaliza para que ningún consumidor tenga que distinguirlos.
+             */
+            minimums: {
+                /** @example categorical */
+                shape: string;
+                /**
+                 * @description La condición, legible y evaluable sobre el valor.
+                 * @example items < 2
+                 * @example puntos < 2
+                 * @example filas < 2 o columnas < 2
+                 */
+                when: string;
+                /**
+                 * @description **Copy de producto, se pinta tal cual.** Viene redactada de
+                 *     `design.md`; el front no la traduce ni la compone.
+                 * @example una barra sola no compara nada
+                 */
+                reason: string;
+            }[];
+            /**
+             * @description El techo que lo deshabilita, con su razón. `null` cuando no tiene —
+             *     medido: sólo cuatro de los 49 lo llevan.
+             */
+            cap?: {
+                /** @example partes > 5 */
+                when: string;
+                /** @example más de cinco partes, ilegible en dona */
+                reason: string;
+            } | null;
+        };
         /** @description `dashboard.BlockRule`. Quince filas en la tabla `blocks`. */
         BlockRule: {
             /**
@@ -1270,6 +1369,29 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Envelope"] & {
                         data?: components["schemas"]["BlockRule"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getPlots: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El repertorio entero, en el orden de §5 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["PlotRule"][];
                     };
                 };
             };

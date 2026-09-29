@@ -1,0 +1,931 @@
+[
+  {
+    "id": "kpi",
+    "nombre": "KPI",
+    "formas": [
+      "scalar"
+    ],
+    "soporta_banda": false,
+    "minimos": [],
+    "tope": null,
+    "orden": 1,
+    "dibujado_en_el_pen": false
+  },
+  {
+    "id": "gauge",
+    "nombre": "ARCO",
+    "formas": [
+      "scalar"
+    ],
+    "soporta_banda": false,
+    "minimos": [],
+    "tope": null,
+    "orden": 2,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "bullet",
+    "nombre": "BULLET",
+    "formas": [
+      "scalar"
+    ],
+    "soporta_banda": false,
+    "minimos": [],
+    "tope": null,
+    "orden": 3,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "rings",
+    "nombre": "ANILLOS",
+    "formas": [
+      "scalar"
+    ],
+    "soporta_banda": false,
+    "minimos": [],
+    "tope": null,
+    "orden": 4,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "spark",
+    "nombre": "MICRO TENDENCIA",
+    "formas": [
+      "scalar",
+      "time_series"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "time_series",
+        "cuando": "puntos < 2",
+        "razon": "un punto no es una tendencia"
+      }
+    ],
+    "tope": null,
+    "orden": 5,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "interval",
+    "nombre": "INTERVALO",
+    "formas": [
+      "scalar_with_interval",
+      "series_with_band"
+    ],
+    "soporta_banda": true,
+    "minimos": [
+      {
+        "forma": "series_with_band",
+        "cuando": "puntos < 2",
+        "razon": "un punto no es una tendencia"
+      }
+    ],
+    "tope": null,
+    "orden": 6,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "forecast",
+    "nombre": "PRONÓSTICO",
+    "formas": [
+      "scalar_with_interval",
+      "series_with_band"
+    ],
+    "soporta_banda": true,
+    "minimos": [
+      {
+        "forma": "series_with_band",
+        "cuando": "puntos < 2",
+        "razon": "un punto no es una tendencia"
+      }
+    ],
+    "tope": null,
+    "orden": 7,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "tornado",
+    "nombre": "TORNADO",
+    "formas": [
+      "scalar_with_interval",
+      "compared_categorical"
+    ],
+    "soporta_banda": true,
+    "minimos": [
+      {
+        "forma": "compared_categorical",
+        "cuando": "items < 2",
+        "razon": "una barra sola no compara nada"
+      }
+    ],
+    "tope": null,
+    "orden": 8,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "columns",
+    "nombre": "COLUMNAS",
+    "formas": [
+      "time_series",
+      "categorical"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "time_series",
+        "cuando": "puntos < 2",
+        "razon": "un punto no es una tendencia"
+      },
+      {
+        "forma": "categorical",
+        "cuando": "items < 2",
+        "razon": "una barra sola no compara nada"
+      }
+    ],
+    "tope": {
+      "cuando": "etiquetas > 16 caracteres",
+      "razon": "etiqueta larga en columna vertical; usar bars"
+    },
+    "orden": 9,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "area",
+    "nombre": "ÁREA",
+    "formas": [
+      "time_series"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "time_series",
+        "cuando": "puntos < 2",
+        "razon": "un punto no es una tendencia"
+      }
+    ],
+    "tope": null,
+    "orden": 10,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "step",
+    "nombre": "ESCALERA",
+    "formas": [
+      "time_series"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "time_series",
+        "cuando": "puntos < 2",
+        "razon": "un punto no es una tendencia"
+      }
+    ],
+    "tope": null,
+    "orden": 11,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "cycle",
+    "nombre": "CICLO",
+    "formas": [
+      "time_series"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "time_series",
+        "cuando": "puntos < 2",
+        "razon": "un punto no es una tendencia"
+      }
+    ],
+    "tope": null,
+    "orden": 12,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "candle",
+    "nombre": "RANGO DIARIO",
+    "formas": [
+      "time_series"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "time_series",
+        "cuando": "puntos < 2",
+        "razon": "un punto no es una tendencia"
+      }
+    ],
+    "tope": null,
+    "orden": 13,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "control",
+    "nombre": "CONTROL",
+    "formas": [
+      "time_series",
+      "series_with_band"
+    ],
+    "soporta_banda": true,
+    "minimos": [
+      {
+        "forma": "time_series",
+        "cuando": "puntos < 2",
+        "razon": "un punto no es una tendencia"
+      },
+      {
+        "forma": "series_with_band",
+        "cuando": "puntos < 2",
+        "razon": "un punto no es una tendencia"
+      }
+    ],
+    "tope": null,
+    "orden": 14,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "multiline",
+    "nombre": "LÍNEAS",
+    "formas": [
+      "time_series",
+      "multi_series"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "time_series",
+        "cuando": "puntos < 2",
+        "razon": "un punto no es una tendencia"
+      },
+      {
+        "forma": "multi_series",
+        "cuando": "series < 2",
+        "razon": "una sola serie no se compara con nada"
+      }
+    ],
+    "tope": null,
+    "orden": 15,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "stackarea",
+    "nombre": "ÁREA APILADA",
+    "formas": [
+      "multi_series"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "multi_series",
+        "cuando": "series < 2",
+        "razon": "una sola serie no se compara con nada"
+      }
+    ],
+    "tope": null,
+    "orden": 16,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "combo",
+    "nombre": "COMBINADO",
+    "formas": [
+      "multi_series"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "multi_series",
+        "cuando": "series < 2",
+        "razon": "una sola serie no se compara con nada"
+      }
+    ],
+    "tope": null,
+    "orden": 17,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "smallmult",
+    "nombre": "MÚLTIPLOS",
+    "formas": [
+      "multi_series"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "multi_series",
+        "cuando": "series < 2",
+        "razon": "una sola serie no se compara con nada"
+      }
+    ],
+    "tope": null,
+    "orden": 18,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "bump",
+    "nombre": "RANKING",
+    "formas": [
+      "multi_series",
+      "ranking"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "multi_series",
+        "cuando": "series < 2",
+        "razon": "una sola serie no se compara con nada"
+      },
+      {
+        "forma": "ranking",
+        "cuando": "items < 3",
+        "razon": "un ranking de dos es una comparación"
+      }
+    ],
+    "tope": null,
+    "orden": 19,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "slope",
+    "nombre": "PENDIENTE",
+    "formas": [
+      "multi_series",
+      "compared_categorical"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "multi_series",
+        "cuando": "series < 2",
+        "razon": "una sola serie no se compara con nada"
+      },
+      {
+        "forma": "compared_categorical",
+        "cuando": "items < 2",
+        "razon": "una barra sola no compara nada"
+      }
+    ],
+    "tope": null,
+    "orden": 20,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "bars",
+    "nombre": "BARRAS",
+    "formas": [
+      "categorical",
+      "ranking"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "categorical",
+        "cuando": "items < 2",
+        "razon": "una barra sola no compara nada"
+      },
+      {
+        "forma": "ranking",
+        "cuando": "items < 3",
+        "razon": "un ranking de dos es una comparación"
+      }
+    ],
+    "tope": null,
+    "orden": 21,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "lollipop",
+    "nombre": "LOLLIPOP",
+    "formas": [
+      "categorical",
+      "ranking"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "categorical",
+        "cuando": "items < 2",
+        "razon": "una barra sola no compara nada"
+      },
+      {
+        "forma": "ranking",
+        "cuando": "items < 3",
+        "razon": "un ranking de dos es una comparación"
+      }
+    ],
+    "tope": null,
+    "orden": 22,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "donut",
+    "nombre": "DONA",
+    "formas": [
+      "categorical",
+      "composition"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "categorical",
+        "cuando": "items < 2",
+        "razon": "una barra sola no compara nada"
+      },
+      {
+        "forma": "composition",
+        "cuando": "partes < 2",
+        "razon": "una parte sola es el 100 %"
+      }
+    ],
+    "tope": {
+      "cuando": "partes > 5",
+      "razon": "más de cinco partes, ilegible en dona"
+    },
+    "orden": 23,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "treemap",
+    "nombre": "TREEMAP",
+    "formas": [
+      "categorical",
+      "composition"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "categorical",
+        "cuando": "items < 2",
+        "razon": "una barra sola no compara nada"
+      },
+      {
+        "forma": "composition",
+        "cuando": "partes < 3",
+        "razon": "con dos rectángulos es una barra apilada"
+      }
+    ],
+    "tope": null,
+    "orden": 24,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "radial",
+    "nombre": "BARRAS RADIALES",
+    "formas": [
+      "categorical"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "categorical",
+        "cuando": "items < 2",
+        "razon": "una barra sola no compara nada"
+      }
+    ],
+    "tope": null,
+    "orden": 25,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "pareto",
+    "nombre": "PARETO",
+    "formas": [
+      "categorical"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "categorical",
+        "cuando": "items < 3",
+        "razon": "con dos categorías no hay concentración que mostrar"
+      }
+    ],
+    "tope": null,
+    "orden": 26,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "grouped",
+    "nombre": "COLUMNAS AGRUPADAS",
+    "formas": [
+      "compared_categorical"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "compared_categorical",
+        "cuando": "items < 2",
+        "razon": "una barra sola no compara nada"
+      }
+    ],
+    "tope": null,
+    "orden": 27,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "dumbbell",
+    "nombre": "DUMBBELL",
+    "formas": [
+      "compared_categorical"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "compared_categorical",
+        "cuando": "items < 2",
+        "razon": "una barra sola no compara nada"
+      }
+    ],
+    "tope": null,
+    "orden": 28,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "stacked",
+    "nombre": "COLUMNAS APILADAS",
+    "formas": [
+      "composition"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "composition",
+        "cuando": "partes < 2",
+        "razon": "una parte sola es el 100 %"
+      }
+    ],
+    "tope": null,
+    "orden": 29,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "stacked100",
+    "nombre": "APILADO 100%",
+    "formas": [
+      "composition"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "composition",
+        "cuando": "partes < 2",
+        "razon": "una parte sola es el 100 %"
+      }
+    ],
+    "tope": null,
+    "orden": 30,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "marimekko",
+    "nombre": "MARIMEKKO",
+    "formas": [
+      "composition"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "composition",
+        "cuando": "partes < 2",
+        "razon": "una parte sola es el 100 %"
+      }
+    ],
+    "tope": null,
+    "orden": 31,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "waterfall",
+    "nombre": "CASCADA",
+    "formas": [
+      "composition"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "composition",
+        "cuando": "partes < 3",
+        "razon": "una cascada de dos pasos es una diferencia"
+      }
+    ],
+    "tope": null,
+    "orden": 32,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "funnel",
+    "nombre": "EMBUDO",
+    "formas": [
+      "composition",
+      "flow"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "composition",
+        "cuando": "partes < 2",
+        "razon": "una parte sola es el 100 %"
+      },
+      {
+        "forma": "flow",
+        "cuando": "etapas < 3",
+        "razon": "dos etapas son una tasa de conversión, y eso es una cifra"
+      }
+    ],
+    "tope": null,
+    "orden": 33,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "heatmap",
+    "nombre": "MAPA DE CALOR",
+    "formas": [
+      "matrix"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "matrix",
+        "cuando": "filas < 2 o columnas < 2",
+        "razon": "una matriz de una fila es un gráfico de barras"
+      }
+    ],
+    "tope": null,
+    "orden": 34,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "cohort",
+    "nombre": "COHORTES",
+    "formas": [
+      "matrix"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "matrix",
+        "cuando": "filas < 2 o columnas < 2",
+        "razon": "una matriz de una fila es un gráfico de barras"
+      }
+    ],
+    "tope": null,
+    "orden": 35,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "calendar",
+    "nombre": "CALENDARIO",
+    "formas": [
+      "matrix"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "matrix",
+        "cuando": "filas < 2 o columnas < 2",
+        "razon": "una matriz de una fila es un gráfico de barras"
+      }
+    ],
+    "tope": null,
+    "orden": 36,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "matrix",
+    "nombre": "MATRIX",
+    "formas": [
+      "matrix"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "matrix",
+        "cuando": "filas < 2 o columnas < 2",
+        "razon": "una matriz de una fila es un gráfico de barras"
+      }
+    ],
+    "tope": null,
+    "orden": 37,
+    "dibujado_en_el_pen": false
+  },
+  {
+    "id": "histogram",
+    "nombre": "HISTOGRAMA",
+    "formas": [
+      "distribution"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "distribution",
+        "cuando": "cortes < 3",
+        "razon": "con dos cortes es una comparación, no una distribución"
+      }
+    ],
+    "tope": null,
+    "orden": 38,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "box",
+    "nombre": "CAJA",
+    "formas": [
+      "distribution"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "distribution",
+        "cuando": "cortes < 3",
+        "razon": "con dos cortes es una comparación, no una distribución"
+      }
+    ],
+    "tope": null,
+    "orden": 39,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "scatter",
+    "nombre": "DISPERSIÓN",
+    "formas": [
+      "distribution"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "distribution",
+        "cuando": "cortes < 3",
+        "razon": "con dos cortes es una comparación, no una distribución"
+      }
+    ],
+    "tope": null,
+    "orden": 40,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "bubble",
+    "nombre": "BURBUJAS",
+    "formas": [
+      "distribution"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "distribution",
+        "cuando": "cortes < 3",
+        "razon": "con dos cortes es una comparación, no una distribución"
+      }
+    ],
+    "tope": null,
+    "orden": 41,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "cuadrantes",
+    "nombre": "CUADRANTES",
+    "formas": [
+      "distribution"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "distribution",
+        "cuando": "cortes < 3",
+        "razon": "con dos cortes es una comparación, no una distribución"
+      }
+    ],
+    "tope": {
+      "cuando": "cuadrantes sin rótulo",
+      "razon": "promete una decisión por zona y sin rótulo no la entrega"
+    },
+    "orden": 42,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "sankey",
+    "nombre": "FLUJO",
+    "formas": [
+      "flow"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "flow",
+        "cuando": "etapas < 3",
+        "razon": "dos etapas son una tasa de conversión, y eso es una cifra"
+      }
+    ],
+    "tope": null,
+    "orden": 43,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "network",
+    "nombre": "GRAFO",
+    "formas": [
+      "flow",
+      "graph"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "flow",
+        "cuando": "etapas < 3",
+        "razon": "dos etapas son una tasa de conversión, y eso es una cifra"
+      },
+      {
+        "forma": "graph",
+        "cuando": "aristas < 2",
+        "razon": "una sola relación se dice con una frase"
+      }
+    ],
+    "tope": null,
+    "orden": 44,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "radar",
+    "nombre": "RADAR",
+    "formas": [
+      "multi_attribute_profile"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "multi_attribute_profile",
+        "cuando": "atributos < 3",
+        "razon": "con dos ejes el radar es una línea"
+      }
+    ],
+    "tope": {
+      "cuando": "perfiles > 3",
+      "razon": "por encima de tres, los polígonos se superponen y ninguno se lee"
+    },
+    "orden": 45,
+    "dibujado_en_el_pen": true
+  },
+  {
+    "id": "list",
+    "nombre": "LIST",
+    "formas": [
+      "ranking"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "ranking",
+        "cuando": "items < 3",
+        "razon": "un ranking de dos es una comparación"
+      }
+    ],
+    "tope": null,
+    "orden": 46,
+    "dibujado_en_el_pen": false
+  },
+  {
+    "id": "table",
+    "nombre": "TABLE",
+    "formas": [
+      "tabular",
+      "ranking"
+    ],
+    "soporta_banda": false,
+    "minimos": [
+      {
+        "forma": "ranking",
+        "cuando": "items < 3",
+        "razon": "un ranking de dos es una comparación"
+      }
+    ],
+    "tope": null,
+    "orden": 47,
+    "dibujado_en_el_pen": false
+  },
+  {
+    "id": "prose",
+    "nombre": "PROSE",
+    "formas": [
+      "prose"
+    ],
+    "soporta_banda": false,
+    "minimos": [],
+    "tope": null,
+    "orden": 48,
+    "dibujado_en_el_pen": false
+  },
+  {
+    "id": "reco",
+    "nombre": "RECO",
+    "formas": [
+      "prose"
+    ],
+    "soporta_banda": false,
+    "minimos": [],
+    "tope": null,
+    "orden": 49,
+    "dibujado_en_el_pen": false
+  }
+]
