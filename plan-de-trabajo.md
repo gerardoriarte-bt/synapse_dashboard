@@ -903,6 +903,8 @@ pruebas de integración contra HTTP.
 ### ➕ B1.21 ⬜ Declarar los mínimos de datos por gráfico
 **Espera del backend.** **Queda `GET /config/plots`; `chart` YA LLEGÓ** · el mismo día que se pidió, en `f70cec2`. Medido el 2026-09-28 contra el servicio: sale en `DDPanelDTO.chart` y en `DDLayoutPanel.chart`, lo escribe el builder recortado y en minúsculas —`"  Waterfall  "` → `waterfall`— y los doce paneles publicados quedaron con `''`, así que no migró ningún layout. Transcripto en los dos cables y adaptado, con prueba de que **un id desconocido se pasa igual**: descartarlo haría caer el panel al gráfico por defecto sin que nadie se entere. **Lo que falta es la ruta del repertorio**, y para escribirla piden tres archivos nuestros que no están en su repo — contestado en `docs/MENSAJE-2026-09-28-backend-lo-que-piden.md`.
 
+**Lo tiene: NOSOTROS** · mandarles `docs/ENTREGA-2026-09-29-repertorio-de-graficos.md`. **Lo pidieron dos veces**, y las dos se les contestó con una ruta de NUESTRO repositorio, que no ven.
+
 **Medido contra `de881e1` el 2026-09-29** · `GET /config/plots` → **404**.
 
 **NUESTRA MITAD ESTÁ HECHA** · 2026-09-26, y **el repertorio entero desde el 2026-09-28**: `docs/REPERTORIO-2026-09-28-los-49-graficos.md`. El orden que habíamos propuesto era «1. el front declara los mínimos y los propone en el contrato · 2. el backend los sirve». **El paso 1 está**: el contrato declara `GET /config/plots`, `Grafico` y `MinimoDeDatos`, y la tabla que hay que implementar está en `docs/DECISIONES-2026-09-26-minimos-por-grafico.md`.
@@ -916,6 +918,8 @@ Sólo tres suben el de su forma —`treemap`, `pareto` y `waterfall`, a 3— y e
 **Los tres mínimos que ya estaban escritos** en el criterio de abajo —«una serie de un punto, una composición de una parte y un ranking de dos ítems»— se respetaron, y de ahí sale que `ranking` sea 3 y no 2.
 
 **Espera del backend.** **Servir `GET /config/plots`** con la tabla del documento, con la misma figura que `/config/blocks`: global, no por tenant. Medido el 2026-09-26: **404**. Bloquea F1.31 y F4.21.
+
+**Lo tiene: NOSOTROS** · mandarles `docs/ENTREGA-2026-09-29-repertorio-de-graficos.md`. **Lo pidieron dos veces**, y las dos se les contestó con una ruta de NUESTRO repositorio, que no ven.
 
 **NO depende de Snowflake.** No toca datos: es una tabla de reglas y un endpoint.
 
@@ -1211,6 +1215,8 @@ Hoy el cable manda `reason` y `unlocks_with` como texto redactado, que sirve par
 #### ➕ B1.29 ⚠️ `schema-check` · decir qué le falta al cliente ANTES de intentar
 **Espera del backend.** **Una ruta que compare el `db.schema` del tenant contra el contrato de esquema** — pedido el 2026-09-28 en `docs/MENSAJE-2026-09-28-backend-tres-del-alta.md`.
 
+**Lo tiene: DATOS** · habilitar la IP de salida en Snowflake. **La ruta está entregada** y ellos la midieron desde su red con `200`.
+
 **Medido contra `de881e1` el 2026-09-29** · `schema-check` → **404** · y se comprobó que `GET /agents/ping` y `GET /admin/tenants/{id}/catalog/health`, que sí existen, contestan otra cosa.
 
 **LA RUTA LLEGÓ EL 2026-09-29 · en `e1037d9`. Queda en ⚠️ y no en ✅ por una razón que NO es suya: Snowflake nos bloquea la IP.**
@@ -1247,6 +1253,8 @@ Lo que falta es la mitad de **esquema**, y son dos `DESCRIBE` y una comparación
 #### ➕ B1.30 ⚠️ `sync-catalog` como ruta HTTP
 **Espera del backend.** **La simétrica de `materialize`** — pedido el 2026-09-28.
 
+**Lo tiene: DATOS** · habilitar la IP de salida en Snowflake. **La ruta está entregada.**
+
 **Medido contra `de881e1` el 2026-09-29** · `sync-catalog` → **404** · su hermana `materialize` → **202**.
 
 **LA RUTA LLEGÓ EL 2026-09-29 · en `e1037d9`.** `POST /admin/tenants/{id}/sync-catalog` ya no da 404: contesta **502** por el mismo bloqueo de IP de Snowflake que B1.29, o sea que **llegó hasta intentar la consulta**.
@@ -1264,6 +1272,8 @@ Medido ese día contra `f70cec2`: `POST /admin/tenants/{tenantId}/materialize` c
 
 #### ➕ B1.31 ⚠️ La plataforma genera el par de claves del usuario de servicio
 **Espera del backend.** **Que el servicio genere el par RSA y devuelva sólo la pública** — pedido el 2026-09-28.
+
+**Lo tiene: NOSOTROS** · probar la rotación en el próximo alta real. **La ruta está entregada** y su guarda se midió.
 
 **Medido contra `de881e1` el 2026-09-29** · sin un solo `rsa.GenerateKey` en `internal/`.
 
@@ -1530,6 +1540,8 @@ dibuja y lo que hace que una cifra se lea contra algo en vez de sola. · Bloquea
 
 **Espera del backend.** **EL CAMINO YA EXISTE · corregido el 2026-09-28 leyendo su repositorio.**
 
+**Lo tiene: DESPLIEGUE** · depende de B2.15 · el generador de prosa está en la rama desde `5924bf2`.
+
 **Medido contra `de881e1` el 2026-09-29** · `DD_MATERIALIZE_PROSE_ENABLED` existe con default `false` · `dd_materializer_service.go:57`.
 
 Esto decía «los paneles de prosa los genera el AGENTE, y hoy no hay camino», y era
@@ -1570,6 +1582,8 @@ del seed; para un texto del agente sería mentira, y `GOLD · ERP` sería peor.
 Todo en `docs/MENSAJE-2026-09-24-materializador.md` §3. · Bloquea **B2.12**.
 
 **Espera del backend.** **Una fila que NUNCA se materializó no puede servirse
+
+**Lo tiene: DESPLIEGUE** · depende de B2.15 · el generador de prosa está en la rama desde `5924bf2`.
 como `AVAILABLE`.** `sync-catalog` trae diez métricas de Snowflake y la semilla
 tiene doce, así que **dos quedan sin fuente** —`executive_summary` y
 `decisions`—. El materializador lo sabe: informa `preserved=2`. Pero esas dos
@@ -4249,6 +4263,8 @@ verificada y no declarada. La prueba además **afirma que el fixture no trae
 #### ➕ B2.14 ⬜ `/config/solicitudes` · pedir acceso a una métrica que no se ve
 **Espera del backend.** **La ruta no existe** · medido el 2026-09-28: `GET /config/solicitudes` da **404**.
 
+**Lo tiene: PRODUCTO** · decidir si existe una ruta de solicitud. **La mitad que nos bloqueaba llegó**: el estado ya declara razón y desbloqueo, así que F2.3 se puede construir sin CTA.
+
 **Medido contra `de881e1` el 2026-09-29** · `GET /config/solicitudes` → **404** · y el payload `FORBIDDEN` es `{status, request_from}` y nada más.
 
 **Bloquea F2.3.** Y el hueco tiene una forma concreta: el payload `FORBIDDEN` es hoy `{status, request_from}` **y nada más** —medido pidiéndole al token de `planner` los tres paneles que su rol oculta—. Sin `reason` ni `unlocks_with`, que es la gramática de §8 que los otros cinco estados sí traen.
@@ -4279,6 +4295,8 @@ FORBIDDEN
 
 #### ➕ B2.15 ⬜ Encender `DD_MATERIALIZE_PROSE_ENABLED` y avisar
 **Espera del backend.** **Que se encienda en dev y nos avisen** — lo ofrecieron ellos en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
+
+**Lo tiene: DESPLIEGUE** · prender el flag en dev después del próximo despliegue. **Fecha, no código.**
 
 **Medido contra `de881e1` el 2026-09-29** · `ProseGeneratorEnabledFromEnv` lee el flag con default `false`.
 

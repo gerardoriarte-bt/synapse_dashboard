@@ -43,6 +43,17 @@ ESPERA = re.compile(r"^\*\*Espera del backend\.\*\*\s*(.+)$")
 # **La marca de verificación de un PEDIDO** · agregada el 2026-09-28.
 MEDIDO = re.compile(r"\*\*Medido contra `([0-9a-f]{7,40})` el (\d{4}-\d{2}-\d{2})\*\*")
 
+# **De quién es cada pedido** · agregado el 2026-09-29, y lo pidió el backend.
+#
+# Nos hicieron una cuenta que no cerraba: decíamos «quedan siete» en un archivo
+# que se llama «lo que el front necesita del BACKEND», y **ninguno de los siete
+# era código suyo** — dos eran nuestros, dos de datos, dos de despliegue y uno una
+# decisión de producto. Tenían razón: leer esa lista les hacía perder tiempo
+# buscando qué construir.
+#
+# Un pedido sin dueño se lee como si fuera de quien abre el archivo.
+DUENO = re.compile(r"^\*\*Lo tiene: ([A-ZÁÉÍÓÚÑ]+)\*\*")
+
 CABLE_REF = pathlib.Path("contracts/synapse-console-wire.yaml")
 
 
@@ -139,6 +150,9 @@ def recolectar(texto: str):
                 mm = MEDIDO.search(linea)
                 if mm:
                     actual["medido"] = (mm.group(1), mm.group(2))
+                dd = DUENO.match(linea)
+                if dd:
+                    actual["dueno"] = dd.group(1)
                 acumulando.append(linea)
                 continue
         m = ENCABEZADO.match(linea)
@@ -160,6 +174,7 @@ def recolectar(texto: str):
                 "candado": (m.group(4).split(" · 🔒")[1].strip()
                             if " · 🔒" in m.group(4) else ""),
                 "medido": None,
+                "dueno": None,
                 "esperas": [],
             }
             tareas.append(actual)
@@ -205,12 +220,38 @@ def render(tareas, hechas, todas=(), viejos=()) -> str:
             o.append(f"- **{t['id']}** · {t['titulo']}")
 
     pend = [t for t in tareas if t["estado"] != "hecho"]
+    # ── QUIÉN TIENE CADA UNO · lo primero que se lee ─────────────────────────
+    #
+    # Antes esto decía «esperamos N» y nada más, en un archivo que se llama «lo
+    # que el front necesita del backend». El 2026-09-29 nos señalaron —con razón—
+    # que de siete pedidos **ninguno era código suyo**. Un pedido sin dueño se
+    # lee como si fuera de quien abre el archivo.
+    de_backend = [t for t in pend if (t["dueno"] or "BACKEND") == "BACKEND"]
+    otros = [t for t in pend if (t["dueno"] or "BACKEND") != "BACKEND"]
+    if otros:
+        import collections
+        por = collections.Counter(t["dueno"] for t in otros)
+        o.append(
+            f"\n---\n\n## Antes de leer: {len(de_backend)} de {len(pend)} son del backend\n\n"
+            "**El resto está acá porque nos frena a NOSOTROS, no porque haya que\n"
+            "construirlo del lado del backend.** Se listan igual —una tarea trabada\n"
+            "es información— pero con el dueño adelante, para no hacer perder\n"
+            "tiempo buscando qué implementar.\n"
+        )
+        o.append("\n| Dueño | Pedidos |\n|---|---|")
+        o.append(f"| **BACKEND** · código | {len(de_backend)} |")
+        for d, n_ in por.most_common():
+            o.append(f"| {d} | {n_} |")
+        o.append("")
+
     o.append(f"\n---\n\n## Lo que esperamos · {len(pend)} pedido(s)\n")
     if not pend:
         o.append("Nada. El front no está esperando ningún campo ni ninguna ruta.\n")
     for t in pend:
         o.append(f"\n### {t['id']} · {t['titulo']}")
-        o.append(f"\n*Estado de la tarea: {t['estado']}.*\n")
+        o.append(f"\n*Estado de la tarea: {t['estado']}.*"
+                 + (f" · **Lo tiene: {t['dueno']}**" if t["dueno"] and t["dueno"] != "BACKEND" else "")
+                 + "\n")
         for e in t["esperas"]:
             o.append(f"\n{e}\n")
 
@@ -342,9 +383,11 @@ def main() -> int:
         return 1
 
     estado = "✓" if not viejos else "⚠"
+    de_back = sum(1 for t in tareas if (t["dueno"] or "BACKEND") == "BACKEND")
     print(
-        f"para-backend {estado} {len(tareas)} tarea(s) esperan al backend"
-        f" · {sum(len(t['esperas']) for t in tareas)} pedido(s)"
+        f"para-backend {estado} {len(tareas)} tarea(s) trabadas"
+        f" · **{de_back} del backend**"
+        f" · {len(tareas) - de_back} de otros"
         f" · {len(hechas)} de integración cerradas"
     )
     if viejos:
