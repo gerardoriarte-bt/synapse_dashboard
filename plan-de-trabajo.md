@@ -1193,7 +1193,11 @@ GET /admin/tenants/{id}/schema-check   → 502
 
 **Así que la FORMA de la respuesta sigue sin medirse**, y eso es lo que falta para cerrarla: sin ver su cuerpo no sabemos si trae `afecta` y `claves_sin_query`, que eran los dos campos que la volvían valiosa.
 
-**Se pide a datos**, no al backend: habilitar la IP de salida actual.
+**Se pide a datos**, no al backend · `docs/MENSAJE-2026-09-29-datos-habilitar-ip.md`, mandado el 2026-09-29.
+
+**Y el pedido lleva una pregunta de fondo, porque la IP ya cambió una vez:** el 2026-09-24 Snowflake veía `201.244.209.190` —la habilitaron y el chat funcionó— y hoy ve `190.27.36.15`. **Cinco días, dos direcciones.** Habilitar ésta desbloquea hoy y es razonable esperar que vuelva a cortar.
+
+**Un detalle que hace perder una tarde si no se sabe:** la salida a Snowflake **no es la misma que la salida general**. En el mismo instante, Snowflake ve `190.27.36.15` y un «cuál es mi IP» genérico ve `186.31.4.152`. **La única que sirve es la que Snowflake reporta en el error** — habilitar la otra no funciona y parece que la política no se aplicó.
 
 **El problema que cierra es un SILENCIO**, y es el que más encarece un alta: hoy una columna que falta hace que el panel salga `BLOCKED` **sin razón** — no dice qué columna, ni que el problema sea de esquema. Se descubre al final, después de crear todo.
 
