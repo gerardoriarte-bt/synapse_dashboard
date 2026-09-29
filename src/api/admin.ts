@@ -277,6 +277,18 @@ function adaptarPanel(p: A['LayoutPanel']): PanelConfig {
     colStart: p.col_start,
     colSpan: p.col_span,
     rowSpan: p.row_span,
+    // ── **`chart` SE LEE, Y NO LEERLO BORRABA** · 2026-09-29 ──────────────
+    //
+    // El cable lo declara desde `f70cec2` en `LayoutPanel` y en `PanelInput`, y
+    // este adaptador no lo tocaba en ninguno de los dos sentidos. Eso no era un
+    // hueco: **el `PUT` del layout es un REEMPLAZO COMPLETO** —«se envía el
+    // layout entero y lo que no venga se borra», dice el cable— así que abrir en
+    // el builder un layout con gráficos y guardarlo **los borraba todos**, en
+    // silencio y sin que nada fallara.
+    //
+    // Se descubrió al construir el selector de F4.21: el borrador no tenía dónde
+    // poner lo elegido.
+    ...(p.chart === undefined || p.chart === '' ? {} : { grafico: p.chart as NonNullable<PanelConfig['grafico']> }),
     ...(p.options === undefined ? {} : { opciones: p.options }),
   }
 }
@@ -331,7 +343,7 @@ export type TabParaGuardar = {
   pregunta: string
   orden: number
   roles: string[]
-  panels: { id?: string; metricId: string; tipo: string; colStart: number; colSpan: number; rowSpan: number; opciones?: Record<string, unknown> }[]
+  panels: { id?: string; metricId: string; tipo: string; colStart: number; colSpan: number; rowSpan: number; grafico?: NonNullable<PanelConfig['grafico']>; opciones?: Record<string, unknown> }[]
 }
 
 function aCuerpo(tabs: readonly TabParaGuardar[]): A['LayoutUpdateRequest'] {
@@ -349,6 +361,11 @@ function aCuerpo(tabs: readonly TabParaGuardar[]): A['LayoutUpdateRequest'] {
         col_start: p.colStart,
         col_span: p.colSpan,
         row_span: p.rowSpan,
+        // **Vacío cuando no hay, y no ausente.** El servicio recorta y baja a
+        // minúsculas, y omitir la clave deja cadena vacía igual — pero mandarla
+        // explícita hace que el cuerpo diga qué se quiso: sin gráfico elegido,
+        // el de por defecto del tipo.
+        chart: p.grafico ?? '',
         ...(p.opciones === undefined ? {} : { options: p.opciones }),
       })),
     })),

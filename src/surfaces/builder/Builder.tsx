@@ -27,6 +27,7 @@ import { useState } from 'react'
 import {
   useAdminCatalog,
   useBlocks,
+  usePlots,
   useCreateDraft,
   useLayoutDetail,
   useLayouts,
@@ -58,7 +59,7 @@ import {
   reubicarPanel,
   editar,
   editarOpcion,
-  editarPanel,
+  editarPanel, quitarOPonerGrafico,
   mover,
   quitar,
   quitarPanel,
@@ -135,6 +136,10 @@ export function Builder() {
   // formas acepta cada tipo y qué spans; el catálogo de admin manda las métricas
   // del tenant SIN filtrar por rol, que es la lista que quien compone necesita.
   const bloques = useBlocks()
+  // El repertorio · F4.21. Arriba con los demás hooks, y no junto a su uso:
+  // puesto abajo quedaría después de los retornos tempranos, que es como se
+  // rompió el contenedor de la consola el mismo día.
+  const plots = usePlots()
   const catalogo = useAdminCatalog(tenantActivo)
   const semilla = detalle.data === undefined ? null : sembrar(detalle.data)
   const tabs =
@@ -459,6 +464,16 @@ export function Builder() {
 
           {configurable !== null && (
             <PanelConfigurator
+              plots={plots.data ?? []}
+              onGrafico={(id) => {
+                if (seleccion === null) return
+                // **`undefined` QUITA el gráfico, y por eso no puede ir por
+                // `editarPanel`**: su `Partial` mezcla con spread, así que un
+                // `undefined` explícito no borra la clave — la deja igual. Es el
+                // mismo modo de falla que el spread condicional de JSX, y acá se
+                // ve al revés: querer borrar y que no pase nada.
+                cambiar(quitarOPonerGrafico(tabs, seleccion.tab, seleccion.panel, id))
+              }}
               panel={configurable}
               bloques={listaDeBloques}
               tabla={tabla}

@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**171 de 223 tareas cerradas.** 14 parciales · 33 pendientes · 5 diferidas.
+**172 de 223 tareas cerradas.** 14 parciales · 32 pendientes · 5 diferidas.
 
 
-## Front · 112 de 125
+## Front · 113 de 125
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -16,7 +16,7 @@
 | 1 · Consola y render/ | `█████████████████████·` | 44/46 | 2 | 0 |
 | 2 · Estados | `██████████████████████` | 6/6 | 0 | 0 |
 | 3 · Chat contextual | `██████████████████····` | 12/15 | 0 | 0 |
-| 4 · Admin y Builder | `█████████████████·····` | 19/24 | 0 | 5 |
+| 4 · Admin y Builder | `██████████████████····` | 20/24 | 0 | 4 |
 | 5 · Pruebas y pulido | `██████████████████····` | 15/18 | 0 | 2 |
 
 ## Backend · 59 de 98
@@ -61,7 +61,7 @@ Nada del front está libre: todo lo pendiente espera algo.
 
 ---
 
-## Bloqueadas · 15
+## Bloqueadas · 14
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -75,7 +75,6 @@ Lo que el front espera del backend está detallado en
 - **F4.18** · MatrixBody + HeatmapPlot
 - **F4.19** · GraphBody + GraphPlot
 - **F4.20** · Registrar los tres con carga diferida
-- **F4.21** · Selector de gráfico en el builder
 - **F5.13** · Períodos libres en el selector
 - **F5.3** · Completar los plots que falten
 

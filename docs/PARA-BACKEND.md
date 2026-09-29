@@ -333,7 +333,7 @@ Hasta entonces los dos paneles de prosa se sirven con el valor de la semilla, **
 
 ---
 
-## Y esto frena al front · 9 tarea(s)
+## Y esto frena al front · 8 tarea(s)
 
 **No todo lo de acá es suyo**, y por eso no está arriba: son los
 bloqueos que las tareas del front declaran en su título, tal cual
@@ -347,7 +347,6 @@ Lo de arriba son pedidos; esto es información.
 |---|---|
 | **F1.42** · El mes en curso está incompleto y el selector no lo dice | el período no declara QUÉ PARTE del mes cubre |
 | **F1.44** · El orden de una tabla se anuncia, no se aplica | `cut` de `series` no lo lee nadie |
-| **F4.21** · Selector de gráfico en el builder | `/config/plots` da 404 |
 | **F4.17** · ComparisonBody + ComparePlot | ninguna métrica declara `categoricaComparada` |
 | **F4.18** · MatrixBody + HeatmapPlot | ninguna métrica declara `matriz` |
 | **F4.19** · GraphBody + GraphPlot | ninguna métrica declara `grafo` ni `flujo` |

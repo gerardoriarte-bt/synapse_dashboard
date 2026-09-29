@@ -41,6 +41,10 @@ export function sembrar(detalle: LayoutDetalle): TabParaGuardar[] {
         colStart: p.colStart,
         colSpan: p.colSpan,
         rowSpan: p.rowSpan,
+        // **El gráfico viaja con el panel.** Sin esta línea el borrador lo
+        // perdía al serializarse, y como el `PUT` reemplaza el layout entero,
+        // guardar borraba el gráfico de todos los paneles.
+        ...(p.grafico === undefined ? {} : { grafico: p.grafico }),
         ...(p.opciones === undefined ? {} : { opciones: p.opciones }),
       })),
     }))
@@ -155,6 +159,35 @@ export function quitarPanel(
 ): TabParaGuardar[] {
   return tabs.map((t, i) =>
     i === indiceTab ? { ...t, panels: t.panels.filter((_, j) => j !== indicePanel) } : t,
+  )
+}
+
+/** Pone o QUITA el gráfico de un panel.
+ *
+ *  **Aparte de `editarPanel` porque quitar no es editar.** Aquél toma un
+ *  `Partial` y lo mezcla con spread: `{ grafico: undefined }` deja la clave
+ *  intacta en vez de borrarla, así que «quitar» no haría nada y el control se
+ *  vería funcionando. Es el modo de falla del spread condicional, del otro lado.
+ *
+ *  Y borrar importa: sin gráfico el panel usa el de por defecto de su tipo, que
+ *  es un estado legítimo y el cuarto bullet del criterio de F4.21. */
+export function quitarOPonerGrafico(
+  tabs: readonly TabParaGuardar[],
+  indiceTab: number,
+  indicePanel: number,
+  grafico: PanelDeBorrador['grafico'],
+): TabParaGuardar[] {
+  return tabs.map((t, i) =>
+    i === indiceTab
+      ? {
+          ...t,
+          panels: t.panels.map((p, j) => {
+            if (j !== indicePanel) return p
+            const { grafico: _, ...resto } = p
+            return grafico === undefined ? resto : { ...resto, grafico }
+          }),
+        }
+      : t,
   )
 }
 

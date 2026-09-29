@@ -129,8 +129,8 @@ que su resultado esté escrito.
 | `A6 · Cola de accionables` | **No construida** · F3.10, diferida por D3 |
 | `B1 · Selector de contexto` | `src/surfaces/builder/ContextView.tsx` |
 | `B2 · Canvas de composición` | `src/surfaces/builder/Canvas.tsx` |
-| `B3 · Selector de gráfico` | **No construida** · F4.21 · espera `/config/plots` |
-| `B3 · Selector · gráfico deshabilitado por tope` | **No construida** · ídem · el tope sale de B1.21 |
+| `B3 · Selector de gráfico` | **`src/surfaces/builder/PlotPicker.tsx`** · §PEN:B3 · F4.21, 2026-09-29 |
+| `B3 · Selector · gráfico deshabilitado por tope` | **No construida** · el estado deshabilitado necesita el DATO para saber si el tope se excede, y el builder va sin payloads por decisión de F4.12. Acá el tope se **declara**, que es lo que el criterio pide |
 | `B4 · Binder de métrica` | `src/surfaces/builder/PanelConfigurator.tsx` |
 | `B5 · Vista previa · rol Planner sin componer` | `src/surfaces/builder/RolePreview.tsx` |
 | `B6 · Historial de versiones` | **No construida** · ninguna ruta lista versiones con su autor y fecha · **desde el 2026-09-28 tiene entrada dibujada**: el `Más` del navbar del builder |
@@ -6130,7 +6130,63 @@ el 422 como error genérico, y publicar sin mandar el `versionId`.
 - F4.15: publicar surte efecto sin deploy, y se ve en la consola en la siguiente
   carga.
 
-### ➕ F4.21 ⬜ Selector de gráfico en el builder · 🔒 `/config/plots` da 404
+### ➕ F4.21 ✅ Selector de gráfico en el builder
+**CERRADA EL 2026-09-29**, con la ruta que escribimos el mismo día. `PlotPicker`
+· §PEN:B3, leído antes de escribir la primera línea.
+
+**Y AL CONSTRUIRLO APARECIÓ ALGO PEOR QUE LO QUE FALTABA: el builder BORRABA el
+gráfico de todos los paneles al guardar.** `adaptarPanel` no leía `chart` y el
+cuerpo del `PUT` no lo mandaba — y el `PUT` **reemplaza el layout entero**, con
+esas palabras en el cable: «se envía el layout entero y lo que no venga se
+borra». Abrir en el builder el layout que se publicó esa mañana con doce
+gráficos y apretar Guardar los perdía los doce, en silencio.
+
+**La cabecera de `borrador.ts` decía justo lo contrario** —«que el borrador tenga
+la forma del cuerpo y no una intermedia es la decisión que sostiene todo lo
+demás: **no hay una segunda traducción donde perder un campo**»—. Es cierto, y el
+campo se perdió igual: **la forma nunca lo tuvo**. Una sola traducción protege de
+perder lo que se transcribió; no protege de lo que no se transcribió nunca.
+
+**Y una prueba vieja se puso roja al arreglarlo**, que es para lo que sirve fijar
+el cuerpo del `PUT` entero con `toEqual`: un campo nuevo no entra sin que alguien
+lo mire.
+
+**Los cuatro bullets del criterio, y dónde quedó cada uno:**
+
+| Bullet | Cómo |
+|---|---|
+| La lista se filtra por `formas`; los incompatibles **no se muestran** | El grupo de cada forma lista sólo los que la sirven. Un gráfico de dos formas aparece en los dos grupos, **y no es repetición**: su mínimo cambia con la forma |
+| Cada opción **declara** su mínimo y su tope | Textual, con la razón del repertorio. **El mínimo es el de ESA forma**: `treemap` pide 2 en `categorica` y 3 en `composicion`, y mostrar el primero diría que alcanza con dos |
+| Con `serieConBanda`, sólo gráficos con banda | Lo sostiene la estructura: las únicas entradas cuyas `formas` incluyen `serieConBanda` son las tres que declaran `soportaBanda: true` |
+| No elegir nada es válido | Se dice en pantalla —«sin elegir · usa el de por defecto del tipo»— y hay un botón para quitarlo |
+
+**Quitar necesitó su propia función**, y la razón es un modo de falla conocido
+del otro lado: `editarPanel` mezcla con spread, así que `{ grafico: undefined }`
+**deja la clave intacta** y «quitar» se vería funcionando sin hacer nada.
+
+**TRES COSAS DEL DIBUJO QUE NO SE CONSTRUYERON, cada una con su razón escrita en
+el componente:**
+
+1. **El preview.** La nota del `.pen` es explícita —«el preview es el espécimen de
+   la librería, no una miniatura aparte: un Plot no escala»— y tiene razón, por
+   eso no se dibujó una miniatura. Lo que falta es el **espécimen**: un valor de
+   muestra por forma que no declara ni el contrato ni `/config/plots`. Inventarlo
+   sería meter cifras fabricadas en el producto.
+2. **La opción deshabilitada por tope.** Necesita el DATO para saber si se
+   excede, y el builder va sin payloads por decisión escrita de F4.12.
+3. **La descripción de una línea** —`UNA CATEGORÍA, UNA MEDIDA` en el frame—. El
+   repertorio no la lleva y escribirla acá sería inventar copy de producto.
+
+**Y una que sí cambia respecto del dibujo:** la nota dice «se abre al soltar un
+tipo», y acá se abre desde el configurador, con la métrica ya puesta. Mover el
+selector al drop reordena el flujo entero —gráfico antes que métrica— y eso es
+F4.10, no esta tarea.
+
+**Seis mutaciones fieles, seis muertas**: las dos del campo que se borraba —leer
+y escribir—, la del borrador que lo perdía al serializar, la de «quitar» con
+spread, la del mínimo tomado del primero de la lista, y la de la lista sin
+filtrar por forma.
+
 **Descripción.** El configurador de panel ofrece los gráficos **compatibles con
 la forma de la métrica elegida**, no los 49. Consume `/config/plots` vía
 `catalog/plots.ts`.

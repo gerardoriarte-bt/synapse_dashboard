@@ -51,6 +51,9 @@
  */
 import { Label } from '../../render/primitives/Label'
 import { invalidReason } from '../../catalog/blocks'
+import { useState } from 'react'
+import type { ChartId, Plot } from '../../catalog/types'
+import { PlotPicker } from './PlotPicker'
 import { PARAM_SCHEMAS, describirParam } from '../../api/params'
 import type { BlockTable } from '../../catalog/blocks'
 import type { Block, Metric, PanelType } from '../../api/types'
@@ -67,6 +70,12 @@ type Props = {
   onSpan: (campo: 'colSpan' | 'rowSpan', valor: number) => void
   /** `undefined` borra la opción · ver `editarOpcion`. */
   onOpcion: (nombre: string, valor: unknown) => void
+  /** El gráfico elegido · `undefined` lo quita y devuelve al de por defecto. */
+  onGrafico: (id: ChartId | undefined) => void
+  /** El repertorio, de `/config/plots`. **Vacío apaga la sección entera** en vez
+   *  de mostrar un selector sin nada: la ruta puede fallar sola, y un control que
+   *  se abre vacío promete una elección que no se puede hacer. */
+  plots: readonly Plot[]
   /** Los de ESTE panel, ya calculados · una sola corrida de `validarBorrador`. */
   problemas: readonly ProblemaLocal[]
   onQuitar: () => void
@@ -81,11 +90,14 @@ export function PanelConfigurator({
   onMetrica,
   onSpan,
   onOpcion,
+  onGrafico,
+  plots,
   problemas,
   onQuitar,
 }: Props) {
   const tipo = panel.tipo as PanelType
   const bloque = tabla.get(tipo)
+  const [abierto, setAbierto] = useState(false)
   const esquema = PARAM_SCHEMAS[tipo] ?? {}
 
 
@@ -239,6 +251,58 @@ export function PanelConfigurator({
           </>
         )}
       </div>
+
+      {/* ── EL GRÁFICO · §PEN:B3 · F4.21 ────────────────────────────────────
+          **Va después de la métrica y no antes**, al revés de lo que el `.pen`
+          dibuja —ahí el selector se abre al soltar el tipo, antes de elegir la
+          métrica—. Reordenar el flujo entero es F4.10; acá el selector se abre
+          desde donde hoy se configura todo lo demás. Anotado en `PlotPicker`. */}
+      {bloque !== undefined && plots.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <Label as="div">Gráfico</Label>
+          {abierto ? (
+            <div className="h-100">
+              <PlotPicker
+                tipo={tipo}
+                formasDelTipo={bloque.formasAceptadas}
+                plots={plots}
+                {...(panel.grafico === undefined ? {} : { actual: panel.grafico })}
+                onElegir={(id) => {
+                  onGrafico(id)
+                  setAbierto(false)
+                }}
+                onVolver={() => setAbierto(false)}
+              />
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              {/* **Ausente es válido y se dice**, que es el cuarto bullet del
+                  criterio: no elegir nada usa el gráfico por defecto del tipo. */}
+              <Label as="div">
+                {panel.grafico === undefined
+                  ? 'Sin elegir · usa el de por defecto del tipo'
+                  : panel.grafico}
+              </Label>
+              <button
+                type="button"
+                onClick={() => setAbierto(true)}
+                className="h-7 cursor-pointer rounded-md border border-w4 bg-transparent px-2.5 font-mono text-label leading-rotulo tracking-rotulo uppercase text-ink"
+              >
+                Elegir gráfico
+              </button>
+              {panel.grafico !== undefined && (
+                <button
+                  type="button"
+                  onClick={() => onGrafico(undefined)}
+                  className="h-7 cursor-pointer rounded-md border-0 bg-transparent px-1 font-mono text-nota leading-rotulo tracking-rotulo uppercase text-dim"
+                >
+                  Quitar
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {bloque !== undefined && (
         <div className="flex gap-6">

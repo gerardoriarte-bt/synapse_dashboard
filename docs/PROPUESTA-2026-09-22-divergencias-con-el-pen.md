@@ -81,6 +81,13 @@ El mismo caso, encontrado al construir `ROLES Y COMPOSICIÓN` el 2026-09-22:
 |---|---|---|
 | nombre del rol · `font-display` **17** | va de `--text-titulo: 15px` a `--text-titulo-lg: 20px` | `text-titulo` |
 | nombre de la pestaña · `font-body` **12.5** | va de `--text-celda: 12px` a `--text-cuerpo: 13px` | `text-celda` |
+| título del selector de gráfico · `font-display` **19** · §PEN:B3 | el mismo hueco, del otro lado: `--text-titulo: 15px` a `--text-titulo-lg: 20px` | `text-titulo-lg` · agregado el 2026-09-29 |
+
+**Y con el tercero el patrón deja de poder leerse como descuido.** Los dos
+primeros salieron de una pantalla; el del 2026-09-29 sale de otra, dibujada en
+otro momento, y cae **en el mismo hueco de `font-display`** — entre 15 y 20. Tres
+nodos en ese rango es la evidencia que faltaba: o la escala gana un escalón ahí,
+o el `.pen` se alinea a los dos que ya tiene.
 
 **Esto NO es una pregunta nueva: es evidencia para la 9 de B0.9**, que ya
 pregunta si §2.3 gana una tabla para `font-body` y `font-display`. Ahí está

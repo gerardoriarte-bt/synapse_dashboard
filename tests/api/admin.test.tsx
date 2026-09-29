@@ -159,7 +159,14 @@ describe('guardar · el PUT reemplaza el layout entero', () => {
           operational_question: '¿Qué movió?',
           sort_order: 1,
           role_ids: [],
-          panels: [{ metric_id: 'm-1', type: 'kpi', col_start: 1, col_span: 3, row_span: 4 }],
+          // **`chart` se agregó el 2026-09-29 y esta prueba se puso ROJA**, que
+          // es exactamente para lo que sirve fijar el cuerpo entero con
+          // `toEqual`: un campo nuevo en el `PUT` no puede entrar sin que
+          // alguien lo mire. Va vacío porque este panel no tiene gráfico
+          // elegido, y explícito porque el cuerpo dice qué se quiso.
+          panels: [
+            { metric_id: 'm-1', type: 'kpi', col_start: 1, col_span: 3, row_span: 4, chart: '' },
+          ],
         },
       ],
     })
