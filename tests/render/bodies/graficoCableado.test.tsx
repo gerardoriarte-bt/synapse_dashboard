@@ -303,3 +303,88 @@ describe('`tope` NO recorta la dona ni el pareto · las dos derivan del total', 
     expect(screen.getByRole('img', { name: '2 columnas' })).toBeVisible()
   })
 })
+
+// ── LOS CUATRO QUE EL LOTE DEJÓ SIN CABLEAR · 2026-09-29 ─────────────────────
+//
+// Los cuatro llegaron con `aprobado: false` y **ninguno por un defecto del
+// componente**: los QA de `treemap` y `combo` lo dicen con esas palabras —«no
+// encontré ningún defecto en el componente»— y los cuatro cerraron sus huecos
+// con pruebas propias antes de firmar. Lo que faltaba era esto: el despacho.
+//
+// **`smallmult` es el que enseña.** Su QA encontró que `grep -rn PlotSmallMult
+// src/` devolvía una sola línea y era un COMENTARIO, así que sus dos pruebas de
+// cuerpo pasaban **por ausencia**: afirmaban que el cuerpo no lo montaba, y eso
+// era cierto porque no existía la rama. Una prueba que pasa porque el código no
+// está no distingue «correcto» de «sin construir».
+describe('los cuatro que faltaban · el despacho es lo único que les faltaba', () => {
+  it('`treemap` monta el MOSAICO, no las barras', () => {
+    render(<BarsBody {...base} value={TRES} params={{}} grafico="treemap" />)
+
+    // **Nombre exacto y no `/categorías/`.** `PlotTreemap` dice «3 categorías en
+    // mosaico» y `PlotBars` «3 categorías»: un patrón laxo matchea los dos y
+    // deja de distinguir cuál se montó, que es el único punto de esta prueba.
+    expect(screen.getByRole('img', { name: '3 categorías en mosaico' })).toBeVisible()
+    expect(screen.queryByRole('img', { name: '3 categorías' })).toBeNull()
+  })
+
+  it('`treemap` recibe la lista SIN recortar · su cuota sale del total', () => {
+    // Misma razón que la dona y el pareto: deriva `v / Σv`. Con `tope` aplicado
+    // antes, cada porcentaje se calcularía contra un total que no es el total y
+    // la suma seguiría dando 100 % — impecable y falso.
+    render(<BarsBody {...base} value={TRES} params={{ tope: 1 }} grafico="treemap" />)
+
+    expect(screen.getByRole('img', { name: '3 categorías en mosaico' })).toBeVisible()
+  })
+
+  it('`combo` monta el COMBINADO y reparte los roles por ORDEN del payload', () => {
+    render(<SeriesBody {...base} value={MULTIPLES} params={{}} grafico="combo" />)
+
+    // La primera del payload va en columnas y la segunda en la línea. El nombre
+    // accesible lleva las dos etiquetas, así que esto afirma el reparto y no
+    // sólo que el plot se montó.
+    expect(
+      screen.getByRole('img', { name: 'Combinado · Meta en columnas y Google en línea' }),
+    ).toBeVisible()
+    expect(screen.queryByRole('img', { name: '2 series' })).toBeNull()
+  })
+
+  it('`combo` con UNA serie no cae a la línea · dice qué falta', () => {
+    // Un combinado de una serie es una serie, y pintarla como si fuera un
+    // combinado es la sustitución silenciosa con otra cara: acá el id SÍ se sabe
+    // dibujar y lo que falta es el dato, así que el estado es `EmptyState` y no
+    // `UnknownPlotState`.
+    const una = valor<'seriesMultiples'>({
+      forma: 'seriesMultiples',
+      series: [{ etiqueta: 'Meta', puntos: [{ t: 'S1', v: 10 }] }],
+    })
+    render(<SeriesBody {...base} value={una} params={{}} grafico="combo" />)
+
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(screen.getByText(/necesita dos series y llegó una/)).toBeVisible()
+  })
+
+  it('`smallmult` monta las DIVISIONES, no las líneas', () => {
+    render(<SeriesBody {...base} value={MULTIPLES} params={{}} grafico="smallmult" />)
+
+    expect(screen.getByRole('img', { name: '2 divisiones' })).toBeVisible()
+    expect(screen.queryByRole('img', { name: '2 series' })).toBeNull()
+  })
+
+  it('`rings` monta UN anillo desde el escalar, con su objetivo', () => {
+    // La cabecera de `PlotRings` lo dejó resuelto: recibe una lista porque el
+    // `.pen` dibuja tres, y un panel se ancla a UN `metricId`. Una lista de uno
+    // se construye desde un escalar sin inventar nada — que es por qué esto se
+    // cablea en vez de quedar como propuesta de spec.
+    render(<GaugeBody {...base} value={ESCALAR} params={{ maximo: 100 }} grafico="rings" />)
+
+    expect(screen.getByRole('img', { name: 'UNIDADES 72% de su objetivo' })).toBeVisible()
+    // El nombre de `PlotGauge`, exacto: si el despacho se olvidara, el arco
+    // seguiría montándose y el anillo no.
+    expect(screen.queryByRole('img', { name: '72 de 100' })).toBeNull()
+  })
+
+  it('el shell tampoco se va con el anillo · la línea de BASE queda', () => {
+    render(<GaugeBody {...base} value={ESCALAR} params={{ maximo: 100 }} grafico="rings" />)
+    expect(screen.getByText('Sobre 100')).toBeVisible()
+  })
+})

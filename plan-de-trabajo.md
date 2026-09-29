@@ -3408,6 +3408,43 @@ palabras. Se cerró agregando al modo mock una pestaña de muestrario con los nu
 `columns`, `lollipop`, `donut` con su total al centro, `radial`, `pareto` con su
 acumulado en 42 / 75 / 100 %, `bump` y `slope`.
 
+**Y LOS CUATRO QUE FALTABAN SE CERRARON EL MISMO DÍA · 2026-09-29, tarde.** Los
+trece ids del repertorio con dato real quedan cableados.
+
+**Ninguno de los cuatro tenía un defecto de componente, y eso estaba escrito en
+sus propios informes de QA** —`treemap` y `combo` con esas palabras, «no encontré
+ningún defecto en el componente»—. Lo que faltaba era el despacho, y los cuatro
+habían cerrado sus huecos de prueba antes de firmar: `anillos.test.tsx` pasó de
+13 a 19 con un helper que lee los radios del comando `A`, porque la prueba vieja
+**afirmaba por escrito cubrir el tamaño del anillo y era falso** —`arcPath` emite
+sólo los extremos del arco, que en una vuelta completa caen los dos en el mismo
+punto—.
+
+**El candado de `rings` estaba dado vuelta.** La auditoría lo anotó como propuesta
+de spec —«pide `{ rings: Ring[] }` y `ValorEscalar` es `{ forma, v }`»— y la
+cabecera del propio plot ya lo había resuelto al construirlo: *«hoy el cuerpo le
+pasa un elemento y se ve un anillo solo — que es lo honesto, no un defecto»*. Una
+lista de uno se construye desde un escalar sin inventar nada. Lo que sigue sin
+poderse es dibujar los tres del `.pen`, y eso es del cable.
+
+| Id | Cuerpo | Decisión del cableado |
+|---|---|---|
+| `treemap` | `BarsBody` · `categorica` | Recibe la lista **sin recortar por `tope`**, como la dona y el pareto: deriva su cuota de `v / Σv`, así que sobre una lista recortada cada porcentaje se calcularía contra un total que no es el total **y la suma seguiría dando 100 %** |
+| `combo` | `SeriesBody` · `seriesMultiples` | **El cuerpo reparte los roles** —`PlotCombo` recibe `columns` y `line` por separado, no un arreglo— y la única fuente honesta del orden es el orden del payload. Con menos de dos series **no cae a la línea**: `EmptyState` con la razón, porque acá el id sí se sabe dibujar y lo que falta es el dato |
+| `smallmult` | `SeriesBody` · `seriesMultiples` | Va **normalizado**, al revés que `bump`: su cabecera declara medido que «la escala es compartida **y** el dominio», y con escala compartida una serie chica queda pegada al piso — que es para lo que `base100` existe |
+| `rings` | `GaugeBody` · `escalar` | Un anillo, con `presentation.label` cayendo al nombre de la métrica, igual que el total de la dona |
+
+**Cuatro mutaciones fieles sobre base verde —24 pruebas—, cuatro muertas**, cada
+una comprobada aplicada y con el árbol restaurado: los tres despachos borrados
+—que hacen caer a barras, a líneas y al arco— y el `combo` con los roles
+invertidos.
+
+**Y mirarlos encontró una del fixture.** El anillo salía «140.400 %» porque el
+muestrario le daba `maximum: 100` a una métrica que vale 140.400. **No era del
+plot** —el arco se topa en una vuelta y la cifra dice la verdad, que es lo
+correcto para un sobrecumplimiento— sino un objetivo fuera de la magnitud de lo
+que mide. Con 200.000 el anillo dice 70 % y se lee.
+
 **Criterio de aceptación.**
 - Ausente `plot` en el layout se dibuja **exactamente** lo que se dibuja hoy: el
   cambio no mueve ninguna pantalla existente.

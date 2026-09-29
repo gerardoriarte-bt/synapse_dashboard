@@ -48,7 +48,7 @@ const P = (n: number) => `55555555-5555-5555-5555-5555555555${String(n).padStart
  *  las dos pestañas de negocio**, que siguen con la rotación intacta, y los
  *  dibujos acá. Exceptuar la pestaña del muestrario no es maquillar la demo —
  *  lo sería si la excepción tapara un estado que no se ve en otro lado. */
-export const PANELES_MUESTRARIO = new Set([20, 21, 22, 23, 24, 25, 26, 27, 28].map(P))
+export const PANELES_MUESTRARIO = new Set([20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32].map(P))
 const R = (n: number) => `66666666-6666-6666-6666-6666666666${String(n).padStart(2, '0')}`
 
 export const usuario = {
@@ -254,7 +254,14 @@ const tabsDe = (layout: string) => [
     // `slope` sobre `multi_series`, y los cinco de barras sobre `categorical`.
     tab: { id: TAB_C, layout_version_id: layout, name: 'Repertorio de gráficos', key: 'repertorio', operational_question: '¿Se ve como el dibujo?', sort_order: 3, role_ids: [] },
     panels: [
-      panel(20, 2, TAB_C, 1, 4, 'gauge', 'bullet', { maximum: 100 }),
+      // **El `maximum` es 200.000 y no 100**, corregido el 2026-09-29 al mirarlo:
+      // las métricas `scalar` del mock valen del orden de 10⁵, así que un
+      // objetivo de 100 daba un anillo de «140.400 %» y un bullet clavado en el
+      // tope. No era un defecto de los plots —el arco se topa en una vuelta y la
+      // cifra dice la verdad, que es lo correcto para un sobrecumplimiento— sino
+      // un fixture que no se podía leer. Un objetivo tiene que estar en la
+      // magnitud de lo que mide.
+      panel(20, 2, TAB_C, 1, 4, 'gauge', 'bullet', { maximum: 200000 }),
       panel(21, 7, TAB_C, 5, 5, 'series', 'spark'),
       panel(22, 10, TAB_C, 10, 3, 'bars', 'donut'),
       panel(23, 10, TAB_C, 1, 4, 'bars', 'columns'),
@@ -263,6 +270,12 @@ const tabsDe = (layout: string) => [
       panel(26, 10, TAB_C, 1, 4, 'bars', 'pareto'),
       panel(27, 9, TAB_C, 5, 5, 'series', 'bump'),
       panel(28, 9, TAB_C, 10, 5, 'series', 'slope'),
+      // Los cuatro que el lote dejó sin cablear y se cerraron el mismo día ·
+      // ninguno tenía un defecto de componente: les faltaba el despacho.
+      panel(29, 11, TAB_C, 1, 5, 'bars', 'treemap'),
+      panel(30, 9, TAB_C, 6, 5, 'series', 'combo'),
+      panel(31, 9, TAB_C, 1, 5, 'series', 'smallmult'),
+      panel(32, 3, TAB_C, 6, 3, 'gauge', 'rings', { maximum: 200000 }),
     ],
   },
 ]

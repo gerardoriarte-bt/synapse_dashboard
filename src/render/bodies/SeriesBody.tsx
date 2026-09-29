@@ -4,6 +4,9 @@ import { PlotStackArea } from '../plots/PlotStackArea'
 import { PlotSpark } from '../plots/PlotSpark'
 import { PlotBump } from '../plots/PlotBump'
 import { PlotSlope } from '../plots/PlotSlope'
+import { PlotCombo } from '../plots/PlotCombo'
+import { PlotSmallMult } from '../plots/PlotSmallMult'
+import { EmptyState } from '../states/EmptyState'
 import { UnknownPlotState } from '../states/UnknownPlotState'
 import type { DrawableSeries } from '../plots/PlotSeries'
 import type { BodyProps } from '../types'
@@ -50,7 +53,7 @@ import type { BodyProps } from '../types'
  *  los dos caen en `UnknownPlotState`, que dice el id en pantalla. */
 const DIBUJA = {
   serieTemporal: ['area', 'spark'],
-  seriesMultiples: ['multiline', 'stackarea', 'bump', 'slope'],
+  seriesMultiples: ['multiline', 'stackarea', 'bump', 'slope', 'combo', 'smallmult'],
 } as const
 
 export type SeriesParams = {
@@ -67,6 +70,10 @@ export function SeriesBody({
   family,
   grafico,
   format,
+  // **De la MÉTRICA y no del valor** · sólo la lee `smallmult`, que la usa para
+  // completar el «8.9K u.» que su frame dibuja. Los demás gráficos de este
+  // cuerpo sacan sus rótulos de las etiquetas de cada serie.
+  unit,
 }: BodyProps<'serieTemporal' | 'seriesMultiples', SeriesParams>) {
   // Antes de elegir el dibujo, y no dentro de cada rama · misma razón que en
   // `ForecastBody`: resuelto abajo, la rama que se olvide se ve bien.
@@ -130,6 +137,69 @@ export function SeriesBody({
   // período las empata todas en 100 y el orden que sale de ahí no es el del
   // dato. La normalización sirve para comparar magnitudes distintas en un eje de
   // valores, y acá el eje es de puestos.
+  // ── `combo` · EL CUERPO REPARTE LOS ROLES, Y POR ESO PIDE DOS ──────────────
+  //
+  // `PlotCombo` no recibe un arreglo: recibe `columns` y `line` por separado, y
+  // su cabecera dice por qué —«para que "combinado con una sola serie" no sea
+  // construible»—. El reparto es de acá, y la única fuente honesta del orden es
+  // **el orden del payload**: la primera va en columnas y la segunda en la
+  // línea, que es como el `.pen` dibuja `Inversión y ROAS`. Elegir cuál es cuál
+  // mirando las magnitudes sería el cuerpo adivinando.
+  //
+  // **Con menos de dos no se dibuja, y no cae a la línea.** Un combinado de una
+  // serie es una serie, y pintarla como si fuera un combinado es la sustitución
+  // silenciosa que `UnknownPlotState` existe para impedir — acá con otra cara,
+  // porque el id SÍ se sabe dibujar y lo que falta es el dato. Por eso el estado
+  // es `EmptyState` y no el del gráfico desconocido: dice qué falta, que es lo
+  // que §8 pide.
+  //
+  // **Va con las series CRUDAS.** `base100` divide cada una por su primer punto
+  // y las deja en la misma escala; un combinado existe precisamente porque las
+  // dos NO son comparables —una inversión en millones contra un ROAS de 4,1— y
+  // aplanarlas a la misma base borra la razón de tener dos ejes.
+  if (grafico === 'combo') {
+    const columnas = series[0]
+    const linea = series[1]
+    if (columnas === undefined || linea === undefined) {
+      return (
+        <EmptyState
+          phrase="Un combinado necesita dos series y llegó una"
+          detail="Una sola serie se dibuja como línea · elegí otro gráfico o agregá la segunda"
+        />
+      )
+    }
+    return (
+      <div className="h-full min-h-0">
+        <PlotCombo
+          columns={columnas}
+          line={linea}
+          family={family}
+          format={(v) => format.number(v, { abbreviate: true })}
+        />
+      </div>
+    )
+  }
+
+  // ── `smallmult` · LA NORMALIZACIÓN SÍ VALE ACÁ, Y NO ES OBVIO ──────────────
+  //
+  // La cabecera de `PlotSmallMult` lo dice medido: «la escala es compartida **y**
+  // el dominio» entre las divisiones. Con escala compartida, dos series de
+  // magnitudes distintas dejan a la chica pegada al piso y su forma no se puede
+  // comparar con nada — que es justo para lo que `base100` existe. Así que acá
+  // se pasa `normalized` y no `series`, al revés que `bump`.
+  if (grafico === 'smallmult') {
+    return (
+      <div className="h-full min-h-0">
+        <PlotSmallMult
+          series={normalized}
+          family={family}
+          format={(v) => format.number(v, { abbreviate: true })}
+          {...(unit === undefined ? {} : { unit })}
+        />
+      </div>
+    )
+  }
+
   if (grafico === 'bump') {
     return (
       <div className="h-full min-h-0">

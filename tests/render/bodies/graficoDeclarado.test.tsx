@@ -107,22 +107,30 @@ const SERIE = valor<'serieTemporal'>({
 })
 
 describe('cada cuerpo declara el gráfico que no dibuja · no lo sustituye', () => {
-  it('BarsBody · `treemap` sobre una `categorica` NO se sirve como barras', () => {
-    // **EL ID CAMBIÓ DE `donut` A `treemap` EL 2026-09-29 (tarde), y el cambio
-    // es la noticia**: `donut` pasó a dibujarse —`PlotDonut`, cableado ese día—
-    // así que esta prueba habría quedado verificando un caso que ya no existe.
-    // Se movió al único de los siete de `categorica` que sigue sin dibujarse.
+  it('BarsBody · `bump` sobre un `ranking` NO se sirve como barras', () => {
+    // ── TERCER ID EN UN DÍA, Y ESO ES LO QUE HAY QUE LEER ─────────────────
     //
-    // **`treemap` es el caso fuerte**, más que `donut`: su componente EXISTE
-    // —`PlotTreemap.tsx`, construido el mismo día— y no se cableó porque su QA
-    // no aprobó. O sea que acá el id es legítimo, el layout lo puede pedir, el
-    // dibujo está a un import de distancia, y lo correcto sigue siendo decirlo.
-    render(<BarsBody {...base} value={CATEGORICA} params={{}} grafico="treemap" />)
+    // Fue `donut`, después `treemap`, y ahora `bump`. **Las dos veces la prueba
+    // se rompió porque el id que usaba pasó a dibujarse**, que es exactamente lo
+    // que tiene que pasar: un caso negativo cuyo ejemplo se vuelve positivo
+    // queda verificando algo que ya no existe, y la puerta lo atrapó las dos
+    // veces en rojo en vez de dejarlo pasar en verde.
+    //
+    // **De `categorica` ya no queda ninguno**: los siete que §5 le da —`bars`,
+    // `columns`, `lollipop`, `donut`, `radial`, `pareto` y `treemap`— se
+    // dibujan. Por eso el caso se mudó a la OTRA forma de este cuerpo. `bump` es
+    // de `ranking` según §5, **lo dibuja `SeriesBody` y no éste**, así que un
+    // layout lo puede pedir legítimamente sobre un ranking y acá no hay con qué.
+    //
+    // El día que no quede ningún id sin dibujar en ninguna forma de este cuerpo,
+    // esta prueba no se borra: se convierte en la de un id inexistente, que es
+    // el otro caso que `UnknownPlotState` cubre.
+    render(<BarsBody {...base} value={RANKING} params={{}} grafico="bump" />)
 
-    expect(screen.getByText(/treemap/)).toBeVisible()
+    expect(screen.getByText(/bump/)).toBeVisible()
     // Exacto y no `/categorías/`: `PlotLollipop` y `PlotPareto` también nombran
     // «categorías», así que el patrón laxo dejaría de distinguir cuál se montó.
-    expect(screen.queryByRole('img', { name: '2 categorías' })).toBeNull()
+    expect(screen.queryByRole('img', { name: '3 categorías' })).toBeNull()
   })
 
   it('CompositionBody · `waterfall` no se sirve como barra apilada', () => {
@@ -147,14 +155,20 @@ describe('cada cuerpo declara el gráfico que no dibuja · no lo sustituye', () 
     expect(screen.queryByRole('img', { name: /cortes/ })).toBeNull()
   })
 
-  it('GaugeBody · `rings` no se sirve como el arco', () => {
-    // **Era `bullet` hasta el 2026-09-29 (tarde)**, y `bullet` pasó a dibujarse
-    // en este mismo cuerpo. `rings` es el que queda, y queda por una razón que
-    // ninguna lista de ids puede arreglar: `PlotRings` pide una LISTA de anillos
-    // y `ValorEscalar` es `{ forma, v }` — no hay de dónde sacar los otros.
-    render(<GaugeBody {...base} value={ESCALAR} params={{ maximo: 100 }} grafico="rings" />)
+  it('GaugeBody · `spark` no se sirve como el arco', () => {
+    // Fue `bullet`, después `rings`, y los dos pasaron a dibujarse en este mismo
+    // cuerpo. **Y el de `rings` se escribió sobre una premisa dada vuelta**: que
+    // «`PlotRings` pide una LISTA y `ValorEscalar` es `{ forma, v }`, no hay de
+    // dónde sacar los otros». Una lista de UNO sale de un escalar sin inventar
+    // nada, y la cabecera del propio plot ya lo decía —«hoy el cuerpo le pasa un
+    // elemento y se ve un anillo solo, que es lo honesto»—. Lo que no se puede
+    // es dibujar los tres del `.pen`, que es otra cosa.
+    //
+    // Queda `spark`, que §5 le da a `escalar` y **dibuja `SeriesBody`**: acá no
+    // hay con qué, y sobre un escalar suelto tampoco habría puntos.
+    render(<GaugeBody {...base} value={ESCALAR} params={{ maximo: 100 }} grafico="spark" />)
 
-    expect(screen.getByText(/rings/)).toBeVisible()
+    expect(screen.getByText(/spark/)).toBeVisible()
     expect(screen.queryByRole('img')).toBeNull()
   })
 

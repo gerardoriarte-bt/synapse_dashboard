@@ -5,6 +5,7 @@ import { PlotLollipop } from '../plots/PlotLollipop'
 import { PlotDonut } from '../plots/PlotDonut'
 import { PlotRadial } from '../plots/PlotRadial'
 import { PlotPareto } from '../plots/PlotPareto'
+import { PlotTreemap } from '../plots/PlotTreemap'
 import { UnknownPlotState } from '../states/UnknownPlotState'
 import type { BodyProps } from '../types'
 
@@ -28,7 +29,7 @@ import type { BodyProps } from '../types'
  *  `bump` come `seriesMultiples` —lo dibuja `SeriesBody`— y `table` es de
  *  `TableBody`. */
 const DIBUJA = {
-  categorica: ['bars', 'columns', 'lollipop', 'donut', 'radial', 'pareto'],
+  categorica: ['bars', 'columns', 'lollipop', 'donut', 'radial', 'pareto', 'treemap'],
   ranking: ['bars', 'lollipop'],
 } as const
 
@@ -125,6 +126,29 @@ export function BarsBody({
     return (
       <div className="h-full min-h-0">
         <PlotPareto
+          value={{ forma: 'categorica', items: sorted }}
+          family={family}
+          format={figure}
+        />
+      </div>
+    )
+  }
+
+  // **`treemap` va con `sorted`, por la MISMA razón que la dona y el pareto**, y
+  // por eso quedó junto a ellos: deriva la cuota de cada hoja del total de lo
+  // que recibe —`v / Σv`—, así que sobre una lista recortada por `tope` cada
+  // porcentaje se calcularía contra un total que no es el total y la suma
+  // seguiría dando 100 %. El mosaico se vería impecable afirmando otra cosa.
+  //
+  // Lo que `treemap` NO comparte con ellas es el orden: reordena adentro por
+  // área, y su cabecera declara que lo hace por área y no por posición para que
+  // la regla aguante `orden: natural`. Pasarle `sorted` no se lo saca — se lo
+  // da ya ordenado, que es el caso que el fixture de su prueba dejaba sin
+  // ejercitar y su QA tuvo que cubrir aparte.
+  if (grafico === 'treemap') {
+    return (
+      <div className="h-full min-h-0">
+        <PlotTreemap
           value={{ forma: 'categorica', items: sorted }}
           family={family}
           format={figure}
