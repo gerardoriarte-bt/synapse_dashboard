@@ -5,7 +5,7 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**139 de 222 tareas cerradas.** 15 parciales · 63 pendientes · 5 diferidas.
+**167 de 222 tareas cerradas.** 16 parciales · 34 pendientes · 5 diferidas.
 
 
 ## Front · 110 de 125
@@ -19,7 +19,7 @@
 | 4 · Admin y Builder | `█████████████████·····` | 19/24 | 0 | 5 |
 | 5 · Pruebas y pulido | `██████████████████····` | 15/18 | 0 | 2 |
 
-## Backend · 29 de 97
+## Backend · 57 de 97
 
 > ⚠️ **Este número está bajo y no refleja al backend.** El plan de acá
 > es la fuente del FRONT; el estado de las tareas `B*` solo se mueve
@@ -45,12 +45,12 @@
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
-| 0 · Fundamentos | `████··················` | 2/10 | 1 | 7 |
-| 1 · API de consola | `███████████···········` | 16/33 | 6 | 11 |
-| 2 · Materialización | `████··················` | 3/16 | 1 | 12 |
-| 3 · Chat contextual | `······················` | 0/11 | 2 | 9 |
-| 4 · Admin y Builder | `█████████·············` | 8/20 | 1 | 11 |
-| 5 · Multi-dashboard y pulido | `······················` | 0/7 | 1 | 5 |
+| 0 · Fundamentos | `█████████████·········` | 6/10 | 1 | 3 |
+| 1 · API de consola | `█████████████·········` | 20/33 | 6 | 7 |
+| 2 · Materialización | `███████████···········` | 8/16 | 2 | 6 |
+| 3 · Chat contextual | `██████················` | 3/11 | 2 | 6 |
+| 4 · Admin y Builder | `████████████████████··` | 18/20 | 1 | 1 |
+| 5 · Multi-dashboard y pulido | `██████················` | 2/7 | 1 | 3 |
 
 ---
 
@@ -61,7 +61,7 @@ Nada del front está libre: todo lo pendiente espera algo.
 
 ---
 
-## Bloqueadas · 19
+## Bloqueadas · 18
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -90,7 +90,6 @@ Lo que el front espera del backend está detallado en
 - **B2.12** · Correr el materializador contra datos reales y verificar los seis estados
 - **B2.14** · /config/solicitudes · pedir acceso a una métrica que no se ve
 - **B2.15** · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar
-- **B2.7** · Estado SIN_PERMISO en el batch
 
 ---
 

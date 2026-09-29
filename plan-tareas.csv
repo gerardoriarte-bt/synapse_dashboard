@@ -2,14 +2,14 @@ ID,Epic,Equipo,Fase,FaseNombre,Titulo,Descripcion,CriterioDeAceptacion,Estado,Es
 B0.1,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e infraestructura,Esquema Postgres,"Modelar el almacenamiento: tenants, roles, users, layout_versions, tabs, panels, panel_options, panel_data, catalog_metrics, agent_configs. panel_data es el snapshot materializado y no una vista sobre Snowflake.","• Las migraciones corren de cero sobre una base vacía y son reversibles.
 • Un panel se ancla a metric_id; ninguna tabla guarda SQL ni nombre de tabla de Snowflake asociado a un panel.
 • panel_data tiene clave (tenant_id, metric_id, periodo) y columnas para el gobierno completo: base, capa, fuente, frescura, catalog_version.
-• Existe un diagrama o un schema.sql versionado en el repo del backend.",pendiente,no,,equipo:backend fase:0 estado:pendiente
+• Existe un diagrama o un schema.sql versionado en el repo del backend.",hecho,no,,equipo:backend fase:0 estado:hecho
 B0.2,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e infraestructura,Versionado de layout,"Un layout tiene versiones con estado draft | published. Publicar congela una versión, le asigna versionId y sella publishedAt.","• Editar un layout publicado crea un borrador nuevo; nunca muta el publicado.
 • Un tenant tiene como máximo un layout publicado por dashboard en un momento.
 • Se puede consultar el histórico de versiones con quién publicó y cuándo.
-• Publicar invalida la cache de layout de ese tenant (ver B2.8).",pendiente,no,,equipo:backend fase:0 estado:pendiente
+• Publicar invalida la cache de layout de ese tenant (ver B2.8).",hecho,no,,equipo:backend fase:0 estado:hecho
 B0.3,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e infraestructura,Autenticación JWT,"Emitir y validar tokens con claims tenant_id, role_id, user_id y aud (usuario | platform). El front no decodifica el token: recibe todo resuelto en /config/me.","• Todo endpoint bajo /api/v1 rechaza sin Authorization: Bearer con 401.
 • El token expira y hay refresh o re-login declarado.
-• Ningún endpoint devuelve tenant_id como identificador que el front deba reenviar: la pertenencia se resuelve del token.",pendiente,no,,equipo:backend fase:0 estado:pendiente
+• Ningún endpoint devuelve tenant_id como identificador que el front deba reenviar: la pertenencia se resuelve del token.",hecho,no,,equipo:backend fase:0 estado:hecho
 B0.4,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e infraestructura,Middleware de auth y envelope,"Toda respuesta viaja como { success: true, data } o { success: false, error: { codigo, mensaje, campo?, desbloqueaCon? } }.","• No hay endpoint que devuelva el objeto pelado sin envelope.
 • mensaje está escrito desde el lado del usuario. §8 de design.md: los errores no se disculpan y nunca son vagos — «El feed de inventario tiene 31 horas», no «Error al obtener snapshot».
 • codigo es estable y sirve para decidir en código.",hecho,no,,equipo:backend fase:0 estado:hecho
@@ -26,7 +26,7 @@ B0.9,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e
 • La 1171 en particular determina qué estados tiene que renderizar F2.1–F2.3.",parcial,si,,equipo:backend fase:0 estado:parcial nueva
 B0.10,Backend · Fase 0 — Fundamentos e infraestructura,Backend,0,Fundamentos e infraestructura,Endpoint de login,"tareas-front-back.md pide en F0.5 «login → guardar JWT → redirigir», y ninguna tarea de backend lo expone. B0.3 define el JWT pero no la ruta que lo emite.","• Existe POST /api/v1/auth/login (o la ruta que el backend decida) declarado en el yaml, con su forma de request y de respuesta.
 • Declara qué pasa con credenciales inválidas y con cuenta bloqueada, con codigo estable.
-• El front puede implementar F0.5 sin inventar la forma del request.",pendiente,si,,equipo:backend fase:0 estado:pendiente nueva
+• El front puede implementar F0.5 sin inventar la forma del request.",hecho,si,,equipo:backend fase:0 estado:hecho nueva
 B1.1,Backend · Fase 1 — API de consola,Backend,1,API de consola,"GET /config/me · los seis, o retirados con razón","Contexto de arranque: user (con capacidades y preferencias), tenant, role (con puedeAprobar), tabs sin paneles, periodos, catalogVersion, alcance y —si hay más de uno— layouts.","• Las pestañas llegan ya filtradas por el rol del token y en su orden.
 • Cada Periodo declara su grano (dia | semana | mes): sin él el front sabe que una métrica es mensual pero no si 2026-W32 es una semana.
 • No incluye paneles: pedirlos es GET /config/tabs/{tabId}.
@@ -49,16 +49,16 @@ B1.7,Backend · Fase 1 — API de consola,Backend,1,API de consola,Resolver el l
 • Un rol con override ve su composición propia sin huecos en la grilla.",pendiente,no,,equipo:backend fase:1 estado:pendiente
 B1.8,Backend · Fase 1 — API de consola,Backend,1,API de consola,Filtrar pestañas por visibilidad de rol,"La resolución que ocurre antes de responder: tomar el layout publicado, filtrar pestañas y paneles por rol, aplicar overrides.","• El front recibe solo lo resuelto y no aplica ningún filtro.
 • Una métrica oculta no llega ni en tabs, ni en catalog, ni en batch.
-• Un rol con override ve su composición propia sin huecos en la grilla.",pendiente,no,,equipo:backend fase:1 estado:pendiente
+• Un rol con override ve su composición propia sin huecos en la grilla.",hecho,no,,equipo:backend fase:1 estado:hecho
 B1.9,Backend · Fase 1 — API de consola,Backend,1,API de consola,Filtrar paneles por hiddenMetricIds — ocultar ≠ permitir,"La resolución que ocurre antes de responder: tomar el layout publicado, filtrar pestañas y paneles por rol, aplicar overrides.","• El front recibe solo lo resuelto y no aplica ningún filtro.
 • Una métrica oculta no llega ni en tabs, ni en catalog, ni en batch.
-• Un rol con override ve su composición propia sin huecos en la grilla.",pendiente,no,,equipo:backend fase:1 estado:pendiente
+• Un rol con override ve su composición propia sin huecos en la grilla.",hecho,no,,equipo:backend fase:1 estado:hecho
 B1.10,Backend · Fase 1 — API de consola,Backend,1,API de consola,Aplicar layoutOverrides por rol,"La resolución que ocurre antes de responder: tomar el layout publicado, filtrar pestañas y paneles por rol, aplicar overrides.","• El front recibe solo lo resuelto y no aplica ningún filtro.
 • Una métrica oculta no llega ni en tabs, ni en catalog, ni en batch.
-• Un rol con override ve su composición propia sin huecos en la grilla.",pendiente,no,,equipo:backend fase:1 estado:pendiente
+• Un rol con override ve su composición propia sin huecos en la grilla.",hecho,no,,equipo:backend fase:1 estado:hecho
 B1.11,Backend · Fase 1 — API de consola,Backend,1,API de consola,Unión discriminada de Payload,"Cinco estados por estado: DISPONIBLE, DEGRADADO, BLOQUEADO, SIN_PERMISO, ERROR.","• BLOQUEADO no lleva valor. Es estructural, no una convención.
 • Ningún estado lleva campos de otro.
-• CARGANDO no existe del lado del servidor: es del cliente.",pendiente,no,,equipo:backend fase:1 estado:pendiente
+• CARGANDO no existe del lado del servidor: es del cliente.",hecho,no,,equipo:backend fase:1 estado:hecho
 B1.12,Backend · Fase 1 — API de consola,Backend,1,API de consola,Gobierno obligatorio en DISPONIBLE y DEGRADADO,"base, capa, fuente, frescura, catalogVersion intersectados en los dos estados que muestran número.","• Un valor sin procedencia es imposible de construir en el tipo, no algo que se recuerde poner.
 • frescura es ISO 8601 y refleja cuándo se materializó, no «ahora» (B2.10).",hecho,no,,equipo:backend fase:1 estado:hecho
 B1.13,Backend · Fase 1 — API de consola,Backend,1,API de consola,Presentacion opcional,"Los rótulos y cifras de apoyo que el panel pinta alrededor del valor: label, medidor, comparativo, nota. Viajan con el dato, no con el layout, porque dependen del período.","• El backend devuelve los rótulos ya redactados; el front no los compone.
@@ -136,13 +136,13 @@ B1.33,Backend · Fase 1 — API de consola,Backend,1,API de consola,El patrón d
 • F5.13 deja de citar «el patrón de PeriodoId» como candado y pasa a citar lo que realmente espera: soporte de otro grano, que nadie pidió.",hecho,si,,equipo:backend fase:1 estado:hecho nueva
 B2.1,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y cache,Tabla panel_data,"El snapshot materializado con gobierno completo por (tenant_id, metric_id, periodo). Es la fuente del batch y sobrevive reinicios.","• Guarda el Valor ya transformado a su forma, no el resultado crudo de la query.
 • Guarda frescura como el instante de materialización.
-• Se puede auditar: qué había en un panel el mes pasado es consultable.",pendiente,no,,equipo:backend fase:2 estado:pendiente
+• Se puede auditar: qué había en un panel el mes pasado es consultable.",hecho,no,,equipo:backend fase:2 estado:hecho
 B2.2,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y cache,Job de materialización,"Por cada tenant × métrica × período activo: consultar Snowflake o el semantic layer, transformar a Valor + Gobierno + Presentacion, escribir en panel_data.","• Un dashboard de 30 paneles no dispara 30 queries a Snowflake al cargar la página: el batch lee cache.
 • El job es idempotente: correrlo dos veces sobre el mismo período no duplica.
 • Un fallo en una métrica no aborta el resto del job.",pendiente,no,,equipo:backend fase:2 estado:pendiente
 B2.3,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y cache,"El batch lee de panel_data, no de Snowflake",,"• batch → Redis hit? → return · miss → Postgres → populate → return.
 • Redis no es fuente de verdad. Vaciarlo no pierde datos: los repuebla desde Postgres.
-• TTL corto, 5–15 minutos.",pendiente,no,,equipo:backend fase:2 estado:pendiente
+• TTL corto, 5–15 minutos.",hecho,no,,equipo:backend fase:2 estado:hecho
 B2.4,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y cache,Redis opcional encima de Postgres,,"• batch → Redis hit? → return · miss → Postgres → populate → return.
 • Redis no es fuente de verdad. Vaciarlo no pierde datos: los repuebla desde Postgres.
 • TTL corto, 5–15 minutos.",pendiente,no,,equipo:backend fase:2 estado:pendiente
@@ -150,10 +150,10 @@ B2.5,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y
 • DEGRADADO sí lleva valor: muestra la cifra y declara la limitación. No es un estado sin dato.
 • La cadencia y la tolerancia son configurables por métrica, no una constante.",hecho,no,,equipo:backend fase:2 estado:hecho
 B2.6,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y cache,Estado BLOQUEADO,,"• Job fallido o precondición incumplida → sin valor, con razon y desbloqueaCon.
-• No se inventa un número aproximado. §8 de design.md: si un feed está vencido, el panel muestra estado, razón y qué lo desbloquea.",pendiente,no,,equipo:backend fase:2 estado:pendiente
+• No se inventa un número aproximado. §8 de design.md: si un feed está vencido, el panel muestra estado, razón y qué lo desbloquea.",parcial,no,,equipo:backend fase:2 estado:parcial
 B2.7,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y cache,Estado SIN_PERMISO en el batch,,"• Publicar un layout deja de servir el anterior en la siguiente request.
 • Un panel recién materializado se ve con su frescura nueva sin esperar el TTL.
-• Un rol sin permiso sobre una métrica no recibe su payload aunque conozca el panelId.",pendiente,no,B0.9 (línea 1171),equipo:backend fase:2 estado:pendiente bloqueada
+• Un rol sin permiso sobre una métrica no recibe su payload aunque conozca el panelId.",hecho,no,B0.9 (línea 1171),equipo:backend fase:2 estado:hecho bloqueada
 B2.8,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y cache,Invalidar cache al publicar layout,,"• Publicar un layout deja de servir el anterior en la siguiente request.
 • Un panel recién materializado se ve con su frescura nueva sin esperar el TTL.
 • Un rol sin permiso sobre una métrica no recibe su payload aunque conozca el panelId.",pendiente,no,,equipo:backend fase:2 estado:pendiente
@@ -162,10 +162,10 @@ B2.9,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y
 • Un rol sin permiso sobre una métrica no recibe su payload aunque conozca el panelId.",pendiente,no,,equipo:backend fase:2 estado:pendiente
 B2.10,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y cache,"frescura = instante de materialización, nunca «ahora»",,"• Publicar un layout deja de servir el anterior en la siguiente request.
 • Un panel recién materializado se ve con su frescura nueva sin esperar el TTL.
-• Un rol sin permiso sobre una métrica no recibe su payload aunque conozca el panelId.",pendiente,no,,equipo:backend fase:2 estado:pendiente
+• Un rol sin permiso sobre una métrica no recibe su payload aunque conozca el panelId.",hecho,no,,equipo:backend fase:2 estado:hecho
 B2.11,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y cache,Filtrado por rol también en el batch,,"• Publicar un layout deja de servir el anterior en la siguiente request.
 • Un panel recién materializado se ve con su frescura nueva sin esperar el TTL.
-• Un rol sin permiso sobre una métrica no recibe su payload aunque conozca el panelId.",pendiente,no,,equipo:backend fase:2 estado:pendiente
+• Un rol sin permiso sobre una métrica no recibe su payload aunque conozca el panelId.",hecho,no,,equipo:backend fase:2 estado:hecho
 B2.12,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y cache,Correr el materializador contra datos reales y verificar los seis estados,"Con el catálogo ya en Snowflake (B1.22–B1.24), correr make materialize TENANT_ID=<uuid> PERIOD=<YYYY-MM> y comprobar que la consola pinta datos del negocio y no los del fixture del seed. Es la primera vez que el camino completo se ejercita de punta a punta: vista → sync-catalog → dd_catalog_metrics → materialize → dd_panel_data → panels:batch → panel. Guía: docs/snowflake/INSTRUCCION-ALTA-TENANT.md §5, la verificación de punta a punta.","• POST /config/panels:batch devuelve AVAILABLE con valores distintos a los del fixture. Que conteste 200 no alcanza: el seed también contesta 200.
 • Si llegan todos en BLOCKED, es B1.24 —las claves no caen en el registro— y no un problema de datos. Queda escrito, porque el síntoma no lo dice.
 • Los seis estados se verifican contra el servicio real y no contra MSW: DEGRADED envejeciendo materialized_at en la base, BLOCKED pidiendo un período sin materializar, FORBIDDEN con el rol planner, ERROR con un gauge sin maximum.
@@ -178,11 +178,11 @@ B3.1,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,POST /confi
 • El esquema EventoDeChat del yaml ya declara la unión; se respeta.
 • Una conexión cortada por el cliente no deja la query colgada.",parcial,no,,equipo:backend fase:3 estado:parcial
 B3.2,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,GET /config/chat/hilos — historial,,"• El historial es del usuario y del tenant; nunca cruza tenants.
-• Un hilo guarda el contexto de panel con el que se abrió.",pendiente,no,,equipo:backend fase:3 estado:pendiente
+• Un hilo guarda el contexto de panel con el que se abrió.",hecho,no,,equipo:backend fase:3 estado:hecho
 B3.10,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,Persistir hilos y mensajes en Postgres,,"• El historial es del usuario y del tenant; nunca cruza tenants.
-• Un hilo guarda el contexto de panel con el que se abrió.",pendiente,no,,equipo:backend fase:3 estado:pendiente
+• Un hilo guarda el contexto de panel con el que se abrió.",hecho,no,,equipo:backend fase:3 estado:hecho
 B3.3,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,Modelo AgenteTenant,"snowflakeAccount, warehouse, semanticViews[], systemPromptBase. El front solo conoce que existe un tenant; el backend resuelve el agente.","• Cada tenant puede tener semantic views, vocabulario y restricciones distintas.
-• El front nunca recibe la configuración del agente ni la lista de vistas.",pendiente,no,,equipo:backend fase:3 estado:pendiente
+• El front nunca recibe la configuración del agente ni la lista de vistas.",hecho,no,,equipo:backend fase:3 estado:hecho
 B3.4,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,Resolver el agente del tenant desde el JWT,"snowflakeAccount, warehouse, semanticViews[], systemPromptBase. El front solo conoce que existe un tenant; el backend resuelve el agente.","• Cada tenant puede tener semantic views, vocabulario y restricciones distintas.
 • El front nunca recibe la configuración del agente ni la lista de vistas.",pendiente,no,,equipo:backend fase:3 estado:pendiente
 B3.5,Backend · Fase 3 — Chat contextual,Backend,3,Chat contextual,Inyectar ContextoDePanel en el system prompt,,"• El agente recibe el contexto de la métrica: metricId, metricKey, nombre, base, fuente, capa, familia, periodo, tipo.
@@ -205,40 +205,40 @@ B4.2,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,GET /admin/
 • Editar nunca muta la versión publicada.",hecho,no,,equipo:backend fase:4 estado:hecho
 B4.3,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,POST /admin/tenants/{id}/layouts — crear borrador,,"• Solo accesibles con aud: platform; con token de usuario devuelven 403.
 • Publicar genera versionId, sella publishedAt, registra quién publicó e invalida la cache del tenant.
-• Editar nunca muta la versión publicada.",pendiente,no,,equipo:backend fase:4 estado:pendiente
+• Editar nunca muta la versión publicada.",hecho,no,,equipo:backend fase:4 estado:hecho
 B4.4,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,PUT /admin/layouts/{id} — editar pestañas y paneles,,"• Solo accesibles con aud: platform; con token de usuario devuelven 403.
 • Publicar genera versionId, sella publishedAt, registra quién publicó e invalida la cache del tenant.
 • Editar nunca muta la versión publicada.",hecho,no,,equipo:backend fase:4 estado:hecho
 B4.5,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,POST /admin/layouts/{id}/publish,,"• Solo accesibles con aud: platform; con token de usuario devuelven 403.
 • Publicar genera versionId, sella publishedAt, registra quién publicó e invalida la cache del tenant.
-• Editar nunca muta la versión publicada.",pendiente,no,,equipo:backend fase:4 estado:pendiente
+• Editar nunca muta la versión publicada.",hecho,no,,equipo:backend fase:4 estado:hecho
 B4.7,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,GET /admin/tenants/{id}/catalog,,"• Solo accesibles con aud: platform; con token de usuario devuelven 403.
 • Publicar genera versionId, sella publishedAt, registra quién publicó e invalida la cache del tenant.
-• Editar nunca muta la versión publicada.",pendiente,no,,equipo:backend fase:4 estado:pendiente
+• Editar nunca muta la versión publicada.",hecho,no,,equipo:backend fase:4 estado:hecho
 B4.6,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,POST /admin/layouts/{id}/validate,"La validación de composición, del lado del servidor. El front la replica para dar feedback inmediato, pero el servidor es el que decide.","• Un panel gauge sobre una métrica de forma serieTemporal no publica.
 • Un kpi con colSpan 8 no publica: su rango es 3–4.
 • El error dice cuál panel y por qué, en la lengua del producto: «un bloque gauge no sabe dibujar la forma serieTemporal», no «validación fallida».
-• La regla dura de serieConBanda se verifica: solo gráficos con banda.",pendiente,no,,equipo:backend fase:4 estado:pendiente
+• La regla dura de serieConBanda se verifica: solo gráficos con banda.",hecho,no,,equipo:backend fase:4 estado:hecho
 B4.11,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Validar que metricId existe en el catálogo del tenant,"La validación de composición, del lado del servidor. El front la replica para dar feedback inmediato, pero el servidor es el que decide.","• Un panel gauge sobre una métrica de forma serieTemporal no publica.
 • Un kpi con colSpan 8 no publica: su rango es 3–4.
 • El error dice cuál panel y por qué, en la lengua del producto: «un bloque gauge no sabe dibujar la forma serieTemporal», no «validación fallida».
-• La regla dura de serieConBanda se verifica: solo gráficos con banda.",pendiente,no,,equipo:backend fase:4 estado:pendiente
+• La regla dura de serieConBanda se verifica: solo gráficos con banda.",hecho,no,,equipo:backend fase:4 estado:hecho
 B4.12,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Validar que tipo es compatible con la forma de la métrica,"La validación de composición, del lado del servidor. El front la replica para dar feedback inmediato, pero el servidor es el que decide.","• Un panel gauge sobre una métrica de forma serieTemporal no publica.
 • Un kpi con colSpan 8 no publica: su rango es 3–4.
 • El error dice cuál panel y por qué, en la lengua del producto: «un bloque gauge no sabe dibujar la forma serieTemporal», no «validación fallida».
-• La regla dura de serieConBanda se verifica: solo gráficos con banda.",pendiente,no,,equipo:backend fase:4 estado:pendiente
+• La regla dura de serieConBanda se verifica: solo gráficos con banda.",hecho,no,,equipo:backend fase:4 estado:hecho
 B4.13,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Validar rangos de colSpan / rowSpan por tipo,"La validación de composición, del lado del servidor. El front la replica para dar feedback inmediato, pero el servidor es el que decide.","• Un panel gauge sobre una métrica de forma serieTemporal no publica.
 • Un kpi con colSpan 8 no publica: su rango es 3–4.
 • El error dice cuál panel y por qué, en la lengua del producto: «un bloque gauge no sabe dibujar la forma serieTemporal», no «validación fallida».
-• La regla dura de serieConBanda se verifica: solo gráficos con banda.",pendiente,no,,equipo:backend fase:4 estado:pendiente
+• La regla dura de serieConBanda se verifica: solo gráficos con banda.",hecho,no,,equipo:backend fase:4 estado:hecho
 B4.14,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Validar opciones de layout (maximo obligatorio en gauge),"La validación de composición, del lado del servidor. El front la replica para dar feedback inmediato, pero el servidor es el que decide.","• Un panel gauge sobre una métrica de forma serieTemporal no publica.
 • Un kpi con colSpan 8 no publica: su rango es 3–4.
 • El error dice cuál panel y por qué, en la lengua del producto: «un bloque gauge no sabe dibujar la forma serieTemporal», no «validación fallida».
-• La regla dura de serieConBanda se verifica: solo gráficos con banda.",pendiente,no,,equipo:backend fase:4 estado:pendiente
+• La regla dura de serieConBanda se verifica: solo gráficos con banda.",hecho,no,,equipo:backend fase:4 estado:hecho
 B4.15,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Rechazar la publicación si hay paneles inválidos,"La validación de composición, del lado del servidor. El front la replica para dar feedback inmediato, pero el servidor es el que decide.","• Un panel gauge sobre una métrica de forma serieTemporal no publica.
 • Un kpi con colSpan 8 no publica: su rango es 3–4.
 • El error dice cuál panel y por qué, en la lengua del producto: «un bloque gauge no sabe dibujar la forma serieTemporal», no «validación fallida».
-• La regla dura de serieConBanda se verifica: solo gráficos con banda.",pendiente,no,,equipo:backend fase:4 estado:pendiente
+• La regla dura de serieConBanda se verifica: solo gráficos con banda.",hecho,no,,equipo:backend fase:4 estado:hecho
 B4.8,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,CRUD de roles por tenant · lo tomaron el 2026-09-25,,"• Las cuatro operaciones existen bajo AdminOnlyMiddleware y responden con el envelope del servicio, no con uno nuestro.
 • Borrar un rol con usuarios asignados falla con razón, no en cascada.
 • hidden_metric_ids sigue siendo filtro de composición y no de permiso: el servidor verifica igual, y hay una prueba que lo demuestra pidiendo una métrica oculta directamente.
@@ -267,16 +267,16 @@ B4.10,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Asignació
 • El preview devuelve exactamente lo que ese rol vería, resuelto por el mismo código que sirve /config/me. No una simulación aparte.",parcial,no,,equipo:backend fase:4 estado:parcial
 B4.16,Backend · Fase 4 — Admin y Builder,Backend,4,Admin y Builder,Declarar el gráfico en el layout,"D2 lo resolvió a favor. PanelConfigurado gana plot?: PlotId. Depende de B1.21: primero los mínimos, después el campo — elegir gráfico sin saber qué necesita cada uno es multiplicar el problema, no resolverlo.","• plot es opcional: ausente ⇒ el gráfico por defecto del tipo, que es exactamente lo que se dibuja hoy. El cambio no mueve ninguna pantalla existente.
 • layouts/{id}/validate verifica tres cosas contra el repertorio: compatibilidad gráfico ↔ forma, la regla dura de banda, y que la métrica pueda alcanzar los mínimos del gráfico en el grano que declara.
-• Un layout con un gráfico incompatible no publica, y el error dice cuál panel y por qué.",pendiente,si,,equipo:backend fase:4 estado:pendiente nueva
+• Un layout con un gráfico incompatible no publica, y el error dice cuál panel y por qué.",hecho,si,,equipo:backend fase:4 estado:hecho nueva
 B5.1,Backend · Fase 5 — Multi-dashboard y pulido,Backend,5,Multi-dashboard y pulido,Varios layouts por tenant,"Un tenant puede tener más de un dashboard publicado — «Operaciones», «Marca», «Ejecutivo»— cada uno con sus pestañas.","• Cada layout versiona por separado: publicar «Marca» no toca «Operaciones».
 • /config/me devuelve layouts solo cuando el usuario tiene más de uno asignado; con uno, el campo no viaja.",parcial,no,,equipo:backend fase:5 estado:parcial
 B5.2,Backend · Fase 5 — Multi-dashboard y pulido,Backend,5,Multi-dashboard y pulido,"Asignar layout por rol, o dejar elegir si el usuario tiene varios",,"• El superadmin asigna qué layout ve cada rol.
-• GET /config/tabs/{tabId}?layoutId= resuelve contra el layout pedido, y verifica que ese layout esté asignado al rol del token: si no, 404.",pendiente,no,,equipo:backend fase:5 estado:pendiente
+• GET /config/tabs/{tabId}?layoutId= resuelve contra el layout pedido, y verifica que ese layout esté asignado al rol del token: si no, 404.",hecho,no,,equipo:backend fase:5 estado:hecho
 B5.3,Backend · Fase 5 — Multi-dashboard y pulido,Backend,5,Multi-dashboard y pulido,Formas v1.1 cuando haya datos,"categoricaComparada, perfilMultiatributo, matriz, grafo y flujo.","• Se activan cuando exista el dato, no antes. Construir contra formas que ningún endpoint devuelve es escribir a ciegas.
 • Cada una entra con su regla mínima declarada, igual que las once actuales.",pendiente,no,,equipo:backend fase:5 estado:pendiente
 B5.4,Backend · Fase 5 — Multi-dashboard y pulido,Backend,5,Multi-dashboard y pulido,Endpoint de drill-down bajo demanda,"Desagregación de un panel por las dimensiones que declara su métrica, contra Snowflake en vivo — la misma figura que el chat. Estado: diferida (D3). No se descarta ni se planifica todavía; entra cuando el backend llegue a ese tramo. El contrato ya cubre la superficie que la consume, así que lo que falta es el servicio, no el diseño.","• Las dimensiones disponibles salen del catálogo de la métrica, no de una lista aparte.
 • Con timeout y tope de filas declarados, igual que el chat.",diferida,no,,equipo:backend fase:5 estado:diferida
-B5.5,Backend · Fase 5 — Multi-dashboard y pulido,Backend,5,Multi-dashboard y pulido,Auditoría de publicaciones de layout,,"• Queda registrado quién publicó, cuándo y qué cambió respecto de la versión anterior. Consultable desde admin.",pendiente,no,,equipo:backend fase:5 estado:pendiente
+B5.5,Backend · Fase 5 — Multi-dashboard y pulido,Backend,5,Multi-dashboard y pulido,Auditoría de publicaciones de layout,,"• Queda registrado quién publicó, cuándo y qué cambió respecto de la versión anterior. Consultable desde admin.",hecho,no,,equipo:backend fase:5 estado:hecho
 B5.6,Backend · Fase 5 — Multi-dashboard y pulido,Backend,5,Multi-dashboard y pulido,Tests de integración por endpoint de consola,,"• Cada endpoint tiene un test que verifica el envelope, el 401 sin token y el filtrado por rol.",pendiente,no,,equipo:backend fase:5 estado:pendiente
 B5.7,Backend · Fase 5 — Multi-dashboard y pulido,Backend,5,Multi-dashboard y pulido,Tests del job de materialización con fixtures de Snowflake,,"• El job se prueba sin tocar Snowflake, contra respuestas fijas.
 • Se cubre el camino de fallo: una métrica que falla deja BLOQUEADO con razón y no aborta el resto del job.",pendiente,no,,equipo:backend fase:5 estado:pendiente

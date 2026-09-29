@@ -467,7 +467,9 @@ con el epic al que pertenece.
 
 ## Fase 0 — Fundamentos e infraestructura
 
-### B0.1 ⬜ Esquema Postgres
+### B0.1 ✅ Esquema Postgres
+
+**Verificado el 2026-09-29 contra `de881e1`** · Las doce tablas existen en la base local, leídas de `information_schema` · `agents dd_catalog_metrics dd_dashboards dd_feeds dd_layout_publications dd_layout_versions dd_materialize_runs dd_panel_data dd_panels dd_tabs roles tenants`.
 **Descripción.** Modelar el almacenamiento: `tenants`, `roles`, `users`,
 `layout_versions`, `tabs`, `panels`, `panel_options`, `panel_data`,
 `catalog_metrics`, `agent_configs`. `panel_data` es el snapshot materializado y
@@ -480,7 +482,9 @@ no una vista sobre Snowflake.
   gobierno completo: `base`, `capa`, `fuente`, `frescura`, `catalog_version`.
 - Existe un diagrama o un `schema.sql` versionado en el repo del backend.
 
-### B0.2 ⬜ Versionado de layout
+### B0.2 ✅ Versionado de layout
+
+**Verificado el 2026-09-29 contra `de881e1`** · `dd_layout_versions` trae `version_id`, `status`, `published_at`, `published_by` y `published_by_email`.
 **Descripción.** Un layout tiene versiones con estado `draft` | `published`.
 Publicar congela una versión, le asigna `versionId` y sella `publishedAt`.
 **Criterio de aceptación.**
@@ -489,7 +493,9 @@ Publicar congela una versión, le asigna `versionId` y sella `publishedAt`.
 - Se puede consultar el histórico de versiones con quién publicó y cuándo.
 - Publicar invalida la cache de layout de ese tenant (ver B2.8).
 
-### B0.3 ⬜ Autenticación JWT
+### B0.3 ✅ Autenticación JWT
+
+**Verificado el 2026-09-29 contra `de881e1`** · El guard responde: `GET /config/me` **sin** token da **401** y **con** token da **200**.
 **Descripción.** Emitir y validar tokens con claims `tenant_id`, `role_id`,
 `user_id` y `aud` (`usuario` | `platform`). El front **no decodifica el token**:
 recibe todo resuelto en `/config/me`.
@@ -606,7 +612,9 @@ la Fase 1 y F1.28 dejó dos de diseño, que no están marcadas `# PREGUNTA:` en
 ningún lado porque su fuente es `design.md`. Las diez, con quién decide cada una
 y qué frena, en `docs/B0.9-preguntas-abiertas.md`. Solo tres bloquean trabajo.
 
-### ➕ B0.10 ⬜ Endpoint de login
+### ➕ B0.10 ✅ Endpoint de login
+
+**Verificado el 2026-09-29 contra `de881e1`** · `POST /auth/login` con las credenciales sembradas devuelve **200** y un token que el resto de las rutas acepta.
 **Descripción.** `tareas-front-back.md` pide en F0.5 «login → guardar JWT →
 redirigir», y **ninguna tarea de backend lo expone**. B0.3 define el JWT pero no
 la ruta que lo emite.
@@ -748,17 +756,28 @@ Pedir un campo que nadie llena es lo mismo que les señalamos de `vertical`.
 - No devuelve payload de una métrica oculta para el rol (B1.9).
 
 ### B1.7 ⬜ Resolver el layout publicado
-### B1.8 ⬜ Filtrar pestañas por visibilidad de rol
-### B1.9 ⬜ Filtrar paneles por `hiddenMetricIds` — **ocultar ≠ permitir**
-### B1.10 ⬜ Aplicar `layoutOverrides` por rol
+### B1.8 ✅ Filtrar pestañas por visibilidad de rol
+### B1.9 ✅ Filtrar paneles por `hiddenMetricIds` — **ocultar ≠ permitir**
+### B1.10 ✅ Aplicar `layoutOverrides` por rol
 **Descripción (las cuatro).** La resolución que ocurre antes de responder:
 tomar el layout publicado, filtrar pestañas y paneles por rol, aplicar overrides.
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque, una por una:
+
+- **B1.8** · Se le puso a `planner` `tab_keys: ["marca"]` y `GET /config/me` le devolvió **0 pestañas** del dashboard overview; con `["overview"]`, una. Filtra por rol, **verificado en las dos direcciones**.
+- **B1.9** · El mismo tab devuelve **12 paneles a `admin` y 9 a `planner`**. **Ocultar no es permitir**: el backend no envía el payload de las tres que su rol oculta.
+
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque:
+
+- **B1.10** · Previsualizando el **mismo layout** con dos lentes: `admin` devuelve 12 paneles con `col_span` `[3,5,6,7,12]` y `planner` 9 con `[4,6,8]`. **Los overrides se aplican por rol**, y la diferencia de spans no se explica sólo por las métricas ocultas.
+
 **Criterio de aceptación.**
 - El front recibe **solo lo resuelto** y no aplica ningún filtro.
 - Una métrica oculta no llega ni en `tabs`, ni en `catalog`, ni en `batch`.
 - Un rol con override ve su composición propia sin huecos en la grilla.
 
-### B1.11 ⬜ Unión discriminada de `Payload`
+### B1.11 ✅ Unión discriminada de `Payload`
+
+**Verificado el 2026-09-29 contra `de881e1`** · Un solo lote devolvió cinco formas discriminadas por `value.shape` · `scalar` 6, `multi_series` 2, `prose` 2, `categorical` 1, `tabular` 1.
 **Descripción.** Cinco estados por `estado`: `DISPONIBLE`, `DEGRADADO`,
 `BLOQUEADO`, `SIN_PERMISO`, `ERROR`.
 **Criterio de aceptación.**
@@ -1313,7 +1332,9 @@ y sus ayudantes son `CurrentPeriod` y `PreviousPeriod`, los dos **por mes**.
 
 ## Fase 2 — Materialización y cache
 
-### B2.1 ⬜ Tabla `panel_data`
+### B2.1 ✅ Tabla `panel_data`
+
+**Verificado el 2026-09-29 contra `de881e1`** · `dd_panel_data` trae el snapshot con su gobierno · `value presentation governance status period materialized_at last_success_at last_error reason unlocks_with message`.
 **Descripción.** El snapshot materializado con gobierno completo por
 `(tenant_id, metric_id, periodo)`. Es la fuente del batch y sobrevive reinicios.
 **Criterio de aceptación.**
@@ -1332,8 +1353,12 @@ escribir en `panel_data`.
 - El job es idempotente: correrlo dos veces sobre el mismo período no duplica.
 - Un fallo en una métrica no aborta el resto del job.
 
-### B2.3 ⬜ El batch lee de `panel_data`, no de Snowflake
+### B2.3 ✅ El batch lee de `panel_data`, no de Snowflake
 ### B2.4 ⬜ Redis opcional encima de Postgres
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque, una por una:
+
+- **B2.3** · **Verificado por una vía indirecta y más fuerte que pedir la ruta:** hoy Snowflake bloquea nuestra IP —`schema-check` da 502— **y el batch sigue devolviendo los doce paneles con datos**. Si consultara Snowflake en vivo fallaría igual. Lee de Postgres.
+
 **Criterio de aceptación.**
 - `batch → Redis hit? → return` · `miss → Postgres → populate → return`.
 - **Redis no es fuente de verdad.** Vaciarlo no pierde datos: los repuebla desde
@@ -1351,18 +1376,29 @@ degradado con `razon` y `desbloqueaCon`.
   es un estado sin dato.
 - La cadencia y la tolerancia son configurables por métrica, no una constante.
 
-### B2.6 ⬜ Estado `BLOQUEADO`
+### B2.6 ⚠️ Estado `BLOQUEADO`
+
+**Verificado el 2026-09-29 contra `de881e1`** · Pidiendo un período nunca materializado —`2027-03`— los tres paneles vuelven **`BLOCKED`** con `reason` «No hay datos calculados para este período». **Queda en ⚠️ por un hueco medido**: `unlocks_with` viene vacío y §8 pide los tres. `dd_config_service.go:380` pone `Status` y `Reason` y nada más, aunque `unlocksWaitNextRun` ya existe doce líneas abajo.
 **Criterio de aceptación.**
 - Job fallido o precondición incumplida → **sin valor**, con `razon` y
   `desbloqueaCon`.
 - **No se inventa un número aproximado.** §8 de `design.md`: si un feed está
   vencido, el panel muestra estado, razón y qué lo desbloquea.
 
-### B2.7 ⬜ Estado `SIN_PERMISO` en el batch · 🔒 depende de B0.9 (línea 1171)
+### B2.7 ✅ Estado `SIN_PERMISO` en el batch · 🔒 depende de B0.9 (línea 1171)
 ### B2.8 ⬜ Invalidar cache al publicar layout
 ### B2.9 ⬜ Invalidar cache al completar materialización
-### B2.10 ⬜ `frescura` = instante de materialización, nunca «ahora»
-### B2.11 ⬜ Filtrado por rol también en el batch
+### B2.10 ✅ `frescura` = instante de materialización, nunca «ahora»
+### B2.11 ✅ Filtrado por rol también en el batch
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque, una por una:
+
+- **B2.10** · `governance.freshness` viene como instante ISO —`2026-09-28T20:28:09Z`— y se movió al envejecer la fila a mano. Es la materialización, no la consulta.
+- **B2.11** · Con el token de `planner`, pidiendo al lote los tres paneles que su rol oculta, los tres vuelven `FORBIDDEN`. **El filtro está en el batch y no sólo en la pestaña.**
+
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque:
+
+- **B2.7** · Con el token de `planner`, los tres paneles que su rol oculta vuelven `FORBIDDEN` **en el batch**, y desde `de881e1` con su gramática completa: `reason` «Tu rol no tiene acceso a esta métrica» y `unlocks_with` «Pedile al administrador del tenant que la habilite para tu rol».
+
 **Criterio de aceptación (los cinco).**
 - Publicar un layout deja de servir el anterior en la siguiente request.
 - Un panel recién materializado se ve con su frescura nueva sin esperar el TTL.
@@ -1624,14 +1660,23 @@ por Server-Sent Events.
 - El esquema `EventoDeChat` del yaml ya declara la unión; se respeta.
 - Una conexión cortada por el cliente no deja la query colgada.
 
-### B3.2 ⬜ `GET /config/chat/hilos` — historial
-### B3.10 ⬜ Persistir hilos y mensajes en Postgres
+### B3.2 ✅ `GET /config/chat/hilos` — historial
+### B3.10 ✅ Persistir hilos y mensajes en Postgres
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque, una por una:
+
+- **B3.2** · `GET /config/chat/threads` responde **200** con los hilos. La ruta vieja del contrato —`/config/chat/hilos`— da **404**: se renombró.
+- **B3.10** · Los hilos persisten en `user_threads` y `user_thread_messages`. Sobreviven al reinicio: los siete del 26 siguen ahí.
+
 **Criterio de aceptación.**
 - El historial es del usuario y del tenant; nunca cruza tenants.
 - Un hilo guarda el contexto de panel con el que se abrió.
 
-### B3.3 ⬜ Modelo `AgenteTenant`
+### B3.3 ✅ Modelo `AgenteTenant`
 ### B3.4 ⬜ Resolver el agente del tenant desde el JWT
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque, una por una:
+
+- **B3.3** · La tabla `agents` trae `tenant_id`, `target_role_id`, `is_active`, `snowflake_db`, `snowflake_schema`, `snowflake_cortex_agent_name`, `warehouse`, `semantic_views` y `system_prompt_base`.
+
 **Descripción.** `snowflakeAccount`, `warehouse`, `semanticViews[]`,
 `systemPromptBase`. El front solo conoce que existe un tenant; el backend
 resuelve el agente.
@@ -1797,7 +1842,7 @@ Las tres con `actor_user_id` y `actor_role: admin`, o sea **quién**. Y `POST /a
 `{ID, TenantID, Status, VersionID, PublishedAt, CreatedAt, UpdatedAt}`. `PublishedBy`,
 `PublishedByEmail` y la ruta `/admin/layouts/{layoutId}/diff` son **nuestras**, de `2fafe82`.
 
-### B4.3 ⬜ `POST /admin/tenants/{id}/layouts` — crear borrador
+### B4.3 ✅ `POST /admin/tenants/{id}/layouts` — crear borrador
 ### B4.4 ✅ `PUT /admin/layouts/{id}` — editar pestañas y paneles
 **Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. `tab.icon` y `tab.chat_suggestions` llegan en `GET /config/tabs/{id}`, y las sugerencias **como lista, nunca `null`**. Vacías en la semilla, presentes en el cable.
 
@@ -1807,8 +1852,8 @@ Los dos están en el modelo de §2 de `design.md` y en `Pestana` del contrato, y
 
 **Y una pregunta que es de ustedes, no un pedido.** `OperationalQuestion` no es requerido y el servicio acepta la cadena vacía. El producto dice lo contrario —«una pestaña que no contesta una pregunta no se compone», §7.2 y la descripción de `Pestana`—, así que hoy **la regla la sostiene el front solo**: el editor marca la pestaña, la cuenta y no la deja componer. Si además la rechazara el `validate` o el `publish`, la regla dejaría de depender de qué cliente haga el PUT. Es B4.15 quien decidiría.
 
-### B4.5 ⬜ `POST /admin/layouts/{id}/publish`
-### B4.7 ⬜ `GET /admin/tenants/{id}/catalog`
+### B4.5 ✅ `POST /admin/layouts/{id}/publish`
+### B4.7 ✅ `GET /admin/tenants/{id}/catalog`
 **Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó **campo por campo** las rutas de cuatro de las seis: `GET /admin/tenants` (B4.1), `GET /admin/tenants/{tenantId}/layouts` (B4.2), `PUT /admin/layouts/{layoutId}` (B4.4) y `GET /admin/layouts/{layoutId}/validate` (B4.6). Los requeridos están y no sobra ninguno sin declarar.
 
 **Va acá y no en cada encabezado, y la razón es del parser:** estas seis comparten este bloque, y meter una línea **en cualquiera de sus encabezados** —probado con B4.1, B4.2 y B4.4— parte el grupo y deja a cuatro sin criterio. `plan --check` lo atajó las dos veces que se intentó.
@@ -1817,18 +1862,39 @@ Los dos están en el modelo de §2 de `design.md` y en `Pestana` del contrato, y
 
 **Es la FORMA de las rutas, no el criterio de las seis.** Dice que las respuestas no cambiaron, no que las tareas se hayan vuelto a auditar.
 
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque, una por una:
+
+- **B4.3** · `POST /admin/tenants/{tenantId}/layouts` con `dashboard_id` crea un borrador y devuelve su id con `status: draft`.
+- **B4.7** · `GET /admin/tenants/{tenantId}/catalog` responde **200**, y `humo` lo leyó campo por campo: 12 requeridos y nada fuera de los 12 declarados.
+
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque:
+
+- **B4.5** · Se publicó **dos veces** sobre el dashboard «Marca» —para no tocar el que la consola sirve— y las dos dieron **200**, dejando su fila de auditoría con actor y diff.
+
 **Criterio de aceptación (los seis).**
 - Solo accesibles con `aud: platform`; con token de usuario devuelven `403`.
 - Publicar genera `versionId`, sella `publishedAt`, registra quién publicó e
   invalida la cache del tenant.
 - Editar nunca muta la versión publicada.
 
-### B4.6 ⬜ `POST /admin/layouts/{id}/validate`
-### B4.11 ⬜ Validar que `metricId` existe en el catálogo del tenant
-### B4.12 ⬜ Validar que `tipo` es compatible con la `forma` de la métrica
-### B4.13 ⬜ Validar rangos de `colSpan` / `rowSpan` por tipo
-### B4.14 ⬜ Validar opciones de layout (`maximo` obligatorio en gauge)
-### B4.15 ⬜ Rechazar la publicación si hay paneles inválidos
+### B4.6 ✅ `POST /admin/layouts/{id}/validate`
+### B4.11 ✅ Validar que `metricId` existe en el catálogo del tenant
+### B4.12 ✅ Validar que `tipo` es compatible con la `forma` de la métrica
+### B4.13 ✅ Validar rangos de `colSpan` / `rowSpan` por tipo
+### B4.14 ✅ Validar opciones de layout (`maximo` obligatorio en gauge)
+### B4.15 ✅ Rechazar la publicación si hay paneles inválidos
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque, una por una:
+
+- **B4.6** · `POST /admin/layouts/{layoutId}/validate` devuelve `{valid: false, errors: [...]}` en español · «el layout necesita al menos una pestaña».
+- **B4.11** · Un `metric_id` inexistente se rechaza · «la métrica no existe en el catálogo del tenant».
+- **B4.12** · Un bloque incompatible con la forma se rechaza · «la forma 'scalar' no es compatible con el bloque 'table'».
+- **B4.13** · Un `col_span` fuera de rango se rechaza · «col_span fuera de rango para el bloque 'kpi'».
+- **B4.14** · Un `gauge` sin `maximum` se rechaza · «el bloque gauge necesita options.maximum». **Y eso explica por qué `ERROR` dejó de ser alcanzable por ahí** · ver B2.12.
+
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque:
+
+- **B4.15** · Publicar un layout con paneles inválidos se rechaza · `VALIDATION_LAYOUT` · «el layout tiene errores de validación; consulte validate para el detalle». **Y remite a `validate`** en vez de repetir el detalle, que es lo correcto: una sola fuente para el listado de errores.
+
 **Descripción.** La validación de composición, del lado del servidor. El front
 la replica para dar feedback inmediato, pero **el servidor es el que decide**.
 **Criterio de aceptación.**
@@ -2212,7 +2278,9 @@ decidir la forma de su API. Propuesto el 2026-09-22 en
 nosotros** —cero churn en su código, que es la regla— y la unión de campos queda
 como alternativa si la prefieren.
 
-### ➕ B4.16 ⬜ Declarar el gráfico en el layout
+### ➕ B4.16 ✅ Declarar el gráfico en el layout
+
+**Verificado el 2026-09-29 contra `de881e1`** · `chart` viaja en `DDPanelDTO` y en `DDLayoutPanel`, se escribe desde el builder recortado y en minúsculas —`"  Waterfall  "` → `waterfall`— y ausente queda cadena vacía. Transcripto en los dos cables y con prueba de cadena de punta a punta.
 **Descripción.** D2 lo resolvió a favor. `PanelConfigurado` gana `plot?: PlotId`.
 Depende de B1.21: **primero los mínimos, después el campo** — elegir gráfico sin
 saber qué necesita cada uno es multiplicar el problema, no resolverlo.
@@ -2244,7 +2312,9 @@ Lo que decía el pedido, como registro: **La lista de layouts que el usuario pue
 - `/config/me` devuelve `layouts` solo cuando el usuario tiene más de uno
   asignado; con uno, el campo no viaja.
 
-### B5.2 ⬜ Asignar layout por rol, o dejar elegir si el usuario tiene varios
+### B5.2 ✅ Asignar layout por rol, o dejar elegir si el usuario tiene varios
+
+**Verificado el 2026-09-29 contra `de881e1`** · `GET /config/tabs/{tabId}?layoutId=…` responde **200**: el parámetro se acepta y resuelve.
 **Criterio de aceptación.**
 - El superadmin asigna qué layout ve cada rol.
 - `GET /config/tabs/{tabId}?layoutId=` resuelve contra el layout pedido, y
@@ -2269,7 +2339,9 @@ así que lo que falta es el servicio, no el diseño.
   aparte.
 - Con timeout y tope de filas declarados, igual que el chat.
 
-### B5.5 ⬜ Auditoría de publicaciones de layout
+### B5.5 ✅ Auditoría de publicaciones de layout
+
+**Verificado el 2026-09-29 contra `de881e1`** · Tres publicaciones generadas y leídas · dos `publish` y un `rollback`, cada una con `actor_user_id`, `actor_role` y su `diff.summary`. **Y las colecciones vacías del diff salen `[]` desde `de881e1`**; las publicaciones viejas conservan `null`.
 **Criterio de aceptación.** Queda registrado quién publicó, cuándo y qué cambió
 respecto de la versión anterior. Consultable desde admin.
 
