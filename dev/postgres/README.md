@@ -148,6 +148,24 @@ Para recuperarlo: crear un tercer dashboard con
 `POST /admin/tenants/{tenantId}/dashboards`, o recrear el contenedor —que es para
 lo que es descartable—.
 
+**⚠️ Y DESDE EL 2026-09-29 SU LAYOUT ES UN MUESTRARIO DE GRÁFICOS.** Se publicó
+ahí una pestaña `repertorio-real` con **doce paneles que llevan `chart`** —
+`bullet`, `rings`, `donut`, `columns`, `lollipop`, `pareto`, `treemap`, `radial`,
+`combo`, `smallmult`, `bump` y `slope`— sobre métricas reales del catálogo de
+Snowflake. Es lo que permitió verificar que los gráficos dibujan **con dato del
+negocio** y no sólo contra MSW; los doce paneles del dashboard por defecto siguen
+con `chart: ''`, que es como los emite el servicio.
+
+**Dos efectos más que hay que saber**, porque no se deducen de mirar la consola:
+
+- **El rol `admin` ganó la clave `repertorio-real` en `tab_keys`.** Sin eso la
+  pestaña no se ve: `/config/me` la filtra por rol y el rol traía sólo
+  `["overview"]`. Es B4.18 funcionando, y el síntoma de no saberlo es una
+  pantalla vacía sin error.
+- **La preferencia `preferred_dashboard_id` del usuario `dev@synapse.local`
+  quedó apuntando a «Marca».** Para volver a Overview:
+  `PUT /config/me/preferences` con el id del dashboard por defecto.
+
 Lo que sigue describe para qué existía, y sigue siendo la razón de tenerlo:
 
 **No tenía layout publicado, y eso es lo que lo hacía útil.** Es el estado normal

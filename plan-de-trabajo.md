@@ -1387,6 +1387,17 @@ y sus ayudantes son `CurrentPeriod` y `PreviousPeriod`, los dos **por mes**.
 
 **Medido contra `de881e1` el 2026-09-29** · el servicio manda `"20362"`, `"20393"`, `"20423"` en `points[].t`. Son **días desde epoch** —2025-10-01, 2025-11-01, 2025-12-01, el primero de cada mes— pero **el cable no lo declara en ningún lado**.
 
+**Y DESDE EL 2026-09-29 SE VE EN PANTALLA**, que hasta ese día no pasaba: ningún
+gráfico dibujaba eje de tiempo —`PlotSeries` sólo tiene eje de valores—, así que
+el `t` viajaba sin que nadie lo leyera. `PlotCombo` **sí rotula su eje**, y al
+publicarlo sobre `media_efficiency_12m` con dato real de Snowflake el eje salió
+`20362 · 20454 · 20544 · 20635 · 20697`.
+
+**Los números crudos en pantalla es lo que cambia la urgencia del pedido**: deja
+de ser una ambigüedad del cable y pasa a ser copy equivocado en la consola. Y el
+front no lo puede arreglar — deducir que son días desde época es exactamente la
+invención que el adaptador tiene prohibida; que coincida hoy no lo declara.
+
 **Por qué importa ahora y no antes.** `stale_since` llegó en el mismo commit, y con él se puede marcar el tramo vencido que el `.pen` dibuja —las dos últimas barras en `$w2`—. Para eso hay que comparar cada punto con `stale_since`, y para comparar hay que interpretar el `t`.
 
 **El front no lo va a interpretar.** Un tramo mal marcado **afirma que un dato concreto está vencido cuando no lo está**, y eso es peor que no marcarlo: la trama existe para fechar, y una fecha inventada no fecha, miente.
@@ -6933,6 +6944,30 @@ cliente, el nombre que deja de abrir y Escape que no cierra. Mueren las nueve.
 ## Fase 5 — Multi-dashboard, pruebas y pulido
 
 ### F5.1 ✅ Selector de dashboard cuando hay más de uno
+**EL SELECTOR CAMBIABA DE DASHBOARD Y LA CONSOLA QUEDABA VACÍA · encontrado y
+arreglado el 2026-09-29.** Publicando una pestaña en «Marca» y cambiando a él:
+`/config/me` devolvía la pestaña, la superficie pintaba su pregunta operativa, y
+`GET /config/tabs/{ese mismo id}` contestaba **404 «pestaña no encontrada»**.
+Encabezado y **cero paneles**.
+
+**No era del backend.** Su handler —`dd_config_handler.go`, leído en `de881e1`—
+acepta `?layoutId=` y `?dashboardId=`, y sin ninguno de los dos resuelve contra el
+layout del dashboard **por defecto**: una pestaña de otro dashboard no existe para
+esa consulta. `ConsoleContainer` llamaba `useTab(activeTab?.id)` **sin el
+parámetro desde siempre**, aunque `useTab` y el cliente ya lo aceptaban.
+
+**Andaba de casualidad, y eso es lo que conviene registrar.** Mientras hubo un
+solo dashboard, el activo y el de por defecto eran el mismo y la caída del
+backend acertaba. Es el modo de falla que este repositorio persigue: correcto por
+coincidencia, y el día que deja de serlo **no falla el código que está mal**.
+
+**Y MSW no podía verlo**, por la misma razón que no vio la `Authorization` del
+chat: sus handlers coinciden con la ruta **sin mirar el query string**, así que
+responden igual con parámetro y sin él. Por eso
+`tests/surfaces/console/layoutEnLaConsulta.test.tsx` no afirma lo que se dibuja
+—eso ya pasaba— sino **lo que se pidió**: captura la URL y lee su `layoutId`.
+Mutación verificada: quitar el parámetro la mata.
+
 
 **AJUSTADA AL DIBUJO EL 2026-09-28** · §PEN:C6. F5.1 puso un `<select>` en el navbar con la pregunta de dónde iba **abierta como propuesta de spec**, y C6 la contestó: no va ahí, porque «de ocho elementos a 768 el navbar no entra». Lo abre el chevron del bloque de cliente, **que ya estaba dibujado, y por eso el navbar no crece**.
 

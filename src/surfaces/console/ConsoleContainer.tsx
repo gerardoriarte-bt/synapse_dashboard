@@ -86,7 +86,26 @@ export function ConsoleContainer() {
   const periods = context.data?.periodos ?? []
   const activePeriod = periods.find((p) => p.id === periodId) ?? periods[0]
 
-  const layout = useTab(activeTab?.id ?? null)
+  // ── EL LAYOUT ACTIVO SE PASA, Y SIN ESO EL MULTI-DASHBOARD NO ANDA ────────
+  //
+  // **Medido el 2026-09-29 contra `de881e1`**: publicando una pestaña en el
+  // dashboard «Marca» y cambiando a él, `/config/me` devolvía la pestaña, la
+  // consola pintaba su encabezado, y `GET /config/tabs/{ese mismo id}` contestaba
+  // **404 «pestaña no encontrada»**. Pantalla con título y cero paneles.
+  //
+  // **No era del backend.** Su handler acepta `?layoutId=` y `?dashboardId=`, y
+  // sin ninguno de los dos resuelve contra el layout del dashboard POR DEFECTO —
+  // así que una pestaña que vive en otro dashboard no existe para esa consulta.
+  // Acá se llamaba sin el parámetro desde siempre.
+  //
+  // **Andaba de casualidad**: mientras hubo un solo dashboard, el activo y el
+  // de por defecto eran el mismo y la caída acertaba. Es el modo de falla que
+  // este repositorio persigue — correcto por coincidencia, y el día que deja de
+  // serlo no falla el código que está mal.
+  //
+  // `?? undefined` y no `?? ''`: el cliente omite el parámetro cuando es
+  // `undefined`, y una cadena vacía viajaría como `?layoutId=` y daría 400.
+  const layout = useTab(activeTab?.id ?? null, context.data?.layoutActivoId ?? undefined)
   const panels = layout.data?.panels ?? []
 
   const batch = usePanelsBatch(
