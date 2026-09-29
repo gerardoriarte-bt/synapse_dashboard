@@ -87,12 +87,14 @@ umbrales distintos sobre la misma variable.
 
 **`B2.15 · `DD_MATERIALIZE_PROSE_ENABLED`.** Fecha, no código, como dijeron.
 
-## Un documento que citan y no llegó
+## Una corrección nuestra · el documento sí estaba
 
-`RESPUESTA-2026-09-28-todo-lo-que-falta.md` remite a
-**`RESPUESTA-2026-09-28-tres-del-alta.md`** y ese archivo no está de nuestro lado.
-No hace falta reenviarlo —las tres rutas ya las medimos— pero lo decimos por si
-había algo más ahí.
+A la mañana dijimos que `RESPUESTA-2026-09-28-tres-del-alta.md` «no llegó».
+**Está en su repositorio, en `docs/`** — lo buscamos del lado equivocado.
+
+Es el mismo error que les señalamos con los tres archivos del repertorio, y nos
+tocó a nosotros el mismo día: **buscar en el repositorio propio algo que vive en
+el del otro.** Queda dicho porque vale para los dos lados.
 
 ## Dos cosas de método, cortas
 

@@ -88,10 +88,13 @@ def leer():
                 # o el matiz — acá interesa qué es la tarea, no su detalle.
                 "titulo": re.sub(r"`|\*\*", "", m.group(4)).split(" · ")[0].strip(),
                 "cuerpo": [],
+                "espera": False,
             }
             tareas.append(actual)
         elif actual is not None:
             actual["cuerpo"].append(linea)
+            if linea.startswith("**Espera del backend.**"):
+                actual["espera"] = True
     for t in tareas:
         cuerpo = "\n".join(t["cuerpo"])
         # **El MÁS RECIENTE, no el primero.** Una tarea acumula verificaciones —
@@ -135,11 +138,20 @@ def render(tareas, ref) -> str:
     con_commit = [t for t in hechas + parcial if t["commit"]]
     al_dia = [t for t in con_commit if ref and t["commit"] == ref]
 
+    # **La tercera fila es la que faltaba.** Un `⬜` de backend NO quiere decir
+    # «no está hecho»: quiere decir «no lo verificamos». Y son dos cosas muy
+    # distintas — su propio plan da 65 de 69 hechas, así que la mayoría de
+    # nuestros `⬜` son deuda NUESTRA de verificación, no trabajo suyo pendiente.
+    esperando = [t for t in tareas if t["estado"] == "⬜" and t["espera"]]
+    sin_mirar = [t for t in tareas if t["estado"] == "⬜" and not t["espera"]]
+
     o.append("\n## En una línea\n")
     o.append("| | |\n|---|---|")
     o.append(f"| Tareas `B*` en el plan | **{len(tareas)}** |")
     o.append(f"| Verificadas por nosotros · ✅ o ⚠️ | **{len(hechas) + len(parcial)}** |")
     o.append(f"| De ésas, **contra el último commit** | **{len(al_dia)}** |")
+    o.append(f"| ⬜ Esperando algo de ellos | **{len(esperando)}** |")
+    o.append(f"| ⬜ **Que NUNCA verificamos** | **{len(sin_mirar)}** |")
     if ref:
         o.append(f"| El último commit que leímos | `{ref}` |")
     else:
@@ -160,6 +172,21 @@ def render(tareas, ref) -> str:
                 o.append(f"| **{t['id']}** · {t['titulo']} | {t['estado']} "
                          f"| `{t['commit']}` | {t['fecha'] or '—'} |")
             o.append("")
+
+    if sin_mirar:
+        o.append(
+            f"\n## ⬜ {len(sin_mirar)} que nunca verificamos · y NO quiere decir que falten\n\n"
+            "**Un `⬜` de backend dice «no lo miramos», no «no está hecho».** Nuestro\n"
+            "plan sólo mueve una `B*` cuando el front la verifica contra el servicio\n"
+            "corriendo, así que este número es **deuda nuestra de verificación**.\n\n"
+            "Para contrastar: su propio plan —`docs/dynamic-dashboard-backend.md`\n"
+            "en su repositorio— declara **65 de 69 hechas**, con cuatro abiertas y\n"
+            "tres de ellas de cache opcional. **Las listas no son la misma** y los\n"
+            "identificadores no coinciden, así que los números no se restan; pero\n"
+            "la distancia dice de qué lado está el trabajo pendiente.\n\n"
+            "**El número que sí es nuestro y sí es un compromiso** son las que\n"
+            f"esperan algo de ellos: **{len(esperando)}**, y salen en `PARA-BACKEND.md`.\n"
+        )
 
     o.append("\n## Todas, por fase\n")
     for fase, nombre in FASES.items():

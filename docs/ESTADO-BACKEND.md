@@ -17,6 +17,8 @@ falta para re-verificar. Para su avance real está
 | Tareas `B*` en el plan | **97** |
 | Verificadas por nosotros · ✅ o ⚠️ | **41** |
 | De ésas, **contra el último commit** | **18** |
+| ⬜ Esperando algo de ellos | **3** |
+| ⬜ **Que NUNCA verificamos** | **52** |
 | El último commit que leímos | `de881e1` |
 
 
@@ -45,6 +47,22 @@ Re-verificar una es leer su criterio y medirlo de nuevo.
 | **B4.4** · PUT /admin/layouts/{id} — editar pestañas y paneles | ✅ | `5924bf2b` | 2026-09-28 |
 | **B4.19** · La compuerta de resolveLayout y la vista previa por rol | ✅ | `f70cec2` | 2026-09-28 |
 | **B5.1** · Varios layouts por tenant | ⚠️ | `8633b10` | 2026-09-26 |
+
+
+## ⬜ 52 que nunca verificamos · y NO quiere decir que falten
+
+**Un `⬜` de backend dice «no lo miramos», no «no está hecho».** Nuestro
+plan sólo mueve una `B*` cuando el front la verifica contra el servicio
+corriendo, así que este número es **deuda nuestra de verificación**.
+
+Para contrastar: su propio plan —`docs/dynamic-dashboard-backend.md`
+en su repositorio— declara **65 de 69 hechas**, con cuatro abiertas y
+tres de ellas de cache opcional. **Las listas no son la misma** y los
+identificadores no coinciden, así que los números no se restan; pero
+la distancia dice de qué lado está el trabajo pendiente.
+
+**El número que sí es nuestro y sí es un compromiso** son las que
+esperan algo de ellos: **3**, y salen en `PARA-BACKEND.md`.
 
 
 ## Todas, por fase
