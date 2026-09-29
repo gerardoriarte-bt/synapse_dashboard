@@ -17,8 +17,8 @@ falta para re-verificar. Para su avance real está
 | Tareas `B*` en el plan | **98** |
 | Verificadas por nosotros · ✅ o ⚠️ | **70** |
 | De ésas, **contra el último commit** | **33** |
-| ⬜ Esperando algo de ellos | **4** |
-| ⬜ **Que NUNCA verificamos** | **23** |
+| ⬜ Esperando algo de ellos | **5** |
+| ⬜ **Que NUNCA verificamos** | **22** |
 | El último commit que leímos | `de881e1` |
 
 
@@ -49,7 +49,7 @@ Re-verificar una es leer su criterio y medirlo de nuevo.
 | **B5.1** · Varios layouts por tenant | ⚠️ | `8633b10` | 2026-09-26 |
 
 
-## ⬜ 23 que nunca verificamos · y NO quiere decir que falten
+## ⬜ 22 que nunca verificamos · y NO quiere decir que falten
 
 **Un `⬜` de backend dice «no lo miramos», no «no está hecho».** Nuestro
 plan sólo mueve una `B*` cuando el front la verifica contra el servicio
@@ -62,7 +62,7 @@ identificadores no coinciden, así que los números no se restan; pero
 la distancia dice de qué lado está el trabajo pendiente.
 
 **El número que sí es nuestro y sí es un compromiso** son las que
-esperan algo de ellos: **4**, y salen en `PARA-BACKEND.md`.
+esperan algo de ellos: **5**, y salen en `PARA-BACKEND.md`.
 
 
 ## Todas, por fase
@@ -199,7 +199,7 @@ esperan algo de ellos: **4**, y salen en `PARA-BACKEND.md`.
 | 🕓 | **B5.4** · Endpoint de drill-down bajo demanda | — | — |
 | ✅ | **B5.5** · Auditoría de publicaciones de layout | `de881e1` | 2026-09-29 |
 | ⬜ | **B5.6** · Tests de integración por endpoint de consola | — | — |
-| ⬜ | **B5.7** · Tests del job de materialización con fixtures de Snowflake | `8633b10` ⚠ | 2026-09-26 |
+| ⬜ | **B5.7** · Tests del job de materialización con fixtures de Snowflake | `de881e1` | 2026-09-29 |
 
 
 ---

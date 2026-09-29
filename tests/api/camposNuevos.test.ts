@@ -62,6 +62,67 @@ describe('el rango del período · B1.1', () => {
   })
 })
 
+describe('doce entradas que no son doce meses · 2026-09-29', () => {
+  /** El fixture **está capturado, no escrito de memoria**: es la respuesta de
+   *  `GET /config/me` contra `de881e1` el 2026-09-29, tal cual. Marzo dos veces
+   *  y febrero ausente, en `periods` y en `periods_detail`.
+   *
+   *  La causa es `availablePeriods()` de su `dd_config_service.go`, que resta
+   *  meses con `now.AddDate(0, -i, 0)` sin normalizar al día 1: «29 de febrero»
+   *  no existe y Go desborda al 1 de marzo. Pasa 29 días de los 365, y por eso
+   *  la lista salía bien el resto del año. */
+  const capturado = [
+    '2026-09', '2026-08', '2026-07', '2026-06', '2026-05', '2026-04',
+    '2026-03', '2026-03', '2026-01', '2025-12', '2025-11', '2025-10',
+  ]
+
+  it('un id repetido se colapsa · es una CLAVE, no un dato', () => {
+    const ctx = adaptContext({
+      ...base,
+      periods: capturado,
+      periods_detail: capturado.map((k) => ({
+        key: k,
+        grain: 'month',
+        start: `${k}-01`,
+        end: `${k}-01`,
+      })),
+    } as unknown as WireContext)
+
+    // Once, no doce: la entrada repetida desaparece.
+    expect(ctx.periodos).toHaveLength(11)
+    expect(ctx.periodos.filter((p) => p.id === '2026-03')).toHaveLength(1)
+    // **Y no hay dos con el mismo id**, que es la garantía que sostiene
+    // `periodos.find(p => p.id === activeId)` y la `key` de cada `<option>`.
+    expect(new Set(ctx.periodos.map((p) => p.id)).size).toBe(ctx.periodos.length)
+  })
+
+  it('el ORDEN del cable se conserva, y gana la PRIMERA aparición', () => {
+    // Deduplicar reordenando sería cambiar cuál período queda primero, y la
+    // superficie cae al primero cuando el activo no está en la lista.
+    const ctx = adaptContext({
+      ...base,
+      periods: capturado,
+    } as unknown as WireContext)
+
+    expect(ctx.periodos.map((p) => p.id)).toEqual([
+      '2026-09', '2026-08', '2026-07', '2026-06', '2026-05', '2026-04',
+      '2026-03', '2026-01', '2025-12', '2025-11', '2025-10',
+    ])
+  })
+
+  it('el mes que falta NO se rellena', () => {
+    // Febrero no está y el front no lo agrega: no sabe si el servicio no lo
+    // tiene o no lo quiere dar, y un período que el batch va a rechazar es peor
+    // que uno ausente. Se pierde hasta que ellos normalicen.
+    const ctx = adaptContext({
+      ...base,
+      periods: capturado,
+    } as unknown as WireContext)
+
+    expect(ctx.periodos.map((p) => p.id)).not.toContain('2026-02')
+  })
+})
+
 describe('el alcance · B1.1', () => {
   it('`multi_tenant` es `plataforma`, y la lista trae la FORMA CORTA', () => {
     // **Las dos son distintas a propósito, y por eso esta prueba sirve.** Hasta

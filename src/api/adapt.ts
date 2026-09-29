@@ -375,7 +375,35 @@ export function adaptContext(w: WireContext): AppContext {
     // `periods` sigue siendo la fuente del ORDEN y de qué períodos hay; el
     // detalle se busca por clave y **no se asume que venga para todos**: si
     // falta, se cae a lo de antes en vez de descartar el período.
-    periodos: w.periods.map((id) => {
+    //
+    // ── **SIN REPETIDOS, Y NO ES UNA PRECAUCIÓN** · medido el 2026-09-29 ────
+    //
+    // El cable manda **doce entradas que no son doce meses distintos**. Medido
+    // contra `de881e1` ese día: `['2026-09', … , '2026-04', '2026-03',
+    // '2026-03', '2026-01', …]` — marzo dos veces y **febrero no está**, en
+    // `periods` y en `periods_detail`.
+    //
+    // Es `availablePeriods()` de su `dd_config_service.go`, que resta meses con
+    // `now.AddDate(0, -i, 0)` **sin normalizar al día 1**: el 29 de septiembre
+    // menos siete meses cae en «29 de febrero», que no existe, y Go desborda al
+    // 1 de marzo. Reproducido con su misma aritmética: pasa **29 días de los
+    // 365**, los 29/30/31 de un mes cuyo mes objetivo es más corto. Los otros
+    // 336 la lista sale bien, y por eso nunca se había visto. El arreglo es de
+    // ellos y ya existe escrito en su propio `snowflake/period.go:66`, que sí
+    // normaliza — está pedido.
+    //
+    // **Acá se deduplica porque `id` es una CLAVE, no un dato.** Atraviesa el
+    // batch, la caché, el payload y el hilo del chat, y la superficie busca el
+    // activo con `periodos.find(p => p.id === activeId)`: dos entradas con el
+    // mismo id son la misma, por construcción. No es calcular ni inventar —las
+    // dos entradas son idénticas campo por campo, rango incluido—, y dejarlas
+    // pasar pinta dos veces «2026-03» con la misma `key` de React.
+    //
+    // **Lo que NO se hace es rellenar el mes que falta.** Febrero no está y el
+    // front no lo puede agregar: no sabe si el servicio no lo tiene o no lo
+    // quiere dar, y ofrecer un período que el batch va a rechazar es peor que
+    // no ofrecerlo. Se pierde un mes hasta que ellos normalicen.
+    periodos: [...new Set(w.periods)].map((id) => {
       const det = (w.periods_detail ?? []).find((d) => d.key === id)
       return {
         id,

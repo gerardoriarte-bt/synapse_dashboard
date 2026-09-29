@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Antes de leer: 1 de 8 son del backend
+## Antes de leer: 3 de 10 son del backend
 
 **El resto está acá porque nos frena a NOSOTROS, no porque haya que
 construirlo del lado del backend.** Se listan igual —una tarea trabada
@@ -43,7 +43,7 @@ tiempo buscando qué implementar.
 
 | Dueño | Pedidos |
 |---|---|
-| **BACKEND** · código | 1 |
+| **BACKEND** · código | 3 |
 | NOSOTROS | 2 |
 | DATOS | 2 |
 | DESPLIEGUE | 2 |
@@ -52,7 +52,7 @@ tiempo buscando qué implementar.
 
 ---
 
-## Lo que esperamos · 8 pedido(s)
+## Lo que esperamos · 10 pedido(s)
 
 
 ### B1.21 · Declarar los mínimos de datos por gráfico
@@ -255,6 +255,98 @@ su razón. El front ya pinta `DEGRADED` con su badge, su razón y su
 nuestro lado. · Bloquea **B2.12**.
 
 
+### F1.42 · El mes en curso está incompleto y el selector no lo dice
+
+*Estado de la tarea: parcial.*
+
+
+Que `availablePeriods()` normalice al día 1 antes de
+restar meses. **Medido contra `de881e1` el 2026-09-29**: `GET /config/me` devuelve
+doce entradas que **no son doce meses distintos** — `['2026-09', …, '2026-04',
+'2026-03', '2026-03', '2026-01', …]`, marzo dos veces y **febrero ausente**, en
+`periods` y en `periods_detail`.
+
+Es `internal/core/services/dd_config_service.go:690`, que resta con
+`now.AddDate(0, -i, 0)` sin normalizar el día: el 29 de septiembre menos siete
+meses cae en «29 de febrero», que no existe, y Go desborda al 1 de marzo.
+Reproducido con su misma aritmética: **pasa 29 días de los 365** —los 29, 30 y 31
+de un mes cuyo mes objetivo es más corto—, y los otros 336 la lista sale bien. Por
+eso nunca se había visto.
+
+**El arreglo ya está escrito en su propio repositorio**: `snowflake/period.go:66`
+hace `firstOfMonth(now).AddDate(0, -i, 0)`, que es exactamente lo que falta acá. Y
+`dd_seed_panel_data.go:123` repite el patrón sin normalizar, así que conviene
+mirarlo en la misma pasada.
+
+**Lo nuestro ya está hecho y no espera**: el adaptador colapsa los ids repetidos
+—`id` es una clave que atraviesa el batch, la caché y el hilo del chat— con la
+respuesta capturada como fixture. **Lo que el front no hace es rellenar el mes que
+falta**: no sabe si el servicio no lo tiene o no lo quiere dar, y ofrecer un
+período que el batch va a rechazar es peor que no ofrecerlo. Hasta que normalicen,
+29 días al año la consola ofrece once meses y no doce. · Bloquea nada, **degrada
+F1.42**.
+
+
+### F1.44 · El orden de una tabla se anuncia, no se aplica
+
+*Estado de la tarea: parcial.*
+
+
+Que `cut` salga de `layout_params` de `series`, o que
+digan quién lo lee. **Medido contra `de881e1` el 2026-09-29** y verificado en su
+repositorio: **las dos mitades del candado vencieron y apareció la respuesta
+real, que es que el param no hace nada.**
+
+| Lo que decía este bloqueo | Lo medido el 2026-09-29 |
+|---|---|
+| «no se sabe qué significa `cut` en `series`» | Contestado: es la granularidad declarada, y el índice del pronóstico se renombró a `horizon_cut`. Verificado en `dd_seed_blocks.go:44,48` y `manual_migrations.go:190`, no en su prosa |
+| «el dato no permite deducirlo: los dos paneles traen las mismas ocho estampas mensuales sin importar el `cut`» | **Falso ahora.** `cut=month` trae **12** estampas mensuales —`2025-10-01`, `2025-11-01`…— y `cut=day` trae **28** diarias —`2026-09-01`, `2026-09-02`…— |
+
+**Pero el grano no sale de `cut`: sale de la MÉTRICA.** `git grep '"cut"'` sobre
+`de881e1` lo encuentra en tres lugares —la semilla del panel, la declaración del
+param y la migración— y **en ningún lector**. Los dos paneles difieren porque son
+dos métricas distintas, `daily_trend` y `twelve_month_efficiency`, materializadas
+cada una a su grano natural. Ellos ya lo dijeron: «ningún código suyo la lee».
+
+**Y el `.pen` tampoco le da dónde dibujarse.** `Plot/CONSOLA · Tendencia diaria`
+son cuatro líneas de grilla en `$w2` y los trazos: **ni eje de tiempo ni rótulos
+ni marcas**, que es exactamente lo que `PlotSeries` implementa. Leído el
+2026-09-29.
+
+Así que la cuarta viñeta del criterio se resuelve por su segunda rama y no por la
+primera: **declararlo en `PARAM_SCHEMAS` sería declarar un param que nadie lee**,
+que es lo que el encabezado de `api/params.ts` prohíbe en dos párrafos y lo que ya
+se decidió para `orden` de `table` en esta misma tarea. El front lo sigue
+descartando como desconocido, con aviso en desarrollo, y eso es la respuesta
+correcta. · Bloquea **F1.44**.
+
+**Y `min_grain` quedó anotado aparte, que es de DATOS.** Las dieciocho métricas
+del catálogo declaran `min_grain: 'month'`, **incluida `daily_trend`**, que viene
+de Snowflake —`catalog_version=3`, fuente «Reporte **diario** de ecommerce del
+cliente»— y cuyo panel sirve 28 puntos diarios. `coarsestRequired` toma el más
+grueso de la pestaña, así que con las dieciocho en `month` el selector no puede
+ofrecer días ni semanas **para ninguna pestaña**.
+
+Hoy no se ve: los doce períodos que el servicio manda son todos mensuales, y
+`PeriodPicker` sólo pinta los granos que tienen períodos. **Se ve el día que haya
+períodos diarios o rangos libres, que es F5.13** — y es un segundo bloqueo de esa
+tarea que no estaba escrito. La columna es `SYNAPSE_METRIC_CATALOG.MIN_GRAIN`, así
+que es de la misma familia que las seis filas de `SEMANTIC_DIRECTION`.
+
+
+## Fase 2 — Los estados de materialización en pantalla
+
+Depende de B2.5–B2.7 para los estados REALES: hasta que el backend los emita,
+solo se pueden probar contra el seed (B1.20) o contra MSW.
+
+**Arrancada el 2026-09-03**, en cuanto B0.9 contestó la 1171. Lo primero que
+apareció al abrirla: **MSW emitía únicamente `DISPONIBLE`**, así que los otros
+cinco estados nunca habían atravesado el contenedor, el adaptador de params ni
+el registro de cuerpos. Estaban probados a nivel de componente —con payloads
+montados a mano— y ni una vez de punta a punta. Eso es
+`tests/surfaces/console/states.test.tsx`, 29 pruebas.
+
+
 ### B2.14 · /config/solicitudes · pedir acceso a una métrica que no se ve
 
 *Estado de la tarea: pendiente.* · **Lo tiene: PRODUCTO**
@@ -301,7 +393,7 @@ Lo de arriba son pedidos; esto es información.
 |---|---|
 | **F1.31** · Registro de gráficos y verificación de mínimos | `/config/plots` da 404 |
 | **F1.42** · El mes en curso está incompleto y el selector no lo dice | el período no declara QUÉ PARTE del mes cubre |
-| **F1.44** · El orden de una tabla se anuncia, no se aplica | falta qué es `cut` en `series` |
+| **F1.44** · El orden de una tabla se anuncia, no se aplica | `cut` de `series` no lo lee nadie |
 | **F4.21** · Selector de gráfico en el builder | `/config/plots` da 404 |
 | **F4.17** · ComparisonBody + ComparePlot | ninguna métrica declara `categoricaComparada` |
 | **F4.18** · MatrixBody + HeatmapPlot | ninguna métrica declara `matriz` |

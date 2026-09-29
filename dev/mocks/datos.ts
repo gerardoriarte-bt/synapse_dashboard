@@ -249,7 +249,13 @@ export const contexto = {
     operational_question: t.tab.operational_question,
     sort_order: t.tab.sort_order,
   })),
-  periods: ['2026-09', '2026-08', '2026-07'],
+  // **El repetido está a propósito** · medido el 2026-09-29 contra `de881e1`.
+  // El servicio manda doce entradas que no son doce meses: `availablePeriods()`
+  // resta con `now.AddDate(0, -i, 0)` sin normalizar al día 1, así que 29 días
+  // de los 365 devuelve un mes dos veces y se come el anterior. El adaptador lo
+  // colapsa —`id` es una clave— y con un mock de ids limpios ese camino no se
+  // recorre nunca, que es cómo el cable envejece sin que nadie lo note.
+  periods: ['2026-09', '2026-08', '2026-07', '2026-07'],
 
   // ── LOS CUATRO QUE FALTABAN, Y POR QUÉ ROMPÍAN LA APLICACIÓN ──────────────
   //
@@ -280,6 +286,8 @@ export const contexto = {
   periods_detail: [
     { key: '2026-09', grain: 'month', start: '2026-09-01', end: '2026-10-01' },
     { key: '2026-08', grain: 'month', start: '2026-08-01', end: '2026-09-01' },
+    { key: '2026-07', grain: 'month', start: '2026-07-01', end: '2026-08-01' },
+    // El repetido llega también en el detalle, igual que en el servicio.
     { key: '2026-07', grain: 'month', start: '2026-07-01', end: '2026-08-01' },
   ],
   // **`multi_tenant` con DOS**, que es lo que hace visible el selector de
