@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Antes de leer: 0 de 7 son del backend
+## Antes de leer: 1 de 8 son del backend
 
 **El resto está acá porque nos frena a NOSOTROS, no porque haya que
 construirlo del lado del backend.** Se listan igual —una tarea trabada
@@ -43,7 +43,7 @@ tiempo buscando qué implementar.
 
 | Dueño | Pedidos |
 |---|---|
-| **BACKEND** · código | 0 |
+| **BACKEND** · código | 1 |
 | NOSOTROS | 2 |
 | DATOS | 2 |
 | DESPLIEGUE | 2 |
@@ -52,7 +52,7 @@ tiempo buscando qué implementar.
 
 ---
 
-## Lo que esperamos · 7 pedido(s)
+## Lo que esperamos · 8 pedido(s)
 
 
 ### B1.21 · Declarar los mínimos de datos por gráfico
@@ -166,6 +166,24 @@ Medido ese día contra `f70cec2`: `POST /admin/tenants/{tenantId}/materialize` c
 Hoy `POST /admin/tenants` exige `private_key_pem`, así que por cada cliente **alguien genera un par a mano y transporta una clave privada** hasta donde se haga el alta. Verificado ese día: no hay `rsa.GenerateKey` en `internal/`.
 
 **Es más fácil y además más seguro**, que es la combinación que no obliga a elegir: la privada nunca sale del servicio y lo que circula es la pública.
+
+
+### B1.34 · Declarar qué es el t de una serie, o mandar el tramo vencido
+
+*Estado de la tarea: pendiente.*
+
+
+**Qué unidad tiene el `t` de `points[]`** — y con eso se desbloquea la trama del degradado.
+
+**Lo tiene: BACKEND** · declarar la unidad, o mandar el índice del tramo vencido.
+
+**Medido contra `de881e1` el 2026-09-29** · el servicio manda `"20362"`, `"20393"`, `"20423"` en `points[].t`. Son **días desde epoch** —2025-10-01, 2025-11-01, 2025-12-01, el primero de cada mes— pero **el cable no lo declara en ningún lado**.
+
+**Por qué importa ahora y no antes.** `stale_since` llegó en el mismo commit, y con él se puede marcar el tramo vencido que el `.pen` dibuja —las dos últimas barras en `$w2`—. Para eso hay que comparar cada punto con `stale_since`, y para comparar hay que interpretar el `t`.
+
+**El front no lo va a interpretar.** Un tramo mal marcado **afirma que un dato concreto está vencido cuando no lo está**, y eso es peor que no marcarlo: la trama existe para fechar, y una fecha inventada no fecha, miente.
+
+**Y nunca se notó porque el eje X no se pinta.** `PlotSeries` rinde sólo el eje de valores, así que el número crudo no se ve. Nuestro propio contrato decía que `t` era «la etiqueta del eje, ya lista para pintar» — corregido el mismo día.
 
 
 ### B2.12 · Correr el materializador contra datos reales y verificar los seis estados

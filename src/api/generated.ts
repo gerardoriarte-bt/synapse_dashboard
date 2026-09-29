@@ -1627,7 +1627,21 @@ export interface components {
         Valor: components["schemas"]["ValorEscalar"] | components["schemas"]["ValorEscalarConIntervalo"] | components["schemas"]["ValorSerieTemporal"] | components["schemas"]["ValorSerieConBanda"] | components["schemas"]["ValorSeriesMultiples"] | components["schemas"]["ValorCategorica"] | components["schemas"]["ValorRanking"] | components["schemas"]["ValorComposicion"] | components["schemas"]["ValorDistribucion"] | components["schemas"]["ValorCategoricaComparada"] | components["schemas"]["ValorPerfilMultiatributo"] | components["schemas"]["ValorMatriz"] | components["schemas"]["ValorGrafo"] | components["schemas"]["ValorFlujo"] | components["schemas"]["ValorTabular"] | components["schemas"]["ValorProsa"];
         Punto: {
             /**
-             * @description La etiqueta del eje, ya lista para pintar.
+             * @description **MEDIDO EL 2026-09-29: NO es una etiqueta lista para pintar.** Acá
+             *     decía que sí, y es falso — el servicio manda **días desde epoch** en
+             *     una cadena: `"20362"`, `"20393"`, `"20423"`, que son 2025-10-01,
+             *     2025-11-01 y 2025-12-01, el primero de cada mes.
+             *
+             *     **Nunca se notó porque el eje X NO SE PINTA**: `PlotSeries` rinde sólo
+             *     el eje de valores. Un número crudo que nadie muestra no rompe nada, y
+             *     por eso la descripción vivió mal desde que se escribió.
+             *
+             *     **Y es lo que bloquea la trama del degradado.** Marcar el tramo
+             *     vencido pide comparar cada punto con `stale_since`, y para eso hay que
+             *     interpretar esto como días epoch — una interpretación que **el cable
+             *     del servicio no declara**. Un tramo mal marcado afirma que un dato
+             *     concreto está vencido cuando no lo está, y eso es peor que no
+             *     marcarlo. Pedido al backend · B1.34.
              * @example jul
              * @example 2026-07-15
              */

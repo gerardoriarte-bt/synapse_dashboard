@@ -134,6 +134,9 @@ B1.32,Backend · Fase 1 — API de consola,Backend,1,API de consola,"cut es day 
 • Lo mismo para normalization · confirmado, y de paso el order de tablas.",hecho,si,,equipo:backend fase:1 estado:hecho nueva
 B1.33,Backend · Fase 1 — API de consola,Backend,1,API de consola,El patrón de PeriodoId · es YYYY-MM y nada más,,"• Queda escrito qué patrones acepta hoy · YYYY-MM, verificado en period.go.
 • F5.13 deja de citar «el patrón de PeriodoId» como candado y pasa a citar lo que realmente espera: soporte de otro grano, que nadie pidió.",hecho,si,,equipo:backend fase:1 estado:hecho nueva
+B1.34,Backend · Fase 1 — API de consola,Backend,1,API de consola,"Declarar qué es el t de una serie, o mandar el tramo vencido",,"• El cable declara la unidad de points[].t · días epoch, ISO, o lo que sea.
+• O, más simple y mejor: el payload degradado trae desde qué índice de la serie el dato está vencido, y el front no compara nada.
+• Si la respuesta es la segunda, stale_since sigue sirviendo para la nota —«la última actualización fue el …»— y el índice para el dibujo. Son dos consumidores distintos del mismo hecho.",pendiente,si,,equipo:backend fase:1 estado:pendiente nueva bloqueada
 B2.1,Backend · Fase 2 — Materialización y cache,Backend,2,Materialización y cache,Tabla panel_data,"El snapshot materializado con gobierno completo por (tenant_id, metric_id, periodo). Es la fuente del batch y sobrevive reinicios.","• Guarda el Valor ya transformado a su forma, no el resultado crudo de la query.
 • Guarda frescura como el instante de materialización.
 • Se puede auditar: qué había en un panel el mes pasado es consultable.",hecho,no,,equipo:backend fase:2 estado:hecho

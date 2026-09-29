@@ -1338,6 +1338,24 @@ y sus ayudantes son `CurrentPeriod` y `PreviousPeriod`, los dos **por mes**.
 - Queda escrito qué patrones acepta hoy · **`YYYY-MM`, verificado en `period.go`**.
 - F5.13 deja de citar «el patrón de `PeriodoId`» como candado y pasa a citar lo que realmente espera: **soporte de otro grano**, que nadie pidió.
 
+#### ➕ B1.34 ⬜ Declarar qué es el `t` de una serie, o mandar el tramo vencido
+**Espera del backend.** **Qué unidad tiene el `t` de `points[]`** — y con eso se desbloquea la trama del degradado.
+
+**Lo tiene: BACKEND** · declarar la unidad, o mandar el índice del tramo vencido.
+
+**Medido contra `de881e1` el 2026-09-29** · el servicio manda `"20362"`, `"20393"`, `"20423"` en `points[].t`. Son **días desde epoch** —2025-10-01, 2025-11-01, 2025-12-01, el primero de cada mes— pero **el cable no lo declara en ningún lado**.
+
+**Por qué importa ahora y no antes.** `stale_since` llegó en el mismo commit, y con él se puede marcar el tramo vencido que el `.pen` dibuja —las dos últimas barras en `$w2`—. Para eso hay que comparar cada punto con `stale_since`, y para comparar hay que interpretar el `t`.
+
+**El front no lo va a interpretar.** Un tramo mal marcado **afirma que un dato concreto está vencido cuando no lo está**, y eso es peor que no marcarlo: la trama existe para fechar, y una fecha inventada no fecha, miente.
+
+**Y nunca se notó porque el eje X no se pinta.** `PlotSeries` rinde sólo el eje de valores, así que el número crudo no se ve. Nuestro propio contrato decía que `t` era «la etiqueta del eje, ya lista para pintar» — corregido el mismo día.
+
+**Criterio de aceptación.**
+- El cable declara la unidad de `points[].t` · días epoch, ISO, o lo que sea.
+- **O, más simple y mejor**: el payload degradado trae **desde qué índice** de la serie el dato está vencido, y el front no compara nada.
+- Si la respuesta es la segunda, `stale_since` sigue sirviendo para la nota —«la última actualización fue el …»— y el índice para el dibujo. **Son dos consumidores distintos del mismo hecho.**
+
 ---
 
 ## Fase 2 — Materialización y cache

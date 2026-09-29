@@ -14,10 +14,10 @@ falta para re-verificar. Para su avance real está
 
 | | |
 |---|---|
-| Tareas `B*` en el plan | **97** |
+| Tareas `B*` en el plan | **98** |
 | Verificadas por nosotros · ✅ o ⚠️ | **70** |
 | De ésas, **contra el último commit** | **33** |
-| ⬜ Esperando algo de ellos | **3** |
+| ⬜ Esperando algo de ellos | **4** |
 | ⬜ **Que NUNCA verificamos** | **23** |
 | El último commit que leímos | `de881e1` |
 
@@ -62,7 +62,7 @@ identificadores no coinciden, así que los números no se restan; pero
 la distancia dice de qué lado está el trabajo pendiente.
 
 **El número que sí es nuestro y sí es un compromiso** son las que
-esperan algo de ellos: **3**, y salen en `PARA-BACKEND.md`.
+esperan algo de ellos: **4**, y salen en `PARA-BACKEND.md`.
 
 
 ## Todas, por fase
@@ -84,7 +84,7 @@ esperan algo de ellos: **3**, y salen en `PARA-BACKEND.md`.
 | ✅ | **B0.10** ➕ · Endpoint de login | `de881e1` | 2026-09-29 |
 
 
-### Fase 1 · Catálogo y materialización — 20 de 33
+### Fase 1 · Catálogo y materialización — 20 de 34
 
 | | Tarea | Verificada contra | Cuándo |
 |---|---|---|---|
@@ -121,6 +121,7 @@ esperan algo de ellos: **3**, y salen en `PARA-BACKEND.md`.
 | ⚠️ | **B1.31** ➕ · La plataforma genera el par de claves del usuario de servicio | `de881e1` | 2026-09-29 |
 | ✅ | **B1.32** ➕ · cut es day o month, y lo aplica el front | `de881e1` | 2026-09-29 |
 | ✅ | **B1.33** ➕ · El patrón de PeriodoId | — | — |
+| ⬜ | **B1.34** ➕ · Declarar qué es el t de una serie, o mandar el tramo vencido | `de881e1` | 2026-09-29 |
 
 
 ### Fase 2 · Estados y cache — 8 de 16
