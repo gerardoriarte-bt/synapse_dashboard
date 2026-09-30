@@ -79,13 +79,6 @@ export type WirePanel = W['PanelDTO']
  * líneas escritas.
  */
 
-/** Las nueve formas que `materialize.TransformValue` sabe producir.
- *
- *  Las otras siete del contrato —`distribucion`, `serieConBanda`,
- *  `categoricaComparada`, `perfilMultiatributo`, `matriz`, `flujo`, `grafo`— no
- *  están acá porque el backend no las materializa: su `switch` tiene nueve casos
- *  y un `default` que devuelve `ErrUnknownShape`. Ponerlas sería declarar una
- *  traducción para algo que nunca llega. */
 /** **El nombre de cable de cada forma, y va al revés a propósito.**
  *
  *  Un `Record<string, Shape>` —que es como estuvo hasta el 2026-09-15— no puede
@@ -615,6 +608,19 @@ const DIBUJABLES: readonly Shape[] = [
   // declara su esquema y `DistributionBody` y `ForecastBody` existen.
   'distribucion',
   'serieConBanda',
+  // **Las tres del 2026-09-30**, y las tres condiciones se cumplen a la vez por
+  // primera vez para las formas v1.1: el backend las materializa —con las
+  // entradas de `MetricRegistry` que escribimos y corrimos contra Snowflake—, el
+  // contrato declara su esquema desde el 2026-09-26, y `ComparisonBody`,
+  // `MatrixBody` y `GraphBody` existen.
+  //
+  // **Las otras dos siguen afuera y no es simetría pendiente:**
+  // `perfilMultiatributo` tiene un solo gráfico en el repertorio —`radar`— y no
+  // está construido; `grafo` no tiene ni gráfico ni dato del cual salir. Una
+  // forma acá sin cuerpo que la dibuje es un panel en blanco sin razón.
+  'categoricaComparada',
+  'matriz',
+  'flujo',
 ]
 
 /** Un bloque cuyo `type` no es uno de los quince **no entra a la tabla**, y sale
@@ -895,6 +901,24 @@ function puntos(filas: Record<string, unknown>[]): { t: string; v: number }[] {
   })
 }
 
+/** Una lista de CADENAS · `rows` y `columns` de la matriz.
+ *
+ *  Separada de `lista`, que devuelve objetos: las etiquetas de la matriz son
+ *  cadenas sueltas y pasarlas por `objeto()` las descartaría todas. Devuelve
+ *  `null` cuando el campo no es un arreglo, y **una entrada que no es cadena
+ *  invalida la lista entera** — descartarla correría las etiquetas contra las
+ *  celdas, y una matriz corrida se ve perfecta con los rótulos cambiados de
+ *  lugar. */
+const cadenas = (o: Record<string, unknown>, k: string): string[] | null => {
+  if (!Array.isArray(o[k])) return null
+  const out: string[] = []
+  for (const x of o[k] as unknown[]) {
+    if (typeof x !== 'string') return null
+    out.push(x)
+  }
+  return out
+}
+
 export function adaptValue(raw: unknown): ValorOk | ValorMal {
   const v = objeto(raw)
   if (v === null) return { ok: false, razon: 'El payload no trae valor.' }
@@ -1119,13 +1143,120 @@ export function adaptValue(raw: unknown): ValorOk | ValorMal {
       return { ok: true, valor: { forma: 'distribucion', cortes } }
     }
 
+    case 'compared_categorical': {
+      // **F4.17 · adaptada el 2026-09-30**, contra la salida real de
+      // `platform_gap` en Snowflake: 37 ítems, 22 con `reference`.
+      const items = lista(v, 'items')
+      if (items === null) return { ok: false, razon: 'Una comparación sin ítems.' }
+      const out: Extract<Value, { forma: 'categoricaComparada' }>['items'] = []
+      for (const i of items) {
+        const etiqueta = cadena(i, 'label')
+        const n = numero(i, 'v')
+        if (etiqueta === null || n === null) continue
+        const referencia = numero(i, 'reference')
+        const delta = numero(i, 'delta')
+        // **`referencia` ausente NO se rellena, y `delta` NO se deriva.** El
+        // esquema del contrato dice las dos cosas con todas las letras: sin
+        // referencia «es una categórica común con otro nombre, y el panel tiene
+        // que decirlo en vez de inventar un objetivo», y el delta «lo calcula el
+        // BACKEND … quien conoce la definición del delta —absoluto, relativo,
+        // contra qué base— es quien produjo el dato».
+        //
+        // Y no es teórico: en la salida real quince de los 37 ítems llegan sin
+        // `reference` —plataformas con retorno atribuido y sin costo, avisado a
+        // datos— y `v - reference` habría dibujado quince pesas desde el origen.
+        out.push({
+          etiqueta,
+          v: n,
+          ...(referencia === null ? {} : { referencia }),
+          ...(delta === null ? {} : { delta }),
+        })
+      }
+      return out.length === 0
+        ? { ok: false, razon: 'Una comparación sin ítems válidos.' }
+        : { ok: true, valor: { forma: 'categoricaComparada', items: out } }
+    }
+
+    case 'matrix': {
+      // **F4.18 · adaptada el 2026-09-30**, contra `platform_month_matrix`:
+      // 38 × 12 con celdas `null` donde la plataforma no tuvo inversión ese mes.
+      const filas = cadenas(v, 'rows')
+      const columnas = cadenas(v, 'columns')
+      if (filas === null || columnas === null) {
+        return { ok: false, razon: 'Una matriz sin sus etiquetas de fila o de columna.' }
+      }
+      if (!Array.isArray(v['cells'])) return { ok: false, razon: 'Una matriz sin celdas.' }
+      const celdas: (number | null)[][] = []
+      for (const fila of v['cells'] as unknown[]) {
+        if (!Array.isArray(fila)) return { ok: false, razon: 'Una fila de la matriz no es una lista.' }
+        const out: (number | null)[] = []
+        for (const c of fila as unknown[]) {
+          // **`null` pasa y cualquier otra cosa invalida la matriz entera.**
+          // `null` es «el backend declara que no hay dato» y se dibuja con su
+          // contorno; una celda de otro tipo es un payload mal formado, y
+          // convertirla en `null` le atribuiría al negocio un hueco que es del
+          // productor del dato. Es la misma distinción que ya costó en A5 y A1,
+          // y acá la sostiene el adaptador porque `MatrixBody` sólo puede ver
+          // largos, no tipos.
+          if (c === null) out.push(null)
+          else if (typeof c === 'number' && Number.isFinite(c)) out.push(c)
+          else return { ok: false, razon: 'Una celda de la matriz no es una cifra ni está vacía.' }
+        }
+        celdas.push(out)
+      }
+      // **La densidad NO se comprueba acá, y es a propósito.** La declara
+      // `MatrixBody` con el estado que dice cuántas faltan, porque un panel que
+      // desaparece del layout con «forma inválida» no dice nada y uno que
+      // muestra «38 etiquetas y 37 filas» sí. Lo que sí es del adaptador es el
+      // TIPO de cada celda, que el cuerpo no puede ver.
+      return { ok: true, valor: { forma: 'matriz', filas, columnas, celdas } }
+    }
+
+    case 'flow': {
+      // **F4.19 · adaptada el 2026-09-30**, contra `spend_flow`: 23 etapas y
+      // 22 enlaces, todos hacia un único nodo `total`.
+      const stages = lista(v, 'stages')
+      const links = lista(v, 'links')
+      if (stages === null || links === null) {
+        return { ok: false, razon: 'Un flujo sin etapas o sin enlaces.' }
+      }
+      const etapas = stages.flatMap((e) => {
+        const id = cadena(e, 'id')
+        const etiqueta = cadena(e, 'label')
+        const n = numero(e, 'v')
+        // **La etiqueta no cae al `id`.** El esquema de `ValorGrafo` declara que
+        // ese respaldo **lo hace el backend** —«cae al `id` cuando la fila no
+        // trae una, y lo hace el backend»— y `ValorFlujo` la pide obligatoria.
+        // Hacerlo acá taparía que dejó de hacerlo.
+        return id === null || etiqueta === null || n === null ? [] : [{ id, etiqueta, v: n }]
+      })
+      const enlaces = links.flatMap((l) => {
+        const desde = cadena(l, 'from')
+        const hacia = cadena(l, 'to')
+        const n = numero(l, 'v')
+        return desde === null || hacia === null || n === null ? [] : [{ desde, hacia, v: n }]
+      })
+      // **Un enlace a una etapa que no existe NO se filtra acá.** Es el
+      // repartidor del dibujo el que decide qué hacer con él —`flowLayout` de
+      // `PlotSankey` lo descarta, con su prueba— y filtrarlo en el adaptador
+      // dejaría un flujo que suma distinto sin que nada lo diga.
+      return etapas.length === 0 || enlaces.length === 0
+        ? { ok: false, razon: 'Un flujo sin etapas o enlaces válidos.' }
+        : { ok: true, valor: { forma: 'flujo', etapas, enlaces } }
+    }
+
     default:
-      // Lo que queda acá son las formas que el contrato **no declara**:
-      // `compared_categorical`, `multi_attribute_profile`, `matrix`, `graph` y
-      // `flow`. El backend las emite desde `168a761`; lo que falta es de este
-      // lado —esquema en `Valor` y cuerpo—, y son F4.17–F4.19, que siguen
-      // bloqueadas con esa razón escrita y verificada el 2026-09-25.
+      // Lo que queda son las dos formas que **ningún cuerpo dibuja**:
+      // `multi_attribute_profile`, cuyo único gráfico es `radar` y no está
+      // construido, y `graph`, que además no tiene de dónde salir —ninguna
+      // columna de las dos tablas Gold trae aristas origen→destino, medido el
+      // 2026-09-29—.
       //
+      // **Acá decía que el contrato no las declaraba, y era falso desde el
+      // 2026-09-26**: el yaml declara las dieciséis `Valor*`. El comentario se
+      // escribió cuando era cierto para las cinco y envejeció con tres de ellas
+      // adentro — el mismo modo de falla que tuvo `case 'distribution'`, que
+      // caía acá con un comentario que decía que el backend no la emitía.
       return { ok: false, razon: `Forma desconocida: «${shape}».` }
   }
 }

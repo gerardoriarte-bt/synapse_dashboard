@@ -191,17 +191,37 @@ describe('catálogo', () => {
     expect(rejected).toHaveLength(0)
   })
 
+  it('las tres de v1.1 pasan · F4.17–F4.19, 2026-09-30', () => {
+    // Las tres condiciones se cumplen a la vez: el backend las materializa —con
+    // las entradas de `MetricRegistry` que escribimos y corrimos contra
+    // Snowflake—, el contrato declara su esquema desde el 2026-09-26, y los tres
+    // cuerpos existen.
+    const { metrics, rejected } = adaptCatalog(
+      ['compared_categorical', 'matrix', 'flow'].map((shape, i) => ({
+        ...metrica,
+        id: `m-${i}`,
+        shape,
+      })),
+    )
+    expect(metrics.map((m) => m.forma)).toEqual(['categoricaComparada', 'matriz', 'flujo'])
+    expect(rejected).toHaveLength(0)
+  })
+
   it('una forma que el front todavía NO DIBUJA no pasa · y la razón lo dice', () => {
-    // **Las cinco que quedan cumplen una de las tres condiciones y no las otras
-    // dos**: el backend las emite, nuestro contrato no declara su esquema y no
-    // hay cuerpo. Son F4.17–F4.19, y su candado dice exactamente eso.
+    // **EL EJEMPLO CAMBIÓ DE FORMA POR SEGUNDA VEZ · 2026-09-30.** Era
+    // `distribution`, pasó a `matrix` el 2026-09-25 cuando la primera empezó a
+    // dibujarse, y hoy `matrix` también se dibuja. Ahora es `graph`, y de las
+    // dieciséis es la que menos probable es que se mueva: no tiene gráfico
+    // construido **y** no tiene de dónde salir, porque ninguna columna de las dos
+    // tablas Gold trae aristas origen→destino.
     //
-    // La razón dejó de decir «el backend no materializa», que era falso desde
-    // el 21 y estaba escrito en tres lugares a la vez.
-    const { metrics, rejected } = adaptCatalog([{ ...metrica, shape: 'matrix' }])
+    // Que este ejemplo haya que mudarlo dos veces en una semana es el patrón
+    // registrado: un caso negativo cuyo ejemplo se vuelve positivo queda
+    // verificando algo que ya no existe. Acá lo atrapó la puerta las dos veces.
+    const { metrics, rejected } = adaptCatalog([{ ...metrica, shape: 'graph' }])
 
     expect(metrics).toHaveLength(0)
-    expect(rejected[0]?.razon).toContain('matrix')
+    expect(rejected[0]?.razon).toContain('graph')
     expect(rejected[0]?.razon).toMatch(/no dibuja/i)
   })
 
@@ -242,15 +262,23 @@ describe('bloques', () => {
     // **A las que el front DIBUJA**, no a las dieciséis del enum: ofrecer una
     // forma que ningún cuerpo puede pintar es una promesa vacía.
     //
-    // Eran nueve y son once desde el 2026-09-25, cuando `distribucion` y
-    // `serieConBanda` pasaron a tener las tres cosas —el backend las emite, el
-    // contrato declara su esquema y hay cuerpo—.
+    // Eran nueve, once desde el 2026-09-25 y **catorce desde el 2026-09-30**,
+    // cuando `categoricaComparada`, `matriz` y `flujo` pasaron a tener las tres
+    // cosas —el backend las materializa, el contrato declara su esquema y hay
+    // cuerpo—.
     expect(b?.formasAceptadas).toContain('escalar')
     expect(b?.formasAceptadas).toContain('distribucion')
     expect(b?.formasAceptadas).toContain('serieConBanda')
-    // Y NO las cinco que no se dibujan · F4.17–F4.19.
-    expect(b?.formasAceptadas).not.toContain('matriz')
+    expect(b?.formasAceptadas).toContain('matriz')
+    // **Y NO las dos que no se dibujan.** `perfilMultiatributo` tiene un solo
+    // gráfico en el repertorio —`radar`— y no está construido; `grafo` no tiene
+    // ni gráfico ni dato del cual salir. Ofrecerlas en el comodín sería una
+    // promesa vacía en el builder.
+    expect(b?.formasAceptadas).not.toContain('perfilMultiatributo')
     expect(b?.formasAceptadas).not.toContain('grafo')
+    // **El número exacto, y no sólo la pertenencia.** Sin esto, agregar una forma
+    // a `DIBUJABLES` sin cuerpo pasaría las seis afirmaciones de arriba.
+    expect(b?.formasAceptadas).toHaveLength(14)
   })
 
   /** ── LO QUE `/config/blocks` MANDA DE VERDAD · 2026-09-15 ────────────────
@@ -279,14 +307,14 @@ describe('bloques', () => {
     // sola tabla, y la tentación de volver a juntarlas es lo que esta prueba
     // impide.
     //
-    // **El ejemplo cambió de forma el 2026-09-25**, y eso es el punto: la que
-    // servía —`distribution`— pasó a dibujarse, así que ahora ilustra con
-    // `matrix`, que el bloque `matrix` nombra y el catálogo sigue rechazando
-    // porque nuestro contrato no declara su esquema.
-    const [b] = adaptBlocks([{ ...bars, type: 'matrix', accepted_shapes: ['matrix'] }])
-    expect(b?.formasAceptadas).toEqual(['matriz'])
+    // **El ejemplo cambió de forma dos veces**: `distribution` el 2026-09-25 y
+    // `matrix` el 2026-09-30, las dos veces porque la forma que servía de ejemplo
+    // pasó a dibujarse. Ahora es `graph`, que el bloque `graph` nombra y el
+    // catálogo sigue rechazando porque no hay gráfico que la dibuje.
+    const [b] = adaptBlocks([{ ...bars, type: 'graph', accepted_shapes: ['graph'] }])
+    expect(b?.formasAceptadas).toEqual(['grafo'])
 
-    const { metrics, rejected } = adaptCatalog([{ ...metrica, shape: 'matrix' }])
+    const { metrics, rejected } = adaptCatalog([{ ...metrica, shape: 'graph' }])
     expect(metrics).toHaveLength(0)
     expect(rejected[0]?.razon).toMatch(/no dibuja/i)
   })
@@ -647,20 +675,166 @@ describe('las formas de v1.1 · el día que llegaron', () => {
     expect((p as { mensaje: string }).mensaje).toMatch(/intervalo/i)
   })
 
-  it.each([
-    'compared_categorical',
-    'multi_attribute_profile',
-    'matrix',
-    'graph',
-    'flow',
-  ])('%s no se adapta · `Valor` no declara su esquema · F4.17–F4.19', (shape) => {
-    // **Estas cinco sí siguen bloqueadas, y el candado se verificó el
-    // 2026-09-25**: el contrato las nombra en la unión `Forma` y no declara el
-    // objeto de ninguna. No es que no lleguen: es que no hay dónde ponerlas.
-    const p = conValor({ shape })
-    expect(p).toMatchObject({ estado: 'ERROR' })
-    expect((p as { mensaje: string }).mensaje).toContain(shape)
+  /* ── LAS TRES QUE SE ADAPTARON EL 2026-09-30 · F4.17, F4.18 y F4.19 ─────────
+   *
+   *  **Los fixtures son la salida REAL**, recortada: se capturaron de
+   *  `dd_panel_data` del servicio local después de correr las tres métricas que
+   *  escribimos en `MetricRegistry` contra Snowflake. Se recortan las filas, no
+   *  los campos — un fixture inventado verifica el fixture, que es la regla de
+   *  este repositorio y ya corrigió tres fixtures el 2026-09-04.
+   *
+   *  Acá había un `it.each` de CINCO afirmando que ninguna se adaptaba. Tres
+   *  pasaron a adaptarse y **el caso negativo se movió a las dos que quedan** en
+   *  vez de borrarse: es el patrón que apareció tres veces el 2026-09-29 —un
+   *  ejemplo «no dibujado» que pasa a dibujarse deja la prueba verde verificando
+   *  nada—. */
+
+  it('compared_categorical · `reference` ausente NO se rellena y `delta` NO se deriva', () => {
+    // Las tres primeras filas de `platform_gap`, período 2026-09. La tercera es
+    // la que enseña: quince de los 37 ítems reales llegan SIN `reference`
+    // —plataformas con retorno atribuido y sin costo, avisado a datos— y con un
+    // `?? 0` habrían salido con la brecha entera como delta.
+    const p = conValor({
+      shape: 'compared_categorical',
+      items: [
+        { label: 'Google PMax', v: 502449.76, reference: 85134.28, delta: 417315.48 },
+        { label: 'MGID', v: 221.48, reference: 7842.45, delta: -7620.97 },
+        { label: 'YouTube', v: 12455.52 },
+      ],
+    })
+    expect(p).toMatchObject({ estado: 'DISPONIBLE' })
+    const valor = (p as { valor: unknown }).valor as {
+      forma: string
+      items: Record<string, unknown>[]
+    }
+    expect(valor.forma).toBe('categoricaComparada')
+    expect(valor.items[0]).toEqual({
+      etiqueta: 'Google PMax',
+      v: 502449.76,
+      referencia: 85134.28,
+      delta: 417315.48,
+    })
+    // El delta NEGATIVO pasa como vino: es el signo lo que comunica la dirección
+    // —regla dura 3— y un `Math.abs` acá borraría que la plataforma no llegó.
+    expect(valor.items[1]).toMatchObject({ delta: -7620.97 })
+    // **Las CLAVES, no el valor**: `referencia: undefined` pasaría un
+    // `toMatchObject` y es exactamente lo que no debe estar, porque
+    // `PlotDumbbell` decide con `i.referencia === undefined`.
+    expect(Object.keys(valor.items[2] ?? {}).sort()).toEqual(['etiqueta', 'v'])
   })
+
+  it('matrix · `null` es «sin dato» y sobrevive al adaptador', () => {
+    // Cuatro celdas de `platform_month_matrix`: `Criteo` con inversión los dos
+    // meses, `Adsmovil` con el segundo en `null` —la plataforma no existía—. La
+    // distinción es la que ya costó en A5 y en A1.
+    const p = conValor({
+      shape: 'matrix',
+      rows: ['Criteo', 'Adsmovil'],
+      columns: ['2025-10', '2025-11'],
+      cells: [
+        [7933.11, 1939.7],
+        [1766.49, null],
+      ],
+    })
+    const valor = (p as { valor: unknown }).valor as { forma: string; celdas: unknown[][] }
+    expect(valor.forma).toBe('matriz')
+    expect(valor.celdas[1]).toEqual([1766.49, null])
+  })
+
+  it('matrix · una celda que no es cifra ni `null` invalida la matriz ENTERA', () => {
+    // No se convierte a `null`: eso le atribuiría al negocio un hueco que es del
+    // productor del dato, y el panel diría «sin dato» donde hay un payload mal
+    // formado.
+    const p = conValor({
+      shape: 'matrix',
+      rows: ['Criteo'],
+      columns: ['2025-10', '2025-11'],
+      cells: [[7933.11, 'n/d']],
+    })
+    expect(p).toMatchObject({ estado: 'ERROR' })
+    expect((p as { mensaje: string }).mensaje).toMatch(/celda/i)
+  })
+
+  it('matrix · una etiqueta que no es cadena invalida la lista, no se descarta', () => {
+    // Descartarla correría las etiquetas contra las celdas: la matriz se vería
+    // perfecta con los rótulos cambiados de lugar.
+    const p = conValor({
+      shape: 'matrix',
+      rows: ['Criteo'],
+      columns: ['2025-10', 11],
+      cells: [[1, 2]],
+    })
+    expect(p).toMatchObject({ estado: 'ERROR' })
+  })
+
+  it('matrix · la DENSIDAD no la comprueba el adaptador · la declara el cuerpo', () => {
+    // Una matriz rala pasa por acá y `MatrixBody` la explica con cuántas faltan.
+    // Rechazarla acá la sacaría del layout con «forma inválida», que no dice nada.
+    const p = conValor({
+      shape: 'matrix',
+      rows: ['Criteo', 'Adsmovil'],
+      columns: ['2025-10', '2025-11'],
+      cells: [[7933.11, 1939.7]],
+    })
+    expect(p).toMatchObject({ estado: 'DISPONIBLE' })
+  })
+
+  it('flow · etapas y enlaces, con los nombres del contrato interno', () => {
+    // Tres enlaces de `spend_flow`, todos hacia el único nodo `total`, que es la
+    // forma que la consulta produce: cada plataforma aporta su inversión.
+    const p = conValor({
+      shape: 'flow',
+      stages: [
+        { id: 'Dailymotion', label: 'Dailymotion', v: 1883185 },
+        { id: 'TikTok', label: 'TikTok', v: 18358.88 },
+        { id: 'total', label: 'Total invertido', v: 1901543.88 },
+      ],
+      links: [
+        { from: 'Dailymotion', to: 'total', v: 1883185 },
+        { from: 'TikTok', to: 'total', v: 18358.88 },
+      ],
+    })
+    const valor = (p as { valor: unknown }).valor as {
+      forma: string
+      etapas: Record<string, unknown>[]
+      enlaces: Record<string, unknown>[]
+    }
+    expect(valor.forma).toBe('flujo')
+    expect(valor.etapas[0]).toEqual({ id: 'Dailymotion', etiqueta: 'Dailymotion', v: 1883185 })
+    expect(valor.enlaces[1]).toEqual({ desde: 'TikTok', hacia: 'total', v: 18358.88 })
+  })
+
+  it('flow · una etapa sin `label` se descarta y NO cae al `id`', () => {
+    // Ese respaldo lo hace el BACKEND —está escrito en el esquema de
+    // `ValorGrafo`— y repetirlo acá taparía que dejó de hacerlo.
+    const p = conValor({
+      shape: 'flow',
+      stages: [
+        { id: 'a', v: 1 },
+        { id: 'b', label: 'B', v: 2 },
+      ],
+      links: [{ from: 'a', to: 'b', v: 1 }],
+    })
+    const valor = (p as { valor: unknown }).valor as { etapas: { id: string }[] }
+    expect(valor.etapas.map((e) => e.id)).toEqual(['b'])
+  })
+
+  it.each(['multi_attribute_profile', 'graph'])(
+    '%s NO se adapta · ninguno de sus gráficos está construido',
+    (shape) => {
+      // **Las dos que quedan, y cada una por su razón.**
+      // `multi_attribute_profile` tiene un solo gráfico en el repertorio —`radar`—
+      // y `PlotRadar` no existe. `graph` tampoco tiene gráfico Y además no tiene
+      // de dónde salir: ninguna columna de las dos tablas Gold trae aristas
+      // origen→destino, medido el 2026-09-29.
+      //
+      // Una forma adaptada sin cuerpo que la dibuje es un panel en blanco sin
+      // razón, que es lo que este rechazo evita.
+      const p = conValor({ shape })
+      expect(p).toMatchObject({ estado: 'ERROR' })
+      expect((p as { mensaje: string }).mensaje).toContain(shape)
+    },
+  )
 })
 
 describe('presentación', () => {

@@ -58,6 +58,16 @@ ADAPT = RAIZ / "src/api/adapt.ts"
 SALIDA_JSON = RAIZ / "docs/repertorio-de-graficos.json"
 SALIDA_GO = RAIZ / "docs/backend/dd_seed_plots.go"
 
+# **El mismo JSON, dentro de `dev/`, para que el modo mock sirva el repertorio.**
+# Hasta el 2026-09-30 `GET /config/plots` no tenía handler en MSW: la consola en
+# `dev:mock` corría con el repertorio VACÍO, así que ningún mínimo ni tope se
+# ejercitaba nunca ahí. Es la familia de F1.38 —«los mocks responden lo que
+# nosotros creemos del cable»— con la cara de no responder nada.
+#
+# Se GENERA y no se copia a mano por la misma razón que los otros dos: una
+# tercera tabla escrita aparte se desincroniza sin que nadie lo note.
+SALIDA_MOCK = RAIZ / "dev/mocks/repertorio.json"
+
 BLOQUEADO = 2
 
 
@@ -371,7 +381,7 @@ def main() -> int:
 
     if check:
         malo = []
-        for ruta, esperado in ((SALIDA_JSON, js), (SALIDA_GO, go)):
+        for ruta, esperado in ((SALIDA_JSON, js), (SALIDA_GO, go), (SALIDA_MOCK, js)):
             if not ruta.exists() or ruta.read_text() != esperado:
                 malo.append(ruta.relative_to(RAIZ))
         if malo:
@@ -384,6 +394,8 @@ def main() -> int:
     SALIDA_GO.parent.mkdir(parents=True, exist_ok=True)
     SALIDA_JSON.write_text(js)
     SALIDA_GO.write_text(go)
+    SALIDA_MOCK.parent.mkdir(parents=True, exist_ok=True)
+    SALIDA_MOCK.write_text(js)
 
     con_min = sum(1 for f in filas if f["minimos"])
     con_tope = sum(1 for f in filas if f["tope"])
@@ -394,6 +406,7 @@ def main() -> int:
     )
     print(f"  → {SALIDA_JSON.relative_to(RAIZ)}")
     print(f"  → {SALIDA_GO.relative_to(RAIZ)}")
+    print(f"  → {SALIDA_MOCK.relative_to(RAIZ)}")
     return 0
 
 

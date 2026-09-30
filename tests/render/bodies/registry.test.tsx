@@ -46,18 +46,44 @@ describe('cada cargador resuelve a un memo', () => {
 })
 
 describe('un tipo sin cuerpo NO cae en un fallback silencioso', () => {
-  it('devuelve undefined y quien llama decide', () => {
+  /** Un `tipo` que NO está en el enumerado del contrato.
+   *
+   *  ── POR QUÉ INVENTADO Y NO UNO DE `MISSING_TYPES` · 2026-09-30 ─────────────
+   *
+   *  Esta prueba recorría `MISSING_TYPES`, y el 2026-09-30 esa lista quedó
+   *  **vacía**: los tres cuerpos que le faltaban se construyeron. Un `for` sobre
+   *  una lista vacía pasa sin ejecutar una sola afirmación, así que la prueba
+   *  habría quedado verde verificando nada — el patrón que en este repositorio
+   *  apareció tres veces el 2026-09-29 y otras dos en `adapt.test.ts`.
+   *
+   *  Con un tipo inventado la afirmación **no depende de que falte un cuerpo**, y
+   *  eso es lo que la hace permanente: `bodyFor` recibe su argumento de
+   *  `block_type`, que en el cable es una cadena libre, así que el caso que cubre
+   *  es el real —un tipo que el servicio manda y este build no conoce—. El `as`
+   *  es la mentira necesaria para escribirlo: en runtime llega igual. */
+  const INVENTADO = 'sunburst' as PanelType
+
+  it('un tipo que el contrato no declara devuelve undefined y quien llama decide', () => {
     // Pintar el cuerpo de otro tipo, o una caja vacía, convierte un error de
     // composición en una pantalla que parece correcta · F1.22 y §1 principio 6.
-    for (const type of MISSING_TYPES) {
-      expect(bodyFor(type)).toBeUndefined()
-    }
+    expect(bodyFor(INVENTADO)).toBeUndefined()
+  })
+
+  it('y el inventado NO es uno de los quince · si lo fuera, la prueba de arriba mentiría', () => {
+    expect(CONTRACT_TYPES).not.toContain(INVENTADO)
   })
 
   it('los construidos sí resuelven', () => {
     for (const type of BUILT_TYPES) {
       expect(bodyFor(type)).toBeDefined()
     }
+  })
+
+  it('están los QUINCE construidos y no falta ninguno · F4.20', () => {
+    // La otra mitad de lo que `MISSING_TYPES` vacía afirma, escrita como
+    // afirmación y no como recorrido: los quince del contrato tienen cuerpo.
+    expect(MISSING_TYPES).toEqual([])
+    expect(BUILT_TYPES).toHaveLength(CONTRACT_TYPES.length)
   })
 })
 
@@ -83,9 +109,14 @@ describe('la cuenta cierra contra el contrato', () => {
 
 describe('preloadBodies · los chunks viajan en paralelo con panels:batch', () => {
   it('no revienta con un tipo sin cuerpo', () => {
-    // Una pestaña puede declarar un tipo que todavía no existe: la precarga lo
+    // Una pestaña puede declarar un tipo que este build no conoce: la precarga lo
     // saltea, y el error explícito lo da `bodyFor` al montar.
-    expect(() => preloadBodies(['kpi', 'matrix'])).not.toThrow()
+    //
+    // **El ejemplo era `matrix`, y dejó de servir el 2026-09-30**: al construirse
+    // su cuerpo, esta prueba pasó a precargar dos tipos que EXISTEN y el `?.` que
+    // viene a cubrir quedó sin ejercitar. Con un tipo inventado la afirmación no
+    // depende de que falte un cuerpo.
+    expect(() => preloadBodies(['kpi', 'sunburst' as PanelType])).not.toThrow()
   })
 
   it('deduplica · una pestaña con seis kpi pide el chunk una vez', () => {

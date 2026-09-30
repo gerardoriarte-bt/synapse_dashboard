@@ -170,6 +170,18 @@ Snowflake. Es lo que permitió verificar que los gráficos dibujan **con dato de
 negocio** y no sólo contra MSW; los doce paneles del dashboard por defecto siguen
 con `chart: ''`, que es como los emite el servicio.
 
+**Y DESDE EL 2026-09-30 LA PESTAÑA `overview` LLEVA TRES PANELES MÁS**, que son
+los de las formas v1.1: `comparison`/`dumbbell` sobre `platform_gap`,
+`matrix`/`heatmap` sobre `platform_month_matrix` y `graph`/`sankey` sobre
+`spend_flow`. **Van en `overview` y no en `repertorio-real` a propósito**: es la
+pestaña del layout ACTIVO, así que se ven abriendo la consola sin cambiar de
+dashboard. El footer dice **15 paneles**.
+
+Se insertaron a mano en `dd_panels` porque el builder no ofrece todavía esas
+métricas —el catálogo las trae desde que sembramos su fila—; el SQL está en el
+historial de esta sesión y se rehace con un `INSERT … SELECT` sobre
+`dd_catalog_metrics`.
+
 **Dos efectos más que hay que saber**, porque no se deducen de mirar la consola:
 
 - **El rol `admin` ganó la clave `repertorio-real` en `tab_keys`.** Sin eso la

@@ -28,6 +28,7 @@
  */
 import { http, HttpResponse, delay } from 'msw'
 import { setupWorker } from 'msw/browser'
+import repertorio from './repertorio.json'
 import { LAYOUT_PUB, bloques, catalogo, contexto, detalle, layouts, roles, tenants, usuario, PANELES_MUESTRARIO } from './datos'
 
 const API = '*/api/v1'
@@ -120,6 +121,60 @@ function valorPara(forma: string, i: number): Record<string, unknown> {
           { label: '20 +', v: n * 0.12 },
         ],
       }
+    case 'compared_categorical':
+      // **Tres ítems de la salida real de `platform_gap`**, y el tercero llega
+      // SIN `reference`: es el caso de quince de sus 37 ítems —plataformas con
+      // retorno atribuido y sin costo— y el que hace visible que la pesa no se
+      // dibuja desde el origen.
+      return {
+        shape: 'compared_categorical',
+        items: [
+          { label: 'Google PMax', v: 502449.76, reference: 85134.28, delta: 417315.48 },
+          { label: 'Google', v: 197060.78, reference: 43422.49, delta: 153638.29 },
+          { label: 'Facebook', v: 155645.76, reference: 43692.57, delta: 111953.19 },
+          { label: 'Criteo', v: 36813.49, reference: 2574.17, delta: 34239.32 },
+          { label: 'MGID', v: 221.48, reference: 7842.45, delta: -7620.97 },
+          { label: 'YouTube', v: 12455.52 },
+        ],
+      }
+    case 'matrix':
+      // Cinco plataformas por seis meses de `platform_month_matrix`, con sus
+      // `null` reales: la plataforma no tuvo inversión ese mes. **Se recorta a
+      // cinco filas y no a las 38 que devuelve** — mirarlas las 38 es lo que hizo
+      // ver que la forma no tiene tope, y eso está anotado aparte.
+      return {
+        shape: 'matrix',
+        rows: ['Criteo', 'DV360', 'Facebook', 'Google', 'Adsmovil'],
+        columns: ['2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09'],
+        cells: [
+          [7933.11, 1939.7, 4032.44, 3333.74, 1782.43, 1383.86],
+          [1398.95, null, 2259.97, null, 1851.48, 642.01],
+          [133397.25, 23698.11, 100811.13, 76124.1, 59614.31, 35455.82],
+          [39998.02, 26888.85, 43297.82, 48462.64, 31122.54, 29607.82],
+          [1766.49, 0.04, null, null, null, null],
+        ],
+      }
+    case 'flow':
+      // Cinco plataformas hacia el nodo `total`, que es la forma que la consulta
+      // produce: cada una aporta su inversión y el total sólo recibe.
+      return {
+        shape: 'flow',
+        stages: [
+          { id: 'Dailymotion', label: 'Dailymotion', v: 1883185 },
+          { id: 'GCM-Other', label: 'GCM-Other', v: 1058397 },
+          { id: 'Google PMax', label: 'Google PMax', v: 85134.28 },
+          { id: 'Facebook', label: 'Facebook', v: 43692.57 },
+          { id: 'TikTok', label: 'TikTok', v: 18358.88 },
+          { id: 'total', label: 'Total invertido', v: 3088767.73 },
+        ],
+        links: [
+          { from: 'Dailymotion', to: 'total', v: 1883185 },
+          { from: 'GCM-Other', to: 'total', v: 1058397 },
+          { from: 'Google PMax', to: 'total', v: 85134.28 },
+          { from: 'Facebook', to: 'total', v: 43692.57 },
+          { from: 'TikTok', to: 'total', v: 18358.88 },
+        ],
+      }
     case 'categorical':
       return {
         shape: 'categorical',
@@ -193,6 +248,16 @@ export const worker = setupWorker(
   // `SendSuccess(c, 200, metrics)` en Go.
   http.get(`${API}/config/catalog`, () => ok(catalogo)),
   http.get(`${API}/config/blocks`, () => ok(bloques)),
+  /* **El repertorio, y hasta el 2026-09-30 no tenía handler.** MSW avisaba
+     «intercepted a request without a matching request handler» en la consola del
+     navegador y la aplicación seguía andando: `usePlots` caía a lista vacía y
+     `plotProblemOf` devuelve `undefined` con el repertorio vacío —lo dice su
+     propia guardia— así que **ningún mínimo ni tope se ejercitaba en `dev:mock`**.
+
+     Se sirve el JSON GENERADO y no una copia a mano: lo emite `tools/gen-plots.py`
+     junto con los otros dos, de modo que las 49 filas de acá son las mismas que
+     las del servicio. Una tercera tabla escrita aparte es cómo se desincroniza. */
+  http.get(`${API}/config/plots`, () => ok(repertorio)),
   http.get(`${API}/config/tabs/:tabId`, ({ params }) => {
     const d = estado.detalles.get(LAYOUT_PUB)
     const t = d?.tabs.find((x) => x.tab.id === params['tabId'])

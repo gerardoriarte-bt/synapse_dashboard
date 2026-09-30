@@ -48,7 +48,9 @@ const P = (n: number) => `55555555-5555-5555-5555-5555555555${String(n).padStart
  *  las dos pestañas de negocio**, que siguen con la rotación intacta, y los
  *  dibujos acá. Exceptuar la pestaña del muestrario no es maquillar la demo —
  *  lo sería si la excepción tapara un estado que no se ve en otro lado. */
-export const PANELES_MUESTRARIO = new Set([20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32].map(P))
+export const PANELES_MUESTRARIO = new Set(
+  [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35].map(P),
+)
 const R = (n: number) => `66666666-6666-6666-6666-6666666666${String(n).padStart(2, '0')}`
 
 export const usuario = {
@@ -90,6 +92,14 @@ const FORMAS = [
   // no se publica», que sin esto no se ejercitaba nunca.
   ['series_with_band', 'demand'],
   ['distribution', 'inventory'],
+  // **Las tres del 2026-09-30**, por la misma razón que las dos de arriba: el
+  // servicio real sólo las tiene desde que sembramos su fila del catálogo en la
+  // base local, así que sin esto `dev:mock` no puede mirar los tres cuerpos
+  // nuevos. Los payloads son la SALIDA REAL recortada, capturada de
+  // `dd_panel_data` después de correr las métricas contra Snowflake.
+  ['compared_categorical', 'media'],
+  ['matrix', 'media'],
+  ['flow', 'media'],
 ] as const
 
 export const catalogo = FORMAS.flatMap(([shape, family], i) =>
@@ -97,7 +107,7 @@ export const catalogo = FORMAS.flatMap(([shape, family], i) =>
     id: M(i * 2 + k),
     tenant_id: TENANT,
     key: `${shape}_${String(i)}_${String(k)}`,
-    name: `${['Ventas', 'Margen', 'Tráfico', 'Inversión', 'Retorno', 'Stock', 'Quiebres', 'Órdenes', 'Ticket medio', 'Recompra', 'Pronóstico de venta', 'Días de cobertura'][i] ?? 'Métrica'} ${String(k + 1)}`,
+    name: `${['Ventas', 'Margen', 'Tráfico', 'Inversión', 'Retorno', 'Stock', 'Quiebres', 'Órdenes', 'Ticket medio', 'Recompra', 'Pronóstico de venta', 'Días de cobertura', 'Retorno contra inversión', 'Inversión por plataforma y mes', 'Inversión hacia el total'][i] ?? 'Métrica'} ${String(k + 1)}`,
     shape,
     family,
     layer: ['GOLD', 'SILVER', 'BRONZE'][(i + k) % 3],
@@ -188,9 +198,14 @@ const panel = (
   // desnuda que un arco sin máximo. Va acá y no cableado adentro porque el
   // servicio lo manda en `options`, igual que `meter` o `cut`.
   options: Record<string, unknown> = {},
+  // **El alto, y llegó con las formas v1.1** · 2026-09-30. Los doce anteriores
+  // caben en 4 filas y `matrix` pide 5 como mínimo y `graph` 7 —está en
+  // `/config/blocks`—, así que un 4 fijo componía paneles que el propio
+  // validador del builder rechaza. Sigue con default 4 para no tocar los doce.
+  rowSpan = 4,
 ) => ({
   id: P(n), tab_id: tab, metric_id: M(metric), type: tipo,
-  col_start: colStart, col_span: colSpan, row_span: 4,
+  col_start: colStart, col_span: colSpan, row_span: rowSpan,
   chart, note: '', options,
 })
 
@@ -276,6 +291,11 @@ const tabsDe = (layout: string) => [
       panel(30, 9, TAB_C, 6, 5, 'series', 'combo'),
       panel(31, 9, TAB_C, 1, 5, 'series', 'smallmult'),
       panel(32, 3, TAB_C, 6, 3, 'gauge', 'rings', { maximum: 200000 }),
+      // Los tres de las formas v1.1 · 2026-09-30. Los spans son los del bloque
+      // en `/config/blocks`: `comparison` 5–8, `matrix` y `graph` 6–12.
+      panel(33, 24, TAB_C, 1, 6, 'comparison', 'dumbbell', {}, 5),
+      panel(34, 26, TAB_C, 7, 6, 'matrix', 'heatmap', {}, 5),
+      panel(35, 28, TAB_C, 1, 12, 'graph', 'sankey', {}, 7),
     ],
   },
 ]

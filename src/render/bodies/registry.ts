@@ -81,8 +81,22 @@ type Loader = () => Promise<{ default: PanelBody }>
  *
  *  La comparación de `memo` es superficial: si algún día un cuerpo recibe un
  *  objeto construido en el render del padre, deja de servir en silencio.
+ *
+ *  ── **`Record` COMPLETO Y NO `Partial`, DESDE EL 2026-09-30 · F4.20** ────────
+ *
+ *  Con `Partial` un tipo nuevo en el enumerado del contrato compilaba sin cuerpo
+ *  y se descubría en runtime, con `bodyFor` devolviendo `undefined`. Con el
+ *  `Record` entero **no compila**, que es el mecanismo que `NOMBRE_DE_FORMA` de
+ *  `adapt.ts` ya usaba para las formas y que su comentario anticipaba para acá:
+ *  «es el mismo mecanismo que el criterio de F4.20 pide para el registro de
+ *  cuerpos, acá donde sí se puede sostener hoy». Ahora se sostiene en los dos.
+ *
+ *  **`bodyFor` sigue devolviendo `PanelBody | undefined`** y eso no es
+ *  redundante: su argumento sale de `block_type`, que en el cable es una cadena
+ *  libre. `esTipo` lo filtra en el adaptador, pero el `undefined` es la red del
+ *  día que alguien llame con un tipo que no pasó por ahí.
  */
-export const LOADERS: Partial<Record<PanelType, Loader>> = {
+export const LOADERS: Record<PanelType, Loader> = {
   kpi: () => import('./KpiBody').then((m) => ({ default: memo(adapt(m.KpiBody)) })),
   prose: () => import('./ProseBody').then((m) => ({ default: memo(adapt(m.ProseBody)) })),
   series: () => import('./SeriesBody').then((m) => ({ default: memo(adapt(m.SeriesBody)) })),
@@ -97,27 +111,50 @@ export const LOADERS: Partial<Record<PanelType, Loader>> = {
   distribution: () =>
     import('./DistributionBody').then((m) => ({ default: memo(adapt(m.DistributionBody)) })),
   blocked: () => import('./BlockedBody').then((m) => ({ default: memo(adapt(m.BlockedBody)) })),
+  // Los tres de las formas v1.1 · F4.17, F4.18 y F4.19, construidos el
+  // 2026-09-30 contra las tres métricas que corrimos en Snowflake.
+  comparison: () =>
+    import('./ComparisonBody').then((m) => ({ default: memo(adapt(m.ComparisonBody)) })),
+  matrix: () => import('./MatrixBody').then((m) => ({ default: memo(adapt(m.MatrixBody)) })),
+  graph: () => import('./GraphBody').then((m) => ({ default: memo(adapt(m.GraphBody)) })),
 }
 
-export const BODIES: Partial<Record<PanelType, PanelBody>> = Object.fromEntries(
-  Object.entries(LOADERS).map(([type, load]) => [type, lazy(load)]),
-)
+/** **También `Record` completo**, y se construye recorriendo `LOADERS` en vez de
+ *  con `Object.fromEntries`.
+ *
+ *  `fromEntries` devuelve `{ [k: string]: T }` y hacen falta DOS casts para
+ *  llegar a un `Record` completo —el compilador avisa que los tipos «no se
+ *  superponen»—, y un cast doble no lo verifica nadie. Recorriendo las claves de
+ *  una fuente que YA es completa, el único cast es el del acumulador vacío, y lo
+ *  que lo hace verdadero está a la vista en la línea siguiente: el bucle visita
+ *  todas las claves de `LOADERS`, que es el `Record` completo de arriba. */
+export const BODIES: Record<PanelType, PanelBody> = (() => {
+  const out = {} as Record<PanelType, PanelBody>
+  for (const type of Object.keys(LOADERS) as PanelType[]) out[type] = lazy(LOADERS[type])
+  return out
+})()
 
 export const BUILT_TYPES = Object.keys(BODIES) as PanelType[]
 
-/** Los tres del contrato que todavía no tienen cuerpo.
+/** **VACÍA DESDE EL 2026-09-30, y se queda como lista.**
  *
- *  **DOCE DE QUINCE, y los doce son todos los que alguna pestaña usa.** Los tres
- *  que faltan —`comparison`, `matrix`, `graph`— son las formas v1.1 de §8.12:
- *  ningún endpoint las devuelve todavía, así que construirlos hoy sería escribir
- *  contra formas inventadas. Los cierran F4.17, F4.18 y F4.19.
+ *  Tenía los tres de las formas v1.1 —`comparison`, `matrix`, `graph`— con la
+ *  razón de que ningún endpoint las devolvía. Las tres métricas que las emiten se
+ *  escribieron y corrieron contra Snowflake el 2026-09-30 —`platform_gap`,
+ *  `platform_month_matrix` y `spend_flow`—, así que la razón venció y los tres
+ *  cuerpos existen.
  *
- *  Se declaran para que una prueba pueda afirmar que los que faltan son
- *  exactamente estos, y no que se perdió uno sin que nadie lo note. Cuando estén
- *  los quince, `BODIES` pasa a `Record<PanelType, PanelBody>` completo y agregar
- *  un tipo al enumerado sin su cuerpo deja de compilar — que es lo que pide §2.4
- *  y lo que cierra F4.20. */
-export const MISSING_TYPES: PanelType[] = ['comparison', 'matrix', 'graph']
+ *  **No se borra**, y no es por compatibilidad: es el enunciado del que
+ *  `registry.test.tsx` deriva la paridad contra el enumerado del contrato. Vacía
+ *  afirma algo —«ningún tipo del contrato se quedó sin cuerpo»— y el día que el
+ *  contrato gane uno, la única forma de volver a compilar es agregarlo a
+ *  `LOADERS` o declararlo acá con su razón.
+ *
+ *  **Lo que sí hay que cuidar es su prueba.** Un caso negativo cuyo ejemplo
+ *  desaparece queda verificando una lista vacía, que es el patrón que en este
+ *  repositorio apareció tres veces en un día. Está resuelto en
+ *  `registry.test.tsx`, con un tipo inventado en lugar de uno de esta lista. */
+export const MISSING_TYPES: PanelType[] = []
 
 /** Un tipo sin cuerpo registrado da `undefined` y **quien llama decide**.
  *

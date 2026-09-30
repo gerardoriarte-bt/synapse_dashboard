@@ -6787,10 +6787,108 @@ cuerpo propio a cada una, o escribirlo en una sección de evidencia como ésta, 
 el parser no reparte—. Se eligió el segundo, que es el que ya usan las once
 tareas cerradas de esta fase.
 
-### F4.17 ⬜ `ComparisonBody` + `ComparePlot` · 🔒 ninguna métrica declara `categoricaComparada`
-### F4.18 ⬜ `MatrixBody` + `HeatmapPlot` · 🔒 ninguna métrica declara `matriz`
-### F4.19 ⬜ `GraphBody` + `GraphPlot` · 🔒 ninguna métrica declara `grafo` ni `flujo`
-### F4.20 ⬜ Registrar los tres con carga diferida · 🔒 espera a F4.17–F4.19
+### F4.17 ✅ `ComparisonBody` + `PlotDumbbell`
+### F4.18 ✅ `MatrixBody` + `PlotHeatmap`
+### F4.19 ✅ `GraphBody` + `PlotSankey`
+### F4.20 ✅ Registrar los tres con carga diferida · el registro pasó a `Record` completo
+
+**CERRADAS EL 2026-09-30 CONTRA DATO DE SNOWFLAKE, Y ESO ES LO QUE SE CIERRA.**
+No «contra el servicio real», que se dice solo: los tres paneles se compusieron
+sobre las tres métricas que corrimos contra Snowflake, se sirvieron por
+`GET /config/tabs` del binario local y **se miraron en la consola** — el pie dice
+15 paneles. `carga-diferida ✓ 15 cuerpos en 15 chunks`.
+
+**Las dos condiciones del criterio se cumplieron el mismo día y por caminos
+distintos:** el contrato declara las cinco formas desde el 2026-09-26, y la
+métrica que las usa la escribimos nosotros —`platform_gap`,
+`platform_month_matrix` y `spend_flow`, en `MetricRegistry`—. El candado decía
+«se construyen cuando el backend envíe esas formas», y resultó que enviarlas era
+trabajo nuestro.
+
+**Qué se hizo, además de los tres archivos:**
+
+| | |
+|---|---|
+| `adaptValue` | Tres `case` nuevos · `compared_categorical`, `matrix` y `flow` |
+| `DIBUJABLES` | Las tres agregadas · de once a catorce formas |
+| `registry.ts` | `LOADERS` y `BODIES` pasaron de `Partial<Record>` a `Record` completo · `MISSING_TYPES` quedó **vacía** |
+
+**LAS DOS QUE QUEDAN AFUERA, cada una por su razón, y no es simetría pendiente:**
+`perfilMultiatributo` tiene un solo gráfico en el repertorio —`radar`— y no está
+construido; `grafo` no tiene ni gráfico **ni dato del cual salir**, porque ninguna
+columna de las dos tablas Gold trae aristas origen→destino. Las dos se declaran
+en pantalla con `UnknownPlotState`, que nombra el id — no caen al dibujo de al
+lado.
+
+**Y LOS TRES CUERPOS ACEPTAN LAS DOS FORMAS DE SU BLOQUE, que es un cambio de
+criterio.** `GraphBody` llegó como `BodyProps<'flujo'>` con el argumento de que
+restringir el tipo es más fuerte que una rama. **Es falso apenas el cuerpo entra
+al registro:** `ErasedBodyProps` ancha `value` a la unión entera —lo dice su
+propio comentario— así que un `grafo` compuesto sobre un bloque `graph` llega
+igual y `PlotSankey` leería `etapas` de un valor que trae `nodos`. El tipo
+estrecho no impedía nada; escondía la rama.
+
+#### Lo que encontró MIRARLO, que es lo que ninguna prueba dijo
+
+**NINGUNO DE LOS TRES TIENE TOPE, y con la cardinalidad real los tres fallan
+distinto.** Medido en la consola el 2026-09-30, con los paneles servidos por el
+binario local:
+
+| Gráfico | Filas reales | Qué se ve |
+|---|---|---|
+| `dumbbell` | 22 de 37 ítems | Se **recorta** al alto del panel y nada dice que faltan |
+| `heatmap` | 38 × 12 | Los rótulos de fila **se pisan** entre sí: ilegibles |
+| `sankey` | 23 etapas | Las veinte cintas chicas se apilan en una banda sin rótulos |
+
+**El repertorio declara mínimos para las tres formas y tope para ninguna.** El
+mecanismo existe —`tope` lo evalúa `catalog/plots.ts` y lo hace cumplir
+`plotProblemOf`, y `radar` ya lo usa— así que lo que falta es el NÚMERO, y ése es
+producto: se avisó a datos en
+`docs/MENSAJE-2026-09-30-datos-lo-que-encontro-correrlo.md` y queda como
+propuesta, no se decide acá.
+
+**A cardinalidad sana los tres se leen bien**, y eso se comprobó aparte en
+`dev:mock` con cinco y seis filas: el problema es el corte del dato, no el plot.
+
+#### Dos defectos que salieron de construir esto, los dos arreglados
+
+- **`PlotHeatmap` recortaba los rótulos de COLUMNA con el presupuesto de las
+  FILAS.** Un solo `cap`, sacado de la canaleta de rótulos de fila, aplicado a
+  los dos ejes. Miente en las dos direcciones y las dos se midieron: con filas de
+  30 caracteres el tope sube a 29 y los rótulos de columna pasan enteros con
+  149px sobre celdas de 52; con filas cortas un rótulo de columna se recorta a
+  siete caracteres aunque su celda mida 261. **Lo encontró una mutación que
+  SOBREVIVIÓ** —ningún fixture tenía las dos longitudes desacopladas, así que el
+  error no podía salir— y su prueba se escribió con el arreglo puesto.
+- **`GET /config/plots` no tenía handler en MSW.** La consola en `dev:mock`
+  corría con el **repertorio vacío**, así que ningún mínimo ni tope se ejercitaba
+  ahí; MSW lo avisaba por consola y la aplicación seguía andando. Ahora
+  `tools/gen-plots.py` emite también `dev/mocks/repertorio.json`, de modo que las
+  49 filas del mock son las mismas que las del servicio y no una tercera tabla
+  escrita aparte.
+
+#### Y el patrón del caso negativo rancio apareció otras tres veces
+
+Las tres en el mismo commit, y las tres las atrapó la puerta en rojo:
+
+1. `adapt.test.ts` afirmaba que **cinco** formas no se adaptaban; tres pasaron a
+   adaptarse. Se movió a las dos que quedan y se agregaron siete positivas.
+2. «una forma que el front todavía NO DIBUJA» usaba `matrix` —ya había mudado de
+   `distribution` el 2026-09-25—. Ahora usa `graph`, que es la que menos probable
+   es que se mueva: no tiene gráfico **ni** dato.
+3. `registry.test.tsx` recorría `MISSING_TYPES` para afirmar que un tipo sin
+   cuerpo no cae en un fallback. Con la lista vacía el `for` no ejecuta ninguna
+   afirmación: habría quedado verde sin verificar nada. Se reemplazó por un tipo
+   **inventado**, que es lo que la hace permanente — `bodyFor` recibe su
+   argumento de `block_type`, una cadena libre en el cable.
+
+**Criterio de aceptación.**
+- Se construyen cuando el contrato declare esas formas **y** exista una métrica
+  que las use. Las dos mitades se cumplieron el 2026-09-30.
+- Al estar los quince, el registro pasa de `Partial<Record<PanelType, …>>` a
+  `Record` completo, y **agregar un tipo al enumerado sin su cuerpo deja de
+  compilar**. Hecho, y verificado por mutación: quitar `graph` de `LOADERS` deja
+  de compilar y rompe la paridad contra el enumerado del yaml.
 **PEDIDO A DATOS EL 2026-09-29** · `docs/MENSAJE-2026-09-29-datos-formas-sin-metrica.md`.
 
 **Espera de datos.** **La fila del catálogo y el esquema de Gold** · el SQL lo
