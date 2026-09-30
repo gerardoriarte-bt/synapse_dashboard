@@ -114,13 +114,13 @@ que su resultado esté escrito.
 | `Consola · C4 · Hallazgo fuera de banda` | **No construida** · ídem |
 | `Consola · C5 · Sin permiso` | `src/render/states/ForbiddenState.tsx` |
 | `C5 · Sin permiso · sin alternativas que ofrecer` | La misma: sin manejador no se pinta el CTA · la regla del CTA muerto |
-| `C6 · Selector de dashboard` | **No construida** · dibujada el 2026-09-28 para contestar `docs/PROPUESTA-2026-09-26-selector-de-dashboard.md`. F5.1 puso un `<select>` en el navbar y el dibujo lo reemplaza por un panel que abre el chevron del bloque de cliente: **lo construido diverge del dibujo y la tarea de ajuste no está tomada** |
+| `C6 · Selector de dashboard` | `src/surfaces/console/DashboardPanel.tsx` · §PEN:C6 · **la fila la daba por pendiente y era falso desde el 2026-09-28**, el mismo día que se dibujó: el panel se construyó, reemplazó al `<select>` que F5.1 había puesto en el navbar y lo monta `Topbar.tsx:133`. Corregido el 2026-09-30 |
 | `A1 · Clientes y plataforma` | `src/surfaces/admin/TenantList.tsx` |
 | `A1 · Clientes · sin ningún cliente` | `src/surfaces/admin/EmptyRow.tsx` |
 | `A1 · Clientes · cargando` | `src/surfaces/admin/SkeletonRows.tsx` |
 | `A2 · Ficha de cliente` | `src/surfaces/admin/RoleEditor.tsx` y `src/surfaces/admin/AgentConfig.tsx` · **diverge** · misma auditoría, §8 y §9 |
-| `A2 · Ficha · tenant en alta` | **No construida** · no hay alta de tenant en el front |
-| `A3 · Usuarios` | `src/surfaces/admin/UserList.tsx` · F4.3, construida el 2026-09-25 · **diverge en el alcance**: el dibujo pide plataforma y la ruta es por cliente, declarado en la pantalla |
+| `A2 · Ficha · tenant en alta` | **No construida** · no hay alta de tenant en el front. **El candado ya NO es del backend**: `POST /admin/tenants` existe —`router.go:154`, suyo— y `GET /admin/tenants` devuelve las trece columnas. Lo que falta son **tres decisiones de producto y diseño** · `docs/PROPUESTA-2026-09-28-pantallas-de-alta.md`. Remedido el 2026-09-30 contra `de881e1` |
+| `A3 · Usuarios` | `src/surfaces/admin/UserList.tsx` · F4.3, construida el 2026-09-25 · **diverge en el alcance y el candado VENCIÓ**: la pantalla lista por cliente porque cuando se construyó no había ruta global. **`GET /admin/users` contesta 200** —medido el 2026-09-30— con `total`, `tenants` y `tenant_name` por usuario, que es exactamente el alcance de plataforma que el dibujo pide. De `6e521cc`, suyo. **Es tomable** |
 | `A3 · Usuarios · filtro sin resultados` | La misma: el vacío de filtro lo pinta `EmptyRow` con `clase="filtro"` y su deshacer |
 | `A4 · Catálogo de métricas` | `src/surfaces/admin/CatalogView.tsx` |
 | `A4 · Métricas · filtro sin resultados` | `src/surfaces/admin/EmptyRow.tsx` |
@@ -133,8 +133,8 @@ que su resultado esté escrito.
 | `B3 · Selector · gráfico deshabilitado por tope` | **No construida** · el estado deshabilitado necesita el DATO para saber si el tope se excede, y el builder va sin payloads por decisión de F4.12. Acá el tope se **declara**, que es lo que el criterio pide |
 | `B4 · Binder de métrica` | `src/surfaces/builder/PanelConfigurator.tsx` |
 | `B5 · Vista previa · rol Planner sin componer` | `src/surfaces/builder/RolePreview.tsx` |
-| `B6 · Historial de versiones` | **No construida** · ninguna ruta lista versiones con su autor y fecha · **desde el 2026-09-28 tiene entrada dibujada**: el `Más` del navbar del builder |
-| `B7 · Guardar como plantilla` | **No construida** · dibujada el 2026-09-28 · promueve la composición a plantilla de vertical, que es el movimiento que a §3.4 le faltaba. **No hay backend**: `vertical` no existe en su código, medido en `docs/DECISIONES-2026-09-26-estado-y-vertical.md` |
+| `B6 · Historial de versiones` | **No construida · y su razón escrita era FALSA.** Decía «ninguna ruta lista versiones con su autor y fecha»; `GET /admin/layouts/{layoutId}/publications` existe desde `168a761` —suyo— y **contesta 200 con filas reales**, medido el 2026-09-30: `version_id`, `action`, `actor_user_id`, `actor_role`, `previous_layout_id`, `created_at` y un `diff` con resumen y detalle por panel. `POST /admin/layouts/{layoutId}/revert` cubre el «REVERTIR A ESTA» del dibujo. **Lo único que no llega es el NOMBRE del autor** —el dibujo pinta `MARÍA RESTREPO` y la ruta da el uuid—, y eso se resuelve con `GET /admin/users`, que también contesta 200. **Es tomable** |
+| `B7 · Guardar como plantilla` | **No construida** · dibujada el 2026-09-28 · promueve la composición a plantilla de vertical, que es el movimiento que a §3.4 le faltaba. **No hay backend, y la razón se afinó el 2026-09-30**: el campo `vertical` SÍ existe ahora —`ports/tenant.go:46`, de `6e521cc`— pero su propio comentario dice «reservados hasta que el cliente defina sus valores (siempre nil en v1)», y **no hay ruta de plantillas**: `/admin/templates` y `/admin/verticals` dan **404**. El candado sigue, con la letra corregida |
 
 ---
 

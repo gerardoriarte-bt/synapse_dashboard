@@ -109,10 +109,14 @@ describe('§4 · el ancho mínimo, que no es uniforme', () => {
 
 describe('las pantallas que todavía no se pueden construir', () => {
   it('las que quedan dicen qué las desbloquea en vez de mostrarse vacías', async () => {
-    // Tres: B1 es F4.7, B4 es F4.10 y B5 es F4.12. Una pantalla que se declara
-    // pendiente no es lo mismo que una que no está.
+    // Una pantalla que se declara pendiente no es lo mismo que una que no está.
+    //
+    // **`grafico` salió de esta lista el 2026-09-30**: el selector se construyó
+    // en F4.21 y vive dentro de B1, igual que el binder. Mientras estuvo acá, el
+    // builder le decía «Pendiente · /config/plots no existe» a un cliente sobre
+    // una pantalla construida y una ruta que sí existe.
     montar()
-    const construidas = ['contexto', 'canvas', 'metrica', 'preview']
+    const construidas = ['contexto', 'canvas', 'metrica', 'preview', 'grafico']
     for (const p of PANTALLAS.filter((x) => !construidas.includes(x.id))) {
       await userEvent.click(screen.getByRole('button', { name: p.nombre }))
       expect(screen.getByText('Pendiente')).toBeInTheDocument()
@@ -148,22 +152,37 @@ describe('las pantallas que todavía no se pueden construir', () => {
     expect(screen.queryByText(/decisión de diseño/i)).toBeNull()
   })
 
-  it('B6 nombra los dos campos que el cable no trae', async () => {
-    // §7.2: «quién, cuándo, qué cambió. Permite revertir.» `LayoutVersion` trae
-    // cuándo. Ni autor, ni diferencia, ni ruta de reversión.
+  it('B6 sigue pendiente y dice qué va a mostrar, sin culpar al cable', async () => {
+    // **ESTA PRUEBA AFIRMABA ALGO FALSO HASTA EL 2026-09-30.** Pedía que la
+    // pantalla nombrara «los dos campos que el cable no trae» y citara `B4.10`,
+    // y las dos cosas dejaron de ser ciertas: `GET /admin/layouts/{id}/publications`
+    // contesta 200 con `actor_user_id`, `actor_role`, `created_at` y un `diff`
+    // con resumen y detalle por panel, y `POST /admin/layouts/{id}/revert` existe.
+    //
+    // La pantalla sigue sin construirse, así que el aviso se queda — lo que
+    // cambia es lo que dice.
     montar()
     await userEvent.click(screen.getByRole('button', { name: 'Historial de versiones' }))
-    const texto = screen.getByText(/quién, cuándo y qué cambió/)
-    expect(texto).toBeInTheDocument()
-    expect(screen.getByText(/B4.10/)).toBeInTheDocument()
+
+    expect(screen.getByText('Pendiente')).toBeInTheDocument()
+    expect(screen.getByText(/quién la hizo, cuándo y qué cambió/)).toBeInTheDocument()
+    // **Y no culpa al servicio**, que es la mitad que costó: el aviso viejo decía
+    // que el cable no traía el autor y lo trae desde `168a761`.
+    expect(screen.queryByText(/LayoutVersion/)).toBeNull()
+    expect(screen.queryByText(/B4\.10/)).toBeNull()
   })
 
-  it('B3 nombra /config/plots, que es lo que espera', async () => {
+  it('B3 dice que está construida en otra pantalla, no «pendiente»', async () => {
+    // Misma resolución que el binder, y por la misma razón: elegir el gráfico de
+    // un panel exige tener el panel elegido. Decirle «Pendiente» a algo hecho
+    // miente sobre trabajo hecho — y acá además nombraba una ruta inexistente
+    // que sí existe desde `b6f0e09`.
     montar()
     await userEvent.click(screen.getByRole('button', { name: 'Selector de gráfico' }))
-    // Dos veces: la razón y lo que la desbloquea.
-    expect(screen.getAllByText(/config\/plots/).length).toBeGreaterThan(0)
-    expect(screen.getByText(/B1.21/)).toBeInTheDocument()
+
+    expect(screen.getByText('Está construida, en otra pantalla')).toBeInTheDocument()
+    expect(screen.queryByText('Pendiente')).toBeNull()
+    expect(screen.queryByText(/config\/plots/)).toBeNull()
   })
 })
 

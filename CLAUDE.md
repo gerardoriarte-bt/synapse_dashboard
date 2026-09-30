@@ -739,10 +739,15 @@ no volver a pedirlo.
 
 ## LO QUE FRENA HOY, y es poco
 
+**⚠️ LAS DOS PRIMERAS FILAS DE ESTA TABLA VENCIERON, remedido el 2026-09-30** ·
+`docs/AUDITORIA-2026-09-30-pantallas-faltantes.md`. Se dejan tachadas porque el
+modo de falla —una razón escrita cuando era cierta que envejece sin aviso— es más
+útil visible que borrado.
+
 | | Qué falta | De quién |
 |---|---|---|
-| **A1 · las cinco columnas** | `GET /admin/tenants` devuelve `id` y `name` · B4.1, **escrita en nuestro fork** | Que la tomen |
-| **A3 · alcance de plataforma** | No hay ruta que liste usuarios de todos los clientes; `/admin/users` da 404 | Backend |
+| ~~**A1 · las cinco columnas**~~ | ~~`GET /admin/tenants` devuelve `id` y `name`~~ · **LAS TOMARON** en `6e521cc`: devuelve **trece** campos, con `status` y `vertical` declarados «reservados … siempre nil en v1» | Nadie · es nuestra |
+| ~~**A3 · alcance de plataforma**~~ | ~~`/admin/users` da 404~~ · **contesta 200** desde `6e521cc`, con `total`, `tenants` y `tenant_name` por usuario | Nadie · es nuestra |
 | ~~**F3.15 · el chat presente**~~ | **NO FRENA NADA · LA TAREA ESTÁ ✅** desde el 2026-09-26, verificada contra el servicio corriendo. Esta fila quedó de cuando el candado estaba vigente y **sobrevivió tres días a la tarea que la venció**: el 28 se la volvió a leer como pendiente. Lo único sin mirar son sus dos composiciones responsive | Nadie |
 | **F4.17–F4.19** | `Valor` no declara `matriz`, `grafo`, `flujo` ni las otras dos · **y B5.3 pide que el dato exista**, que no existe | Las dos condiciones, verificadas el 2026-09-25 |
 | **Seis filas de `SEMANTIC_DIRECTION`** | Traen el código en vez del texto | Datos |

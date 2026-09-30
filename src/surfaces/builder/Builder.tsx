@@ -76,16 +76,30 @@ import type { PantallaId } from './pantallas'
 
 /** Qué espera cada pantalla. Acá y no en un comentario: la pantalla lo pinta, así
  *  que quien la abre se entera sin leer el código. */
+/** ── LAS DOS ENTRADAS ESTABAN VENCIDAS Y SE PINTAN EN LA PANTALLA · 2026-09-30 ──
+ *
+ *  Esto no es un comentario: es copy que el cliente lee. Las dos filas decían
+ *  algo falso y llevaban días diciéndolo.
+ *
+ *  · `grafico` decía «esa lista la sirve /config/plots, que no existe».
+ *    **Existe desde el 2026-09-29** —la escribimos nosotros, `b6f0e09`— y
+ *    `PlotPicker` está construido (F4.21). No era una pantalla pendiente: era
+ *    una pantalla **que vive en otra**, igual que el binder. Se mudó abajo.
+ *  · `historial` decía que no hay autor, ni diferencia, ni ruta para revertir.
+ *    **Las tres son falsas**: `GET /admin/layouts/{id}/publications` contesta
+ *    200 con `actor_user_id`, `actor_role`, `created_at` y un `diff` con
+ *    resumen y detalle por panel, y `POST /admin/layouts/{id}/revert` existe.
+ *    Medido contra el servicio el 2026-09-30.
+ *
+ *  **Y el copy cambió de idioma**, que es la otra mitad. Decía «§7.2 pide» y
+ *  «LayoutVersion trae» en la pantalla de un cliente — está levantado en
+ *  `docs/AUDITORIA-2026-09-30-usabilidad.md` §1.1. Lo que falta se sigue
+ *  declarando; lo que cambia es a quién se le habla. */
 const PENDIENTES: Partial<Record<PantallaId, { razon: string; desbloqueaCon: string }>> = {
-  grafico: {
-    razon:
-      'La biblioteca lista los gráficos por grupo y esa lista la sirve /config/plots, que no existe.',
-    desbloqueaCon: 'B1.21 · la ruta /config/plots · después F4.21',
-  },
   historial: {
     razon:
-      '§7.2 pide quién, cuándo y qué cambió. LayoutVersion trae cuándo y nada más: ni autor ni diferencia contra la versión anterior, y tampoco hay ruta para revertir.',
-    desbloqueaCon: 'B4.10 · autor, diferencia y reversión en LayoutVersion',
+      'Esta pantalla va a mostrar cada publicación con quién la hizo, cuándo y qué cambió, y va a permitir volver a una anterior.',
+    desbloqueaCon: 'Está en construcción · el servicio ya entrega el historial',
   },
 }
 
@@ -99,6 +113,11 @@ const PENDIENTES: Partial<Record<PantallaId, { razon: string; desbloqueaCon: str
 const EN_OTRA_PANTALLA: Partial<Record<PantallaId, string>> = {
   metrica:
     'El binder está construido —F4.10— y vive en «Contexto de edición»: se elige un panel de una pestaña y se configura ahí. Configurar un panel exige tenerlo elegido, y elegirlo es de B1.',
+  // **Mudado desde `PENDIENTES` el 2026-09-30**, y es la misma razón que el
+  // binder: elegir el gráfico de un panel exige tener el panel elegido. El
+  // selector se construyó en F4.21 y lo monta `PanelConfigurator`.
+  grafico:
+    'El selector de gráfico está construido —F4.21— y vive en «Contexto de edición»: se elige un panel y el gráfico se elige ahí, con su repertorio y sus mínimos. Elegir el gráfico de un panel exige tener el panel elegido.',
 }
 
 export function Builder() {
