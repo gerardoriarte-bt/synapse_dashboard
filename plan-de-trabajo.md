@@ -6817,6 +6817,25 @@ y **`multi_attribute_profile` tampoco** mientras los atributos no compartan
 unidad, que es una regla de nuestro contrato: un radar con pesos en un eje y
 porcentaje en otro dibuja un área que depende del orden de los ejes.
 
+**CONTESTADO EL 2026-09-30**, y de su nota salieron un dato nuevo y un hallazgo:
+
+- **El default de `MIN_GRAIN` es del SYNC, no de la view.** Verificado en
+  `dd_catalog_sync_service.go`: `if minGrain == "" { minGrain = "month" }`. Así
+  que «las dieciocho declaran `month`» tiene dos causas y desde Postgres no se
+  distinguen — la consulta que desambigua es de datos, porque nosotros no
+  corremos SQL en Snowflake.
+- **Su afirmación de que una forma nueva se materializa «sin cambios de código»
+  es falsa**, y está en su propio `dd_materializer_service.go`: sin entrada en
+  `MetricRegistry` la métrica sale `BLOCKED · No Snowflake query registered`. Es
+  el mismo error que nosotros cometimos al revés el 29 —«nada del backend»— y
+  las dos veces la causa fue no leer `queries.go`.
+- **Y LA FORMA SE DECLARA DOS VECES.** `Materialize(spec.Shape, ...)` usa la del
+  REGISTRO; el front lee la del CATÁLOGO en `/config/catalog`. Si difieren, el
+  único efecto es un `slog.Warn` en el servidor: **un panel compuesto para una
+  forma recibiendo otra**, que es el modo de falla que este producto persigue.
+  Propuesto que falle en vez de avisar ·
+  `docs/MENSAJE-2026-09-30-backend-registry-y-forma.md`.
+
 **Lo de datos son dos cosas y ninguna es la consulta:**
 
 1. **La fila en `SYNAPSE_METRIC_CATALOG` con su copy** — `NAME`, `BASE`,
