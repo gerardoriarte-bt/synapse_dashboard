@@ -119,7 +119,7 @@ que su resultado esté escrito.
 | `A1 · Clientes · sin ningún cliente` | `src/surfaces/admin/EmptyRow.tsx` |
 | `A1 · Clientes · cargando` | `src/surfaces/admin/SkeletonRows.tsx` |
 | `A2 · Ficha de cliente` | `src/surfaces/admin/RoleEditor.tsx` y `src/surfaces/admin/AgentConfig.tsx` · **diverge** · misma auditoría, §8 y §9 |
-| `A2 · Ficha · tenant en alta` | **No construida** · no hay alta de tenant en el front. **El candado ya NO es del backend**: `POST /admin/tenants` existe —`router.go:154`, suyo— y `GET /admin/tenants` devuelve las trece columnas. Lo que falta son **tres decisiones de producto y diseño** · `docs/PROPUESTA-2026-09-28-pantallas-de-alta.md`. Remedido el 2026-09-30 contra `de881e1` |
+| `A2 · Ficha · tenant en alta` | `src/surfaces/admin/TenantIdentity.tsx`, `src/surfaces/admin/Subprocessors.tsx`, `src/surfaces/admin/StatusChip.tsx` y `src/surfaces/admin/alta.ts`, más la rama `BLOQUEADO` de `src/surfaces/admin/AgentConfig.tsx` y el vacío de alta de `src/surfaces/admin/RoleEditor.tsx` · F5.20, 2026-09-30 · **la pantalla ADOPTA un cliente, no lo da de alta**: `POST /admin/tenants` exige cuatro credenciales que §7.3 prohíbe pedir, así que el alta la hace el equipo interno y esta ficha la muestra. **DIVERGE en seis cosas, todas anotadas y cinco de ellas atadas por una aserción**: (1) la cabecera —el dibujo pone el nombre del cliente en display 24 con una migaja encima y la aplicación pone el nombre de la PANTALLA, que tiene decisión escrita y prueba propia, así que el chip `EN ALTA` va a la fila del rótulo de identidad; (2) la migaja y el display 24 quedan sin construir; (3) `ID` pinta el identificador que el servicio da —un uuid— donde el dibujo escribe una forma corta que ningún campo trae; (4) la frase del aporte de la plantilla **no se compone**, y hay una aserción que atestigua su ausencia; (5) el vacío de roles **no lleva el icono** `users` de 22 que el frame dibuja arriba de la frase, porque esta superficie no pinta un solo icono ni tiene la biblioteca —previa y de la superficie entera—; (6) el padding del cuerpo es el de toda la superficie —24, no 32—, también previa. **Los literales del vacío SÍ son los del dibujo desde la auditoría del 2026-09-30**: la pantalla decía «Este cliente todavía no tiene roles · está en alta» + «Sin ningún rol nadie puede entrar…» en dos labels mono donde el frame escribe `SIN ROLES DEFINIDOS` en el resumen y UNA frase de `$font-body` 12.5, y los dos literales eran previos a F5.20. Se corrigieron y quedaron atados en `tests/surfaces/admin/enAlta.test.tsx` |
 | `A3 · Usuarios` | `src/surfaces/admin/UserList.tsx` · F4.3, construida el 2026-09-25 · **diverge en el alcance y el candado VENCIÓ**: la pantalla lista por cliente porque cuando se construyó no había ruta global. **`GET /admin/users` contesta 200** —medido el 2026-09-30— con `total`, `tenants` y `tenant_name` por usuario, que es exactamente el alcance de plataforma que el dibujo pide. De `6e521cc`, suyo. **Es tomable** |
 | `A3 · Usuarios · filtro sin resultados` | La misma: el vacío de filtro lo pinta `EmptyRow` con `clase="filtro"` y su deshacer |
 | `A4 · Catálogo de métricas` | `src/surfaces/admin/CatalogView.tsx` |
@@ -7604,6 +7604,107 @@ Dos cosas del entorno que parecían fallos y no lo eran: jsdom abre en 1024px, o
 sea seis columnas, así que la grilla colapsaba —F1.30 funcionando— y el alto no
 es un `height` sino `gridRow: span N` sobre `gridAutoRows`. Y la celda se busca
 por su panel y no por índice, porque `readingOrder` ordena el DOM.
+
+### ➕ F5.20 ✅ A2 · Ficha · tenant en alta · §PEN:A2
+**Descripción.** La variante que faltaba de A2. Su nota lo dice: «axo_mx vive en
+SYNAPSE_TENANTS con roles: [] y A1 ya lo lista, pero A2 no sabía dibujarlo: la
+banda de roles quedaba en blanco sin explicar nada». Trae los tres bloques que
+§7.3 le pide a la ficha y no estaban —los datos del cliente, el estado del acceso
+y los subprocesadores— y el estado de alta, que **no es un campo: se deriva**.
+
+**Y no es una pantalla de alta.** `POST /admin/tenants` devuelve 400 pidiendo las
+cuatro credenciales de Snowflake que §7.3 prohíbe mostrar, así que el alta la hace
+el equipo interno por runbook y esta ficha **adopta** al cliente que ya existe.
+
+**Criterio de aceptación.**
+- `estadoDeAlta` y `versionDeCatalogo` viven en `src/surfaces/admin/alta.ts` y
+  **no en el adaptador**: son reducciones sobre filas, y el adaptador renombra y
+  reformatea. Mismo precedente que `saludDeFuente.ts`.
+- La versión del catálogo es el **MÁXIMO** de las filas, que es la definición del
+  servicio y no una elección nuestra —`GET /config/me` devuelve 4 para el cliente
+  cuyas 21 métricas traen 1, 3 y 4—. Con cero métricas es **`null`, no `0`**.
+- `EN ALTA` se deriva de no tener roles **ni** catálogo. **`status` NO se lee** —
+  llega vacío por decisión escrita del servicio— y hay una prueba que falla el día
+  que alguien lo lea: es una reapertura de la decisión, no un bug escondido.
+- El bloque de acceso queda `BLOQUEADO` cuando el cliente tiene **cero ROLES, no
+  cero agentes**, y ese estado **reemplaza** la tabla en vez de sumarse a ella.
+- El CTA `DEFINIR PRIMER ROL` **dispara** —abre el formulario de rol nuevo— y es
+  el único: en el vacío de alta la cabecera no repite el suyo.
+- Las tres columnas sin dato salen en un guión atenuado y **no en blanco ni en
+  cadena vacía**, y la que no tiene ni campo ni ruta —`PLANTILLA`— conserva su
+  rótulo con una línea al pie que declara la falta.
+- La frase del aporte de la plantilla **no se compone con las cifras que hay a
+  mano**: las pestañas del layout y las métricas del catálogo no son «lo que
+  aporta la plantilla». Se omite entera y una aserción atestigua la ausencia.
+- El adaptador gana **una línea** —`creadoEn`— y nada más.
+- `npm run pen-pantallas`, `npm run copy-producto` y `npm run design-lint` en
+  verde, y el ancla `§PEN:A2` en cada archivo que el registro nombra.
+
+**Construida el 2026-09-30.** `alta.ts`, `StatusChip.tsx`, `TenantIdentity.tsx` y
+`Subprocessors.tsx`; la rama `BLOQUEADO` de `AgentConfig.tsx`, el CTA del vacío de
+`RoleEditor.tsx` y el cableado de `Cliente` en `Admin.tsx`. Las pruebas son
+`tests/surfaces/admin/alta.test.ts` —siete, con tres mutaciones muertas sobre
+línea de base verde— y `tests/surfaces/admin/enAlta.test.tsx` —**veinticinco**,
+montadas desde `Admin` y no desde los componentes, que es lo único que cubre el
+paso de props—. **El número se movió dos veces el mismo día**: dieciséis al
+construirla, veinte cuando QA ató cinco mutaciones que sobrevivían, veinticinco
+cuando la auditoría ató los literales del dibujo y la quinta cosa que apareció al
+volver a abrirla. La suite entera queda en **1561 en 113 archivos**.
+
+**LO QUE QA DEJÓ ABIERTO Y LA AUDITORÍA CERRÓ · 2026-09-30.**
+
+| Qué estaba abierto | Qué se hizo |
+|---|---|
+| Dos literales del vacío **divergían del `.pen`** y la divergencia no estaba declarada · QA lo dejó como decisión humana porque afirmar el dibujo ponía la suite en rojo | **La cadena de autoridad no lo deja abierto** —«gana el `.pen` para lo visual y el literal de la UI»—, así que se corrigió la pantalla: `SIN ROLES DEFINIDOS` en el resumen y la frase del frame en `$font-body`, no dos labels mono. Tres aserciones nuevas y **dos mutaciones muertas** |
+| El caso negativo de `carga.test.tsx` se volvía a desapuntar con ese cambio | Retargeteado al literal nuevo y **comprobado con la mutación que QA usó** —que sólo el bloque del vacío ignore `cargando`—: muere |
+| `celda()` resolvía por `getByText` global y `Estado` es también encabezado de la tabla de agentes | Acotado a la tarjeta de identidad. **Comprobado, no deducido**: con el ayudante viejo y un escenario con agentes, `Found multiple elements with the text: Estado`; con el nuevo, pasa |
+| La procedencia del fixture decía «copiados de la respuesta medida» y `currency: 'MXN'` no salió de ahí —los dos clientes sembrados vienen en `COP` por un default de columna— | Corregida la línea: la FORMA está medida, el `MXN` es del dibujo y está a propósito sobre un `locale` colombiano |
+| El conteo de pruebas citado en prosa había quedado viejo | Corregido acá, y con la suite entera al lado para que se vea de dónde sale |
+
+**Lo que NO se cerró, porque no es del front:** las tres filas de subprocesadores
+siguen siendo una afirmación legal construida desde un mockup cuya propia nota
+dice que la lista es inventada. Las regiones y el «sin retención» los confirma
+quien sea dueño del acuerdo de tratamiento, no una prueba.
+
+**CERRADA CONTRA EL MODO MOCK, Y HAY QUE DECIRLO ASÍ.** El estado que esta
+pantalla dibuja **no es alcanzable contra el servicio**, y la mitad que sí lo es
+está medida aparte. **Remedido por la auditoría el 2026-09-30, contra el binario
+que corre en `:4010`, que es `de881e1` —leído de su clone, no citado de memoria—**
+y no contra `6e521cc`, que es donde nacieron las rutas y es su ancestro:
+
+| Lo medido | Qué contestó | Qué decide |
+|---|---|---|
+| `GET /admin/tenants` | **Trece campos**, los mismos que el fixture · `status` y `vertical` en `null` y `label` en `""` **en los dos clientes** | Que las tres columnas sin dato salgan en un guión, y que `status` no se lea |
+| Los dos clientes | `currency: COP`, `locale: es-CO`, `timezone: America/Bogota` · **ninguno en `MXN`** | Que el `MXN` del fixture sea del dibujo y no una medición · corregida la línea de procedencia |
+| `.../catalog` y `.../roles/composition` | `1111…` → 12 métricas todas en `catalog_version: 1` y **3 roles** · `e65f…` → 21 métricas en 1, 3 y 4 y **4 roles** | Que ningún cliente del servicio esté en alta: las dos condiciones fallan en los dos |
+| `GET /config/me` de `e65f…` | `catalog_version: 4` | Que **MAX sea la definición del servicio** y no una elección nuestra |
+| `GET /admin/templates` y `/admin/verticals` | **404** los dos | Que `PLANTILLA` conserve el rótulo con la falta declarada al pie |
+
+O sea: no se puede llegar al estado dibujado desde el servicio, y tampoco crear un
+cliente desde la pantalla. Así que se agregó un tercer cliente al modo mock —«Grupo
+Axo», sin roles, sin catálogo y sin layout— y **la pantalla se abrió y se miró**,
+en sus dos mitades: en alta y en servicio.
+
+**Y mirarla encontró cuatro cosas que ninguna prueba iba a decir:**
+
+| Qué se vio | Qué era |
+|---|---|
+| Dos botones idénticos a diez píxeles uno de otro | La cabecera repetía `NUEVO ROL` al lado del `DEFINIR PRIMER ROL` del vacío. El dibujo pone **uno solo**, adentro |
+| «0 rol(es) · 3 pestaña(s) · 24 paneles» | El modo mock servía los layouts de otro cliente al que no publicó nunca |
+| Una ruta y un identificador de tarea pintados en la ficha | `Y LA LISTA DE USUARIOS DE A3 · … · SOLO EXISTE POST /admin/users`, **y encima falso** desde que la ruta global contesta. `copy-producto` no lo ve: sólo mira cadenas entre comillas, y esto es texto suelto entre etiquetas |
+| «El permiso se aplica en el backend» | Vocabulario nuestro en la ficha de un cliente. Lo que importa decir es CUÁNDO se aplica, no dónde |
+| **Y una quinta, en la auditoría** · abrirla de nuevo después de corregir los literales: debajo del vacío aparecía «OCULTAR UNA MÉTRICA NO ES UN PERMISO · EL SERVIDOR LA VUELVE A VERIFICAR EN EL CATÁLOGO Y EN EL BATCH» | Una advertencia sobre un mecanismo **que no está presente**: el cliente no tiene un rol ni una métrica que ocultar, y el frame de alta no dibuja nada en ese hueco. Es la misma familia que declarar una carencia ya cubierta. Atada por las dos mitades —sin roles no está, con un rol vuelve— y **dos mutaciones muertas** |
+
+**El fixture del modo mock servía 3 de los 13 campos** que `GET /admin/tenants`
+devuelve, y arreglarlo destrabó también A1: sus cinco columnas se veían vacías.
+
+**Lo que queda levantado y no es código:** las tres filas de subprocesadores son
+una **afirmación legal** construida desde un mockup cuya propia nota dice que la
+lista es inventada. Las regiones y el «sin retención» no son decisiones de diseño:
+hay que confirmarlas con quien sea dueño del acuerdo de tratamiento antes de que
+esto lo vea un cliente. No bloquea el píxel; bloquea la afirmación.
+
+---
 
 ### ➕ F5.19 ✅ B6 · Historial de versiones · §PEN:B6
 **Descripción.** La sexta y última pantalla del builder —el `.pen` lo dice:

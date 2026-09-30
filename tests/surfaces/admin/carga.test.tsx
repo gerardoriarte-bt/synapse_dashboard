@@ -25,7 +25,10 @@ import { ok } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
 
 const API = '*/api/v1'
-const tenants = [{ id: 't-1', name: 'Under Armour México' }]
+/** `created_at` va porque A2 lo pinta en `ALTA` y el cable lo declara
+ *  obligatorio · F5.20. Acá había dos campos de los trece que la ruta
+ *  devuelve, escritos cuando devolvía dos. */
+const tenants = [{ id: 't-1', name: 'Under Armour México', created_at: '2026-09-22T09:18:45Z' }]
 
 /** Nunca contesta · deja la pantalla en carga. */
 const colgada = async () => {
@@ -193,7 +196,27 @@ describe('A2 · los roles mientras cargan', () => {
     // «paneles» aparece con razón en la lista de carencias, y prohibirla entera
     // hacía fallar esta prueba por el lugar equivocado.
     expect(screen.queryByText(/\d+ rol\(es\) ·/)).toBeNull()
-    expect(screen.queryByText(/no tiene roles definidos todavía/i)).toBeNull()
+    // **Y el vacío de ALTA tampoco**, que es la otra afirmación prematura: con
+    // la vuelta en vuelo «cero roles» es lo que todavía no se sabe, no lo que
+    // hay · §PEN:A2, F5.20.
+    //
+    // **Acá el ejemplo negativo había dejado de serlo dos veces**, y la segunda
+    // la produjo el arreglo de la primera:
+    //
+    // 1. decía `/no tiene roles definidos todavía/i`, una redacción que esta
+    //    pantalla nunca usó —vive en el BUILDER—, así que no podía fallar. Lo
+    //    encontró QA por mutación el 2026-09-30;
+    // 2. se retargeteó al literal nuestro, y ese mismo día la auditoría lo
+    //    reemplazó por el del `.pen`. Una aserción negativa apuntada a un texto
+    //    que ya no existe es exactamente el mismo defecto con otra cara.
+    //
+    // Se afirma contra el literal del dibujo, que es el que la pantalla pinta.
+    expect(
+      screen.queryByText(/Todavía no hay roles definidos, así que este cliente/i),
+    ).toBeNull()
+    // Y el rótulo del resumen tampoco: mientras carga dice CARGANDO, no «SIN
+    // ROLES DEFINIDOS», que también es una afirmación sobre lo que no llegó.
+    expect(screen.queryByText('Sin roles definidos')).toBeNull()
     // El CTA no depende de los datos y sigue ahí.
     expect(screen.getByRole('button', { name: 'Nuevo rol' })).toBeInTheDocument()
   })

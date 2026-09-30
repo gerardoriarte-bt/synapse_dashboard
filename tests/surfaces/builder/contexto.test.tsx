@@ -218,6 +218,6 @@ describe('sin versiones', () => {
     )
     montar()
     expect(await screen.findByText(/Ninguna todavía/i)).toBeInTheDocument()
-    expect(screen.getByText(/F4.13/)).toBeInTheDocument()
+    expect(screen.getByText(/se crea un borrador para empezar a componer/i)).toBeInTheDocument()
   })
 })

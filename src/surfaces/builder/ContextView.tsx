@@ -132,7 +132,7 @@ export function ContextView({
         {versiones.length === 0 ? (
           // §8: el vacío invita a actuar. Y acá la salida es concreta.
           <Label as="div">
-            Ninguna todavía · se crea un borrador con POST /admin/tenants/:id/layouts · F4.13
+            Ninguna todavía · se crea un borrador para empezar a componer
           </Label>
         ) : (
           <ul className="flex flex-col gap-1 m-0 p-0 list-none">

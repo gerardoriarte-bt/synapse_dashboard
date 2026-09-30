@@ -62,7 +62,7 @@ describe('F4.4 · §7.3 · la plomería no cruza la frontera', () => {
   })
 
   it('la pantalla no pinta ninguno de los cuatro', () => {
-    const { container } = render(<AgentConfig agentes={[agente()]} />)
+    const { container } = render(<AgentConfig agentes={[agente()]} sinRoles={false} />)
     for (const plomeria of ['DB_BT_UA', 'BT_UA_MART_ANALYTICS', 'WH_SYNAPSE', 'SYNAPSE_METRIC_CATALOG']) {
       expect(container.textContent).not.toContain(plomeria)
     }
@@ -71,7 +71,7 @@ describe('F4.4 · §7.3 · la plomería no cruza la frontera', () => {
   it('el rol que se muestra es el de PRODUCTO', () => {
     // `target_role` sale de `roles.name` —«Planner», «CEO»— y no es un rol
     // técnico de Snowflake, que es lo que §7.3 prohíbe.
-    render(<AgentConfig agentes={[agente()]} />)
+    render(<AgentConfig agentes={[agente()]} sinRoles={false} />)
     expect(screen.getByText('Planner')).toBeInTheDocument()
   })
 })
@@ -81,7 +81,7 @@ describe('F4.4 · el estado del acceso se DECLARA pendiente, no se deduce', () =
     // **Es la aserción de la tarea.** `is_active` solo dice que nadie lo dio de
     // baja: un agente activo con la credencial vencida se ve igual que uno que
     // funciona.
-    render(<AgentConfig agentes={[agente({ is_active: true })]} />)
+    render(<AgentConfig agentes={[agente({ is_active: true })]} sinRoles={false} />)
 
     // **La aserción va sobre la FILA, no sobre la pantalla.** La palabra
     // «vigente» sí aparece abajo, en el texto que explica que esa verificación
@@ -94,12 +94,12 @@ describe('F4.4 · el estado del acceso se DECLARA pendiente, no se deduce', () =
   })
 
   it('activo e inactivo se distinguen', () => {
-    render(<AgentConfig agentes={[agente({ is_active: false })]} />)
+    render(<AgentConfig agentes={[agente({ is_active: false })]} sinRoles={false} />)
     expect(screen.getByText('Inactivo')).toBeInTheDocument()
   })
 
   it('la declaración de pendiente dice qué falta y qué lo desbloquea', () => {
-    render(<AgentConfig agentes={[agente()]} />)
+    render(<AgentConfig agentes={[agente()]} sinRoles={false} />)
     expect(screen.getByText(/Pendiente · el estado del acceso/)).toBeVisible()
     expect(screen.getByText(/Se desbloquea con/)).toBeVisible()
   })
@@ -107,7 +107,12 @@ describe('F4.4 · el estado del acceso se DECLARA pendiente, no se deduce', () =
   it('sin agentes la declaración SIGUE, porque el hueco es del cable', () => {
     // Un cliente sin agente y un cable sin verificación de acceso son dos cosas
     // distintas. Esconder la segunda cuando falta la primera las confunde.
-    render(<AgentConfig agentes={[]} />)
+    // **`sinRoles={false}` y no por defecto** · F5.20. La rama `BLOQUEADO` del
+    // dibujo REEMPLAZA este cuerpo, así que estas nueve pruebas tienen que decir
+    // en qué estado están: sin roles no hay declaración de acceso que hacer, hay
+    // un bloqueo. La prop es obligatoria justamente para que eso no se decida por
+    // omisión — y la rama nueva se prueba montando la pantalla, en `enAlta`.
+    render(<AgentConfig agentes={[]} sinRoles={false} />)
     expect(screen.getByText(/todavía no tiene un agente/)).toBeInTheDocument()
     // **`toBeVisible` y no `textContent`.** Una mutación que escondía el bloque
     // con `hidden` pasaba: `textContent` incluye lo oculto, así que la prueba
@@ -120,13 +125,13 @@ describe('§PEN:A2 · los literales del bloque de acceso', () => {
   it('el bloque se llama «Acceso a datos», no «Agente de datos»', () => {
     // Al super-admin no le importa que haya un agente: le importa si el rol ve
     // el dato. El nombre viejo describía la plomería.
-    render(<AgentConfig agentes={[agente()]} />)
+    render(<AgentConfig agentes={[agente()]} sinRoles={false} />)
     expect(screen.getByText('Acceso a datos')).toBeVisible()
   })
 
   it('el ROL va primero · la pantalla contesta «qué ve cada rol»', () => {
     // Es la misma pregunta que encabeza la ficha de cliente.
-    const { container } = render(<AgentConfig agentes={[agente()]} />)
+    const { container } = render(<AgentConfig agentes={[agente()]} sinRoles={false} />)
     const encabezados = Array.from(container.querySelectorAll('th')).map((t) => t.textContent)
     expect(encabezados[0]).toBe('Rol')
   })
@@ -134,8 +139,14 @@ describe('§PEN:A2 · los literales del bloque de acceso', () => {
   it('la nota dura del permiso está escrita', () => {
     // Se puede componer un panel que un rol no va a poder ver, y eso no es un
     // error de composición. Es lo que más enseña de esta pantalla.
-    const { container } = render(<AgentConfig agentes={[agente()]} />)
-    expect(container.textContent).toMatch(/El permiso se aplica en el backend, no en la composición/)
-    expect(container.textContent).toMatch(/un rol sin\s+acceso no ve el dato aunque el panel exista/)
+    const { container } = render(<AgentConfig agentes={[agente()]} sinRoles={false} />)
+    // **«en el backend» salió de la pantalla el 2026-09-30.** Es vocabulario
+    // nuestro en la ficha de un cliente, y lo que importa decir es CUÁNDO se
+    // aplica el permiso —al servir el dato, no al componer—, que es lo que vuelve
+    // útil la advertencia. `copy-producto` no lo marcó porque es texto suelto
+    // entre etiquetas y el chequeo sólo mira cadenas entre comillas: lo encontró
+    // leerlo.
+    expect(container.textContent).toMatch(/El permiso se aplica al servir el dato, no al componer/)
+    expect(container.textContent).toMatch(/un rol sin acceso no ve el\s+dato aunque el panel exista/)
   })
 })

@@ -123,6 +123,16 @@ export type Tenant = {
   estado: string | null
   /** `null` hasta que definamos los valores · pedido abierto. */
   vertical: string | null
+  /** Cuándo se dio de alta el cliente · lo que A2 pinta en `ALTA`.
+   *
+   *  **No es opcional y no cae a `null`**: en el cable `created_at` es
+   *  obligatorio y del lado del servicio es un `time.Time`, no un puntero, así
+   *  que llega siempre. Un `?? null` acá inventaría un caso que no existe.
+   *
+   *  Llega como instante con huso —`2026-09-22T09:18:45.919012-05:00`, medido el
+   *  2026-09-30— y **se formatea en la pantalla, no acá**: el adaptador renombra,
+   *  no reformatea fechas para mostrar. */
+  creadoEn: string
 }
 
 /** ── `archivado` ES EL TERCERO, Y FALTABA · 2026-09-30 ──────────────────────
@@ -748,6 +758,10 @@ export const adminApi = {
       peorFuenteHoras: t.worst_feed_freshness_hours ?? null,
       estado: t.status ?? null,
       vertical: t.vertical ?? null,
+      // **La única línea que este adaptador gana con A2 en alta** · F5.20. El
+      // campo ya estaba en el cable y acá se tiraba; lo que lo hizo falta fue
+      // que una pantalla lo pidiera.
+      creadoEn: t.created_at,
     })),
 
   /** **El catálogo SIN filtrar por rol** · es la diferencia con

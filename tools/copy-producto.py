@@ -71,19 +71,67 @@ EXENTAS = [
     "subprocesador",
     # El nombre del agente es del producto y lo eligió datos, no es plomería.
     "SYNAPSE_UA",
+    # ── LAS DOS QUE EL `.pen` DIBUJA CON LA CITA ADENTRO ─────────────────────
+    #
+    # **Acá la regla de la casa manda al revés**, y por eso se eximen en vez de
+    # reescribirse: «donde el `.pen` y `design.md` difieran, gana el `.pen` para
+    # lo visual y **el literal de la UI**», y el agente no modifica el `.pen`.
+    #
+    # Los dos textos están dibujados con su `(§3.3)` y su `§5` adentro —
+    # comprobado leyendo el archivo, no deducido—. Que el dibujo cite la spec en
+    # copy de producto es una divergencia contra la decisión del 2026-09-30, y
+    # **se levanta como propuesta a diseño en vez de resolverse en silencio**:
+    # `docs/PROPUESTA-2026-09-30-citas-de-spec-en-el-pen.md`.
+    #
+    # La exención es por el TEXTO EXACTO: si alguien lo cambia, deja de coincidir
+    # y el chequeo vuelve a saltar. Es lo que la hace una decisión y no un hueco.
+    "ocultar no es permitir (§3.3)",
+    "§5 gobierna esta lista",
 ]
 
 
 def cadenas(texto: str):
-    """Las cadenas de un `.tsx`, con su línea. **Los comentarios se sacan antes**
-    —ahí la razón técnica es lo que hace falta— y también los `import`."""
+    """Lo que puede llegar al DOM de un `.tsx`, con su línea.
+
+    **Los comentarios se sacan antes** —ahí la razón técnica es exactamente lo
+    que hace falta, y es adonde se la mudó— y también los `import`.
+
+    ── Y EL TEXTO SUELTO ENTRE ETIQUETAS TAMBIÉN CUENTA · 2026-09-30 ───────────
+
+    La primera versión miraba **sólo literales entre comillas**, y con eso se le
+    escapaba lo más directo que existe: el texto escrito derecho dentro del JSX.
+
+        <Note as="div">
+          El backend no envía el payload · ocultar no es permitir (§3.3)
+        </Note>
+
+    Eso se pinta igual que una cadena y no lleva una sola comilla. **Lo encontró
+    la auditoría de A2, no el chequeo** — que es la mitad del trabajo que un
+    chequeo nuevo no hace todavía: cubrir la forma que su autor no usó.
+    """
     sin_bloque = re.sub(r"/\*.*?\*/", lambda m: "\n" * m.group().count("\n"), texto, flags=re.S)
-    for n, linea in enumerate(sin_bloque.splitlines(), 1):
+    sin_llaves = re.sub(r"\{/\*.*?\*/\}", lambda m: "\n" * m.group().count("\n"), sin_bloque, flags=re.S)
+    for n, linea in enumerate(sin_llaves.splitlines(), 1):
         sin_linea = re.sub(r"//.*$", "", linea)
         if sin_linea.lstrip().startswith("import"):
             continue
         for m in re.finditer(r"'([^'\\]{6,})'|\"([^\"\\]{6,})\"|`([^`\\$]{6,})`", sin_linea):
             yield n, m.group(1) or m.group(2) or m.group(3), linea
+        # **El texto suelto del JSX**: una línea que no abre etiqueta, no es
+        # código y tiene letras. Es deliberadamente conservador —una línea que
+        # empieza con `<`, `{`, `}` o una palabra clave se saltea— porque un
+        # falso positivo acá cuesta más que un hueco: el chequeo está en la
+        # puerta y nadie mantiene uno que grita.
+        crudo = sin_linea.strip()
+        if (
+            len(crudo) >= 8
+            and not crudo.startswith(("<", "{", "}", "/", "*", ")", "]"))
+            and not re.match(r"^(?:const|let|var|return|export|import|function|if|for|type|interface|case)\b", crudo)
+            and re.search(r"[A-Za-zÁÉÍÓÚÑáéíóúñ]{3}", crudo)
+            and "=" not in crudo
+            and ";" not in crudo
+        ):
+            yield n, crudo, linea
 
 
 def main() -> int:

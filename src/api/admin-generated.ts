@@ -11,7 +11,38 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Los tenants, para elegir cuál se compone */
+        /**
+         * Los tenants, para elegir cuál se compone
+         * @description **MEDIDA CONTRA EL SERVICIO EL 2026-09-30, campo por campo** · `:4010`,
+         *     binario del fork en `4c80802`. Devuelve un array de 2 tenants con
+         *     **trece campos cada uno, exactamente los trece que declara
+         *     `TenantOption`**: ninguno sin declarar, ninguno declarado que no llegue.
+         *
+         *     **Y las rutas de A2 son de ELLOS**, comprobado con `git log -L` sobre
+         *     `internal/adapters/handler/router.go` y no supuesto — acá el binario es
+         *     el fork, que es la trampa del 2026-09-22: medir con el fork corriendo
+         *     hace que nuestro propio código se vea como avance suyo.
+         *     `/tenants/:tenantId/catalog` la escribió `02336d03` y
+         *     `/tenants/:tenantId/roles/composition` la escribió `1e080eed` · B4.8.
+         *
+         *     Lo medido confirma tres cosas que ya están escritas campo por campo en
+         *     `TenantOption`, y se juntan acá porque son de la respuesta entera:
+         *
+         *       · `label` llega **`""` en los dos** tenants sembrados. Quien la pinte
+         *         cae a `name`.
+         *       · `status` y `vertical` llegan **`null` en los dos**, y no es una foto:
+         *         `internal/core/ports/tenant.go:33` lo dice en el código —«Status y
+         *         Vertical quedan reservados hasta que el cliente defina sus valores
+         *         (siempre nil en v1)»—.
+         *       · `locale`, `currency` y `timezone` salen **colombianos en el tenant
+         *         mexicano** —`es-CO`/`COP`/`America/Bogota`—, que es el default de
+         *         columna ya reportado en
+         *         `docs/MENSAJE-2026-09-29-backend-tenant-colombiano.md`.
+         *
+         *     **`catalog_version` NO viaja acá**, y no es un hueco de esta ruta: viene
+         *     por fila en `GET /admin/tenants/{tenantId}/catalog`, y lo que vale para
+         *     el cliente es una reducción. Está explicado en esa ruta.
+         */
         get: operations["listTenants"];
         put?: never;
         post?: never;
@@ -58,6 +89,33 @@ export interface paths {
          *
          *     Devuelve el mismo `CatalogMetric` que la consola — **ese struct SÍ tiene
          *     etiquetas `json:`**.
+         *
+         *     ── **`catalog_version` ES POR FILA · LA DEL CLIENTE ES EL MÁXIMO** ─────
+         *
+         *     Medido el 2026-09-30 contra `:4010`, binario del fork en `4c80802`:
+         *
+         *       · tenant `11111111-…`: **12 métricas**, las doce en `catalog_version: 1`
+         *       · tenant `e65f81ae-…`: **21 métricas con TRES valores distintos** · ocho
+         *         en `1`, cuatro en `3`, nueve en `4`
+         *
+         *     O sea que «la versión del catálogo del cliente» **no es un campo de esta
+         *     respuesta: es una reducción sobre las filas**. Y decirlo importa porque
+         *     esa reducción parece una decisión de diseño y no lo es: **la define su
+         *     código**. `internal/core/services/dd_catalog_sync_service.go:100` arranca
+         *     cada sync con `MaxCatalogVersion(ctx, tenantID)` y escribe
+         *     `currentVersion + 1` en lo que toca, así que **MAX**.
+         *
+         *     **Comprobado cruzado el mismo día**, que es lo que lo saca de deducción:
+         *     `GET /config/me` del tenant `e65f81ae-…` devuelve `catalog_version: 4`, y
+         *     4 es el máximo de sus 21 filas.
+         *
+         *     Y `/config/me` **no sirve para A2**: informa el catálogo del tenant de
+         *     QUIEN PREGUNTA, no del que se está mirando.
+         *
+         *     La respuesta trae además `measurement_window`, `semantic_direction`,
+         *     `unit`, `created_at` y `updated_at`. **No se declaran acá a propósito** —
+         *     `CatalogMetric` de este archivo lleva `additionalProperties: true` y
+         *     remite a `synapse-console-wire.yaml`, que los declara los cinco.
          */
         get: operations["adminCatalog"];
         put?: never;
@@ -125,7 +183,18 @@ export interface paths {
         };
         /**
          * Los roles del cliente, con su composición
-         * @description **LA TOMARON, y en la ruta que propusimos** · B4.8 · medida el 2026-09-26.
+         * @description **RELEÍDA EL 2026-09-30 contra `4c80802`** —de ahí la marca, que antes
+         *     decía `8633b10`—: 200 en los dos tenants sembrados, **tres roles**
+         *     (`admin`, `planner`, `user`, los tres con `user_count: 0`) en el
+         *     `11111111-…` y **cuatro** en el `e65f81ae-…`, con los **once campos** de
+         *     `Role` en cada uno.
+         *
+         *     **Y ninguno de los dos devuelve `roles: []`.** Queda escrito porque no es
+         *     un detalle de la respuesta sino un límite de lo que se puede mirar: el
+         *     estado vacío que A2 dibuja **no es alcanzable contra `:4010` hoy**, así
+         *     que se verifica con MSW o no se verifica.
+         *
+         *     **LA TOMARON, y en la ruta que propusimos** · B4.8 · medida el 2026-09-26.
          *     Acá decía «no la sirve el servicio desplegado», y eso venció el
          *     2026-09-25: `GET .../roles/composition` responde 200. La colisión con su
          *     propio `GET .../roles` se resolvió moviendo el NUESTRO, y su ruta quedó
@@ -696,8 +765,13 @@ export interface components {
              *     `CONFLICT_REVERT_EMPTY` del revert, y `NOT_FOUND_DASHBOARD`, que lo
              *     emite `GET /admin/dashboards/{dashboardId}/publications`.
              *
+             *     **Y `NOT_FOUND_TENANT`, medido el 2026-09-30**: lo devuelve
+             *     `GET /admin/tenants/{tenantId}/catalog` con un tenant que no existe.
+             *     Faltaba acá aunque su ruta es la primera que A2 pide.
+             *
              *     **Medidos acá**: `AUTH_FORBIDDEN` con token de planner,
-             *     `CONFLICT_NO_PREVIOUS` y `CONFLICT_REVERT_SELF` en el revert.
+             *     `CONFLICT_NO_PREVIOUS` y `CONFLICT_REVERT_SELF` en el revert, y
+             *     `NOT_FOUND_TENANT` con un uuid inventado.
              * @example CONFLICT_NO_PREVIOUS
              * @example AUTH_FORBIDDEN
              * @example VALIDATION_LAYOUT
@@ -1737,6 +1811,24 @@ export interface operations {
                 };
             };
             403: components["responses"]["Forbidden"];
+            /**
+             * @description **Medido el 2026-09-30** con un uuid que no existe:
+             *     `{"success": false, "error": "tenant no encontrado", "code":
+             *     "NOT_FOUND_TENANT"}`. Lo emite
+             *     `internal/core/services/dd_layout_builder_service.go:458`.
+             *
+             *     Estaba sin declarar, y no es una omisión inocua: A2 recibe el
+             *     `tenantId` de la banda de clientes, así que es el 404 que se ve si
+             *     alguien llega con un id de una sesión vieja.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     getLayout: {

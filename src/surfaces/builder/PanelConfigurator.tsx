@@ -432,7 +432,7 @@ export function PanelConfigurator({
           ))}
 
         <Label as="div">
-          Y falta la dimensión de desagregación que §7.2 pide · ningún tipo la declara como param
+          Y falta elegir por qué dimensión se desagrega · ningún tipo de panel lo admite todavía
         </Label>
       </div>
     </div>

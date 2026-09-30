@@ -41,12 +41,18 @@ import { FeedHealth } from './FeedHealth'
 import { UserList } from './UserList'
 import { createFormat, LOCALE_POR_DEFECTO } from '../../render/format'
 import { RoleEditor } from './RoleEditor'
+import { Subprocessors } from './Subprocessors'
+import { TenantIdentity } from './TenantIdentity'
+import { estadoDeAlta, versionDeCatalogo } from './alta'
 import { usoPorMetrica } from './uso'
 import { TenantList } from './TenantList'
 import { SurfaceMessage } from '../console/SurfaceMessage'
 import { AgentConfig } from './AgentConfig'
 import { Label } from '../../render/primitives/Label'
 import { ApiError } from '../../api/types'
+import type { EstadoDeAlta } from './alta'
+import type { Tenant } from '../../api/admin'
+import type { Formatter } from '../../render/format'
 import type { PantallaId } from './pantallas'
 
 /** Lo que cada pantalla pendiente espera. Acá y no en un comentario: la pantalla
@@ -117,6 +123,24 @@ export function Admin() {
   const guardarRol = useSaveRole(activo)
   const borrarRol = useDeleteRole(activo)
 
+  /* ── A2 · EL ESTADO DE ALTA · §PEN:A2 · F5.20 ─────────────────────────────
+   *
+   * **Se deriva acá y se baja hecho**, que es la misma forma que `usoPorMetrica`:
+   * el contenedor tiene los dos hooks que hacen falta y los presentacionales
+   * reciben el resultado. La regla vive en `alta.ts`, aparte, porque es una
+   * decisión y no un render.
+   *
+   * **`null` mientras alguna de las dos vueltas no llegó**, y no `'EN_ALTA'`.
+   * Con los datos ausentes las dos listas son vacías, así que una derivación
+   * ansiosa pintaría el chip `EN ALTA` sobre cualquier cliente durante el
+   * primer render y lo sacaría después. Un cartel que aparece y desaparece es
+   * peor que uno que tarda: el que mira no sabe cuál de los dos era cierto. */
+  const metricas = catalogo.data?.metrics ?? []
+  const listaDeRoles = roles.data ?? []
+  const derivable = roles.data !== undefined && catalogo.data !== undefined
+  const estado = derivable ? estadoDeAlta({ roles: listaDeRoles, metricas }) : null
+  const version = derivable ? versionDeCatalogo(metricas) : null
+
   if (tenants.isError) {
     // El 403 es el caso probable y tiene una causa concreta que conviene decir:
     // estas rutas piden rol `admin`, y un `planner` que abra `/admin` no está
@@ -160,6 +184,12 @@ export function Admin() {
         <Cliente
           agentes={agentes}
           roles={roles}
+          // **El `Tenant` de la fila activa, no un viaje nuevo**: `lista` ya lo
+          // trae con sus trece campos desde que A1 pidió las cinco columnas.
+          tenant={lista.find((x) => x.id === activo) ?? null}
+          estado={estado}
+          version={version}
+          format={format}
           // **La pregunta operativa y el conteo, no sólo el nombre** · A2 §9.
           // El desglose por rol los necesita, y los dos ya vienen en el layout
           // publicado: no cuesta un viaje más.
@@ -172,7 +202,7 @@ export function Admin() {
               paneles: t.panels.length,
             })) ?? []
           }
-          metricas={catalogo.data?.metrics ?? []}
+          metricas={metricas}
           onGuardar={(id, rol) => guardarRol.mutate({ ...(id === undefined ? {} : { id }), rol })}
           onBorrar={(id) => borrarRol.mutate(id)}
           guardando={guardarRol.isPending}
@@ -289,6 +319,10 @@ function mensajeDeRol(e: Error | null): string | null {
 function Cliente({
   agentes,
   roles,
+  tenant,
+  estado,
+  version,
+  format,
   // **`...paraRoles` y no una prop más en la lista** · 2026-09-22. Estaba
   // escrito prop por prop, y al sumar `onVerCatalogo` —opcional— el compilador
   // no dijo nada: la prop llegaba a `Cliente`, se perdía acá, y el enlace del
@@ -299,6 +333,13 @@ function Cliente({
 }: {
   agentes: ReturnType<typeof useAgents>
   roles: ReturnType<typeof useRoles>
+  /** Los cuatro de `TenantIdentity` · §PEN:A2. **Ninguno es opcional**, que es lo
+   *  único que el compilador puede hacer contra el spread de arriba: una prop
+   *  obligatoria mal escrita no compila, una opcional sí. */
+  tenant: Tenant | null
+  estado: EstadoDeAlta | null
+  version: number | null
+  format: Formatter
 } & Omit<Parameters<typeof RoleEditor>[0], 'roles'>) {
   if (roles.isError) {
     return (
@@ -309,7 +350,14 @@ function Cliente({
     )
   }
   return (
+    // **Los cuatro bloques en el orden del dibujo** · §PEN:A2: identidad, roles
+    // y composición, acceso a datos, subprocesadores. El orden no es estético —
+    // el dibujo lo ordena por lo que decide lo siguiente: sin roles no hay
+    // acceso, y los subprocesadores aplican igual desde el alta, así que van al
+    // final.
     <div className="flex flex-col gap-6">
+      <TenantIdentity tenant={tenant} estado={estado} version={version} format={format} />
+
       <RoleEditor {...paraRoles} roles={roles.data ?? []} cargando={roles.data === undefined} />
 
       {/* **El agente se pinta aunque su petición falle, y con la razón.** Hoy
@@ -325,8 +373,20 @@ function Cliente({
           </Label>
         </section>
       ) : (
-        <AgentConfig agentes={agentes.data ?? []} />
+        // **`sinRoles` y no `estado === 'EN_ALTA'`**, que es la distinción que el
+        // dibujo hace y se puede perder: un cliente CON catálogo y SIN roles no
+        // está en alta —ya tiene dato cargado— y su acceso sigue bloqueado
+        // igual, porque no hay a quién otorgárselo. Son dos preguntas.
+        //
+        // Y `roles.data !== undefined` adelante: mientras la vuelta no llegó,
+        // «cero roles» es lo que todavía no se sabe, no lo que hay.
+        <AgentConfig
+          agentes={agentes.data ?? []}
+          sinRoles={roles.data !== undefined && roles.data.length === 0}
+        />
       )}
+
+      <Subprocessors />
     </div>
   )
 }

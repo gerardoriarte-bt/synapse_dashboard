@@ -23,7 +23,10 @@ import { server } from '../../mocks/server'
 
 const API = '*/api/v1'
 
-const tenants = [{ id: 't-1', name: 'Under Armour México' }]
+/** `created_at` va porque A2 lo pinta en `ALTA` y el cable lo declara
+ *  obligatorio · F5.20. Acá había dos campos de los trece que la ruta
+ *  devuelve, escritos cuando devolvía dos. */
+const tenants = [{ id: 't-1', name: 'Under Armour México', created_at: '2026-09-22T09:18:45Z' }]
 
 const roles = [
   {
@@ -347,11 +350,16 @@ describe('el 404 mientras el fork no esté desplegado', () => {
 })
 
 describe('lo que A2 y A3 todavía no pueden mostrar', () => {
-  it('declara las dos de la ficha y la lista de usuarios', async () => {
-    // **Eran tres hasta el 2026-09-21.** El estado del acceso salió de esta
-    // lista y no porque llegara: lo declara `AgentConfig`, al lado de los
-    // agentes y diciendo con precisión qué significa «Activo». Tenerlo en los
-    // dos lados era la misma carencia contada dos veces en la misma pantalla.
+  it('declara lo que le falta a la ficha, y una vez sola', async () => {
+    // **Eran cuatro hasta el 2026-09-30 y quedó una.** Las otras tres no
+    // llegaron: se MUDARON, al construir `A2 · Ficha · tenant en alta`. Los
+    // datos del cliente los pinta la tarjeta de identidad —con un guión donde el
+    // valor falta—, quién trata los datos lo pinta el bloque de subprocesadores,
+    // y lo que aporta la plantilla lo declara la línea al pie de esa tarjeta.
+    //
+    // Es el mismo movimiento que el estado del acceso en 2026-09-21: declararlo
+    // en los dos lados era la misma carencia contada dos veces en la misma
+    // pantalla. La declaración se conserva; lo que cambia es dónde se lee.
     base()
     const { container } = montar()
     await abrirFicha()
@@ -362,8 +370,11 @@ describe('lo que A2 y A3 todavía no pueden mostrar', () => {
     // §9 sumó dos carencias más. Lo que la prueba fija es que cada carencia
     // esté nombrada, que es lo que vale.
     expect(texto).toMatch(/va a crecer/i)
-    expect(texto).toContain('Quiénes tratan los datos de este cliente')
     expect(texto).toContain('La descripción de cada rol')
+    // Y las dos que se mudaron, cada una en su bloque nuevo: acá se afirma que
+    // NO están duplicadas, que es la mitad que puede volver sin que nadie mire.
+    expect(texto).not.toContain('Quiénes tratan los datos de este cliente')
+    expect(texto).toContain('Subprocesadores')
   })
 
   it('el estado del acceso se declara UNA vez, y en el bloque del agente', async () => {

@@ -61,16 +61,24 @@ import type { Metric } from '../../api/types'
  *  pierde: baja al comentario**, que es donde le sirve a quien la va a
  *  construir.
  */
+/** ── TRES DE LAS CUATRO DEJARON DE SER CIERTAS · 2026-09-30, F5.20 ──────────
+ *
+ *  Las quitó construir `A2 · Ficha · tenant en alta`, que trajo los bloques que
+ *  esas tres declaraban como ausentes:
+ *
+ *  · **los datos del cliente** los pinta `TenantIdentity`, con sus siete columnas
+ *    y con un guión atenuado donde el valor todavía no llega;
+ *  · **quién trata los datos** lo pinta `Subprocessors`, que es de plataforma;
+ *  · **lo que aporta la plantilla** lo declara la línea al pie de esa tarjeta, y
+ *    ahí es donde corresponde — al lado de la celda que sale vacía.
+ *
+ *  **Declararlas acá igual sería la misma carencia contada dos veces en la misma
+ *  pantalla**, que es exactamente el defecto que esta lista ya cometió con el
+ *  estado del acceso y que se vio al abrirla. La declaración no se borra: se mudó
+ *  a donde se ve el hueco. */
 const FALTANTES = [
-    // `GET /admin/tenants` ya los devuelve desde `6e521cc`, y llegan nulos:
-    // «reservados hasta que el cliente defina sus valores» · B4.1 cerrada.
-    'Los datos del cliente: su vertical, su estado y desde cuándo está activo',
-    // Los subprocesadores. Obligación legal y no hay de dónde leerlos.
-    'Quiénes tratan los datos de este cliente, que es una declaración obligatoria',
     // El `.pen` la dibuja; el contrato declara «descripcion» y el cable no la trae.
     'La descripción de cada rol, debajo de su nombre',
-    // No hay noción de plantilla en el cable · es D2 de las pantallas de alta.
-    'Cuántos paneles hereda cada pestaña de la plantilla de su vertical',
 ] as const
 
 type Props = {
@@ -123,6 +131,12 @@ export function RoleEditor({
 
   const nombreDeMetrica = (id: string) => metricas.find((m) => m.id === id)?.nombre ?? id
 
+  /** El vacío de ALTA · **no es «no hay roles», es «todavía no hay»**. Mientras
+   *  la vuelta no llegó, cero roles es lo que no se sabe. Se calcula una vez
+   *  porque decide dos cosas —el vacío y si la cabecera lleva CTA— y con la
+   *  condición escrita dos veces una de las dos se olvida. */
+  const vacioDeAlta = roles.length === 0 && !cargando
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
@@ -135,36 +149,81 @@ export function RoleEditor({
 
             CARGANDO y no una cifra: «2 roles» mientras carga afirma algo que
             todavía no llegó. */}
+        {/* **Y en alta el dibujo escribe otra cosa en este mismo hueco** ·
+            §PEN:A2, 2026-09-30 · corregido en la auditoría. El frame de alta
+            pone `SIN ROLES DEFINIDOS` donde el frame normal pone las cifras, y
+            acá salía «0 rol(es) · 0 pestaña(s) · 0 paneles»: tres ceros que se
+            leen como un dato medido cuando lo que pasa es que el trabajo no
+            empezó. El `.pen` manda en el literal de la UI. */}
         <Label as="div">
           {cargando
             ? 'Cargando'
-            : `${String(roles.length)} rol(es) · ${String(pestanas.length)} pestaña(s) · ${String(
-                pestanas.reduce((n, t) => n + t.paneles, 0),
-              )} paneles`}
+            : vacioDeAlta
+              ? 'Sin roles definidos'
+              : `${String(roles.length)} rol(es) · ${String(pestanas.length)} pestaña(s) · ${String(
+                  pestanas.reduce((n, t) => n + t.paneles, 0),
+                )} paneles`}
         </Label>
-        <button
-          type="button"
-          onClick={() => abrir(null)}
-          className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2"
-        >
-          Nuevo rol
-        </button>
+        {/* **En el vacío de alta la cabecera NO lleva CTA** · §PEN:A2, 2026-09-30.
+            El dibujo pone uno solo y lo pone adentro del vacío; la ficha del
+            cliente en servicio sí lo tiene acá. Con los dos, la pantalla ofrece
+            dos botones idénticos a diez píxeles uno de otro — **se vio al
+            abrirla**, no lo dijo ninguna prueba. */}
+        {!vacioDeAlta && (
+          <button
+            type="button"
+            onClick={() => abrir(null)}
+            className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2"
+          >
+            Nuevo rol
+          </button>
+        )}
       </div>
 
-      {roles.length === 0 && !cargando && (
+      {vacioDeAlta && (
         // **Vacío de ALTA, que es el tercer tipo** · el `.pen` le dedica un
         // frame entero, `A2 · Ficha · tenant en alta`: «no falta un filtro ni
         // falla nada: el cliente es nuevo y el trabajo está por hacerse». La
         // salida es el siguiente paso, no deshacer ni reintentar.
-        <div className="flex flex-col gap-2 rounded-sm bg-w2 p-3">
-          <Label as="div">Este cliente todavía no tiene roles · está en alta</Label>
-          <Label as="div">
-            Sin ningún rol nadie puede entrar a la consola de este cliente, y sus pestañas no
-            tienen a quién servirle
-          </Label>
-          <Label as="div">
-            El siguiente paso es crear el primero · «Nuevo rol», acá arriba
-          </Label>
+        <div className="flex flex-col gap-3 rounded-xl border border-w3 bg-panel p-6">
+          {/* ── EL LITERAL ES EL DEL DIBUJO · §PEN:A2, 2026-09-30 ────────────
+              Corregido en la auditoría, y era una divergencia de las que se
+              deshacen solas: acá había DOS labels nuestros —«Este cliente
+              todavía no tiene roles · está en alta» y «Sin ningún rol nadie
+              puede entrar…»— donde el frame escribe UNA frase, y la frase dice
+              las dos cosas. `CLAUDE.md` es explícito: **el `.pen` gana para el
+              literal de la UI**.
+
+              Y el rol tipográfico también es el del dibujo: `$font-body` 12.5 en
+              `$ink`, no un label mono en mayúsculas. Es una frase, no un rótulo
+              —el mismo par que la rama `BLOQUEADO` de `AgentConfig`, que se
+              construyó bien el mismo día—.
+
+              **Lo que sigue divergiendo y no se puede arreglar acá:** el frame
+              dibuja un icono `users` de 22 arriba de la frase, y esta superficie
+              no pinta un solo icono ni tiene la biblioteca; y el padding es 32
+              donde toda la superficie usa 24. Las dos son previas y de la
+              superficie entera, y están anotadas en el registro. */}
+          <p className="font-body text-celda leading-cuerpo text-ink m-0">
+            Todavía no hay roles definidos, así que este cliente no tiene composición ni usuarios
+            que puedan entrar.
+          </p>
+          {/* ── EL CTA, Y NO UNA INDICACIÓN · §PEN:A2, 2026-09-30 ───────────
+              Acá decía «"Nuevo rol", acá arriba», que le pide al lector que
+              busque un botón en otra parte de la pantalla. El dibujo pone el
+              CTA **dentro** del vacío, en `$acc`, y es el único de los tres
+              tipos de vacío que lo lleva: §8 dice que un vacío de alta es una
+              invitación a actuar, y la acción tiene que estar donde se lee.
+
+              **Y hace lo mismo que «Nuevo rol»** —abre el formulario—, no algo
+              parecido: dos caminos al mismo estado y no dos estados. */}
+          <button
+            type="button"
+            onClick={() => abrir(null)}
+            className="self-start inline-flex h-7.5 items-center gap-1.75 rounded-lg px-3.5 cursor-pointer border-0 bg-acc font-mono text-label leading-rotulo tracking-rotulo uppercase font-medium text-on-acc hover:bg-acc-hover"
+          >
+            Definir primer rol
+          </button>
         </div>
       )}
 
@@ -193,13 +252,25 @@ export function RoleEditor({
         ))}
       </ul>
 
-      {/* **La advertencia va una vez y siempre, no por rol.** Es una propiedad
-          del campo, no de un rol en particular, y repetirla por fila la vuelve
-          decoración. */}
-      <Label as="div">
-        Ocultar una métrica NO es un permiso · el servidor la vuelve a verificar en el
-        catálogo y en el batch
-      </Label>
+      {/* **La advertencia va una vez, no por rol** —es una propiedad del campo y
+          repetirla por fila la vuelve decoración— **y no va cuando no hay ningún
+          rol** · §PEN:A2, corregido en la auditoría del 2026-09-30.
+
+          Se vio al abrir la ficha en alta: debajo del vacío aparecía una
+          advertencia sobre ocultar métricas en un cliente que no tiene roles ni
+          métricas que ocultar, y el frame de alta no dibuja nada en ese hueco.
+          Es la misma clase que los otros cuatro hallazgos de mirar la pantalla:
+          **una carencia o una advertencia sobre algo que no está presente**.
+
+          Y de paso es el único texto de esta superficie que sigue nombrando
+          plomería —«el servidor», «el batch»—; se deja donde tiene sentido
+          porque ahí le habla a quien compone, que es quien va a usar el campo. */}
+      {roles.length > 0 && (
+        <Label as="div">
+          Ocultar una métrica NO es un permiso · el servidor la vuelve a verificar en el
+          catálogo y en el batch
+        </Label>
+      )}
 
       {editando !== null && (
         <form
@@ -290,8 +361,15 @@ export function RoleEditor({
             {f}
           </Label>
         ))}
+        {/* **Decía «ninguna ruta los lista · solo existe POST /admin/users»** y
+            eran dos defectos en una línea: una ruta y un identificador de tarea
+            pintados en la ficha de un cliente —lo que §7.3 llama vocabulario de
+            infraestructura, acá aplicado a la nuestra— y, desde que la ruta
+            global contesta, **una afirmación falsa**. `copy-producto` no la vio
+            porque es texto suelto entre etiquetas; se vio al abrir la pantalla. */}
         <Label as="div">
-          Y la lista de usuarios de A3 · ninguna ruta los lista · solo existe POST /admin/users
+          Y quiénes son los usuarios de este cliente · hoy se ven en la pantalla de usuarios,
+          no acá
         </Label>
       </div>
     </div>

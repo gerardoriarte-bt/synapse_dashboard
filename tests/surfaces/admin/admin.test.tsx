@@ -264,7 +264,12 @@ describe('las cinco pantallas de §7.3 · ninguna queda pendiente', () => {
     await screen.findByText('Under Armour México')
 
     await userEvent.click(screen.getByRole('button', { name: 'Ficha de cliente' }))
-    expect(await screen.findByRole('button', { name: 'Nuevo rol' })).toBeInTheDocument()
+    // **El CTA del vacío de alta y no «Nuevo rol»** · §PEN:A2, 2026-09-30. Este
+    // escenario sirve la ficha con CERO roles, y desde que el vacío tiene su
+    // propio CTA la cabecera no repite el suyo: el dibujo pone uno solo. Lo que
+    // la prueba fija sigue siendo lo mismo —que la ficha se pinta y no se declara
+    // pendiente—, con el botón que ese estado sí tiene.
+    expect(await screen.findByRole('button', { name: 'Definir primer rol' })).toBeInTheDocument()
     expect(screen.queryByText('Pendiente')).toBeNull()
   })
 })

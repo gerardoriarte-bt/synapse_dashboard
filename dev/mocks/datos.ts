@@ -176,14 +176,68 @@ export const roles = [
   { id: R(3), tenant_id: TENANT, name: 'Analista', tab_ids: [], hidden_metric_ids: [], layout_overrides: {}, user_count: 0 },
 ]
 
-/** **`label` DISTINTA de `name`, a propósito.** El selector de cliente del
+/** El tercer cliente, el que está EN ALTA · §PEN:A2 · F5.20.
+ *
+ *  **Existe porque el estado que A2 dibuja no es alcanzable contra el servicio.**
+ *  Medido el 2026-09-30: los dos clientes sembrados tienen 3 y 4 roles y catálogo
+ *  poblado, y darlo de alta desde la pantalla no se puede —`POST /admin/tenants`
+ *  exige cuatro credenciales que §7.3 prohíbe pedir—. Así que **éste es el único
+ *  lugar donde la pantalla se puede MIRAR**, y mirarla es requisito: los ocho
+ *  defectos del 16 y 17 de septiembre salieron todos de abrir la aplicación.
+ *
+ *  Sus dos rutas devuelven vacío en `browser.ts`, que es lo que lo pone en alta:
+ *  el estado se deriva de no tener roles ni catálogo, no de un campo. */
+export const TENANT_EN_ALTA = '11111111-1111-1111-1111-333333333333'
+
+/** ── LOS TRECE CAMPOS, Y ACÁ HABÍA TRES · corregido el 2026-09-30 ───────────
+ *
+ *  `GET /admin/tenants` devuelve **trece** campos por cliente y este fixture
+ *  servía **tres**, así que `locale`, `currency`, `timezone`, `user_count`,
+ *  `status`, `vertical`, `created_at` y las dos de frescura llegaban vacías al
+ *  adaptador. Es el mismo envejecimiento que ya costó una tabla de quince filas
+ *  mal: el modo mock hablando un cable más viejo que el real es exactamente la
+ *  forma en que deja de servir para mirar.
+ *
+ *  Los valores salen de medir el servicio local ese día, incluido lo que se ve
+ *  raro y es cierto: **`locale`, `currency` y `timezone` salen colombianos en el
+ *  cliente mexicano** —es un default de columna, ya reportado— y **`status` y
+ *  `vertical` llegan vacíos en los dos**, por decisión escrita del servicio.
+ *
+ *  **`label` DISTINTA de `name`, a propósito.** El selector de cliente del
  *  navbar lee la corta y la cabecera la larga; con las dos iguales no se puede
  *  ver cuál se está leyendo, y **ese fue el defecto**: el adaptador leía `name`
  *  acá mientras el resto ya leía `label`, y se descubrió abriendo la aplicación.
  *  Un fixture donde los dos valores coinciden no distingue nada. */
 export const tenants = [
-  { id: TENANT, name: 'Under Armour México', label: 'UA México' },
-  { id: '11111111-1111-1111-1111-222222222222', name: 'Terpel Colombia', label: 'Terpel' },
+  {
+    id: TENANT, name: 'Under Armour México', label: 'UA México',
+    locale: 'es-CO', currency: 'COP', timezone: 'America/Bogota',
+    user_count: 2, last_published_at: '2026-09-29T15:11:13.664957-05:00',
+    worst_feed_status: 'fresh', worst_feed_freshness_hours: 45.67,
+    status: null, vertical: null,
+    created_at: '2026-09-22T09:18:45.919012-05:00',
+  },
+  {
+    id: '11111111-1111-1111-1111-222222222222', name: 'Terpel Colombia', label: 'Terpel',
+    locale: 'es-CO', currency: 'COP', timezone: 'America/Bogota',
+    // Nunca publicó y ninguna fuente cargó nunca: los dos nulos que **no se
+    // pueden colapsar en cero**, que es la distinción que A5 paga dos veces.
+    user_count: 0, last_published_at: null,
+    worst_feed_status: 'unknown', worst_feed_freshness_hours: null,
+    status: null, vertical: null,
+    created_at: '2026-09-24T10:18:05.834346-05:00',
+  },
+  {
+    id: TENANT_EN_ALTA, name: 'Grupo Axo', label: 'Axo',
+    // El cliente en alta es mexicano y **su moneda es la que el dibujo escribe**:
+    // es el único de los tres que no arrastra el default colombiano, para que se
+    // vea que la columna `MONEDA` sale del dato y no de una constante.
+    locale: 'es-MX', currency: 'MXN', timezone: 'America/Mexico_City',
+    user_count: 0, last_published_at: null,
+    worst_feed_status: 'unknown', worst_feed_freshness_hours: null,
+    status: null, vertical: null,
+    created_at: '2026-08-15T10:00:00-05:00',
+  },
 ]
 
 /** **`chart` y `note` son del cable desde `f70cec2`** · medidos el 2026-09-28.

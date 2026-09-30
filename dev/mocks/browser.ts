@@ -29,7 +29,7 @@
 import { http, HttpResponse, delay } from 'msw'
 import { setupWorker } from 'msw/browser'
 import repertorio from './repertorio.json'
-import { DASH_A, LAYOUT_PUB, bloques, catalogo, contexto, detalle, layouts, publicaciones, roles, tenants, usuario, PANELES_MUESTRARIO } from './datos'
+import { DASH_A, LAYOUT_PUB, TENANT_EN_ALTA, bloques, catalogo, contexto, detalle, layouts, publicaciones, roles, tenants, usuario, PANELES_MUESTRARIO } from './datos'
 
 const API = '*/api/v1'
 const ok = <T,>(data: T) => HttpResponse.json({ success: true, data })
@@ -493,8 +493,23 @@ export const worker = setupWorker(
 
   /* ── Admin y builder ────────────────────────────────────────────────────── */
   http.get(`${API}/admin/tenants`, () => ok(tenants)),
-  http.get(`${API}/admin/tenants/:id/catalog`, () => ok(catalogo)),
-  http.get(`${API}/admin/tenants/:id/layouts`, () => ok(estado.layouts)),
+  /* ── EL CLIENTE EN ALTA DEVUELVE VACÍO EN SUS DOS RUTAS · §PEN:A2, F5.20 ───
+   *
+   * **Las dos, y por eso el `if` está acá y no en el componente.** El estado de
+   * alta se DERIVA de no tener roles ni catálogo: si el catálogo siguiera
+   * respondiendo las treinta métricas de arriba, el cliente daría «Activo» y el
+   * frame que se quiere mirar no se podría mirar. Es la misma razón por la que
+   * hay un tercer cliente: contra el servicio este estado no existe. */
+  http.get(`${API}/admin/tenants/:id/catalog`, ({ params }) =>
+    ok(params['id'] === TENANT_EN_ALTA ? [] : catalogo),
+  ),
+  /** **Y tampoco tiene layout** · lo encontró MIRAR la pantalla: con los layouts
+   *  compartidos, la cabecera del cliente en alta decía «0 rol(es) · 3 pestaña(s)
+   *  · 24 paneles», o sea que un cliente sin nada mostraba las pestañas de otro.
+   *  Un cliente en alta no publicó todavía; ése es el punto del estado. */
+  http.get(`${API}/admin/tenants/:id/layouts`, ({ params }) =>
+    ok(params['id'] === TENANT_EN_ALTA ? [] : estado.layouts),
+  ),
 
   http.post(`${API}/admin/tenants/:id/layouts`, async ({ request }) => {
     const { version_id } = (await request.json()) as { version_id?: string }
@@ -740,7 +755,13 @@ export const worker = setupWorker(
     },
   ])),
 
-  http.get(`${API}/admin/tenants/:id/agents`, () => ok([
+  /** **El cliente en alta tampoco tiene agente**, y que igual salga `BLOQUEADO`
+   *  es lo que hay que poder mirar: la condición del bloqueo son los ROLES, no
+   *  los agentes, y con los dos en cero las dos lecturas se ven idénticas. Para
+   *  distinguirlas a mano, cambiá este `[]` por la lista de abajo: el bloque
+   *  tiene que seguir diciendo `BLOQUEADO`. */
+  http.get(`${API}/admin/tenants/:id/agents`, ({ params }) =>
+    params['id'] === TENANT_EN_ALTA ? ok([]) : ok([
     {
       id: 'ag-1', tenant_id: 't-1', name: 'Agente UA MX', target_role: 'Planner',
       snowflake_db: 'DB_BT_UA', snowflake_schema: 'BT_UA_MART_ANALYTICS',
@@ -759,9 +780,10 @@ export const worker = setupWorker(
     },
   ])),
 
-  http.get(`${API}/admin/tenants/:id/roles/composition`, async () => {
+  http.get(`${API}/admin/tenants/:id/roles/composition`, async ({ params }) => {
     await delay(200)
-    return ok(estado.roles)
+    // Sin roles, que es lo que pone al cliente en alta · ver el catálogo arriba.
+    return ok(params['id'] === TENANT_EN_ALTA ? [] : estado.roles)
   }),
   http.post(`${API}/admin/tenants/:id/roles`, async ({ request }) => {
     const r = (await request.json()) as { name: string; tab_ids?: string[]; hidden_metric_ids?: string[] }

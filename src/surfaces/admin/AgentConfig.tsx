@@ -27,14 +27,67 @@
  *  prohíbe: declarar una consecuencia que nadie verificó. Está pedido en
  *  `docs/PARA-BACKEND.md`.
  *
+ *  ── LA RAMA `BLOQUEADO` · §PEN:A2 · F5.20, 2026-09-30 ───────────────────────
+ *
+ *  `A2 · Ficha · tenant en alta` dibuja este mismo bloque de otra forma: un chip
+ *  `BLOQUEADO`, la razón, y qué lo desbloquea. **Y la condición es tener CERO
+ *  ROLES, no cero agentes**, que es la parte que se puede equivocar viéndose
+ *  bien.
+ *
+ *  El dibujo y su nota dicen por qué: «sin rol no hay a quién otorgarle lectura».
+ *  El número de agentes contesta otra pregunta —si alguien ya configuró el
+ *  acceso— y con un cliente recién dado de alta las dos dan cero, así que un
+ *  fixture obvio no las distingue. Con roles, sigue la tabla.
+ *
+ *  **Reemplaza el cuerpo y no se suma a él** · §5.2: un estado reemplaza el
+ *  cuerpo, nunca el shell. El rótulo del bloque sigue arriba; lo que cambia es
+ *  todo lo de abajo, incluida la declaración de lo que falta — que en este estado
+ *  hablaría de un acceso que todavía no se pidió.
+ *
  *  **§PEN:A2** · A2 · el bloque «ACCESO A DATOS» · DIVERGE en forma · misma auditoría, §8.
  */
 import { Label } from '../../render/primitives/Label'
+import { Note } from '../../render/primitives/Note'
+import { StatusChip } from './StatusChip'
 import type { Agente } from '../../api/admin'
 
 const CELDA = 'font-body text-cuerpo leading-cuerpo text-ink px-3 py-2 align-top'
 
-export function AgentConfig({ agentes }: { agentes: readonly Agente[] }) {
+type Props = {
+  agentes: readonly Agente[]
+  /** **Cero roles, no cero agentes** · ver el comentario de arriba. Obligatoria y
+   *  no opcional a propósito: con el spread condicional de JSX una prop mal
+   *  escrita compila, y una opcional mal escrita se lee como «false». */
+  sinRoles: boolean
+}
+
+export function AgentConfig({ agentes, sinRoles }: Props) {
+  if (sinRoles) {
+    return (
+      <section className="flex flex-col gap-3">
+        <Label as="div">Acceso a datos</Label>
+        <div className="rounded-xl border border-w3 bg-panel p-6 flex flex-col gap-3">
+          <div className="flex items-center gap-2.5">
+            <StatusChip tono="accion">Bloqueado</StatusChip>
+            <div className="text-dim">
+              <Note as="div">Todavía no configurado</Note>
+            </div>
+          </div>
+          <p className="font-body text-celda leading-cuerpo text-ink m-0">
+            El acceso a datos se configura al confirmar el primer rol: sin rol no hay a quién
+            otorgárselo.
+          </p>
+          {/* **Razón y desbloqueo**, que es la gramática que §8 le pide a
+              cualquier estado apagado. Sin la segunda mitad esto sería un cartel
+              que dice «no» y deja al super-admin sin siguiente paso. */}
+          <div className="text-dim">
+            <Note as="div">Lo desbloquea · definir el primer rol</Note>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className="flex flex-col gap-2">
       {/* **Se llama `ACCESO A DATOS`** · §PEN:A2, que es como el dibujo nombra
@@ -104,12 +157,11 @@ export function AgentConfig({ agentes }: { agentes: readonly Agente[] }) {
       <div className="flex flex-col gap-1 border-t border-w2 pt-2">
         <Label as="div">Pendiente · el estado del acceso</Label>
         <p className="font-body text-cuerpo leading-cuerpo text-dim m-0">
-          Ninguna ruta declara si el acceso del agente sigue vigente ni cuándo se
-          verificó por última vez. «Activo» solo dice que nadie lo dio de baja:
-          un agente activo con la credencial vencida se ve igual que uno que
-          funciona.
+          Todavía no se puede comprobar desde acá si el acceso sigue vigente ni cuándo se
+          verificó por última vez. «Activo» solo dice que nadie lo dio de baja: un agente
+          activo con la credencial vencida se ve igual que uno que funciona.
         </p>
-        <Label as="div">Se desbloquea con · una verificación de acceso en el cable</Label>
+        <Label as="div">Se desbloquea con · una comprobación del acceso</Label>
       </div>
 
       {/* **La nota dura del permiso** · §PEN:A2 la escribe al pie del bloque, y
@@ -118,8 +170,8 @@ export function AgentConfig({ agentes }: { agentes: readonly Agente[] }) {
           misma regla que `RoleEditor` ya declara para las métricas ocultas,
           dicha para el acceso. */}
       <Label as="div">
-        El permiso se aplica en el backend, no en la composición · un rol sin
-        acceso no ve el dato aunque el panel exista
+        El permiso se aplica al servir el dato, no al componer · un rol sin acceso no ve el
+        dato aunque el panel exista
       </Label>
     </section>
   )
