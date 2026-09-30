@@ -148,6 +148,45 @@ materialize— **y su verificación por paso**.
 **Ese documento sí nombra bases, roles y grants.** Su lector es el equipo interno,
 que es de quien §7.3 dice que opera esa capa.
 
+## 5 bis · DOS DE LAS TRES ESTÁN DECIDIDAS · 2026-09-30 (humano)
+
+**D1 → opción (c): dos altas, dos roles.** El equipo interno crea el tenant con
+sus credenciales por runbook; el super-admin lo **adopta** eligiendo plantilla y
+definiendo el primer rol. §7.3 queda intacta —ninguna clave privada pasa por un
+formulario— y es lo único que explica por qué el dibujo muestra un tenant que
+**ya existe** con `roles: []`.
+
+**Lo que esto significa para construir:** la hoja de alta de A1 **no crea el
+tenant**. A2 · `tenant en alta` es la pantalla de adopción, y sus dos CTA
+—`ELEGIR PLANTILLA` y `DEFINIR PRIMER ROL`— son el trabajo real del super-admin.
+
+**D3 → derivado, no guardado.** `EN ALTA` se deduce: un tenant con `roles: []` y
+sin `catalog_version` está en alta. Un estado que se deduce no se puede quedar
+desincronizado, y éste es exactamente deducible.
+
+**Y hay una razón nueva, medida el 2026-09-30, que refuerza la elección:**
+`status` llega **siempre nulo**. El campo existe en el cable desde `6e521cc` y su
+propio comentario dice «reservados hasta que el cliente defina sus valores
+(siempre nil en v1)». Un cuarto valor guardado sobre una columna que nadie
+escribe no habría pintado nunca.
+
+**D2 sigue abierta y es del backend.** Ver la corrección de abajo.
+
+### Corrección a D2 · el campo existe, el mecanismo no · 2026-09-30
+
+D2 dice «la palabra `vertical` no aparece en el código del backend», medido el
+2026-09-26 contra `6e595e3`. **Eso envejeció**: `ports/tenant.go:46` declara
+`Vertical *string` desde `6e521cc`, y `GET /admin/tenants` lo devuelve.
+
+**Pero la conclusión no cambia, sólo su letra.** El campo llega siempre nulo, y
+**no hay plantillas**: `/admin/templates` y `/admin/verticals` dan **404**,
+medido el 2026-09-30 contra el servicio corriendo. La herencia que §3.4 describe
+—plantilla → override por tenant → override por rol— sigue sin backend.
+
+**Es el bloqueo más grande de las dos pantallas y sigue en pie.**
+
+---
+
 ## 5 · LAS TRES DECISIONES QUE ESTO NECESITA, Y NO SON DEL FRONT
 
 ### D1 · ¿Dónde se cargan las siete credenciales de Snowflake?
