@@ -6836,6 +6836,26 @@ porcentaje en otro dibuja un área que depende del orden de los ejes.
   Propuesto que falle en vez de avisar ·
   `docs/MENSAJE-2026-09-30-backend-registry-y-forma.md`.
 
+**LAS TRES ENTRADAS ESTÁN ESCRITAS Y PROBADAS CONTRA SNOWFLAKE · 2026-09-30** ·
+`8876b4d` en `feature/config-plots` del fork. `platform_gap`
+(`compared_categorical`), `platform_month_matrix` (`matrix`) y `spend_flow`
+(`flow`), **las tres sobre columnas que `platform_return` ya leía**. Corrida real:
+`available 19 · blocked 2 · errors 0`, y los dos bloqueados son los de prosa.
+
+**Churn +100 −2 en archivos de ellos**, y los 2 son una expectativa que quedó
+rancia: `AffectedMetrics` decía «sólo `platform_return`» y ahora son cuatro las
+métricas de paid media — que las cuatro se afecten si falta la tabla es el
+comportamiento correcto.
+
+**Y correrlo encontró tres cosas del dato**, que es lo que ningún esquema habría
+dicho: dieciséis plataformas con retorno y **sin costo**, `Daily Motion` y
+`Dailymotion` como dos filas distintas, y **38 plataformas** donde habíamos
+estimado seis —el panel muestra seis porque tiene un tope, no porque haya seis—.
+Avisado en `docs/MENSAJE-2026-09-30-datos-lo-que-encontro-correrlo.md`.
+
+**Esa última es la mejor evidencia de por qué el inventario va primero**: una
+suposición sobre la cardinalidad ya nos hizo escribir mal un pedido.
+
 **Lo de datos son dos cosas y ninguna es la consulta:**
 
 1. **La fila en `SYNAPSE_METRIC_CATALOG` con su copy** — `NAME`, `BASE`,

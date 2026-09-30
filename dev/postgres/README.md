@@ -148,6 +148,20 @@ Para recuperarlo: crear un tercer dashboard con
 `POST /admin/tenants/{tenantId}/dashboards`, o recrear el contenedor —que es para
 lo que es descartable—.
 
+**⚠️ Y DESDE EL 2026-09-30 HAY TRES MÉTRICAS SEMBRADAS A MANO.**
+`platform_gap`, `platform_month_matrix` y `spend_flow`, insertadas directo en
+`dd_catalog_metrics` para probar las tres entradas nuevas de `MetricRegistry`
+contra Snowflake real **antes** de que datos cure sus filas.
+
+**No están en `SYNAPSE_METRIC_CATALOG`**, así que la próxima corrida de
+`sync-catalog` **no las borra** —el sync no elimina lo que no está en la view, que
+es lo mismo que sostiene a `executive_summary` y `decisions`— pero tampoco las
+actualiza. Cuando datos las cure de verdad, conviene borrar estas tres primero
+para no quedarse con dos filas de la misma clave.
+
+Las tres se materializaron bien —`available 19, blocked 2, errors 0`— y lo que
+devolvieron está en `docs/MENSAJE-2026-09-30-datos-lo-que-encontro-correrlo.md`.
+
 **⚠️ Y DESDE EL 2026-09-29 SU LAYOUT ES UN MUESTRARIO DE GRÁFICOS.** Se publicó
 ahí una pestaña `repertorio-real` con **doce paneles que llevan `chart`** —
 `bullet`, `rings`, `donut`, `columns`, `lollipop`, `pareto`, `treemap`, `radial`,
