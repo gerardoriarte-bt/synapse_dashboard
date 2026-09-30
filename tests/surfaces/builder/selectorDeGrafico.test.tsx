@@ -202,6 +202,37 @@ describe('cada opción DECLARA su mínimo y su tope · el segundo bullet', () =>
     expect(screen.getByText(/ilegible en dona/)).toBeVisible()
   })
 
+  it('y NO va en el naranja · el dibujo lo pinta en `$dim`', () => {
+    // ── POR QUÉ ESTA ASERCIÓN EXISTE · 2026-09-30 ────────────────────────────
+    //
+    // El tope se pintaba en `text-acc` con esta razón escrita en el componente:
+    // «es donde el `.pen` lo pinta en la variante deshabilitada». **Se leyó el
+    // dibujo y es falso.** El frame `B3 · Selector · gráfico deshabilitado por
+    // tope` sustituye la DESCRIPCIÓN de la opción por la razón del tope y la
+    // deja en `$dim` —el mismo tono que ese renglón ya tenía—; lo que cambia es
+    // el nombre, que baja de `$ink` a `$dim`, y el preview, que se apaga.
+    //
+    // Nada lo ataba, así que la afirmación falsa sobrevivió a la construcción de
+    // la pantalla. Es la forma que la auditoría de A2 encontró cinco veces el
+    // mismo día: algo declarado en prosa y sin aserción se deshace solo.
+    //
+    // **Y el color no es cosmética**: el naranja es regla dura —«solo CTAs,
+    // estado activo, enlaces y cifras resaltadas en prosa»— y un tope sobre una
+    // opción HABILITADA no es ninguna de las cuatro.
+    montar(['categorica'])
+    const tope = screen.getByText(/partes > 5/)
+
+    // Se mira el elemento Y sus ancestros hasta la opción: el color puede venir
+    // de un `<span>` envolvente, que es como estaba puesto.
+    let n: HTMLElement | null = tope
+    const clases: string[] = []
+    while (n !== null && n.tagName !== 'BUTTON') {
+      clases.push(n.className)
+      n = n.parentElement
+    }
+    expect(clases.join(' ')).not.toContain('text-acc')
+  })
+
   it('un gráfico SIN mínimo lo dice · no se deja el hueco mudo', () => {
     montar(['ranking'])
     expect(screen.getByText(/Sin mínimo/)).toBeVisible()

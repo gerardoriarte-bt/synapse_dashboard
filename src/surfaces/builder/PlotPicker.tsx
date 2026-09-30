@@ -220,12 +220,25 @@ function Opcion({
         </Note>
       </span>
       {plot.tope != null && (
-        // **El tope va en `$acc`**, que es donde el `.pen` lo pinta en la
-        // variante deshabilitada. No es color de datos: es un aviso, y el naranja
-        // está permitido para eso.
-        <span className="text-acc">
-          <Note as="div">{`Tope · ${plot.tope.cuando} · ${plot.tope.razon}`}</Note>
-        </span>
+        // ── EL TOPE VA EN `$dim`, Y ESTUVO EN `$acc` CON UNA RAZÓN FALSA ──────
+        //
+        // Acá decía «el tope va en `$acc`, que es donde el `.pen` lo pinta en la
+        // variante deshabilitada». **Se leyó el dibujo el 2026-09-30 y es
+        // falso.** El frame `B3 · Selector · gráfico deshabilitado por tope`
+        // sustituye la descripción de la opción por la razón del tope y **la
+        // deja en `$dim`**, el mismo tono que ya tenía ese renglón; lo que sí
+        // cambia es el NOMBRE, que baja de `$ink` a `$dim`, y el preview, que
+        // se apaga (`enabled: false`).
+        //
+        // Nadie lo había comprobado y **ninguna prueba lo ataba**, que es la
+        // forma que la auditoría de A2 encontró cinco veces el mismo día: algo
+        // declarado en prosa y sin aserción se deshace solo.
+        //
+        // Y el color importa por una regla dura: el naranja **no** es para
+        // cualquier aviso — «solo CTAs, estado activo, enlaces y cifras
+        // resaltadas en prosa». Un tope sobre una opción HABILITADA no es
+        // ninguna de las cuatro.
+        <Note as="div">{`Tope · ${plot.tope.cuando} · ${plot.tope.razon}`}</Note>
       )}
     </button>
   )
