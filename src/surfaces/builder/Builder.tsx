@@ -135,12 +135,14 @@ const PENDIENTES: Partial<Record<PantallaId, { razon: string; desbloqueaCon: str
  *  llegar al mismo formulario. Es una desviación de la spec y va dicha. */
 const EN_OTRA_PANTALLA: Partial<Record<PantallaId, string>> = {
   metrica:
-    'El binder está construido —F4.10— y vive en «Contexto de edición»: se elige un panel de una pestaña y se configura ahí. Configurar un panel exige tenerlo elegido, y elegirlo es de B1.',
+    // F4.10 · es una desviación de §7.2 y va dicha, no escondida.
+    'Está en «Contexto de edición»: se elige un panel de una pestaña y se configura ahí. Configurar un panel exige tenerlo elegido.',
   // **Mudado desde `PENDIENTES` el 2026-09-30**, y es la misma razón que el
   // binder: elegir el gráfico de un panel exige tener el panel elegido. El
   // selector se construyó en F4.21 y lo monta `PanelConfigurator`.
   grafico:
-    'El selector de gráfico está construido —F4.21— y vive en «Contexto de edición»: se elige un panel y el gráfico se elige ahí, con su repertorio y sus mínimos. Elegir el gráfico de un panel exige tener el panel elegido.',
+    // F4.21 · misma resolución que el binder y por la misma razón.
+    'Está en «Contexto de edición»: se elige un panel y el gráfico se elige ahí, con su repertorio y sus mínimos. Elegir el gráfico de un panel exige tener el panel elegido.',
 }
 
 export function Builder() {
@@ -770,7 +772,9 @@ function Preview({
           <Label as="div">No se pudo resolver el preview</Label>
           <Label as="div">
             {query.error instanceof ApiError && query.error.httpStatus === 404
-              ? 'El servicio desplegado todavía no sirve esta ruta · está escrita en el fork · B4.9'
+              ? // La ruta de vista previa por rol está escrita en nuestro fork y el servicio
+      // desplegado no la sirve · B4.9.
+      'La vista previa por rol todavía no se puede consultar'
               : (query.error.message === '' ? 'Sin detalle del servidor' : query.error.message)}
           </Label>
         </div>

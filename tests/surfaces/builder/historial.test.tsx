@@ -298,10 +298,10 @@ describe('B6 · lo que el dibujo pide y no se compone', () => {
     // Una divergencia sin prueba deriva en silencio el día que alguien la
     // «arregle» componiendo la frase.
     pintar()
-    expect(screen.getByText(/Faltan 5 cosas/i)).toBeInTheDocument()
-    expect(screen.getByText(/El «Resumen» de cada versión/i)).toBeInTheDocument()
-    expect(screen.getByText(/La línea RAZÓN/i)).toBeInTheDocument()
-    expect(screen.getByText(/La fila de BORRADOR/i)).toBeInTheDocument()
+    expect(screen.getByText(/va a crecer/i)).toBeInTheDocument()
+    expect(screen.getByText(/resumen que escribió quien publicó/i)).toBeInTheDocument()
+    expect(screen.getByText(/La razón de cada cambio/i)).toBeInTheDocument()
+    expect(screen.getByText(/El borrador en curso/i)).toBeInTheDocument()
   })
 
   it('«REVERSIÓN» se ve, y sólo en la fila que llegó por rollback', () => {

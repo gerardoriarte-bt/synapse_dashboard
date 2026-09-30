@@ -178,12 +178,20 @@ describe('§7.3 · los cuatro campos que la pantalla NO puede afirmar', () => {
     await screen.findByText('Ventas')
 
     const texto = container.textContent ?? ''
-    expect(texto).toContain('Faltan 3 datos')
-    for (const campo of ['Frescura', 'Ventana', 'Estado']) {
+    expect(texto).toContain('Esta pantalla va a crecer')
+    for (const campo of ['frescura', 'ventana', 'estado']) {
       expect(texto).toContain(campo)
     }
-    expect(texto).toContain('B1.17')
-    expect(texto).toContain('B1.25')
+    // **NO se nombra la tarea que lo desbloquea, y ese cambio es el punto.**
+    // Decía `B1.17` en la pantalla de un cliente. La razón técnica no se perdió:
+    // bajó al comentario de `FALTANTES`, que es donde le sirve a quien lo va a
+    // construir · auditoría de usabilidad §1.1, decidido el 2026-09-30.
+    expect(texto).not.toMatch(/B\d\.\d/)
+    // Las dos acciones también dejaron de nombrar su plomería: decían
+    // «hoy es make sync-catalog», un comando que quien lee no puede correr.
+    expect(texto).toContain('Pedir una sincronización del catálogo')
+    expect(texto).toContain('Editar una métrica')
+    expect(texto).not.toContain('sync-catalog')
     // **«En cuántos paneles se usa» salió de la lista el 2026-09-15**: la
     // columna `USO` lo cuenta sobre el layout publicado. Es el único de los
     // cuatro que dejó de faltar.
@@ -201,7 +209,10 @@ describe('§7.3 · los cuatro campos que la pantalla NO puede afirmar', () => {
     await screen.findByText('Ventas')
 
     expect(screen.queryByRole('button', { name: /sincronizar/i })).toBeNull()
-    expect((container.textContent ?? '').toLowerCase()).toContain('sincronizar')
+    // **La declaración se conserva; lo que cambió es que ya no nombra el
+    // comando.** Que la acción NO exista como botón y SÍ esté declarada es lo
+    // que esta prueba fija, y eso no se tocó.
+    expect((container.textContent ?? '').toLowerCase()).toContain('sincronización')
   })
 })
 
@@ -274,7 +285,7 @@ describe('los estados de A4 · §8', () => {
     await abrirCatalogo()
 
     expect(await screen.findByText(/no tiene métricas en el catálogo/i)).toBeInTheDocument()
-    expect(screen.getByText(/B1.18/)).toBeInTheDocument()
+    expect(screen.getByText(/Se llenan cuando el catálogo se sincroniza/)).toBeInTheDocument()
   })
 
   it('un 403 nombra el rol que falta, no «error del sistema»', async () => {

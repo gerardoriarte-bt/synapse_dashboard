@@ -47,10 +47,26 @@ const NOTA = 'font-mono text-nota leading-rotulo tracking-rotulo uppercase text-
 const COLUMNAS = ['Usuario', 'Cliente', 'Rol', 'Estado', 'Último acceso', 'Alta'] as const
 
 /** **Eran cuatro hasta el 2026-09-26.** El de alcance se cerró con B4.17. */
+/** LO QUE ESTA PANTALLA TODAVÍA NO MUESTRA · reescrito el 2026-09-30 (humano)
+ *
+ *  **Esto se PINTA, así que es copy de producto y no una nota nuestra.** Hasta
+ *  hoy citaba §7.3, nombraba rutas del servicio y hablaba de «el cable» en la
+ *  pantalla de un cliente — la auditoría de usabilidad lo puso primero en su
+ *  lista: `docs/AUDITORIA-2026-09-30-usabilidad.md` §1.1.
+ *
+ *  **Declarar lo que falta se conserva**, que es la mejor costumbre de este
+ *  repositorio y la misma gramática de §8: un panel apagado dice qué pasa. Lo
+ *  que cambia es a quién se le habla. **La razón técnica de cada línea no se
+ *  pierde: baja al comentario**, que es donde le sirve a quien la va a
+ *  construir.
+ */
 const FALTANTES = [
-  'Invitación pendiente · el cable sólo trae activo o suspendido',
-  'Quién dio de alta · el dibujo pone «por M. Benítez» y no hay campo',
-  'Reenviar invitación · no hay ruta',
+    // El cable sólo trae activo o suspendido.
+    'Las invitaciones pendientes, además de los usuarios activos y suspendidos',
+    // El dibujo pone «por M. Benítez» y no hay campo.
+    'Quién dio de alta a cada usuario',
+    // No hay ruta.
+    'Volver a enviar una invitación que nadie aceptó',
 ] as const
 
 
@@ -220,7 +236,7 @@ export function UserList({ format, usuarios, total, clientes, cargando = false }
         </div>
 
         <div className="flex flex-col gap-1 border-t border-w2 pt-3">
-          <Label as="div">{`Faltan ${String(FALTANTES.length)} cosas que §7.3 pide de esta pantalla`}</Label>
+          <Label as="div">{`Esta pantalla va a crecer`}</Label>
           {FALTANTES.map((f) => (
             <Label as="div" key={f}>{f}</Label>
           ))}

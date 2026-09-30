@@ -131,7 +131,7 @@ describe('A4 · el catálogo mientras carga', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
 
     expect(await screen.findByLabelText('Capa')).toBeInTheDocument()
-    expect(container.textContent).toContain('Faltan 3 datos')
+    expect(container.textContent).toContain('Esta pantalla va a crecer')
 
     const tabla = screen.getByRole('table')
     expect(tabla).toHaveAttribute('aria-busy', 'true')

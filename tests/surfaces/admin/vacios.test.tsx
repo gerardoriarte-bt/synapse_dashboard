@@ -61,7 +61,7 @@ describe('vacío de SISTEMA · nadie dio de alta nada', () => {
     const { container } = montar()
 
     expect(await screen.findByText(/Ningún cliente dado de alta todavía/)).toBeInTheDocument()
-    expect(container.textContent).toContain('plantilla de vertical')
+    expect(container.textContent).toContain('después se elige su plantilla')
     // **Sin botón de deshacer**: no hay nada que deshacer.
     expect(screen.queryByRole('button', { name: 'Limpiar el filtro' })).toBeNull()
   })
@@ -75,7 +75,7 @@ describe('vacío de SISTEMA · nadie dio de alta nada', () => {
     await abrirCatalogo()
 
     expect(screen.getByText(/no tiene métricas en el catálogo/)).toBeInTheDocument()
-    expect(screen.getByText(/sincronizando desde el modelo semántico · B1.18/)).toBeInTheDocument()
+    expect(screen.getByText(/Se llenan cuando el catálogo se sincroniza/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Limpiar el filtro' })).toBeNull()
   })
 })

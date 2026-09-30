@@ -183,12 +183,12 @@ describe('§7.2 · la herencia de plantilla, que no existe en el cable', () => {
     await screen.findByRole('button', { name: /v4/ })
 
     const texto = container.textContent ?? ''
-    expect(texto).toContain('Faltan 3 cosas')
+    expect(texto).toContain('Esta pantalla va a crecer')
     // El `.pen` pide «la proporción real entre paneles heredados de la plantilla
     // y propios del tenant» · «UA MX hereda 11 de 12 paneles en su overview».
-    expect(texto).toContain('HEREDADOS')
-    expect(texto).toContain('OVERRIDE')
-    expect(texto).toContain('vertical')
+    expect(texto).toContain('vienen de la plantilla y cuántos son propios')
+    expect(texto).toContain('se apartaron de la plantilla')
+    expect(texto).toContain('plantilla de vertical')
   })
 })
 

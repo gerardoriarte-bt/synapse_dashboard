@@ -38,10 +38,26 @@ const COLUMNAS = ['Fuente', 'Capa', 'Cadencia', 'Última carga', 'Frescura', 'Fi
 
 /** Lo que el cable no manda, dicho en la pantalla. Misma forma que `CatalogView`
  *  y `RoleEditor`: el hueco se declara donde se ve, no en un comentario. */
+/** LO QUE ESTA PANTALLA TODAVÍA NO MUESTRA · reescrito el 2026-09-30 (humano)
+ *
+ *  **Esto se PINTA, así que es copy de producto y no una nota nuestra.** Hasta
+ *  hoy citaba §7.3, nombraba rutas del servicio y hablaba de «el cable» en la
+ *  pantalla de un cliente — la auditoría de usabilidad lo puso primero en su
+ *  lista: `docs/AUDITORIA-2026-09-30-usabilidad.md` §1.1.
+ *
+ *  **Declarar lo que falta se conserva**, que es la mejor costumbre de este
+ *  repositorio y la misma gramática de §8: un panel apagado dice qué pasa. Lo
+ *  que cambia es a quién se le habla. **La razón técnica de cada línea no se
+ *  pierde: baja al comentario**, que es donde le sirve a quien la va a
+ *  construir.
+ */
 const FALTANTES = [
-  'Capa · el dibujo la pone como columna y el cable no la manda · pedido a backend',
-  'Ver rechazos · no hay ruta que liste las filas que fallaron Silver→Gold',
-  'Sincronizar todo · no hay ruta que dispare una carga',
+    // El dibujo la pone como columna y el cable no la manda · pedido a backend.
+    'De qué capa viene cada fuente',
+    // No hay ruta que liste los rechazos Silver→Gold.
+    'Ver las filas que una carga dejó afuera',
+    // No hay ruta que dispare una carga.
+    'Pedir una sincronización desde acá',
 ] as const
 
 /** **Acá se armaban dos `Intl` con `'es-MX'` fijo** y su comentario prometía
@@ -209,7 +225,7 @@ export function FeedHealth({ fuentes, tenant, format, cargando = false }: Props)
         </div>
 
         <div className="flex flex-col gap-1 border-t border-w2 pt-3">
-          <Label as="div">{`Faltan ${String(FALTANTES.length)} cosas que §7.3 pide de esta pantalla`}</Label>
+          <Label as="div">{`Esta pantalla va a crecer`}</Label>
           {FALTANTES.map((f) => (
             <Label as="div" key={f}>{f}</Label>
           ))}

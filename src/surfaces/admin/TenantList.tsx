@@ -139,7 +139,12 @@ export function TenantList({ format, tenants, onAbrir, cargando = false }: Props
               clase="sistema"
               columnas={5}
               razon="Ningún cliente dado de alta todavía"
-              salida="Se crean con POST /admin/tenants · crear uno exige elegir plantilla de vertical"
+              /* **Decía `POST /admin/tenants`** · 2026-09-30. Esa ruta existe y exige
+                 siete credenciales de infraestructura que §7.3 prohíbe pedir en
+                 pantalla, así que el alta la hace el equipo interno y acá se
+                 ADOPTA — es D1, decidida ese día. Nombrar el endpoint además
+                 prometía una acción que esta pantalla no tiene. */
+              salida="Un cliente aparece acá cuando se lo da de alta · después se elige su plantilla"
             />
           )}
           {tenants.map((t) => (

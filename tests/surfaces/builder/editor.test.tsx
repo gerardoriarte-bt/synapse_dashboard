@@ -332,8 +332,8 @@ describe('§7.2 · los campos del modelo que el cable no tiene', () => {
     await abrirVersion()
 
     const texto = container.textContent ?? ''
-    expect(texto).toContain('Faltan 3 campos')
-    expect(texto).toContain('chatSugerencias')
-    expect(texto).toContain('heredadaDe')
+    expect(texto).toContain('Cada pestaña va a poder declarar más cosas')
+    expect(texto).toContain('preguntas sugeridas de su chat')
+    expect(texto).toContain('De qué plantilla hereda')
   })
 })

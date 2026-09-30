@@ -37,10 +37,26 @@
 import { Label } from '../../render/primitives/Label'
 import type { LayoutVersion, Tenant } from '../../api/admin'
 
+/** LO QUE ESTA PANTALLA TODAVÍA NO MUESTRA · reescrito el 2026-09-30 (humano)
+ *
+ *  **Esto se PINTA, así que es copy de producto y no una nota nuestra.** Hasta
+ *  hoy citaba §7.3, nombraba rutas del servicio y hablaba de «el cable» en la
+ *  pantalla de un cliente — la auditoría de usabilidad lo puso primero en su
+ *  lista: `docs/AUDITORIA-2026-09-30-usabilidad.md` §1.1.
+ *
+ *  **Declarar lo que falta se conserva**, que es la mejor costumbre de este
+ *  repositorio y la misma gramática de §8: un panel apagado dice qué pasa. Lo
+ *  que cambia es a quién se le habla. **La razón técnica de cada línea no se
+ *  pierde: baja al comentario**, que es donde le sirve a quien la va a
+ *  construir.
+ */
 const FALTANTES = [
-  'Cuántos paneles de cada pestaña son HEREDADOS y cuántos propios · el `.pen` pide la proporción real y el cable no tiene herencia',
-  'De qué plantilla de vertical hereda · el tenant no declara vertical y no hay plantillas',
-  'Cuáles pestañas tienen OVERRIDE · una pestaña no sabe si es propia o heredada',
+    // El `.pen` pide la proporción real y el cable no tiene herencia.
+    'Cuántos paneles de cada pestaña vienen de la plantilla y cuántos son propios',
+    // El tenant declara `vertical` desde `6e521cc` y llega nulo; no hay plantillas.
+    'De qué plantilla de vertical hereda este cliente',
+    // Una pestaña no sabe si es propia o heredada.
+    'Cuáles pestañas se apartaron de la plantilla',
 ] as const
 
 type Props = {
@@ -152,7 +168,7 @@ export function ContextView({
       {children}
 
       <div className="flex flex-col gap-1 rounded-sm bg-w2 p-3">
-        <Label as="div">{`Faltan ${String(FALTANTES.length)} cosas que §7.2 pide de esta pantalla`}</Label>
+        <Label as="div">{`Esta pantalla va a crecer`}</Label>
         {FALTANTES.map((f) => (
           <Label key={f} as="div">
             {f}

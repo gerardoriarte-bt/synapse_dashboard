@@ -30,6 +30,7 @@
     "pen-graficos": "python3 tools/pen-graficos.py",
     "docs-registro": "python3 tools/docs-registro.py",
     "afirmaciones": "python3 tools/afirmaciones.py",
+    "copy-producto": "python3 tools/copy-producto.py",
     "mocks-fuera": "python3 tools/mocks-fuera.py",
     "backend-drift": "python3 tools/backend-drift.py",
     "humo": "python3 tools/humo.py",

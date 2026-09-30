@@ -359,7 +359,7 @@ describe('los estados de B5', () => {
     await abrirPreview()
 
     expect(
-      await screen.findByText(/todavía no sirve esta ruta · está escrita en el fork · B4.9/),
+      await screen.findByText(/La vista previa por rol todavía no se puede consultar/),
     ).toBeInTheDocument()
   })
 })

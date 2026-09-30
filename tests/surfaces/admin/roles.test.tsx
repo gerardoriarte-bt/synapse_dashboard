@@ -341,7 +341,7 @@ describe('el 404 mientras el fork no esté desplegado', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Ficha de cliente' }))
 
     expect(
-      await screen.findByText(/todavía no sirve las rutas de roles · están escritas en el fork/),
+      await screen.findByText(/La composición por rol de este cliente todavía no se puede consultar/),
     ).toBeInTheDocument()
   })
 })
@@ -361,9 +361,9 @@ describe('lo que A2 y A3 todavía no pueden mostrar', () => {
     // se puede vencer; escribirlo acá sí — y se venció el 2026-09-22, cuando
     // §9 sumó dos carencias más. Lo que la prueba fija es que cada carencia
     // esté nombrada, que es lo que vale.
-    expect(texto).toMatch(/Faltan \d+ cosas/)
-    expect(texto).toContain('Subprocesadores')
-    expect(texto).toContain('POST /admin/users')
+    expect(texto).toMatch(/va a crecer/i)
+    expect(texto).toContain('Quiénes tratan los datos de este cliente')
+    expect(texto).toContain('La descripción de cada rol')
   })
 
   it('el estado del acceso se declara UNA vez, y en el bloque del agente', async () => {
@@ -451,7 +451,7 @@ describe('A4 · la columna USO · divergencia 6', () => {
     const { container } = montar()
     await abrirCatalogo()
 
-    expect(container.textContent).toContain('Faltan 3 datos')
+    expect(container.textContent).toContain('Esta pantalla va a crecer')
     expect(container.textContent).not.toContain('en cuántos paneles se usa')
   })
 })

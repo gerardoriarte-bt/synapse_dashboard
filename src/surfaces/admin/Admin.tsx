@@ -274,7 +274,9 @@ function Catalogo({
 function mensajeDeRol(e: Error | null): string | null {
   if (e === null) return null
   if (e instanceof ApiError && e.httpStatus === 404) {
-    return 'El servicio desplegado todavía no sirve las rutas de roles · están escritas en el fork · B4.8'
+    // La razón técnica, que ya no se pinta: las rutas de roles están escritas
+    // en nuestro fork y el servicio desplegado no las sirve · B4.8.
+    return 'La composición por rol de este cliente todavía no se puede consultar'
   }
   if (e instanceof ApiError && e.httpStatus === 409) {
     return e.message === '' ? 'El nombre ya está en uso en este cliente' : e.message

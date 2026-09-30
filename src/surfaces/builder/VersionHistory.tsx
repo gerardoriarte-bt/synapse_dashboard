@@ -68,12 +68,33 @@ import type { Formatter } from '../../render/format'
 
 /** Lo que el dibujo pide y el cable no da. **Se declara, no se compone** · el
  *  pedido está en `docs/PROPUESTA-2026-09-30-b6-prosa-del-historial.md`. */
+/** LO QUE ESTA PANTALLA TODAVÍA NO MUESTRA · reescrito el 2026-09-30 (humano)
+ *
+ *  **Esto se PINTA, así que es copy de producto y no una nota nuestra.** Hasta
+ *  hoy citaba §7.3, nombraba rutas del servicio y hablaba de «el cable» en la
+ *  pantalla de un cliente — la auditoría de usabilidad lo puso primero en su
+ *  lista: `docs/AUDITORIA-2026-09-30-usabilidad.md` §1.1.
+ *
+ *  **Declarar lo que falta se conserva**, que es la mejor costumbre de este
+ *  repositorio y la misma gramática de §8: un panel apagado dice qué pasa. Lo
+ *  que cambia es a quién se le habla. **La razón técnica de cada línea no se
+ *  pierde: baja al comentario**, que es donde le sirve a quien la va a
+ *  construir.
+ */
 const FALTANTES = [
-  'El «Resumen» de cada versión · el dibujo pinta una frase redactada y el cable manda contadores. Se pide un `note` de publicación',
-  'La línea RAZÓN · el porqué de una decisión humana. No hay campo y no se compone',
-  'La fila de BORRADOR con sus cambios pendientes · hace falta `GET /admin/layouts/{layoutId}/diff?against=…`, que del lado suyo es exponer una función pura que ya tienen',
-  'Quién está editando ahora · «EDITANDO AHORA» no tiene equivalente en ningún cable',
-  '«Inversión cambia su dirección semántica» · el diff cubre pestañas, posición, tipo y parámetros; la dirección semántica es de la MÉTRICA y vive en el catálogo',
+    // El dibujo pinta una frase redactada y el cable manda contadores. Se pide
+    // un `note` de publicación · ver la propuesta.
+    'El resumen que escribió quien publicó cada versión',
+    // El porqué de una decisión humana. No hay campo y NO se compone.
+    'La razón de cada cambio, en las palabras de quien lo hizo',
+    // Hace falta `GET /admin/layouts/{layoutId}/diff?against=…`, que del lado
+    // suyo es exponer una función pura que ya tienen.
+    'El borrador en curso, con sus cambios todavía sin publicar',
+    // «EDITANDO AHORA» no tiene equivalente en ningún cable.
+    'Quién está editando en este momento',
+    // El diff cubre pestañas, posición, tipo y parámetros; la dirección
+    // semántica es de la MÉTRICA y vive en el catálogo.
+    'Cuándo una métrica cambia de dirección semántica',
 ] as const
 
 type Props = {
@@ -211,7 +232,7 @@ export function VersionHistory({
       )}
 
       <div className="flex flex-col gap-1 rounded-sm bg-w2 p-3">
-        <Label as="div">{`Faltan ${String(FALTANTES.length)} cosas que el dibujo pide y el cable no da`}</Label>
+        <Label as="div">{`Esta pantalla va a crecer`}</Label>
         {FALTANTES.map((f) => (
           <Label key={f} as="div">
             {f}

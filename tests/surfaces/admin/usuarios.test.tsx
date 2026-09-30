@@ -160,8 +160,8 @@ describe('el alcance NO se copia del dibujo', () => {
 
   it('y los TRES huecos que quedan siguen declarados', () => {
     render(<UserList format={format} usuarios={[usuario({ id: 'u-1' })]} total={1} clientes={1} />)
-    expect(screen.getByText(/Faltan 3 cosas/i)).toBeVisible()
-    expect(screen.getByText(/el cable sólo trae activo o suspendido/i)).toBeVisible()
+    expect(screen.getByText(/va a crecer/i)).toBeVisible()
+    expect(screen.getByText(/invitaciones pendientes/i)).toBeVisible()
   })
 
   it('no ofrece «invitar usuario» ni «reenviar invitación» · sin ruta no hay CTA', () => {

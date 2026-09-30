@@ -49,6 +49,11 @@ CHEQUEOS = [
     ("pen-graficos", [sys.executable, "tools/pen-graficos.py"], True),
     ("docs-registro", [sys.executable, "tools/docs-registro.py"], True),
     ("afirmaciones", [sys.executable, "tools/afirmaciones.py"], True),
+    # **El vocabulario interno no se pinta** · desde el 2026-09-30. Nació de la
+    # auditoría de usabilidad: siete bloques citando §7.3 y nombrando rutas del
+    # servicio en la pantalla de un cliente, acumulados durante meses sin que
+    # nadie los viera como un defecto. Al escribirlo encontró SEIS más.
+    ("copy-producto", [sys.executable, "tools/copy-producto.py"], True),
     ("mocks-fuera", [sys.executable, "tools/mocks-fuera.py"], True),
     ("token-drift", [sys.executable, "tools/token-drift.py"], True),
     ("contraste", [sys.executable, "tools/contraste.py"], True),

@@ -153,8 +153,8 @@ describe('el vacío de ALTA · el tercer tipo', () => {
 describe('lo que el cable NO manda se declara', () => {
   it('nombra los tres huecos, y la capa entre ellos', () => {
     render(<FeedHealth format={format} fuentes={[fuente({ clave: 'x' })]} tenant="UA MX" />)
-    expect(screen.getByText(/Faltan 3 cosas/i)).toBeVisible()
-    expect(screen.getByText(/Capa · el dibujo la pone como columna/i)).toBeVisible()
+    expect(screen.getByText(/va a crecer/i)).toBeVisible()
+    expect(screen.getByText(/De qué capa viene cada fuente/i)).toBeVisible()
   })
 
   it('y NO pinta «sincronizar todo» ni «ver rechazos» · sin ruta no hay CTA', () => {

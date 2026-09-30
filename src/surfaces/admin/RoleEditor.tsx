@@ -48,12 +48,29 @@ import type { Metric } from '../../api/types'
  *
  *  El conteo del rótulo sale de `.length`, así que no hay un número que se
  *  venza cuando esta lista cambie. */
+/** LO QUE ESTA PANTALLA TODAVÍA NO MUESTRA · reescrito el 2026-09-30 (humano)
+ *
+ *  **Esto se PINTA, así que es copy de producto y no una nota nuestra.** Hasta
+ *  hoy citaba §7.3, nombraba rutas del servicio y hablaba de «el cable» en la
+ *  pantalla de un cliente — la auditoría de usabilidad lo puso primero en su
+ *  lista: `docs/AUDITORIA-2026-09-30-usabilidad.md` §1.1.
+ *
+ *  **Declarar lo que falta se conserva**, que es la mejor costumbre de este
+ *  repositorio y la misma gramática de §8: un panel apagado dice qué pasa. Lo
+ *  que cambia es a quién se le habla. **La razón técnica de cada línea no se
+ *  pierde: baja al comentario**, que es donde le sirve a quien la va a
+ *  construir.
+ */
 const FALTANTES = [
-  'Datos del cliente · GET /admin/tenants devuelve id y nombre · B4.1',
-  'Subprocesadores · es obligación legal declararlos y no hay de dónde leerlos',
-  // Las dos que se vieron al construir el desglose de §9, el 2026-09-22.
-  'Descripción del rol · el .pen la dibuja bajo el nombre · el contrato declara «descripcion» y el cable no la trae',
-  'Heredados de plantilla · el .pen desglosa cuántos paneles hereda cada pestaña · no hay noción de plantilla en el cable',
+    // `GET /admin/tenants` ya los devuelve desde `6e521cc`, y llegan nulos:
+    // «reservados hasta que el cliente defina sus valores» · B4.1 cerrada.
+    'Los datos del cliente: su vertical, su estado y desde cuándo está activo',
+    // Los subprocesadores. Obligación legal y no hay de dónde leerlos.
+    'Quiénes tratan los datos de este cliente, que es una declaración obligatoria',
+    // El `.pen` la dibuja; el contrato declara «descripcion» y el cable no la trae.
+    'La descripción de cada rol, debajo de su nombre',
+    // No hay noción de plantilla en el cable · es D2 de las pantallas de alta.
+    'Cuántos paneles hereda cada pestaña de la plantilla de su vertical',
 ] as const
 
 type Props = {
@@ -267,7 +284,7 @@ export function RoleEditor({
       {error !== null && <Label as="div">{error}</Label>}
 
       <div className="flex flex-col gap-1 rounded-sm bg-w2 p-3">
-        <Label as="div">{`Faltan ${String(FALTANTES.length)} cosas que §7.3 pide de esta ficha`}</Label>
+        <Label as="div">{`Esta ficha va a crecer`}</Label>
         {FALTANTES.map((f) => (
           <Label key={f} as="div">
             {f}
