@@ -133,7 +133,7 @@ que su resultado esté escrito.
 | `B3 · Selector · gráfico deshabilitado por tope` | **No construida** · el estado deshabilitado necesita el DATO para saber si el tope se excede, y el builder va sin payloads por decisión de F4.12. Acá el tope se **declara**, que es lo que el criterio pide |
 | `B4 · Binder de métrica` | `src/surfaces/builder/PanelConfigurator.tsx` |
 | `B5 · Vista previa · rol Planner sin componer` | `src/surfaces/builder/RolePreview.tsx` |
-| `B6 · Historial de versiones` | **No construida · y su razón escrita era FALSA.** Decía «ninguna ruta lista versiones con su autor y fecha»; `GET /admin/layouts/{layoutId}/publications` existe desde `168a761` —suyo— y **contesta 200 con filas reales**, medido el 2026-09-30: `version_id`, `action`, `actor_user_id`, `actor_role`, `previous_layout_id`, `created_at` y un `diff` con resumen y detalle por panel. `POST /admin/layouts/{layoutId}/revert` cubre el «REVERTIR A ESTA» del dibujo. **Lo único que no llega es el NOMBRE del autor** —el dibujo pinta `MARÍA RESTREPO` y la ruta da el uuid—, y eso se resuelve con `GET /admin/users`, que también contesta 200. **Es tomable** |
+| `B6 · Historial de versiones` | **`src/surfaces/builder/VersionHistory.tsx`** y **`src/surfaces/builder/VersionCard.tsx`** · §PEN:B6 · construida el 2026-09-30. La lista sale de **`GET /admin/dashboards/{dashboardId}/publications`** y no de la de `layouts`, que devuelve **una sola fila** —medido: 5 contra 1—, porque revertir COPIA a un layout nuevo y nunca reactiva el archivado. `POST /admin/layouts/{layoutId}/revert` cubre el «REVERTIR A ESTA». **Diverge en cuatro cosas que el cable no da y NO se componen**: el `Resumen` de 13px, la línea `RAZÓN`, la fila de BORRADOR —falta una ruta de diff— y el cambio de dirección semántica, que es de la MÉTRICA y no del layout · `docs/PROPUESTA-2026-09-30-b6-prosa-del-historial.md`. **Cableada en `Builder.tsx` el 2026-09-30** y abierta contra el servicio: cinco filas en «Marca», el vacío medido en «Overview», y el navbar con `VOLVER A EDITAR` del frame `Volver` —`gwJUk`— en vez de las acciones de composición. El glifo del diff y su cruce con los contadores los arma `src/surfaces/builder/cambios.ts` |
 | `B7 · Guardar como plantilla` | **No construida** · dibujada el 2026-09-28 · promueve la composición a plantilla de vertical, que es el movimiento que a §3.4 le faltaba. **No hay backend, y la razón se afinó el 2026-09-30**: el campo `vertical` SÍ existe ahora —`ports/tenant.go:46`, de `6e521cc`— pero su propio comentario dice «reservados hasta que el cliente defina sus valores (siempre nil en v1)», y **no hay ruta de plantillas**: `/admin/templates` y `/admin/verticals` dan **404**. El candado sigue, con la letra corregida |
 
 ---
@@ -1957,7 +1957,7 @@ Tres publicaciones generadas y leídas:
 
 Las tres con `actor_user_id` y `actor_role: admin`, o sea **quién**. Y `POST /admin/layouts/{layoutId}/revert` contestó **200**, devolviendo un layout con `version_id: rollback-v-1…`.
 
-**Dos detalles de forma para quien construya B6**, y conviene no perderlos: `tabs_added` trae la **`key`** de la pestaña y no su id —consistente con que la identidad estable sea la key—, y las colecciones vacías del diff vuelven como **`null`, no `[]`**, que es distinto de lo que su documento del 28 dibujaba.
+**Dos detalles de forma para quien construya B6, Y LOS DOS ESTABAN MAL ESCRITOS** · corregido el 2026-09-30 leyendo `internal/core/dashboard/diff.go`. Decía que `tabs_added` trae la **`key`** de la pestaña: trae el **NOMBRE normalizado** —`tabKey(name)` es `ToLower(TrimSpace(name))` e `indexTabs` lo aplica sobre `t.Name`—, así que cruzarlo contra `TabDeLayout.clave` no encuentra nada. Y decía que las colecciones vacías vuelven «`null`, no `[]`»: vuelven **de las dos formas**, porque `de881e13` cambió la serialización y el diff se PERSISTE en `jsonb` — las filas viejas quedan en `null` para siempre. Las dos frases se escribieron de una lectura y no de la fuente; las dos las atrapó abrir su código.
 
 **La ruta NO está transcripta al cable**, a propósito: nadie la llama todavía. Se transcribe cuando se construya B6, que es la regla — una ruta transcrita que nadie llama envejece sin que nadie lo note. `LayoutVersion` sí se midió y trae sólo `created_at`, `dashboard_id`, `id`, `published_at`, `status`, `tenant_id`, `updated_at` y `version_id` — o sea **cuándo**.
 
@@ -5781,6 +5781,12 @@ Lo que las frena **no es lo mismo**, y esa distinción es la que importa:
 | B5 · Vista previa por rol | Roles por tenant · B4.9, que escribimos nosotros | Cable |
 | B6 · Historial | Ni **quién** publicó ni **qué cambió** · pedido en B4.2 | Cable |
 
+**ESA TABLA ES DEL 2026-09-15 Y CINCO DE SUS SEIS FILAS YA VENCIERON** · anotado
+el 2026-09-30 para que no se lea como el estado de hoy: B3 se construyó con F4.21,
+B4 con F4.10, B5 con F4.12 y **B6 con F5.19** —su candado era falso: el cable trae
+autor y diff desde `168a761`—. La única viva es B2, que sigue esperando una
+decisión de diseño.
+
 **B2 es la que hay que mirar dos veces.** §7.2 describe el RESULTADO del arrastre
 —slot vacío con su label, badge `HEREDADO`, colisión marcada, nada se suelta
 encima— y no la INTERACCIÓN: qué agarra el cursor, cómo se redimensiona por
@@ -7598,6 +7604,144 @@ Dos cosas del entorno que parecían fallos y no lo eran: jsdom abre en 1024px, o
 sea seis columnas, así que la grilla colapsaba —F1.30 funcionando— y el alto no
 es un `height` sino `gridRow: span N` sobre `gridAutoRows`. Y la celda se busca
 por su panel y no por índice, porque `readingOrder` ordena el DOM.
+
+### ➕ F5.19 ✅ B6 · Historial de versiones · §PEN:B6
+**Descripción.** La sexta y última pantalla del builder —el `.pen` lo dice:
+«CIERRA EL BUILDER: B1→B2→B3→B4→B5→B6»— y la que hace reversible un error de
+composición en producción. §7.2 en una línea: «quién, cuándo, qué cambió. Permite
+revertir».
+
+**La razón escrita en el registro de pantallas era FALSA** y decía «ninguna ruta
+lista versiones con su autor y fecha». Existían las dos: el historial desde
+`168a761` y el revert desde `5924bf2b`, las dos de ellos, las dos contestando 200.
+
+**Y la ruta que el registro nombraba no alcanza.**
+`GET /admin/layouts/{layoutId}/publications` devuelve **una sola fila** —medido: 1
+contra 5 para el mismo dashboard—. La razón es estructural y está en su código:
+revertir **copia** a un layout nuevo y nunca reactiva el archivado, así que cada
+layout se publica exactamente una vez. La lista sale de
+`GET /admin/dashboards/{dashboardId}/publications`.
+
+**Criterio de aceptación.**
+- La lista sale de `GET /admin/dashboards/{dashboardId}/publications`, más
+  recientes primero, y **no se reordena en el front**.
+- `adaptarPublicacion` **renombra y reformatea**: el único normalizado es `?? []`
+  sobre las ocho listas del diff, porque está medido que la misma clave vuelve
+  `[]` en las filas nuevas y `null` en las viejas — el diff se persiste en `jsonb`
+  y `de881e1` cambió la serialización después de escribirlas.
+- Un `diff` en `null` **no se colapsa a un diff en cero**: «no hay registro de qué
+  cambió» y «no cambió nada» se pintan distinto.
+- El badge `EN PRODUCCIÓN` aparece **exactamente una vez**, y se DERIVA cruzando
+  `layoutId` contra el layout cuyo estado es `publicado`.
+- `REVERTIR A ESTA` **dispara** con el layout publicado en el path y el destino en
+  el cuerpo, y **no se pinta** ni en la fila publicada ni cuando no hay layout
+  publicado. Es la misma regla que el servicio hace cumplir con
+  `CONFLICT_REVERT_SELF`.
+- El nombre del autor se resuelve en la superficie contra `GET /admin/users`; si no
+  resuelve, la línea arranca por el rol y **el uuid no aparece en el DOM**.
+- El nombre de la métrica sale del catálogo; si no resuelve, «MÉTRICA FUERA DEL
+  CATÁLOGO» y nunca el uuid.
+- Las cuatro cosas que el dibujo pide y el cable no da quedan **declaradas y sin
+  componer**, con una prueba que atestigua su ausencia.
+- `npm run pen-pantallas`, `npm run admin-drift` y `npm run design-lint` en verde.
+
+**Construida el 2026-09-30.** `src/surfaces/builder/VersionHistory.tsx`,
+`VersionCard.tsx` y `cambios.ts`; el cable, el adaptador y los dos hooks.
+
+**CERRADA EL 2026-09-30, Y CONTRA QUÉ:** cableada en `Builder.tsx` y **abierta en
+la aplicación corriendo** contra el binario de `:4010` levantado desde el fork
+—login `dev@synapse.local`, tenant `e65f81ae…`—. No es una foto de la semilla: las
+cinco filas de «Marca» son las que el servicio devolvió ese día, con sus autores,
+sus fechas y sus diffs, y los seis contadores de la primera cruzan con las diez
+líneas que pinta. **Los tres casos se miraron**, no sólo el feliz:
+
+| Qué se abrió | Qué se vio |
+|---|---|
+| «Marca» · 5 publicaciones | El badge `EN PRODUCCIÓN` una sola vez, `REVERTIR A ESTA` en las otras cuatro, `REVERSIÓN` en la fila del rollback |
+| «Overview» · 0 publicaciones | El vacío de sistema, no «cargando» ni un error — es el caso medido: tiene layout publicado y cero filas |
+| El OTRO cliente del mismo nombre | El título dice sólo el cliente: `/config/me` es del usuario que mira y no resuelve el nombre de un dashboard ajeno |
+
+**El 200 del revert sigue SIN MEDIR contra el servicio, y es a propósito:**
+correrlo publica una versión nueva y cambia el layout que la consola está
+sirviendo. La cadena está cubierta de punta a punta en
+`tests/surfaces/builder/historialCableado.test.tsx`, que afirma el **método, la
+URL con el layout publicado y el cuerpo con el destino** — y una mutación que
+invierte los dos ids la mata.
+
+**Y el cableado destapó dos defectos más, los dos del chrome y los dos invisibles
+hasta que hubo una pantalla que montar:**
+
+- **`BuilderChrome` no distinguía `contexto` de `composicion`.** La tabla de
+  `pantallas.ts` dice «Contexto · volver a editar» desde el 2026-09-15 y el
+  componente las mandaba a las dos al mismo bloque, así que B6 ofrecía `VISTA
+  PREVIA`, `PUBLICAR` y el contador de cambios sin guardar sobre una pantalla de
+  sólo lectura. El `.pen` lo dibuja explícito: frame `Volver`, `gwJUk`, icono
+  `pencil` y `VOLVER A EDITAR`, **y nada más a la derecha**. No se vio antes
+  porque la única pantalla con esa forma mostraba un aviso de «Pendiente», y un
+  aviso no tiene nada que publicar.
+- **La entrada de `PENDIENTES` decía «Está en construcción»** con los tres
+  archivos escritos y probados. Un aviso que describe el estado del TRABAJO y no
+  el del producto es un defecto, y lo leía el admin del cliente — la misma clase
+  que las dos entradas vencidas que se corrigieron esa mañana. `PENDIENTES` quedó
+  **vacío**, con la forma declarada, igual que `Admin.tsx` desde el 2026-09-25.
+
+**Y un tercero que no es del chrome:** `useRevertLayout` tomaba el layout
+publicado como parámetro del hook, lo que obligaba al contenedor a derivar por
+**segunda vez** cuál es —una vez para pintar el badge y otra para armar la URL—.
+Los dos ids pasaron a viajar en la mutación, que es como `VersionHistory` ya los
+entregaba: así no queda un campo del callback ignorado, que se lee como si se
+usara.
+
+**El título puede no tener nombre de dashboard, y se dice.** El único cable
+transcripto con nombres de dashboard es `/config/me`, que es del usuario que
+MIRA. Para un cliente ajeno haría falta `GET /admin/tenants/{tenantId}/dashboards`
+—que el servicio tiene desde `168a761` y **nuestro cable no declara**: es trabajo
+nuestro, no un hueco suyo, y por eso no entró en la lista de faltantes de la
+pantalla—. Sin nombre el título dice sólo el cliente: decir menos, no decir algo
+falso.
+
+**Doce pruebas nuevas de cableado y siete mutaciones sobre línea de base verde,
+las siete muertas**: el `dashboardId` que no sale de la versión, el chrome que
+vuelve a ofrecer composición, el nombre de dashboard que nunca se resuelve, los
+dos ids de la reversión invertidos, la lista de usuarios que no llega, el
+historial pedido a la ruta de `layouts`, y B6 vuelta a declarar pendiente.
+
+**DOS ARREGLOS QUE ESTA PANTALLA DESTAPÓ, Y LOS DOS ERAN MENTIRAS EN PRODUCCIÓN.**
+
+`EstadoDeLayout` declaraba dos estados y el dominio tiene **tres**. `archived` no
+es raro: es **el más común** —4 de los 7 layouts medidos—. Con el enum en dos,
+`ESTADOS['archived']` era `undefined` y el `?? 'borrador'` entregaba **`borrador`
+para las cuatro versiones archivadas**, así que `ContextView` ofrecía editar
+cuatro versiones que no se pueden editar. El fallback estaba escrito como «la
+lectura SEGURA» y con la clave ausente era una afirmación falsa con cara de
+prudencia — el mismo modo de falla que el PascalCase, con otra causa.
+
+**Y la prueba que debía atraparlo lo CODIFICABA.** `tests/api/admin.test.tsx`
+decía «un estado desconocido cae en `borrador`» y usaba `archived` como ejemplo de
+desconocido. No verificaba un fallback: verificaba la mentira, y pasaba porque
+estaba escrita mirando el mapa de `ESTADOS` en vez del enum del cable. Es el
+antecedente del 2026-08-20 otra vez.
+
+El segundo: `adaptarVersion` **tiraba `dashboard_id`**, que el cable manda desde el
+multi-dashboard. Sin él no hay manera de saber qué historial pedir.
+
+**DOS FRASES DEL PROPIO PLAN ESTABAN MAL, Y LAS DOS SE ESCRIBIERON DE UNA LECTURA.**
+Decía que `tabs_added` trae la **`key`** de la pestaña: trae el **nombre
+normalizado** —`tabKey(name)` es `ToLower(TrimSpace(name))`—, así que cruzarlo
+contra `TabDeLayout.clave` no encuentra nada. Y decía que las colecciones vacías
+vuelven «`null`, no `[]`»: vuelven **de las dos formas**. Las dos las atrapó abrir
+`internal/core/dashboard/diff.go`, no releer el plan.
+
+**Verificada por mutación, nueve casos sobre línea de base verde** —1496 pruebas—.
+Ocho mueren de entrada: el `?? []` del adaptador, `ESTADOS.archived`,
+`dashboardId`, una lista del diff olvidada, un glifo reasignado, el `layoutId` y
+el `toLayoutId` invertidos, la prop del callback mal escrita —que **compila**, por
+el spread condicional— y el ancla borrada del archivo.
+
+**La novena SOBREVIVIÓ y era la prueba que faltaba.** Borrar el `!enProduccion` de
+`VersionCard` no hacía fallar nada, porque la pantalla nunca le pasa `onRevertir`
+en la fila publicada: la guarda quedaba sin cubrir. **No se borró la guarda, se
+cubrió** — la tarjeta es reusable y el patrón de `enabled` del `.pen` es normativo.
 
 ### ➕ F5.18 ✅ `ROLES Y COMPOSICIÓN` en A2 · el desglose por rol
 **Descripción.** El séptimo y último punto mediano de la auditoría

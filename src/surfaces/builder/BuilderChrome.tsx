@@ -50,6 +50,17 @@ import type { FormaDeChrome, PantallaId } from './pantallas'
  *  funciones dicen lo que el componente soporta y no lo que la tabla usa hoy. */
 const sinChrome = (f: FormaDeChrome) => f === 'ninguno'
 const conContexto = (f: FormaDeChrome) => f === 'composicion' || f === 'contexto'
+/** **`contexto` se MIRA, no se toca** · la cuarta columna de la tabla de
+ *  `pantallas.ts` decía «Contexto · volver a editar» desde el 2026-09-15 y este
+ *  componente no la distinguía de `composicion`: las dos caían en el mismo bloque
+ *  de acciones, así que B6 pintaba `VISTA PREVIA`, `PUBLICAR` y el contador de
+ *  cambios sin guardar sobre una pantalla de sólo lectura.
+ *
+ *  **No se vio hasta el 2026-09-30 porque B6 no estaba montada**: la única
+ *  pantalla con esta forma mostraba un aviso de «Pendiente», y un aviso no tiene
+ *  nada que publicar. El `.pen` lo dibuja explícito —frame `Volver`, `gwJUk`:
+ *  icono `pencil` más `VOLVER A EDITAR`, y ningún otro control a la derecha—. */
+const soloContexto = (f: FormaDeChrome) => f === 'contexto'
 
 /** Una entrada por ancho de `pantallas.ts`. Escritas, no interpoladas. */
 const ANCHO: Readonly<Record<number, string>> = {
@@ -172,47 +183,65 @@ export function BuilderChrome({
                   <span className="text-ink text-celda">{contexto.pestana ?? 'Todas'}</span>
                 </div>
 
-                {/* **El contador va acá y sigue al usuario.** Es lo que §7.2 pide
-                    con «guardado explícito, con indicador de cambios sin
-                    guardar», y en una barra del cuerpo se perdía al navegar. */}
-                {contexto.cambios > 0 && (
-                  <Label>{`${String(contexto.cambios)} cambio(s) sin guardar`}</Label>
-                )}
-                {onGuardar !== null && (
-                  <button
-                    type="button"
-                    onClick={onGuardar}
-                    disabled={guardando}
-                    className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2 disabled:opacity-40"
-                  >
-                    {guardando ? 'Guardando…' : NOTA_GUARDAR}
-                  </button>
-                )}
-
-                <div className="flex items-center gap-2 ml-auto">
-                  <button
-                    type="button"
-                    onClick={() => onIr('preview')}
-                    className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2"
-                  >
-                    Vista previa
-                  </button>
-                  {/* **Un CTA sin manejador no se pinta** · la misma regla que
-                      `RecoBody`: un botón que se aprieta y no hace nada es peor
-                      que uno ausente. La razón la da la pantalla, que es donde
-                      hay lugar para decirla entera. */}
-                  {onPublicar === null ? (
-                    <Label>Publicar · falta validar en el servidor</Label>
-                  ) : (
+                {soloContexto(forma) ? (
+                  /* **La única acción de B6, y es la del dibujo.** Una pantalla
+                     que se mira no ofrece guardar ni publicar: lo que ofrece es
+                     la vuelta a la que sí compone. El literal es del `.pen`. */
+                  <div className="flex items-center gap-2 ml-auto">
                     <button
                       type="button"
-                      onClick={onPublicar}
+                      onClick={() => onIr('contexto')}
                       className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2"
                     >
-                      Publicar
+                      Volver a editar
                     </button>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* **El contador va acá y sigue al usuario.** Es lo que §7.2
+                        pide con «guardado explícito, con indicador de cambios
+                        sin guardar», y en una barra del cuerpo se perdía al
+                        navegar. */}
+                    {contexto.cambios > 0 && (
+                      <Label>{`${String(contexto.cambios)} cambio(s) sin guardar`}</Label>
+                    )}
+                    {onGuardar !== null && (
+                      <button
+                        type="button"
+                        onClick={onGuardar}
+                        disabled={guardando}
+                        className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2 disabled:opacity-40"
+                      >
+                        {guardando ? 'Guardando…' : NOTA_GUARDAR}
+                      </button>
+                    )}
+
+                    <div className="flex items-center gap-2 ml-auto">
+                      <button
+                        type="button"
+                        onClick={() => onIr('preview')}
+                        className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2"
+                      >
+                        Vista previa
+                      </button>
+                      {/* **Un CTA sin manejador no se pinta** · la misma regla
+                          que `RecoBody`: un botón que se aprieta y no hace nada
+                          es peor que uno ausente. La razón la da la pantalla,
+                          que es donde hay lugar para decirla entera. */}
+                      {onPublicar === null ? (
+                        <Label>Publicar · falta validar en el servidor</Label>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={onPublicar}
+                          className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2"
+                        >
+                          Publicar
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             )}
 

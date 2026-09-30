@@ -57,6 +57,9 @@ export const keys = {
   usuariosDePlataforma: () => ['admin', 'usuarios', 'plataforma'] as const,
   preview: (layoutId: string, rolId: string) => ['admin', 'preview', layoutId, rolId] as const,
   layout: (layoutId: string) => ['admin', 'layout', layoutId] as const,
+  /** **Por DASHBOARD y no por layout** · §PEN:B6. El historial es del dashboard:
+   *  la ruta por layout devuelve una fila sola. Ver `adminApi.publicaciones`. */
+  publicaciones: (dashboardId: string) => ['admin', 'publicaciones', dashboardId] as const,
 }
 
 /** Contexto al montar la app. Una sola vez: no cambia con el período. */
@@ -365,6 +368,64 @@ export function usePublishLayout(layoutId: string | null, tenantId: string | nul
       void qc.invalidateQueries({ queryKey: keys.layout(layoutId ?? '') })
       // La consola. `me` trae las pestañas del layout publicado y `tab` su
       // composición: publicar las cambia a las dos.
+      void qc.invalidateQueries({ queryKey: keys.me })
+      void qc.invalidateQueries({ queryKey: ['config', 'tab'] })
+    },
+  })
+}
+
+/* ── B6 · el historial y la reversión · §PEN:B6 ─────────────────────────────*/
+
+/** El historial de publicaciones · **por dashboard**.
+ *
+ *  **No lleva el tenant en la clave** y no hace falta: el `dashboardId` es un
+ *  uuid, así que dos clientes no comparten uno. Ponerlo al lado sería una
+ *  segunda fuente para lo mismo. */
+export function usePublications(dashboardId: string | null) {
+  return useQuery({
+    queryKey: keys.publicaciones(dashboardId ?? ''),
+    queryFn: () => adminApi.publicaciones(dashboardId as string),
+    enabled: dashboardId !== null && dashboardId !== '',
+  })
+}
+
+/** Revertir · **publica una versión nueva**, así que invalida lo mismo que
+ *  publicar MÁS el historial.
+ *
+ *  Son las cuatro de `usePublishLayout` —`layouts`, `layout`, `me` y las
+ *  pestañas de la consola— y la quinta, `publicaciones`. **Olvidar la quinta es
+ *  el defecto silencioso de esta pantalla**: el historial se quedaría mostrando
+ *  el estado viejo justo después de la acción que lo cambió, y la fila nueva
+ *  —la del `rollback`— no aparecería. Quien apretó el botón concluiría que no
+ *  funcionó.
+ *
+ *  **El `layoutId` es el PUBLICADO y el `toLayoutId` el destino** · ver
+ *  `adminApi.revertir`: el path acota, el cuerpo elige.
+ *
+ *  ── LOS DOS IDS VIAJAN EN LA MUTACIÓN, NO EN EL HOOK · cableado 2026-09-30 ──
+ *
+ *  `layoutId` era parámetro del hook, y con eso el contenedor tenía que derivar
+ *  **por segunda vez** cuál es el layout publicado del dashboard: una vez para
+ *  pintar el badge `EN PRODUCCIÓN` —eso vive en `VersionHistory`, que es la que
+ *  tiene las filas— y otra para armar la URL. Dos derivaciones de la misma cosa
+ *  en dos archivos es la forma en que una se queda vieja.
+ *
+ *  `VersionHistory.onRevertir` ya entrega los dos ids juntos, sacados de la
+ *  misma fila que pinta. Tomándolos acá el contenedor los pasa tal cual y no
+ *  queda un campo del callback **ignorado**, que es la otra mitad del defecto:
+ *  un payload que se descarta se lee como si se usara. */
+export function useRevertLayout(tenantId: string | null, dashboardId: string | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { layoutId: string; toLayoutId: string }) =>
+      adminApi.revertir(v.layoutId, v.toLayoutId),
+    // **`variables` y no una captura**: el layout del path es el de ESTA
+    // reversión, así que la clave que se invalida sale de la misma variable que
+    // armó la URL.
+    onSuccess: (_version, v) => {
+      void qc.invalidateQueries({ queryKey: keys.layouts(tenantId ?? '') })
+      void qc.invalidateQueries({ queryKey: keys.layout(v.layoutId) })
+      void qc.invalidateQueries({ queryKey: keys.publicaciones(dashboardId ?? '') })
       void qc.invalidateQueries({ queryKey: keys.me })
       void qc.invalidateQueries({ queryKey: ['config', 'tab'] })
     },

@@ -14,7 +14,7 @@ const panel = (id: string, metricId: string) => ({
 })
 
 const detalle: LayoutDetalle = {
-  layout: { id: 'l-1', tenantId: 't-1', estado: 'publicado', versionId: 'v3', publicadoEn: null },
+  layout: { id: 'l-1', tenantId: 't-1', dashboardId: 'd-1', estado: 'publicado', versionId: 'v3', publicadoEn: null },
   tabs: [
     {
       tab: { id: 'tab-a', clave: 'tab-a-key', nombre: 'Resumen', pregunta: '¿?', orden: 1, roles: [] },

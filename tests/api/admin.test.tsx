@@ -93,11 +93,33 @@ describe('el PascalCase del dominio se absorbe acá', () => {
     expect(l).toMatchObject({ estado: 'publicado', publicadoEn: '2026-09-11T14:00:00Z' })
   })
 
-  it('un estado desconocido cae en `borrador`, que es la lectura SEGURA', async () => {
-    // No se sustituye por `publicado`: un layout del que no se sabe si está
-    // publicado no se trata como publicado. La dirección importa.
+  it('`archived` → `archivado` · ESTA PRUEBA AFIRMABA LO CONTRARIO', async () => {
+    // ── LA PRUEBA ESTABA ESCRITA DESDE LA IMPLEMENTACIÓN · 2026-09-30 ───────
+    //
+    // Acá decía «un estado desconocido cae en `borrador`, que es la lectura
+    // SEGURA» y usaba **`archived`** como ejemplo de desconocido. `archived` no
+    // es desconocido: está en el dominio del servicio desde el principio y es
+    // **el estado más común** — 4 de los 7 layouts medidos el 2026-09-30.
+    //
+    // Así que la prueba no verificaba un fallback: **verificaba la mentira**. Y
+    // pasaba, porque estaba escrita mirando el mapa de `ESTADOS` en vez de el
+    // enum del cable. Es el antecedente del 2026-08-20 otra vez: una prueba
+    // escrita desde la implementación no puede fallar nunca.
+    //
+    // Lo encontró construir B6, que es la pantalla que necesita distinguir un
+    // borrador de una versión archivada.
     server.use(
       http.get(`${API}/admin/tenants/t-1/layouts`, () => ok([{ ...borrador, status: 'archived' }])),
+    )
+    expect((await adminApi.layouts('t-1'))[0]?.estado).toBe('archivado')
+  })
+
+  it('un estado que NO está en el enum cae en `borrador`, que es la lectura SEGURA', async () => {
+    // El fallback sigue existiendo y sigue siendo fallback. No se sustituye por
+    // `publicado`: un layout del que no se sabe si está publicado no se trata
+    // como publicado. La dirección importa.
+    server.use(
+      http.get(`${API}/admin/tenants/t-1/layouts`, () => ok([{ ...borrador, status: 'inventado' }])),
     )
     expect((await adminApi.layouts('t-1'))[0]?.estado).toBe('borrador')
   })

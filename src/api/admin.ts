@@ -125,7 +125,27 @@ export type Tenant = {
   vertical: string | null
 }
 
-export type EstadoDeLayout = 'borrador' | 'publicado'
+/** ── `archivado` ES EL TERCERO, Y FALTABA · 2026-09-30 ──────────────────────
+ *
+ *  Este tipo declaraba dos estados y el dominio del servicio tiene **tres**:
+ *  `LayoutStatusArchived` son «versiones reemplazadas por una publicación
+ *  posterior. Nunca se borran: quedan para auditoría y rollback».
+ *
+ *  **Y es el estado más común.** Medido el 2026-09-30 contra `:4010`:
+ *  `GET /admin/tenants/{tenantId}/layouts` devuelve **7** versiones — 4
+ *  `archived`, 2 `published`, 1 `draft`.
+ *
+ *  **Lo que faltaba no era un valor: era una mentira.** Con el enum en dos,
+ *  `ESTADOS['archived']` es `undefined` y el `?? 'borrador'` de `adaptarVersion`
+ *  entregaba **`'borrador'` para las cuatro versiones archivadas** — o sea que
+ *  `ContextView` ofrecía editar cuatro versiones que no se pueden editar. Es el
+ *  mismo modo de falla que el PascalCase documenta abajo, con otra causa: un
+ *  fallback escrito como «la lectura SEGURA» que con la clave ausente pasa a ser
+ *  una afirmación falsa con cara de prudencia.
+ *
+ *  Sin esto B6 no puede distinguir un borrador de una versión archivada, que es
+ *  justo la distinción que el historial existe para mostrar. */
+export type EstadoDeLayout = 'borrador' | 'publicado' | 'archivado'
 
 /** Un rol del tenant · B4.8.
  *
@@ -183,6 +203,14 @@ export type PreviewDeRol = {
 export type LayoutVersion = {
   id: string
   tenantId: string
+  /** **De qué dashboard es esta versión** · el cable lo manda desde el
+   *  multi-dashboard y este adaptador lo tiraba.
+   *
+   *  No es un campo de adorno: el historial de publicaciones se pide **por
+   *  dashboard** —`GET /admin/dashboards/{dashboardId}/publications`— y sin esto
+   *  B6 no sabe qué historial pedir a partir de la versión que el builder tiene
+   *  abierta. */
+  dashboardId: string
   estado: EstadoDeLayout
   versionId: string
   /** `null` mientras sea borrador: un borrador no tiene fecha de publicación, y
@@ -224,9 +252,227 @@ export type ResultadoDeValidacion = {
   problemas: ProblemaDeComposicion[]
 }
 
+/* ── B6 · EL HISTORIAL DE PUBLICACIONES · §PEN:B6 ────────────────────────────
+ *
+ *  **La fila del historial, y es sólo de lectura.** El comentario de su struct lo
+ *  dice: «Solo se inserta, nunca se edita». Una publicación es una foto de lo que
+ *  pasó, no del estado de hoy — por eso `estado` NO está en este tipo: qué
+ *  versión está en producción hoy se contesta cruzando `layoutId` contra los
+ *  `status` de `GET /admin/tenants/{tenantId}/layouts`, que es un cruce entre dos
+ *  respuestas y no un cálculo sobre una.
+ */
+
+/** Las tres que definen el lugar del panel en la grilla. **No hay fila de
+ *  inicio**: el layout la resuelve por orden. */
+export type GeometriaDePanel = {
+  colStart: number
+  colSpan: number
+  rowSpan: number
+}
+
+/** A qué panel se refiere una entrada del diff.
+ *
+ *  **`pestana` es el NOMBRE normalizado de la pestaña, no su `key` ni su id.**
+ *  No se deduce del JSON: está leído en `internal/core/dashboard/diff.go`, donde
+ *  `tabKey(name) = strings.ToLower(strings.TrimSpace(name))` y `indexTabs` la
+ *  aplica sobre `t.Name`. Medido: `["repertorio con dato real"]`.
+ *
+ *  Importa porque **el plan decía otra cosa** —«`tabs_added` trae la `key` de la
+ *  pestaña»—, escrito de una lectura y no de la fuente. Con la `key` uno
+ *  intentaría cruzarlo contra `TabDeLayout.clave` y no encontraría nada.
+ *
+ *  **Y no trae nombre de métrica**, sólo `metricId`: el nombre sale del catálogo,
+ *  que es otra ruta. Resolverlo acá obligaría al adaptador a pedir una segunda
+ *  cosa. */
+export type RefDePanel = {
+  pestana: string
+  tipo: string
+  metricId: string
+}
+
+export type PanelMovido = RefDePanel & {
+  desde: GeometriaDePanel
+  hasta: GeometriaDePanel
+}
+
+export type PanelRetipado = RefDePanel & {
+  /** El tipo que tenía. El nuevo es el `tipo` de siempre. */
+  tipoAnterior: string
+}
+
+/** **Cinco contadores para ocho listas**, y eso es lo que hay que declarar.
+ *
+ *  `panelesCambiados` es la SUMA de tres —movidos + retipados + con parámetro
+ *  cambiado—, leída en `DiffLayouts` y comprobada en las dos direcciones el
+ *  2026-09-30: `3` con las tres en 1, `0` con las tres vacías. **Se LEE del
+ *  cable, no se suma acá**: el adaptador no calcula.
+ *
+ *  **No hay contador de pestañas reordenadas.** Un reordenamiento es un cambio
+ *  que el resumen no ve, así que una pantalla que dijera «sin cambios» mirando
+ *  sólo estos cinco mentiría sobre ese caso. */
+export type ContadoresDeDiff = {
+  pestanasAnadidas: number
+  pestanasQuitadas: number
+  panelesAnadidos: number
+  panelesQuitados: number
+  panelesCambiados: number
+}
+
+/** Qué cambió respecto de la versión anterior · ocho listas y el resumen. */
+export type DiffDePublicacion = {
+  contadores: ContadoresDeDiff
+  pestanasAnadidas: string[]
+  pestanasQuitadas: string[]
+  /** Las pestañas cuyo orden cambió. **El resumen no las cuenta.** */
+  pestanasReordenadas: string[]
+  panelesAnadidos: RefDePanel[]
+  panelesQuitados: RefDePanel[]
+  panelesMovidos: PanelMovido[]
+  panelesRetipados: PanelRetipado[]
+  panelesConParametroCambiado: RefDePanel[]
+}
+
+/** Una fila del historial · lo que `GET /admin/dashboards/{id}/publications` da.
+ *
+ *  ── QUÉ CAMPOS DEL DIBUJO **NO** ESTÁN ACÁ, Y POR QUÉ ──────────────────────
+ *
+ *  El `.pen` pinta cuatro cosas que el cable no manda, y **ninguna se compone**:
+ *  el adaptador renombra y reformatea, no escribe copy de producto.
+ *
+ *  · **`resumen`** — el renglón de 13px «Medidores de composición en los seis
+ *    KPI». Es un título redactado por una persona. El cable manda `versionId` y
+ *    contadores; armar una frase con ellos sería inventar copy.
+ *  · **`razon`** — la línea `!` «RAZÓN · los kpi repetían lo que ya muestra…».
+ *    Es el porqué de una decisión humana. No hay campo.
+ *  · **`autorNombre`** — el cable manda el uuid. Lo resuelve la SUPERFICIE
+ *    contra `GET /admin/users`; meterlo acá obligaría al adaptador a pedir una
+ *    segunda cosa.
+ *  · **`direccionSemanticaCambiada`** — el diff cubre pestañas, posición, tipo y
+ *    `options`; `semantic_direction` es atributo de la MÉTRICA y vive en el
+ *    catálogo, no en el layout. No hay nada que pintar.
+ *
+ *  Las cuatro tienen una prueba que atestigua su AUSENCIA, y no un comentario:
+ *  una prueba que afirma que la clave no está rompe el día que alguien la
+ *  rellene con una frase compuesta, que es exactamente lo que hay que impedir.
+ *  Van pedidas en `docs/PROPUESTA-2026-09-30-b6-prosa-del-historial.md`. */
+export type Publicacion = {
+  id: string
+  tenantId: string
+  dashboardId: string
+  /** La versión que quedó publicada por este evento. */
+  layoutId: string
+  /** La etiqueta de esa versión · `v-1790712673`, `rollback-v-1790630106`. Vacía
+   *  si nunca se puso. **No se renumera a `v1..vN`**: sería inventar una etiqueta
+   *  que el servicio no tiene. */
+  versionId: string
+  /** **El valor del enumerado NO se traduce**: es clave del contrato. */
+  accion: 'publish' | 'rollback'
+  /** `null` cuando el servicio no lo guardó · el campo es puntero con
+   *  `omitempty`, así que puede venir AUSENTE. */
+  autorId: string | null
+  /** Con qué rol publicó · medido `"admin"`. */
+  autorRol: string
+  /** La versión que se reemplazó. **`null` en la primera publicación de un
+   *  dashboard**, medido en la fila más vieja de «Marca». Ausente no es
+   *  «ninguna»: es «no había anterior». */
+  layoutAnteriorId: string | null
+  /** **`null` cuando el servicio no guardó diff.** No es un descuido: el campo es
+   *  `JSONRaw` y su `MarshalJSON` emite `null` con el valor vacío.
+   *
+   *  **`null` no se colapsa a un diff en cero.** «No hay registro de qué cambió»
+   *  y «no cambió nada» son dos cosas distintas, y pintar la segunda por la
+   *  primera es la clase de mentira que el `?? 0` de A5 ya documentó. */
+  diff: DiffDePublicacion | null
+  /** ISO tal cual. El formateo es del locale del tenant y vive en
+   *  `render/format.ts`. */
+  creadoEn: string
+}
+
+export type WireLayoutPublication = A['LayoutPublication']
+
+/** **El único normalizado del adaptador, y es obligatorio.**
+ *
+ *  Cada lista del diff se lee con `?? []`. No es defensa genérica: está MEDIDO
+ *  que la misma clave vuelve `[]` en las filas nuevas y `null` en las viejas.
+ *  `de881e13` inicializa las ocho y dejó escrito «Las colecciones vacías se
+ *  serializan como [] (nunca null)» — pero **el diff se persiste en `jsonb`**,
+ *  así que las filas escritas antes de ese commit se sirven con `null` para
+ *  siempre. **No es transitorio: es la base.**
+ *
+ *  Normalizar a `[]` es reformatear, que es lo que el adaptador puede hacer. */
+const lista = <T,>(xs: readonly T[] | null | undefined): T[] => (xs === null || xs === undefined ? [] : [...xs])
+
+const refDePanel = (r: A['PanelRef']): RefDePanel => ({
+  pestana: r.tab,
+  tipo: r.type,
+  metricId: r.metric_id,
+})
+
+const geometria = (g: A['PanelGeometry']): GeometriaDePanel => ({
+  colStart: g.col_start,
+  colSpan: g.col_span,
+  rowSpan: g.row_span,
+})
+
+function adaptarDiff(w: A['LayoutDiff']): DiffDePublicacion {
+  return {
+    // Los cinco se LEEN. `panelesCambiados` es la suma de tres listas del lado
+    // del servicio y acá no se recalcula: si algún día dejaran de coincidir,
+    // sumarlo nosotros esconderia la diferencia en vez de mostrarla.
+    contadores: {
+      pestanasAnadidas: w.summary.tabs_added,
+      pestanasQuitadas: w.summary.tabs_removed,
+      panelesAnadidos: w.summary.panels_added,
+      panelesQuitados: w.summary.panels_removed,
+      panelesCambiados: w.summary.panels_changed,
+    },
+    pestanasAnadidas: lista(w.tabs_added),
+    pestanasQuitadas: lista(w.tabs_removed),
+    pestanasReordenadas: lista(w.tabs_reordered),
+    panelesAnadidos: lista(w.panels_added).map(refDePanel),
+    panelesQuitados: lista(w.panels_removed).map(refDePanel),
+    panelesMovidos: lista(w.panels_moved).map((m) => ({
+      ...refDePanel(m),
+      desde: geometria(m.from),
+      hasta: geometria(m.to),
+    })),
+    panelesRetipados: lista(w.panels_retyped).map((r) => ({
+      ...refDePanel(r),
+      tipoAnterior: r.from_type,
+    })),
+    panelesConParametroCambiado: lista(w.panels_options_changed).map(refDePanel),
+  }
+}
+
+export function adaptarPublicacion(w: WireLayoutPublication): Publicacion {
+  return {
+    id: w.id,
+    tenantId: w.tenant_id,
+    dashboardId: w.dashboard_id,
+    layoutId: w.layout_id,
+    versionId: w.version_id,
+    accion: w.action,
+    // `?? null` en los dos punteros, y **nunca `?? ''`**: una cadena vacía se
+    // pinta y un `null` no, así que un `?? ''` haría que «no hubo anterior» se
+    // vea como un id que no se pudo leer.
+    autorId: w.actor_user_id ?? null,
+    autorRol: w.actor_role,
+    layoutAnteriorId: w.previous_layout_id ?? null,
+    // **`null` pasa como `null`.** Ver el comentario del campo: no se sustituye
+    // por un diff en cero, que diría «no cambió nada» sobre «no sé qué cambió».
+    diff: w.diff === null ? null : adaptarDiff(w.diff),
+    creadoEn: w.created_at,
+  }
+}
+
+
 const ESTADOS: Readonly<Record<string, EstadoDeLayout>> = {
   draft: 'borrador',
   published: 'publicado',
+  // Leído del enum del cable, que salió de `domain.LayoutStatusArchived`. Ver el
+  // comentario de `EstadoDeLayout`: sin esta línea las cuatro versiones
+  // archivadas del tenant se leían como borradores.
+  archived: 'archivado',
 }
 
 /** ── LOS QUINCE CAMPOS PASARON A snake_case · 2026-09-26 ────────────────────
@@ -256,7 +502,8 @@ function adaptarVersion(w: WireLayoutVersion): LayoutVersion {
   return {
     id: w.id,
     tenantId: w.tenant_id,
-    // Un estado que no es `draft` ni `published` no se sustituye por uno: cae en
+    dashboardId: w.dashboard_id,
+    // Un estado que no es de los TRES del enum no se sustituye por uno: cae en
     // `borrador`, que es la lectura SEGURA — un layout que no se sabe si está
     // publicado no se trata como publicado.
     //
@@ -667,6 +914,59 @@ export const adminApi = {
       await pedir<WireLayoutVersion>(`/admin/layouts/${encodeURIComponent(layoutId)}/publish`, {
         method: 'POST',
         body: JSON.stringify({ version_id: versionId ?? '' }),
+      }),
+    ),
+
+  /** El historial de publicaciones del dashboard · §PEN:B6.
+   *
+   *  ── **ES LA DE `dashboards`, Y NO LA DE `layouts`** ──────────────────────
+   *
+   *  Las dos rutas existen y devuelven la misma forma, así que la elección se ve
+   *  arbitraria y no lo es. Está leída en
+   *  `internal/adapters/repository/dd_layout_publication_repository.go`:
+   *
+   *      ListByLayout     WHERE layout_id = ? OR previous_layout_id = ?
+   *      ListByDashboard  WHERE dashboard_id = ?
+   *
+   *  La primera contesta «dónde participó ESTA versión» y devuelve **una fila**,
+   *  porque revertir **copia** a un layout nuevo y nunca reactiva el archivado:
+   *  cada layout se publica exactamente una vez. Medido el 2026-09-30 —
+   *  `16009187-…` → 1 fila, su dashboard → **5**.
+   *
+   *  Con la de `layouts` B6 pintaría una tarjeta sola y quien la mire creería que
+   *  el servicio está pobre. **Sólo se transcribió la que la pantalla llama**:
+   *  una ruta transcripta que nadie llama envejece sin que nadie lo note.
+   *
+   *  **Un historial vacío no es un error.** «Overview» tiene su `v1` publicado y
+   *  devuelve cero filas: la auditoría se empezó a escribir con `168a761` y lo
+   *  publicado antes no dejó fila. */
+  publicaciones: async (dashboardId: string): Promise<Publicacion[]> =>
+    (
+      await pedir<WireLayoutPublication[]>(
+        `/admin/dashboards/${encodeURIComponent(dashboardId)}/publications`,
+      )
+    ).map(adaptarPublicacion),
+
+  /** Volver a una versión anterior · B4.2.
+   *
+   *  **El `{layoutId}` del path NO es el destino.** Leído en
+   *  `dd_layout_builder_service.go:228-291`: el path sólo acota tenant+dashboard
+   *  y sirve para el chequeo de sí-mismo —`CONFLICT_REVERT_SELF`—, y **el destino
+   *  es `to_layout_id` en el CUERPO**. Confundirlos revertiría al layout
+   *  equivocado sin que nada falle.
+   *
+   *  Copia las pestañas y paneles del destino a un draft nuevo, lo valida contra
+   *  el catálogo de HOY —de ahí el 422— y lo publica con `action=rollback`. **La
+   *  versión de destino sigue `archived`**, y es lo que hace cierto el literal
+   *  que la cabecera de B6 imprime: «REVERTIR NO PIERDE LO POSTERIOR».
+   *
+   *  **El 200 no está medido** y el cable lo dice: correrlo cambia el layout que
+   *  la consola está sirviendo. Lo medido son las dos compuertas de 409. */
+  revertir: async (layoutId: string, toLayoutId: string): Promise<LayoutVersion> =>
+    adaptarVersion(
+      await pedir<WireLayoutVersion>(`/admin/layouts/${encodeURIComponent(layoutId)}/revert`, {
+        method: 'POST',
+        body: JSON.stringify({ to_layout_id: toLayoutId }),
       }),
     ),
 }

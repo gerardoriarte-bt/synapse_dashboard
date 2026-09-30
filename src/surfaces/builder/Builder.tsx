@@ -15,6 +15,18 @@
  *  | B5 · Vista previa por rol | Roles por tenant · B4.9, que escribimos nosotros | Cable |
  *  | B6 · Historial | El cable no dice **quién** publicó ni **qué cambió** | Cable |
  *
+ *  **ESA TABLA ESTÁ VENCIDA Y SE DEJA COMO REGISTRO DE CÓMO SE VENCEN.** Cinco de
+ *  las seis filas eran falsas al 2026-09-30: B3 (F4.21), B4 (F4.10), B5 (F4.12) y
+ *  B6 (F5.19) están construidas, y la de B6 nombraba dos campos que el cable trae
+ *  desde `168a761`. La única viva es B2, que espera una decisión de diseño.
+ *
+ *  **B6 · Historial de versiones se cableó el 2026-09-30** · §PEN:B6. Lo que la
+ *  frenaba —«el cable no dice quién publicó ni qué cambió»— venció:
+ *  `GET /admin/dashboards/{dashboardId}/publications` contesta 200 con
+ *  `actor_user_id`, `actor_role`, `created_at` y un `diff` con resumen y detalle
+ *  por panel. Medido contra `:4010` con `dev@synapse.local`: **cinco filas** en
+ *  «Marca» y **cero** en «Overview».
+ *
  *  **B1 · Contexto de edición está construida desde el 2026-09-15** —F4.7—: es la
  *  única de las seis con cable suficiente, y aun así sostiene dos de las cuatro
  *  cosas que §7.2 le pide.
@@ -23,7 +35,7 @@
  *  primera dice qué la desbloquea, que es lo que §8 pide de cualquier estado.
  */
 import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   useAdminCatalog,
   useBlocks,
@@ -32,11 +44,14 @@ import {
   useLayoutDetail,
   useLayouts,
   usePreview,
+  usePublications,
   usePublishLayout,
   useMe,
+  useRevertLayout,
   useRoles,
   useSaveLayout,
   useTenants,
+  useUsers,
   useValidateLayout,
 } from '../../api/hooks'
 import { BuilderChrome } from './BuilderChrome'
@@ -47,6 +62,8 @@ import { Library } from './Library'
 import { PanelConfigurator } from './PanelConfigurator'
 import { PublishBar } from './PublishBar'
 import { RolePreview } from './RolePreview'
+import { VersionHistory } from './VersionHistory'
+import { createFormat, LOCALE_POR_DEFECTO } from '../../render/format'
 import type { LayoutDetalle } from '../../api/admin'
 import { SaveBar } from './SaveBar'
 import { ValidationSummary } from './ValidationSummary'
@@ -94,14 +111,20 @@ import type { PantallaId } from './pantallas'
  *  **Y el copy cambió de idioma**, que es la otra mitad. Decía «§7.2 pide» y
  *  «LayoutVersion trae» en la pantalla de un cliente — está levantado en
  *  `docs/AUDITORIA-2026-09-30-usabilidad.md` §1.1. Lo que falta se sigue
- *  declarando; lo que cambia es a quién se le habla. */
-const PENDIENTES: Partial<Record<PantallaId, { razon: string; desbloqueaCon: string }>> = {
-  historial: {
-    razon:
-      'Esta pantalla va a mostrar cada publicación con quién la hizo, cuándo y qué cambió, y va a permitir volver a una anterior.',
-    desbloqueaCon: 'Está en construcción · el servicio ya entrega el historial',
-  },
-}
+ *  declarando; lo que cambia es a quién se le habla.
+ *
+ *  ── Y QUEDÓ VACÍO EL MISMO DÍA · B6 CABLEADA ───────────────────────────────
+ *
+ *  La entrada de `historial` decía «Está en construcción» con la pantalla ya
+ *  escrita —`VersionHistory`, `VersionCard`, `cambios`— y sin montar: un aviso de
+ *  andamio en la superficie de un cliente. **Un aviso que describe el estado del
+ *  trabajo y no el del producto es un defecto**, igual que las dos entradas de
+ *  arriba.
+ *
+ *  **La forma se deja declarada y no se borra**, mismo criterio que `Admin.tsx`
+ *  desde el 2026-09-25: es la que hace que una pantalla pendiente diga qué falta
+ *  en vez de mostrarse vacía, y la próxima que se declare la usa. */
+const PENDIENTES: Partial<Record<PantallaId, { razon: string; desbloqueaCon: string }>> = {}
 
 /** Pantallas de §7.2 que SÍ están construidas y **viven en otra**. No es lo
  *  mismo que pendiente, y decirlo «Pendiente» sería mentir sobre trabajo hecho.
@@ -194,6 +217,63 @@ export function Builder() {
   const publicar = usePublishLayout(version, tenantActivo)
   const duplicar = useCreateDraft(tenantActivo)
   const publicada = detalle.data?.layout.estado === 'publicado'
+
+  /* ── B6 · EL HISTORIAL Y LA REVERSIÓN · §PEN:B6 · 2026-09-30 ───────────────
+   *
+   * **El dashboard sale de la versión abierta, y es el único camino.** El
+   * historial se pide por dashboard —`GET /admin/dashboards/{id}/publications`,
+   * cinco filas contra una de la ruta por layout— y lo que B1 elige es un
+   * LAYOUT. `adaptarVersion` tiraba `dashboard_id` hasta hoy, así que hasta hoy
+   * no había forma de llegar de lo elegido a lo que hay que pedir.
+   *
+   * Los tres hooks se llaman siempre y se apagan por `enabled`, como los de
+   * arriba: no pueden colgar de `pantalla` sin violar las reglas de hooks.
+   */
+  const dashboardId = detalle.data?.layout.dashboardId ?? null
+  const publicaciones = usePublications(dashboardId)
+  const usuarios = useUsers(tenantActivo)
+  const revertir = useRevertLayout(tenantActivo, dashboardId)
+
+  /** **El locale de QUIEN MIRA**, igual que en administración y por la misma
+   *  razón escrita en `Admin.tsx`: el builder CRUZA clientes —B1 los elige, y
+   *  cada uno trae el suyo—, así que formatear con el del cliente haría que la
+   *  misma columna de fechas cambiara de formato al cambiar de selector. En la
+   *  consola es al revés porque ahí todo es de un tenant. */
+  const format = useMemo(
+    () => createFormat(yo.data?.tenant.locale || LOCALE_POR_DEFECTO),
+    [yo.data?.tenant.locale],
+  )
+
+  /** El nombre del dashboard · **puede no resolverse, y se dice en vez de
+   *  inventarse**.
+   *
+   *  `/config/me` es el único cable transcripto que trae nombres de dashboard, y
+   *  es del usuario que MIRA: sirve mientras se compone el cliente propio. Para
+   *  uno ajeno haría falta `GET /admin/tenants/{tenantId}/dashboards`, que el
+   *  servicio tiene desde `168a761` y **nuestro cable no declara** — eso es
+   *  trabajo nuestro, no un hueco suyo.
+   *
+   *  **El caso se ve de entrada**, medido el 2026-09-30: la base local tiene dos
+   *  clientes con el nombre «Under Armour México» y el que el builder elige por
+   *  defecto —`lista[0]`— no es el del usuario sembrado. */
+  const dashboardNombre =
+    yo.data === undefined || yo.data.tenant.id !== tenantActivo || dashboardId === null
+      ? null
+      : (yo.data.dashboards.find((d) => d.id === dashboardId)?.nombre ?? null)
+
+  /** El cliente, por nombre. `null` mientras `GET /admin/tenants` no volvió. */
+  const clienteNombre = lista.find((t) => t.id === tenantActivo)?.nombre ?? null
+
+  /** **El mensaje del servidor y no uno nuestro.** El envelope trae `error` como
+   *  cadena ya redactada en español desde `f70cec2`, así que traducir los códigos
+   *  acá sería una segunda fuente para el mismo texto. Lo único propio es el
+   *  caso en que la cadena viene vacía. */
+  const errorAlRevertir =
+    revertir.error === null
+      ? null
+      : revertir.error.message === ''
+        ? 'No se pudo revertir'
+        : revertir.error.message
 
   /** El 409 tiene nombre propio y una salida concreta; el resto, lo que diga el
    *  servicio. Sin distinguirlos, «error al guardar» taparía la única acción que
@@ -382,6 +462,71 @@ export function Builder() {
           hayVersion={version !== null}
           {...(detalle.data === undefined ? {} : { completo: detalle.data })}
         />
+      ) : pantalla === 'historial' ? (
+        /* ── B6 · §PEN:B6 ──────────────────────────────────────────────────
+         *
+         * **Los tres estados los decide el contenedor**, y eso lo declara el
+         * propio `VersionHistory`: el `.pen` no dibuja carga ni error para B6
+         * —sus vacíos y su esqueleto son de TABLAS de administración, y B6 es
+         * una lista de tarjetas—. El vacío SÍ lo pinta la pantalla, porque
+         * «cero publicaciones» es un dato y no una espera.
+         */
+        version === null ? (
+          // Mismo vacío con salida que los dos de B5, y por la misma razón:
+          // un texto que manda a otra pantalla sin forma de llegar es «un
+          // estado sin salida», que §8 llama una queja.
+          <div className="flex flex-col items-start gap-3">
+            <Label as="div">Elegí una versión en «Contexto de edición» para ver su historial</Label>
+            <button
+              type="button"
+              onClick={() => setPantalla('contexto')}
+              className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2"
+            >
+              Ir a contexto de edición
+            </button>
+          </div>
+        ) : publicaciones.isError ? (
+          <SurfaceMessage
+            title="No se pudo traer el historial"
+            detail={
+              publicaciones.error.message === ''
+                ? 'Sin detalle del servidor'
+                : publicaciones.error.message
+            }
+            onRetry={() => void publicaciones.refetch()}
+          />
+        ) : publicaciones.data === undefined || clienteNombre === null ? (
+          <Label as="div">Trayendo el historial…</Label>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {/* El fallo de la reversión va ARRIBA de la lista y no dentro de la
+                tarjeta: la acción cambia la lista entera, así que su resultado
+                no es de una fila. */}
+            {errorAlRevertir !== null && <Label as="div">{errorAlRevertir}</Label>}
+            {revertir.isPending && <Label as="div">Revirtiendo…</Label>}
+            <VersionHistory
+              publicaciones={publicaciones.data}
+              layouts={versiones.data ?? []}
+              dashboardNombre={dashboardNombre}
+              clienteNombre={clienteNombre}
+              usuarios={usuarios.data ?? []}
+              metricas={catalogo.data?.metrics ?? []}
+              format={format}
+              // **Los dos ids se pasan TAL CUAL.** El `layoutId` es el publicado
+              // y el `toLayoutId` el destino, y los dos salen de la fila que se
+              // apretó: derivar acá cuál es el publicado sería la segunda
+              // derivación de lo mismo, que es cómo una se queda vieja.
+              //
+              // La guarda de `isPending` evita dos reversiones por dos clics:
+              // cada una PUBLICA una versión nueva, así que la segunda no es
+              // idempotente.
+              onRevertir={(v) => {
+                if (revertir.isPending) return
+                revertir.mutate(v)
+              }}
+            />
+          </div>
+        )
       ) : (
         <ContextView
           tenants={lista}

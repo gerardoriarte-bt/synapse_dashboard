@@ -24,7 +24,7 @@ import {
 import type { LayoutDetalle } from '@/api/admin'
 
 const detalle: LayoutDetalle = {
-  layout: { id: 'l-1', tenantId: 't-1', estado: 'borrador', versionId: 'v1', publicadoEn: null },
+  layout: { id: 'l-1', tenantId: 't-1', dashboardId: 'd-1', estado: 'borrador', versionId: 'v1', publicadoEn: null },
   tabs: [
     {
       // A propósito fuera de orden: `sembrar` ordena por `orden`, no por el

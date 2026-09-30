@@ -24,6 +24,8 @@
  *  escondería** — que es el aprendizaje de la integración del 2026-09-14.
  */
 
+import type { WireLayoutPublication } from '../../src/api/admin'
+
 export const TENANT = '11111111-1111-1111-1111-111111111111'
 export const LAYOUT_PUB = '22222222-2222-2222-2222-222222222222'
 /** Los dos dashboards · el segundo sin layout, como el «Marca» de la base local. */
@@ -209,9 +211,84 @@ const panel = (
   chart, note: '', options,
 })
 
+/** **`dashboard_id` no es adorno, y faltaba** · B6 · 2026-09-30.
+ *
+ *  El historial se pide por dashboard, y la única vía desde la versión que el
+ *  builder tiene abierta es este campo. Sin él, B6 en modo mock se quedaba
+ *  pidiendo elegir una versión después de haberla elegido. Las dos son de
+ *  `DASH_A`, que es el que tiene layout. */
 export const layouts = [
-  { id: LAYOUT_PUB, tenant_id: TENANT, status: 'published', version_id: 'v3', published_at: '2026-09-10T12:00:00Z' },
-  { id: LAYOUT_DRAFT, tenant_id: TENANT, status: 'draft', version_id: 'v4', published_at: null },
+  { id: LAYOUT_PUB, tenant_id: TENANT, dashboard_id: DASH_A, status: 'published', version_id: 'v3', published_at: '2026-09-10T12:00:00Z' },
+  { id: LAYOUT_DRAFT, tenant_id: TENANT, dashboard_id: DASH_A, status: 'draft', version_id: 'v4', published_at: null },
+]
+
+/** El historial de `DASH_A` · B6 · §PEN:B6.
+ *
+ *  **Dos filas y no una**, porque con una sola no hay a dónde revertir y el CTA
+ *  no se pinta — que es justo lo que hay que poder mirar. La forma es la del
+ *  cable medido el 2026-09-30: `summary` con cinco contadores, ocho listas, y el
+ *  `action` en `publish`/`rollback` sin traducir.
+ *
+ *  **La fila vieja lleva tres listas en `null`** a propósito: el diff se persiste
+ *  en `jsonb` y las filas escritas antes de `de881e13` se van a servir así para
+ *  siempre. Si el adaptador perdiera su `?? []`, en modo mock se vería. */
+export const publicaciones: WireLayoutPublication[] = [
+  {
+    id: '55555555-5555-4555-8555-555555555551',
+    tenant_id: TENANT,
+    dashboard_id: DASH_A,
+    layout_id: LAYOUT_PUB,
+    version_id: 'v3',
+    action: 'publish',
+    actor_user_id: 'u-1',
+    actor_role: 'admin',
+    previous_layout_id: LAYOUT_DRAFT,
+    diff: {
+      summary: { tabs_added: 0, panels_added: 1, tabs_removed: 0, panels_changed: 2, panels_removed: 0 },
+      tabs_added: [],
+      panels_added: [{ tab: 'ecommerce overview', type: 'bars', metric_id: M(4) }],
+      panels_moved: [
+        {
+          tab: 'ecommerce overview',
+          type: 'kpi',
+          metric_id: M(0),
+          from: { col_span: 3, row_span: 4, col_start: 4 },
+          to: { col_span: 3, row_span: 4, col_start: 1 },
+        },
+      ],
+      tabs_removed: [],
+      panels_removed: [],
+      panels_retyped: [{ tab: 'ecommerce overview', type: 'kpi', from_type: 'gauge', metric_id: M(1) }],
+      tabs_reordered: [],
+      panels_options_changed: [],
+    },
+    created_at: '2026-09-10T12:00:00Z',
+  },
+  {
+    id: '55555555-5555-4555-8555-555555555552',
+    tenant_id: TENANT,
+    dashboard_id: DASH_A,
+    layout_id: LAYOUT_DRAFT,
+    version_id: 'v2',
+    action: 'publish',
+    actor_user_id: 'u-1',
+    actor_role: 'admin',
+    // **La primera publicación de un dashboard no trae la clave**, no la trae en
+    // `null`: `previous_layout_id` es puntero con `omitempty`. Medido el
+    // 2026-09-30 sobre la fila más vieja de «Marca», que la omite.
+    diff: {
+      summary: { tabs_added: 1, panels_added: 3, tabs_removed: 0, panels_changed: 0, panels_removed: 0 },
+      tabs_added: null,
+      panels_added: null,
+      panels_moved: [],
+      tabs_removed: [],
+      panels_removed: [],
+      panels_retyped: [],
+      tabs_reordered: null,
+      panels_options_changed: [],
+    },
+    created_at: '2026-09-02T09:30:00Z',
+  },
 ]
 
 const tabsDe = (layout: string) => [

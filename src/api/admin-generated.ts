@@ -323,6 +323,104 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/layouts/{layoutId}/publications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dónde participó esta versión · publicada o reemplazada
+         * @description Las publicaciones **en las que este layout aparece de los dos lados**:
+         *     como el que se publicó (`layout_id`) o como el que fue reemplazado
+         *     (`previous_layout_id`). No es el historial del dashboard — para eso está
+         *     `GET /admin/dashboards/{dashboardId}/publications`.
+         *
+         *     Más recientes primero, y **sin límite ni paginación**.
+         *
+         *     Medido el 2026-09-30 contra `:4010`: `16009187-…` → una fila,
+         *     `f998ae8c-…` → `{"success":true,"data":[]}`.
+         */
+        get: operations["listLayoutPublications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/dashboards/{dashboardId}/publications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * El historial de publicaciones del dashboard · §PEN:B6
+         * @description **Es la fuente de B6.** Todas las publicaciones y reversiones del
+         *     dashboard, más recientes primero.
+         *
+         *     Medido el 2026-09-30 contra `:4010`, dashboard «Marca» → cinco filas:
+         *     dos `publish` del 29, una `rollback` y dos `publish` del 28. La más vieja
+         *     **no trae `previous_layout_id`**, que es la primera publicación.
+         *
+         *     **El `limit` se acota en el repositorio, no en el handler**: `<= 0` o
+         *     `> 200` vuelven a **50**. Así que pedir `limit=500` no da 400: da 50.
+         */
+        get: operations["listDashboardPublications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tenants/{tenantId}/dashboards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Los dashboards del cliente
+         * @description `domain.DDDashboard`, con etiquetas `json:` — snake_case.
+         *
+         *     **B6 la necesita para el título**: el historial trae `dashboard_id` y
+         *     ningún nombre. Medido el 2026-09-30: dos dashboards, «Overview»
+         *     (`is_default: true`) y «Marca».
+         */
+        get: operations["listDashboards"];
+        put?: never;
+        /**
+         * Dar de alta un dashboard del cliente · **LEÍDA, NO CORRIDA**
+         * @description **Transcrita el 2026-09-30 leyendo su código, sin correrla** ·
+         *     `internal/core/services/dd_dashboard_service.go:40-79` y
+         *     `internal/adapters/repository/dd_dashboard_repository.go:23-35`.
+         *
+         *     Responde **201**, como `createDraft`.
+         *
+         *     Lo que el servicio decide y el cuerpo no dice:
+         *
+         *     · **`slug` se deriva del `name`** si no viene —`slugify`: minúsculas, sin
+         *       tildes ni `ñ`, todo lo que no sea alfanumérico a `-`—. Si de ahí no sale
+         *       nada, 400.
+         *     · **`is_default` omitido es `true` sólo para el primer dashboard** del
+         *       tenant, y `false` para los siguientes.
+         *     · **Poner `is_default: true` DEMOTA al anterior**, en la misma
+         *       transacción. No es aditivo.
+         */
+        post: operations["createDashboard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/tenants/{tenantId}/agents": {
         parameters: {
             query?: never;
@@ -593,6 +691,11 @@ export interface components {
              *     `CONFLICT_NO_PREVIOUS`, `CONFLICT_REVERT_SELF`,
              *     `NOT_FOUND_REVERT_TARGET`, `VALIDATION_REVERT_TARGET`.
              *
+             *     **Sumados el 2026-09-30, releyendo el servicio en vez de esta lista**
+             *     —que es de donde salen las omisiones—: `CONFLICT_NO_DASHBOARD` y
+             *     `CONFLICT_REVERT_EMPTY` del revert, y `NOT_FOUND_DASHBOARD`, que lo
+             *     emite `GET /admin/dashboards/{dashboardId}/publications`.
+             *
              *     **Medidos acá**: `AUTH_FORBIDDEN` con token de planner,
              *     `CONFLICT_NO_PREVIOUS` y `CONFLICT_REVERT_SELF` en el revert.
              * @example CONFLICT_NO_PREVIOUS
@@ -764,9 +867,21 @@ export interface components {
             /**
              * @description Uno `published` por **dashboard**, no por tenant: publicar demota al
              *     anterior del mismo dashboard.
+             *
+             *     ── **`archived` FALTABA, Y NO ES UN ESTADO RARO** · 2026-09-30 ──────
+             *
+             *     El enum decía `[draft, published]` y su dominio declara **tres**:
+             *     `LayoutStatusArchived` está en `dd_layout_version.go` con su
+             *     comentario —«versiones reemplazadas por una publicación posterior.
+             *     Nunca se borran: quedan para auditoría y rollback»—.
+             *
+             *     **Y es el estado más común**: medido el 2026-09-30,
+             *     `GET /admin/tenants/{tenantId}/layouts` devuelve 7 versiones y son
+             *     **4 `archived`, 2 `published`, 1 `draft`**. Un historial de versiones
+             *     que no conoce `archived` no puede nombrar a qué se está volviendo.
              * @enum {string}
              */
-            status: "draft" | "published";
+            status: "draft" | "published" | "archived";
             /** @description Etiqueta legible. Cadena vacía si nunca se puso. */
             version_id: string;
             /** Format: date-time */
@@ -797,6 +912,203 @@ export interface components {
             created_at?: string;
             /** Format: date-time */
             updated_at?: string;
+        };
+        /**
+         * @description `domain.DDLayoutPublication` · la fila del historial · §PEN:B6.
+         *
+         *     **Sólo se inserta, nunca se edita** —lo dice el comentario de su struct—,
+         *     así que una fila es una foto de lo que pasó y no del estado de hoy.
+         *
+         *     Leída el 2026-09-30 en `internal/core/domain/dd_layout_publication.go`
+         *     contra `de881e1`, y medida contra `:4010`. **Once campos, y dos son
+         *     `omitempty`** — eso no se dedujo del JSON, se leyó de las etiquetas.
+         */
+        LayoutPublication: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            /** Format: uuid */
+            dashboard_id: string;
+            /**
+             * Format: uuid
+             * @description La versión que quedó publicada por este evento.
+             */
+            layout_id: string;
+            /**
+             * @description La etiqueta de esa versión · `v-1790712673`, `rollback-v-1790630106`.
+             *     Cadena vacía si nunca se puso.
+             */
+            version_id: string;
+            /**
+             * @description `publish` o `rollback` · las dos constantes de su dominio.
+             *
+             *     Una reversión **no reactiva** la versión vieja: publica una copia, y
+             *     eso es lo que la deja aparecer como una fila más.
+             * @enum {string}
+             */
+            action: "publish" | "rollback";
+            /**
+             * Format: uuid
+             * @description Quién publicó. **`omitempty` y puntero**: puede venir AUSENTE.
+             *
+             *     Trae el id y ningún nombre — el nombre sale de `GET /admin/users`.
+             */
+            actor_user_id?: string;
+            /**
+             * @description Con qué rol publicó · medido `"admin"`.
+             * @example admin
+             */
+            actor_role: string;
+            /**
+             * Format: uuid
+             * @description La versión que se reemplazó. **`omitempty`: AUSENTE en la primera
+             *     publicación de un dashboard**, medido en la fila más vieja de
+             *     «Marca». Ausente no es «ninguna»: es «no había anterior».
+             */
+            previous_layout_id?: string;
+            /**
+             * @description Qué cambió respecto de la versión anterior.
+             *
+             *     **Puede ser `null`.** No es un descuido nuestro: es `JSONRaw`, y su
+             *     `MarshalJSON` emite `null` cuando el valor está vacío.
+             */
+            diff: components["schemas"]["LayoutDiff"] | null;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /**
+         * @description `dashboard.LayoutDiff` · nueve claves: el resumen y ocho listas.
+         *
+         *     ── **LAS LISTAS VIENEN DE LAS DOS FORMAS: `[]` Y `null`** ──────────────
+         *
+         *     `de881e13` inicializa las ocho y dejó escrito «Las colecciones vacías se
+         *     serializan como [] (nunca null)». **Pero el diff se PERSISTE en `jsonb`**,
+         *     así que las filas escritas antes de ese commit se sirven con `null` para
+         *     siempre. Medido el 2026-09-30 en las tres filas del 28 y del 29. **No es
+         *     transitorio: es la base**, y el adaptador tiene que tolerar las dos.
+         *
+         *     ── **EL EMPAREJADO, QUE DECIDE QUÉ CUENTA COMO CAMBIO** ───────────────
+         *
+         *     Leído en `internal/core/dashboard/diff.go`: las pestañas se emparejan por
+         *     **`Name` en minúsculas y sin espacios al borde** —la función `tabKey`—,
+         *     **no por su campo `key`**, y los paneles por el par `(pestaña, metric_id)`.
+         *     De ahí sale que mover un panel de pestaña se lea como uno quitado y otro
+         *     agregado.
+         */
+        LayoutDiff: {
+            summary: components["schemas"]["LayoutDiffCounts"];
+            /**
+             * @description **El nombre de la pestaña normalizado**, no su id ni su `key` ·
+             *     medido `["repertorio con dato real"]`.
+             */
+            tabs_added: string[] | null;
+            tabs_removed: string[] | null;
+            /**
+             * @description Las pestañas cuyo `sort_order` cambió. **El resumen NO las cuenta**:
+             *     `summary` no tiene contador de reordenamiento.
+             */
+            tabs_reordered: string[] | null;
+            panels_added: components["schemas"]["PanelRef"][] | null;
+            panels_removed: components["schemas"]["PanelRef"][] | null;
+            panels_moved: components["schemas"]["PanelMove"][] | null;
+            panels_retyped: components["schemas"]["PanelRetype"][] | null;
+            /**
+             * @description Cambió el `options` del panel. Se compara el **jsonb crudo**
+             *     —`sameJSON`, con `{}` por vacío—, así que un reordenamiento de claves
+             *     cuenta como cambio.
+             */
+            panels_options_changed: components["schemas"]["PanelRef"][] | null;
+        };
+        /**
+         * @description `dashboard.LayoutDiffCounts` · **exactamente cinco contadores**, y eso es
+         *     lo que hay que declarar: hay ocho listas y cinco números.
+         *
+         *     **`panels_changed` es la SUMA de tres listas** —`panels_moved` +
+         *     `panels_retyped` + `panels_options_changed`—, leído en `DiffLayouts` y
+         *     comprobado en las dos direcciones el 2026-09-30: `3` con las tres en 1, y
+         *     `0` con las tres vacías.
+         *
+         *     **No hay contador de `tabs_reordered`.** Un reordenamiento de pestañas es
+         *     un cambio que el resumen no ve — si la pantalla dice «sin cambios» con el
+         *     resumen en cero, va a mentir sobre ese caso.
+         */
+        LayoutDiffCounts: {
+            tabs_added: number;
+            tabs_removed: number;
+            panels_added: number;
+            panels_removed: number;
+            /** @description Movidos + retipados + con opciones cambiadas. */
+            panels_changed: number;
+        };
+        /**
+         * @description `dashboard.PanelRef` · a qué panel se refiere una entrada del diff.
+         *
+         *     **Trae `metric_id` y ningún nombre de métrica**: el nombre sale de
+         *     `GET /admin/tenants/{tenantId}/catalog`.
+         */
+        PanelRef: {
+            /** @description El nombre normalizado de la pestaña · ver `LayoutDiff`. */
+            tab: string;
+            /** Format: uuid */
+            metric_id: string;
+            /**
+             * @description El tipo de panel · `kpi`, `bars`, `gauge`…
+             * @example kpi
+             */
+            type: string;
+        };
+        /**
+         * @description `dashboard.PanelMove` · un `PanelRef` **embebido** más `from` y `to`. Se
+         *     emite cuando cambió cualquiera de los tres números de la geometría.
+         */
+        PanelMove: {
+            tab: string;
+            /** Format: uuid */
+            metric_id: string;
+            type: string;
+            from: components["schemas"]["PanelGeometry"];
+            to: components["schemas"]["PanelGeometry"];
+        };
+        /**
+         * @description `dashboard.PanelRetype` · un `PanelRef` embebido más `from_type`. El tipo
+         *     nuevo es el `type` de siempre.
+         */
+        PanelRetype: {
+            tab: string;
+            /** Format: uuid */
+            metric_id: string;
+            /** @description El tipo NUEVO */
+            type: string;
+            /** @description El tipo que tenía */
+            from_type: string;
+        };
+        /**
+         * @description `dashboard.PanelGeometry` · las tres que definen el lugar del panel en la
+         *     grilla. **No hay fila de inicio**: el layout la resuelve por orden.
+         */
+        PanelGeometry: {
+            col_start: number;
+            col_span: number;
+            row_span: number;
+        };
+        /**
+         * @description `ports.DDDashboardInput` · tres campos, y **sólo `name` es obligatorio**
+         *     (`binding:"required"`).
+         */
+        DashboardInput: {
+            /** @example Operaciones */
+            name: string;
+            /**
+             * @description Si falta, se deriva del `name`.
+             * @example operaciones
+             */
+            slug?: string;
+            /**
+             * @description **Puntero en Go**: omitirlo NO es `false`. Omitido significa «decidilo
+             *     vos» y el servicio pone `true` sólo si es el primero del tenant.
+             */
+            is_default?: boolean;
         };
         /** @description `domain.DDTab`, también en snake_case desde `8633b10`. */
         LayoutTab: {
@@ -1252,7 +1564,15 @@ export interface components {
         };
     };
     responses: {
-        /** @description Identificador mal formado */
+        /**
+         * @description Identificador mal formado · **`code: VALIDATION_REQUEST`**, medido el
+         *     2026-09-30 con `/admin/dashboards/no-uuid/publications`.
+         *
+         *     **El código no lo pone el handler**: `SendError` pasa `code` vacío y
+         *     `DefaultErrorCode(status)` lo llena con el de la familia
+         *     —`internal/adapters/handler/response.go:38-58`—, así que vale para todo
+         *     el 400 de admin y no sólo para esta ruta.
+         */
         BadRequest: {
             headers: {
                 [name: string]: unknown;
@@ -1305,6 +1625,7 @@ export interface components {
         tenantId: string;
         layoutId: string;
         roleId: string;
+        dashboardId: string;
     };
     requestBodies: never;
     headers: never;
@@ -1714,7 +2035,11 @@ export interface operations {
                     };
                 };
             };
-            /** @description El destino no existe o es de otro dashboard · `NOT_FOUND_REVERT_TARGET` */
+            /**
+             * @description `NOT_FOUND_LAYOUT` — el `{layoutId}` del path no existe ·
+             *     `NOT_FOUND_REVERT_TARGET` — el destino no existe o es de otro
+             *     dashboard.
+             */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1722,9 +2047,16 @@ export interface operations {
                 content?: never;
             };
             /**
-             * @description `CONFLICT_NO_PREVIOUS` — no hay a qué volver y no mandaron destino ·
-             *     **medido** · `CONFLICT_REVERT_SELF` — el destino es este mismo layout ·
-             *     **medido** · `CONFLICT_REVERT_TO_DRAFT` — el destino es un borrador.
+             * @description **Los cinco, releídos uno por uno el 2026-09-30** en
+             *     `internal/core/services/dd_layout_builder_service.go` contra
+             *     `de881e1`. Faltaban dos: el cable declaraba tres.
+             *
+             *     `CONFLICT_NO_DASHBOARD` — el layout no cuelga de ningún dashboard,
+             *     así que no hay historial contra el que revertir · `CONFLICT_NO_PREVIOUS`
+             *     — no hay a qué volver y no mandaron destino · **medido** ·
+             *     `CONFLICT_REVERT_SELF` — el destino es este mismo layout · **medido** ·
+             *     `CONFLICT_REVERT_TO_DRAFT` — el destino es un borrador ·
+             *     `CONFLICT_REVERT_EMPTY` — el destino no tiene pestañas.
              */
             409: {
                 headers: {
@@ -1738,6 +2070,161 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    listLayoutPublications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                layoutId: components["parameters"]["layoutId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Publicaciones, más recientes primero · puede ser vacío */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["LayoutPublication"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            /** @description `NOT_FOUND_LAYOUT` — el layout no existe */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listDashboardPublications: {
+        parameters: {
+            query?: {
+                /** @description Cuántas filas. Fuera de `1..200` el servicio usa 50 **en silencio**. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                dashboardId: components["parameters"]["dashboardId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /**
+             * @description Publicaciones, más recientes primero · **puede ser vacío con un
+             *     layout publicado**, si se publicó antes de que existiera la auditoría
+             */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["LayoutPublication"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            /** @description `NOT_FOUND_DASHBOARD` — el dashboard no existe */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listDashboards: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los dashboards del tenant */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["LayoutDashboard"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createDashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DashboardInput"];
+            };
+        };
+        responses: {
+            /** @description El dashboard creado · **no medido** */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["LayoutDashboard"];
+                    };
+                };
+            };
+            /**
+             * @description Sin nombre, o no se pudo derivar un slug · **sin `code` propio**: sale
+             *     `VALIDATION_REQUEST` por la familia del status.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            /**
+             * @description Ya existe un dashboard con ese slug en el tenant · **sin `code`
+             *     propio**.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
         };
     };

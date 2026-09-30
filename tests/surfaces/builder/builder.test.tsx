@@ -107,20 +107,22 @@ describe('§4 · el ancho mínimo, que no es uniforme', () => {
   })
 })
 
-describe('las pantallas que todavía no se pueden construir', () => {
-  it('las que quedan dicen qué las desbloquea en vez de mostrarse vacías', async () => {
-    // Una pantalla que se declara pendiente no es lo mismo que una que no está.
+describe('las pantallas que todavía no se pueden construir · ninguna', () => {
+  it('NINGUNA de las seis dice «Pendiente» · la tabla quedó vacía', async () => {
+    // **Era al revés hasta el 2026-09-30**: esta prueba recorría las pendientes y
+    // exigía que dijeran qué las desbloquea. La lista se vació —`grafico` con
+    // F4.21, `historial` con F5.19— y una prueba que recorre una lista vacía
+    // **pasa sin afirmar nada**, que es la forma en que un test se muere sin que
+    // nadie lo note. Así que se da vuelta la aserción: lo que hay que sostener
+    // ahora es que ninguna se declare pendiente.
     //
-    // **`grafico` salió de esta lista el 2026-09-30**: el selector se construyó
-    // en F4.21 y vive dentro de B1, igual que el binder. Mientras estuvo acá, el
-    // builder le decía «Pendiente · /config/plots no existe» a un cliente sobre
-    // una pantalla construida y una ruta que sí existe.
+    // **B5 se recorre aparte**: no lleva navbar —«SIN CHROME DE EDICIÓN»—, así
+    // que al entrar no hay cómo volver.
     montar()
-    const construidas = ['contexto', 'canvas', 'metrica', 'preview', 'grafico']
-    for (const p of PANTALLAS.filter((x) => !construidas.includes(x.id))) {
+    for (const p of PANTALLAS.filter((x) => x.id !== 'preview')) {
       await userEvent.click(screen.getByRole('button', { name: p.nombre }))
-      expect(screen.getByText('Pendiente')).toBeInTheDocument()
-      expect(screen.getByText(/Se desbloquea con/)).toBeInTheDocument()
+      expect(screen.queryByText('Pendiente')).toBeNull()
+      expect(screen.queryByText(/Se desbloquea con/)).toBeNull()
     }
   })
 
@@ -152,22 +154,23 @@ describe('las pantallas que todavía no se pueden construir', () => {
     expect(screen.queryByText(/decisión de diseño/i)).toBeNull()
   })
 
-  it('B6 sigue pendiente y dice qué va a mostrar, sin culpar al cable', async () => {
-    // **ESTA PRUEBA AFIRMABA ALGO FALSO HASTA EL 2026-09-30.** Pedía que la
-    // pantalla nombrara «los dos campos que el cable no trae» y citara `B4.10`,
-    // y las dos cosas dejaron de ser ciertas: `GET /admin/layouts/{id}/publications`
-    // contesta 200 con `actor_user_id`, `actor_role`, `created_at` y un `diff`
-    // con resumen y detalle por panel, y `POST /admin/layouts/{id}/revert` existe.
+  it('B6 está CABLEADA · ni «Pendiente» ni «en construcción»', async () => {
+    // **ESTA PRUEBA AFIRMÓ DOS COSAS FALSAS, UNA DESPUÉS DE LA OTRA.** Primero
+    // que el cable no traía autor ni diff —lo trae desde `168a761`—, y después,
+    // ya corregida, que «la pantalla sigue sin construirse» mientras
+    // `VersionHistory`, `VersionCard` y `cambios` estaban escritos y probados y
+    // sólo faltaba montarlos. Un aviso que describe el estado del TRABAJO y no
+    // el del producto es un defecto, y el cliente lo leía.
     //
-    // La pantalla sigue sin construirse, así que el aviso se queda — lo que
-    // cambia es lo que dice.
+    // Lo que se pinta ahora es el vacío con salida de la propia pantalla, porque
+    // sin versión elegida no hay dashboard del que pedir el historial.
     montar()
     await userEvent.click(screen.getByRole('button', { name: 'Historial de versiones' }))
 
-    expect(screen.getByText('Pendiente')).toBeInTheDocument()
-    expect(screen.getByText(/quién la hizo, cuándo y qué cambió/)).toBeInTheDocument()
-    // **Y no culpa al servicio**, que es la mitad que costó: el aviso viejo decía
-    // que el cable no traía el autor y lo trae desde `168a761`.
+    expect(screen.queryByText('Pendiente')).toBeNull()
+    expect(screen.queryByText(/en construcción/i)).toBeNull()
+    expect(screen.getByText(/ELEGÍ UNA VERSIÓN/i)).toBeInTheDocument()
+    // Y sigue sin culpar al servicio, que es la corrección que ya estaba.
     expect(screen.queryByText(/LayoutVersion/)).toBeNull()
     expect(screen.queryByText(/B4\.10/)).toBeNull()
   })

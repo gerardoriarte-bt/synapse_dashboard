@@ -29,7 +29,7 @@
 import { http, HttpResponse, delay } from 'msw'
 import { setupWorker } from 'msw/browser'
 import repertorio from './repertorio.json'
-import { LAYOUT_PUB, bloques, catalogo, contexto, detalle, layouts, roles, tenants, usuario, PANELES_MUESTRARIO } from './datos'
+import { DASH_A, LAYOUT_PUB, bloques, catalogo, contexto, detalle, layouts, publicaciones, roles, tenants, usuario, PANELES_MUESTRARIO } from './datos'
 
 const API = '*/api/v1'
 const ok = <T,>(data: T) => HttpResponse.json({ success: true, data })
@@ -58,6 +58,8 @@ const estado = {
   layouts: structuredClone(layouts),
   detalles: new Map(layouts.map((l) => [l.id, structuredClone(detalle(l.id))])),
   roles: structuredClone(roles),
+  // B6 · el historial crece con cada reversión, igual que en el servicio.
+  publicaciones: structuredClone(publicaciones),
 }
 
 /** `panelId` → la forma de la métrica que ese panel dibuja.
@@ -497,8 +499,11 @@ export const worker = setupWorker(
   http.post(`${API}/admin/tenants/:id/layouts`, async ({ request }) => {
     const { version_id } = (await request.json()) as { version_id?: string }
     const nuevo = {
-      id: crypto.randomUUID(), tenant_id: tenants[0]!.id, status: 'draft',
-      version_id: `${version_id ?? 'v'}-copia`, published_at: null,
+      // **`dashboard_id` también se copia** · el duplicado es del mismo
+      // dashboard que el origen, y de ese campo sale qué historial pedir.
+      id: crypto.randomUUID(), tenant_id: tenants[0]!.id, dashboard_id: DASH_A,
+      status: 'draft' as string,
+      version_id: `${version_id ?? 'v'}-copia`, published_at: null as string | null,
     }
     estado.layouts = [nuevo, ...estado.layouts]
     // Duplicar copia el contenido de la versión de origen, que es lo que hace
@@ -511,6 +516,51 @@ export const worker = setupWorker(
   http.get(`${API}/admin/layouts/:id`, ({ params }) => {
     const d = estado.detalles.get(params['id'] as string)
     return d === undefined ? mal('layout not found', 404) : ok(d)
+  }),
+
+  /* ── B6 · el historial y la reversión · §PEN:B6 ──────────────────────────
+   *
+   * **Es la ruta de `dashboards` y no la de `layouts`**, igual que en el
+   * servicio: aquella filtra por layout y devuelve una fila sola, porque
+   * revertir COPIA a un layout nuevo y cada layout se publica una vez. Sin este
+   * handler B6 en modo mock pintaba «no se pudo traer el historial», que es un
+   * fallo nuestro leído como uno del servicio.
+   */
+  http.get(`${API}/admin/dashboards/:id/publications`, ({ params }) =>
+    ok(estado.publicaciones.filter((p) => p.dashboard_id === params['id'])),
+  ),
+
+  /** Revertir **publica una versión nueva**, no reactiva la archivada. El estado
+   *  en memoria hace lo mismo: el destino pasa a `published`, el que estaba se
+   *  archiva, y queda una fila más con `action: 'rollback'`. Sin eso el botón se
+   *  apretaría y la lista no cambiaría, que es el defecto silencioso que el hook
+   *  describe. */
+  http.post(`${API}/admin/layouts/:id/revert`, async ({ params, request }) => {
+    const desde = params['id'] as string
+    const { to_layout_id } = (await request.json()) as { to_layout_id?: string }
+    const destino = estado.layouts.find((l) => l.id === to_layout_id)
+    if (destino === undefined) return mal('layout not found', 404)
+    if (destino.id === desde) return mal('no se puede revertir a sí mismo', 409)
+    estado.layouts = estado.layouts.map((l) =>
+      l.id === desde
+        ? { ...l, status: 'archived' }
+        : l.id === destino.id
+          ? { ...l, status: 'published' }
+          : l,
+    )
+    estado.publicaciones = [
+      {
+        ...estado.publicaciones[0]!,
+        id: crypto.randomUUID(),
+        layout_id: destino.id,
+        version_id: `rollback-${destino.version_id}`,
+        action: 'rollback',
+        previous_layout_id: desde,
+        created_at: new Date().toISOString(),
+      },
+      ...estado.publicaciones,
+    ]
+    return ok(estado.layouts.find((l) => l.id === destino.id))
   }),
 
   http.put(`${API}/admin/layouts/:id`, async ({ params, request }) => {

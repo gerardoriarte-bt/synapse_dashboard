@@ -72,11 +72,13 @@ openapi: 3.1.0
 # `DDLayoutVersion` tiene un campo `Tenant Tenant` **sin `json:"-"`**, y
 # `domain.Tenant` guarda `PrivateKeyPEM` y `PrivateKeyPassphrase`.
 #
-# **Hoy no filtra**: ningún repositorio hace `Preload("Tenant")`, así que lo que
-# se serializa es un `Tenant` en cero y lo que viaja son cadenas vacías. Pero los
-# nombres de los campos de un almacén de credenciales aparecen en una respuesta
-# de admin, y **el día que alguien agregue un `Preload` para mostrar el nombre
-# del tenant, filtra y nada lo detendría.** Es un `json:"-"` de una línea.
+# **ARREGLADO, y este párrafo estaba vencido** · releído el 2026-09-30 en
+# `internal/core/domain/dd_layout_version.go`: el campo lleva `json:"-"`, igual
+# que las dos credenciales de `Tenant`. Lo pusieron en `a643cfe`, que es lo que
+# ya dice el esquema `LayoutVersion` más abajo — el aviso quedó escrito arriba y
+# nadie lo bajó. Se deja el registro porque el hallazgo fue real y la lección es
+# la de siempre: **el párrafo que describe un riesgo se relee cuando se relee la
+# fuente**, o se vuelve una alarma que nadie apaga.
 # ─────────────────────────────────────────────────────────────────────────────
 
 info:
@@ -503,6 +505,7 @@ paths:
     post:
       tags: [admin]
       operationId: revertLayout
+      x-verificado-en: de881e1
       summary: Volver a una versión anterior
       description: |
         **B4.2 · llegó con `5924bf2b`.** Toma la versión destino —`to_layout_id`,
@@ -568,14 +571,222 @@ paths:
                     properties:
                       data: { $ref: '#/components/schemas/LayoutVersion' }
         '404':
-          description: 'El destino no existe o es de otro dashboard · `NOT_FOUND_REVERT_TARGET`'
+          description: |
+            `NOT_FOUND_LAYOUT` — el `{layoutId}` del path no existe ·
+            `NOT_FOUND_REVERT_TARGET` — el destino no existe o es de otro
+            dashboard.
         '409':
           description: |
-            `CONFLICT_NO_PREVIOUS` — no hay a qué volver y no mandaron destino ·
-            **medido** · `CONFLICT_REVERT_SELF` — el destino es este mismo layout ·
-            **medido** · `CONFLICT_REVERT_TO_DRAFT` — el destino es un borrador.
+            **Los cinco, releídos uno por uno el 2026-09-30** en
+            `internal/core/services/dd_layout_builder_service.go` contra
+            `de881e1`. Faltaban dos: el cable declaraba tres.
+
+            `CONFLICT_NO_DASHBOARD` — el layout no cuelga de ningún dashboard,
+            así que no hay historial contra el que revertir · `CONFLICT_NO_PREVIOUS`
+            — no hay a qué volver y no mandaron destino · **medido** ·
+            `CONFLICT_REVERT_SELF` — el destino es este mismo layout · **medido** ·
+            `CONFLICT_REVERT_TO_DRAFT` — el destino es un borrador ·
+            `CONFLICT_REVERT_EMPTY` — el destino no tiene pestañas.
         '422':
           description: '`VALIDATION_REVERT_TARGET` — la versión vieja ya no valida contra el catálogo actual'
+
+  # ── B6 · EL HISTORIAL DE VERSIONES · MEDIDO EL 2026-09-30 ─────────────────
+  #
+  # **Dos rutas, y la que la pantalla necesita es la segunda.** No son dos formas
+  # de pedir lo mismo: el filtro es distinto y se leyó en el repositorio
+  # —`internal/adapters/repository/dd_layout_publication_repository.go`—, no
+  # deducido del nombre.
+  #
+  #   ListByLayout     WHERE layout_id = ? OR previous_layout_id = ?   sin límite
+  #   ListByDashboard  WHERE dashboard_id = ?                          LIMIT
+  #
+  # Por eso el mismo layout devolvió **una** fila y su dashboard **cinco**: la
+  # primera es «dónde participó ESTA versión», la segunda es el historial.
+  #
+  # **Y un dashboard con un layout publicado puede devolver CERO filas**: medido
+  # en «Overview», que tiene su `v1` publicado. La auditoría se empezó a escribir
+  # con `168a761`; lo publicado antes no dejó fila. Un historial vacío no es un
+  # error ni un dashboard sin publicar.
+  /admin/layouts/{layoutId}/publications:
+    x-verificado-en: de881e1
+    get:
+      tags: [admin]
+      operationId: listLayoutPublications
+      summary: Dónde participó esta versión · publicada o reemplazada
+      description: |
+        Las publicaciones **en las que este layout aparece de los dos lados**:
+        como el que se publicó (`layout_id`) o como el que fue reemplazado
+        (`previous_layout_id`). No es el historial del dashboard — para eso está
+        `GET /admin/dashboards/{dashboardId}/publications`.
+
+        Más recientes primero, y **sin límite ni paginación**.
+
+        Medido el 2026-09-30 contra `:4010`: `16009187-…` → una fila,
+        `f998ae8c-…` → `{"success":true,"data":[]}`.
+      parameters: [{ $ref: '#/components/parameters/layoutId' }]
+      responses:
+        '200':
+          description: Publicaciones, más recientes primero · puede ser vacío
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/LayoutPublication' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: '`NOT_FOUND_LAYOUT` — el layout no existe'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /admin/dashboards/{dashboardId}/publications:
+    x-verificado-en: de881e1
+    get:
+      tags: [admin]
+      operationId: listDashboardPublications
+      summary: El historial de publicaciones del dashboard · §PEN:B6
+      description: |
+        **Es la fuente de B6.** Todas las publicaciones y reversiones del
+        dashboard, más recientes primero.
+
+        Medido el 2026-09-30 contra `:4010`, dashboard «Marca» → cinco filas:
+        dos `publish` del 29, una `rollback` y dos `publish` del 28. La más vieja
+        **no trae `previous_layout_id`**, que es la primera publicación.
+
+        **El `limit` se acota en el repositorio, no en el handler**: `<= 0` o
+        `> 200` vuelven a **50**. Así que pedir `limit=500` no da 400: da 50.
+      parameters:
+        - { $ref: '#/components/parameters/dashboardId' }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, default: 50, maximum: 200 }
+          description: |
+            Cuántas filas. Fuera de `1..200` el servicio usa 50 **en silencio**.
+      responses:
+        '200':
+          description: |
+            Publicaciones, más recientes primero · **puede ser vacío con un
+            layout publicado**, si se publicó antes de que existiera la auditoría
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/LayoutPublication' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: '`NOT_FOUND_DASHBOARD` — el dashboard no existe'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  # ── B5.1 · los dashboards del tenant · DE DÓNDE SALE EL NOMBRE ────────────
+  #
+  # El **GET está medido**. El `POST` se transcribe **leído y NO corrido**, con
+  # la misma honestidad que el 200 del revert: se declara qué falta medir en vez
+  # de callarlo.
+  #
+  # **Y la razón de no correrlo es concreta: no hay DELETE de dashboard** —su
+  # router tiene GET, POST y PUT y nada más—, así que medirlo deja un dashboard
+  # de prueba para siempre en una base que el resto del trabajo lee, y `is_default`
+  # **demota al anterior en la misma transacción** (`clearDefaultDashboard`). No
+  # es descartable como un rol descartable.
+  #
+  # `PUT /admin/dashboards/{dashboardId}` queda **sin transcribir**: mismo motivo
+  # y ninguna pantalla lo llama todavía.
+  /admin/tenants/{tenantId}/dashboards:
+    x-verificado-en: de881e1
+    get:
+      tags: [admin]
+      operationId: listDashboards
+      summary: Los dashboards del cliente
+      description: |
+        `domain.DDDashboard`, con etiquetas `json:` — snake_case.
+
+        **B6 la necesita para el título**: el historial trae `dashboard_id` y
+        ningún nombre. Medido el 2026-09-30: dos dashboards, «Overview»
+        (`is_default: true`) y «Marca».
+      parameters: [{ $ref: '#/components/parameters/tenantId' }]
+      responses:
+        '200':
+          description: Los dashboards del tenant
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/LayoutDashboard' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [admin]
+      operationId: createDashboard
+      summary: Dar de alta un dashboard del cliente · **LEÍDA, NO CORRIDA**
+      x-verificado-en: de881e1
+      description: |
+        **Transcrita el 2026-09-30 leyendo su código, sin correrla** ·
+        `internal/core/services/dd_dashboard_service.go:40-79` y
+        `internal/adapters/repository/dd_dashboard_repository.go:23-35`.
+
+        Responde **201**, como `createDraft`.
+
+        Lo que el servicio decide y el cuerpo no dice:
+
+        · **`slug` se deriva del `name`** si no viene —`slugify`: minúsculas, sin
+          tildes ni `ñ`, todo lo que no sea alfanumérico a `-`—. Si de ahí no sale
+          nada, 400.
+        · **`is_default` omitido es `true` sólo para el primer dashboard** del
+          tenant, y `false` para los siguientes.
+        · **Poner `is_default: true` DEMOTA al anterior**, en la misma
+          transacción. No es aditivo.
+      parameters: [{ $ref: '#/components/parameters/tenantId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DashboardInput' }
+      responses:
+        '201':
+          description: 'El dashboard creado · **no medido**'
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/LayoutDashboard' }
+        '400':
+          description: |
+            Sin nombre, o no se pudo derivar un slug · **sin `code` propio**: sale
+            `VALIDATION_REQUEST` por la familia del status.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: |
+            Ya existe un dashboard con ese slug en el tenant · **sin `code`
+            propio**.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   # ── B3.9 · el agente por tenant · TRANSCRITO DE 82da946 ──────────────────
   /admin/tenants/{tenantId}/agents:
@@ -742,10 +953,22 @@ components:
       in: path
       required: true
       schema: { type: string, format: uuid }
+    dashboardId:
+      name: dashboardId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
 
   responses:
     BadRequest:
-      description: Identificador mal formado
+      description: |
+        Identificador mal formado · **`code: VALIDATION_REQUEST`**, medido el
+        2026-09-30 con `/admin/dashboards/no-uuid/publications`.
+
+        **El código no lo pone el handler**: `SendError` pasa `code` vacío y
+        `DefaultErrorCode(status)` lo llena con el de la familia
+        —`internal/adapters/handler/response.go:38-58`—, así que vale para todo
+        el 400 de admin y no sólo para esta ruta.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -926,6 +1149,11 @@ components:
             `VALIDATION_THEME`, `VALIDATION_DASHBOARD_NOT_VISIBLE`,
             `CONFLICT_NO_PREVIOUS`, `CONFLICT_REVERT_SELF`,
             `NOT_FOUND_REVERT_TARGET`, `VALIDATION_REVERT_TARGET`.
+
+            **Sumados el 2026-09-30, releyendo el servicio en vez de esta lista**
+            —que es de donde salen las omisiones—: `CONFLICT_NO_DASHBOARD` y
+            `CONFLICT_REVERT_EMPTY` del revert, y `NOT_FOUND_DASHBOARD`, que lo
+            emite `GET /admin/dashboards/{dashboardId}/publications`.
 
             **Medidos acá**: `AUTH_FORBIDDEN` con token de planner,
             `CONFLICT_NO_PREVIOUS` y `CONFLICT_REVERT_SELF` en el revert.
@@ -1109,7 +1337,19 @@ components:
           description: |
             Uno `published` por **dashboard**, no por tenant: publicar demota al
             anterior del mismo dashboard.
-          enum: [draft, published]
+
+            ── **`archived` FALTABA, Y NO ES UN ESTADO RARO** · 2026-09-30 ──────
+
+            El enum decía `[draft, published]` y su dominio declara **tres**:
+            `LayoutStatusArchived` está en `dd_layout_version.go` con su
+            comentario —«versiones reemplazadas por una publicación posterior.
+            Nunca se borran: quedan para auditoría y rollback»—.
+
+            **Y es el estado más común**: medido el 2026-09-30,
+            `GET /admin/tenants/{tenantId}/layouts` devuelve 7 versiones y son
+            **4 `archived`, 2 `published`, 1 `draft`**. Un historial de versiones
+            que no conoce `archived` no puede nombrar a qué se está volviendo.
+          enum: [draft, published, archived]
         version_id:
           type: string
           description: Etiqueta legible. Cadena vacía si nunca se puso.
@@ -1135,6 +1375,222 @@ components:
           description: El que resuelve cuando el rol no declara preferencia.
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+
+    LayoutPublication:
+      type: object
+      description: |
+        `domain.DDLayoutPublication` · la fila del historial · §PEN:B6.
+
+        **Sólo se inserta, nunca se edita** —lo dice el comentario de su struct—,
+        así que una fila es una foto de lo que pasó y no del estado de hoy.
+
+        Leída el 2026-09-30 en `internal/core/domain/dd_layout_publication.go`
+        contra `de881e1`, y medida contra `:4010`. **Once campos, y dos son
+        `omitempty`** — eso no se dedujo del JSON, se leyó de las etiquetas.
+      required: [id, tenant_id, dashboard_id, layout_id, version_id, action, actor_role, diff, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        dashboard_id: { type: string, format: uuid }
+        layout_id:
+          type: string
+          format: uuid
+          description: La versión que quedó publicada por este evento.
+        version_id:
+          type: string
+          description: |
+            La etiqueta de esa versión · `v-1790712673`, `rollback-v-1790630106`.
+            Cadena vacía si nunca se puso.
+        action:
+          type: string
+          description: |
+            `publish` o `rollback` · las dos constantes de su dominio.
+
+            Una reversión **no reactiva** la versión vieja: publica una copia, y
+            eso es lo que la deja aparecer como una fila más.
+          enum: [publish, rollback]
+        actor_user_id:
+          type: string
+          format: uuid
+          description: |
+            Quién publicó. **`omitempty` y puntero**: puede venir AUSENTE.
+
+            Trae el id y ningún nombre — el nombre sale de `GET /admin/users`.
+        actor_role:
+          type: string
+          description: Con qué rol publicó · medido `"admin"`.
+          examples: ['admin']
+        previous_layout_id:
+          type: string
+          format: uuid
+          description: |
+            La versión que se reemplazó. **`omitempty`: AUSENTE en la primera
+            publicación de un dashboard**, medido en la fila más vieja de
+            «Marca». Ausente no es «ninguna»: es «no había anterior».
+        diff:
+          description: |
+            Qué cambió respecto de la versión anterior.
+
+            **Puede ser `null`.** No es un descuido nuestro: es `JSONRaw`, y su
+            `MarshalJSON` emite `null` cuando el valor está vacío.
+          oneOf:
+            - $ref: '#/components/schemas/LayoutDiff'
+            - type: 'null'
+        created_at: { type: string, format: date-time }
+
+    LayoutDiff:
+      type: object
+      description: |
+        `dashboard.LayoutDiff` · nueve claves: el resumen y ocho listas.
+
+        ── **LAS LISTAS VIENEN DE LAS DOS FORMAS: `[]` Y `null`** ──────────────
+
+        `de881e13` inicializa las ocho y dejó escrito «Las colecciones vacías se
+        serializan como [] (nunca null)». **Pero el diff se PERSISTE en `jsonb`**,
+        así que las filas escritas antes de ese commit se sirven con `null` para
+        siempre. Medido el 2026-09-30 en las tres filas del 28 y del 29. **No es
+        transitorio: es la base**, y el adaptador tiene que tolerar las dos.
+
+        ── **EL EMPAREJADO, QUE DECIDE QUÉ CUENTA COMO CAMBIO** ───────────────
+
+        Leído en `internal/core/dashboard/diff.go`: las pestañas se emparejan por
+        **`Name` en minúsculas y sin espacios al borde** —la función `tabKey`—,
+        **no por su campo `key`**, y los paneles por el par `(pestaña, metric_id)`.
+        De ahí sale que mover un panel de pestaña se lea como uno quitado y otro
+        agregado.
+      required: [summary, tabs_added, tabs_removed, tabs_reordered, panels_added, panels_removed, panels_moved, panels_retyped, panels_options_changed]
+      properties:
+        summary: { $ref: '#/components/schemas/LayoutDiffCounts' }
+        tabs_added:
+          type: ['array', 'null']
+          items: { type: string }
+          description: |
+            **El nombre de la pestaña normalizado**, no su id ni su `key` ·
+            medido `["repertorio con dato real"]`.
+        tabs_removed:
+          type: ['array', 'null']
+          items: { type: string }
+        tabs_reordered:
+          type: ['array', 'null']
+          items: { type: string }
+          description: |
+            Las pestañas cuyo `sort_order` cambió. **El resumen NO las cuenta**:
+            `summary` no tiene contador de reordenamiento.
+        panels_added:
+          type: ['array', 'null']
+          items: { $ref: '#/components/schemas/PanelRef' }
+        panels_removed:
+          type: ['array', 'null']
+          items: { $ref: '#/components/schemas/PanelRef' }
+        panels_moved:
+          type: ['array', 'null']
+          items: { $ref: '#/components/schemas/PanelMove' }
+        panels_retyped:
+          type: ['array', 'null']
+          items: { $ref: '#/components/schemas/PanelRetype' }
+        panels_options_changed:
+          type: ['array', 'null']
+          items: { $ref: '#/components/schemas/PanelRef' }
+          description: |
+            Cambió el `options` del panel. Se compara el **jsonb crudo**
+            —`sameJSON`, con `{}` por vacío—, así que un reordenamiento de claves
+            cuenta como cambio.
+
+    LayoutDiffCounts:
+      type: object
+      description: |
+        `dashboard.LayoutDiffCounts` · **exactamente cinco contadores**, y eso es
+        lo que hay que declarar: hay ocho listas y cinco números.
+
+        **`panels_changed` es la SUMA de tres listas** —`panels_moved` +
+        `panels_retyped` + `panels_options_changed`—, leído en `DiffLayouts` y
+        comprobado en las dos direcciones el 2026-09-30: `3` con las tres en 1, y
+        `0` con las tres vacías.
+
+        **No hay contador de `tabs_reordered`.** Un reordenamiento de pestañas es
+        un cambio que el resumen no ve — si la pantalla dice «sin cambios» con el
+        resumen en cero, va a mentir sobre ese caso.
+      required: [tabs_added, tabs_removed, panels_added, panels_removed, panels_changed]
+      properties:
+        tabs_added: { type: integer }
+        tabs_removed: { type: integer }
+        panels_added: { type: integer }
+        panels_removed: { type: integer }
+        panels_changed:
+          type: integer
+          description: Movidos + retipados + con opciones cambiadas.
+
+    PanelRef:
+      type: object
+      description: |
+        `dashboard.PanelRef` · a qué panel se refiere una entrada del diff.
+
+        **Trae `metric_id` y ningún nombre de métrica**: el nombre sale de
+        `GET /admin/tenants/{tenantId}/catalog`.
+      required: [tab, metric_id, type]
+      properties:
+        tab:
+          type: string
+          description: El nombre normalizado de la pestaña · ver `LayoutDiff`.
+        metric_id: { type: string, format: uuid }
+        type:
+          type: string
+          description: El tipo de panel · `kpi`, `bars`, `gauge`…
+          examples: ['kpi']
+
+    PanelMove:
+      type: object
+      description: |
+        `dashboard.PanelMove` · un `PanelRef` **embebido** más `from` y `to`. Se
+        emite cuando cambió cualquiera de los tres números de la geometría.
+      required: [tab, metric_id, type, from, to]
+      properties:
+        tab: { type: string }
+        metric_id: { type: string, format: uuid }
+        type: { type: string }
+        from: { $ref: '#/components/schemas/PanelGeometry' }
+        to: { $ref: '#/components/schemas/PanelGeometry' }
+
+    PanelRetype:
+      type: object
+      description: |
+        `dashboard.PanelRetype` · un `PanelRef` embebido más `from_type`. El tipo
+        nuevo es el `type` de siempre.
+      required: [tab, metric_id, type, from_type]
+      properties:
+        tab: { type: string }
+        metric_id: { type: string, format: uuid }
+        type: { type: string, description: El tipo NUEVO }
+        from_type: { type: string, description: El tipo que tenía }
+
+    PanelGeometry:
+      type: object
+      description: |
+        `dashboard.PanelGeometry` · las tres que definen el lugar del panel en la
+        grilla. **No hay fila de inicio**: el layout la resuelve por orden.
+      required: [col_start, col_span, row_span]
+      properties:
+        col_start: { type: integer }
+        col_span: { type: integer }
+        row_span: { type: integer }
+
+    DashboardInput:
+      type: object
+      description: |
+        `ports.DDDashboardInput` · tres campos, y **sólo `name` es obligatorio**
+        (`binding:"required"`).
+      required: [name]
+      properties:
+        name: { type: string, examples: ['Operaciones'] }
+        slug:
+          type: string
+          description: Si falta, se deriva del `name`.
+          examples: ['operaciones']
+        is_default:
+          type: boolean
+          description: |
+            **Puntero en Go**: omitirlo NO es `false`. Omitido significa «decidilo
+            vos» y el servicio pone `true` sólo si es el primero del tenant.
 
     LayoutTab:
       type: object
