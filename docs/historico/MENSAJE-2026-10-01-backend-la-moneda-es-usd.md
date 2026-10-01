@@ -1,5 +1,11 @@
 # Para el equipo de backend · la moneda de UA MX es USD, no MXN · 2026-10-01
 
+> **VENCIDO · NUNCA SE ENVIÓ.** Se dobló dentro de
+> `docs/MENSAJE-2026-10-01-backend-cuatro-pendientes.md`, que junta todo lo que
+> el backend tiene pendiente en un solo mensaje. El contenido sigue siendo
+> correcto; lo que cambió es que no se manda suelto.
+
+
 > **Histórico.** Un mensaje mandado, con fecha: qué se pidió y con qué evidencia.
 > No se actualiza.
 

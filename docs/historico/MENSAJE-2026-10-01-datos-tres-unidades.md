@@ -1,5 +1,19 @@
 # Para el equipo de datos · tres métricas sin `UNIT`, y una de ellas está bien · 2026-10-01
 
+> **VENCIDO Y EQUIVOCADO · NUNCA SE ENVIÓ.** Pedía que
+> `media_efficiency_12m` y `platform_return` declararan `UNIT = 'x'`, y están
+> bien sin unidad.
+>
+> Lo corrigió la planilla de datos —`docs/snowflake/Metricas.xlsx`, leída el
+> mismo día—: en sus 16 filas la regla forma→unidad es consistente y sin
+> solapamiento. **`multi_series`, `tabular` y `flow` no llevan unidad** porque
+> cargan varias series, columnas o etapas, cada una con la suya; `scalar`,
+> `categorical`, `composition`, `matrix`, `ranking` y `time_series` sí.
+>
+> `media_efficiency_12m` es `multi_series` y `platform_return` es `tabular`:
+> las dos correctas. No había ningún olvido que pedir.
+
+
 > **Histórico.** Un mensaje mandado, con fecha: qué se pidió y con qué evidencia.
 > No se actualiza.
 

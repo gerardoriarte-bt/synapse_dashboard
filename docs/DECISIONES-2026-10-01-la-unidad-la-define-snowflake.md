@@ -90,6 +90,31 @@ separa:**
 | `platform_return` | Es ROAS reportado por la plataforma · igual, `x`. **Es un olvido** |
 | `daily_trend` | **Correcto que no tenga**: mezcla venta, visitas e inversión en una sola métrica, así que no hay UNA unidad |
 
+### ⚠ CORRECCIÓN · el mismo día, unas horas después
+
+**Las tres están bien sin unidad. Ninguna es un olvido**, y la tabla de arriba
+—que decía que dos lo eran— se deja visible porque el modo de falla importa: era
+una deducción nuestra sobre el trabajo de otro equipo, escrita sin la fuente a
+mano. Llegó a tener un mensaje redactado pidiéndolas; está retirado en
+`docs/historico/MENSAJE-2026-10-01-datos-tres-unidades.md`.
+
+Lo corrigió la planilla de datos —`docs/snowflake/Metricas.xlsx`—, y lo que
+muestra es **una regla, no tres casos sueltos**. Sobre sus 16 filas, sin un solo
+solapamiento:
+
+| | Formas | Por qué |
+|---|---|---|
+| **Sin unidad** | `multi_series`, `tabular`, `flow` | Cargan varias series, columnas o etapas, **cada una con la suya** |
+| **Con unidad** | `scalar`, `categorical`, `composition`, `matrix`, `ranking`, `time_series` | Una cifra o un conjunto homogéneo |
+
+`media_efficiency_12m` es `multi_series` y `platform_return` es `tabular`.
+
+**La regla mejora la decisión en vez de contradecirla**, y conviene quedarse con
+ésta: *una métrica declara unidad cuando todas sus cifras comparten una*. Así
+dicho, `UNIT` vacío deja de ser un hueco a llenar y pasa a ser **información
+sobre la forma del dato** — que es lo que ya se había visto en `daily_trend` y en
+la auditoría de la multilínea, sin saber que era general.
+
 **Y `daily_trend` es el mismo hallazgo que la auditoría de comprensión de
 gráficos** —§3.2, «tres series en un eje, sin leyenda, y dos quedan pegadas al
 piso porque están en otra magnitud»—. **El catálogo ya lo estaba diciendo**: una
