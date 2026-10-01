@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   useBlocks,
+  useDrillSupport,
   usePlots,
   useCatalog,
   useMe,
@@ -30,6 +31,7 @@ import { currentTheme } from '../../tokens/theme'
 import { markTabConfig } from '../../render/budget'
 import { Console } from './Console'
 import { ChatSheet } from './ChatSheet'
+import { DrillSheet } from './DrillSheet'
 import { SurfaceMessage } from './SurfaceMessage'
 import type { Metric, PanelType, Payload } from '../../api/types'
 
@@ -59,6 +61,13 @@ export function ConsoleContainer() {
    *  activa, y guardar su id abriría la puerta a preguntarle a una que ya no se
    *  está mirando. Cambiar de pestaña con la hoja abierta la cierra. */
   const [askingTab, setAskingTab] = useState(false)
+  /** Desde qué panel se abrió el detalle · F3.9 · §PEN:C2.
+   *
+   *  **Un estado propio, y excluyente con el del chat.** No se apilan: el pie de
+   *  la hoja de detalle ofrece «preguntar sobre esta cifra», que es exactamente el
+   *  caso que dejaría dos hojas abiertas, y con dos el Escape cierra una sola y el
+   *  usuario no sabe cuál. La exclusión se escribe en los dos manejadores, abajo. */
+  const [drillingPanelId, setDrillingPanelId] = useState<string | null>(null)
 
   const context = useMe()
   const catalog = useCatalog()
@@ -125,6 +134,21 @@ export function ConsoleContainer() {
     activePeriod?.id ?? '',
   )
   const retryPanel = useRetryPanel(activeTab?.id ?? null, activePeriod?.id ?? '')
+
+  /** De qué paneles se puede abrir el detalle · F3.9.
+   *
+   *  **Una lectura por panel, y está declarada como ruido.** No hay ruta batch, y
+   *  «un CTA sin manejador no se pinta» exige saberlo ANTES de dibujar el pie del
+   *  panel. Son lecturas baratas —el servicio resuelve el rol, autoriza y consulta
+   *  un mapa en memoria— y la caché las dedupe, pero el arreglo verdadero es que
+   *  el catálogo llene el campo que ya declara: hoy llega vacío en las 21
+   *  métricas. Ver `useDrillSupport`.
+   *
+   *  **Va arriba, con los demás hooks**, y no abajo donde se usa: puesto junto a
+   *  su lógica quedaría después de los retornos tempranos del contenedor, así que
+   *  en unos renders se llamaría y en otros no. Ya pasó con `usePlots`. */
+  const panelIds = panels.map((p) => p.id)
+  const canDrill = useDrillSupport(panelIds)
 
   // El catálogo resuelve `metricId` → métrica. Llega YA filtrado por rol: el
   // front no filtra nada · F1.27.
@@ -330,6 +354,20 @@ export function ConsoleContainer() {
   const askingPanel = panels.find((p) => p.id === askingPanelId)
   const askingMetric = askingPanel === undefined ? undefined : byId.get(askingPanel.metricId)
 
+  /* ── F3.9 · «Ver detalle» · §PEN:C2 ───────────────────────────────────────
+   *
+   *  Mismo idioma que el chat: la hoja se monta sólo cuando hay panel Y su
+   *  métrica resuelve. Si el panel dejó de existir —cambió la pestaña con la hoja
+   *  abierta— no se monta: titular un detalle sobre un panel que ya no está en
+   *  pantalla es peor que cerrarla.
+   *
+   *  **El payload entra por props**, y es lo que deja que el encabezado declare la
+   *  BASE y la procedencia: la respuesta de la desagregación trae nueve campos y
+   *  **ninguno es de procedencia**. Se pasa `payloadWithParams`, el mismo que ve la
+   *  grilla, para que la cifra de la hoja y la del panel no puedan decir distinto. */
+  const drillingPanel = panels.find((p) => p.id === drillingPanelId)
+  const drillingMetric = drillingPanel === undefined ? undefined : byId.get(drillingPanel.metricId)
+
   return (
     <>
     <Console
@@ -365,9 +403,48 @@ export function ConsoleContainer() {
         })
       }}
       onRetryPanel={(panelId) => retryPanel.mutate(panelId)}
-      onAskPanel={setAskingPanelId}
-      onAskTab={() => setAskingTab(true)}
+      onAskPanel={(panelId) => {
+        // **Abrir el chat cierra el detalle**, y al revés también. Es la
+        // exclusión que hace que no haya dos hojas abiertas, escrita en los
+        // manejadores y no en la hoja: la hoja no sabe de la otra.
+        setDrillingPanelId(null)
+        setAskingPanelId(panelId)
+      }}
+      onDrillPanel={(panelId) => {
+        setAskingPanelId(null)
+        setAskingTab(false)
+        setDrillingPanelId(panelId)
+      }}
+      canDrill={canDrill}
+      onAskTab={() => {
+        setDrillingPanelId(null)
+        setAskingTab(true)
+      }}
     />
+
+    {/* ── LA HOJA DE DETALLE · F3.9 · §PEN:C2 ───────────────────────────── */}
+    {drillingPanel !== undefined && drillingMetric !== undefined && activePeriod !== undefined ? (
+      <DrillSheet
+        // **La `key` es el panel**, por la misma razón que en el chat: sin ella,
+        // abrir el detalle de otro panel reutilizaría el mismo estado y la
+        // dimensión elegida en el anterior quedaría debajo de un título nuevo —
+        // y peor, podría no estar entre las que el panel nuevo declara.
+        key={drillingPanel.id}
+        panelId={drillingPanel.id}
+        metric={drillingMetric}
+        payload={payloadWithParams(drillingPanel.id)}
+        periodo={activePeriod.id}
+        format={format}
+        now={new Date()}
+        onClose={() => setDrillingPanelId(null)}
+        // **Cierra ésta y abre el chat: no se apilan.** Y sin este manejador el
+        // botón del pie no se pintaría — la regla del CTA muerto.
+        onAsk={() => {
+          setDrillingPanelId(null)
+          setAskingPanelId(drillingPanel.id)
+        }}
+      />
+    ) : null}
 
     {askingPanel !== undefined && askingMetric !== undefined && activePeriod !== undefined ? (
       <ChatSheet

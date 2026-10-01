@@ -107,7 +107,7 @@ que su resultado esté escrito.
 | `Consola · C1 · Forecast` | **No construida** · dibujada el 2026-09-28 · es una pestaña más del layout, así que la pinta la misma `Console`. **Espera dos filas de catálogo** —`series_with_band` y `scalar_with_interval`—, pedidas en `docs/snowflake/PEDIDO-2026-09-28-metricas-mmm-y-forecast.md`. Su panel F5 está dibujado `BLOQUEADO` a propósito: hoy no hay pronóstico publicado |
 | `C1 · 768 · seis columnas` | `src/render/useColumns.ts` · el colapso se resuelve en JS · F1.30 |
 | `C1 · 360 · una columna` | ídem · el mínimo son 360 y no 768 · PS-12 |
-| `Consola · C2 · Drill-down de panel` | **No construida** · F3.9, diferida por D3 |
+| `Consola · C2 · Drill-down de panel` | `src/surfaces/console/DrillSheet.tsx` · F3.9, 2026-09-30 · **el candado D3 venció y se puede mostrar cuál**: las dos rutas son de `168a761`, suyas —verificado con `git log -L` sobre las dos líneas del router y con `git log --` sobre los cinco archivos del camino, ninguno con un commit nuestro— y contestan 200. **DIVERGE en cinco cosas, las cinco atadas por una aserción** en `tests/surfaces/console/drilldown.test.tsx`: (1) la frase `LA DESAGREGACIÓN CIERRA CONTRA EL TOTAL` **no se pinta y su falsedad está medida** —la cifra publicada es 1 232 721 y la desagregación suma 1 282 259 por día y por semana y 968 169 por plataforma, que lee otra tabla—; (2) tampoco el porcentaje por fila, por el mismo denominador y porque sería un cálculo; (3) `TABLA ORIGEN` y (4) `LINAJE HASTA LA FUENTE CRUDA` quedan **declaradas ausentes**: ninguna ruta devuelve filas crudas ni las cuatro capas, y de las cuatro el gobierno da una, que ya es el badge de procedencia; (5) la desagregación se dibuja con el cuerpo del registro y no con la lista de cuotas del dibujo, porque ese visual **no está en el repertorio** y un id que la tabla no declara no se puede validar contra ella. Dos ausencias más son pedido al backend y no hueco nuestro —el rótulo legible de cada dimensión, que su `DrillDimension.Label` no serializa, y el campo `dimensiones` del catálogo, vacío en las 21— · `docs/PROPUESTA-2026-09-30-divergencias-C2.md` |
 | `Consola · C3 · Chat expandido` | `src/surfaces/console/ChatSheet.tsx` · la forma se cerró en F5.17; lo que queda diverge por decisión, ver `docs/AUDITORIA-2026-09-21-pen-vs-chat-y-ficha.md` §2 |
 | `Consola · C3 · Chat · historial colapsado` | `src/surfaces/console/ChatSheet.tsx` |
 | `Consola · C4 · Detalle de hallazgo` | **No construida** · F3.10, diferida por D3 |
@@ -5157,12 +5157,66 @@ backend, que era cierto del contrato y dejó de serlo del cable**: el frame
 `error` de `82da946` manda `{code, message}`. Hoy lo deriva `api/chat.ts` y está
 pedido como campo. Ver F3.5.
 
-### ➕ F3.9 🕓 Drill-down C2
-**Estado: diferida** (D3). No se descarta ni se planifica todavía; entra cuando el backend llegue a ese tramo. El contrato ya la cubre, así que lo que falta es el servicio, no el diseño.
+### ➕ F3.9 ⚠️ Drill-down C2
+**Estado: construida, con una mitad de la verificación sin hacer** · 2026-09-30 ·
+`src/surfaces/console/DrillSheet.tsx` · §PEN:C2.
+
+**POR QUÉ ⚠️ Y NO ✅, que es lo que esta entrada tiene que decir.** La corrida que
+la construyó **se cortó en la auditoría**: su QA se colgó esperando su propia
+`npx vitest run`, que bajo contención de máquina se pasó del timeout de diez
+minutos del comando. Se cortó a propósito, no se perdió — plan, cable, desarrollo
+y QA habían cerrado y su trabajo está en el árbol.
+
+**Lo que SÍ se verificó a mano el 2026-10-01, contra el servicio en `:4010`:**
+
+- `npm run verify` entera en verde · 1598 pruebas · `pen-pantallas` la cuenta.
+- **La asimetría del CTA, que es lo que más podía salir mal.** De los quince
+  paneles de `overview`, **siete traen `supported: true` y ocho no** —medido ruta
+  por ruta—, y la consola pinta **exactamente siete** «Ver detalle»: `sales`,
+  `investment`, `roas`, `orders`, `visits`, `units` e `investment_by_platform`.
+  `goals_vs_actual` y la prosa no lo ofrecen. Es «un CTA sin manejador no se
+  pinta» funcionando sobre un dato que varía por panel.
+
+**Lo que NO se verificó, y por eso la tarea no está ✅: la hoja no se abrió con
+dato.** La extensión del navegador se desconectó antes de poder hacerlo. En las
+dos pantallas anteriores de esta misma tanda —B6 y A2— abrirlas encontró **cinco
+defectos que ninguna prueba había visto**, así que esta mitad no es un trámite.
+
+**Queda por hacer**: abrir la hoja sobre `sales` en el período `2026-09`, que es
+el que tiene dato materializado, y recorrer sus tres dimensiones.
+
+**El candado D3 venció, y se puede mostrar cuál.** Decía «entra cuando el backend
+llegue a ese tramo», y llegó: `GET /config/panels/{panelId}/drilldown/dimensions`
+y `POST /config/panels/{panelId}/drilldown` son de `168a761` —verificado con
+`git log -L 111,112` sobre las dos líneas de su router y con `git log --` sobre
+los cinco archivos del camino, **ninguno con un commit nuestro**— y las dos
+contestan 200. Un bloqueo escrito no se razona por encima; acá la razón citada
+venció y está medido cuál.
+
 **Descripción.** v2 tiene 128 líneas construidas: desagregación por las
 `dimensiones` que declara la métrica. `nuevo-desarrollo.md` lo baja a F5.4.
+
 **Criterio de aceptación.** Las dimensiones salen del catálogo, no de una lista
 escrita en el front.
+
+**Cómo se cumple, y la mitad que no es nuestra.** El front **no escribe ninguna
+lista**: los ejes salen de la lectura de dimensiones, respaldada por el registry
+del servicio. La otra mitad es pedido: `Metrica.dimensiones` existe en el
+contrato y en el cable y llega **vacía en las 21 métricas**, medido el
+2026-09-30, así que hoy no puede ser la fuente. La aserción que lo ata pone
+`['region']` en el catálogo y `['day','week']` en la lectura y exige que se
+pinten las dos de la lectura y ninguna del catálogo.
+
+**Contra qué se cerró.** Contra el binario de `:4010` levantado desde el fork, con
+`dev@synapse.local`, tenant «Under Armour México», dashboard `overview`, período
+`2026-09`; y **abierta en `dev:mock`**, que es donde aparecieron dos defectos que
+ninguna prueba vio: los chips y los botones del pie se pintaban sin borde ni
+fondo —`border-0` y `bg-transparent` en la cadena base ganaban sobre lo que cada
+rama ponía, porque el orden en la cadena no decide nada— y la desagregación por
+día apilaba treinta barras en 320px con las etiquetas pisando el dibujo.
+
+**Lo que NO se construyó, con su razón y su aserción**, está en la fila del
+registro de pantallas y en `docs/PROPUESTA-2026-09-30-divergencias-C2.md`.
 
 ### ➕ F3.10 🕓 Accionables y hallazgos C4
 **Estado: diferida** (D3). No se descarta ni se planifica todavía; entra cuando el backend llegue a ese tramo. El contrato ya la cubre, así que lo que falta es el servicio, no el diseño.

@@ -198,4 +198,24 @@ export const handlers = [
   // exactamente lo que hace contra un servicio que todavía no sirve la ruta. La
   // prueba que necesita la tabla la sirve con `server.use`.
   http.get(`${API}/config/plots`, () => ok([])),
+  // ── LAS DIMENSIONES DE CADA PANEL VAN EN EL PISO · F3.9, 2026-09-30 ───────
+  //
+  // La consola le pregunta por CADA panel de la pestaña para decidir si pinta
+  // «Ver detalle» —un CTA sin manejador no se pinta—, así que sin este handler
+  // toda prueba que monte el contenedor se cae: `onUnhandledRequest: 'error'`.
+  //
+  // **`supported: false`, que es el lado seguro.** El piso es «el contexto
+  // mínimo con el que la app arranca», y sin saber si una métrica se puede
+  // desagregar lo correcto es no prometer la acción. La prueba que necesita el
+  // CTA lo sirve con `server.use`, que es lo que la hace decir qué ejercita.
+  http.get(`${API}/config/panels/:panelId/drilldown/dimensions`, ({ params }) =>
+    ok({
+      panel_id: String(params['panelId']),
+      metric_key: 'sin_drilldown',
+      supported: false,
+      // **`[]` y no `null`**: el servicio inicializa el DTO con `[]string{}` y
+      // sólo después mira el registry, medido en las ocho que no soportan.
+      dimensions: [],
+    }),
+  ),
 ]

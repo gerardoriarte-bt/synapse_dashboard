@@ -1,20 +1,25 @@
 /** La hoja lateral del chat · F3.1 · §PEN:C3
  *
- *  **Sin `<dialog>` nativo, y con la razón escrita.** `showModal()` daría el
- *  Escape, la trampa de foco y la devolución del foco al disparador de arriba,
- *  pero jsdom no lo implementa —verificado el 2026-09-03— así que las pruebas
- *  tendrían que polirrellenarlo y estarían verificando el polyfill, no la hoja.
- *  Se hace a mano, que además deja el retorno del foco explícito en vez de
- *  confiado al navegador.
+ *  **Desde el 2026-09-30 las mecánicas viven en `SideSheet`**, y este archivo es
+ *  lo que §PEN:C3 mide: el ancho, la superficie, el radio y el filo. Apareció la
+ *  segunda hoja —el drill-down de §PEN:C2— y **no comparte ninguna de las
+ *  cuatro**, así que lo que se compartió es el comportamiento.
  *
- *  **Una sola hoja abierta a la vez.** Apilarlas deja al usuario sin saber qué
- *  cierra el Escape. La consola sostiene un solo estado, así que estructuralmente
- *  no puede haber dos; el contador de abajo es la red por si alguien monta una
- *  segunda desde otro lado, y avisa en vez de fallar en silencio.
+ *  **Conserva su nombre y su ancla a propósito.** La extracción no es un cambio
+ *  de pantalla, y la forma de demostrarlo fue dejar `tests/surfaces/console/
+ *  foco.test.tsx` y `preguntar.test.tsx` verdes **sin tocarlas**: si una hubiera
+ *  necesitado un ajuste para pasar, la extracción habría cambiado comportamiento
+ *  y había que parar.
+ *
+ *  Lo que estaba acá y ahora está en `SideSheet`: el Escape con
+ *  `stopPropagation`, el foco al abrir, la devolución del foco al disparador, el
+ *  velo que cierra al apretarlo, el `role="dialog"` con `aria-modal`, y el
+ *  contador de hojas abiertas —que tiene que ser **uno solo** para que el chat y
+ *  el drill-down se vean entre ellos—.
  *
  *  ── LA FORMA SALE DEL DIBUJO · 2026-09-21 ───────────────────────────────────
  *
- *  Hasta hoy medía 480 y no tenía velo. El frame `Chat` de §PEN:C3 dice otra
+ *  Hasta ese día medía 480 y no tenía velo. El frame `Chat` de §PEN:C3 dice otra
  *  cosa, campo por campo:
  *
  *   · **940 de ancho**, pegada a la derecha — `x=500` sobre un lienzo de 1440.
@@ -38,15 +43,15 @@
  *   · **El velo `#0B0B0CCC`.** No hay token con ese valor, y «un hex literal es
  *     un bug» es regla dura. Se usa `shad`, que es el único negro translúcido
  *     del sistema y **se invierte con el tema**, que un hex fijo no hace.
+ *     **El frame de §PEN:C2 lo dibuja con `$shad`**, lo que confirma que el token
+ *     existe y que el hex de este frame es el descuido.
  *
  *  Las dos quedan como propuesta de spec: o la escala gana un radio de 16 y un
  *  color de velo, o el dibujo usa los que ya hay. Escritas y juntas con las
  *  otras en `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` · §1.
  */
-import { useEffect, useRef } from 'react'
+import { SideSheet } from './SideSheet'
 import type { ReactNode } from 'react'
-
-let abiertas = 0
 
 type Props = {
   open: boolean
@@ -60,74 +65,20 @@ type Props = {
 }
 
 export function ChatOverlay({ open, title, contexto, onClose, children }: Props) {
-  const hoja = useRef<HTMLDivElement>(null)
-  // Quién tenía el foco antes de abrir. Se guarda en el momento de abrir y no
-  // al montar: la hoja se monta con la consola y se abre mucho después.
-  const disparador = useRef<HTMLElement | null>(null)
-
-  useEffect(() => {
-    if (!open) return
-
-    disparador.current = document.activeElement as HTMLElement | null
-    hoja.current?.focus()
-
-    abiertas += 1
-    if (abiertas > 1) {
-      console.warn(
-        '[Synapse] Dos hojas de chat abiertas a la vez. El Escape cierra una sola ' +
-          'y el usuario no sabe cuál: la consola sostiene un único estado de chat.',
-      )
-    }
-
-    const alTeclear = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation()
-        onClose()
-      }
-    }
-    document.addEventListener('keydown', alTeclear)
-
-    return () => {
-      document.removeEventListener('keydown', alTeclear)
-      abiertas -= 1
-      // El foco vuelve al disparador. Sin esto, cerrar con Escape deja el foco
-      // en el `body` y quien navega con teclado tiene que recorrer la página
-      // entera para volver al panel desde el que preguntó.
-      disparador.current?.focus()
-    }
-  }, [open, onClose])
-
-  if (!open) return null
-
   return (
-    <>
-      {/* **El velo** · §PEN:C3 lo dibuja a pantalla completa por detrás de la
-          hoja. Cierra al apretarlo, que es lo que espera cualquiera que haya
-          usado una hoja lateral, y **es lo que vuelve cierto el `aria-modal`**.
-
-          `aria-hidden` porque no aporta nada a quien no lo ve: el Escape y el
-          botón de cerrar son las salidas que sí se anuncian. */}
-      <div
-        aria-hidden
-        onClick={onClose}
-        className="fixed inset-0 z-40 bg-shad"
-      />
-
-      <div
-        ref={hoja}
-        role="dialog"
-        aria-modal="true"
-        aria-label={contexto === undefined ? title : `${title} · ${contexto}`}
-        tabIndex={-1}
-        // 940 del dibujo, pegada a la derecha, y redondeada **solo a la
-        // izquierda** — el lado por el que entra. `overflow-hidden` para que
-        // las dos columnas respeten ese radio.
-        className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[940px] overflow-hidden rounded-l-xl bg-dock shadow-[0_0_40px_var(--color-shad)] outline-none"
-      >
-        {/* El `Filo`: 2px de `$acc` arriba de todo, a lo ancho de la hoja. */}
-        <span aria-hidden className="absolute inset-x-0 top-0 z-10 h-0.5 bg-acc" />
-        {children}
-      </div>
-    </>
+    <SideSheet
+      open={open}
+      title={title}
+      {...(contexto === undefined ? {} : { contexto })}
+      onClose={onClose}
+      // 940 del dibujo, pegada a la derecha.
+      ancho="w-full max-w-[940px]"
+      // `$dock`, y redondeada **solo a la izquierda** — el lado por el que entra.
+      superficie="rounded-l-xl bg-dock shadow-[0_0_40px_var(--color-shad)]"
+      // El `Filo`: 2px de `$acc` arriba de todo, a lo ancho de la hoja.
+      filo="absolute inset-x-0 top-0 z-10 h-0.5 bg-acc"
+    >
+      {children}
+    </SideSheet>
   )
 }

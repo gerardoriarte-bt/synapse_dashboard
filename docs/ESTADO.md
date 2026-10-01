@@ -5,7 +5,7 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**178 de 225 tareas cerradas.** 15 parciales · 27 pendientes · 5 diferidas.
+**178 de 225 tareas cerradas.** 16 parciales · 27 pendientes · 4 diferidas.
 
 
 ## Front · 119 de 127
@@ -15,7 +15,7 @@
 | 0 · Fundamentos | `██████████████████████` | 16/16 | 0 | 0 |
 | 1 · Consola y render/ | `█████████████████████·` | 44/46 | 2 | 0 |
 | 2 · Estados | `██████████████████████` | 6/6 | 0 | 0 |
-| 3 · Chat contextual | `██████████████████····` | 12/15 | 0 | 0 |
+| 3 · Chat contextual | `██████████████████····` | 12/15 | 1 | 0 |
 | 4 · Admin y Builder | `██████████████████████` | 24/24 | 0 | 0 |
 | 5 · Pruebas y pulido | `███████████████████···` | 17/20 | 0 | 2 |
 
@@ -54,10 +54,9 @@
 
 ---
 
-## Se puede tomar hoy · 0 del front
+## Se puede tomar hoy · 1 del front
 
-Nada del front está libre: todo lo pendiente espera algo.
-
+- **F3.9** · Drill-down C2
 
 ---
 

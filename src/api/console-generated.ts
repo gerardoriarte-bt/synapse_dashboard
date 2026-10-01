@@ -266,6 +266,124 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/config/panels/{panelId}/drilldown/dimensions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Por qué dimensiones se puede desagregar este panel
+         * @description `DDDrillDownHandler.Dimensions` → `ddDrillDownService.Dimensions`.
+         *
+         *     **Es una lectura barata, y eso es lo que la hace útil al pintar.**
+         *     Resuelve el rol, autoriza el panel y consulta `sfspec.DrillRegistry`,
+         *     que es un mapa en memoria: **no toca Snowflake, no firma un JWT y no
+         *     usa el agente**. Se le puede preguntar por cada panel de la pestaña.
+         *
+         *     Con eso la consola sabe si dibuja el CTA de «ver detalle» — la regla de
+         *     la casa es que **un CTA sin manejador no se pinta**, y acá el manejador
+         *     existe sólo cuando `supported` es `true`.
+         *
+         *     **No lleva el rate limit del chat**; el POST sí. Lo dice el router:
+         *     `config.GET("/panels/:panelId/drilldown/dimensions", …)` sin
+         *     `chatLimiter`.
+         *
+         *     **No toma `period`.** Qué dimensiones existen es de la métrica, no del
+         *     mes que se está mirando.
+         *
+         *     **Medida en las quince del `overview`, una por una** · 2026-09-30 · y el
+         *     reparto es 7/8, con tres juegos de dimensiones distintos:
+         *
+         *     · `sales`, `investment`, `roas` → `['day', 'week', 'platform']`
+         *     · `orders`, `visits`, `units` → `['day', 'week']`
+         *     · `investment_by_platform` → **`['day']` y nada más**: su spec declara una
+         *       sola dimensión, la de día sobre la tabla de medios pagos
+         *
+         *     Las ocho con `supported: false` y `dimensions: []` son
+         *     `executive_summary`, `decisions`, `goals_vs_actual`, `daily_trend`,
+         *     `twelve_month_efficiency`, `platform_gap`, `platform_month_matrix` y
+         *     `spend_flow`.
+         *
+         *     **La clave que viaja es la del CATÁLOGO, no la canónica**, y es por donde
+         *     se entra a equivocarse: el registry se consulta con
+         *     `CanonicalKey(metric.Key)` —`sales` → `revenue`, `visits` → `sessions`,
+         *     `investment_by_platform` → `platform_return`— pero `metric_key` devuelve
+         *     la del catálogo. Buscar `revenue` en esta respuesta no encuentra nada.
+         */
+        get: operations["panelDrillDownDimensions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/config/panels/{panelId}/drilldown": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Desagregar la métrica del panel por una dimensión · Snowflake en vivo
+         * @description `DDDrillDownHandler.Query` → `ddDrillDownService.Query`.
+         *
+         *     **Esta sí consulta Snowflake, en vivo y con las credenciales del
+         *     tenant**: resuelve el agente del tenant y del rol, firma un JWT, arma el
+         *     SQL del registry y corre la consulta con timeout —20 s, o
+         *     `DD_DRILLDOWN_TIMEOUT_SECONDS`—. **No persiste nada**: no escribe hilo
+         *     ni materialización.
+         *
+         *     **Comparte la cuota del chat.** `config.POST("/panels/:panelId/drilldown",
+         *     chatLimiter, …)` es el mismo `UserRateLimitMiddleware` que
+         *     `POST /config/chat` —100 pedidos por usuario por minuto por defecto,
+         *     `RATE_LIMIT_ENABLED` y `RATE_LIMIT_PER_USER_PER_MINUTE`—, así que abrir
+         *     hojas de detalle gasta la misma cuota que preguntarle al agente.
+         *
+         *     **El nombre de columna NUNCA sale del input.** `dimension` se busca en
+         *     la lista blanca de `DrillRegistry`; lo que viaja al SQL es la expresión
+         *     que el registry declara. Lo que llega del cliente se compara
+         *     `strings.ToLower(strings.TrimSpace(...))` y si no está, 400 con las
+         *     soportadas.
+         *
+         *     ── **LAS PARTES NO SUMAN EL TOTAL DEL PANEL, Y HAY DOS RAZONES** ──────
+         *
+         *     Medido sobre `sales` (`80158182-…`, `2026-09`) el 2026-09-30, y es lo
+         *     primero que la hoja de C2 tiene que no prometer:
+         *
+         *     1. **`platform` sale de OTRA TABLA y con OTRA MEDIDA.** `day` y `week`
+         *        agregan `REV_TOTAL` del hecho de ecommerce; `platform` agrupa por
+         *        `FUENTE` sobre la tabla de medios pagos y suma `INGRESOS_USD`. Medido:
+         *        `day` y `week` dan **1 282 259** las dos, y `platform` da
+         *        **968 169,49** — no es un error de redondeo, es el ingreso atribuido
+         *        a medios pagos contra el total del sitio, que es justo lo que la BASE
+         *        del panel dice («ALL CHANNELS»).
+         *     2. **El panel es una foto y esto es en vivo.** El escalar del panel traía
+         *        `1 232 721` con `freshness: 2026-09-30T17:37:34Z`, y la suma por día
+         *        pedida a las 00:07 UTC daba `1 282 259`: el mes está en curso y la
+         *        materialización es de siete horas antes. `queried_at` y `freshness`
+         *        **no son lo mismo y confundirlos es el bug**, igual que en
+         *        `ChatFrameData`.
+         *
+         *     **Y la respuesta no trae gobierno.** Ni BASE, ni capa, ni fuente, ni
+         *     frescura: nueve campos y ninguno es de procedencia. El encabezado de la
+         *     hoja los tiene que tomar del panel de origen —`POST /config/panels:batch`
+         *     los trae— porque §8 pide que toda métrica declare su BASE y su
+         *     PROCEDENCIA, y una cifra desagregada sigue siendo la métrica.
+         */
+        post: operations["panelDrillDown"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1259,6 +1377,172 @@ export interface components {
              */
             intent: string;
         };
+        /** @description `ports.DDDrillDownDimensions`. Qué se puede desagregar de este panel. */
+        DrillDownDimensions: {
+            /** Format: uuid */
+            panel_id: string;
+            /**
+             * @description **La clave del catálogo**, no la canónica del registry · ver la
+             *     descripción de la ruta.
+             * @example sales
+             * @example investment_by_platform
+             */
+            metric_key: string;
+            /**
+             * @description `true` cuando `DrillRegistry` tiene la métrica canónica. **Es lo que
+             *     decide si el CTA de detalle se pinta.**
+             */
+            supported: boolean;
+            /**
+             * @description **Nunca `null`.** El servicio inicializa el DTO con `[]string{}` y
+             *     sólo después mira el registry, así que una métrica sin drill-down
+             *     llega con `[]` — medido en las ocho.
+             *
+             *     Los valores son los que el registry declara, y hoy son tres:
+             *     `day`, `week` y `platform`. **No es un enum del cable**: agregar una
+             *     dimensión es agregar una fila en `DrillRegistry`, y entonces este
+             *     arreglo trae una cuarta sin que nada más cambie.
+             * @example [
+             *       "day",
+             *       "week",
+             *       "platform"
+             *     ]
+             * @example []
+             */
+            dimensions: string[];
+        };
+        /**
+         * @description `ddDrillDownRequest` de `dd_drilldown_handler.go`. Los dos primeros son
+         *     `binding:"required"`.
+         */
+        DrillDownRequest: {
+            /**
+             * @description Una de las que `GET …/drilldown/dimensions` devolvió para este panel.
+             *     El servicio la compara en minúsculas y sin espacios
+             *     —`strings.ToLower(strings.TrimSpace(...))`— contra la lista blanca.
+             * @example platform
+             * @example day
+             * @example week
+             */
+            dimension: string;
+            /**
+             * @description `YYYY-MM`, el mismo `ParsePeriod` del resto del cable. Un día
+             *     —`2026-09-01`— devuelve 400.
+             * @example 2026-09
+             */
+            period: string;
+            /**
+             * @description **No estaba en el encargo y existe**: `drillDefaultLimit = 50`,
+             *     `drillMaxLimit = 500`, y `<= 0` cae al default.
+             *
+             *     **El recorte ocurre en el SQL** —`LIMIT %d`—, así que `row_count`
+             *     ya viene recortado y **nada en la respuesta dice que se recortó**:
+             *     medido con `limit: 3` sobre `day`, contesta `row_count: 3` y tres
+             *     ítems, idéntico a un mes de tres días. Si la hoja de C2 lo usa para
+             *     paginar, el «hay más» lo tiene que saber por otro lado.
+             * @default 50
+             * @example 50
+             */
+            limit: number;
+        };
+        /**
+         * @description `ports.DDDrillDownResponse`. **Nueve campos y ninguno es de
+         *     procedencia** — ver la ruta.
+         */
+        DrillDownResponse: {
+            /** Format: uuid */
+            panel_id: string;
+            /**
+             * @description La del catálogo, igual que en `DrillDownDimensions`.
+             * @example sales
+             */
+            metric_key: string;
+            /**
+             * @description El nombre de la métrica tal como lo trae el catálogo. **Hoy sale en
+             *     inglés en los paneles del `overview`** —medido `"Sales"` y
+             *     `"Investment and return by platform"`— porque esos paneles apuntan a
+             *     las métricas de la semilla; las de Snowflake están en español. **No
+             *     se traduce acá ni en el adaptador**: el dueño del copy que describe
+             *     datos es el catálogo.
+             * @example Sales
+             * @example Investment and return by platform
+             */
+            metric_name: string;
+            /**
+             * @description La dimensión resuelta —`dim.Key` del registry—, no el texto que
+             *     mandó el cliente.
+             * @example platform
+             */
+            dimension: string;
+            /** @example 2026-09 */
+            period: string;
+            /**
+             * @description **Está CABLEADO en el servicio** —`Shape: "categorical"` en
+             *     `dd_drilldown_service.go`—, no derivado de la métrica ni de la
+             *     dimensión: las tres dimensiones de `sales` contestan lo mismo,
+             *     medido. Un `day` con treinta ítems llega como categórico y no como
+             *     serie de tiempo, así que **el cuerpo que lo dibuja lo elige la
+             *     consola**, con `/config/plots` como repertorio: para `categorical`
+             *     declara siete —`columns`, `bars`, `lollipop`, `donut`, `treemap`,
+             *     `radial`, `pareto`—.
+             * @enum {string}
+             */
+            shape: "categorical";
+            /**
+             * @description El payload **con la misma forma que un panel `categorical`**, que es
+             *     lo que permite reusar el cuerpo: `{ shape: 'categorical', items:
+             *     [{ label, v }] }`, y los ítems traen esas dos claves y nada más.
+             *     Lo produce `materialize.Materialize("categorical", rows, …)`, que
+             *     repite `shape` adentro.
+             *
+             *     **El orden lo fija el registry, no el cliente.** `platform` ordena
+             *     por valor descendente —`byValue`, `2 DESC NULLS LAST`— y `day` y
+             *     `week` por etiqueta: medido `'2026-09-01'…` en día y
+             *     `'2026-08-31', '2026-09-07', '2026-09-14', '2026-09-21',
+             *     '2026-09-28'` en semana. **La semana es el inicio del balde**
+             *     —`DATE_TRUNC('week', DATE)`—, así que el primero puede empezar en el
+             *     mes anterior y traer sólo los días que caen dentro del período.
+             *
+             *     **Y los ceros vienen.** Medido en `platform`: 29 de los 37 ítems en
+             *     `0`. Una barra en cero no es un hueco de datos, es una plataforma sin
+             *     gasto en el mes.
+             */
+            value: {
+                /** @enum {string} */
+                shape: "categorical";
+                items: {
+                    /** @example Google PMax */
+                    label: string;
+                    /** @example 537180.1 */
+                    v: number;
+                }[];
+            };
+            /**
+             * @description `len(rows)` **de Snowflake**, y **NO es la cantidad de ítems** · es
+             *     pérdida silenciosa y se midió: `platform` sobre `sales` contestó
+             *     `row_count: 39` con **37** ítems.
+             *
+             *     Las dos filas se van en `transformCategorical`, que saltea toda fila
+             *     sin `label` o sin `v` —`if !okLabel || !okV { continue }`— y también
+             *     las comparativas —`isComparativeRow`—. **Nada avisa de la
+             *     diferencia**: un «39 filas» en la hoja sobre una lista de 37 es una
+             *     cifra que no cierra con lo que se ve.
+             * @example 39
+             */
+            row_count: number;
+            /**
+             * Format: date-time
+             * @description **Cuándo se corrió ESTA consulta** · `time.Now().UTC()`, RFC 3339.
+             *
+             *     **No es la frescura del panel y confundirlos es el bug**, igual que
+             *     en `ChatFrameData.provenance`: `governance.freshness` dice cuándo se
+             *     materializó la métrica y esto dice cuándo se leyó Snowflake. Medido
+             *     el 2026-09-30 son siete horas de diferencia sobre el mes en curso, y
+             *     con ellas el total del panel y la suma del detalle no coinciden.
+             * @example 2026-10-01T00:07:50.780199Z
+             */
+            queried_at: string;
+        };
     };
     responses: {
         /** @description Request mal formado */
@@ -1646,6 +1930,221 @@ export interface operations {
                 };
             };
             404: components["responses"]["NotFound"];
+        };
+    };
+    panelDrillDownDimensions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                panelId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las dimensiones del panel, o la lista vacía */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["DrillDownDimensions"];
+                    };
+                };
+            };
+            /**
+             * @description `panelId` que no parsea como uuid. Medido: `"panelId inválido"` con
+             *     `VALIDATION_REQUEST`. **No es un 404**: el handler no llega a
+             *     buscarlo.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /**
+             * @description El rol no ve la pestaña del panel, o la métrica está en sus
+             *     `hidden_metric_ids`. Transcrito del handler —`ErrChatPanelForbidden`—,
+             *     no medido.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /**
+             * @description Medido: `"panel o pestaña no encontrados"` con `NOT_FOUND_RESOURCE`.
+             *     Un panel de otro tenant cae acá, no en 403.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    panelDrillDown: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                panelId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DrillDownRequest"];
+            };
+        };
+        responses: {
+            /** @description La desagregación, con la misma forma que un panel `categorical` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["DrillDownResponse"];
+                    };
+                };
+            };
+            /**
+             * @description Cuatro formas distintas, las cuatro medidas, y **las cuatro con
+             *     `VALIDATION_REQUEST`** — el detalle del `code` no las distingue:
+             *
+             *     · `panelId` que no parsea · `"panelId inválido"`
+             *     · falta `dimension` o `period` · `"solicitud inválida: Key:
+             *       'ddDrillDownRequest.period' Error:Field validation for 'period'
+             *       failed on the 'required' tag"` — **el nombre del struct de Go y el
+             *       tag del validador llegan a la pantalla**, que es lo que
+             *       `ErrorResponse.error` ya advierte
+             *     · `period` que no es `YYYY-MM` · `"período inválido, formato esperado
+             *       YYYY-MM"`
+             *     · dimensión no declarada · `"dimensión inválida para esta métrica:
+             *       soportadas [day week platform]"` · **trae la lista blanca**, así
+             *       que el mensaje alcanza para corregir el pedido
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /**
+             * @description El rol no ve la pestaña del panel o la métrica está oculta para él ·
+             *     `ErrChatPanelForbidden`. Transcrito del handler, no medido.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Medido: `"panel o pestaña no encontrados"` con `NOT_FOUND_RESOURCE`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /**
+             * @description El tenant no tiene agente activo para ese rol ·
+             *     `ErrChatAgentUnavailable`. **El mismo candado que el chat**: sin
+             *     agente cargado no hay credenciales de Snowflake con las que
+             *     consultar. Transcrito del handler, no medido.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /**
+             * @description **Dos razones distintas bajo el mismo código**, y para la pantalla no
+             *     son lo mismo:
+             *
+             *     · `"la métrica no soporta drill-down"` · `VALIDATION_RULE` · medido
+             *       pidiéndole `day` a un panel de `goals_vs_actual`. Es el mismo
+             *       estado que `supported: false` y **no debería pasar** si la consola
+             *       preguntó primero por las dimensiones.
+             *     · `"Snowflake no devolvió filas para ese período y dimensión"` ·
+             *       `ErrDrillNoData`, transcrito del servicio y no medido. Acá sí hay
+             *       que pintar un vacío declarado: la dimensión existe y el período no
+             *       tiene filas.
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /**
+             * @description Rate limit por usuario, **compartido con `/config/chat`**. Viene con
+             *     cabecera `Retry-After` —segundos— y el mensaje
+             *     `"límite de peticiones por usuario excedido; reintenta más tarde"`,
+             *     que es uno de los pocos ya redactados en español. Transcrito de
+             *     `handler/ratelimit.go`, no medido: habría que gastar la cuota.
+             */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /**
+             * @description La rama `default` del handler, y **no es sólo «algo falló»**: caen acá
+             *     el tenant que no se encuentra, el JWT que no se puede firmar y
+             *     —esto importa— **que ninguna fila sobreviva a la transformación**.
+             *     `transformCategorical` devuelve `ErrInvalidRow` cuando ninguna trae
+             *     `label` y `v`, y el servicio lo envuelve como «drilldown: transformar
+             *     filas». Transcrito del código, no medido.
+             */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /**
+             * @description La consulta a Snowflake falló o se pasó del timeout ·
+             *     `ErrChatUpstream`. Transcrito del handler, no medido.
+             */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
 }

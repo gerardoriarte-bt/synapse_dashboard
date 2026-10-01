@@ -10,6 +10,8 @@ import {
   adaptPlots,
   adaptCatalog,
   adaptContext,
+  adaptDrillDimensions,
+  adaptDrillResult,
   adaptPayload,
   adaptSuggestion,
   adaptTab,
@@ -17,11 +19,15 @@ import {
 } from './adapt'
 import type {
   AdaptedCatalog,
+  DrillDimensions,
+  DrillResult,
   WireBlock,
   WirePlot,
   WireChatSuggestion,
   WireChatThread,
   WireContext,
+  WireDrillDimensions,
+  WireDrillResult,
   WireMetric,
   WirePayload,
   WireTabWithPanels,
@@ -186,6 +192,53 @@ export const api = {
         `/config/panels/${encodeURIComponent(panelId)}/chat-suggestions?period=${encodeURIComponent(periodo)}`,
       )
     ).map(adaptSuggestion),
+
+  /** ── EL DRILL-DOWN · B5.4 · F3.9 · §PEN:C2 ───────────────────────────────
+   *
+   *  Por qué dimensiones se puede desagregar este panel.
+   *
+   *  **Es una lectura barata y por eso se le puede preguntar por cada panel de
+   *  la pestaña**: el servicio resuelve el rol, autoriza el panel y consulta un
+   *  mapa en memoria. No toca Snowflake, no firma un JWT y no usa el agente.
+   *
+   *  Con eso la consola sabe si dibuja el CTA de detalle — un CTA sin manejador
+   *  no se pinta, y acá el manejador existe sólo cuando `soportado` es `true`.
+   *
+   *  **No toma período**: qué dimensiones existen es de la métrica, no del mes
+   *  que se está mirando. */
+  drillDimensions: async (panelId: string): Promise<DrillDimensions> =>
+    adaptDrillDimensions(
+      await request<WireDrillDimensions>(
+        `/config/panels/${encodeURIComponent(panelId)}/drilldown/dimensions`,
+      ),
+    ),
+
+  /** Desagregar la métrica del panel por una dimensión.
+   *
+   *  **Pasa por el mismo `request()` que todo lo demás, y eso no es una
+   *  formalidad.** `askSynapse` usa `fetch` crudo porque necesita leer el cuerpo
+   *  como stream, y al escribirlo aparte se le copiaron las dos cabeceras del
+   *  SSE y no la `Authorization`: el chat nunca autenticó y el servicio
+   *  contestaba 401 en 170 µs. Acá no hay stream que leer, así que no hay razón
+   *  para salirse del único lugar que pone el token.
+   *
+   *  **`limit` no se manda.** El servicio recorta en el SQL con un default de 50
+   *  y **nada en la respuesta dice que recortó** —medido con `limit: 3` sobre
+   *  `day`: contesta tres ítems, idéntico a un mes de tres días—. Pedir un
+   *  recorte sin poder decir que se recortó es prometer una lista completa que
+   *  no lo es. */
+  drill: async (panelId: string, dimension: string, periodo: string): Promise<DrillResult> =>
+    adaptDrillResult(
+      await request<WireDrillResult>(
+        `/config/panels/${encodeURIComponent(panelId)}/drilldown`,
+        {
+          method: 'POST',
+          // **`dimension` y `period`**, los dos `binding:"required"` en Gin: un
+          // nombre equivocado no devuelve una respuesta vacía, devuelve 400.
+          body: JSON.stringify({ dimension, period: periodo }),
+        },
+      ),
+    ),
 
   /** El tema es preferencia de USUARIO, no de tenant · §2.4.
    *

@@ -74,6 +74,50 @@ function formaDe(panelId: string): string {
   return catalogo.find((m) => m.id === panel.metric_id)?.shape ?? 'scalar'
 }
 
+/** `panelId` → la clave de su métrica. **La del catálogo y no la canónica**, que
+ *  es lo que el servicio devuelve. */
+function claveDe(panelId: string): string {
+  const paneles = [...estado.detalles.values()].flatMap((d) => d.tabs.flatMap((t) => t.panels))
+  const panel = paneles.find((p) => p.id === panelId)
+  if (panel === undefined) return 'desconocida'
+  return catalogo.find((m) => m.id === panel.metric_id)?.key ?? 'desconocida'
+}
+
+/** Por qué dimensiones se puede desagregar · ver el handler, abajo: la regla sale
+ *  de la FORMA de la métrica, igual que el reparto 7/15 medido en el servicio. */
+function dimensionesDe(panelId: string): string[] {
+  return formaDe(panelId) === 'scalar' ? ['day', 'week', 'platform'] : []
+}
+
+/** Los ítems de cada dimensión, con los tamaños y los ceros MEDIDOS. */
+function itemsDe(dimension: string): { label: string; v: number }[] {
+  if (dimension === 'day') {
+    // 30 ítems, ordenados por etiqueta, que es lo que hace el registry con el día.
+    return Array.from({ length: 30 }, (_, k) => ({
+      label: `2026-09-${String(k + 1).padStart(2, '0')}`,
+      v: 32_000 + ((k * 7919) % 19_000),
+    }))
+  }
+  if (dimension === 'week') {
+    // Cinco baldes, y **el primero empieza en el mes anterior** —`DATE_TRUNC`—,
+    // así que trae sólo los días que caen dentro del período.
+    return ['2026-08-31', '2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28'].map((label, k) => ({
+      label,
+      v: k === 0 ? 71_400 : 240_000 + k * 9_100,
+    }))
+  }
+  // `platform` · 37 ítems ordenados por valor descendente, **29 en cero**.
+  const conGasto = [
+    'Google PMax', 'Meta Advantage+', 'Google Shopping', 'Google Search',
+    'Meta Retargeting', 'TikTok Ads', 'Criteo', 'Pinterest Ads',
+  ].map((label, k) => ({ label, v: Math.round(537_180 / (k + 1)) }))
+  const enCero = Array.from({ length: 29 }, (_, k) => ({
+    label: `Plataforma sin gasto ${String(k + 1)}`,
+    v: 0,
+  }))
+  return [...conGasto, ...enCero]
+}
+
 /** Un valor del CABLE para cada una de las nueve formas que el backend
  *  materializa. **Las claves salen de `synapse-console-wire.yaml`**, no de la
  *  memoria: `v` y no `valor`, `headline` y no `titular`, `t`/`v` en los puntos. */
@@ -421,6 +465,71 @@ export const worker = setupWorker(
     { question: '¿Qué está impulsando esta cifra?', intent: 'drivers' },
     { question: '¿Cómo se reparte por canal?', intent: 'breakdown' },
   ])),
+
+  /** ── C2 · EL DRILL-DOWN · F3.9 · §PEN:C2 ───────────────────────────────
+   *
+   *  **Las dos rutas van acá para poder MIRAR la hoja**, que es la mitad de la
+   *  regla que los ocho defectos del 2026-09-16/17 dejaron escrita: ninguno lo
+   *  encontró una prueba, los ocho salieron de usar la aplicación.
+   *
+   *  **`supported` sale de la FORMA de la métrica, no de un índice.** En el
+   *  servicio real el reparto medido es 7 de 15, y los siete que soportan son los
+   *  escalares —ventas, inversión, retorno, órdenes, visitas, unidades— mientras
+   *  los ocho que no son la prosa, la matriz, el flujo y las series. Acá se
+   *  reproduce con esa misma regla, así que en pantalla se ve lo que importa:
+   *  **unos paneles con «Ver detalle» y otros sin él**, que es la regla del CTA
+   *  muerto en acción. Un mock que lo pintara en los quince escondería justo eso. */
+  http.get(`${API}/config/panels/:panelId/drilldown/dimensions`, ({ params }) => {
+    const id = String(params['panelId'])
+    const dims = dimensionesDe(id)
+    return ok({
+      panel_id: id,
+      metric_key: claveDe(id),
+      supported: dims.length > 0,
+      // `[]` y no `null`: el servicio inicializa el DTO con `[]string{}`.
+      dimensions: dims,
+    })
+  }),
+
+  /** La desagregación · **con las formas MEDIDAS, no con tres filas cómodas**.
+   *
+   *  Lo medido el 2026-09-30 contra el servicio, que es lo que hay que poder ver:
+   *
+   *  · `platform` → 37 ítems, **29 de ellos en cero**, y `row_count: 39`.
+   *  · `day` → 30 ítems, `row_count: 30`, ordenados por etiqueta.
+   *  · `week` → 5 ítems, el primer balde empieza en el mes anterior.
+   *
+   *  **Los 29 ceros están a propósito** y no son relleno: con dato real la hoja
+   *  dibuja 37 barras de las que 29 miden cero, y eso hay que verlo en vez de
+   *  deducirlo. Y **el 39 contra 37 es la trampa del cable**: `row_count` es lo
+   *  que Snowflake devolvió, no los ítems que sobrevivieron a la transformación. */
+  http.post(`${API}/config/panels/:panelId/drilldown`, async ({ request, params }) => {
+    const id = String(params['panelId'])
+    const { dimension, period } = (await request.json()) as { dimension: string; period: string }
+    const dims = dimensionesDe(id)
+    await delay(500)
+    if (dims.length === 0) return mal('la métrica no soporta drill-down', 422)
+    if (!dims.includes(dimension)) {
+      return mal(`dimensión inválida para esta métrica: soportadas [${dims.join(' ')}]`, 400)
+    }
+    const items = itemsDe(dimension)
+    return ok({
+      panel_id: id,
+      metric_key: claveDe(id),
+      // **En inglés**, igual que lo mide el servicio: los paneles del dashboard
+      // por defecto apuntan a las métricas de la semilla. Escribirlo en español
+      // acá escondería el pedido que la hoja declara.
+      metric_name: 'Sales',
+      dimension,
+      period,
+      // Cableado del lado del servicio, igual en las tres dimensiones.
+      shape: 'categorical',
+      value: { shape: 'categorical', items },
+      // **Dos más que los ítems en `platform`**, que es lo medido: 39 contra 37.
+      row_count: dimension === 'platform' ? items.length + 2 : items.length,
+      queried_at: new Date().toISOString(),
+    })
+  }),
 
   http.post(`${API}/config/chat`, async ({ request }) => {
     const { question } = (await request.json()) as { question: string }

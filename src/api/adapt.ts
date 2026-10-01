@@ -870,8 +870,8 @@ export function adaptPayload(w: WirePayload): NetworkPayload {
 
 /* ── El valor · nueve formas ──────────────────────────────────────────────── */
 
-type ValorOk = { ok: true; valor: Value }
-type ValorMal = { ok: false; razon: string }
+export type ValorOk = { ok: true; valor: Value }
+export type ValorMal = { ok: false; razon: string }
 
 const objeto = (v: unknown): Record<string, unknown> | null =>
   typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : null
@@ -1363,4 +1363,88 @@ export function adaptThread(w: WireChatThread): ThreadSummary {
  *  copy de producto. */
 export function adaptSuggestion(w: W['ChatSuggestion']): string {
   return w.question
+}
+
+/* ── B5.4 · el drill-down · F3.9 · §PEN:C2 ─────────────────────────────────── */
+
+export type WireDrillDimensions = W['DrillDownDimensions']
+export type WireDrillResult = W['DrillDownResponse']
+
+/** Por qué dimensiones se puede desagregar un panel. */
+export type DrillDimensions = {
+  panelId: string
+  /** La clave de la métrica **del catálogo**, no la canónica del registry: el
+   *  servicio consulta con la canónica —`sales` → `revenue`— y devuelve ésta. */
+  clave: string
+  /** Lo que decide si el CTA de detalle se pinta. */
+  soportado: boolean
+  dimensiones: string[]
+}
+
+/** Una desagregación ya pedida. */
+export type DrillResult = {
+  panelId: string
+  clave: string
+  /** Como lo trae el catálogo. **Hoy sale en inglés** en los paneles del
+   *  dashboard por defecto, porque apuntan a las métricas de la semilla; las de
+   *  Snowflake están en español. No se traduce acá: el dueño del copy que
+   *  describe datos es el catálogo. */
+  nombre: string
+  dimension: string
+  periodo: string
+  /** **Las filas que la consulta devolvió, y NO la cantidad de ítems.** Medido
+   *  el 2026-09-30: `platform` sobre `sales` contestó 39 con 37 ítems, porque
+   *  el transformador del servicio saltea en silencio toda fila sin `label` o
+   *  sin `v`. Se pasa con su nombre propio y no se usa para nada más — quien lo
+   *  pinte tiene que rotularlo por lo que es. */
+  filas: number
+  /** Cuándo se corrió ESTA consulta · `time.Now().UTC()` del servicio.
+   *
+   *  **No es la frescura del panel y confundirlos es el bug**: `governance.
+   *  frescura` dice cuándo se materializó la métrica. Medido el 2026-09-30 son
+   *  siete horas de diferencia sobre el mes en curso, y con ellas el total del
+   *  panel y la suma del detalle no coinciden. */
+  consultadoEn: string
+  /** `ValorOk | ValorMal`: un valor que no adapta trae su razón y la hoja la
+   *  pinta, en vez de dibujar una caja vacía. */
+  valor: ValorOk | ValorMal
+}
+
+/** Sólo renombra. `dimensions` llega siempre como arreglo —el servicio inicializa
+ *  el DTO con `[]string{}` y sólo después mira el registry—, así que `[]`
+ *  significa «no soporta» y no «no vino». */
+export function adaptDrillDimensions(w: WireDrillDimensions): DrillDimensions {
+  return {
+    panelId: w.panel_id,
+    clave: w.metric_key,
+    soportado: w.supported,
+    dimensiones: w.dimensions,
+  }
+}
+
+/** Sólo renombra, y el valor lo adapta el que ya existe.
+ *
+ *  **El `shape` de raíz se ignora a propósito.** Está cableado a `"categorical"`
+ *  del lado del servicio —`Shape: "categorical"`, medido igual en las tres
+ *  dimensiones— y `value.shape` lo repite. Leer los dos sería una segunda fuente
+ *  para el mismo dato, y se separarían el día que una de las dos cambie.
+ *
+ *  **Lo que el dibujo pide y el cable no trae queda AUSENTE**, cada cosa con una
+ *  prueba que lo atestigua en vez de una aserción borrada: las filas crudas de la
+ *  tabla origen, las cuatro capas del linaje con sus conteos, el descarte de
+ *  bronce a plata, el porcentaje por fila, el total de la desagregación y la
+ *  frase que afirma que cierra contra el total. Las dos primeras no tienen ruta;
+ *  las dos últimas serían un cálculo y una frase compuesta, que no es trabajo de
+ *  acá. */
+export function adaptDrillResult(w: WireDrillResult): DrillResult {
+  return {
+    panelId: w.panel_id,
+    clave: w.metric_key,
+    nombre: w.metric_name,
+    dimension: w.dimension,
+    periodo: w.period,
+    filas: w.row_count,
+    consultadoEn: w.queried_at,
+    valor: adaptValue(w.value),
+  }
 }

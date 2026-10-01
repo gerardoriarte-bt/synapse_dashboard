@@ -7,7 +7,7 @@
  *  Las claves se declaran acá y no en cada llamada para que invalidar sea
  *  posible desde afuera sin repetir el arreglo.
  */
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
 import { esDePanel } from './chat'
 import type { ContextoDeChat } from './chat'
@@ -36,6 +36,20 @@ export const keys = {
     ] as const,
   sugerencias: (panelId: string, periodo: string) =>
     ['chat', 'sugerencias', panelId, periodo] as const,
+
+  /* ── El drill-down · B5.4 · F3.9 · §PEN:C2 ───────────────────────────────
+   *
+   * **Las dimensiones NO llevan período en la clave**, y no es un olvido: la
+   * ruta no lo toma. Qué dimensiones existen es de la métrica, así que meterlo
+   * en la clave multiplicaría por doce una lectura que no cambia.
+   *
+   * **La desagregación sí lleva las tres**, porque las tres cambian la
+   * respuesta. Sin `dimension` en la clave, apretar el chip de semana serviría
+   * del cache de día hasta que la red conteste — el mismo defecto que el riel
+   * de hilos tuvo con el panel. */
+  drillDimensions: (panelId: string) => ['drill', 'dimensiones', panelId] as const,
+  drill: (panelId: string, dimension: string, periodo: string) =>
+    ['drill', panelId, dimension, periodo] as const,
 
   /* ── Builder · F4.23 ─────────────────────────────────────────────────────
    *
@@ -130,6 +144,84 @@ export function useSuggestions(panelId: string | null, periodo: string) {
     // existe para una pestaña. No se pide con un id vacío —eso sería un 404
     // por render— y la hoja muestra el campo sin abridores.
     enabled: panelId !== null,
+  })
+}
+
+/* ── EL DRILL-DOWN · B5.4 · F3.9 · §PEN:C2 ─────────────────────────────────── */
+
+/** Por qué dimensiones se puede desagregar este panel.
+ *
+ *  **`null` es «no hay panel abierto»** · mismo idioma que `useSuggestions`: la
+ *  ruta cuelga de un panel, así que no se pide con un id vacío — eso sería un
+ *  404 por render.
+ *
+ *  **No se refresca mientras la hoja está abierta.** Qué dimensiones existe lo
+ *  decide un mapa en memoria del servicio: cambia cuando alguien agrega una fila
+ *  a ese mapa, no con el tiempo ni con el período. */
+export function useDrillDimensions(panelId: string | null) {
+  return useQuery({
+    queryKey: keys.drillDimensions(panelId ?? ''),
+    queryFn: () => api.drillDimensions(panelId as string),
+    enabled: panelId !== null,
+  })
+}
+
+/** Qué paneles de la pestaña soportan drill-down · **una lectura por panel**.
+ *
+ *  ── POR QUÉ N LECTURAS, Y ESTÁ DECLARADO COMO RUIDO ────────────────────────
+ *
+ *  «Un CTA sin manejador no se pinta» exige saber `soportado` **antes** de
+ *  dibujar el pie del panel, y `soportado` es por panel: quince paneles, quince
+ *  lecturas. No hay ruta batch, y se midió que son baratas —el servicio resuelve
+ *  el rol, autoriza y consulta un mapa en memoria: sin Snowflake, sin JWT, sin
+ *  agente—. TanStack las dedupe y las cachea, así que cambiar de período no las
+ *  vuelve a pedir.
+ *
+ *  **La alternativa es peor**: pintar el CTA siempre y que la hoja diga «este
+ *  corte no está disponible» es el botón que se aprieta y no lleva a ningún
+ *  lado, con un paso más.
+ *
+ *  **El arreglo verdadero está a medio construir del otro lado**: el catálogo ya
+ *  declara `dimensiones` por métrica en el cable y en nuestro contrato, y llega
+ *  vacía en las 21 — medido el 2026-09-30. Con ese campo lleno, estas lecturas
+ *  desaparecen y el CTA se decide con cero peticiones extra. Está pedido.
+ *
+ *  **Devuelve el conjunto de los que soportan, no un arreglo de resultados**:
+ *  es lo único que la decisión del CTA necesita, y un panel cuya lectura todavía
+ *  no volvió —o falló— queda afuera, que es el lado seguro: antes de saber, no
+ *  se promete la acción.
+ */
+export function useDrillSupport(panelIds: readonly string[]): ReadonlySet<string> {
+  const results = useQueries({
+    queries: panelIds.map((id) => ({
+      queryKey: keys.drillDimensions(id),
+      queryFn: () => api.drillDimensions(id),
+    })),
+  })
+  const soportan = new Set<string>()
+  for (const r of results) {
+    if (r.data?.soportado === true) soportan.add(r.data.panelId)
+  }
+  return soportan
+}
+
+/** La desagregación · **un POST, y es una LECTURA**.
+ *
+ *  `useQuery` y no `useMutation`: no escribe nada —el servicio no persiste hilo
+ *  ni materialización— y el resultado se cachea por panel, dimensión y período,
+ *  que es lo que hace que volver a un chip ya visto sea instantáneo. Que el
+ *  método sea POST es del transporte: el cuerpo lleva la dimensión y el período.
+ *
+ *  **`retry: false`, y es una decisión de pantalla.** La ruta comparte la cuota
+ *  del chat —100 pedidos por usuario por minuto— así que un reintento automático
+ *  sobre un 429 gasta la cuota que acabó de agotarse. El estado dice qué pasó y
+ *  quien mira decide. */
+export function useDrill(panelId: string | null, dimension: string | null, periodo: string) {
+  return useQuery({
+    queryKey: keys.drill(panelId ?? '', dimension ?? '', periodo),
+    queryFn: () => api.drill(panelId as string, dimension as string, periodo),
+    enabled: panelId !== null && dimension !== null && periodo !== '',
+    retry: false,
   })
 }
 
