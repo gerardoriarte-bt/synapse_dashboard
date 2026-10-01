@@ -11,7 +11,7 @@ los cuatro implementados dan.
 |---|---|---|
 | 1 | El repertorio como dato + la forma de la respuesta | **Adjunto** · §1 |
 | 2 | `Metricas.xlsx` | **Adjunta** · §2 |
-| 2 | El eje de columnas de la matriz | **No lo decidimos nosotros** · §3 |
+| 2 | El eje de columnas de la matriz | **Es MES** · §3 · hay que cambiar el SQL |
 
 ---
 
@@ -76,34 +76,28 @@ armar.
 **Las tres del fork no las necesitamos.** Las sacamos del dashboard justamente
 porque no se pueden recalcular. Si datos las quiere, las agregará a la planilla.
 
-## 3 · El eje de columnas de la matriz · no lo decidimos nosotros
+## 3 · El eje de columnas de la matriz · es MES, y hay que cambiar el SQL
 
-Eligieron semana del mes y preguntan si la planilla dice otra cosa. **Dice algo
-que se contradice**, así que no lo podemos confirmar:
+Eligieron semana del mes. **Va por mes.** Decidido por producto esta noche.
 
 ```
-BASE                 Suma de inversión (cost_usd) por plataforma, agrupada por mes
-MEASUREMENT_WINDOW   Mes calendario seleccionado
-DIMENSIONS           ["FUENTE"]
+filas      plataforma   (FUENTE)
+columnas   MES          · los últimos doce hasta el seleccionado
 ```
 
-«Agrupada por mes» sobre una ventana de **un** mes da **una sola columna**, que
-no es una matriz. Una de las dos líneas está mal.
+**Por qué eligieron semana, y no fue un error de lectura:** la planilla declara
+`BASE: agrupada por mes` con `MEASUREMENT_WINDOW: mes calendario seleccionado`, y
+un mes agrupado por mes da una columna. Su elección semanal era la única que
+producía una matriz con esa ventana.
 
-**Nuestra lectura, y es sólo eso:** la métrica que reemplaza —`platform_month_matrix`—
-tenía ventana «los últimos doce meses», y con esa ventana «agrupada por mes» sí
-produce una matriz: filas = plataforma, columnas = mes. Es la combinación que
-hace consistentes las dos líneas.
+**Lo que está mal es la ventana**, y datos ya está avisado: pasa a «últimos doce
+meses calendario hasta el seleccionado», que es la que tenía
+`platform_month_matrix`, la métrica que ésta reemplaza.
 
-**Lo preguntamos a datos y les avisamos.** Mientras tanto no toquen el SQL: su
-elección semanal es la única que produce una matriz con la ventana que la
-planilla declara, así que si hay que cambiar algo será después de la respuesta,
-no antes.
-
-**Lo que sí confirmamos de su implementación**, porque es independiente del eje:
-celda en `0` y no vacía cuando una plataforma no invirtió. Es lo correcto —
-nuestro cuerpo distingue `null` («no hay dato») de `0` («no invirtió») y pinta el
-contorno sólo en el primero.
+**Lo que NO cambia de su implementación**, y está bien resuelto: celda en `0` y
+no vacía cuando una plataforma no invirtió en una columna. Nuestro cuerpo
+distingue `null` («no hay dato») de `0` («no invirtió») y pinta el contorno sólo
+en el primero, así que mandar `0` es lo correcto.
 
 ## 4 · Lo que verificamos de los otros puntos
 
@@ -138,5 +132,5 @@ pasamos el resultado.**
 |---|---|---|
 | 1 | Escribir `GET /config/plots` con el archivo adjunto | Ustedes |
 | 2 | Registrar las cuatro métricas restantes con la planilla | Ustedes |
-| 3 | El eje de columnas de la matriz | **Nosotros preguntamos a datos** |
+| 3 | Cambiar el eje de la matriz a MES, doce meses | Ustedes · datos corrige la planilla |
 | 5 | Un usuario de QA para correr el humo | Ustedes |

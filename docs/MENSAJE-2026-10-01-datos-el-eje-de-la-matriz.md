@@ -1,10 +1,10 @@
-# Para el equipo de datos · el eje de columnas de la matriz · 2026-10-01 (noche)
+# Para el equipo de datos · una corrección en `Metricas.xlsx` · 2026-10-01 (noche)
 
 > **Histórico.** Un mensaje mandado, con fecha: qué se pidió y con qué evidencia.
 > No se actualiza.
 
-**Una pregunta, sobre una fila de `Metricas.xlsx`.** El backend ya está
-escribiendo la métrica y necesita el eje para cerrar el SQL.
+**Una línea a corregir en una fila.** El backend ya está escribiendo la métrica y
+la escribió con otro eje.
 
 ## La fila
 
@@ -13,44 +13,34 @@ METRIC_KEY           media_platform_investment_matrix
 SHAPE                matrix
 DIMENSIONS           ["FUENTE"]
 BASE                 Suma de inversión (cost_usd) por plataforma, agrupada por mes
-MEASUREMENT_WINDOW   Mes calendario seleccionado
+MEASUREMENT_WINDOW   Mes calendario seleccionado        ← ésta
 ```
 
-## Lo que se contradice
+## Qué está mal
 
-Una matriz necesita **dos** ejes. Las filas son plataforma —`FUENTE`—, y las
-columnas tendrían que salir de «agrupada por mes».
+Una matriz necesita dos ejes: filas = plataforma, columnas = «agrupada por mes».
+**Pero la ventana es un solo mes, así que agrupar por mes da una sola columna.**
 
-**Pero la ventana es un solo mes**, así que agrupar por mes da **una columna**.
-Una de las dos líneas está mal.
+## Lo correcto, decidido por producto
 
-## Lo que creemos, y por qué preguntamos en vez de asumirlo
+**Filas = plataforma · columnas = MES.** La `BASE` está bien; la ventana es la
+que hay que cambiar:
 
-La métrica que reemplaza —`platform_month_matrix`— declaraba «inversión bruta de
-cada plataforma en **los últimos doce meses**». Con esa ventana, «agrupada por
-mes» sí produce una matriz: filas = plataforma, columnas = mes.
+```
+MEASUREMENT_WINDOW   Últimos doce meses calendario hasta el seleccionado
+```
 
-**Si es eso, lo que hay que corregir es `MEASUREMENT_WINDOW`**, no la base.
+Es la misma ventana que tenía `platform_month_matrix`, la métrica que ésta
+reemplaza.
 
-## Lo que el backend hizo mientras tanto
-
-Eligieron **semana del mes** —«Semana 1» son los días 1 a 7, hasta «Semana 5»—,
-que es la única lectura que produce una matriz con la ventana tal como está
-escrita. Está implementado y anda.
-
-**Les pedimos que confirmen una de las tres:**
-
-| | Filas × columnas | Qué habría que cambiar en la planilla |
-|---|---|---|
-| **a** | plataforma × **mes**, últimos 12 | `MEASUREMENT_WINDOW` → «últimos doce meses hasta el seleccionado» |
-| **b** | plataforma × **semana** del mes | `BASE` → «agrupada por semana del mes» |
-| **c** | plataforma × **día** del mes | `BASE` → «agrupada por día» |
-
-**No cambiamos nada hasta que contesten**, y el backend tampoco.
+**No hace falta que nos manden nada**: con corregir esa celda alcanza. Se lo
+avisamos al backend en paralelo, porque implementaron columnas por **semana del
+mes** —era la única lectura que producía una matriz con la ventana tal como está
+escrita— y tienen que cambiar el SQL.
 
 ---
 
-**Y gracias por la planilla**: resolvió dos cosas el mismo día. La regla
-forma→unidad que trae —`multi_series`, `tabular` y `flow` sin unidad; las otras
-seis con— nos corrigió un pedido que íbamos a mandarles pidiendo `UNIT = 'x'`
-para `media_efficiency_12m` y `platform_return`. Estaban bien como están.
+**Y gracias por la planilla**: la regla forma→unidad que trae —`multi_series`,
+`tabular` y `flow` sin unidad, las otras seis con— nos corrigió un pedido que
+íbamos a mandarles pidiendo `UNIT = 'x'` para `media_efficiency_12m` y
+`platform_return`. Estaban bien como están.
