@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**179 de 225 tareas cerradas.** 15 parciales · 27 pendientes · 4 diferidas.
+**179 de 226 tareas cerradas.** 15 parciales · 28 pendientes · 4 diferidas.
 
 
-## Front · 120 de 127
+## Front · 120 de 128
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -17,7 +17,7 @@
 | 2 · Estados | `██████████████████████` | 6/6 | 0 | 0 |
 | 3 · Chat contextual | `███████████████████···` | 13/15 | 0 | 0 |
 | 4 · Admin y Builder | `██████████████████████` | 24/24 | 0 | 0 |
-| 5 · Pruebas y pulido | `███████████████████···` | 17/20 | 0 | 2 |
+| 5 · Pruebas y pulido | `██████████████████····` | 17/21 | 0 | 3 |
 
 ## Backend · 59 de 98
 
@@ -54,10 +54,9 @@
 
 ---
 
-## Se puede tomar hoy · 0 del front
+## Se puede tomar hoy · 1 del front
 
-Nada del front está libre: todo lo pendiente espera algo.
-
+- **F5.21** · Qué hace un gráfico cuando el dato excede lo legible
 
 ---
 

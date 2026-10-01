@@ -7652,6 +7652,56 @@ sea seis columnas, así que la grilla colapsaba —F1.30 funcionando— y el alt
 es un `height` sino `gridRow: span N` sobre `gridAutoRows`. Y la celda se busca
 por su panel y no por índice, porque `readingOrder` ordena el DOM.
 
+### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
+
+**Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio
+declara un **tope** para cuatro gráficos de 49 —la dona lo tiene: «más de cinco
+partes, ilegible en dona»— y el builder deshabilita la opción cuando el dato lo
+excede. Para el resto no hay nada, y el gráfico se dibuja prolijo e ilegible.
+
+**Medido el 2026-10-01**, poniendo los paneles en el dashboard de UA:
+
+| Gráfico | Dato real | Qué pasa |
+|---|---|---|
+| `heatmap` sobre `platform_month_matrix` | 38 filas × 12 columnas | A `colSpan 12 · rowSpan 7` —el máximo que el bloque admite, 656 px— quedan ~17 px por fila contra rótulos de 9 px. Se encabalgan |
+| `tornado` sobre `platform_gap` | 37 ítems | Ilegible, y además los dos valores de cada fila se superponen en su franja |
+
+**Las dos salidas no se excluyen, y la segunda es una propuesta de spec.**
+
+1. **Un tope declarado** por gráfico, como el de la dona. Son dos líneas en
+   `tools/gen-plots.py` y hace que el builder deje de ofrecer la combinación en
+   vez de que alguien la descubra mirando.
+2. **Scroll interno en el plot.** `design.md` principio 11 lo sanciona —«listas
+   largas con scroll interno propio»— y el `.pen` lo dibuja: `Cuerpo
+   Lista/Viewport/Scroll`, un frame de 3 px de ancho y radio 2. **Pero lo declara
+   para LISTAS**, y para un plot no hay regla. Es la propuesta.
+
+**Por qué no se resuelve de una.** Una lista se lee fila por fila y lo que queda
+abajo no hace falta para entender lo de arriba; **una matriz se lee entera** —el
+sentido de un mapa de calor es ver el patrón de un vistazo— así que scrollearla
+la convierte en una tabla con colores, que además se ordena y dice las cifras.
+Puede que la respuesta sea distinta por forma.
+
+**Decidido el 2026-10-01 (humano): se prueban LAS DOS con dato real y se mira**,
+antes de elegir. No se construye ninguna a ciegas.
+
+**Candado.** Espera a `media_platform_investment_matrix`, que datos entregó el
+2026-10-01 y el backend está registrando. Su eje de columnas se decidió el mismo
+día —plataforma × mes, doce meses— así que el dato que va a llegar tiene
+exactamente la forma que hace falta para probar. Sin él la prueba se haría sobre
+`platform_month_matrix`, que **no se puede recalcular**: su consulta vive en un
+commit de nuestro fork que upstream no tomó.
+
+**Criterio de aceptación.** Con el dato real de
+`media_platform_investment_matrix` servido, el mismo panel se arma de las dos
+maneras y **las dos se miran**: (a) con las filas acotadas por un tope declarado
+en el repertorio, y (b) con el plot dibujado a su alto natural dentro de un
+contenedor que scrollea. Se elige una por forma, se escribe cuál y por qué, y si
+la elegida es el scroll **se abre propuesta de spec** porque `design.md` sólo lo
+declara para listas. Queda una aserción que ate la decisión: si es tope, el
+repertorio lo declara y `gen-plots.py` lo emite; si es scroll, una prueba exige
+que el contenedor desborde en vez de comprimir.
+
 ### ➕ F5.20 ✅ A2 · Ficha · tenant en alta · §PEN:A2
 **Descripción.** La variante que faltaba de A2. Su nota lo dice: «axo_mx vive en
 SYNAPSE_TENANTS con roles: [] y A1 ya lo lista, pero A2 no sabía dibujarlo: la
