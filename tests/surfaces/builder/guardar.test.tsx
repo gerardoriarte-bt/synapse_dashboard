@@ -258,16 +258,59 @@ describe('una versión publicada no se edita', () => {
     expect(screen.queryByRole('button', { name: 'Guardar' })).toBeNull()
   })
 
-  it('duplicar manda el versionId de origen y salta al borrador nuevo', async () => {
-    const cuerpos: unknown[] = []
+  it('duplicar COPIA la composición · el POST crea un borrador vacío', async () => {
+    // ── **ESTA PRUEBA FIJABA EL DEFECTO** · corregida el 2026-10-01 ──────────
+    //
+    // Afirmaba `cuerpos` igual a `[{ version_id: 'v3' }]` y nada más, que es
+    // exactamente lo que el front hacía: mandar el nombre y creer que eso
+    // duplicaba. **El cable dice «Crear un borrador VACÍO»** y `version_id` es
+    // cómo se va a llamar, no de dónde sale.
+    //
+    // Medido contra el servicio ese día sobre un layout de 14 paneles: el
+    // borrador salía con `tabs: 0`. Y lo que viene después del botón es
+    // publicar, así que el final de ese camino es **el dashboard reemplazado
+    // por nada**.
+    //
+    // La aserción nueva es el `PUT`, que es lo único que puede fallar: que el
+    // `POST` salga ya lo hacía el código roto.
+    const posts: unknown[] = []
+    const puts: { id: string; cuerpo: { tabs: { panels: unknown[] }[] } }[] = []
     base([
       http.get(`${API}/admin/tenants/:id/layouts`, () => ok([publicado, borrador])),
-      http.get(`${API}/admin/layouts/:id`, ({ params }) =>
-        ok(tabDe(params['id'] === 'l-2' ? borrador : publicado, 'tab-a', params['id'] === 'l-2' ? 'Copia' : 'Resumen')),
-      ),
+      http.get(`${API}/admin/layouts/:id`, ({ params }) => {
+        const d = tabDe(
+          params['id'] === 'l-2' ? borrador : publicado,
+          'tab-a',
+          params['id'] === 'l-2' ? 'Copia' : 'Resumen',
+        )
+        // **El fixture compartido trae `panels: []`**, y con una pestaña vacía
+        // la aserción de abajo no separa «copió» de «no copió»: las dos mandan
+        // cero paneles. El panel se agrega sólo en este caso.
+        return ok({
+          ...d,
+          tabs: [
+            {
+              ...d.tabs[0],
+              panels: [
+                {
+                  id: 'p-1', tab_id: 'tab-a', metric_id: 'm-1', type: 'kpi',
+                  col_start: 1, col_span: 3, row_span: 4, chart: '',
+                },
+              ],
+            },
+          ],
+        })
+      }),
       http.post(`${API}/admin/tenants/:id/layouts`, async ({ request }) => {
-        cuerpos.push(await request.json())
+        posts.push(await request.json())
         return ok(borrador)
+      }),
+      http.put(`${API}/admin/layouts/:id`, async ({ request, params }) => {
+        puts.push({
+          id: String(params['id']),
+          cuerpo: (await request.json()) as { tabs: { panels: unknown[] }[] },
+        })
+        return ok(tabDe(borrador, 'tab-a', 'Copia'))
       }),
     ])
     montar()
@@ -276,7 +319,24 @@ describe('una versión publicada no se edita', () => {
     await screen.findByDisplayValue('Resumen')
     await userEvent.click(screen.getByRole('button', { name: /Crear borrador desde esta versión/ }))
 
-    await waitFor(() => expect(cuerpos).toEqual([{ version_id: 'v3' }]))
+    await waitFor(() => expect(posts).toEqual([{ version_id: 'v3' }]))
+
+    // **Va al borrador NUEVO**, no al de origen: escribir la copia sobre la
+    // versión abierta sería peor que no copiar.
+    await waitFor(() => expect(puts).toHaveLength(1))
+    expect(puts[0]?.id).toBe('l-2')
+
+    // Y lleva la composición, no un `tabs: []` que el servicio aceptaría igual.
+    expect(puts[0]?.cuerpo.tabs).toHaveLength(1)
+    expect(puts[0]?.cuerpo.tabs[0]?.panels.length).toBeGreaterThan(0)
+
+    // **SIN los ids del layout de origen.** Con ellos el servicio intenta
+    // actualizar filas de otro layout y contesta 500 — medido contra el
+    // servicio corriendo el 2026-10-01, con el `PUT` ya saliendo. Es la mitad
+    // del arreglo que una aserción de «mandó algo» no habría visto.
+    expect(puts[0]?.cuerpo.tabs[0]).not.toHaveProperty('id')
+    expect(puts[0]?.cuerpo.tabs[0]?.panels[0]).not.toHaveProperty('id')
+
     expect(await screen.findByDisplayValue('Copia')).toBeInTheDocument()
   })
 

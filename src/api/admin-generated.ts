@@ -1418,7 +1418,7 @@ export interface components {
         /** @description `ports.DDLayoutValidationResult` · SÍ tiene etiquetas `json:`. */
         ValidationResult: {
             valid: boolean;
-            errors: components["schemas"]["ValidationIssue"][];
+            errors: components["schemas"]["ValidationIssue"][] | null;
         };
         /**
          * @description Trae `tab_id` y `panel_id` cuando aplica, **así que el error se puede

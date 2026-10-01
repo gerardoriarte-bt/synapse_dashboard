@@ -584,7 +584,17 @@ export function Builder() {
               publicada={publicada}
               error={errorAlGuardar}
               onDuplicar={() => {
-                duplicar.mutate(detalle.data?.layout.versionId, {
+                // **Se le pasan las pestañas que se están viendo**, no sólo el
+                // nombre de la versión: el `POST` crea un borrador VACÍO y el
+                // botón promete duplicar. Van las de `tabs` y no las del
+                // servidor, que es lo que el botón significa — se duplica para
+                // seguir trabajando sobre lo que hay en pantalla.
+                // El spread condicional es obligatorio con
+                // `exactOptionalPropertyTypes`, y trae su costo conocido: una
+                // clave mal escrita compila. Por eso la prueba de esto afirma
+                // que el `PUT` SALE con los paneles, no que el botón exista.
+                const v = detalle.data?.layout.versionId
+                duplicar.mutate({ ...(v === undefined ? {} : { versionId: v }), tabs }, {
                   onSuccess: (nuevo) => {
                     setBorrador(null)
                     setSeleccion(null)

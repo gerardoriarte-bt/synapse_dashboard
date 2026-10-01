@@ -139,12 +139,21 @@ describe('ComparisonBody · dos formas, un dibujo', () => {
     expect(screen.queryByRole('img', { name: /categorías/ })).toBeNull()
   })
 
-  it('un gráfico que no dibuja se declara · `tornado` NO cae al dumbbell', () => {
-    // `tornado` es de los 49 y sirve `compared_categorical`: un layout lo puede
-    // pedir legítimamente y acá no hay componente.
-    render(<ComparisonBody {...base} value={COMPARADA} params={{}} grafico="tornado" />)
+  it('un gráfico que no dibuja se declara · `slope` NO cae al dumbbell', () => {
+    // **Este caso decía `tornado` y el 2026-10-01 `tornado` pasó a dibujar.** El
+    // ejemplo venció y la prueba se puso ROJA, que es lo que tiene que pasar:
+    // el caso negativo que se queda verde apuntando a un id ya construido es el
+    // que no verifica nada, y acá ya ocurrió media docena de veces. Lo reescribe
+    // el id que SIGUE sin dibujar en esta forma, no el conteo de aserciones.
+    //
+    // `slope` es el cuarto de `compared_categorical` y el único que falta. Su
+    // razón está escrita en el cuerpo y no es «no hay componente»: `PlotSlope`
+    // existe y es `PlotProps<'seriesMultiples'>`, así que servirlo exigiría
+    // fabricar dos series de un punto, y esa traducción es una decisión de
+    // dibujo que nadie tomó.
+    render(<ComparisonBody {...base} value={COMPARADA} params={{}} grafico="slope" />)
 
-    expect(screen.getByText(/tornado/)).toBeVisible()
+    expect(screen.getByText(/slope/)).toBeVisible()
     expect(screen.queryByRole('img', { name: /categorías/ })).toBeNull()
   })
 
@@ -187,12 +196,19 @@ describe('MatrixBody · la guardia de densidad que el plot dejó anotada', () =>
     expect(screen.getByText(/la fila 2 trae 1 celdas y hay 2 columnas/)).toBeVisible()
   })
 
-  it('`cohort` NO se sirve como mapa de calor', () => {
-    // Los tres que faltan —`cohort`, `calendar`, `matrix`— son la misma rejilla
-    // con otra lectura, así que caer a `heatmap` se vería correcto.
-    render(<MatrixBody {...base} value={MATRIZ} params={{}} grafico="cohort" />)
+  it('`matrix` NO se sirve como mapa de calor', () => {
+    // **Decía `cohort` hasta el 2026-10-01**, mismo vencimiento que el de
+    // `ComparisonBody` doce líneas arriba y el mismo día: los dos ejemplos
+    // elegidos como «no dibuja» se construyeron, y los dos se pusieron rojos en
+    // la misma corrida.
+    //
+    // `matrix` —la tabla cruda— es el único de los cuatro de `matrix` que sigue
+    // sin componente. Los cuatro son la misma rejilla con otra lectura, así que
+    // caer a `heatmap` se vería correcto y sería otra cosa: es por eso que la
+    // lista de `DIBUJA` es blanca y no un `default`.
+    render(<MatrixBody {...base} value={MATRIZ} params={{}} grafico="matrix" />)
 
-    expect(screen.getByText(/cohort/)).toBeVisible()
+    expect(screen.getByText(/matrix/)).toBeVisible()
     expect(screen.queryByRole('img', { name: /celdas en mapa de calor/ })).toBeNull()
   })
 })

@@ -19,9 +19,14 @@
  *  ── POR QUÉ `dumbbell` Y NO LOS OTROS TRES ──────────────────────────────────
  *
  *  `categoricaComparada` tiene cuatro gráficos en el repertorio —`tornado`,
- *  `slope`, `grouped` y `dumbbell`— y sólo uno se puede dibujar hoy:
+ *  `slope`, `grouped` y `dumbbell`— y hoy se dibujan tres:
  *
- *   · `tornado` y `grouped` no tienen componente.
+ *   · **`tornado` y `grouped` se construyeron el 2026-10-01 y se cablean acá.**
+ *     Hasta ese día esta línea decía «no tienen componente», y siguió diciéndolo
+ *     después de que los dos existieran: es otra vez lo declarado en prosa que
+ *     se deshace solo. **Lo encontró el QA de cada gráfico** avisando que su
+ *     propio plot era código muerto —`DIBUJA` no lo nombraba y nadie lo
+ *     importaba fuera de su prueba—, no una prueba ni la puerta.
  *   · **`slope` tiene componente y no sirve acá.** `PlotSlope` es
  *     `PlotProps<'seriesMultiples'>`: para pasarle esta forma habría que
  *     fabricar dos series con un punto cada una, y esa traducción es una
@@ -59,6 +64,8 @@
  *  de `api/params.ts` —«lo que no se lee, no se valida»— y acá además es cierto.
  */
 import { PlotDumbbell } from '../plots/PlotDumbbell'
+import { PlotGrouped } from '../plots/PlotGrouped'
+import { PlotTornado } from '../plots/PlotTornado'
 import { EmptyState } from '../states/EmptyState'
 import { UnknownPlotState } from '../states/UnknownPlotState'
 import type { BodyProps } from '../types'
@@ -70,9 +77,16 @@ import type { BodyProps } from '../types'
  *  reventaría. Vacía significa «esta forma no tiene ningún dibujo», que es la
  *  verdad medida y lo que decide la rama de abajo. */
 const DIBUJA = {
-  categoricaComparada: ['dumbbell'],
+  categoricaComparada: ['dumbbell', 'tornado', 'grouped'],
   perfilMultiatributo: [],
 } as const
+
+/** **`dumbbell` sigue siendo el de por defecto**, y la razón no es la
+ *  antigüedad: es el único de los tres que dibuja la comparación SIN decidir
+ *  nada más por el lector. El tornado ordena por desvío y el agrupado pone la
+ *  referencia como una columna fantasma al lado — las dos son lecturas, y
+ *  elegirlas es de quien compone el panel, no del cuerpo. */
+const DEFECTO = 'dumbbell'
 
 /** El único gráfico que el repertorio le da a `perfilMultiatributo`.
  *
@@ -111,13 +125,34 @@ export function ComparisonBody({
     )
   }
 
+  // La cifra se formatea una vez y se pasa igual a los tres · si cada rama
+  // armara la suya, dos gráficos del mismo panel abreviarían distinto.
+  const figure = (v: number) => format.number(v, { abbreviate: true })
+
+  // El defecto se resuelve ACÁ y una vez, no en el orden de las ramas: con
+  // `grafico ?? DEFECTO` la última rama es la del dumbbell PORQUE la constante
+  // lo dice, y no porque quedó al final.
+  const elegido = grafico ?? DEFECTO
+
+  if (elegido === 'tornado') {
+    return (
+      <div className="h-full min-h-0">
+        <PlotTornado value={value} family={family} format={figure} />
+      </div>
+    )
+  }
+
+  if (elegido === 'grouped') {
+    return (
+      <div className="h-full min-h-0">
+        <PlotGrouped value={value} family={family} format={figure} />
+      </div>
+    )
+  }
+
   return (
     <div className="h-full min-h-0">
-      <PlotDumbbell
-        value={value}
-        family={family}
-        format={(v) => format.number(v, { abbreviate: true })}
-      />
+      <PlotDumbbell value={value} family={family} format={figure} />
     </div>
   )
 }

@@ -435,7 +435,10 @@ export function useLayoutDetail(layoutId: string | null) {
 export function useCreateDraft(tenantId: string | null) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (versionId?: string) => adminApi.crearBorrador(tenantId as string, versionId),
+    /** Lleva las pestañas que se están viendo · el `POST` solo crea un borrador
+     *  VACÍO, y el botón promete duplicar. Ver `crearBorrador`. */
+    mutationFn: (v: { versionId?: string; tabs?: readonly TabParaGuardar[] }) =>
+      adminApi.crearBorrador(tenantId as string, v.versionId, v.tabs),
     onSuccess: () => void qc.invalidateQueries({ queryKey: keys.layouts(tenantId ?? '') }),
   })
 }

@@ -570,7 +570,13 @@ export function adaptarDetalle(w: WireLayoutDetail): LayoutDetalle {
 export function adaptarValidacion(w: WireValidationResult): ResultadoDeValidacion {
   return {
     valido: w.valid,
-    problemas: w.errors.map((e) => ({
+    // **`errors` llega `null` cuando no hay ninguno**, no `[]` — es un slice de
+    // Go sin inicializar. El cable lo declara así desde el 2026-10-01; hasta ese
+    // día decía `array` y acá se hacía `w.errors.map(...)`, así que **un layout
+    // VÁLIDO reventaba al validarlo** y la barra decía «no se pudo validar ·
+    // cannot read properties of null». El camino del error andaba bien, que es
+    // por qué sobrevivió: las pruebas probaban el caso con problemas.
+    problemas: (w.errors ?? []).map((e) => ({
       tabId: e.tab_id ?? null,
       panelId: e.panel_id ?? null,
       campo: e.field ?? '',
@@ -601,6 +607,15 @@ export type TabParaGuardar = {
   orden: number
   roles: string[]
   panels: { id?: string; metricId: string; tipo: string; colStart: number; colSpan: number; rowSpan: number; grafico?: NonNullable<PanelConfig['grafico']>; opciones?: Record<string, unknown> }[]
+}
+
+/** Una pestaña y sus paneles **sin los ids del layout de origen** · ver
+ *  `crearBorrador`. Se escribe con destructuring y no borrando claves: así el
+ *  día que `TabParaGuardar` gane un campo, el compilador obliga a decidir si
+ *  viaja o no. */
+const sinIds = (t: TabParaGuardar): TabParaGuardar => {
+  const { id: _id, panels, ...resto } = t
+  return { ...resto, panels: panels.map(({ id: _p, ...p }) => p) }
 }
 
 function aCuerpo(tabs: readonly TabParaGuardar[]): A['LayoutUpdateRequest'] {
@@ -957,13 +972,55 @@ export const adminApi = {
       adaptarVersion,
     ),
 
-  crearBorrador: async (tenantId: string, versionId?: string): Promise<LayoutVersion> =>
-    adaptarVersion(
+  /** ── **EL `POST` CREA UN BORRADOR VACÍO, Y LA COMPOSICIÓN LA COPIAMOS ACÁ** ──
+   *
+   *  **El cable lo dice con todas las letras** —«Crear un borrador vacío»— y
+   *  `version_id` es sólo cómo se va a llamar, no de dónde sale. Durante un
+   *  tiempo el front le pasaba el `versionId` de la versión abierta **como si
+   *  eso la duplicara**, detrás de un botón que dice «Crear borrador desde esta
+   *  versión».
+   *
+   *  **El resultado era un borrador de CERO pestañas**, y lo grave no es que no
+   *  copiara: es lo que viene después. Quien aprieta ese botón está por componer
+   *  y publicar, y publicar un layout vacío **reemplaza el dashboard entero por
+   *  nada**. Medido contra el servicio el 2026-10-01 sobre un layout de 14
+   *  paneles: `POST` → `tabs: 0`.
+   *
+   *  **No lo encontró ninguna prueba**: la del hook afirma que el `POST` sale y
+   *  devuelve una versión, que es exactamente lo que pasaba. Lo encontró
+   *  apretarlo.
+   *
+   *  La copia son dos llamadas porque el servicio no tiene una sola: `POST` crea
+   *  el borrador y `PUT` lo reemplaza entero —que es cómo guarda el builder—.
+   *  **Si el `PUT` falla, el borrador vacío ya existe**, así que el error se
+   *  propaga tal cual: un borrador vacío visible es mejor que uno que se cree en
+   *  silencio y nadie sepa de dónde salió. */
+  crearBorrador: async (
+    tenantId: string,
+    versionId?: string,
+    tabs?: readonly TabParaGuardar[],
+  ): Promise<LayoutVersion> => {
+    const creado = adaptarVersion(
       await pedir<WireLayoutVersion>(`/admin/tenants/${encodeURIComponent(tenantId)}/layouts`, {
         method: 'POST',
         body: JSON.stringify({ version_id: versionId ?? '' }),
       }),
-    ),
+    )
+    // Sin pestañas que copiar es un borrador nuevo de verdad, y el `PUT` de más
+    // sería un viaje para no escribir nada.
+    if (tabs === undefined || tabs.length === 0) return creado
+    // ── **LOS IDS NO VIAJAN EN UNA COPIA** ────────────────────────────────
+    //
+    // Los `id` de pestaña y de panel son del layout de ORIGEN, y mandarlos al
+    // borrador nuevo hace que el servicio intente actualizar filas de otro
+    // layout: contesta **500**, medido el 2026-10-01 con el `PUT` ya saliendo.
+    // Una copia es composición nueva — los ids los pone quien la guarda.
+    await pedir<WireLayoutDetail>(`/admin/layouts/${encodeURIComponent(creado.id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(aCuerpo(tabs.map(sinIds))),
+    })
+    return creado
+  },
 
   layout: async (layoutId: string): Promise<LayoutDetalle> =>
     adaptarDetalle(await pedir<WireLayoutDetail>(`/admin/layouts/${encodeURIComponent(layoutId)}`)),

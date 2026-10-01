@@ -1974,7 +1974,17 @@ components:
       properties:
         valid: { type: boolean }
         errors:
-          type: array
+          # **`null` CUANDO NO HAY NINGUNO, no `[]`** · medido el 2026-10-01
+          # contra el servicio: `{"valid":true,"errors":null}`. Es un slice de Go
+          # sin inicializar, que serializa como `null`.
+          #
+          # Acá decía `type: array` a secas, y el adaptador —escrito desde este
+          # yaml— hacía `w.errors.map(...)`. **El resultado es que un layout
+          # VÁLIDO no se podía publicar**: el camino del éxito reventaba con
+          # `Cannot read properties of null (reading 'map')` y la pantalla lo
+          # mostraba como «no se pudo validar». El camino de error, que sí trae
+          # arreglo, andaba bien — por eso no se había visto.
+          type: ['array', 'null']
           items: { $ref: '#/components/schemas/ValidationIssue' }
 
     ValidationIssue:

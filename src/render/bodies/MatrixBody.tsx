@@ -26,13 +26,25 @@
  *  acá pondría el umbral en dos lugares, y el día que el repertorio lo cambie
  *  uno de los dos se queda viejo.
  *
- *  ── UN SOLO GRÁFICO DE LOS CUATRO ───────────────────────────────────────────
+ *  ── TRES DE LOS CUATRO, Y EL CUARTO DECLARADO ───────────────────────────────
  *
- *  `matriz` es la forma con más gráficos sin construir: `cohort`, `calendar` y
- *  `matrix` la aceptan y no tienen componente. Los tres son **la misma rejilla
- *  con otra lectura** —cohortes por antigüedad, calendario por día del año, la
- *  tabla cruda— así que caer a `heatmap` se vería correcto y sería otra cosa. Se
- *  declaran.
+ *  `matriz` es la forma con más gráficos: `heatmap`, `cohort`, `calendar` y
+ *  `matrix`. **`cohort` y `calendar` se construyeron el 2026-10-01** y se
+ *  cablean acá; `matrix` —la tabla cruda— sigue sin componente y se declara con
+ *  `UnknownPlotState`.
+ *
+ *  Los cuatro son **la misma rejilla con otra lectura** —cohortes por
+ *  antigüedad, calendario por día del año, la tabla cruda— y por eso ninguno cae
+ *  a `heatmap`: se vería correcto y sería otra cosa. Esa es la razón de que la
+ *  lista sea blanca y no un `default`.
+ *
+ *  **Y el cableado llegó tarde a propósito de nada.** Los dos plots quedaron
+ *  escritos y probados mientras `DIBUJA` seguía en `['heatmap']`, así que un
+ *  panel con `grafico: 'calendar'` caía a `UnknownPlotState` y los dos
+ *  componentes eran inalcanzables desde la aplicación. Lo dijeron sus propios QA
+ *  —«las 23 pruebas demuestran que el calendario dibuja bien, no que se
+ *  dibuje»—; ninguna prueba del plot podía verlo, porque todas lo montan
+ *  directo.
  *
  *  ── `scale` NO SE LEE ───────────────────────────────────────────────────────
  *
@@ -46,13 +58,21 @@
  *  media va de `0,04` a `9.099.434` en la misma rejilla, así que la lineal deja
  *  casi todo en el primer escalón. Es una propuesta de spec, no una rama.
  */
+import { PlotCalendar } from '../plots/PlotCalendar'
+import { PlotCohort } from '../plots/PlotCohort'
 import { PlotHeatmap } from '../plots/PlotHeatmap'
 import { ErrorState } from '../states/ErrorState'
 import { UnknownPlotState } from '../states/UnknownPlotState'
 import type { BodyProps } from '../types'
 
-/** Los gráficos que este cuerpo sabe dibujar HOY. Uno de los cuatro de `matriz`. */
-const DIBUJA = ['heatmap'] as const
+/** Los gráficos que este cuerpo sabe dibujar HOY. Tres de los cuatro de `matriz`. */
+const DIBUJA = ['heatmap', 'cohort', 'calendar'] as const
+
+/** **`heatmap` es el de por defecto porque es el que no asume nada del eje.**
+ *  `cohort` lee las columnas como ANTIGÜEDAD —períodos desde el alta— y
+ *  `calendar` como DÍAS DEL AÑO; las dos son lecturas del eje que el payload no
+ *  declara, así que elegirlas es de quien compone el panel. */
+const DEFECTO = 'heatmap'
 
 export type MatrixParams = Record<string, never>
 
@@ -65,9 +85,6 @@ export function MatrixBody({ value, family, grafico, format }: BodyProps<'matriz
     return <UnknownPlotState grafico={grafico} />
   }
 
-  // **Se compara contra las DOS listas de etiquetas**, no sólo contra el largo de
-  // `celdas`. Una matriz con las filas justas y una fila corta pasa el primer
-  // control y pierde columnas en silencio, que es el caso que hay que atajar.
   // **Se compara contra las DOS listas de etiquetas**, no sólo contra el largo de
   // `celdas`. Una matriz con las filas justas y una fila corta pasa el primer
   // control y pierde columnas en silencio, que es el caso que hay que atajar.
@@ -94,13 +111,31 @@ export function MatrixBody({ value, family, grafico, format }: BodyProps<'matriz
     )
   }
 
+  const figure = (v: number) => format.number(v, { abbreviate: true })
+
+  // El defecto se resuelve una vez y por la constante, no por el orden de las
+  // ramas · mismo idioma que `ComparisonBody`.
+  const elegido = grafico ?? DEFECTO
+
+  if (elegido === 'cohort') {
+    return (
+      <div className="h-full min-h-0">
+        <PlotCohort value={value} family={family} format={figure} />
+      </div>
+    )
+  }
+
+  if (elegido === 'calendar') {
+    return (
+      <div className="h-full min-h-0">
+        <PlotCalendar value={value} family={family} format={figure} />
+      </div>
+    )
+  }
+
   return (
     <div className="h-full min-h-0">
-      <PlotHeatmap
-        value={value}
-        family={family}
-        format={(v) => format.number(v, { abbreviate: true })}
-      />
+      <PlotHeatmap value={value} family={family} format={figure} />
     </div>
   )
 }

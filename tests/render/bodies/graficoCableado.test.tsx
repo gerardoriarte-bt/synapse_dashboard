@@ -42,6 +42,8 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { BarsBody } from '@/render/bodies/BarsBody'
+import { ComparisonBody } from '@/render/bodies/ComparisonBody'
+import { MatrixBody } from '@/render/bodies/MatrixBody'
 import { GaugeBody } from '@/render/bodies/GaugeBody'
 import { SeriesBody } from '@/render/bodies/SeriesBody'
 import { createFormat } from '@/render/format'
@@ -352,5 +354,144 @@ describe('los cuatro que faltaban · el despacho es lo único que les faltaba', 
   it('el shell tampoco se va con el anillo · la línea de BASE queda', () => {
     render(<GaugeBody {...base} value={ESCALAR} params={{ maximo: 100 }} grafico="rings" />)
     expect(screen.getByText('Sobre 100')).toBeVisible()
+  })
+})
+
+/** ── LOS CUATRO DEL LOTE DEL 2026-10-01 ──────────────────────────────────────
+ *
+ *  `tornado`, `grouped`, `cohort` y `calendar`. Los cuatro llegaron con su
+ *  batería propia —19, 14, 12 y 21 mutaciones— y **los cuatro QA cerraron
+ *  diciendo lo mismo**: el plot dibuja bien y no se dibuja. `DIBUJA` no los
+ *  nombraba, así que `PlotGrouped` y `PlotTornado` sólo los importaba su prueba
+ *  y un panel con `grafico: 'calendar'` caía a `UnknownPlotState`.
+ *
+ *  **Es la misma zona ciega de siempre con una cara nueva**: una prueba que
+ *  monta el plot directo pasa aunque el plot sea código muerto. El de
+ *  `smallmult` ya lo había encontrado al revés el 2026-09-29; esta vez lo
+ *  encontraron cuatro a la vez, y ninguno podía cerrarlo desde su propia tarea.
+ *
+ *  Las dos mitades de cada caso valen igual que arriba: que aparezca el pedido y
+ *  que NO aparezca el del defecto del cuerpo. Un cuerpo que montara los dos
+ *  —porque la rama nueva se agregó ANTES del `return` final sin cortarlo— pasa
+ *  la primera mitad. */
+
+const COMPARADA = valor<'categoricaComparada'>({
+  forma: 'categoricaComparada',
+  items: [
+    { etiqueta: 'Norte', v: 30, referencia: 24, delta: 6 },
+    { etiqueta: 'Sur', v: 12, referencia: 20, delta: -8 },
+  ],
+})
+
+const MATRIZ = valor<'matriz'>({
+  forma: 'matriz',
+  filas: ['L', 'M'],
+  columnas: ['09', '10', '11'],
+  celdas: [
+    [4, 9, null],
+    [2, 7, 5],
+  ],
+})
+
+describe('ComparisonBody · el id elige entre las tres lecturas de la comparación', () => {
+  it('`tornado` monta los DOS SENTIDOS, no las pesas', () => {
+    render(<ComparisonBody {...base} value={COMPARADA} params={{}} grafico="tornado" />)
+
+    expect(
+      screen.getByRole('img', { name: '2 factores con su efecto en los dos sentidos' }),
+    ).toBeVisible()
+    // El nombre de `PlotDumbbell`, que es el defecto del cuerpo.
+    expect(
+      screen.queryByRole('img', { name: '2 categorías con su referencia y su brecha' }),
+    ).toBeNull()
+  })
+
+  it('`grouped` monta las COLUMNAS PAREADAS, no las pesas', () => {
+    render(<ComparisonBody {...base} value={COMPARADA} params={{}} grafico="grouped" />)
+
+    expect(
+      screen.getByRole('img', { name: '2 categorías · valor y referencia en columnas pareadas' }),
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('img', { name: '2 categorías con su referencia y su brecha' }),
+    ).toBeNull()
+  })
+
+  it('sin `grafico` sigue siendo el DUMBBELL · el defecto no se movió al cablear', () => {
+    // La otra mitad del cableado, y la que una rama mal cortada rompe: agregar
+    // dos ids no puede cambiar lo que ve un panel que no declara ninguno. Los
+    // doce paneles publicados están en ese caso.
+    render(<ComparisonBody {...base} value={COMPARADA} params={{}} />)
+
+    expect(
+      screen.getByRole('img', { name: '2 categorías con su referencia y su brecha' }),
+    ).toBeVisible()
+  })
+
+  it('la guardia de `referencia` manda sobre los TRES, no sólo sobre el defecto', () => {
+    // La guardia va antes del despacho a propósito: los tres descartan las filas
+    // sin referencia —`PlotGrouped` lo hace sin `?? 0` y con su razón escrita—,
+    // así que un payload donde ninguna la trae le llega vacío a cualquiera de
+    // los tres y dibuja un SVG en blanco. Se afirma con el id que NO es el
+    // defecto, que es donde la guardia podría haberse salteado.
+    const sinReferencia = valor<'categoricaComparada'>({
+      forma: 'categoricaComparada',
+      items: [{ etiqueta: 'Norte', v: 30 }],
+    })
+    render(<ComparisonBody {...base} value={sinReferencia} params={{}} grafico="tornado" />)
+
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(screen.getByText(/Ninguna categoría trae contra qué compararse/)).toBeVisible()
+  })
+})
+
+describe('MatrixBody · el id elige la lectura del eje de columnas', () => {
+  it('`cohort` monta las COHORTES POR ANTIGÜEDAD, no el mapa de calor', () => {
+    render(<MatrixBody {...base} value={MATRIZ} params={{}} grafico="cohort" />)
+
+    expect(
+      screen.getByRole('img', { name: '2 × 3 celdas en cohortes por antigüedad' }),
+    ).toBeVisible()
+    expect(screen.queryByRole('img', { name: '2 × 3 celdas en mapa de calor' })).toBeNull()
+  })
+
+  it('`calendar` monta el CALENDARIO DE ACTIVIDAD, no el mapa de calor', () => {
+    render(<MatrixBody {...base} value={MATRIZ} params={{}} grafico="calendar" />)
+
+    expect(
+      screen.getByRole('img', { name: '2 × 3 celdas en calendario de actividad' }),
+    ).toBeVisible()
+    expect(screen.queryByRole('img', { name: '2 × 3 celdas en mapa de calor' })).toBeNull()
+  })
+
+  it('sin `grafico` sigue siendo el MAPA DE CALOR', () => {
+    render(<MatrixBody {...base} value={MATRIZ} params={{}} />)
+
+    expect(screen.getByRole('img', { name: '2 × 3 celdas en mapa de calor' })).toBeVisible()
+  })
+
+  it('`matrix` es el cuarto y NO tiene componente · lo dice en vez de caer al calor', () => {
+    // La lista es blanca justamente por esto. `matrix` es la tabla cruda, la
+    // acepta la forma y no está construida: dibujarla como mapa de calor se
+    // vería correcto y sería otra cosa.
+    render(<MatrixBody {...base} value={MATRIZ} params={{}} grafico="matrix" />)
+
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(screen.getByText(/matrix/)).toBeVisible()
+  })
+
+  it('la guardia de densidad manda sobre los TRES · una fila corta no la dibuja ninguno', () => {
+    // Misma razón que la de `referencia` arriba: la guardia está antes del
+    // despacho, y se afirma con un id que no es el defecto.
+    const rala = valor<'matriz'>({
+      forma: 'matriz',
+      filas: ['L', 'M'],
+      columnas: ['09', '10', '11'],
+      celdas: [[4], [2, 7, 5]],
+    })
+    render(<MatrixBody {...base} value={rala} params={{}} grafico="calendar" />)
+
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(screen.getByText(/la fila 1 trae 1 celdas y hay 3 columnas/)).toBeVisible()
   })
 })
