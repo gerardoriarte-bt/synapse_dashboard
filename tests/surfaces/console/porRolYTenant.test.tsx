@@ -79,7 +79,8 @@ const contextoDe = (
     name: tenant,
     label: tenant,
     locale: 'es-MX',
-    currency: 'MXN',
+    // USD · ver `handlers.ts`. La moneda del tenant no sale de su país.
+    currency: 'USD',
     timezone: 'America/Mexico_City',
   },
   role: { id: `r-${rol}`, name: rol },

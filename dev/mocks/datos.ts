@@ -232,7 +232,10 @@ export const tenants = [
     // El cliente en alta es mexicano y **su moneda es la que el dibujo escribe**:
     // es el único de los tres que no arrastra el default colombiano, para que se
     // vea que la columna `MONEDA` sale del dato y no de una constante.
-    locale: 'es-MX', currency: 'MXN', timezone: 'America/Mexico_City',
+    // `currency` es USD y NO MXN · decidido el 2026-10-01. El locale sí es
+    // mexicano —formatea `1,232,721`— y la moneda es la del dato, que el
+    // catálogo declara en USD. Los dos campos son independientes.
+    locale: 'es-MX', currency: 'USD', timezone: 'America/Mexico_City',
     user_count: 0, last_published_at: null,
     worst_feed_status: 'unknown', worst_feed_freshness_hours: null,
     status: null, vertical: null,

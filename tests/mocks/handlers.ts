@@ -77,7 +77,13 @@ export const context: WireContext = {
     name: 'Under Armour México',
     label: 'Under Armour México',
     locale: 'es-MX',
-    currency: 'MXN',
+    // **USD, y no la moneda del país del cliente** · decidido el 2026-10-01
+    // (humano) y medido contra las tres fuentes el mismo día: el catálogo de
+    // Snowflake declara `unit: USD` en las cinco métricas de dinero y su texto
+    // de gobierno dice «en USD»; el `.pen` escribe USD en 62 de sus 63 nodos con
+    // moneda —el único `MXN` es la variante «tenant en alta», que es otro
+    // cliente—; y producto lo confirmó. UA MX factura en dólares.
+    currency: 'USD',
     timezone: 'America/Mexico_City',
   },
   role: { id: 'r-planner', name: 'Planner' },

@@ -49,7 +49,21 @@ const API = '*/api/v1'
  *  dibujo, que ahí sí lo escribe, y está a propósito sobre un `locale` colombiano
  *  para que se vea que la columna sale del dato y no de una constante. El valor
  *  está bien; la procedencia estaba de más, y es la clase de cita que
- *  `afirmaciones` no puede ver. */
+ *  `afirmaciones` no puede ver.
+ *
+ *  ── **EL `MXN` ES DE ESTA VARIANTE Y DE NINGUNA OTRA** · 2026-10-01 ──────────
+ *
+ *  La línea de arriba decía «el `MXN` es el del dibujo» sin decir de **qué**
+ *  pantalla, y eso casi cuesta cambiar este fixture al revés. Contados sobre el
+ *  archivo: el `.pen` tiene **63 nodos con moneda y 62 dicen `USD`**. El único
+ *  `MXN` es éste —`A2 · Ficha · tenant en alta`—, que dibuja **otro cliente
+ *  dándose de alta**; la ficha del cliente vivo, `A2 · Ficha de cliente`,
+ *  escribe `USD`.
+ *
+ *  Así que el `MXN` acá **no se toca**: es lo que la pantalla de alta dibuja, y
+ *  es justamente lo que prueba que la columna sale del dato. Lo que sí cambió
+ *  son los fixtures de la CONSOLA, que decían `MXN` para UA y van en `USD` —
+ *  decidido el 2026-10-01, y las tres fuentes normativas coinciden. */
 const tenants = [
   {
     id: 't-1',

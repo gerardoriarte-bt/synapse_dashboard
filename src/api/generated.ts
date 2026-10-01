@@ -630,8 +630,14 @@ export interface components {
                  *     el cable lo trae**: la unidad de una cifra sale de la MÉTRICA
                  *     —`metric.unidad`, que dice `USD`— y no del tenant. El día que
                  *     haya una cifra sin unidad propia, ésta es la que corresponde.
-                 * @example MXN
-                 * @example COP
+                 *
+                 *     **Para UA MX vale `USD`** · decidido el 2026-10-01 (producto) y
+                 *     medido contra las tres fuentes · ver
+                 *     `docs/DECISIONES-2026-10-01-la-moneda-del-tenant.md`. El ejemplo
+                 *     decía `MXN` y era una deducción desde el país: la moneda es la
+                 *     del DATO, y el catálogo la declara en dólares. Cuando este campo
+                 *     y el `unidad` de la métrica discrepen, **gana la métrica**.
+                 * @example USD
                  */
                 moneda?: string;
                 /**

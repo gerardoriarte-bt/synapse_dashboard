@@ -697,8 +697,28 @@ export interface components {
             locale: string;
             /**
              * @description Código ISO 4217.
-             * @example COP
-             * @example MXN
+             *
+             *     **NO es la moneda del país del cliente, y confundirlas es el bug.**
+             *     Para UA MX vale `USD` — decidido el 2026-10-01 (producto) y medido
+             *     el mismo día contra las tres fuentes que mandan acá:
+             *
+             *     · el **catálogo de Snowflake** declara `unit: USD` en las cinco
+             *       métricas de dinero —`revenue`, `spend`, `spend_flow`,
+             *       `platform_gap`, `platform_month_matrix`— y su texto de gobierno
+             *       dice «Venta total del sitio … **en USD**»;
+             *     · el **`.pen`** escribe `USD` en **62 de sus 63 nodos con moneda**;
+             *       el único `MXN` es `A2 · Ficha · tenant en alta`, que dibuja otro
+             *       cliente;
+             *     · y el `locale` es independiente: `es-MX` decide los separadores
+             *       —`1,232,721`— y no la divisa.
+             *
+             *     **El front no deriva ninguna cifra de este campo**: la unidad de un
+             *     valor sale del `unit` de su métrica en el catálogo, que es quien
+             *     conoce el dato. Este campo se ve en la ficha del cliente y, sobre
+             *     todo, **lo lee el agente al redactar la prosa** — con `COP` escribía
+             *     «los ingresos alcanzaron COP 1.144.876» sobre cifras que son
+             *     dólares.
+             * @example USD
              */
             currency: string;
             /**
