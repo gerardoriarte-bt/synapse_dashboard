@@ -58,7 +58,20 @@ ADAPT = RAIZ / "src/api/adapt.ts"
 SALIDA_JSON = RAIZ / "docs/repertorio-de-graficos.json"
 SALIDA_GO = RAIZ / "docs/backend/dd_seed_plots.go"
 
-# **El mismo JSON, dentro de `dev/`, para que el modo mock sirva el repertorio.**
+# ── **EL MOCK VA EN LA FORMA DEL CABLE, NO EN LA DE LA TABLA** · 2026-10-01 ───
+#
+# Acá decía «el mismo JSON», y servía la tabla con sus claves en español
+# —`nombre`, `formas`, `soporta_banda`— donde `adaptPlots` lee las del cable
+# —`name`, `shapes`, `supports_band`—. **En `dev:mock` el builder reventaba**:
+# `Cannot read properties of undefined (reading 'map')`.
+#
+# Lo encontró el backend preguntando «la forma exacta de la respuesta que el
+# builder espera», no una prueba: ninguna hacía pasar el mock por el adaptador
+# real, que es justamente la frontera que un mock puede esconder.
+#
+# El mismo archivo es lo que se le entrega al backend para escribir la ruta.
+
+# **El JSON de la tabla, para leerla y para diffearla.**
 # Hasta el 2026-09-30 `GET /config/plots` no tenía handler en MSW: la consola en
 # `dev:mock` corría con el repertorio VACÍO, así que ningún mínimo ni tope se
 # ejercitaba nunca ahí. Es la familia de F1.38 —«los mocks responden lo que
@@ -67,6 +80,7 @@ SALIDA_GO = RAIZ / "docs/backend/dd_seed_plots.go"
 # Se GENERA y no se copia a mano por la misma razón que los otros dos: una
 # tercera tabla escrita aparte se desincroniza sin que nadie lo note.
 SALIDA_MOCK = RAIZ / "dev/mocks/repertorio.json"
+SALIDA_CABLE = RAIZ / "docs/backend/config-plots.json"
 
 BLOQUEADO = 2
 
@@ -404,22 +418,54 @@ def emitir_go(filas: list[dict]) -> str:
     return "".join(out)
 
 
+def a_cable(filas: list[dict]) -> list[dict]:
+    """La misma tabla con las claves del CABLE · lo que devuelve `GET /config/plots`.
+
+    **Es la forma que lee `adaptPlots`**, y la única que sirve para dos cosas: el
+    handler de `dev:mock` y la entrega al backend para escribir la ruta. Los
+    nombres salen de `PlotRule` en `contracts/synapse-console-wire.yaml` y de los
+    tags `json:` del dominio del fork, no de memoria.
+
+    `cap` se OMITE cuando no hay, igual que el Go —`json:"cap,omitempty"`—: un
+    `null` explícito obligaría al adaptador a distinguir dos ausencias.
+    """
+    out = []
+    for f in filas:
+        fila = {
+            "id": f["id"],
+            "name": f["nombre"],
+            "shapes": f["formas"],
+            "supports_band": f["soporta_banda"],
+            "minimums": [
+                {"shape": m["forma"], "when": m["cuando"], "reason": m["razon"]}
+                for m in f["minimos"]
+            ],
+        }
+        if f["tope"]:
+            fila["cap"] = {"when": f["tope"]["cuando"], "reason": f["tope"]["razon"]}
+        out.append(fila)
+    return out
+
+
 def main() -> int:
     check = "--check" in sys.argv
     filas = construir()
 
     js = json.dumps(filas, ensure_ascii=False, indent=2) + "\n"
+    cable = json.dumps(a_cable(filas), ensure_ascii=False, indent=2) + "\n"
     go = emitir_go(filas)
 
     if check:
         malo = []
-        for ruta, esperado in ((SALIDA_JSON, js), (SALIDA_GO, go), (SALIDA_MOCK, js)):
+        for ruta, esperado in (
+            (SALIDA_JSON, js), (SALIDA_GO, go), (SALIDA_MOCK, cable), (SALIDA_CABLE, cable),
+        ):
             if not ruta.exists() or ruta.read_text() != esperado:
                 malo.append(ruta.relative_to(RAIZ))
         if malo:
             print(f"gen-plots ✗ desincronizado · corré `npm run gen:plots` · {malo}")
             return 1
-        print(f"gen-plots ✓ {len(filas)} gráficos · los dos artefactos al día")
+        print(f"gen-plots ✓ {len(filas)} gráficos · los cuatro artefactos al día")
         return 0
 
     SALIDA_JSON.parent.mkdir(parents=True, exist_ok=True)
@@ -427,7 +473,8 @@ def main() -> int:
     SALIDA_JSON.write_text(js)
     SALIDA_GO.write_text(go)
     SALIDA_MOCK.parent.mkdir(parents=True, exist_ok=True)
-    SALIDA_MOCK.write_text(js)
+    SALIDA_MOCK.write_text(cable)
+    SALIDA_CABLE.write_text(cable)
 
     con_min = sum(1 for f in filas if f["minimos"])
     con_tope = sum(1 for f in filas if f["tope"])
@@ -439,6 +486,7 @@ def main() -> int:
     print(f"  → {SALIDA_JSON.relative_to(RAIZ)}")
     print(f"  → {SALIDA_GO.relative_to(RAIZ)}")
     print(f"  → {SALIDA_MOCK.relative_to(RAIZ)}")
+    print(f"  → {SALIDA_CABLE.relative_to(RAIZ)}")
     return 0
 
 
