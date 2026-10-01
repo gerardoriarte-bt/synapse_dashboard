@@ -25,6 +25,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   useAgents,
   useFeeds,
+  useRuns,
   useAllUsers,
   useAdminCatalog,
   useDeleteRole,
@@ -38,6 +39,7 @@ import {
 import { AdminChrome } from './AdminChrome'
 import { CatalogView } from './CatalogView'
 import { FeedHealth } from './FeedHealth'
+import { RunHistory } from './RunHistory'
 import { UserList } from './UserList'
 import { createFormat, LOCALE_POR_DEFECTO } from '../../render/format'
 import { RoleEditor } from './RoleEditor'
@@ -113,6 +115,7 @@ export function Admin() {
   const agentes = useAgents(activo)
   // A5 · F4.24. La ruta llegó el 2026-09-25 con `1e080ee`.
   const fuentes = useFeeds(activo)
+  const corridas = useRuns(activo)
   // A3 · F4.3. **De PLATAFORMA desde el 2026-09-26**: `GET /admin/users` llegó
   // con `6e521cc` y es lo que el dibujo declara. La por-cliente —`useUsers`—
   // sigue existiendo para A2, donde el cliente ya está elegido.
@@ -220,12 +223,24 @@ export function Admin() {
           cargando={usuarios.data === undefined}
         />
       ) : pantalla === 'feeds' ? (
-        <FeedHealth
-          fuentes={fuentes.data ?? []}
-          tenant={lista.find((x) => x.id === activo)?.nombre ?? null}
-          format={format}
-          cargando={fuentes.data === undefined}
-        />
+        /* **El historial va DEBAJO de las fuentes y en la misma pantalla.** La
+           pregunta que A5 contesta es «por qué una métrica está degradada, y qué
+           la desbloquea»; cuándo se cargó por última vez y cómo salió es la otra
+           mitad de esa misma pregunta, y hoy sólo se podía ver consultando la
+           base. Es un agregado al dibujo y está declarado en `RunHistory`. */
+        <div className="flex flex-col gap-10">
+          <FeedHealth
+            fuentes={fuentes.data ?? []}
+            tenant={lista.find((x) => x.id === activo)?.nombre ?? null}
+            format={format}
+            cargando={fuentes.data === undefined}
+          />
+          <RunHistory
+            corridas={corridas.data ?? []}
+            format={format}
+            cargando={corridas.data === undefined}
+          />
+        </div>
       ) : pantalla === 'catalogo' ? (
         // **El uso sale del layout publicado y de los roles, que A2 ya pide.**
         // No cuesta un viaje más, y contarlo sobre el publicado es lo correcto

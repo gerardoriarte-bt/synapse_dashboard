@@ -618,10 +618,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/materialize/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Las últimas corridas de materialización
+         * @description Más recientes primero. Una fila **por período y por corrida**: pedir ocho
+         *     períodos deja ocho filas, no una.
+         *
+         *     **Los cinco contadores no son excluyentes entre sí de forma obvia** y
+         *     conviene no sumarlos a ciegas: `available`, `blocked`, `errors`,
+         *     `skipped` y `preserved`. `preserved` es la regla de preservación —un
+         *     `AVAILABLE` previo que no se pisó— así que una métrica puede contarse ahí
+         *     y seguir disponible.
+         *
+         *     Medido el 2026-10-01 contra `:4010`: las ocho corridas de enero a agosto
+         *     salieron `available 19 · blocked 2 · errors 0`, con `preserved 2`.
+         */
+        get: operations["listMaterializeRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description Una corrida de materialización, de un tenant y un período.
+         *
+         *     **Capturada del servicio el 2026-10-01**, campo por campo. `finished_at`
+         *     es nulo mientras `status` es `running`.
+         */
+        MaterializeRun: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            /** @example 2026-08 */
+            period: string;
+            /** @description `manual` lo disparó una persona; `schedule`, el reloj de las 03:00. */
+            trigger: string;
+            /** @example done */
+            status: string;
+            /**
+             * @description **Vacío mientras corre** y con nombre al terminar — medido: una fila
+             *     en `running` lo trae en `""` y la misma al cerrar dice `Synapse UA`.
+             */
+            agent_name?: string;
+            role?: string;
+            available: number;
+            blocked: number;
+            errors: number;
+            skipped?: number;
+            /**
+             * @description Las que **no se pisaron** porque ya tenían un `AVAILABLE` previo. No
+             *     es un fallo: es la regla de preservación del servicio.
+             */
+            preserved?: number;
+            catalog_synced?: boolean;
+            /** @description Vacío cuando no falló · el servicio no lo omite. */
+            error?: string;
+            /** Format: date-time */
+            started_at: string;
+            /**
+             * Format: date-time
+             * @description **Nulo mientras corre.** Es lo que distingue en vuelo de terminada.
+             */
+            finished_at?: string | null;
+        };
         /**
          * @description El sobre de `GET /admin/users` · B4.17 · medido el 2026-09-26.
          *
@@ -2419,6 +2492,34 @@ export interface operations {
             };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    listMaterializeRuns: {
+        parameters: {
+            query?: {
+                /** @description Sin él devuelve las de todos los clientes. */
+                tenant_id?: string;
+                /** @description El servicio lo **topea en 100**, leído de su handler. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Corridas, más recientes primero · puede ser vacío */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["MaterializeRun"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
         };
     };
 }

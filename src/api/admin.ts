@@ -648,6 +648,56 @@ function adaptarUsuario(w: WireUser): Usuario {
   }
 }
 
+/** Una corrida de materialización · lo que `GET /admin/materialize/runs` devuelve.
+ *
+ *  **Los cinco contadores no se suman**, y por eso viajan los cinco: `preservadas`
+ *  es la regla de preservación del servicio —un `AVAILABLE` previo que no se
+ *  pisó— así que una métrica puede contarse ahí **y seguir disponible**. Sumarlos
+ *  para sacar un total daría más métricas de las que el cliente tiene. */
+export type Corrida = {
+  id: string
+  tenantId: string
+  periodo: string
+  /** `manual` la disparó una persona; `schedule`, el reloj. */
+  disparo: string
+  estado: string
+  disponibles: number
+  bloqueadas: number
+  errores: number
+  salteadas: number
+  preservadas: number
+  /** `null` mientras corre · es lo que distingue en vuelo de terminada. */
+  terminadaEn: string | null
+  arrancadaEn: string
+  /** Vacío cuando no falló · el servicio no lo omite. */
+  error: string
+}
+
+function adaptarCorrida(w: WireMaterializeRun): Corrida {
+  return {
+    id: w.id,
+    tenantId: w.tenant_id,
+    periodo: w.period,
+    disparo: w.trigger,
+    estado: w.status,
+    disponibles: w.available,
+    bloqueadas: w.blocked,
+    errores: w.errors,
+    // **`?? 0` acá SÍ, y es la excepción que conviene razonar.** En `Fuente` el
+    // `?? null` existe porque cero y ausente significan cosas distintas. Un
+    // contador de una corrida terminada no tiene ese problema: el servicio los
+    // manda siempre y «ninguna salteada» es cero. El contrato los deja
+    // opcionales porque no están en `required`, no porque falten.
+    salteadas: w.skipped ?? 0,
+    preservadas: w.preserved ?? 0,
+    // `?? null` y no `?? ''`: mientras corre NO hay fin, y una cadena vacía se
+    // formatearía como una fecha inválida en vez de decir «en curso».
+    terminadaEn: w.finished_at ?? null,
+    arrancadaEn: w.started_at,
+    error: w.error ?? '',
+  }
+}
+
 function adaptarFuente(w: WireFeed): Fuente {
   return {
     clave: w.key,
@@ -813,6 +863,18 @@ export const adminApi = {
       usuarios: w.users.map(adaptarUsuario),
     }
   },
+
+  /** El historial de materializaciones · transcripta el 2026-10-01.
+   *
+   *  **El `limit` lo topea el servicio en 100**, leído de su handler. Se pide por
+   *  cliente porque la pantalla es de un cliente; sin el parámetro devuelve las
+   *  de todos. */
+  corridas: async (tenantId: string, limite = 60): Promise<Corrida[]> =>
+    (
+      await pedir<WireMaterializeRun[]>(
+        `/admin/materialize/runs?tenant_id=${encodeURIComponent(tenantId)}&limit=${String(limite)}`,
+      )
+    ).map(adaptarCorrida),
 
   /** Las fuentes del cliente y su salud · B2.13, servida desde `1e080ee`. */
   fuentes: async (tenantId: string): Promise<Fuente[]> =>
@@ -1004,6 +1066,7 @@ export const adminApi = {
 
 export type WireAgent = A['AgentAdmin']
 export type WireFeed = A['Feed']
+export type WireMaterializeRun = A['MaterializeRun']
 export type WireUser = A['User']
 export type WireUsersPlatform = A['UsersPlatform']
 

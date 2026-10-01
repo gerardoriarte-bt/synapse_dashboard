@@ -36,6 +36,22 @@ const NOTA = 'font-mono text-nota leading-rotulo tracking-rotulo uppercase text-
 
 const COLUMNAS = ['Fuente', 'Capa', 'Cadencia', 'Última carga', 'Frescura', 'Filas', 'Fallas S › G', 'Métricas'] as const
 
+/** Las horas de frescura, REDONDEADAS · 2026-10-01.
+ *
+ *  **El defecto, visto en pantalla**: la columna decía `12.186776741388888 h`.
+ *  El servicio manda un flotante —son horas calculadas, no un entero— y se
+ *  pintaba con `String()`, que escribe los quince decimales.
+ *
+ *  **Se redondea a entero y no a un decimal**: la pregunta que esta columna
+ *  contesta es «¿está dentro del límite?», y el límite es cadencia × tolerancia,
+ *  en horas enteras. Un decimal daría una precisión que la decisión no usa.
+ *
+ *  **Y NO pasa por el formateador del tenant.** Es un conteo de horas, no una
+ *  cifra de negocio: no lleva separador de miles ni moneda, y el `.pen` lo
+ *  escribe `31 h`. Redondear acá es presentación, no cálculo — el dato que
+ *  decide el estado sigue siendo el flotante, en `saludDeFuente`. */
+const horas = (n: number) => `${String(Math.round(n))} h`
+
 /** Lo que el cable no manda, dicho en la pantalla. Misma forma que `CatalogView`
  *  y `RoleEditor`: el hueco se declara donde se ve, no en un comentario. */
 /** LO QUE ESTA PANTALLA TODAVÍA NO MUESTRA · reescrito el 2026-09-30 (humano)
@@ -187,7 +203,7 @@ export function FeedHealth({ fuentes, tenant, format, cargando = false }: Props)
                   <td className="py-3">
                     <div className="flex flex-col gap-1">
                       <span className="text-ink text-celda">
-                        {f.frescuraHoras === null ? '—' : `${String(f.frescuraHoras)} h`}
+                        {f.frescuraHoras === null ? '—' : horas(f.frescuraHoras)}
                       </span>
                       <span className={NOTA}>{TEXTO[salud]}</span>
                     </div>
@@ -244,7 +260,7 @@ function Expansion({ fuente, salud }: { fuente: Fuente; salud: SaludDeFuente }) 
       <p className="font-body text-cuerpo leading-cuerpo text-ink m-0">
         {salud === 'SIN_CARGA'
           ? `Esta fuente nunca registró una carga, así que no tiene frescura que comparar. No está atrasada: está sin estrenar.`
-          : `El dato tiene ${String(fuente.frescuraHoras)} h y la fuente se refresca cada ${String(fuente.cadenciaHoras)} h. El límite es cadencia × tolerancia = ${String(limite)} h.`}
+          : `El dato tiene ${horas(fuente.frescuraHoras ?? 0)} y la fuente se refresca cada ${String(fuente.cadenciaHoras)} h. El límite es cadencia × tolerancia = ${String(limite)} h.`}
       </p>
       {/* **Qué lo desbloquea sale del estado, no de un campo**: el cable no
           manda un `unlocks_with` por fuente. Se dice lo que es cierto en cada

@@ -1027,6 +1027,59 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  # ── EL HISTORIAL DE MATERIALIZACIONES ───────────────────────────────────────
+  #
+  # **Transcripta el 2026-10-01**, después de correr ocho períodos a mano y no
+  # tener desde dónde mirar cómo salieron. Hoy el único modo de saber si una
+  # corrida terminó es consultar la base.
+  #
+  # **No acepta filtro por período**, leído de su handler: sólo `tenant_id` y
+  # `limit`, con tope 100. Acotar por año es del front, y por eso está declarado
+  # en la pantalla.
+  /admin/materialize/runs:
+    x-verificado-en: de881e1
+    get:
+      tags: [admin]
+      operationId: listMaterializeRuns
+      summary: Las últimas corridas de materialización
+      description: |
+        Más recientes primero. Una fila **por período y por corrida**: pedir ocho
+        períodos deja ocho filas, no una.
+
+        **Los cinco contadores no son excluyentes entre sí de forma obvia** y
+        conviene no sumarlos a ciegas: `available`, `blocked`, `errors`,
+        `skipped` y `preserved`. `preserved` es la regla de preservación —un
+        `AVAILABLE` previo que no se pisó— así que una métrica puede contarse ahí
+        y seguir disponible.
+
+        Medido el 2026-10-01 contra `:4010`: las ocho corridas de enero a agosto
+        salieron `available 19 · blocked 2 · errors 0`, con `preserved 2`.
+      parameters:
+        - name: tenant_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+          description: Sin él devuelve las de todos los clientes.
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1 }
+          description: El servicio lo **topea en 100**, leído de su handler.
+      responses:
+        '200':
+          description: Corridas, más recientes primero · puede ser vacío
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/MaterializeRun' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
 components:
   securitySchemes:
     bearer: { type: http, scheme: bearer, bearerFormat: JWT }
@@ -1090,6 +1143,47 @@ components:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   schemas:
+    MaterializeRun:
+      type: object
+      description: |
+        Una corrida de materialización, de un tenant y un período.
+
+        **Capturada del servicio el 2026-10-01**, campo por campo. `finished_at`
+        es nulo mientras `status` es `running`.
+      required: [id, tenant_id, period, trigger, status, available, blocked, errors, started_at]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        period: { type: string, example: '2026-08' }
+        trigger:
+          type: string
+          description: '`manual` lo disparó una persona; `schedule`, el reloj de las 03:00.'
+        status: { type: string, example: done }
+        agent_name:
+          type: string
+          description: |
+            **Vacío mientras corre** y con nombre al terminar — medido: una fila
+            en `running` lo trae en `""` y la misma al cerrar dice `Synapse UA`.
+        role: { type: string }
+        available: { type: integer }
+        blocked: { type: integer }
+        errors: { type: integer }
+        skipped: { type: integer }
+        preserved:
+          type: integer
+          description: |
+            Las que **no se pisaron** porque ya tenían un `AVAILABLE` previo. No
+            es un fallo: es la regla de preservación del servicio.
+        catalog_synced: { type: boolean }
+        error:
+          type: string
+          description: Vacío cuando no falló · el servicio no lo omite.
+        started_at: { type: string, format: date-time }
+        finished_at:
+          type: [string, 'null']
+          format: date-time
+          description: '**Nulo mientras corre.** Es lo que distingue en vuelo de terminada.'
+
 
     UsersPlatform:
       type: object

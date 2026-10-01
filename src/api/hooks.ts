@@ -64,6 +64,7 @@ export const keys = {
   roles: (tenantId: string) => ['admin', 'roles', tenantId] as const,
   agentes: (tenantId: string) => ['admin', 'agentes', tenantId] as const,
   fuentes: (tenantId: string) => ['admin', 'fuentes', tenantId] as const,
+  corridas: (tenantId: string) => ['admin', 'corridas', tenantId] as const,
   usuarios: (tenantId: string) => ['admin', 'usuarios', tenantId] as const,
   // **Sin tenant en la clave, a propósito**: es de plataforma. Compartir la clave
   // con la de arriba serviría el listado de un cliente donde va el de todos, que
@@ -346,6 +347,21 @@ export function useFeeds(tenantId: string | null) {
   return useQuery({
     queryKey: keys.fuentes(tenantId ?? ''),
     queryFn: () => adminApi.fuentes(tenantId as string),
+    enabled: tenantId !== null && tenantId !== '',
+  })
+}
+
+/** El historial de materializaciones del cliente · 2026-10-01.
+ *
+ *  **Sin `refetchInterval`, y es una decisión.** Una corrida tarda segundos y
+ *  deja su fila; sondear cada N segundos costaría una petición por minuto para
+ *  mirar algo que casi siempre está quieto. Quien acaba de disparar una recarga
+ *  mira esta lista una vez — y el día que la pantalla pueda disparar corridas,
+ *  es la mutación la que invalida esta clave, no un reloj. */
+export function useRuns(tenantId: string | null) {
+  return useQuery({
+    queryKey: keys.corridas(tenantId ?? ''),
+    queryFn: () => adminApi.corridas(tenantId as string),
     enabled: tenantId !== null && tenantId !== '',
   })
 }
