@@ -424,16 +424,10 @@
     "id": "donut",
     "nombre": "DONA",
     "formas": [
-      "categorical",
       "composition"
     ],
     "soporta_banda": false,
     "minimos": [
-      {
-        "forma": "categorical",
-        "cuando": "items < 2",
-        "razon": "una barra sola no compara nada"
-      },
       {
         "forma": "composition",
         "cuando": "partes < 2",
@@ -451,16 +445,10 @@
     "id": "treemap",
     "nombre": "TREEMAP",
     "formas": [
-      "categorical",
       "composition"
     ],
     "soporta_banda": false,
     "minimos": [
-      {
-        "forma": "categorical",
-        "cuando": "items < 2",
-        "razon": "una barra sola no compara nada"
-      },
       {
         "forma": "composition",
         "cuando": "partes < 3",

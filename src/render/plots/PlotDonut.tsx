@@ -100,9 +100,17 @@ export function PlotDonut({
   const positive = value.items.filter((i) => i.v > 0)
   const total = positive.reduce((s, i) => s + i.v, 0)
 
+  // **Se agrupa desde DOS, no desde uno** · 2026-10-01. Con una sola porción
+  // sobrante la leyenda decía `Otros · 1`: agrupar una no ahorra un escalón de
+  // la rampa ni una línea de leyenda, y lo único que hace es borrar su nombre.
+  // Visto en pantalla con dato real — ese `Otros · 1` era INVERSIÓN.
+  //
+  // **Y esta agrupación es la SEGUNDA.** `CompositionBody` ya agrupa antes de
+  // llamar, así que las dos tienen que decidir igual: con criterios distintos,
+  // el mismo panel agruparía o no según qué gráfico eligió quien compuso.
   const rest = positive.slice(VISIBLE)
   const slices: readonly Slice[] =
-    rest.length === 0
+    rest.length <= 1
       ? positive
       : [
           ...positive.slice(0, VISIBLE),

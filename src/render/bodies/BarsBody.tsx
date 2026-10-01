@@ -28,8 +28,30 @@ import type { BodyProps } from '../types'
  *  `bump` y `table`, los otros dos que §5 le da a `ranking`, **no entran acá**:
  *  `bump` come `seriesMultiples` —lo dibuja `SeriesBody`— y `table` es de
  *  `TableBody`. */
+/** ── `donut` Y `treemap` SALIERON DE `categorica` · 2026-10-01 ───────────────
+ *
+ *  **Visto en pantalla con dato real**: `Cumplimiento de objetivo` como dona
+ *  escribía `461,1` en el centro. Sus cinco valores son PORCENTAJES DE META, y
+ *  una dona los trata como partes de un todo: los suma, y después calcula la
+ *  participación de cada uno sobre esa suma. «VISITAS 23%» no es su
+ *  cumplimiento del 103,8%: es cuánto aporta a una suma que no significa nada.
+ *
+ *  **El contrato ya distinguía las dos formas.** `composicion` ES un todo
+ *  repartido —trae su `porcentaje` calculado por el servicio— y `categorica` es
+ *  etiqueta y valor. Los dos gráficos de parte-sobre-todo asumían lo primero.
+ *
+ *  **La lista de acá y el repertorio tienen que decir lo mismo**, y por eso el
+ *  cambio es en los dos: el repertorio gobierna qué ofrece el builder, y esta
+ *  lista qué dibuja el cuerpo. Si sólo se tocara el repertorio, un panel ya
+ *  compuesto seguiría pintando la dona.
+ *
+ *  Un panel que hoy pida `donut` sobre una categórica cae en `UnknownPlotState`,
+ *  que dice el id — y antes de eso la consola ya lo marca incompatible contra el
+ *  repertorio. Las dos puertas dicen lo mismo, que es lo correcto.
+ *
+ *  `docs/AUDITORIA-2026-10-01-comprension-de-graficos.md` §1. */
 const DIBUJA = {
-  categorica: ['bars', 'columns', 'lollipop', 'donut', 'radial', 'pareto', 'treemap'],
+  categorica: ['bars', 'columns', 'lollipop', 'radial', 'pareto'],
   ranking: ['bars', 'lollipop'],
 } as const
 

@@ -241,32 +241,26 @@ describe('BarsBody · los cinco ids nuevos montan su propio dibujo', () => {
     expect(screen.queryByRole('img', { name: '3 categorías' })).toBeNull()
   })
 
-  it('`donut` monta la DONA y su rótulo de centro sale del catálogo', () => {
-    // El `totalLabel` es obligatorio en `PlotDonut` —«ningún número desnudo»
-    // como error de compilación— y el cuerpo NO lo escribe: cae al nombre de la
-    // métrica, que es copy del catálogo.
-    render(<BarsBody {...base} value={CATEGORICA} params={{}} grafico="donut" />)
-
-    expect(
-      screen.getByRole('img', { name: 'UNIDADES 42 repartido en 2 partes' }),
-    ).toBeVisible()
-    expect(screen.queryByRole('img', { name: '2 categorías' })).toBeNull()
-  })
-
-  it('el rótulo del centro lo gana `presentation.label`, que lo redacta el backend', () => {
-    render(
-      <BarsBody
-        {...base}
-        value={CATEGORICA}
-        params={{}}
-        grafico="donut"
-        presentation={{ label: 'Inversión del mes' } as never}
-      />,
-    )
-
-    expect(
-      screen.getByRole('img', { name: 'INVERSIÓN DEL MES 42 repartido en 2 partes' }),
-    ).toBeVisible()
+  it('`donut` y `treemap` YA NO se sirven sobre una categórica · 2026-10-01', () => {
+    // ── POR QUÉ SE FUERON, Y NO ES UNA PREFERENCIA ───────────────────────────
+    //
+    // Los dos dibujan parte-sobre-todo: calculan la cuota de cada ítem sobre la
+    // SUMA. Con una categórica cuyos valores son porcentajes de metas distintas
+    // esa suma no significa nada — con dato real la dona llegó a escribir
+    // `461,1` en el centro y a presentarlo como el cumplimiento del objetivo.
+    //
+    // **El contrato ya distinguía las dos formas**: `composicion` ES un todo
+    // repartido y trae su `porcentaje` del servicio; `categorica` es etiqueta y
+    // valor. Ahora los dos gráficos viven en `CompositionBody`, y acá se declara
+    // que no caen a las barras — ver `parteSobreTodo.test.tsx`.
+    for (const id of ['donut', 'treemap'] as const) {
+      const { unmount } = render(
+        <BarsBody {...base} value={CATEGORICA} params={{}} grafico={id} />,
+      )
+      expect(screen.getByText(new RegExp(id))).toBeVisible()
+      expect(screen.queryByRole('img', { name: '2 categorías' })).toBeNull()
+      unmount()
+    }
   })
 
   it('`lollipop` también sirve a `ranking`, que es la otra forma que §5 le da', () => {
@@ -277,16 +271,6 @@ describe('BarsBody · los cinco ids nuevos montan su propio dibujo', () => {
 })
 
 describe('`tope` NO recorta la dona ni el pareto · las dos derivan del total', () => {
-  it('la dona suma el centro sobre la lista ENTERA aunque haya `tope`', () => {
-    // Con `tope: 1` aplicado antes, el centro diría 30 y lo presentaría como el
-    // total: el defecto que `CompositionBody` ya tiene registrado por escrito.
-    render(<BarsBody {...base} value={TRES} params={{ tope: 1 }} grafico="donut" />)
-
-    expect(
-      screen.getByRole('img', { name: 'UNIDADES 60 repartido en 3 partes' }),
-    ).toBeVisible()
-  })
-
   it('el pareto cierra su curva sobre todas las causas aunque haya `tope`', () => {
     // Recortar a una y dejar que la curva llegue al 100 % afirma que la causa
     // mostrada es la única — que es justo lo que un pareto no puede afirmar.
@@ -317,24 +301,6 @@ describe('`tope` NO recorta la dona ni el pareto · las dos derivan del total', 
 // era cierto porque no existía la rama. Una prueba que pasa porque el código no
 // está no distingue «correcto» de «sin construir».
 describe('los cuatro que faltaban · el despacho es lo único que les faltaba', () => {
-  it('`treemap` monta el MOSAICO, no las barras', () => {
-    render(<BarsBody {...base} value={TRES} params={{}} grafico="treemap" />)
-
-    // **Nombre exacto y no `/categorías/`.** `PlotTreemap` dice «3 categorías en
-    // mosaico» y `PlotBars` «3 categorías»: un patrón laxo matchea los dos y
-    // deja de distinguir cuál se montó, que es el único punto de esta prueba.
-    expect(screen.getByRole('img', { name: '3 categorías en mosaico' })).toBeVisible()
-    expect(screen.queryByRole('img', { name: '3 categorías' })).toBeNull()
-  })
-
-  it('`treemap` recibe la lista SIN recortar · su cuota sale del total', () => {
-    // Misma razón que la dona y el pareto: deriva `v / Σv`. Con `tope` aplicado
-    // antes, cada porcentaje se calcularía contra un total que no es el total y
-    // la suma seguiría dando 100 % — impecable y falso.
-    render(<BarsBody {...base} value={TRES} params={{ tope: 1 }} grafico="treemap" />)
-
-    expect(screen.getByRole('img', { name: '3 categorías en mosaico' })).toBeVisible()
-  })
 
   it('`combo` monta el COMBINADO y reparte los roles por ORDEN del payload', () => {
     render(<SeriesBody {...base} value={MULTIPLES} params={{}} grafico="combo" />)

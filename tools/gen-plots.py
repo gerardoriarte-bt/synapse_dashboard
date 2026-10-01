@@ -165,6 +165,37 @@ def de_la_entrega() -> tuple[dict[str, str], dict[str, dict], dict[str, dict]]:
     return nombre_de_id, minimos, suben
 
 
+# ── LO QUE LA FUENTE DE v2 DECLARA Y ACÁ SE CORRIGE ──────────────────────────
+#
+# **Una corrección va acá y no en el archivo de v2**, que vive en el repositorio
+# archivado y no lo lee nada más: editarlo escondería el cambio en un sitio que
+# nadie abre. Acá queda con su fecha y su razón, y la tabla sigue generándose.
+#
+# ── POR QUÉ ESTAS DOS · 2026-10-01 ──────────────────────────────────────────
+#
+# **Visto en pantalla con dato real**: `Cumplimiento de objetivo` dibujado como
+# dona escribía `461,1` en el centro. Sus cinco valores son PORCENTAJES DE META
+# —visitas 103,8%, órdenes 85,8%— y una dona los trata como partes de un todo:
+# los suma, y después calcula la participación de cada uno sobre esa suma. El
+# treemap hace lo mismo y además esconde las cifras reales.
+#
+# **Es aritméticamente coherente y semánticamente falso**, que es el peor modo de
+# falla de este producto: nadie tiene de dónde agarrarse para dudar.
+#
+# **El contrato ya distinguía las dos formas, y la distinción es exactamente
+# ésta**: `composicion` ES un todo repartido —tanto que trae su `porcentaje`
+# calculado por el servicio, con su razón escrita— y `categorica` es sólo
+# etiqueta y valor. Los dos gráficos de parte-sobre-todo asumían lo primero.
+#
+# **Y el mismo dato como `rings` se lee perfecto** —centro «92 PROMEDIO», leyenda
+# con los valores reales—, así que lo que sobraba era la combinación, no el dato.
+#
+# `docs/AUDITORIA-2026-10-01-comprension-de-graficos.md` §1.
+QUITADAS = {
+    ("donut", "categorica"),
+    ("treemap", "categorica"),
+}
+
 # ── 4 · el mapa de formas, del adaptador ─────────────────────────────────────
 MAPA = re.compile(r"^  ([a-zA-Z]+): '([a-z_]+)',$", re.M)
 
@@ -195,8 +226,9 @@ def construir() -> list[dict]:
     for orden, p in enumerate(plots, start=1):
         gid = p["id"]
         nombre = nombre_de_id[gid]
+        formas = [f for f in p["formas"] if (gid, f) not in QUITADAS]
         mins = []
-        for forma in p["formas"]:
+        for forma in formas:
             base = minimos.get(forma)
             sube = suben.get(gid)
             if sube and sube["forma"] == forma:
@@ -215,7 +247,7 @@ def construir() -> list[dict]:
         fila = {
             "id": gid,
             "nombre": nombre,
-            "formas": [cable[f] for f in p["formas"]],
+            "formas": [cable[f] for f in formas],
             "soporta_banda": bool(p["soportaBanda"]),
             "minimos": mins,
             "tope": p["tope"],
