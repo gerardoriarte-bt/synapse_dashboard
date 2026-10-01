@@ -1557,7 +1557,7 @@ components:
         el dashboard al que pertenece el layout, además de `layout` y `tabs`.
         Es lo que deja al builder decir DE QUÉ dashboard está editando una
         versión, que con varios por tenant deja de ser obvio.
-      required: [id, tenant_id, name, slug, is_default]
+      required: [id, tenant_id, name, slug, is_default, history_months]
       properties:
         id: { type: string, format: uuid }
         tenant_id: { type: string, format: uuid }
@@ -1566,6 +1566,16 @@ components:
         is_default:
           type: boolean
           description: El que resuelve cuando el rol no declara preferencia.
+        history_months:
+          type: integer
+          description: |
+            **Cuántos meses de histórico ofrece el dashboard** · llegó con
+            `d9147c3`, medido el 2026-10-01.
+
+            Acá es donde el builder la EDITA —`PUT /admin/dashboards/{id}` con
+            `{"history_months": N}`, 1 a 120—, mientras que en el cable de la
+            consola es sólo de lectura. El mismo número con dos lectores.
+          examples: [12]
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
 

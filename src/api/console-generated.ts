@@ -81,6 +81,25 @@ export interface paths {
          *     entradas en 5 ms**. Estuvo pedida tres veces y no llegaba; la tabla era
          *     nuestra entera, así que lo que faltaba era la ruta.
          *
+         *     ── **CONTRA UPSTREAM DA 404** · medido el 2026-10-01 ────────────────────
+         *
+         *     Levantado `d9147c3` —su rama, limpia— esta ruta **no existe**: `git grep`
+         *     no encuentra `config/plots` en una sola línea de su código, y el servicio
+         *     contesta 404. Upstream no tomó `b6f0e09`.
+         *
+         *     **Y eso se vio recién hoy porque el binario de `:4010` era el fork.** Es
+         *     la trampa registrada en `CLAUDE.md` —«antes de medir, mirá qué binario
+         *     está corriendo»— con la cara más cara: no hace que su código se vea como
+         *     avance, hace que **nuestra propia ruta se vea como suya**. Comprobado
+         *     levantando los dos: el viejo da 200 con 49 filas, `d9147c3` da 404.
+         *
+         *     **Lo que se apaga sin ella:** el selector de gráfico del builder entero.
+         *     `PanelConfigurator` declara que un repertorio vacío apaga la sección —«un
+         *     control que se abre vacío promete una elección que no se puede hacer»—
+         *     así que contra upstream **no hay forma de elegir gráfico**, ni de ver el
+         *     que el panel ya tiene. La consola sigue dibujando: el `chart` viaja en el
+         *     layout y los cuerpos despachan sin el repertorio.
+         *
          *     Catálogo **GLOBAL, no por tenant** —qué puede dibujar un gráfico no
          *     depende del cliente— y `data` es un **arreglo desnudo**, igual que
          *     `blocks`. Eso último fue una decisión al escribirla: envolverlo en
@@ -532,6 +551,22 @@ export interface components {
                 name: string;
                 slug: string;
                 is_default: boolean;
+                /**
+                 * @description **Cuántos meses de histórico ofrece ESTE dashboard**, contando
+                 *     el mes en curso · llegó con `d9147c3`, medido el 2026-10-01.
+                 *
+                 *     La profundidad dejó de ser una constante de doce: la decide el
+                 *     admin al crear el dashboard y el servicio la acota entre 1 y
+                 *     120 —`VALIDATION_HISTORY_MONTHS` fuera de rango—. **Un
+                 *     dashboard que no la declara sigue dando doce**, que es lo que
+                 *     pedimos para no romper los que ya existen.
+                 *
+                 *     Viaja **por dashboard y no sólo en `periods`** porque el
+                 *     usuario puede cambiar de dashboard sin recargar: `periods` es
+                 *     la del activo, y ésta es la de cada uno.
+                 * @example 12
+                 */
+                history_months: number;
             }[];
             /**
              * Format: uuid

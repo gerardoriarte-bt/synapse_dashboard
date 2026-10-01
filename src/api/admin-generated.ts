@@ -1055,6 +1055,16 @@ export interface components {
             slug: string;
             /** @description El que resuelve cuando el rol no declara preferencia. */
             is_default: boolean;
+            /**
+             * @description **Cuántos meses de histórico ofrece el dashboard** · llegó con
+             *     `d9147c3`, medido el 2026-10-01.
+             *
+             *     Acá es donde el builder la EDITA —`PUT /admin/dashboards/{id}` con
+             *     `{"history_months": N}`, 1 a 120—, mientras que en el cable de la
+             *     consola es sólo de lectura. El mismo número con dos lectores.
+             * @example 12
+             */
+            history_months: number;
             /** Format: date-time */
             created_at?: string;
             /** Format: date-time */

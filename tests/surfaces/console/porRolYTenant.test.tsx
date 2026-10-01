@@ -93,7 +93,7 @@ const contextoDe = (
   ],
   scope: { kind: 'single_tenant' as const, tenants: [{ id: `t-${tenant}`, name: tenant, label: tenant }] },
   catalog_version: 1,
-  dashboards: [{ id: `d-${tenant}`, name: 'Overview', slug: 'overview', is_default: true }],
+  dashboards: [{ id: `d-${tenant}`, name: 'Overview', slug: 'overview', is_default: true, history_months: 12 }],
   active_dashboard_id: `d-${tenant}`,
   active_layout_id: `l-${tenant}`,
 })

@@ -128,7 +128,11 @@ export const context: WireContext = {
   // no se compuso», que es el estado real de un dashboard sin layout publicado
   // —medido el 2026-09-26 creando uno—. Un fixture que lo omite está simulando
   // ese estado sin querer.
-  dashboards: [{ id: 'd-1', name: 'Overview', slug: 'overview', is_default: true }],
+  // `history_months` es REQUERIDO desde `d9147c3` · medido el 2026-10-01 contra
+  // el servicio: 12 en los dos dashboards sembrados, que es el default de la
+  // columna. No se omite «porque es opcional»: el cable lo pide, y un fixture
+  // que lo omitiera dejaría de compilar — que es justamente cómo lo encontró.
+  dashboards: [{ id: 'd-1', name: 'Overview', slug: 'overview', is_default: true, history_months: 12 }],
   active_dashboard_id: 'd-1',
   active_layout_id: 'l-1',
 }

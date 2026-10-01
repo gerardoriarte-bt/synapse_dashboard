@@ -106,7 +106,7 @@ tags:
 
 paths:
   /config/me:
-    x-verificado-en: de881e1
+    x-verificado-en: d9147c3
     get:
       tags: [config]
       operationId: getMe
@@ -129,7 +129,7 @@ paths:
         '500': { $ref: '#/components/responses/ServerError' }
 
   /config/catalog:
-    x-verificado-en: de881e1
+    x-verificado-en: d9147c3
     get:
       tags: [config]
       operationId: getCatalog
@@ -153,7 +153,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/blocks:
-    x-verificado-en: de881e1
+    x-verificado-en: d9147c3
     get:
       tags: [config]
       operationId: getBlocks
@@ -188,6 +188,25 @@ paths:
         entradas en 5 ms**. Estuvo pedida tres veces y no llegaba; la tabla era
         nuestra entera, así que lo que faltaba era la ruta.
 
+        ── **CONTRA UPSTREAM DA 404** · medido el 2026-10-01 ────────────────────
+
+        Levantado `d9147c3` —su rama, limpia— esta ruta **no existe**: `git grep`
+        no encuentra `config/plots` en una sola línea de su código, y el servicio
+        contesta 404. Upstream no tomó `b6f0e09`.
+
+        **Y eso se vio recién hoy porque el binario de `:4010` era el fork.** Es
+        la trampa registrada en `CLAUDE.md` —«antes de medir, mirá qué binario
+        está corriendo»— con la cara más cara: no hace que su código se vea como
+        avance, hace que **nuestra propia ruta se vea como suya**. Comprobado
+        levantando los dos: el viejo da 200 con 49 filas, `d9147c3` da 404.
+
+        **Lo que se apaga sin ella:** el selector de gráfico del builder entero.
+        `PanelConfigurator` declara que un repertorio vacío apaga la sección —«un
+        control que se abre vacío promete una elección que no se puede hacer»—
+        así que contra upstream **no hay forma de elegir gráfico**, ni de ver el
+        que el panel ya tiene. La consola sigue dibujando: el `chart` viaja en el
+        layout y los cuerpos despachan sin el repertorio.
+
         Catálogo **GLOBAL, no por tenant** —qué puede dibujar un gráfico no
         depende del cliente— y `data` es un **arreglo desnudo**, igual que
         `blocks`. Eso último fue una decisión al escribirla: envolverlo en
@@ -215,7 +234,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/tabs/{tabId}:
-    x-verificado-en: de881e1
+    x-verificado-en: d9147c3
     get:
       tags: [config]
       operationId: getTab
@@ -251,7 +270,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   /config/panels:batch:
-    x-verificado-en: de881e1
+    x-verificado-en: d9147c3
     post:
       tags: [config]
       operationId: batchPanels
@@ -285,7 +304,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/me/preferences:
-    x-verificado-en: de881e1
+    x-verificado-en: d9147c3
     put:
       tags: [config]
       operationId: updatePreferences
@@ -428,7 +447,7 @@ paths:
 
   # ── F3.7 · el historial de hilos · TRANSCRITO DE 82da946 ─────────────────
   /config/chat/threads:
-    x-verificado-en: de881e1
+    x-verificado-en: d9147c3
     get:
       tags: [config]
       operationId: listChatThreads
@@ -491,7 +510,7 @@ paths:
 
   # ── B3.2 · las preguntas sugeridas · TRANSCRITO DE 82da946 ───────────────
   /config/panels/{panelId}/chat-suggestions:
-    x-verificado-en: de881e1
+    x-verificado-en: d9147c3
     get:
       tags: [config]
       operationId: panelChatSuggestions
@@ -1020,12 +1039,28 @@ components:
             un selector** · F5.1.
           items:
             type: object
-            required: [id, name, slug, is_default]
+            required: [id, name, slug, is_default, history_months]
             properties:
               id: { type: string, format: uuid }
               name: { type: string }
               slug: { type: string }
               is_default: { type: boolean }
+              history_months:
+                type: integer
+                description: |
+                  **Cuántos meses de histórico ofrece ESTE dashboard**, contando
+                  el mes en curso · llegó con `d9147c3`, medido el 2026-10-01.
+
+                  La profundidad dejó de ser una constante de doce: la decide el
+                  admin al crear el dashboard y el servicio la acota entre 1 y
+                  120 —`VALIDATION_HISTORY_MONTHS` fuera de rango—. **Un
+                  dashboard que no la declara sigue dando doce**, que es lo que
+                  pedimos para no romper los que ya existen.
+
+                  Viaja **por dashboard y no sólo en `periods`** porque el
+                  usuario puede cambiar de dashboard sin recargar: `periods` es
+                  la del activo, y ésta es la de cada uno.
+                examples: [12]
         active_dashboard_id:
           type: string
           format: uuid

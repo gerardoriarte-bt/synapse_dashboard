@@ -44,8 +44,8 @@ const payload: WirePayload = {
 } as WirePayload
 
 const DOS = [
-  { id: 'd-1', name: 'Overview', slug: 'overview', is_default: true },
-  { id: 'd-2', name: 'Marca', slug: 'marca', is_default: false },
+  { id: 'd-1', name: 'Overview', slug: 'overview', is_default: true, history_months: 12 },
+  { id: 'd-2', name: 'Marca', slug: 'marca', is_default: false, history_months: 12 },
 ]
 
 /** Monta la consola con el contexto que se le pase, y recoge **los cuerpos de

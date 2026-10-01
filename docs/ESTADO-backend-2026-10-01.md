@@ -159,3 +159,132 @@ Las dos únicas variables que hay que sacar de ahí son `DATA_ENCRYPTION_KEY` y
 cualquiera de estos cuatro se vea en la aplicación hay que levantar el backend en
 `d9147c3`, y eso es una decisión, no un trámite — cambia el binario contra el que
 está medido todo lo demás.
+
+---
+
+# Segunda parte · `d9147c3` LEVANTADO en `:4010` y todo remedido
+
+**Decisión del humano, el mismo día: «levantá el backend en `d9147c3` y volvé a
+medir todo».** Lo de arriba se midió en `:4011` sin tocar el servicio; esto es
+con el binario viejo bajado y el nuevo en su lugar.
+
+| | |
+|---|---|
+| Binario anterior | `/tmp/synapse-api-v11` · **se conserva**, y volver es correrlo con el mismo entorno |
+| Binario nuevo | `/tmp/synapse-api-d9147c3` · `go build` desde el worktree |
+| Entorno | leído de `ps eww` del proceso que estaba arriba · **NO de su `.env`**, que apunta a la RDS |
+| Puerta | ✓ conforme · 1722 pruebas |
+
+---
+
+## 1 · LO MÁS CARO: `/config/plots` DA 404, Y EL BINARIO VIEJO ERA NUESTRO FORK
+
+**El selector de gráfico del builder desaparece entero contra upstream.**
+
+```
+binario viejo (:4010 hasta hoy)   GET /config/plots → 200 · 49 filas
+d9147c3 (upstream limpio)         GET /config/plots → 404
+git grep "config/plots" d9147c3   → ninguna línea
+```
+
+Comprobado levantando los dos, no deducido: el viejo en `:4012` contestó 200 con
+las 49, el nuevo contesta 404.
+
+**Es la trampa registrada en `CLAUDE.md` con su cara más cara.** La nota dice
+«medir con el fork levantado hace que nuestro propio código se vea como avance de
+ellos». Acá fue peor: **hizo que una ruta nuestra se viera como existente**, y
+sobre esa lectura se midió el selector de gráfico toda la mañana —incluido el de
+la auditoría de los cuatro gráficos, que lo abrió y lo vio ofrecer TORNADO y
+COHORTES—. Con upstream real no ofrece nada.
+
+**Qué se apaga, exactamente:** `PanelConfigurator` declara que un repertorio
+vacío apaga la sección —«un control que se abre vacío promete una elección que no
+se puede hacer»—, así que contra upstream **no hay forma de elegir gráfico ni de
+ver el que el panel ya tiene**. La consola sigue dibujando: el `chart` viaja en
+el layout y los cuerpos despachan sin el repertorio.
+
+**Y hay una consecuencia que no es de ellos sino nuestra, y queda SIN tocar
+porque la decisión está escrita:** la sección se va **en silencio**. La regla dura
+del producto dice «degradación declarada: estado, razón, qué lo desbloquea y
+CTA», y acá no se declara nada. No se cambió sola — se pregunta.
+
+→ `b6f0e09` en `feature/config-plots` del fork sigue sin que upstream lo tome.
+Es el cuarto pedido de la misma ruta.
+
+## 2 · Dos derivas de cable, las dos `history_months`
+
+`npm run humo` contra `d9147c3`:
+
+```
+✗ /config/me          · el servicio manda y el yaml no declara: dashboards[].history_months
+✗ /admin/layouts/{id} · el servicio manda y el yaml no declara: dashboard.history_months
+```
+
+Transcriptas en los dos cables con su descripción, regeneradas, y
+`console-drift` / `admin-drift` ✓.
+
+**El compilador encontró los fixtures solo**: cinco literales de `dashboards[]`
+en tres archivos de prueba dejaron de compilar al volverse requerido el campo.
+Es exactamente para lo que el cable es la fuente del tipo — ninguno se escribió
+de memoria, el valor es el medido (12).
+
+Después de eso: **humo ✓ en las 10 rutas que ejercita.** Las tres que quedan son
+rutas que el humo no toca, no derivas: `/config/plots` (404, arriba),
+`/config/chat` (SSE, cuesta una llamada a Cortex) y las dos de drill-down —medidas
+a mano: `dimensions` 200 y `drilldown` 422, o sea que existen—.
+
+`backend-drift` pasó de **12 de 12 sin reverificar a 4**, moviendo la marca sólo
+de las ocho que el humo releyó campo por campo.
+
+## 3 · `2026-10` es la MAQUETA, y se abre primero
+
+Al arrancar, el binario siembra el mes en curso. Arrancó el 2026-10-01, así que
+sembró octubre:
+
+```
+2026-10   AVAILABLE 12 · BLOCKED 2   escalares 4.280.000 · 1.820.000 · 70.700
+          prosa: «Sales closed the month at USD 4.28M…»        ← la semilla, en inglés
+2026-09   AVAILABLE 14               escalares 1.232.721 · 3.313.885 · 34.548
+          prosa: «En septiembre de 2026 los ingresos alcanzaron COP 1.144.876…»  ← Snowflake
+```
+
+**La consola abre en octubre y muestra la maqueta.** Y la caída de mes que se
+construyó ayer **no se dispara, correctamente**: su condición es «ningún panel
+con valor», y octubre tiene valores — son de la semilla.
+
+**Es la lección del 2026-09-24 con fecha nueva**: «los doce paneles pintaban la
+maqueta del `.pen` sembrada en Postgres». La diferencia es que ahora se sabe
+mirar, y que no es una regresión de ellos: es el sembrado del arranque cayendo
+un día 1.
+
+**El riesgo real es que no se nota**: el panel dice `AVAILABLE`, trae cifra,
+medidor y comparativo, y nada en pantalla distingue un número del negocio de uno
+de la maqueta. Va al backend como pedido.
+
+## 4 · Lo que anda, verificado contra el binario nuevo
+
+| | |
+|---|---|
+| Consola · `2026-09` | 14 paneles, **14 `AVAILABLE`**, siete formas distintas |
+| `/config/me` | tenant en `es-MX` · `MXN` · `America/Mexico_City` · `history_months` 12 en los dos dashboards |
+| A1 · Clientes y plataforma | los dos tenants con usuarios, feed más atrasado y última publicación |
+| A5 · Salud de feeds | las cuatro fuentes · **el historial de corridas dibuja**, con la corrida de 16 errores del 25 de septiembre en acento |
+| `/admin/*` | las ocho rutas del humo ✓ campo por campo |
+
+## 5 · Y una cosa que esta medición NO cambia
+
+**El selector de cliente sigue con dos tenants de nombre idéntico**, y ahora se
+ve en tres pantallas: el builder, A1 y A5. En A5 el por defecto es el que no
+tiene datos —«4 fuentes · 0 al día · 0 degradadas · 4 sin carga»— y se lee como
+si el cliente estuviera roto.
+
+## Cómo volver atrás
+
+```
+kill <pid de :4010>
+env $(cat <el entorno guardado>) /tmp/synapse-api-v11
+```
+
+El binario viejo no se borró. **Y conviene saber por qué querría alguien
+volver**: con él vuelve `/config/plots`, o sea el selector de gráfico — a costa
+de medir contra código nuestro, que es lo que esta jornada demostró que cuesta.
