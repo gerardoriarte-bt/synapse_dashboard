@@ -104,7 +104,52 @@ export function ConsoleContainer() {
   const tabs = context.data?.tabs ?? []
   const activeTab = tabs.find((t) => t.id === tabId) ?? tabs[0]
   const periods = context.data?.periodos ?? []
-  const activePeriod = periods.find((p) => p.id === periodId) ?? periods[0]
+
+  /** ── EL MES ABIERTO ARRANCA VACÍO, Y ASÍ LA CONSOLA NACÍA MUERTA ───────────
+   *
+   *  **Medido el 2026-10-01**, el día que la fecha cambió de mes: `/config/me`
+   *  ofrece `2026-10` primero y lo declara `open_period`, y `dd_panel_data` tiene
+   *  **cero filas** de ese período. El contenedor elegía `periods[0]`, así que
+   *  los quince paneles salían `BLOQUEADO · No hay datos calculados para este
+   *  período`. **Un cliente que abre el día 1 ve el dashboard entero apagado.**
+   *
+   *  ── POR QUÉ LO DECIDE EL FRONT, QUE ES LO QUE HAY QUE JUSTIFICAR ──────────
+   *
+   *  **El cable no dice si un período tiene dato.** `periods_detail` trae `key`,
+   *  `grain`, `start` y `end`, y nada más — leído del servicio, no deducido. El
+   *  único que lo sabe de verdad es el servicio, que tiene las filas, y pedirle
+   *  la señal es lo correcto a futuro; está anotado como propuesta.
+   *
+   *  Mientras tanto **no se adivina: se mira**. Se pide el mes abierto, y si
+   *  vuelve sin un solo panel con valor se muestra el anterior **y se dice que
+   *  se hizo**. Eso no es calcular un dato que no llegó: es elegir cuál de los
+   *  períodos que el servicio ofrece se abre primero, que siempre fue decisión
+   *  de esta pantalla.
+   *
+   *  ── «VACÍO» ES ESTRICTO, Y ESO IMPORTA ───────────────────────────────────
+   *
+   *  **Ni un solo panel con valor.** `DISPONIBLE` y `DEGRADADO` llevan cifra; los
+   *  otros tres no. Con el umbral estricto, apenas el mes nuevo materializa UN
+   *  panel se deja de caer — que es exactamente lo pedido: mostrar el mes nuevo
+   *  en cuanto se tenga, y el anterior mientras no.
+   *
+   *  ── Y SE LATCHEA, PORQUE SI NO OSCILA ────────────────────────────────────
+   *
+   *  Sin el `useState` esto es un lazo: el período activo decide el batch y el
+   *  batch decidiría el período. Al caer a septiembre el batch trae dato, «vacío»
+   *  se vuelve falso, y volvería a octubre — y otra vez. **El latch se escribe
+   *  UNA vez**, mirando el batch del mes abierto, y no se vuelve a evaluar.
+   *
+   *  **Elegir un período a mano gana siempre**: `periodId` se consulta antes, así
+   *  que quien quiera ver octubre vacío lo ve, con sus paneles declarando por qué.
+   *  La caída es sólo para el arranque. */
+  const [caidoA, setCaidoA] = useState<string | null>(null)
+  const abierto = periods[0]
+  const siguiente = periods[1]
+  const activePeriod =
+    periods.find((p) => p.id === periodId) ??
+    periods.find((p) => p.id === caidoA) ??
+    abierto
 
   // ── EL LAYOUT ACTIVO SE PASA, Y SIN ESO EL MULTI-DASHBOARD NO ANDA ────────
   //
@@ -134,6 +179,49 @@ export function ConsoleContainer() {
     activePeriod?.id ?? '',
   )
   const retryPanel = useRetryPanel(activeTab?.id ?? null, activePeriod?.id ?? '')
+
+  /** La caída al mes anterior · se decide UNA sola vez.
+   *
+   *  Las tres guardas que quedan, cada una con un caso que rompería algo:
+   *
+   *   · `periodId !== null` — alguien eligió a mano y su elección manda.
+   *   · `caidoA !== null` — ya se decidió; volver a evaluar es el lazo.
+   *   · `siguiente === undefined` — con un solo período no hay a dónde caer.
+   *
+   *  ── DOS GUARDAS MÁS SE ESCRIBIERON Y NO PODÍAN DISPARARSE · 2026-10-01 ────
+   *
+   *  **Las dos las encontró la mutación, no la lectura.** Borrarlas no rompía
+   *  ninguna prueba, y al mirar por qué resultó que ninguna de las dos protegía
+   *  nada:
+   *
+   *   · «sólo se juzga el mes abierto» — cuando `periodId` y `caidoA` son los dos
+   *     `null`, `activePeriod` **es** el abierto por construcción.
+   *   · «una pestaña sin paneles no es un mes sin dato» — `usePanelsBatch` ya
+   *     tiene `enabled: … && panelIds.length > 0`, así que sin paneles la
+   *     consulta no corre y `isSuccess` nunca se pone en `true`.
+   *
+   *  **Una guarda que no puede fallar es peor que no tenerla**: su comentario
+   *  afirma una protección que no existe, y el día que alguien cambie `enabled`
+   *  creería que esto está cubierto. La protección real queda donde está —en el
+   *  `enabled` del hook— y **la prueba del caso sigue escrita**, que es lo que
+   *  la sostiene aunque el mecanismo se mude. */
+  useEffect(() => {
+    if (periodId !== null || caidoA !== null) return
+    if (!batch.isSuccess) return
+    if (siguiente === undefined) return
+
+    const conValor = Object.values(batch.data ?? {}).some(
+      (pl) => pl.estado === 'DISPONIBLE' || pl.estado === 'DEGRADADO',
+    )
+    if (!conValor) setCaidoA(siguiente.id)
+  }, [periodId, caidoA, batch.isSuccess, batch.data, siguiente])
+
+  /** Qué contarle a quien mira, cuando se cayó. Ausente si no se cayó: el aviso
+   *  existe para explicar una sustitución, y sin sustitución sería ruido. */
+  const avisoDePeriodo =
+    caidoA !== null && periodId === null && abierto !== undefined
+      ? `${abierto.etiqueta} todavía no tiene datos calculados · se muestra ${activePeriod?.etiqueta ?? ''}`
+      : undefined
 
   /** De qué paneles se puede abrir el detalle · F3.9.
    *
@@ -416,6 +504,7 @@ export function ConsoleContainer() {
         setDrillingPanelId(panelId)
       }}
       canDrill={canDrill}
+      {...(avisoDePeriodo === undefined ? {} : { avisoDePeriodo })}
       onAskTab={() => {
         setDrillingPanelId(null)
         setAskingTab(true)

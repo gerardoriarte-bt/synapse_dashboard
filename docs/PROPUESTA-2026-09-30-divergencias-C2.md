@@ -216,3 +216,43 @@ No es un pedido —el campo cuenta lo que dice contar— pero **quien lo pinte t
 que rotularlo por lo que es**: las filas que la consulta devolvió, nunca
 «mostrando N». Está atado por una aserción, y el adaptador lo pasa con su nombre
 propio sin derivar nada de él.
+
+---
+
+## ANEXO · 2026-10-01 · el mes abierto sin dato · pedido al backend
+
+**No es de C2 pero salió el mismo día y del mismo lado del cable**, así que se
+anota acá en vez de abrir un documento que diría media página.
+
+**El defecto, medido el día que pasó:** al cambiar la fecha de mes, `/config/me`
+pasó a ofrecer `2026-10` primero y a declararlo `open_period`, y `dd_panel_data`
+tenía **cero filas** de ese período. La consola elegía `periods[0]`, así que los
+quince paneles salían `BLOQUEADO`. **Un cliente que abre el día 1 ve el dashboard
+entero apagado.**
+
+**Lo que el cable NO declara:** si un período tiene dato. `periods_detail` trae
+`key`, `grain`, `start` y `end`, y nada más — leído del servicio.
+
+### Lo que se hizo mientras tanto · decisión humana del 2026-10-01
+
+Se pide el mes abierto y, **si vuelve sin un solo panel con valor**, se muestra
+el anterior **y se dice por qué**. No se adivina: se mira. Y el umbral es
+estricto —basta UN panel `DISPONIBLE` o `DEGRADADO` para quedarse en el mes
+nuevo—, que es lo que hace que la consola muestre el mes nuevo apenas se tenga.
+
+### Lo que se pide
+
+**Que el servicio declare cuál es el período por defecto, o si cada uno tiene
+dato.** Es un hecho que ustedes tienen y nosotros inferimos:
+
+```
+periods_detail: [ { key, grain, start, end, has_data: false }, … ]
+            o
+default_period: "2026-09"
+```
+
+Con eso la consola abre en el período correcto **sin la petición de sondeo**, y
+deja de depender de una heurística nuestra sobre datos de ustedes.
+
+**No es urgente** —lo de arriba funciona— pero sí es la clase de cosa que
+conviene que viva de un solo lado.

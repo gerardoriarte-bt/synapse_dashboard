@@ -21,6 +21,10 @@ type Props = {
   context: AppContext
   activeTab: Tab | undefined
   activePeriodId: string | undefined
+  /** **Por qué se muestra un período que nadie eligió** · 2026-10-01 · baja
+   *  hasta `PeriodPicker`. Lo redacta el contenedor porque es el único que ve la
+   *  sustitución; acá sólo viaja. */
+  avisoDePeriodo?: string | undefined
   /** Las métricas de la pestaña activa · el selector de período las necesita
    *  para saber qué granos puede ofrecer. */
   tabMetrics: readonly Metric[]
@@ -42,6 +46,7 @@ export function Topbar({
   context,
   activeTab,
   activePeriodId,
+  avisoDePeriodo,
   tabMetrics,
   format,
   onSelectTab,
@@ -219,6 +224,7 @@ export function Topbar({
           activeId={activePeriodId}
           metrics={tabMetrics}
           format={format}
+          {...(avisoDePeriodo === undefined ? {} : { aviso: avisoDePeriodo })}
           onSelect={onSelectPeriod}
         />
       </div>

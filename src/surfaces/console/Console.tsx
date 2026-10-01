@@ -27,6 +27,10 @@ type Props = {
   context: AppContext
   activeTab: Tab | undefined
   activePeriodId: string | undefined
+  /** **Por qué se muestra un período que nadie eligió** · 2026-10-01 · baja
+   *  hasta `PeriodPicker`. Lo redacta el contenedor porque es el único que ve la
+   *  sustitución; acá sólo viaja. */
+  avisoDePeriodo?: string | undefined
   panels: readonly PanelConfig[]
   metricsById: ReadonlyMap<string, Metric>
   payloadOf: (panelId: string) => Payload
@@ -94,6 +98,7 @@ export function Console({
   context,
   activeTab,
   activePeriodId,
+  avisoDePeriodo,
   panels,
   metricsById,
   payloadOf,
@@ -146,6 +151,7 @@ export function Console({
         context={context}
         activeTab={activeTab}
         activePeriodId={activePeriodId}
+        {...(avisoDePeriodo === undefined ? {} : { avisoDePeriodo })}
         format={format}
         tabMetrics={tabMetrics}
         onSelectTab={onSelectTab}

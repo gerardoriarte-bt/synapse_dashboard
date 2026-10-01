@@ -61,10 +61,17 @@ type Props = {
   /** Del locale del TENANT · F1.13b. El rango llega como dos fechas ISO y se
    *  redacta acá, que es el único lugar del sistema que sabe en qué idioma. */
   format: Formatter
+  /** **Por qué se está mostrando un período que nadie eligió** · 2026-10-01.
+   *
+   *  Llega REDACTADO desde el contenedor, que es el único que sabe que hubo una
+   *  sustitución: este componente ve una lista y un activo, y desde acá los dos
+   *  casos se ven iguales. Ausente cuando no hubo caída — un aviso sin nada que
+   *  explicar es ruido. */
+  aviso?: string | undefined
   onSelect: (id: string) => void
 }
 
-export function PeriodPicker({ periods, activeId, metrics, format, onSelect }: Props) {
+export function PeriodPicker({ periods, activeId, metrics, format, aviso, onSelect }: Props) {
   const required = coarsestRequired(metrics)
   const requiredIndex = GRAINS.indexOf(required)
 
@@ -132,6 +139,11 @@ export function PeriodPicker({ periods, activeId, metrics, format, onSelect }: P
       {activo?.enCurso === true && (
         <Label as="div">Período en curso · incompleto, no compara contra uno cerrado</Label>
       )}
+
+      {/* **Va acá y no sobre los paneles**: es una explicación del período, y
+          éste es el bloque donde el dibujo pone las notas del período. Repetirlo
+          quince veces, una por panel, diría lo mismo quince veces. */}
+      {aviso !== undefined && <Label as="div">{aviso}</Label>}
 
       {hayApagados && (
         // La razón también afuera: dentro del desplegable sólo se ve al
