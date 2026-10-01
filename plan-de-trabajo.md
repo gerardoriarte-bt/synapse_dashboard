@@ -153,7 +153,7 @@ decir qué rol cumple**, porque ahí empieza la superposición.
 | `docs/ESTADO.md` | **GENERADO** · el estado del proyecto. **Lo que se consulta y se reenvía** |
 | `docs/PARA-BACKEND.md` | **GENERADO** · lo que el front espera del backend |
 | `docs/ESTADO-BACKEND.md` | **GENERADO** · **contra qué commit suyo está verificada cada `B*`**, y cuáles quedaron contra uno anterior. No dice cuánto hizo el backend: dice qué sabemos nosotros y desde cuándo |
-| `docs/snowflake/*` | Entregable a **ingeniería de datos**, no al backend. Instrucción y SQL |
+| `docs/snowflake/*` | La carpeta de **ingeniería de datos**, en los dos sentidos: lo que les entregamos —instrucción y SQL— y lo que nos devuelven, como `Metricas.xlsx` o un informe. **Lo que mandan ellos no se edita**, igual que una `RESPUESTA-*`. Los PDF quedan fuera de git por `.gitignore` |
 | `docs/repertorio-de-graficos.json` | **GENERADO** · las 49 entradas de `SYNAPSE_PLOTS`, desde sus cuatro fuentes. Para leerlo y para diffearlo |
 | `docs/backend/*` | **GENERADO** · código Go que emitimos para el fork y que **no se edita a mano**. Hoy el seed de los 49 gráficos |
 | `docs/PLAN-INTEGRACION-*.md` | El **análisis** que fundamenta los pedidos, campo por campo |
