@@ -5157,41 +5157,34 @@ backend, que era cierto del contrato y dejó de serlo del cable**: el frame
 `error` de `82da946` manda `{code, message}`. Hoy lo deriva `api/chat.ts` y está
 pedido como campo. Ver F3.5.
 
-### ➕ F3.9 ⚠️ Drill-down C2
-**Estado: construida, con una mitad de la verificación sin hacer** · 2026-09-30 ·
-`src/surfaces/console/DrillSheet.tsx` · §PEN:C2.
-
-**POR QUÉ ⚠️ Y NO ✅, que es lo que esta entrada tiene que decir.** La corrida que
-la construyó **se cortó en la auditoría**: su QA se colgó esperando su propia
-`npx vitest run`, que bajo contención de máquina se pasó del timeout de diez
-minutos del comando. Se cortó a propósito, no se perdió — plan, cable, desarrollo
-y QA habían cerrado y su trabajo está en el árbol.
-
-**Lo que SÍ se verificó a mano el 2026-10-01, contra el servicio en `:4010`:**
-
-- `npm run verify` entera en verde · 1598 pruebas · `pen-pantallas` la cuenta.
-- **La asimetría del CTA, que es lo que más podía salir mal.** De los quince
-  paneles de `overview`, **siete traen `supported: true` y ocho no** —medido ruta
-  por ruta—, y la consola pinta **exactamente siete** «Ver detalle»: `sales`,
-  `investment`, `roas`, `orders`, `visits`, `units` e `investment_by_platform`.
-  `goals_vs_actual` y la prosa no lo ofrecen. Es «un CTA sin manejador no se
-  pinta» funcionando sobre un dato que varía por panel.
-
-**Lo que NO se verificó, y por eso la tarea no está ✅: la hoja no se abrió con
-dato.** La extensión del navegador se desconectó antes de poder hacerlo. En las
-dos pantallas anteriores de esta misma tanda —B6 y A2— abrirlas encontró **cinco
-defectos que ninguna prueba había visto**, así que esta mitad no es un trámite.
-
-**Queda por hacer**: abrir la hoja sobre `sales` en el período `2026-09`, que es
-el que tiene dato materializado, y recorrer sus tres dimensiones.
+### ➕ F3.9 ✅ Drill-down C2
+**Estado: hecha** · 2026-10-01 · `src/surfaces/console/DrillSheet.tsx` · §PEN:C2.
 
 **El candado D3 venció, y se puede mostrar cuál.** Decía «entra cuando el backend
 llegue a ese tramo», y llegó: `GET /config/panels/{panelId}/drilldown/dimensions`
 y `POST /config/panels/{panelId}/drilldown` son de `168a761` —verificado con
-`git log -L 111,112` sobre las dos líneas de su router y con `git log --` sobre
-los cinco archivos del camino, **ninguno con un commit nuestro**— y las dos
-contestan 200. Un bloqueo escrito no se razona por encima; acá la razón citada
-venció y está medido cuál.
+`git log -L` sobre las dos líneas de su router y con `git log --` sobre los cinco
+archivos del camino, **ninguno con un commit nuestro**— y las dos contestan 200.
+
+**CERRADA CONTRA DATO DE SNOWFLAKE, y se dice qué se miró**, porque «contra el
+servicio real» se dice solo. El 2026-10-01, con el período en `2026-09`:
+
+| Qué se abrió | Qué se vio |
+|---|---|
+| El pie de los quince paneles | **Siete «Ver detalle» y ocho sin él** · exactamente los siete que el servicio declara `supported: true`, medido ruta por ruta |
+| La hoja sobre `Sales` | La cifra, su BASE y procedencia, las tres dimensiones como pestañas, y `TABLA ORIGEN` y `LINAJE` declarados ausentes con su razón |
+| `DAY` | Las 30 barras del mes, con su fecha |
+| `PLATFORM` | Las 37 plataformas · el cambio de dimensión rehace la consulta |
+
+**La corrida que la construyó se había cortado en la auditoría** —su QA quedó
+colgado esperando una `npx vitest run` que bajo contención se pasó de su timeout—
+así que esta mitad se hizo a mano. La tarea estuvo en ⚠️ hasta tenerla.
+
+**Dos cosas observadas al mirar, anotadas y NO corregidas**, porque son de
+producto y no defectos de esta pantalla: la dimensión `day` llega ordenada por
+VALOR y no cronológicamente —así la manda el servicio, y en una dimensión de
+tiempo eso esconde la tendencia—, y la cola de plataformas en cero es el mismo
+cero-por-ausencia que la auditoría de usabilidad ya levantó.
 
 **Descripción.** v2 tiene 128 líneas construidas: desagregación por las
 `dimensiones` que declara la métrica. `nuevo-desarrollo.md` lo baja a F5.4.

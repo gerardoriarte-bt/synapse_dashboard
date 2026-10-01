@@ -111,6 +111,10 @@ export type Formatter = {
  *  ponerlo en una de las dos obligaba a la otra a importarla. */
 export const LOCALE_POR_DEFECTO = 'es-MX'
 
+/** `2026-09-01` a secas · una fecha de CALENDARIO. Con `T` o con huso ya es un
+ *  instante, y se mira desde algún lado. Ver `calendar`. */
+const SOLO_FECHA = /^\d{4}-\d{2}-\d{2}$/
+
 export function createFormat(locale: string): Formatter {
   function number(value: number, options: NumberOptions = {}): string {
     const { abbreviate = false, decimals } = options
@@ -239,6 +243,28 @@ export function createFormat(locale: string): Formatter {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
+        // ── UNA FECHA DE CALENDARIO NO ES UN INSTANTE · 2026-10-01 ───────────
+        //
+        // **El defecto, visto en pantalla**: el período `2026-09` pintaba su
+        // rango como «31 de ago de 2026 – 29 de sept de 2026». Septiembre
+        // empieza el 1.
+        //
+        // `new Date('2026-09-01')` parsea **medianoche UTC** —lo dice el
+        // estándar para la forma corta— y después `Intl` lo escribe en el huso
+        // del NAVEGADOR. Con cualquier huso al oeste de Greenwich, el día de
+        // atrás. **Los dos extremos se corrían**, así que el rango se veía
+        // coherente consigo mismo y era falso en los dos bordes — la clase de
+        // error que no se nota leyendo el código.
+        //
+        // **Se distingue por la forma del dato y no por quién llama.** Un
+        // `YYYY-MM-DD` nombra un día del calendario y hay que escribir ese día;
+        // un instante —`…T15:11:13-05:00`, que es lo que llega en `creadoEn`,
+        // `altaEn` o `ultimaCargaEn`— sí se mira desde un huso, y ése es el del
+        // navegador por la regla de presentación de §4.
+        //
+        // Forzar UTC a los dos habría corrido las marcas de tiempo; dejarlo como
+        // estaba corre las fechas. Son dos tipos distintos con la misma pinta.
+        ...(SOLO_FECHA.test(iso) ? { timeZone: 'UTC' } : {}),
       }).format(new Date(iso))
     },
 

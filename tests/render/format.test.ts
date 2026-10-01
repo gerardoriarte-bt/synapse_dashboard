@@ -128,3 +128,41 @@ describe('frescura · en horas hasta 48 y en días después', () => {
     expect(fmt.freshness('2026-08-31T12:00:00Z', now)).toBe('HACE 2 D')
   })
 })
+
+describe('una fecha de calendario no se corre de día · 2026-10-01', () => {
+  /** ── EL DEFECTO, VISTO EN PANTALLA ──────────────────────────────────────────
+   *
+   *  El período `2026-09` pintaba su rango como «31 de ago de 2026 – 29 de sept
+   *  de 2026». Septiembre empieza el 1.
+   *
+   *  `new Date('2026-09-01')` parsea **medianoche UTC** y `Intl` lo escribe en el
+   *  huso del navegador: con cualquiera al oeste de Greenwich, el día de atrás.
+   *  **Los dos extremos se corrían a la vez**, así que el rango se veía coherente
+   *  consigo mismo y era falso en los dos bordes.
+   *
+   *  **Estas pruebas valen en cualquier huso.** Fijan el día que se escribe, no
+   *  el corrimiento, así que una máquina en UTC no las vuelve verdes por suerte:
+   *  antes del arreglo fallaban en todo huso negativo y pasaban en UTC — y eso
+   *  también se dice, porque una prueba que depende del reloj de quien la corre
+   *  es la que deja pasar esto. */
+  it('el primero del mes se escribe como el primero', () => {
+    expect(fmt.calendar('2026-09-01')).toMatch(/\b1\b/)
+    expect(fmt.calendar('2026-09-01')).toMatch(/sept?/i)
+    expect(fmt.calendar('2026-09-01')).not.toMatch(/ago/i)
+  })
+
+  it('y el último también · es el otro borde del rango', () => {
+    expect(fmt.calendar('2026-09-30')).toMatch(/\b30\b/)
+    expect(fmt.calendar('2026-09-30')).toMatch(/sept?/i)
+  })
+
+  it('una MARCA DE TIEMPO sigue mirándose desde el huso, que es otra cosa', () => {
+    // **La mitad que impide «arreglarlo» forzando UTC a todo.** `creadoEn`,
+    // `altaEn` y `ultimaCargaEn` son instantes, y un instante sí se mira desde
+    // algún lado — el del navegador, por la regla de presentación de §4.
+    // Se afirma que NO se fuerza UTC: a las 23:00 de un huso negativo, el
+    // instante `…T04:00:00Z` del día siguiente es todavía el día anterior acá.
+    const local = new Date('2026-09-02T04:00:00Z').getDate()
+    expect(fmt.calendar('2026-09-02T04:00:00Z')).toMatch(new RegExp(`\\b${String(local)}\\b`))
+  })
+})
