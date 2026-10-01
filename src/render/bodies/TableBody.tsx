@@ -136,8 +136,25 @@ export function TableBody({
                     </td>
                   )
                 }
+                // ── **UNA COLUMNA NUMÉRICA SIGUE ALINEADA A LA DERECHA AUNQUE
+                //      LA CELDA FALTE** · 2026-10-01 ──────────────────────────
+                //
+                // La rama de arriba exige `typeof cell === 'number'`, así que una
+                // celda numérica AUSENTE cae acá y perdía el `text-right`: el
+                // `—` se pintaba a la izquierda de una columna cuyo encabezado
+                // está a la derecha, y quedaba pegado a la cifra de la columna
+                // anterior. Medido en `platform_return` del mes en curso, donde
+                // `sales` y `roas` no vienen: se leía `1,225.14—`.
+                //
+                // Se decide por `c.numerica` —lo que la COLUMNA declara— y no
+                // por el tipo del valor, que es justamente lo que falta.
+                // El `${…}` va ENTRE ESPACIOS y aporta la utilidad entera ·
+                // `tests/tokens/escala.test.ts` lo exige, y tiene razón: pegado a
+                // `text-ink` el escáner de Tailwind lee `text-ink${…}` y la clase
+                // no se emite. Compila, el DOM sale bien y se pinta sin alinear.
+                const alineacion = c.numerica ? 'text-right' : ''
                 return (
-                  <td key={c.clave} className="py-1 font-body text-cuerpo text-ink">
+                  <td key={c.clave} className={`py-1 font-body text-cuerpo text-ink ${alineacion}`}>
                     {j === 0 ? (
                       <span className="flex items-center gap-2 min-w-0">
                         <span

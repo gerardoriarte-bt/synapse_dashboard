@@ -157,6 +157,36 @@ describe('TableBody · la columna se formatea entera, no celda por celda', () =>
     expect(screen.getByText('3.0')).toBeInTheDocument()
   })
 
+  it('una celda numérica AUSENTE sigue alineada a la derecha', () => {
+    // **Lo encontró mirar el dashboard de UA**, no una prueba: en el mes en
+    // curso `platform_return` no trae `sales` ni `roas`, y el `—` se pintaba a
+    // la izquierda de una columna cuyo encabezado está a la derecha. Quedaba
+    // pegado a la cifra de la columna anterior y se leía `1,225.14—`.
+    //
+    // La rama numérica exige `typeof cell === 'number'`, así que la celda que
+    // falta cae en la de texto. La alineación tiene que decidirse por lo que la
+    // COLUMNA declara —`numerica`— y no por el tipo del valor, que es
+    // justamente lo que no está.
+    const conHueco = {
+      forma: 'tabular',
+      columnas: [
+        { clave: 'canal', titulo: 'Canal', numerica: false },
+        { clave: 'roas', titulo: 'ROAS', numerica: true },
+      ],
+      filas: [{ canal: 'Search' }],
+    } as unknown as Extract<Value, { forma: 'tabular' }>
+
+    const { container } = render(
+      <TableBody {...base} value={conHueco} params={{}} metric="ROAS" />,
+    )
+    const celdas = Array.from(container.querySelectorAll('tbody td'))
+    expect(celdas).toHaveLength(2)
+    // La de texto NO se alinea a la derecha; la numérica sí, aunque esté vacía.
+    expect(celdas[0]?.className).not.toContain('text-right')
+    expect(celdas[1]?.textContent).toBe('—')
+    expect(celdas[1]?.className).toContain('text-right')
+  })
+
   it('el encabezado lleva scope y la celda no repite su nombre', () => {
     render(<TableBody {...base} value={value} params={{}} metric="ROAS" />)
     // La celda hereda el nombre de la columna: un label propio la haría decir

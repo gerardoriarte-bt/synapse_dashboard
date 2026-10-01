@@ -1,0 +1,86 @@
+{
+  "tabs": [
+    {
+      "name": "Resumen",
+      "key": "resumen",
+      "operational_question": "¿Qué movió la venta, la inversión y la eficiencia este mes?",
+      "sort_order": 1,
+      "role_ids": [],
+      "panels": [
+        {
+          "type": "kpi",
+          "col_start": 1,
+          "col_span": 3,
+          "row_span": 4,
+          "metric_key": "revenue"
+        },
+        {
+          "type": "kpi",
+          "col_start": 4,
+          "col_span": 3,
+          "row_span": 4,
+          "metric_key": "spend"
+        },
+        {
+          "type": "kpi",
+          "col_start": 7,
+          "col_span": 3,
+          "row_span": 4,
+          "metric_key": "roas"
+        },
+        {
+          "type": "kpi",
+          "col_start": 10,
+          "col_span": 3,
+          "row_span": 4,
+          "metric_key": "orders"
+        },
+        {
+          "type": "kpi",
+          "col_start": 1,
+          "col_span": 3,
+          "row_span": 4,
+          "metric_key": "units"
+        },
+        {
+          "type": "kpi",
+          "col_start": 4,
+          "col_span": 3,
+          "row_span": 4,
+          "metric_key": "sessions"
+        },
+        {
+          "type": "bars",
+          "col_start": 7,
+          "col_span": 6,
+          "row_span": 4,
+          "chart": "radial",
+          "metric_key": "goal_attainment"
+        },
+        {
+          "type": "series",
+          "col_start": 1,
+          "col_span": 6,
+          "row_span": 5,
+          "chart": "smallmult",
+          "metric_key": "daily_trend"
+        },
+        {
+          "type": "series",
+          "col_start": 7,
+          "col_span": 6,
+          "row_span": 5,
+          "chart": "smallmult",
+          "metric_key": "media_efficiency_12m"
+        },
+        {
+          "type": "table",
+          "col_start": 1,
+          "col_span": 8,
+          "row_span": 5,
+          "metric_key": "platform_return"
+        }
+      ]
+    }
+  ]
+}
