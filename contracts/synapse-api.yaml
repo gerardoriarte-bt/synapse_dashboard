@@ -1553,6 +1553,32 @@ components:
           description: |
             `USD` (moneda, va delante), `%` o `x` (símbolo, va pegado), o un
             NOMBRE como «órdenes» (no se pega: pertenece al label).
+
+            ── **ESTE CAMPO ES EL DUEÑO DE LA UNIDAD** · decidido el 2026-10-01 ──
+
+            **Lo declara Snowflake, POR MÉTRICA** —es la columna `UNIT` de
+            `SYNAPSE_METRIC_CATALOG`— y lo que venga acá es lo que se muestra.
+            No se deduce del país del cliente, ni del `locale`, ni de
+            `tenant.moneda`, ni se elige en un componente.
+
+            **Cuando discrepe con `tenant.moneda`, gana éste**, porque es quien
+            conoce el dato. El campo del tenant es respaldo: para una cifra sin
+            unidad propia, y para que el agente tenga algo que escribir.
+
+            **Por métrica y no por tenant, y eso decide el diseño.** Un campo por
+            tenant no puede expresar ingresos en USD con inversión en la moneda
+            local: obliga a elegir una y rotular la otra mal, en silencio y con
+            aritmética coherente. Y la unidad no siempre es moneda —hoy el
+            catálogo trae `%`, `x`, `órdenes`, `unidades`, `visitas`—, así que
+            «la moneda del tenant» no tiene nada que decir sobre la mayoría.
+
+            **`null` sobre una métrica numérica es información, no un hueco.**
+            `daily_trend` no declara unidad porque mezcla venta, visitas e
+            inversión: no hay UNA. Es la misma señal que la auditoría de
+            comprensión de gráficos encontró mirando la multilínea, legible sin
+            abrir la pantalla.
+
+            Ver `docs/DECISIONES-2026-10-01-la-unidad-la-define-snowflake.md`.
         dimensiones:
           type: array
           description: Por dónde se puede desagregar en el drill-down.
