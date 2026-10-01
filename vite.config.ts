@@ -43,6 +43,29 @@ export default defineConfig({
       },
     },
   },
+
+  /** **`preview` lleva el MISMO proxy, y no es duplicación ociosa** · 2026-10-01.
+   *
+   *  `vite preview` sirve el build de `dist/` — el bundle real, con sus quince
+   *  chunks diferidos y sin HMR— y es la única forma de recorrer la aplicación
+   *  **como se despliega** sin construir la imagen. Sin proxy pide contra sí
+   *  mismo, le vuelve un 404 sin cuerpo y la pantalla dice «no se pudo
+   *  conectar»: el mismo síntoma engañoso que el comentario de `server`
+   *  describe, con el agravante de que acá parece un problema del build.
+   *
+   *  **La imagen de producción NO usa esto**: ahí el proxy lo hace nginx con
+   *  `deploy/nginx.conf.template` y su `API_ORIGIN`. Esto es para mirar el
+   *  bundle en local cuando no se puede construir la imagen — hoy, por ejemplo,
+   *  Docker Hub no respondía. */
+  preview: {
+    proxy: {
+      '/api/v1': {
+        target:
+          process.env['API_ORIGIN'] ?? process.env['AUTH_ORIGIN'] ?? 'http://localhost:4010',
+        changeOrigin: true,
+      },
+    },
+  },
   test: {
     /* Las pruebas se agrupan en `tests/`, fuera de `src/`. Los handlers de MSW
      * son datos falsos y no puede existir ruta desde una superficie hasta ellos
