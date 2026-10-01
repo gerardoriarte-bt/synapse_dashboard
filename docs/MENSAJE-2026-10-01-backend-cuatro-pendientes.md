@@ -24,20 +24,30 @@ devuelve ninguna línea.
 llega vacío, así que **no se puede elegir gráfico ni ver el que el panel ya
 tiene**. La consola sigue dibujando porque el `chart` viaja en el layout.
 
-**Está escrita y probada**, en nuestro fork:
+**Está escrita y probada.** Como el fork es privado, va **como parche**, en
+nuestro repositorio público:
 
 ```
-repo    gerardoriarte-bt/synapse-api-go
-rama    feature/config-plots       · 3 commits sobre de881e1
+github.com/gerardoriarte-bt/synapse_dashboard
+  docs/backend/config-plots.patch        · 3 commits sobre de881e1
 
+git am < config-plots.patch              (o git apply, si prefieren un commit solo)
+```
+
+```
 b6f0e09   GET /config/plots · las 49 entradas del repertorio
 8876b4d   compared_categorical, matrix y flow en el materializador
 4c80802   fix · platform_month_matrix devolvía las columnas desordenadas
 ```
 
-Archivos nuevos salvo tres líneas en `manual_migrations.go`, `migrations.go` y
-`app.go`. Las 49 filas se generan con `tools/gen-plots.py`; el resultado está en
-`docs/backend/dd_seed_plots.go`.
+Toca 15 archivos: 7 nuevos, y en los suyos sólo tres líneas de registro
+—`manual_migrations.go`, `migrations.go`, `app.go`— más las entradas de shape en
+`queries.go` y `schema.go`.
+
+**Las 49 filas se generan**, no se transcriben: `tools/gen-plots.py` las emite
+desde cuatro fuentes.
+
+**Si prefieren un PR, díganlo y lo abrimos** contra donde nos digan.
 
 **Verificación:** `GET /config/plots` → 200 con 49 entradas.
 
@@ -45,7 +55,7 @@ Archivos nuevos salvo tres líneas en `manual_migrations.go`, `migrations.go` y
 
 ## 2 · Seis métricas nuevas · datos las entregó hoy
 
-Planilla completa en `docs/snowflake/Metricas.xlsx`. Las diez primeras ya
+Planilla completa en `docs/snowflake/Metricas.xlsx` de nuestro repositorio público. Las diez primeras ya
 funcionan; **estas seis necesitan registro**:
 
 | Métrica | Shape | Unidad | Tabla fuente | Dimensiones | Qué pide |

@@ -1,0 +1,1073 @@
+From b6f0e096f1ad403bfe205a39675a890201e95ec8 Mon Sep 17 00:00:00 2001
+From: gerardoriarte-bt <gerardo.riarte@buentipo.com>
+Date: Tue, 29 Sep 2026 15:36:34 -0500
+Subject: [PATCH 1/3] =?UTF-8?q?:sparkles:=20B1.21=20=C2=B7=20GET=20/config?=
+ =?UTF-8?q?/plots=20=C2=B7=20el=20repertorio=20de=2049=20gr=C3=A1ficos=20?=
+ =?UTF-8?q?=C2=B7=20escrito=20por=20el=20equipo=20de=20front?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Cierra el pedido que estaba hecho tres veces. La ruta hermana de `/config/blocks`:
+tabla global, sin tenant y sin rol, porque qué puede dibujar un gráfico no
+depende del cliente.
+
+    GET /api/v1/config/plots  → 200 · 49 entradas · 5 ms
+
+Cada entrada trae `id`, `name`, `shapes`, `supports_band`, `minimums` y `cap`.
+
+── LAS 49 FILAS ESTÁN GENERADAS, NO TRANSCRITAS ──
+
+`dd_seed_plots.go` lo emite `tools/gen-plots.py` del repositorio del front desde
+CUATRO fuentes con dueños distintos, y por eso lleva el aviso de no editarlo a
+mano:
+
+  · `formas`, `soporta_banda`, `tope` ← el repertorio legible por máquina de v2
+  · `nombre`                          ← el `.pen`, que es copy de producto
+  · `minimums`                        ← la decisión de producto del 2026-09-26
+  · el mapa de formas                 ← el adaptador del front
+
+Pedirles transcribir 49 filas de una tabla markdown era el modo de falla que ya
+nos costó quince filas mal en otra tabla, con la mitad del daño invisible: un
+`tope` equivocado deshabilita un gráfico que debería estar y nadie lo atribuye a
+esto.
+
+── TRES DECISIONES QUE CONVIENE VER ──
+
+**`data` es el arreglo PELADO, sin envolver**, que es lo que hace `GetBlocks`.
+Envolverlo en `{"plots": [...]}` era más prolijo y obligaba al front a un segundo
+adaptador para dos rutas que son la misma cosa. Gana el hermano.
+
+**`minimums` sale como lista vacía y NUNCA como `null`.** Vacío significa «este
+gráfico no exige un mínimo» —una cifra es una cifra—, que es distinto de «no se
+sabe». Seis de los 49 salen así, y son exactamente los de `scalar` y `prose`.
+
+**Servicio propio y no un método en `ddConfigService`.** Agregarle el repositorio
+cambia la firma de `NewDDConfigService`, y **ocho archivos de tests la
+construyen**. El repertorio no necesita ninguna de sus diez dependencias.
+
+── CHURN ──
+
+Cinco archivos suyos, **+18 −1**, todo aditivo; el único borrado es la llamada a
+`SetupRouter` reescrita para pasarle el handler nuevo. Ninguna firma existente
+cambió y ninguna prueba suya se tocó.
+
+`go build` ✓ · `go vet` ✓ · `go test ./...` ✓ **sin una sola falla** ·
+`gofmt -l` limpio sobre los archivos nuevos, y no se corrió sobre los de ustedes.
+---
+ internal/adapters/handler/dd_plot_handler.go  |  37 ++++
+ internal/adapters/handler/router.go           |   2 +
+ .../adapters/repository/dd_plot_repository.go |  30 ++++
+ internal/adapters/repository/dd_seed_plots.go | 161 ++++++++++++++++++
+ .../adapters/repository/manual_migrations.go  |   3 +
+ internal/adapters/repository/migrations.go    |   1 +
+ internal/bootstrap/app.go                     |   7 +-
+ internal/core/domain/dd_plot.go               |  33 ++++
+ internal/core/ports/dd_repositories.go        |   6 +
+ internal/core/services/dd_plot_service.go     |  93 ++++++++++
+ 10 files changed, 372 insertions(+), 1 deletion(-)
+ create mode 100644 internal/adapters/handler/dd_plot_handler.go
+ create mode 100644 internal/adapters/repository/dd_plot_repository.go
+ create mode 100644 internal/adapters/repository/dd_seed_plots.go
+ create mode 100644 internal/core/domain/dd_plot.go
+ create mode 100644 internal/core/services/dd_plot_service.go
+
+diff --git a/internal/adapters/handler/dd_plot_handler.go b/internal/adapters/handler/dd_plot_handler.go
+new file mode 100644
+index 00000000..0394c41c
+--- /dev/null
++++ b/internal/adapters/handler/dd_plot_handler.go
+@@ -0,0 +1,37 @@
++package handler
++
++import (
++	"net/http"
++
++	"synapse-api/internal/core/services"
++
++	"github.com/gin-gonic/gin"
++)
++
++type DDPlotHandler struct {
++	svc *services.DDPlotService
++}
++
++func NewDDPlotHandler(svc *services.DDPlotService) *DDPlotHandler {
++	return &DDPlotHandler{svc: svc}
++}
++
++// GetPlots sirve el repertorio entero · `GET /config/plots`.
++//
++// **Global y sin tenant**, igual que `/config/blocks`: qué puede dibujar un
++// gráfico no depende del cliente. Por eso no lee `tenant_id` del contexto ni
++// filtra por rol — un rol que no ve una métrica tampoco ve su panel, y el
++// repertorio no dice nada de métricas.
++//
++// **`data` es el ARREGLO PELADO, sin envolver.** Es lo que hace `GetBlocks` dos
++// archivos más allá, y lo que el front tiene transcripto de medirlo. Envolverlo
++// en `{"plots": [...]}` habría sido más prolijo y habría obligado al front a un
++// segundo adaptador para dos rutas que son la misma cosa. Gana el hermano.
++func (h *DDPlotHandler) GetPlots(c *gin.Context) {
++	rules, err := h.svc.GetPlots(c.Request.Context())
++	if err != nil {
++		SendError(c, http.StatusInternalServerError, err.Error())
++		return
++	}
++	SendSuccess(c, http.StatusOK, rules)
++}
+diff --git a/internal/adapters/handler/router.go b/internal/adapters/handler/router.go
+index de05b46c..1a7100ed 100644
+--- a/internal/adapters/handler/router.go
++++ b/internal/adapters/handler/router.go
+@@ -26,6 +26,7 @@ func SetupRouter(
+ 	ddFeedHandler *DDFeedHandler,
+ 	ddRoleHandler *DDRoleHandler,
+ 	ddOnboardingHandler *DDOnboardingHandler,
++	ddPlotHandler *DDPlotHandler,
+ ) *gin.Engine {
+ 	router := gin.New()
+ 	router.Use(CORSMiddleware())
+@@ -95,6 +96,7 @@ func SetupRouter(
+ 				config.GET("/me", ddConfigHandler.GetMe)
+ 				config.GET("/catalog", ddConfigHandler.GetCatalog)
+ 				config.GET("/blocks", ddConfigHandler.GetBlocks)
++				config.GET("/plots", ddPlotHandler.GetPlots)
+ 				config.GET("/tabs/:tabId", ddConfigHandler.GetTab)
+ 				config.POST("/panels:batch", ddConfigHandler.BatchPanels)
+ 				config.PUT("/me/preferences", ddConfigHandler.UpdatePreferences)
+diff --git a/internal/adapters/repository/dd_plot_repository.go b/internal/adapters/repository/dd_plot_repository.go
+new file mode 100644
+index 00000000..cbd9372c
+--- /dev/null
++++ b/internal/adapters/repository/dd_plot_repository.go
+@@ -0,0 +1,30 @@
++package repository
++
++import (
++	"context"
++	"fmt"
++
++	"synapse-api/internal/core/domain"
++	"synapse-api/internal/core/ports"
++
++	"gorm.io/gorm"
++)
++
++type postgresDDPlotRepository struct {
++	db *gorm.DB
++}
++
++func NewDDPlotRepository(db *gorm.DB) ports.DDPlotRepository {
++	return &postgresDDPlotRepository{db: db}
++}
++
++// ListAll devuelve el repertorio entero, en el orden del catálogo de diseño.
++// **Ordenado por `sort_order` y no alfabéticamente**: el selector del builder lo
++// pinta en ese orden y es el de §5, que agrupa por familia de gráfico.
++func (r *postgresDDPlotRepository) ListAll(ctx context.Context) ([]domain.DDPlot, error) {
++	var plots []domain.DDPlot
++	if err := r.db.WithContext(ctx).Order("sort_order ASC, plot_id ASC").Find(&plots).Error; err != nil {
++		return nil, fmt.Errorf("DDPlotRepository.ListAll: %w", err)
++	}
++	return plots, nil
++}
+diff --git a/internal/adapters/repository/dd_seed_plots.go b/internal/adapters/repository/dd_seed_plots.go
+new file mode 100644
+index 00000000..ebf7e50a
+--- /dev/null
++++ b/internal/adapters/repository/dd_seed_plots.go
+@@ -0,0 +1,161 @@
++package repository
++
++// ── LAS 49 ENTRADAS DEL REPERTORIO · GENERADO, NO ESCRITO A MANO ────────────
++//
++// Lo emite `tools/gen-plots.py` del repositorio del front, desde cuatro fuentes
++// con dueños distintos: el repertorio legible por máquina de v2 —`formas`,
++// `soporta_banda`, `tope`—, el `.pen` —los nombres, que son copy de producto—,
++// la decisión del 2026-09-26 —los mínimos— y `NOMBRE_DE_FORMA` del adaptador
++// —el mapa al idioma del cable—.
++//
++// **No se edita a mano.** Si una de las cuatro fuentes cambia, se regenera; un
++// cambio escrito acá se pierde en la próxima corrida y produce deriva silenciosa.
++//
++// **Las formas van en el idioma del cable** —`scalar`, `time_series`—, igual que
++// `accepted_shapes` en `blocks`: una ruta hermana que hablara distinto obligaría
++// a una capa de traducción más.
++//
++// **Una lista de mínimos VACÍA es un valor legítimo**, no un dato faltante:
++// cuatro formas no declaran mínimo —`escalar`, `escalarConIntervalo`, `prosa`,
++// `tabular`— porque una cifra es una cifra y una tabla de una fila es una tabla.
++
++import (
++	"encoding/json"
++	"fmt"
++
++	"synapse-api/internal/core/domain"
++
++	"gorm.io/gorm"
++	"gorm.io/gorm/clause"
++)
++
++func seedPlots(db *gorm.DB) error {
++	if !db.Migrator().HasTable("plots") {
++		return nil
++	}
++	rows, err := defaultPlotSeedRows()
++	if err != nil {
++		return fmt.Errorf("seedPlots: %w", err)
++	}
++	if err := db.Clauses(clause.OnConflict{
++		Columns:   []clause.Column{{Name: "plot_id"}},
++		DoNothing: true,
++	}).Create(&rows).Error; err != nil {
++		return fmt.Errorf("seedPlots: %w", err)
++	}
++	return nil
++}
++
++// plotSeed es la fila tal como la emite el generador. Se convierte a
++// domain.DDPlot abajo; los tres campos JSON viajan como jsonb.
++type plotSeed struct {
++	ID           string
++	Name         string
++	Shapes       []string
++	SupportsBand bool
++	Minimums     []plotMinimum
++	Cap          *plotCap
++	SortOrder    int
++}
++
++type plotMinimum struct {
++	Shape  string `json:"shape"`
++	When   string `json:"when"`
++	Reason string `json:"reason"`
++}
++
++type plotCap struct {
++	When   string `json:"when"`
++	Reason string `json:"reason"`
++}
++
++func defaultPlotSeedRows() ([]domain.DDPlot, error) {
++	seeds := []plotSeed{
++		{"kpi", "KPI", []string{"scalar"}, false, nil, nil, 1},
++		{"gauge", "ARCO", []string{"scalar"}, false, nil, nil, 2},
++		{"bullet", "BULLET", []string{"scalar"}, false, nil, nil, 3},
++		{"rings", "ANILLOS", []string{"scalar"}, false, nil, nil, 4},
++		{"spark", "MICRO TENDENCIA", []string{"scalar", "time_series"}, false, []plotMinimum{{"time_series", "puntos < 2", "un punto no es una tendencia"}}, nil, 5},
++		{"interval", "INTERVALO", []string{"scalar_with_interval", "series_with_band"}, true, []plotMinimum{{"series_with_band", "puntos < 2", "un punto no es una tendencia"}}, nil, 6},
++		{"forecast", "PRONÓSTICO", []string{"scalar_with_interval", "series_with_band"}, true, []plotMinimum{{"series_with_band", "puntos < 2", "un punto no es una tendencia"}}, nil, 7},
++		{"tornado", "TORNADO", []string{"scalar_with_interval", "compared_categorical"}, true, []plotMinimum{{"compared_categorical", "items < 2", "una barra sola no compara nada"}}, nil, 8},
++		{"columns", "COLUMNAS", []string{"time_series", "categorical"}, false, []plotMinimum{{"time_series", "puntos < 2", "un punto no es una tendencia"}, {"categorical", "items < 2", "una barra sola no compara nada"}}, &plotCap{"etiquetas > 16 caracteres", "etiqueta larga en columna vertical; usar bars"}, 9},
++		{"area", "ÁREA", []string{"time_series"}, false, []plotMinimum{{"time_series", "puntos < 2", "un punto no es una tendencia"}}, nil, 10},
++		{"step", "ESCALERA", []string{"time_series"}, false, []plotMinimum{{"time_series", "puntos < 2", "un punto no es una tendencia"}}, nil, 11},
++		{"cycle", "CICLO", []string{"time_series"}, false, []plotMinimum{{"time_series", "puntos < 2", "un punto no es una tendencia"}}, nil, 12},
++		{"candle", "RANGO DIARIO", []string{"time_series"}, false, []plotMinimum{{"time_series", "puntos < 2", "un punto no es una tendencia"}}, nil, 13},
++		{"control", "CONTROL", []string{"time_series", "series_with_band"}, true, []plotMinimum{{"time_series", "puntos < 2", "un punto no es una tendencia"}, {"series_with_band", "puntos < 2", "un punto no es una tendencia"}}, nil, 14},
++		{"multiline", "LÍNEAS", []string{"time_series", "multi_series"}, false, []plotMinimum{{"time_series", "puntos < 2", "un punto no es una tendencia"}, {"multi_series", "series < 2", "una sola serie no se compara con nada"}}, nil, 15},
++		{"stackarea", "ÁREA APILADA", []string{"multi_series"}, false, []plotMinimum{{"multi_series", "series < 2", "una sola serie no se compara con nada"}}, nil, 16},
++		{"combo", "COMBINADO", []string{"multi_series"}, false, []plotMinimum{{"multi_series", "series < 2", "una sola serie no se compara con nada"}}, nil, 17},
++		{"smallmult", "MÚLTIPLOS", []string{"multi_series"}, false, []plotMinimum{{"multi_series", "series < 2", "una sola serie no se compara con nada"}}, nil, 18},
++		{"bump", "RANKING", []string{"multi_series", "ranking"}, false, []plotMinimum{{"multi_series", "series < 2", "una sola serie no se compara con nada"}, {"ranking", "items < 3", "un ranking de dos es una comparación"}}, nil, 19},
++		{"slope", "PENDIENTE", []string{"multi_series", "compared_categorical"}, false, []plotMinimum{{"multi_series", "series < 2", "una sola serie no se compara con nada"}, {"compared_categorical", "items < 2", "una barra sola no compara nada"}}, nil, 20},
++		{"bars", "BARRAS", []string{"categorical", "ranking"}, false, []plotMinimum{{"categorical", "items < 2", "una barra sola no compara nada"}, {"ranking", "items < 3", "un ranking de dos es una comparación"}}, nil, 21},
++		{"lollipop", "LOLLIPOP", []string{"categorical", "ranking"}, false, []plotMinimum{{"categorical", "items < 2", "una barra sola no compara nada"}, {"ranking", "items < 3", "un ranking de dos es una comparación"}}, nil, 22},
++		{"donut", "DONA", []string{"categorical", "composition"}, false, []plotMinimum{{"categorical", "items < 2", "una barra sola no compara nada"}, {"composition", "partes < 2", "una parte sola es el 100 %"}}, &plotCap{"partes > 5", "más de cinco partes, ilegible en dona"}, 23},
++		{"treemap", "TREEMAP", []string{"categorical", "composition"}, false, []plotMinimum{{"categorical", "items < 2", "una barra sola no compara nada"}, {"composition", "partes < 3", "con dos rectángulos es una barra apilada"}}, nil, 24},
++		{"radial", "BARRAS RADIALES", []string{"categorical"}, false, []plotMinimum{{"categorical", "items < 2", "una barra sola no compara nada"}}, nil, 25},
++		{"pareto", "PARETO", []string{"categorical"}, false, []plotMinimum{{"categorical", "items < 3", "con dos categorías no hay concentración que mostrar"}}, nil, 26},
++		{"grouped", "COLUMNAS AGRUPADAS", []string{"compared_categorical"}, false, []plotMinimum{{"compared_categorical", "items < 2", "una barra sola no compara nada"}}, nil, 27},
++		{"dumbbell", "DUMBBELL", []string{"compared_categorical"}, false, []plotMinimum{{"compared_categorical", "items < 2", "una barra sola no compara nada"}}, nil, 28},
++		{"stacked", "COLUMNAS APILADAS", []string{"composition"}, false, []plotMinimum{{"composition", "partes < 2", "una parte sola es el 100 %"}}, nil, 29},
++		{"stacked100", "APILADO 100%", []string{"composition"}, false, []plotMinimum{{"composition", "partes < 2", "una parte sola es el 100 %"}}, nil, 30},
++		{"marimekko", "MARIMEKKO", []string{"composition"}, false, []plotMinimum{{"composition", "partes < 2", "una parte sola es el 100 %"}}, nil, 31},
++		{"waterfall", "CASCADA", []string{"composition"}, false, []plotMinimum{{"composition", "partes < 3", "una cascada de dos pasos es una diferencia"}}, nil, 32},
++		{"funnel", "EMBUDO", []string{"composition", "flow"}, false, []plotMinimum{{"composition", "partes < 2", "una parte sola es el 100 %"}, {"flow", "etapas < 3", "dos etapas son una tasa de conversión, y eso es una cifra"}}, nil, 33},
++		{"heatmap", "MAPA DE CALOR", []string{"matrix"}, false, []plotMinimum{{"matrix", "filas < 2 o columnas < 2", "una matriz de una fila es un gráfico de barras"}}, nil, 34},
++		{"cohort", "COHORTES", []string{"matrix"}, false, []plotMinimum{{"matrix", "filas < 2 o columnas < 2", "una matriz de una fila es un gráfico de barras"}}, nil, 35},
++		{"calendar", "CALENDARIO", []string{"matrix"}, false, []plotMinimum{{"matrix", "filas < 2 o columnas < 2", "una matriz de una fila es un gráfico de barras"}}, nil, 36},
++		{"matrix", "MATRIX", []string{"matrix"}, false, []plotMinimum{{"matrix", "filas < 2 o columnas < 2", "una matriz de una fila es un gráfico de barras"}}, nil, 37},
++		{"histogram", "HISTOGRAMA", []string{"distribution"}, false, []plotMinimum{{"distribution", "cortes < 3", "con dos cortes es una comparación, no una distribución"}}, nil, 38},
++		{"box", "CAJA", []string{"distribution"}, false, []plotMinimum{{"distribution", "cortes < 3", "con dos cortes es una comparación, no una distribución"}}, nil, 39},
++		{"scatter", "DISPERSIÓN", []string{"distribution"}, false, []plotMinimum{{"distribution", "cortes < 3", "con dos cortes es una comparación, no una distribución"}}, nil, 40},
++		{"bubble", "BURBUJAS", []string{"distribution"}, false, []plotMinimum{{"distribution", "cortes < 3", "con dos cortes es una comparación, no una distribución"}}, nil, 41},
++		{"cuadrantes", "CUADRANTES", []string{"distribution"}, false, []plotMinimum{{"distribution", "cortes < 3", "con dos cortes es una comparación, no una distribución"}}, &plotCap{"cuadrantes sin rótulo", "promete una decisión por zona y sin rótulo no la entrega"}, 42},
++		{"sankey", "FLUJO", []string{"flow"}, false, []plotMinimum{{"flow", "etapas < 3", "dos etapas son una tasa de conversión, y eso es una cifra"}}, nil, 43},
++		{"network", "GRAFO", []string{"flow", "graph"}, false, []plotMinimum{{"flow", "etapas < 3", "dos etapas son una tasa de conversión, y eso es una cifra"}, {"graph", "aristas < 2", "una sola relación se dice con una frase"}}, nil, 44},
++		{"radar", "RADAR", []string{"multi_attribute_profile"}, false, []plotMinimum{{"multi_attribute_profile", "atributos < 3", "con dos ejes el radar es una línea"}}, &plotCap{"perfiles > 3", "por encima de tres, los polígonos se superponen y ninguno se lee"}, 45},
++		{"list", "LIST", []string{"ranking"}, false, []plotMinimum{{"ranking", "items < 3", "un ranking de dos es una comparación"}}, nil, 46},
++		{"table", "TABLE", []string{"tabular", "ranking"}, false, []plotMinimum{{"ranking", "items < 3", "un ranking de dos es una comparación"}}, nil, 47},
++		{"prose", "PROSE", []string{"prose"}, false, nil, nil, 48},
++		{"reco", "RECO", []string{"prose"}, false, nil, nil, 49},
++	}
++
++	rows := make([]domain.DDPlot, 0, len(seeds))
++	for _, s := range seeds {
++		shapes, err := json.Marshal(s.Shapes)
++		if err != nil {
++			return nil, fmt.Errorf("plot %q: shapes: %w", s.ID, err)
++		}
++		// **Nunca `null`**: una lista vacía es «sin mínimos», que es distinto de
++		// «no se sabe». `json.Marshal` de un slice nil emite `null`, así que se
++		// normaliza acá y no en el consumidor.
++		mins := s.Minimums
++		if mins == nil {
++			mins = []plotMinimum{}
++		}
++		minimums, err := json.Marshal(mins)
++		if err != nil {
++			return nil, fmt.Errorf("plot %q: minimums: %w", s.ID, err)
++		}
++		var cap domain.JSONRaw
++		if s.Cap != nil {
++			raw, err := json.Marshal(s.Cap)
++			if err != nil {
++				return nil, fmt.Errorf("plot %q: cap: %w", s.ID, err)
++			}
++			cap = domain.JSONRaw(raw)
++		}
++		rows = append(rows, domain.DDPlot{
++			PlotID:       s.ID,
++			Name:         s.Name,
++			Shapes:       domain.JSONRaw(shapes),
++			SupportsBand: s.SupportsBand,
++			Minimums:     domain.JSONRaw(minimums),
++			Cap:          cap,
++			SortOrder:    s.SortOrder,
++		})
++	}
++	return rows, nil
++}
+diff --git a/internal/adapters/repository/manual_migrations.go b/internal/adapters/repository/manual_migrations.go
+index 12431c54..c17cfa78 100644
+--- a/internal/adapters/repository/manual_migrations.go
++++ b/internal/adapters/repository/manual_migrations.go
+@@ -78,6 +78,9 @@ func runManualMigrations(db *gorm.DB) error {
+ 	if err := seedBlocks(db); err != nil {
+ 		return err
+ 	}
++	if err := seedPlots(db); err != nil {
++		return err
++	}
+ 	if err := seedDDDefaultDashboard(db); err != nil {
+ 		return err
+ 	}
+diff --git a/internal/adapters/repository/migrations.go b/internal/adapters/repository/migrations.go
+index 06ca1cc3..1ff890e5 100644
+--- a/internal/adapters/repository/migrations.go
++++ b/internal/adapters/repository/migrations.go
+@@ -14,6 +14,7 @@ var migrationModels = []any{
+ 	&domain.AccessRequest{},
+ 	// Dynamic dashboard (dd_*) — tablas nuevas, no rompen las existentes.
+ 	&domain.DDBlock{},
++	&domain.DDPlot{},
+ 	&domain.DDDashboard{},
+ 	&domain.DDLayoutVersion{},
+ 	&domain.DDTab{},
+diff --git a/internal/bootstrap/app.go b/internal/bootstrap/app.go
+index 3edafd3b..772e8ea4 100644
+--- a/internal/bootstrap/app.go
++++ b/internal/bootstrap/app.go
+@@ -96,6 +96,7 @@ func NewApp(db *gorm.DB) *App {
+ 	ticketSvc := services.NewTicketService(jwtGen, sqlAPIClient, imageUploader)
+ 
+ 	ddBlockRepo := repository.NewDDBlockRepository(db)
++	ddPlotRepo := repository.NewDDPlotRepository(db)
+ 	ddDashboardRepo := repository.NewDDDashboardRepository(db)
+ 	ddLayoutRepo := repository.NewDDLayoutVersionRepository(db)
+ 	ddTabRepo := repository.NewDDTabRepository(db)
+@@ -133,6 +134,10 @@ func NewApp(db *gorm.DB) *App {
+ 	ticketHandler := handler.NewTicketHandler(ticketSvc, imageUploader, tenantSvc, agentSvc)
+ 	accessRequestHandler := handler.NewAccessRequestHandler(accessRequestSvc, tenantSvc)
+ 	ddConfigHandler := handler.NewDDConfigHandler(ddConfigSvc)
++	// El repertorio de gráficos va por su propio camino —repo, servicio y
++	// handler— porque no comparte ninguna dependencia con la configuración:
++	// es una tabla global, sin tenant y sin rol.
++	ddPlotHandler := handler.NewDDPlotHandler(services.NewDDPlotService(ddPlotRepo))
+ 	ddLayoutBuilderHandler := handler.NewDDLayoutBuilderHandler(ddLayoutBuilderSvc)
+ 	ddDashboardHandler := handler.NewDDDashboardHandler(ddDashboardSvc)
+ 	ddChatHandler := handler.NewDDChatHandler(ddChatSvc)
+@@ -186,7 +191,7 @@ func NewApp(db *gorm.DB) *App {
+ 	tenantKeySvc := services.NewTenantKeyService(tenantRepo, tenantRepo)
+ 	ddOnboardingHandler := handler.NewDDOnboardingHandler(ddSchemaCheckSvc, ddCatalogSyncSvc, tenantKeySvc)
+ 
+-	router := handler.SetupRouter(authHandler, tenantHandler, userHandler, agentHandler, chatHandler, threadHandler, historyHandler, ticketHandler, accessRequestHandler, ddConfigHandler, ddLayoutBuilderHandler, ddDashboardHandler, ddChatHandler, ddDrillDownHandler, ddMaterializeHandler, ddFeedHandler, ddRoleHandler, ddOnboardingHandler)
++	router := handler.SetupRouter(authHandler, tenantHandler, userHandler, agentHandler, chatHandler, threadHandler, historyHandler, ticketHandler, accessRequestHandler, ddConfigHandler, ddLayoutBuilderHandler, ddDashboardHandler, ddChatHandler, ddDrillDownHandler, ddMaterializeHandler, ddFeedHandler, ddRoleHandler, ddOnboardingHandler, ddPlotHandler)
+ 
+ 	addr := ":" + getEnvOrDefault("APP_PORT", "8080")
+ 	srv := &http.Server{
+diff --git a/internal/core/domain/dd_plot.go b/internal/core/domain/dd_plot.go
+new file mode 100644
+index 00000000..c59bda82
+--- /dev/null
++++ b/internal/core/domain/dd_plot.go
+@@ -0,0 +1,33 @@
++package domain
++
++import "time"
++
++// DDPlot es una entrada del repertorio de gráficos · `SYNAPSE_PLOTS`.
++//
++// **Es una tabla GLOBAL, no por tenant**, igual que `blocks`: qué puede dibujar
++// un gráfico no depende del cliente. Por eso no lleva `tenant_id`.
++//
++// Las tres columnas jsonb guardan lo que el front necesita para decidir sin
++// duplicar la tabla: qué formas acepta, qué mínimos exige y qué techo lo
++// deshabilita. La consumen los tres que validan — el builder, `layout:validate`
++// y el adaptador del front.
++type DDPlot struct {
++	ID     uint   `gorm:"primaryKey" json:"-"`
++	PlotID string `gorm:"column:plot_id;not null;uniqueIndex" json:"id"`
++	Name   string `gorm:"column:name;not null" json:"name"`
++	// Las formas de dato que sabe dibujar, en el idioma del cable
++	// —`scalar`, `time_series`—, igual que `blocks.accepted_shapes`.
++	Shapes JSONRaw `gorm:"type:jsonb;column:shapes;not null" json:"shapes"`
++	// Regla dura 6: `series_with_band` sólo admite gráficos con esto en true.
++	SupportsBand bool `gorm:"column:supports_band;not null;default:false" json:"supports_band"`
++	// Cuántos datos necesita para no engañar, POR FORMA. **Vacío es un valor
++	// legítimo** y no un dato faltante: una cifra es una cifra.
++	Minimums JSONRaw `gorm:"type:jsonb;column:minimums;not null;default:'[]'" json:"minimums"`
++	// El techo que lo deshabilita, con su razón. Nulo cuando no tiene.
++	Cap       JSONRaw   `gorm:"type:jsonb;column:cap" json:"cap,omitempty"`
++	SortOrder int       `gorm:"column:sort_order;not null;default:0" json:"-"`
++	CreatedAt time.Time `json:"created_at"`
++	UpdatedAt time.Time `json:"updated_at"`
++}
++
++func (DDPlot) TableName() string { return "plots" }
+diff --git a/internal/core/ports/dd_repositories.go b/internal/core/ports/dd_repositories.go
+index c7eca3a7..8224fcea 100644
+--- a/internal/core/ports/dd_repositories.go
++++ b/internal/core/ports/dd_repositories.go
+@@ -13,6 +13,12 @@ type DDBlockRepository interface {
+ 	ListAll(ctx context.Context) ([]domain.DDBlock, error)
+ }
+ 
++// DDPlotRepository sirve el repertorio de gráficos (plots). Global, sin tenant:
++// qué puede dibujar un gráfico no depende del cliente.
++type DDPlotRepository interface {
++	ListAll(ctx context.Context) ([]domain.DDPlot, error)
++}
++
+ // DDDashboardRepository administra la identidad de dashboards por tenant (dd_dashboards).
+ type DDDashboardRepository interface {
+ 	Create(ctx context.Context, d *domain.DDDashboard) error
+diff --git a/internal/core/services/dd_plot_service.go b/internal/core/services/dd_plot_service.go
+new file mode 100644
+index 00000000..9a93e9a6
+--- /dev/null
++++ b/internal/core/services/dd_plot_service.go
+@@ -0,0 +1,93 @@
++package services
++
++import (
++	"context"
++	"encoding/json"
++	"fmt"
++
++	"synapse-api/internal/core/ports"
++)
++
++// ── POR QUÉ UN SERVICIO APARTE Y NO UN MÉTODO EN `ddConfigService` ───────────
++//
++// `GetBlocks` vive en el servicio de configuración y lo natural sería poner
++// `GetPlots` al lado. **Agregar el repositorio a `NewDDConfigService` cambia su
++// firma, y ocho archivos de tests la construyen** — ese cambio se propaga a
++// todos ellos sin aportar nada.
++//
++// El repertorio no necesita ninguna de las diez dependencias de aquel servicio:
++// es una tabla global, sin tenant y sin rol. Un servicio propio con un solo
++// repositorio dice eso en su forma.
++type DDPlotService struct {
++	repo ports.DDPlotRepository
++}
++
++func NewDDPlotService(repo ports.DDPlotRepository) *DDPlotService {
++	return &DDPlotService{repo: repo}
++}
++
++// PlotRule es lo que viaja: las tres columnas jsonb ya desempaquetadas.
++//
++// **El desempaquetado va acá y no en el handler** por la misma razón que
++// `BlockRulesFromDomain`: un jsonb mal formado es un error del seed y tiene que
++// salir con el id del gráfico que lo tiene, no como un 500 sin nombre.
++type PlotRule struct {
++	ID           string        `json:"id"`
++	Name         string        `json:"name"`
++	Shapes       []string      `json:"shapes"`
++	SupportsBand bool          `json:"supports_band"`
++	Minimums     []PlotMinimum `json:"minimums"`
++	Cap          *PlotCap      `json:"cap"`
++}
++
++type PlotMinimum struct {
++	Shape  string `json:"shape"`
++	When   string `json:"when"`
++	Reason string `json:"reason"`
++}
++
++type PlotCap struct {
++	When   string `json:"when"`
++	Reason string `json:"reason"`
++}
++
++func (s *DDPlotService) GetPlots(ctx context.Context) ([]PlotRule, error) {
++	plots, err := s.repo.ListAll(ctx)
++	if err != nil {
++		return nil, err
++	}
++	out := make([]PlotRule, 0, len(plots))
++	for _, p := range plots {
++		var shapes []string
++		if err := json.Unmarshal(p.Shapes, &shapes); err != nil {
++			return nil, fmt.Errorf("plot %s shapes: %w", p.PlotID, err)
++		}
++		// **`minimums` sale como lista vacía y nunca como `null`.** Vacío
++		// significa «este gráfico no exige un mínimo», que es distinto de «no se
++		// sabe»; un `null` en el cable obliga a cada consumidor a distinguir los
++		// dos casos y el día que alguien no lo haga, un gráfico sin mínimo se lee
++		// como uno sin verificar.
++		minimums := []PlotMinimum{}
++		if len(p.Minimums) > 0 && string(p.Minimums) != "null" {
++			if err := json.Unmarshal(p.Minimums, &minimums); err != nil {
++				return nil, fmt.Errorf("plot %s minimums: %w", p.PlotID, err)
++			}
++		}
++		var cap *PlotCap
++		if len(p.Cap) > 0 && string(p.Cap) != "null" {
++			cap = &PlotCap{}
++			if err := json.Unmarshal(p.Cap, cap); err != nil {
++				return nil, fmt.Errorf("plot %s cap: %w", p.PlotID, err)
++			}
++		}
++		out = append(out, PlotRule{
++			ID:           p.PlotID,
++			Name:         p.Name,
++			Shapes:       shapes,
++			SupportsBand: p.SupportsBand,
++			Minimums:     minimums,
++			Cap:          cap,
++		})
++	}
++	return out, nil
++}
+-- 
+2.50.1 (Apple Git-155)
+
+
+From 8876b4d4785f5b73467ac8dfc71c472cc667e7aa Mon Sep 17 00:00:00 2001
+From: gerardoriarte-bt <gerardo.riarte@buentipo.com>
+Date: Wed, 30 Sep 2026 12:27:06 -0500
+Subject: [PATCH 2/3] =?UTF-8?q?:sparkles:=20Tres=20formas=20que=20faltaban?=
+ =?UTF-8?q?=20=C2=B7=20compared=5Fcategorical,=20matrix=20y=20flow=20?=
+ =?UTF-8?q?=C2=B7=20por=20el=20equipo=20de=20front?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Las tres salen del dato que YA existe: usan sólo columnas de `GLD_PAID_MEDIA` que
+`platform_return` ya lee. No hace falta una tabla Gold nueva.
+
+Existen para destrabar `ComparisonBody`, `MatrixBody` y `GraphBody` del front, que
+no se pueden construir sin una métrica que declare su forma. **Falta, para cada
+una, su fila en `SYNAPSE_METRIC_CATALOG` con el copy que se pinta en pantalla** —
+eso es de datos y está pedido.
+
+── LAS TRES DECISIONES ──
+
+**`platform_gap`** · retorno contra inversión por plataforma, **los dos en USD**.
+La versión «indicador real contra meta» se descartó: un `compared_categorical`
+comparte eje, así que mezclar órdenes con dólares deja la serie chica pegada al
+piso.
+
+**`platform_month_matrix`** · inversión por plataforma y mes. Los alias van en
+español —`fila`, `columna`— porque `row` y `column` son reservadas; el
+transformador acepta los dos. Y el `DATEADD(month, -12` no es decorativo:
+`periodBindings` lo detecta y liga los DOS `?` a `Hasta` en vez de alternar.
+
+**`spend_flow`** · la inversión de cada plataforma hacia el total. **No es un
+embudo, y la razón salió de leer `transformFlow`**: el valor de cada etapa es su
+flujo SALIENTE y sólo cae al entrante cuando no tiene salida, así que en
+`visitas → sesiones → órdenes` la última etapa muestra el valor de la anterior —
+una cifra correcta en el lugar equivocado. Con este flujo cada plataforma tiene
+su salida y el total sólo entradas: las etapas quedan bien por construcción.
+
+── LA PRUEBA QUE HACÍA FALTA ──
+
+`tests/dashboard/queries_v11_contract_test.go`. El `BuildSQL` y el transformador
+se comunican **por los nombres de las columnas**, y nada los ata: un `AS etiqueta`
+donde el transformador lee `label` compila, la consulta corre, y `Materialize`
+devuelve menos filas de las que llegaron. La prueba cruza los alias del SQL real
+contra las claves del fixture, y las claves van en MAYÚSCULA porque es lo que la
+API devuelve.
+
+── DOS CAMBIOS EN SUS PRUEBAS, LOS DOS EXPLICADOS ──
+
+**`TO_CHAR` y `YYYY` al vocabulario de `schema_contract_test.go`**, de la misma
+clase que `DATE_TRUNC` y `TO_DATE` que ya estaban: nombres de función y
+literales, no columnas. Y el `TO_CHAR` no es cosmético — sin él la etiqueta del
+mes vuelve como la devuelva la API, que para fechas manda días desde época, y el
+encabezado de la matriz sale «20302» en pantalla.
+
+**La expectativa de `AffectedMetrics` pasó de una métrica a cuatro.** Decía «sólo
+platform_return» y era cierto mientras fuera la única de paid media. Que las
+cuatro salgan afectadas si falta la tabla **es el comportamiento correcto**: lo
+que quedó viejo fue la lista escrita a mano.
+
+`go build` ✓ · `go vet` ✓ · `go test ./...` ✓ · `gofmt -l` limpio
+Churn en archivos de ustedes: **+100 −2**, y los 2 son esa expectativa.
+---
+ internal/core/dashboard/snowflake/queries.go |  77 ++++++++
+ internal/core/dashboard/snowflake/schema.go  |   6 +
+ tests/dashboard/queries_v11_contract_test.go | 198 +++++++++++++++++++
+ tests/dashboard/schema_contract_test.go      |  19 +-
+ 4 files changed, 298 insertions(+), 2 deletions(-)
+ create mode 100644 tests/dashboard/queries_v11_contract_test.go
+
+diff --git a/internal/core/dashboard/snowflake/queries.go b/internal/core/dashboard/snowflake/queries.go
+index c130836b..332b48fa 100644
+--- a/internal/core/dashboard/snowflake/queries.go
++++ b/internal/core/dashboard/snowflake/queries.go
+@@ -141,6 +141,83 @@ SELECT FUENTE AS platform,
+ 		},
+ 		ProcessRows: addPlatformShare,
+ 	},
++	// ── TRES FORMAS QUE FALTABAN · escritas por el equipo de front, 2026-09-30 ──
++	//
++	// **Salen del dato que YA existe.** No hacía falta una tabla Gold nueva: las
++	// tres usan columnas que las consultas de arriba ya leen. Se escribieron para
++	// destrabar `ComparisonBody`, `MatrixBody` y `GraphBody` del front, que no se
++	// pueden construir sin una métrica que declare su forma.
++	//
++	// Falta, para cada una, su fila en `SYNAPSE_METRIC_CATALOG` con el copy que se
++	// pinta en pantalla. Eso es de datos y está pedido.
++
++	// **Retorno contra inversión, por plataforma.** Los dos valores en USD, y eso
++	// no es un detalle: un `compared_categorical` comparte eje, así que mezclar
++	// órdenes con dólares deja la serie chica pegada al piso. La versión
++	// «indicador real contra meta» se descartó por eso — son cinco unidades
++	// distintas en el mismo gráfico.
++	"platform_gap": {
++		Shape: "compared_categorical",
++		BuildSQL: func(t Tables, b Bounds) string {
++			return fmt.Sprintf(`
++SELECT FUENTE AS label,
++       ROUND(SUM(INGRESOS_USD), 2) AS v,
++       ROUND(SUM(COST_USD), 2)     AS reference
++  FROM %s
++ WHERE DATE >= ? AND DATE < ?
++ GROUP BY FUENTE
++ ORDER BY v DESC NULLS LAST`, t.PaidMedia)
++		},
++	},
++
++	// **Inversión por plataforma y mes.** Doce meses hacia atrás, como
++	// `media_efficiency_12m` — y el `DATEADD(month, -12` no es decorativo:
++	// `periodBindings` lo detecta y liga los DOS `?` a `Hasta` en vez de
++	// alternar. Cambiar esa expresión cambia el binding en silencio.
++	//
++	// Los alias van en español —`fila`, `columna`— y no en inglés porque `row` y
++	// `column` son palabras reservadas. El transformador acepta los dos.
++	"platform_month_matrix": {
++		Shape: "matrix",
++		BuildSQL: func(t Tables, b Bounds) string {
++			return fmt.Sprintf(`
++SELECT FUENTE AS fila,
++       TO_CHAR(DATE_TRUNC('month', DATE), 'YYYY-MM') AS columna,
++       ROUND(SUM(COST_USD), 2) AS v
++  FROM %s
++ WHERE DATE >= DATEADD(month, -12, TO_DATE(?)) AND DATE < TO_DATE(?)
++ GROUP BY 1, 2
++ ORDER BY 1, 2`, t.PaidMedia)
++		},
++	},
++
++	// **La inversión de cada plataforma hacia el total.**
++	//
++	// La forma del flujo se eligió leyendo `transformFlow`, y conviene decir por
++	// qué no es un embudo: **el valor de cada etapa sale de su flujo SALIENTE**
++	// —`out[id]`, y sólo cae a `in[id]` cuando no tiene salida—. En un embudo
++	// `visitas → sesiones → órdenes` eso deja la última etapa mostrando el valor
++	// de la anterior, que es una cifra correcta en el lugar equivocado.
++	//
++	// Con este flujo cierra sin excepciones: cada plataforma tiene una salida con
++	// su propia inversión, y el total sólo tiene entradas, así que su etapa vale
++	// la suma. Todas las etapas quedan bien por construcción y no por suerte.
++	"spend_flow": {
++		Shape: "flow",
++		BuildSQL: func(t Tables, b Bounds) string {
++			return fmt.Sprintf(`
++SELECT FUENTE AS desde,
++       'total' AS hacia,
++       ROUND(SUM(COST_USD), 2) AS v,
++       FUENTE AS desde_label,
++       'Total invertido' AS hacia_label
++  FROM %s
++ WHERE DATE >= ? AND DATE < ?
++ GROUP BY FUENTE
++ ORDER BY v DESC NULLS LAST`, t.PaidMedia)
++		},
++	},
++
+ 	"exec_resumen": {
+ 		Shape:         "prose",
+ 		Blocked:       true,
+diff --git a/internal/core/dashboard/snowflake/schema.go b/internal/core/dashboard/snowflake/schema.go
+index c5289d22..1fd98503 100644
+--- a/internal/core/dashboard/snowflake/schema.go
++++ b/internal/core/dashboard/snowflake/schema.go
+@@ -64,6 +64,12 @@ var MetricColumnUsage = map[string]MetricColumns{
+ 	"daily_trend":          {ObjectEcomm, []string{"DATE", "REV_TOTAL", "VISITS_TOTAL", "GROSS_SPEND"}},
+ 	"media_efficiency_12m": {ObjectEcomm, []string{"DATE", "GROSS_SPEND", "REV_TOTAL"}},
+ 	"platform_return":      {ObjectPaidMedia, []string{"DATE", "FUENTE", "COST_USD", "INGRESOS_USD"}},
++	// Las tres de 2026-09-30 · declaradas acá para que `schema-check` las
++	// verifique antes de intentar materializarlas, igual que las demás. Las tres
++	// salen de paid media y no piden ninguna columna que no estuviera ya.
++	"platform_gap":          {ObjectPaidMedia, []string{"DATE", "FUENTE", "COST_USD", "INGRESOS_USD"}},
++	"platform_month_matrix": {ObjectPaidMedia, []string{"DATE", "FUENTE", "COST_USD"}},
++	"spend_flow":            {ObjectPaidMedia, []string{"DATE", "FUENTE", "COST_USD"}},
+ }
+ 
+ // RequiredObjects arma la lista de objetos a verificar con los nombres reales del tenant
+diff --git a/tests/dashboard/queries_v11_contract_test.go b/tests/dashboard/queries_v11_contract_test.go
+new file mode 100644
+index 00000000..eb18cd50
+--- /dev/null
++++ b/tests/dashboard/queries_v11_contract_test.go
+@@ -0,0 +1,198 @@
++package dashboard_test
++
++import (
++	"strings"
++	"testing"
++
++	"synapse-api/internal/core/dashboard/materialize"
++	sfspec "synapse-api/internal/core/dashboard/snowflake"
++)
++
++// Las tres métricas nuevas de 2026-09-30 · escritas por el equipo de front.
++//
++// ── QUÉ VERIFICA ESTO, Y POR QUÉ NO ALCANZA CON QUE COMPILE ──────────────────
++//
++// El `BuildSQL` de una métrica y el transformador de su forma se comunican por
++// los NOMBRES DE LAS COLUMNAS, y nada los ata: si el SELECT dice `AS etiqueta`
++// donde el transformador lee `label`, el compilador no dice nada, la consulta
++// corre, y `Materialize` devuelve `ErrInvalidRow` o —peor— un valor con menos
++// filas de las que llegaron.
++//
++// Por eso el fixture de cada prueba es **la fila que ese SELECT produce**, no
++// una genérica: los alias se copian del SQL, y si alguien los cambia sin tocar
++// el transformador, esto se pone rojo.
++//
++// ── LAS CLAVES VAN EN MAYÚSCULA, Y ES A PROPÓSITO ────────────────────────────
++//
++// Snowflake devuelve los alias sin comillas en MAYÚSCULA, así que eso es lo que
++// llega al transformador. `lookup` prueba exacto, mayúscula y minúscula, de modo
++// que funciona igual — pero el fixture imita lo que pasa de verdad. Un fixture
++// en minúscula probaría un camino que la producción no recorre.
++
++// aliasDelSQL extrae los `AS <alias>` de una consulta, para cruzar el SQL real
++// contra las claves que el fixture usa. Sin esto la prueba verificaría el
++// fixture contra sí mismo.
++func aliasDelSQL(sql string) map[string]bool {
++	out := map[string]bool{}
++	for _, linea := range strings.Split(sql, "\n") {
++		partes := strings.Split(linea, " AS ")
++		for i := 1; i < len(partes); i++ {
++			alias := strings.TrimRight(strings.Fields(partes[i])[0], ",")
++			out[strings.ToUpper(alias)] = true
++		}
++	}
++	return out
++}
++
++func specDe(t *testing.T, key string) sfspec.MetricSpec {
++	t.Helper()
++	spec, ok := sfspec.MetricRegistry[key]
++	if !ok {
++		t.Fatalf("la métrica %q no está en MetricRegistry: el materializador la daría por BLOCKED", key)
++	}
++	if spec.BuildSQL == nil {
++		t.Fatalf("la métrica %q no tiene BuildSQL", key)
++	}
++	return spec
++}
++
++var tablasDePrueba = sfspec.Tables{EcommFact: "DB.SC.ECOMM", PaidMedia: "DB.SC.PAID"}
++var boundsDePrueba = sfspec.Bounds{Desde: "2026-09-01", Hasta: "2026-10-01"}
++
++func TestPlatformGap_ElSQLYElTransformadorHablanLoMismo(t *testing.T) {
++	spec := specDe(t, "platform_gap")
++	if spec.Shape != materialize.ShapeComparedCategorical {
++		t.Fatalf("shape = %q, se esperaba compared_categorical", spec.Shape)
++	}
++
++	sql := spec.BuildSQL(tablasDePrueba, boundsDePrueba)
++	for _, alias := range []string{"LABEL", "V", "REFERENCE"} {
++		if !aliasDelSQL(sql)[alias] {
++			t.Fatalf("el SQL no produce la columna %q que transformComparedCategorical lee", alias)
++		}
++	}
++
++	// La fila tal como vuelve de Snowflake.
++	rows := []map[string]any{
++		{"LABEL": "Google Ads", "V": 412000.0, "REFERENCE": 318000.0},
++		{"LABEL": "Meta", "V": 148000.0, "REFERENCE": 96000.0},
++	}
++	res, err := materialize.Materialize(spec.Shape, rows, spec.Options)
++	if err != nil {
++		t.Fatal(err)
++	}
++	items, _ := res.Value["items"].([]map[string]any)
++	if len(items) != 2 {
++		t.Fatalf("items = %d, se esperaban 2 · una fila descartada es una plataforma que desaparece del gráfico", len(items))
++	}
++	// **El delta se DERIVA cuando no viene**, y el SQL no lo manda a propósito:
++	// calcularlo en la consulta sería la misma resta escrita dos veces.
++	if d, ok := items[0]["delta"].(float64); !ok || d != 94000 {
++		t.Fatalf("delta = %v, se esperaba 94000 derivado de v - reference", items[0]["delta"])
++	}
++}
++
++func TestPlatformMonthMatrix_ElSQLYElTransformadorHablanLoMismo(t *testing.T) {
++	spec := specDe(t, "platform_month_matrix")
++	if spec.Shape != materialize.ShapeMatrix {
++		t.Fatalf("shape = %q, se esperaba matrix", spec.Shape)
++	}
++
++	sql := spec.BuildSQL(tablasDePrueba, boundsDePrueba)
++	for _, alias := range []string{"FILA", "COLUMNA", "V"} {
++		if !aliasDelSQL(sql)[alias] {
++			t.Fatalf("el SQL no produce la columna %q que transformMatrix lee", alias)
++		}
++	}
++
++	// **`row` y `column` son palabras reservadas**, por eso los alias van en
++	// español. Si alguien los «corrige» a inglés, el SQL falla en Snowflake y
++	// esta prueba no lo ve — pero el cruce de arriba sí ve el cambio de nombre.
++	//
++	// **Y se compara contra el conjunto de alias, no con `strings.Contains`.** La
++	// primera versión usaba `Contains(sql, " AS COLUMN")` y fallaba sobre el SQL
++	// correcto, porque `COLUMNA` empieza con `COLUMN`: una prueba que se pone
++	// roja con el código bien es peor que ninguna.
++	alias := aliasDelSQL(sql)
++	if alias["ROW"] || alias["COLUMN"] {
++		t.Fatal("el SQL usa `row` o `column` como alias, que son palabras reservadas")
++	}
++
++	// **La ventana de doce meses decide el binding**: `periodBindings` detecta
++	// `DATEADD(MONTH, -12` y liga los DOS `?` a `Hasta` en vez de alternar.
++	// Cambiar esa expresión cambia el binding sin que nada avise.
++	if !strings.Contains(strings.ToUpper(sql), "DATEADD(MONTH, -12") {
++		t.Fatal("el SQL perdió `DATEADD(month, -12`: los dos `?` vuelven a alternar Desde/Hasta")
++	}
++
++	rows := []map[string]any{
++		{"FILA": "Google Ads", "COLUMNA": "2026-08", "V": 31000.0},
++		{"FILA": "Google Ads", "COLUMNA": "2026-09", "V": 34000.0},
++		{"FILA": "Meta", "COLUMNA": "2026-08", "V": 12000.0},
++		{"FILA": "Meta", "COLUMNA": "2026-09", "V": 14000.0},
++	}
++	res, err := materialize.Materialize(spec.Shape, rows, spec.Options)
++	if err != nil {
++		t.Fatal(err)
++	}
++	filas, _ := res.Value["rows"].([]string)
++	columnas, _ := res.Value["columns"].([]string)
++	if len(filas) != 2 || len(columnas) != 2 {
++		t.Fatalf("matriz %dx%d, se esperaba 2x2", len(filas), len(columnas))
++	}
++	celdas, _ := res.Value["cells"].([][]any)
++	if celdas[0][1] != 34000.0 {
++		t.Fatalf("celda [0][1] = %v, se esperaba 34000 · el orden lo fija la primera aparición", celdas[0][1])
++	}
++}
++
++func TestSpendFlow_CadaEtAPAValeLoSuyo(t *testing.T) {
++	spec := specDe(t, "spend_flow")
++	if spec.Shape != materialize.ShapeFlow {
++		t.Fatalf("shape = %q, se esperaba flow", spec.Shape)
++	}
++
++	sql := spec.BuildSQL(tablasDePrueba, boundsDePrueba)
++	for _, alias := range []string{"DESDE", "HACIA", "V", "DESDE_LABEL", "HACIA_LABEL"} {
++		if !aliasDelSQL(sql)[alias] {
++			t.Fatalf("el SQL no produce la columna %q que transformFlow lee", alias)
++		}
++	}
++
++	rows := []map[string]any{
++		{"DESDE": "Google Ads", "HACIA": "total", "V": 412000.0, "DESDE_LABEL": "Google Ads", "HACIA_LABEL": "Total invertido"},
++		{"DESDE": "Meta", "HACIA": "total", "V": 148000.0, "DESDE_LABEL": "Meta", "HACIA_LABEL": "Total invertido"},
++		{"DESDE": "TikTok", "HACIA": "total", "V": 41000.0, "DESDE_LABEL": "TikTok", "HACIA_LABEL": "Total invertido"},
++	}
++	res, err := materialize.Materialize(spec.Shape, rows, spec.Options)
++	if err != nil {
++		t.Fatal(err)
++	}
++
++	etapas, _ := res.Value["stages"].([]map[string]any)
++	if len(etapas) != 4 {
++		t.Fatalf("etapas = %d, se esperaban 4 · tres plataformas más el total", len(etapas))
++	}
++
++	// ── LA ASERCIÓN QUE JUSTIFICA LA FORMA DE ESTE FLUJO ─────────────────────
++	//
++	// `transformFlow` calcula el valor de cada etapa como su flujo SALIENTE, y
++	// sólo cae al entrante cuando la etapa no tiene salida. Por eso este flujo NO
++	// es un embudo: en `visitas → sesiones → órdenes` la última etapa mostraría
++	// el valor de la anterior — una cifra correcta en el lugar equivocado.
++	//
++	// Acá cada plataforma tiene una salida con su propia inversión y el total
++	// sólo tiene entradas, así que las cuatro etapas quedan bien por construcción.
++	porID := map[string]float64{}
++	for _, e := range etapas {
++		id, _ := e["id"].(string)
++		v, _ := e["v"].(float64)
++		porID[id] = v
++	}
++	if porID["Google Ads"] != 412000 {
++		t.Fatalf("la etapa de la plataforma vale %v, se esperaba su propia inversión", porID["Google Ads"])
++	}
++	if porID["total"] != 601000 {
++		t.Fatalf("la etapa total vale %v, se esperaba la suma de las tres", porID["total"])
++	}
++}
+diff --git a/tests/dashboard/schema_contract_test.go b/tests/dashboard/schema_contract_test.go
+index 6c808ab8..ae4ab03f 100644
+--- a/tests/dashboard/schema_contract_test.go
++++ b/tests/dashboard/schema_contract_test.go
+@@ -54,6 +54,15 @@ func TestSchemaContract_ColumnasDelSQLEstanDeclaradas(t *testing.T) {
+ 	ignore := map[string]bool{
+ 		"SELECT": true, "FROM": true, "WHERE": true, "AND": true, "ORDER": true, "GROUP": true, "SUM": true, "ROUND": true,
+ 		"NULLIF": true, "UNION": true, "ALL": true, "DATEADD": true, "DATE_TRUNC": true, "MONTH": true, "TO_DATE": true,
++		// **`TO_CHAR` y su formato** · agregados el 2026-09-30 por el equipo de front
++		// con `platform_month_matrix`. Son de la misma clase que `DATE_TRUNC` y
++		// `TO_DATE`, que ya estaban: nombres de función y literales, no columnas.
++		//
++		// Y el `TO_CHAR` no es cosmético. Sin él la etiqueta del mes vuelve como la
++		// devuelva la API —que para las fechas manda días desde época, no un texto—
++		// y el encabezado de la matriz sale «20302» en pantalla. Con él la columna
++		// llega como texto inequívoco y no hay que interpretarla del otro lado.
++		"TO_CHAR": true, "YYYY": true,
+ 		"DESC": true, "NULLS": true, "LAST": true, "REVENUE": true, "SPEND": true, "ROAS": true, "ORDERS": true, "SESSIONS": true,
+ 		"UNITS": true, "REVENUE_TARGET": true, "SPEND_TARGET": true, "ORDERS_TARGET": true, "SESSIONS_TARGET": true, "UNITS_TARGET": true,
+ 	}
+@@ -80,9 +89,15 @@ func TestSchemaContract_AffectedMetricsYMissing(t *testing.T) {
+ 	if strings.Join(got, ",") != "goal_attainment,spend" {
+ 		t.Fatalf("BUDGET_TARGET debía afectar goal_attainment y spend: %v", got)
+ 	}
++	// **La expectativa se actualizó el 2026-09-30 y el cambio es la noticia.**
++	// Decía «sólo platform_return», y era cierto mientras esa fuera la única
++	// métrica de paid media. Con `platform_gap`, `platform_month_matrix` y
++	// `spend_flow` son cuatro, y que las cuatro salgan afectadas **es el
++	// comportamiento correcto**: si falta la tabla, las cuatro se quedan sin
++	// fuente. Lo que quedó viejo fue la lista escrita a mano, no el código.
+ 	got = sfspec.AffectedMetrics(map[string][]string{sfspec.ObjectPaidMedia: sfspec.PaidMediaColumns})
+-	if strings.Join(got, ",") != "platform_return" {
+-		t.Fatalf("tabla paid ausente debía afectar solo platform_return: %v", got)
++	if strings.Join(got, ",") != "platform_gap,platform_month_matrix,platform_return,spend_flow" {
++		t.Fatalf("la tabla paid ausente debía afectar a las cuatro métricas de paid media: %v", got)
+ 	}
+ 	if len(sfspec.AffectedMetrics(nil)) != 0 {
+ 		t.Fatal("sin faltantes no hay afectadas")
+-- 
+2.50.1 (Apple Git-155)
+
+
+From 4c808029ced2e0f3bad195dac1d6dc3488752554 Mon Sep 17 00:00:00 2001
+From: gerardoriarte-bt <gerardo.riarte@buentipo.com>
+Date: Wed, 30 Sep 2026 12:37:57 -0500
+Subject: [PATCH 3/3] =?UTF-8?q?:bug:=20`platform=5Fmonth=5Fmatrix`=20?=
+ =?UTF-8?q?=C2=B7=20las=20columnas=20sal=C3=ADan=20desordenadas=20=C2=B7?=
+ =?UTF-8?q?=20lo=20encontr=C3=B3=20mirar=20la=20salida?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+`ORDER BY 1, 2` → `ORDER BY 2, 1`.
+
+**`transformMatrix` arma el orden de las columnas por PRIMERA APARICIÓN, no
+ordenándolas.** Con `ORDER BY 1, 2` la primera plataforma —que puede tener dato en
+dos meses sueltos— define los dos primeros encabezados y el resto se agrega detrás
+en desorden. Medido sobre dato real:
+
+    antes   2025-12 · 2026-01 · 2025-10 · 2025-11 · 2026-02 · …
+    ahora   2025-10 · 2025-11 · 2025-12 · 2026-01 · … · 2026-09
+
+**No lo habría visto ninguna prueba.** La de contrato verifica que los alias del
+SQL coincidan con lo que el transformador lee, y coincidían; el fixture tiene dos
+meses y sale ordenado por casualidad. Salió de leer el payload que produjo la
+corrida real, que es la única forma de ver 38 plataformas con huecos distintos.
+
+── Y UNA SEGUNDA EXPECTATIVA RANCIA, EN OTRO ARCHIVO ──
+
+`tests/services/dd_onboarding_test.go` tenía la MISMA lista escrita a mano que
+`tests/dashboard/schema_contract_test.go`: «afectadas = platform_return». Con
+cuatro métricas de paid media son cuatro, y que las cuatro se afecten al faltar
+la tabla es el comportamiento correcto.
+
+Queda anotado en el comentario que la expectativa está **duplicada en dos
+archivos**, así que agregar una métrica de paid media pone en rojo los dos.
+
+`go build` ✓ · `go vet` ✓ · `go test ./...` ✓ · `gofmt -l` limpio
+Reverificado contra Snowflake: available 19 · blocked 2 · errors 0
+---
+ internal/core/dashboard/snowflake/queries.go | 10 +++++++++-
+ tests/services/dd_onboarding_test.go         | 12 ++++++++++--
+ 2 files changed, 19 insertions(+), 3 deletions(-)
+
+diff --git a/internal/core/dashboard/snowflake/queries.go b/internal/core/dashboard/snowflake/queries.go
+index 332b48fa..8e77d14a 100644
+--- a/internal/core/dashboard/snowflake/queries.go
++++ b/internal/core/dashboard/snowflake/queries.go
+@@ -177,6 +177,14 @@ SELECT FUENTE AS label,
+ 	//
+ 	// Los alias van en español —`fila`, `columna`— y no en inglés porque `row` y
+ 	// `column` son palabras reservadas. El transformador acepta los dos.
++	//
++	// **`ORDER BY 2, 1` y no `1, 2`, y la diferencia se ve en pantalla.**
++	// `transformMatrix` arma el orden de las columnas por PRIMERA APARICIÓN, no
++	// ordenándolas: con `ORDER BY 1, 2` la primera plataforma —que puede tener
++	// dato en dos meses sueltos— define los dos primeros encabezados, y el resto
++	// se agrega detrás en desorden. Medido el 2026-09-30 sobre dato real: salía
++	// `2025-12, 2026-01, 2025-10, 2025-11, …`. Ordenando por mes primero, los
++	// doce aparecen en orden cronológico para cualquier plataforma.
+ 	"platform_month_matrix": {
+ 		Shape: "matrix",
+ 		BuildSQL: func(t Tables, b Bounds) string {
+@@ -187,7 +195,7 @@ SELECT FUENTE AS fila,
+   FROM %s
+  WHERE DATE >= DATEADD(month, -12, TO_DATE(?)) AND DATE < TO_DATE(?)
+  GROUP BY 1, 2
+- ORDER BY 1, 2`, t.PaidMedia)
++ ORDER BY 2, 1`, t.PaidMedia)
+ 		},
+ 	},
+ 
+diff --git a/tests/services/dd_onboarding_test.go b/tests/services/dd_onboarding_test.go
+index 38d2ae48..6a457fe2 100644
+--- a/tests/services/dd_onboarding_test.go
++++ b/tests/services/dd_onboarding_test.go
+@@ -134,8 +134,16 @@ func TestSchemaCheck_TablaAusenteAfectaTodasSusMetricas(t *testing.T) {
+ 	if err != nil {
+ 		t.Fatalf("CheckTenant: %v", err)
+ 	}
+-	// platform_return no está en el catálogo del tenant → sale con su nombre canónico.
+-	if strings.Join(res.AffectedMetrics, ",") != "platform_return" {
++	// Las métricas de paid media salen con su nombre canónico cuando no están en
++	// el catálogo del tenant.
++	//
++	// **La lista pasó de una a cuatro el 2026-09-30** con `platform_gap`,
++	// `platform_month_matrix` y `spend_flow`. Que las cuatro se afecten al faltar
++	// la tabla **es el comportamiento correcto**: las cuatro se quedan sin fuente.
++	// Lo que quedó viejo fue la lista escrita a mano — y la misma expectativa
++	// estaba duplicada en `tests/dashboard/schema_contract_test.go`, así que
++	// agregar una métrica a paid media pone en rojo dos archivos.
++	if strings.Join(res.AffectedMetrics, ",") != "platform_gap,platform_month_matrix,platform_return,spend_flow" {
+ 		t.Fatalf("affected_metrics: %v", res.AffectedMetrics)
+ 	}
+ }
+-- 
+2.50.1 (Apple Git-155)
+
