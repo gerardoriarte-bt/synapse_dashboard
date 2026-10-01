@@ -182,6 +182,30 @@ métricas —el catálogo las trae desde que sembramos su fila—; el SQL está 
 historial de esta sesión y se rehace con un `INSERT … SELECT` sobre
 `dd_catalog_metrics`.
 
+**⚠️ «MARCA» NO ES UN DASHBOARD DE PRODUCTO: ES ANDAMIO.** Y confunde — se
+levantó el 2026-10-01 al ver dos dashboards con distinta cantidad de gráficos.
+Su única pestaña se llama `repertorio-real` y su pregunta operativa es
+**«¿Los gráficos dibujan con el dato de Snowflake?»**, que no es una pregunta de
+negocio: es la nuestra. Se publicó ahí para poder mirar los trece gráficos con
+dato real sin ensuciar el dashboard de verdad.
+
+| Dashboard | Pestaña | Paneles | Qué es |
+|---|---|---|---|
+| **Overview** · por defecto | `overview` | 14 | **El real.** Es el que sigue el `.pen` |
+| Marca | `repertorio-real` | 12 | **Andamio nuestro** · el muestrario de gráficos |
+
+**Si confunde, se borra**: `DELETE FROM dd_dashboards WHERE slug='marca'` en la
+base descartable. Lo que se pierde es poder mirar los gráficos que ningún panel
+del dashboard real usa.
+
+**Y SE SACÓ UN PANEL DEL REAL · 2026-10-01**: `spend_flow` dibujado como sankey.
+Eran 22 enlaces al mismo nodo «total», que es la suma de los otros 22 — **un
+gráfico de barras dibujado como sankey**, repitiendo una tabla que ya estaba dos
+paneles más arriba. Lo detectó quien lo miró, no una prueba. El flujo que sí se
+entiende es el embudo, y lo traba una regla del backend ·
+`docs/MENSAJE-2026-10-01-backend-la-ultima-etapa-del-flujo.md`. Overview quedó
+en 14.
+
 **Y EL AÑO 2026 ESTÁ MATERIALIZADO ENTERO · 2026-10-01.** Se corrió
 `POST /admin/tenants/{id}/materialize` con los ocho períodos de enero a agosto,
 que es lo que faltaba para que las tres formas v1.1 —`platform_gap`,
