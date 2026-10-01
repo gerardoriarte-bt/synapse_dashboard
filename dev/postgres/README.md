@@ -182,6 +182,29 @@ métricas —el catálogo las trae desde que sembramos su fila—; el SQL está 
 historial de esta sesión y se rehace con un `INSERT … SELECT` sobre
 `dd_catalog_metrics`.
 
+**Y EL AÑO 2026 ESTÁ MATERIALIZADO ENTERO · 2026-10-01.** Se corrió
+`POST /admin/tenants/{id}/materialize` con los ocho períodos de enero a agosto,
+que es lo que faltaba para que las tres formas v1.1 —`platform_gap`,
+`platform_month_matrix` y `spend_flow`— existieran fuera de septiembre: se
+escribieron el 30 y sólo se habían materializado para el mes de esa corrida.
+
+Las ocho cerraron `available 19 · blocked 2 · errors 0`. La cobertura del tenant
+`e65f81ae` quedó así, y conviene saber leerla:
+
+| Período | Disponibles | Bloqueadas |
+|---|---|---|
+| 2026-07 … 2026-09 | **21 de 21** | — |
+| 2026-01 … 2026-06 | 19 | **2** |
+| 2025-10 … 2025-12 | 16 | 2 |
+
+**Las dos bloqueadas de 2026 no son un hueco nuestro ni se arreglan corriendo el
+materializador otra vez**: son `executive_summary` y `decisions`, y el servicio
+dice por qué con todas las letras — «Requires BT_UA_DECISION_LOG actionable
+framework (not in Snowflake Gold yet)». Son prosa del agente, no métricas.
+
+**Y 2025 quedó corto a propósito**: no se pidió. Cada corrida consulta Snowflake
+de verdad, en la cuenta del cliente, así que el rango se decide y no se asume.
+
 **Dos efectos más que hay que saber**, porque no se deducen de mirar la consola:
 
 - **El rol `admin` ganó la clave `repertorio-real` en `tab_keys`.** Sin eso la
