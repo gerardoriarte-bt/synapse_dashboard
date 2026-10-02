@@ -322,6 +322,23 @@ hayan derivado.
   `RecoBody`: «un botón que se aprieta y devuelve 403 es peor que un botón
   ausente». El estado no queda sin salida —el detalle sigue diciendo qué
   hacer—, pero no promete una acción que no existe.
+- **Una validación que pasa en local puede fallar en la IMAGEN, y callar.** El
+  2026-10-02 el `PUT` del huso del tenant devolvía 400 en QA —«`America/Mexico_City`
+  no es una zona IANA válida»— sobre un backend cuyo código estaba bien y que su
+  equipo había validado. **Lo cerró probar con el valor que el servicio ya tenía
+  guardado**: `America/Bogota` también se rechazaba, así que no era la zona. La
+  causa era `FROM alpine:latest` sin `tzdata` y sin `import _ "time/tzdata"`:
+  `time.LoadLocation` falla con **todas**. En local Go usa el zoneinfo del
+  sistema operativo y no se nota.
+
+  **Y lo peor no era el 400, que al menos se ve.** Su `tenantNow` cae a UTC
+  cuando `LoadLocation` falla —un fallback correcto— así que el cálculo del mes
+  en curso quedaba en el reloj del servidor **sin avisar**. Un fallback sensato
+  puede tapar un defecto de despliegue.
+
+  **Nuestra imagen no tiene el problema** —`nginx:alpine` sirviendo estáticos, y
+  todo el `Intl` corre en el navegador— pero se comprobó en vez de suponerlo.
+
 - **`params` de layout llega como `Record<string, unknown>`.** Un param mal
   escrito hoy se ignora en silencio; F1.29 lo resuelve validando en el adaptador
   de `api/`, no en `render/`.
