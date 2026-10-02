@@ -26,11 +26,41 @@ Tenis para correr UA Charged Assert 10 para hombre Black US 10.5 - MX 8.5
 Septiembre tiene **1.641 productos** con ese grano, y las diez primeras filas
 pueden ser el mismo modelo en diez tallas sin que se note.
 
-**Qué necesitamos: una columna que agrupe las tallas de un modelo** —un
-`STYLE_ID`, `MODELO` o como lo llamen— y su rótulo legible. Con eso el backend
-cambia el `GROUP BY` y listo.
+**El problema es del modelo de datos, no de la consulta.** La planilla declara
+dos dimensiones —`PRODUCT_ID`, que es la talla, y `TITULO_PRODUCTO`, que es una
+cadena con todo adentro— y **el modelo sólo existe dentro del título, como
+texto**:
+
+```
+Tenis para correr UA Charged Assert 10 para hombre Black US 10.5 - MX 8.5
+ └ tipo          └ modelo              └ género   └ color └ talla
+```
+
+No hay nada por lo que agrupar.
+
+### Y «por modelo» son tres rankings distintos · **esto lo tienen que decidir**
+
+| Agrupando por | Las diez filas serían |
+|---|---|
+| `UA Charged Assert 10` | El modelo, sumando géneros y colores |
+| `… para hombre` | El modelo por género |
+| `… para hombre Black` | La combinación de color · lo que en retail suele ser «el producto» comercial |
+
+**No son equivalentes**: con el primero, un modelo que vende en hombre y en mujer
+sube; con el tercero se parte en dos filas. Díganos cuál corresponde al negocio.
+
+### Qué necesitamos, concreto
+
+**Una columna por la que agrupar** —un `STYLE_ID`, `MODELO`, `COLORWAY_ID` o como
+se llame— **y su rótulo legible**, al nivel que elijan. Con eso el backend cambia
+el `GROUP BY` y listo.
 
 **Si ya existe en la tabla y no la vimos, con que nos digan el nombre alcanza.**
+
+**Lo que NO vamos a hacer es derivarlo del título.** Cortar la cadena con un
+patrón funcionaría hasta el primer título con otra forma, y fallaría sin ruido:
+el ranking mostraría diez filas plausibles y mal agrupadas. Es la misma razón por
+la que el adaptador del front no calcula nada que el dato no declare.
 
 ## Lo que el backend vio en las tablas, y conviene que revisen
 
