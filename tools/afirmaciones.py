@@ -170,7 +170,7 @@ def main() -> int:
 
     ids = ids_conocidos()
     fallas: list[str] = []
-    mirados = {"rutas": 0, "commits": 0, "tareas": 0}
+    mirados = {"rutas": 0, "commits": 0, "tareas": 0, "entregas": 0}
 
     for doc in sorted(DOCS.rglob("*.md")):
         # `historico/` está vencido a propósito y lleva su aviso adentro.
@@ -249,6 +249,37 @@ def main() -> int:
             if not existe_commit(sha):
                 fallas.append(f"{rel} · commit `{sha}` no existe en ningún repositorio conocido")
 
+        # ── 4 · UN MENSAJE NO ADJUNTA: PUBLICA ───────────────────────────────
+        #
+        # **Agregado el 2026-10-02, y lo pagó un ciclo entero.** El mensaje del
+        # 1 de octubre decía «adjunta» de tres archivos y el backend recibió
+        # sólo el `.md`: `GET /config/plots` y cuatro métricas quedaron sin
+        # empezar un día por un archivo que nunca viajó.
+        #
+        # **La causa es estructural, no un olvido**: trabajamos en ambientes
+        # separados y el canal del mensaje no lleva archivos. Decidido ese día
+        # (humano): **todo lo que se entrega se sube al repositorio y el mensaje
+        # dice su ruta.**
+        #
+        # Por eso la regla no prohíbe la palabra —citar la de ellos es legítimo,
+        # y `RESPUESTA-*` queda afuera—: exige que el mensaje que la usa **cite
+        # al menos una ruta del repositorio que exista**. Un «va adjunto» sin
+        # nada que buscar es el caso que costó el ciclo.
+        if doc.name.startswith("MENSAJE-") and re.search(r"\badjunt", texto, re.I):
+            # **`entregadas` y no `rutas`**: el nombre de afuera es el mapa de
+            # rutas de los contratos, y pisarlo rompía el chequeo 1 con un
+            # `AttributeError` tres bloques más abajo. Pasó al escribir esto.
+            entregadas = [
+                r for r in re.findall(r"`([A-Za-z0-9_./-]+\.[A-Za-z0-9]{2,5})`", texto)
+                if (RAIZ / r).exists()
+            ]
+            mirados["entregas"] += 1
+            if not entregadas:
+                fallas.append(
+                    f"{rel} · dice «adjunto» y no cita ninguna ruta del repositorio "
+                    f"que exista · los archivos se suben y el mensaje dice dónde"
+                )
+
         # ── 3 · identificadores de tarea ─────────────────────────────────────
         if ids:
             for m in re.finditer(r"\b([FB]\d+\.\d+[a-z]?)\b", texto):
@@ -277,7 +308,8 @@ def main() -> int:
 
     print(
         f"afirmaciones ✓ {mirados['rutas']} método+ruta · "
-        f"{mirados['commits']} commit(s) · {mirados['tareas']} identificador(es)"
+        f"{mirados['commits']} commit(s) · {mirados['tareas']} identificador(es) · "
+        f"{mirados['entregas']} entrega(s)"
     )
     return 0
 

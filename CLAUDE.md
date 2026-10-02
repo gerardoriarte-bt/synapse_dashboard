@@ -267,7 +267,7 @@ equivocado.
 | `npm run plan` | regenera `plan-tareas.csv` y la página desde `plan-de-trabajo.md` |
 | `npm run plan:diff <export.csv>` | compara un export de la plataforma de seguimiento contra el plan |
 | `npm run mocks-fuera` | ningún archivo de `src/` importa un mock · F0.8 |
-| `npm run afirmaciones` | lo citable de `docs/` se verifica · método+ruta, commits y tareas |
+| `npm run afirmaciones` | lo citable de `docs/` se verifica · método+ruta, commits, tareas **y que un mensaje no prometa adjuntos** |
 | `SYNAPSE_EMAIL=… SYNAPSE_PASSWORD=… npm run humo` | el servicio real == los dos yaml transcriptos |
 | `docker compose -f dev/postgres/docker-compose.yml up -d` | **la base local** · desde el 2026-09-22 · ver `dev/postgres/README.md` |
 

@@ -161,7 +161,7 @@ decir qué rol cumple**, porque ahí empieza la superposición.
 | `docs/BITACORA-*.md` | **Histórico.** Lo que costó descubrir. No se tocan |
 | `docs/AUDITORIA-*.md` | **Histórico.** Un cruce puntual, con fecha |
 | `docs/ENTREGA-*.md` | **Histórico.** Qué se entregó y cuándo |
-| `docs/MENSAJE-*-*.md` | **Histórico.** Un mensaje mandado, con fecha. Qué se pidió y con qué evidencia |
+| `docs/MENSAJE-*-*.md` | **Histórico.** Un mensaje mandado, con fecha. Qué se pidió y con qué evidencia. **Y lo que entrega va al REPOSITORIO, con su ruta escrita acá — no se adjunta** · decidido el 2026-10-02 (humano): trabajamos en ambientes separados y el canal del mensaje no lleva archivos. Lo hace cumplir `afirmaciones`: un mensaje que dice «adjunto» sin citar una ruta que exista sale en rojo |
 | `docs/RESPUESTA-*-*.md` | **Histórico.** Lo que OTRO equipo contestó, con fecha. No lo escribimos nosotros y **no se edita**: si algo de ahí resulta inexacto, se dice en la respuesta nuestra, no corrigiendo la suya |
 | `docs/B0.9-preguntas-abiertas.md` | Las preguntas del contrato, con su resolución |
 | `docs/PROPUESTA-*-*.md` | Una **propuesta de spec** abierta, con fecha. Lo que `design.md` no declara y el código no puede inventar |
