@@ -98,6 +98,7 @@ MEDIDAS = {
     "/config/me/preferences",
     "/config/chat/threads",
     "/config/panels/{panelId}/chat-suggestions",
+    "/config/plots",
 }
 SALTADAS = {
     "/config/chat": "SSE · cuesta una llamada a Cortex y escribe un hilo",
@@ -462,6 +463,39 @@ def main() -> int:
         print("  ✗ /config/blocks · `data` no es un arreglo desnudo")
     elif bloques:
         revisar("/config/blocks[0]", bloques[0], "BlockRule")
+
+    # ── **EL REPERTORIO · `/config/plots`** · medido desde el 2026-10-02 ──────
+    #
+    # Llegó en `c8b9247` y hasta entonces esta ruta salía «el cable la declara y
+    # NADA la mide» — honesto, y por eso estaba.
+    #
+    # **Se compara contra el archivo que le entregamos al backend**, no sólo
+    # contra el esquema: el repertorio lo genera `tools/gen-plots.py` desde
+    # cuatro fuentes y ellos lo embeben tal cual, así que una diferencia
+    # significa que una de las dos copias se movió. El esquema solo no lo vería.
+    _, plt = pedir("/config/plots", token)
+    repertorio = plt.get("data") if isinstance(plt, dict) else None
+    if not isinstance(repertorio, list):
+        fallas.append("/config/plots · `data` no es un ARREGLO DESNUDO")
+        print("  ✗ /config/plots · `data` no es un arreglo desnudo")
+    else:
+        revisar("/config/plots[0]", repertorio[0] if repertorio else None, "PlotRule")
+        nuestro = json.loads((RAIZ / "docs/backend/config-plots.json").read_text())
+        if repertorio != nuestro:
+            fallas.append(
+                f"/config/plots · lo que sirve NO es lo que entregamos · "
+                f"{len(repertorio)} entradas contra {len(nuestro)}"
+            )
+            print(f"  ✗ /config/plots · difiere del archivo entregado")
+        else:
+            print(f"  ✓ /config/plots · {len(repertorio)} entradas, idénticas al archivo entregado")
+        # **`cap` se OMITE, no viaja en `null`** · lo señaló el backend al
+        # implementarla, y nuestro cable decía lo contrario. Si vuelve a viajar
+        # en `null`, el adaptador lo tolera y nadie se entera: por eso se mide.
+        nulos = [x["id"] for x in repertorio if "cap" in x and x["cap"] is None]
+        if nulos:
+            fallas.append(f"/config/plots · `cap` viaja en `null` en {len(nulos)}: {nulos[:3]}")
+            print(f"  ✗ /config/plots · `cap` en `null`, debe omitirse · {nulos[:3]}")
 
     tabs = (ctx or {}).get("tabs") or []
     if tabs:
