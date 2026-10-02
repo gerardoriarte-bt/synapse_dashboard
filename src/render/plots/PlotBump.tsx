@@ -54,12 +54,21 @@
  *  ── EL EJE DE PERÍODOS VA A DECIR `20362`, Y ES A PROPÓSITO ──────────────────
  *
  *  El `.pen` dibuja FEB MAR ABR, y el contrato midió el 2026-09-29 que `Punto.t`
- *  es **días desde epoch en una cadena** («20362» = 2025-10-01), no una etiqueta
+ *  era **días desde epoch en una cadena** («20362» = 2025-10-01), no una etiqueta
  *  pintable. Nunca se notó porque **ningún plot del repertorio pinta el eje X**:
- *  éste es el primero que lo necesita. Interpretarlo acá es exactamente la
- *  interpretación que el cable no declara y que el propio contrato rechaza para
- *  la trama del degradado. Queda pedido en B1.34; hasta entonces el eje se ve feo
- *  y es honesto, y se cae solo el día que el backend mande una etiqueta.
+ *  éste es el primero que lo necesita. Interpretarlo acá habría sido la
+ *  interpretación que el cable no declaraba y que el propio contrato rechaza para
+ *  la trama del degradado, así que el eje se veía feo y era honesto.
+ *
+ *  **Y SE CAYÓ SOLO, como estaba previsto** · `c8b9247`, 2026-10-02: el backend
+ *  pasó `t` a ISO —`"2026-09-01"`— en `daily_trend`, `media_efficiency_12m` e
+ *  `instagram_followers_trend`. **Este archivo no cambia**: usa `t` como clave y
+ *  como rótulo, nunca lo parsea, así que una cadena legible entra en el mismo
+ *  lugar donde entraba una ilegible. Eso es lo que la decisión de no
+ *  interpretarlo compró.
+ *
+ *  **Las filas ya materializadas conservan el número** hasta que su período se
+ *  rematerialice, así que los dos formatos conviven un rato.
  *
  *  ── DOS TOPES QUE ESTE ARCHIVO NO PUEDE PONER ───────────────────────────────
  *

@@ -63,8 +63,9 @@
  *
  *  ── Y UNA COSA QUE NO SE USA A PROPÓSITO ────────────────────────────────────
  *
- *  **`Punto.t` no se toca.** Llega como días desde epoch en una cadena —`"20362"`—
- *  y no como etiqueta; este plot no tiene eje X, así que la `x` sale del ÍNDICE
+ *  **`Punto.t` no se toca**, y por eso el cambio de formato no lo afectó. Llegaba
+ *  como días desde epoch en una cadena —`"20362"`— y desde `c8b9247` llega en ISO
+ *  —`"2026-09-01"`—; este plot no tiene eje X, así que la `x` sale del ÍNDICE
  *  del punto, igual que en `PlotSeries`. Eso asume **puntos equiespaciados**,
  *  que es lo que el frame dibuja —once tramos idénticos— y lo que el resto del
  *  repertorio ya asume. Con puntos irregulares el dibujo mentiría sobre el

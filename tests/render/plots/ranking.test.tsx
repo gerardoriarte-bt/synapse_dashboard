@@ -263,10 +263,16 @@ describe('cada serie lleva su rótulo, y el rótulo lleva el color de SU serie',
 
   it('el eje de períodos pinta `t` TAL CUAL LLEGA', () => {
     // **Se ve como una prueba que defiende un defecto y es al revés.** El `.pen`
-    // dibuja FEB MAR ABR; el contrato midió el 2026-09-29 que `Punto.t` es días
-    // desde epoch en una cadena, y que interpretarlo es lo que bloquea la trama
-    // del degradado (B1.34). La prueba deja escrito que el front no lo resuelve
-    // solo, y se cae sola el día que el backend mande una etiqueta.
+    // dibuja FEB MAR ABR; el contrato midió el 2026-09-29 que `Punto.t` era días
+    // desde epoch en una cadena, y que interpretarlo es lo que bloqueaba la
+    // trama del degradado (B1.34). La prueba deja escrito que el front no lo
+    // resuelve solo.
+    //
+    // **Y decía además «se cae sola el día que el backend mande una etiqueta».
+    // Era falso** · corregido el 2026-10-02, el día que el backend la mandó:
+    // esta prueba construye su propio fixture, así que nada de lo que haga el
+    // servicio la toca. Lo que verifica —y está bien— es que el plot pinte `t`
+    // TAL CUAL, sea lo que sea. Lo prueba el caso de abajo con las dos formas.
     render(
       <PlotBump
         {...base}
@@ -278,6 +284,28 @@ describe('cada serie lleva su rótulo, y el rótulo lleva el color de SU serie',
 
     expect(screen.getByText('20362')).toBeInTheDocument()
     expect(screen.getByText('20393')).toBeInTheDocument()
+  })
+
+  it('y con el ISO que el backend manda desde `c8b9247`, lo mismo', () => {
+    // **El cambio de formato no toca este archivo, y ésta es la prueba.** `t` se
+    // usa como clave y como rótulo, nunca se parsea, así que una cadena legible
+    // entra donde entraba una ilegible. Es lo que compró la decisión de no
+    // interpretarlo: el eje se arregló solo cuando el dato mejoró.
+    //
+    // Los dos formatos conviven un tiempo —las filas ya materializadas conservan
+    // el número hasta que su período se rematerialice—, así que las dos formas
+    // tienen que dibujar.
+    render(
+      <PlotBump
+        {...base}
+        value={multi([
+          { etiqueta: 'a', puntos: [{ t: '2026-08-01', v: 3 }, { t: '2026-09-01', v: 4 }] },
+        ])}
+      />,
+    )
+
+    expect(screen.getByText('2026-08-01')).toBeInTheDocument()
+    expect(screen.getByText('2026-09-01')).toBeInTheDocument()
   })
 })
 

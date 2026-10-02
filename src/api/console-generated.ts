@@ -968,15 +968,27 @@ export interface components {
                 reason: string;
             }[];
             /**
-             * @description El techo que lo deshabilita, con su razón. `null` cuando no tiene —
-             *     medido: sólo cuatro de los 49 lo llevan.
+             * @description El techo que lo deshabilita, con su razón. Sólo cuatro de los 49 lo
+             *     llevan.
+             *
+             *     **SE OMITE cuando no hay, NO viaja en `null`** · corregido el
+             *     2026-10-02, y lo encontró el backend al implementar la ruta: acá
+             *     decía `['object', 'null']` y «`null` cuando no tiene», y el archivo
+             *     de datos que les entregamos omite la clave. Siguieron el archivo, que
+             *     es el que vale — el Go lo declara `json:"cap,omitempty"`.
+             *
+             *     **La transcripción estaba mal desde que se escribió y nada la
+             *     delató**, porque `adaptPlots` acepta las dos formas
+             *     —`p.cap === undefined || p.cap === null`— y esa tolerancia tapaba la
+             *     diferencia. Se deja igual: tolerar de más en el adaptador es barato,
+             *     y que el cable mienta no.
              */
             cap?: {
                 /** @example partes > 5 */
                 when: string;
                 /** @example más de cinco partes, ilegible en dona */
                 reason: string;
-            } | null;
+            };
         };
         /** @description `dashboard.BlockRule`. Quince filas en la tabla `blocks`. */
         BlockRule: {
