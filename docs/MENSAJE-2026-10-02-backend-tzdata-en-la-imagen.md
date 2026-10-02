@@ -80,6 +80,36 @@ El huso queda en Bogotá hasta que esto se resuelva.
 colombianos y su `es-CO`/`COP`/`America/Bogota` parece correcto; el default de
 columna sólo estaba mal para el de UA.
 
+## Una sugerencia, no un pedido · por qué su suite no podía atajarlo
+
+**Una prueba de Go no puede encontrar esto, y conviene decirlo**: el runner usa
+el zoneinfo del sistema operativo, así que `LoadLocation` funciona ahí. El
+defecto sólo existe en la imagen. **Es exactamente por qué lo validaron y les dio
+bien** — no fue un descuido de pruebas.
+
+Lo que sí lo atajaría es una **comprobación al arrancar**: cargar una zona real
+una vez y, si falla, morir con un mensaje claro en vez de seguir.
+
+```go
+if _, err := time.LoadLocation("America/Bogota"); err != nil {
+    log.Fatal("sin base de zonas horarias en la imagen: falta tzdata")
+}
+```
+
+**Tiene que ser una zona REAL.** `UTC` y `Local` los resuelve Go sin la base, así
+que una comprobación con cualquiera de las dos pasaría siempre y no verificaría
+nada.
+
+**Por qué nos parece que vale la pena:** hoy `tenantNow` degrada a UTC en
+silencio, y esa es una decisión correcta para un dato faltante — pero acá tapa un
+problema de infraestructura. Con la comprobación al arranque, un despliegue sin
+`tzdata` no levanta, en vez de levantar y calcular los períodos con el reloj
+equivocado sin que nadie se entere.
+
+**Es una sugerencia sobre su código y la decisión es suya.** Si prefieren el
+`import _ "time/tzdata"`, la comprobación sobra: el binario deja de poder
+quedarse sin la base.
+
 ## Una aclaración sobre lo que asumimos
 
 Asumimos que la imagen desplegada se construye con el `Dockerfile` del
