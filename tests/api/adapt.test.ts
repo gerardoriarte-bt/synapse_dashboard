@@ -119,8 +119,27 @@ describe('contexto', () => {
     expect(ctx.role.puedeAprobar).toBe(false)
     // Ausentes, no inventados.
     expect(ctx.user.capacidades).toBeUndefined()
-    expect(ctx.user.preferencias).toBeUndefined()
     expect(ctx.tenant.vertical).toBe('')
+
+    // ── **`preferencias.tema` DEJÓ DE ESTAR AUSENTE** · 2026-10-02 ─────────
+    //
+    // Acá decía `toBeUndefined()`, y era correcto: el adaptador no lo rellenaba
+    // «porque nadie lo consumiría». **Esta aserción existía justamente para
+    // avisar el día que apareciera**, y avisó — es el par de la regla «una
+    // prueba borrada no avisa cuando el campo aparece».
+    //
+    // El fixture trae `theme: 'dark'`, que es lo que el cable manda.
+    expect(ctx.user.preferencias).toEqual({ tema: 'dark' })
+  })
+
+  it('sin `theme` en el cable, `preferencias` queda AUSENTE · no se inventa un tema', () => {
+    // Que el campo exista no autoriza a rellenarlo con un default: «oscuro» por
+    // omisión sería una preferencia que nadie expresó, y la aplicación ya abre
+    // en oscuro por token. Ausente significa «no eligió», que es distinto.
+    const { theme: _theme, ...sinTema } = contexto.user
+    const ctx = adaptContext({ ...contexto, user: sinTema } as typeof contexto)
+
+    expect(ctx.user.preferencias).toBeUndefined()
   })
 })
 

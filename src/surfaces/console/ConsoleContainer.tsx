@@ -24,7 +24,7 @@ import { hasValue } from '../../render/state'
 import { blockTable } from '../../catalog/blocks'
 import { invalidPlotReason, plotTable } from '../../catalog/plots'
 import type { PlotProblem } from '../../catalog/plots'
-import { applyTheme } from '../../tokens/theme'
+import { useTemaGuardado } from '../useTemaGuardado'
 import { preloadBodies } from '../../render/bodies/registry'
 import { createFormat, LOCALE_POR_DEFECTO } from '../../render/format'
 import { currentTheme } from '../../tokens/theme'
@@ -253,10 +253,11 @@ export function ConsoleContainer() {
 
   // El tema inicial llega en `/config/me` y lo aplica la superficie · F1.12. El
   // switcher visual no pasa por acá: escribe el atributo y ya.
-  const savedTheme = context.data?.user.preferencias?.tema
-  useEffect(() => {
-    if (savedTheme !== undefined) applyTheme(savedTheme)
-  }, [savedTheme])
+  //
+  // **El efecto se fue a `useTemaGuardado`** · 2026-10-02: era de esta
+  // superficie y de ninguna otra, así que admin y el builder abrían en oscuro
+  // aunque la persona hubiera elegido claro.
+  useTemaGuardado(context.data?.user.preferencias?.tema)
 
   // Los chunks de los cuerpos viajan EN PARALELO con `panels:batch` · §8. Sin
   // esto `lazy` recién pide el chunk cuando ya llegó el dato, y el panel

@@ -33,6 +33,7 @@
  *  SE PUBLICA». Su única banda es volver a editar, y la pinta ella.
  */
 import { IdentityBlock } from '../IdentityBlock'
+import type { Theme } from '../../tokens/theme'
 import { Label } from '../../render/primitives/Label'
 import { Wordmark } from '../console/Wordmark'
 import { PANTALLAS } from './pantallas'
@@ -96,6 +97,10 @@ type Props = {
   identidad?: { rol: string; nombre: string } | undefined
   /** Salir a otra superficie · la navegación es del contenedor. */
   onSalir: (ruta: string) => void
+  /** **El tema, que viaja hasta `IdentityBlock`** · 2026-10-02. Opcional por la
+   *  misma razón que allá: sin manejador la sección no se pinta. */
+  onChangeTheme?: (theme: Theme) => void
+
   contexto: ContextoDeEdicion
   /** `null` cuando no hay nada que publicar todavía · la razón la da la pantalla. */
   onPublicar: (() => void) | null
@@ -110,6 +115,7 @@ export function BuilderChrome({
   onIr,
   identidad,
   onSalir,
+  onChangeTheme,
   contexto,
   onPublicar,
   onGuardar,
@@ -160,6 +166,8 @@ export function BuilderChrome({
                     desde="builder"
                     esAdmin
                     onIr={onSalir}
+                    {...(onChangeTheme === undefined ? {} : { onChangeTheme })}
+                  {...(onChangeTheme === undefined ? {} : { onChangeTheme })}
                   />
                 )}
                 <Label>Ancho 1600 · lienzo 1:1 a 1200 más 300 de biblioteca</Label>

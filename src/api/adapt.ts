@@ -265,21 +265,23 @@ export function adaptContext(w: WireContext): AppContext {
       // llegaron, así que componerlo es reformatear y no inventar.
       nombre: `${w.user.first_name} ${w.user.last_name}`.trim(),
       email: w.user.email,
-      // `capacidades` y `preferencias.tema` NO se rellenan.
+      // `capacidades` NO se rellena.
       //
-      // **Y la razón del tema CAMBIÓ el 2026-09-26.** Acá decía «`/config/me` no
-      // lo devuelve, se guarda y no se puede leer», y eso venció: B1.1 llegó en
-      // `8633b10` y `w.user.theme` está en el cable, medido.
+      // ── **`preferencias.tema` SÍ, desde el 2026-10-02** ──────────────────
       //
-      // No se rellena todavía porque **nadie lo consumiría**. `tokens/theme.ts`
-      // declara quién debería —«el valor inicial llega en `/config/me` y lo
-      // aplica la superficie»— y ninguna superficie lo hace: `applyTheme` sólo
-      // se llama desde `ThemeOptions`. Un campo poblado sin consumidor es el
-      // defecto de `BodyProps.presentation`, que existió meses documentado y sin
-      // que nadie lo pasara.
+      // Acá decía que no se rellenaba «porque nadie lo consumiría», y era
+      // cierto cuando se escribió: `applyTheme` sólo se llamaba desde
+      // `ThemeOptions`, al apretar. **Ya hay tres consumidores** —las tres
+      // superficies, por `useTemaGuardado`— así que el campo deja de ser un
+      // hueco y pasa a ser el que decide con qué tema abre la aplicación.
       //
-      // Lo que falta es una línea en la superficie y su prueba, y es trabajo de
-      // front sobre un campo que ya llega.
+      // **Y hasta hoy el tema guardado NO SE APLICABA EN NINGUNA PARTE.**
+      // `ConsoleContainer` tenía el efecto desde F1.12 y leía este campo, que
+      // siempre valía `undefined`: el efecto corría y no hacía nada. Elegir
+      // claro, recargar, y volver a oscuro. El propio comentario de arriba lo
+      // predijo —«lo que falta es una línea en la superficie y su prueba»— y
+      // la línea estaba; lo que faltaba era el dato.
+      ...(w.user.theme === undefined ? {} : { preferencias: { tema: w.user.theme } }),
     },
 
     tenant: {

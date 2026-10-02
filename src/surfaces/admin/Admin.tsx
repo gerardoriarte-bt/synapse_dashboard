@@ -21,6 +21,7 @@
  *  la primera dice qué la desbloquea, que es lo que §8 pide de cualquier estado.
  */
 import { useMemo, useState } from 'react'
+import { useTemaGuardado } from '../useTemaGuardado'
 import { useNavigate } from 'react-router-dom'
 import {
   useAgents,
@@ -35,6 +36,7 @@ import {
   useSaveRole,
   useMe,
   useTenants,
+  useSaveTheme,
 } from '../../api/hooks'
 import { AdminChrome } from './AdminChrome'
 import { CatalogView } from './CatalogView'
@@ -73,7 +75,11 @@ export function Admin() {
   const [tenant, setTenant] = useState<string | null>(null)
   // La identidad del navbar · §PEN:A1. Sale del mismo `/config/me` que la
   // consola: no hay una fuente de identidad por superficie.
+  // El tema se escribe igual que en la consola · `useSaveTheme` invalida `me`.
+  const saveTheme = useSaveTheme()
   const contexto = useMe()
+  // El tema guardado lo aplica la superficie · ver `useTemaGuardado`.
+  useTemaGuardado(contexto.data?.user.preferencias?.tema)
 
   /** **El locale de QUIEN MIRA, no el de cada fila** · F1.13b, 2026-09-26.
    *
@@ -167,6 +173,7 @@ export function Admin() {
 
   return (
     <AdminChrome
+      onChangeTheme={(theme) => saveTheme.mutate(theme)}
       activa={pantalla}
       onSalir={(ruta) => void navegar(ruta)}
       onIr={setPantalla}

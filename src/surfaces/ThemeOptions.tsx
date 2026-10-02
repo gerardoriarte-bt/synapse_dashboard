@@ -13,14 +13,24 @@
  *  esto es exactamente eso. Y no es el único portador — `aria-pressed` lo dice
  *  para quien no lo ve.
  *
+ *  ── **VIVE EN `surfaces/` Y NO EN `console/`** · 2026-10-02 ────────────────
+ *
+ *  Nació en la consola porque era la única que lo tenía. Desde que el tema está
+ *  en las tres —la decisión de diseño del 2026-09-28, «todo dentro del punto de
+ *  identidad»— lo usan `UserMenu` y `IdentityBlock`, y éste último es de
+ *  `surfaces/` porque lo comparten admin y builder.
+ *
+ *  Dejarlo en `console/` haría que el chrome del builder importara de la
+ *  consola para pintar una preferencia que no es de ninguna de las dos.
+ *
  *  El cambio visual **no pasa por la API**: es un atributo en la raíz y las
  *  custom properties hacen el resto. La escritura contra el perfil va en
  *  paralelo, y si falla el tema igual cambió — la preferencia es del usuario y
  *  ya la expresó.
  */
 import { useState } from 'react'
-import { applyTheme, currentTheme } from '../../tokens/theme'
-import type { Theme } from '../../tokens/theme'
+import { applyTheme, currentTheme } from '../tokens/theme'
+import type { Theme } from '../tokens/theme'
 
 const OPCIONES: readonly { valor: Theme; rotulo: string }[] = [
   { valor: 'dark', rotulo: 'Oscuro' },

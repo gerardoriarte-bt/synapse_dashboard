@@ -35,6 +35,7 @@
  *  primera dice qué la desbloquea, que es lo que §8 pide de cualquier estado.
  */
 import { useNavigate } from 'react-router-dom'
+import { useTemaGuardado } from '../useTemaGuardado'
 import { useMemo, useState } from 'react'
 import {
   useAdminCatalog,
@@ -53,6 +54,7 @@ import {
   useTenants,
   useUsers,
   useValidateLayout,
+  useSaveTheme,
 } from '../../api/hooks'
 import { BuilderChrome } from './BuilderChrome'
 import { ContextView } from './ContextView'
@@ -147,7 +149,11 @@ const EN_OTRA_PANTALLA: Partial<Record<PantallaId, string>> = {
 
 export function Builder() {
   const navegar = useNavigate()
+  // El tema se escribe igual que en la consola · `useSaveTheme` invalida `me`.
+  const saveTheme = useSaveTheme()
   const yo = useMe()
+  // El tema guardado lo aplica la superficie · ver `useTemaGuardado`.
+  useTemaGuardado(yo.data?.user.preferencias?.tema)
   const [pantalla, setPantalla] = useState<PantallaId>('contexto')
   const [tenant, setTenant] = useState<string | null>(null)
   const [version, setVersion] = useState<string | null>(null)
@@ -330,6 +336,7 @@ export function Builder() {
 
   return (
     <BuilderChrome
+      onChangeTheme={(theme) => saveTheme.mutate(theme)}
       // **La identidad sale del mismo `/config/me` que la consola y admin**:
       // no hay una fuente de identidad por superficie. Sin contexto no se pinta
       // el bloque — el chrome no inventa un nombre.

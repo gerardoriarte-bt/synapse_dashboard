@@ -19,18 +19,25 @@
  *
  *  ── POR QUÉ NO ES EL `UserMenu` DE LA CONSOLA ───────────────────────────────
  *
- *  Aquel pinta además rol con su descripción, cliente, acceso y el tema, porque
- *  §7.1 declara ese contenido **para la consola**. El dibujo de A1 y B2 muestra
- *  sólo el bloque, así que acá va sólo lo que el dibujo pide más las salidas.
- *  Copiar el de la consola habría sido pintar un cliente en una pantalla de
- *  alcance plataforma, donde no hay uno solo.
+ *  Aquel pinta además rol con su descripción, cliente y acceso, porque §7.1
+ *  declara ese contenido **para la consola**. Copiar el de la consola habría
+ *  sido pintar un cliente en una pantalla de alcance plataforma, donde no hay
+ *  uno solo.
+ *
+ *  **El TEMA sí es común a las tres** · 2026-10-02. La decisión del 2026-09-28
+ *  es «todo vive dentro del punto de identidad», y el dibujo de
+ *  `Console/Panel de usuario` lo pone **entre el separador y las salidas**, que
+ *  es el orden que esto respeta. Hasta hoy el tema existía sólo en la consola:
+ *  admin y builder tenían identidad y salidas, y ninguna forma de cambiarlo.
  *
  *  **Lo que sí se comparte es el registro de superficies**, que es donde vivía
  *  el riesgo de divergir.
  */
 import { useEffect, useRef, useState } from 'react'
 import { Note } from '../render/primitives/Note'
+import { ThemeOptions } from './ThemeOptions'
 import { salidasDesde } from './superficies'
+import type { Theme } from '../tokens/theme'
 import type { Superficie } from './superficies'
 
 type Props = {
@@ -49,9 +56,13 @@ type Props = {
    *  navega solo no se puede montar sin un router, y eso lo vuelve imposible de
    *  probar aislado. */
   onIr: (ruta: string) => void
+  /** **Opcional, y su ausencia apaga la sección entera** · mismo idioma que
+   *  `UserMenu`. Un selector de tema que no escribe la preferencia promete algo
+   *  que no hace, y «un CTA sin manejador no se pinta». */
+  onChangeTheme?: (theme: Theme) => void
 }
 
-export function IdentityBlock({ rol, nombre, desde, esAdmin, onIr }: Props) {
+export function IdentityBlock({ rol, nombre, desde, esAdmin, onIr, onChangeTheme }: Props) {
   const [abierto, setAbierto] = useState(false)
   const caja = useRef<HTMLDivElement>(null)
   const salidas = salidasDesde(desde, esAdmin)
@@ -107,12 +118,31 @@ export function IdentityBlock({ rol, nombre, desde, esAdmin, onIr }: Props) {
         </svg>
       </button>
 
-      {abierto && salidas.length > 0 && (
+      {/* **Abre si hay ALGO adentro, no sólo salidas** · 2026-10-02. La
+          condición era `salidas.length > 0`, que con el tema adentro dejaba la
+          preferencia inalcanzable para quien no administra: el chevron se
+          pintaba y no abría nada. */}
+      {abierto && (salidas.length > 0 || onChangeTheme !== undefined) && (
         <div
           role="menu"
           className="absolute top-full right-0 z-20 mt-2 flex w-60 flex-col gap-1 rounded-xl border border-w3 bg-panel p-3 shadow-[0_8px_24px_var(--color-shad)]"
         >
-          <Note as="div">Ir a</Note>
+          {/* **El TEMA va primero** · el dibujo lo pone entre el separador y
+              `IR A` dentro de `Console/Panel de usuario`. Se reusa el mismo
+              componente que la consola, no una copia: dos selectores del mismo
+              estado se separan el día que uno cambie. */}
+          {onChangeTheme !== undefined && (
+            <div className="flex flex-col gap-1">
+              <Note as="div">Tema</Note>
+              <ThemeOptions onChange={onChangeTheme} />
+            </div>
+          )}
+
+          {/* **El separador sólo si hay las dos cosas.** Una línea sobre una
+              sección sola es un borde que no separa nada. */}
+          {onChangeTheme !== undefined && salidas.length > 0 && <div className="h-px bg-w2" />}
+
+          {salidas.length > 0 && <Note as="div">Ir a</Note>}
           {salidas.map((s) => (
             <button
               key={s.ruta}

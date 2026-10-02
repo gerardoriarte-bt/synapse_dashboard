@@ -37,7 +37,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Note } from '../../render/primitives/Note'
-import { ThemeOptions } from './ThemeOptions'
+import { ThemeOptions } from '../ThemeOptions'
 import { esAdmin } from '../../api/rol'
 /** **El registro, no una lista propia** · 2026-09-25. Acá vivían dos entradas
  *  escritas a mano —«son dos y agregar una tercera es una decisión»— y esa

@@ -30,6 +30,7 @@
  *  (PS-5). Por eso acá no hay colapso: hay scroll horizontal, que es visible.
  */
 import { IdentityBlock } from '../IdentityBlock'
+import type { Theme } from '../../tokens/theme'
 import { Label } from '../../render/primitives/Label'
 import { Wordmark } from '../console/Wordmark'
 import { PANTALLAS } from './pantallas'
@@ -43,6 +44,10 @@ type Props = {
   /** Salir a OTRA superficie · distinto de `onIr`, que navega entre las
    *  pantallas de acá. La navegación es del contenedor y no del chrome. */
   onSalir: (ruta: string) => void
+  /** **El tema, que viaja hasta `IdentityBlock`** · 2026-10-02. Opcional por la
+   *  misma razón que allá: sin manejador la sección no se pinta. */
+  onChangeTheme?: (theme: Theme) => void
+
   /** Volver a la consola · `undefined` no pinta el control, que es la regla del
    *  CTA sin manejador. */
   /** Quién está mirando · **§PEN:A1 lo dibuja**: el navbar de `A1 · Clientes y
@@ -63,7 +68,7 @@ type Props = {
   children: React.ReactNode
 }
 
-export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantActivo, onTenant, children }: Props) {
+export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantActivo, onTenant, onChangeTheme, children }: Props) {
   const pantalla = PANTALLAS.find((p) => p.id === activa) ?? PANTALLAS[0]
   const porTenant = pantalla.alcance === 'tenant'
 
@@ -124,6 +129,7 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
                   desde="admin"
                   esAdmin
                   onIr={onSalir}
+                  {...(onChangeTheme === undefined ? {} : { onChangeTheme })}
                 />
               )}
               <Label>{porTenant ? 'Alcance · cliente' : 'Alcance · plataforma'}</Label>
