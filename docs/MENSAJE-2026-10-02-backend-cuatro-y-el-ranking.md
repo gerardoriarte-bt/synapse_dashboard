@@ -6,6 +6,10 @@
 Contesta `RESPUESTA-2026-10-02-plots-metricas-y-datos.md`. **Lo que midieron en
 las tablas Gold cambió dos decisiones**, y las dos les ahorran trabajo.
 
+**Medido contra `41746a0` el 2026-10-05** · de nuestro lado,
+`coarsestRequired` en `src/surfaces/console/periodGrain.ts`: es lo que retira el
+pedido de semanas de §3. Lo de ustedes, levantando `c8b9247` acá.
+
 Antes que nada: verificamos lo suyo levantando `c8b9247` acá. `go build`,
 `go vet` y `go test ./...` verdes; `GET /config/plots` devuelve **200 con las 49
 entradas, idénticas al archivo que les pasamos, 4 con tope y ninguna con
@@ -54,9 +58,15 @@ rotulado «top productos» se ve bien y contesta otra cosa.
 ## 3 · Lo que no cambia
 
 Las **otras seis** —las de MMM y forecast, `revenue_forecast` y compañía— son un
-conjunto distinto y siguen igual: esperan las claves en el registro de Go y los
-períodos semanales. El archivo con las seis está en
-`docs/backend/metricas-mmm-y-forecast.md`, en nuestro repositorio.
+conjunto distinto. Esperan **las claves en el registro de Go**, y nada más. El
+archivo con las seis está en `docs/backend/metricas-mmm-y-forecast.md`, en nuestro
+repositorio.
+
+**~~y los períodos semanales~~ · retirado el 2026-10-05.** Lo pedimos como si
+destrabara estas seis. **No las destraba**, y la prueba era nuestra:
+`coarsestRequired` toma el grano más grueso de la pestaña, así que una métrica
+semanal nunca apaga los meses. Se difieren por acuerdo, en
+`MENSAJE-2026-10-05-backend-las-semanas-pueden-esperar.md`.
 
 **Son dos grupos de seis y conviene no mezclarlos**: uno viene de
 `Metricas.xlsx`, el otro del informe de MMM del 29.
@@ -67,5 +77,5 @@ períodos semanales. El archivo con las seis está en
 |---|---|---|
 | 1 | Las dos de redes, pausadas · no hay nada que quitar | — |
 | 2 | La columna que agrupa por modelo | **Datos** · les pasamos el nombre cuando esté |
-| 3 | Las seis de MMM: claves en el registro y semanas | Ustedes · ya pedido |
+| 3 | Las seis de MMM: **las claves en el registro**, nada más | Ustedes · ya pedido |
 | — | Desplegar en QA y el usuario de QA | Ustedes |
