@@ -554,7 +554,64 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-09-29 · el día que escribimos lo que veníamos pidiendo
+### ⇩ ACÁ SE PARÓ · 2026-10-05 · el día que QA dejó de ser una pregunta
+
+**TODO LO QUE FALTA ESTÁ DEL LADO DEL BACKEND, y el mensaje ya se mandó** ·
+`docs/MENSAJE-2026-10-05-backend-desplegar-el-front.md`, enviado el 2026-10-05.
+Dos pedidos: subir la imagen del front a `qa-synapse.lobueno.co` y redesplegar su
+API a `c8b9247`. **Lo que sigue es esperar, no volver a pedirlo.**
+
+**EL DASHBOARD DE UA ESTÁ EN QA Y ES EL DEFAULT.** Quien entra ve **10 paneles,
+los 10 `AVAILABLE`**, con frescura del día y la gobernanza en español del catálogo
+firmado. Verificado con la preferencia personal **borrada**, que es lo que simula a
+un usuario nuevo. `Overview` —la semilla, con sus dos paneles de prosa en inglés—
+queda como segundo dashboard para comparar.
+
+**Se publicó SIN los tres gráficos** —`radial` en `goal_attainment`, `smallmult` en
+`daily_trend` y `media_efficiency_12m`—, porque QA no sirve `/config/plots` y un
+panel que declara un gráfico sin repertorio se pinta nombrando el error.
+Reponerlos es correr `tools/aplicar-dashboard.py` sin `--sin-graficos`.
+
+**El front está probado contra la API de QA de verdad**, no contra mocks: la
+imagen levantada con `API_ORIGIN=https://qa-synapse-api.lobueno.co`, login y
+`/config/me` con token atravesando el proxy, y construida desde un clone limpio de
+`main`. **`main` se mergeó** —fast-forward— así que el clone por defecto ya trae el
+`Dockerfile`: antes estaba 245 commits atrás y sin él.
+
+**Y el repositorio ya era público**, así que no hubo nada que compartir. Se
+verificó que es seguro apuntarlos ahí: ningún valor de `docs/backdocs/` aparece en
+el repositorio ni en su historial, y esa carpeta **nunca estuvo trackeada**.
+
+**LO QUE ESTE DÍA ENSEÑÓ, Y NO ES LO CONSTRUIDO:**
+
+**Una solicitud sin medir lo NUESTRO cuesta el día de otro equipo.** Les pedimos
+los períodos semanales como si destrabaran seis métricas y no las destrababan — la
+prueba era `coarsestRequired`, código nuestro. Fue el tercer caso del mes.
+`afirmaciones` ahora exige que todo `MENSAJE-*` declare qué se midió de este lado;
+está arriba, en su propia sección.
+
+**Tres cosas anduvieron de casualidad y la medición las separó:**
+
+- **El TLS al upstream iba sin SNI y sin verificar el certificado.** Andaba porque
+  el endpoint de QA lo tolera. Puesto y comprobado rompiéndolo: con un
+  certificado autofirmado la imagen ahora da **502**.
+- **Un `tab_keys` vacío significa TODAS**, y `aplicar-dashboard.py` le agregaba la
+  clave nueva a todos los roles activos. `Admin` y `Planner` —los que tienen los
+  12 usuarios— pasaron de `[]` a `['resumen']` y **`/config/me` devolvió cero
+  pestañas**. Restaurado, y la herramienta ya no toca un rol vacío.
+- **Un 404 que parecía del producto era de la medición.**
+  `GET /config/tabs/{tabId}` exige que la pestaña pertenezca al layout que
+  `resolveLayout` elige; nuestro cliente manda `layoutId` y mi script no.
+
+**Y antes de escribir en QA se leyó SU código, no se supuso:** que el `PUT` de rol
+es parcial, y que esa semántica llegó en `1e080ee` — el mismo commit que trajo
+`/roles/composition`, que QA sirve. Por eso `layout_overrides` y los `hidden` de
+`planner` sobrevivieron.
+
+**El corte medido está en `docs/ESTADO-qa-2026-10-05.md`**, con la priorización y
+con su §0 diciendo qué cambió después de la medición de la mañana.
+
+### ⇩ el 2026-09-29 · el día que escribimos lo que veníamos pidiendo
 
 **Lo que costó descubrir está en `docs/BITACORA-2026-09-29.md`.** Lo de acá es
 dónde retomar.
