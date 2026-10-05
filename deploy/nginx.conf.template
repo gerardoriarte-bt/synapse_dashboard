@@ -52,6 +52,41 @@ server {
         proxy_pass         ${API_ORIGIN};
         proxy_http_version 1.1;
 
+        # ── EL UPSTREAM POR HTTPS · SNI Y VERIFICACIÓN ────────────────────────
+        #
+        # **Las dos van porque los defaults de nginx son los equivocados acá**, y
+        # se midió el 2026-10-05 levantando esta imagen contra QA:
+        #
+        #   docker exec … grep -c 'proxy_ssl_server_name|proxy_ssl_verify'
+        #     → 0, o sea los dos en default
+        #
+        # Y aun así andaba: `GET /api/v1/config/me` devolvía 401 del servicio
+        # real, también con el `Host` que va a tener en producción. **Andaba
+        # porque el endpoint de QA lo tolera, no porque estuviera bien**, que es
+        # la clase de cosa que esta casa ya pagó dos veces.
+        #
+        #   proxy_ssl_server_name   sin esto nginx NO manda SNI. Hoy no importa;
+        #                           el día que la API quede detrás de un balanceador
+        #                           que enruta por SNI, el handshake falla.
+        #   proxy_ssl_verify        sin esto aceptamos CUALQUIER certificado del
+        #                           upstream. El tráfico va cifrado y sin autenticar,
+        #                           que es la mitad de TLS.
+        #
+        # El nombre para el SNI y para la verificación sale solo del host de
+        # `proxy_pass` — no hace falta una variable más.
+        #
+        # **Las dos son inertes con un upstream `http://`**, así que el modo local
+        # —`API_ORIGIN=http://localhost:4010`— no cambia.
+        #
+        # **Si el upstream usa un certificado autofirmado**, esto lo rechaza y hay
+        # que poner su CA en `proxy_ssl_trusted_certificate` o bajar `verify` a
+        # `off` a propósito. Fallar es lo correcto: un certificado que no valida
+        # es algo que alguien tiene que decidir, no algo que se acepte en silencio.
+        proxy_ssl_server_name       on;
+        proxy_ssl_verify            on;
+        proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+        proxy_ssl_verify_depth      2;
+
         proxy_set_header   Host              ${DOLLAR}host;
         proxy_set_header   X-Real-IP         ${DOLLAR}remote_addr;
         proxy_set_header   X-Forwarded-For   ${DOLLAR}proxy_add_x_forwarded_for;

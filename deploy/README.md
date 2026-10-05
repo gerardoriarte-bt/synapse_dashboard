@@ -175,10 +175,64 @@ Probado entero: `/`, `/admin`, `/builder` y el proxy, los cuatro en **200**.
 | | |
 |---|---|
 | **TLS** | Va detrás de un ALB o un ingress que lo termine |
-| **El backend** | `API_ORIGIN` tiene que apuntar a algo. **Hoy el servicio se levanta a mano en `:4010`** y no sabemos si hay un `f70cec2` desplegado |
+| **El backend** | `API_ORIGIN` tiene que apuntar a algo. **Y ya hay a dónde: la API está en QA** · ver la sección de QA arriba. Lo que falta medir por ambiente es el commit que corre |
 | **La base** | Hoy es un Postgres local en Docker. En AWS es RDS — y `DB_AUTO_MIGRATE=true` **sigue prohibido** contra una base compartida |
 | **Los secretos** | `DATA_ENCRYPTION_KEY`, `JWT_SECRET` y las credenciales de Snowflake por tenant van en Secrets Manager o Parameter Store, no en el task definition |
 | **Rotar credenciales** | Diferido por decisión humana el 2026-09-15 · `docs/backdocs/environments.txt` |
+
+## QA · la receta, medida el 2026-10-05
+
+**El destino está decidido (humano, 2026-10-05): el front reemplaza lo que hoy
+sirve `qa-synapse.lobueno.co`.** Esa decisión cierra la única pregunta que
+quedaba de este documento — a qué nombre va.
+
+```
+docker build -t synapse-front .
+docker run -p 8080:8080 \
+  -e API_ORIGIN=https://qa-synapse-api.lobueno.co \
+  synapse-front
+```
+
+**Eso es todo lo que cambia por ambiente.** Una variable de arranque, el mismo
+artefacto. Se corrió así y se midió contra la API de QA de verdad:
+
+| Qué se probó | Resultado |
+|---|---|
+| `GET /` y `GET /admin` | **200** los dos · `try_files` resolviendo la SPA |
+| `GET /api/v1/config/me` **sin token** | **401** del servicio real, atravesando el proxy |
+| `POST /api/v1/auth/login` | **200** · con el usuario de QA |
+| `GET /api/v1/config/me` **con token** | **200** · tenant `Synapse UA HTML` |
+| `GET /api/v1/config/tabs/{id}` | **200** · 12 paneles |
+| Lo mismo con `Host: qa-synapse.lobueno.co` | **401**, o sea el `Host` del front no molesta al upstream |
+
+**No hay nada que configurar de CORS**: la API se sirve en el mismo origen, que
+es para lo que existe el bloque `location /api/v1`.
+
+### Lo que esta medición encontró, y estaba mal
+
+La configuración renderizada **no mencionaba `proxy_ssl_server_name` ni
+`proxy_ssl_verify`** —`grep -c` daba 0—, así que los dos iban en el default de
+nginx: **sin SNI y aceptando cualquier certificado del upstream**. Andaba igual,
+porque el endpoint de QA lo tolera.
+
+Las cuatro líneas están puestas, y **la verificación se comprobó rompiéndola**:
+con `API_ORIGIN=https://self-signed.badssl.com` la imagen ahora devuelve **502** y
+el log dice `upstream SSL certificate verify error: (18:self-signed
+certificate)`. Antes del cambio eso pasaba de largo.
+
+Si alguna vez el upstream usa un certificado propio, hay que darle su CA en
+`proxy_ssl_trusted_certificate` — fallar es lo correcto, y está explicado en el
+template.
+
+### Lo que falta para que QA se vea completo, y no es del front
+
+| | De quién |
+|---|---|
+| Subir esta imagen a `qa-synapse.lobueno.co` · con qué pipeline | **Backend u operaciones** |
+| Redesplegar su API a `c8b9247` o posterior · hoy `/config/plots` da 404 | **Backend** |
+| `tzdata` en su imagen · el tenant mexicano tiene el corte del día en Bogotá | **Backend** · ya pedido el 2026-10-02 |
+
+El detalle medido de QA está en `docs/ESTADO-qa-2026-10-05.md`.
 
 ## Lo que este despliegue NO resuelve
 
