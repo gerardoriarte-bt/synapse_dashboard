@@ -8,6 +8,10 @@ Contesta `RESPUESTA-2026-10-02-periodos-semanales.md`.
 **De acuerdo, y lo verificamos en nuestro código antes de contestar.** Su §4
 —«las seis de forecast y MMM no dependen de esto»— es correcto.
 
+**Medido contra `5a23224` el 2026-10-05** · `coarsestRequired` en
+`src/surfaces/console/periodGrain.ts`, leído y corrido. Es código nuestro, así
+que el pedido original se caía sin preguntarles nada.
+
 ---
 
 ## Lo que medimos

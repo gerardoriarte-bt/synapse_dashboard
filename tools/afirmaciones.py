@@ -84,6 +84,24 @@ METODOS = ("GET", "POST", "PUT", "DELETE", "PATCH")
 PARAM = re.compile(r"\{[^}]+\}|:[A-Za-z_][A-Za-z0-9_]*")
 
 
+# **La misma marca que `para-backend`, no una segunda convención.** Si acá se
+# escribiera otra forma, un pedido podría cumplir un chequeo y fallar el otro, y
+# el que se arreglaría sería el que esté corriendo.
+MEDIDO = re.compile(r"\*\*Medido contra `[0-9a-f]{7,40}` el \d{4}-\d{2}-\d{2}\*\*")
+
+# El escape, y lleva razón obligatoria: un `**Sin medición previa:**` pelado es
+# una casilla tildada. Con la razón escrita, el que lee el mensaje puede no
+# estar de acuerdo — que es el control que vale.
+# **`[^\S\n]*` y no `\s*`, y lo encontró una mutación.** Con `\s*` el salto de
+# línea contaba como espacio, así que un escape PELADO se cumplía con la primera
+# palabra del resto del documento — la casilla tildada que esta línea existe para
+# impedir. La razón va en la misma línea o no está.
+SIN_MEDIR = re.compile(r"\*\*Sin medición previa:\*\*[^\S\n]*\S")
+
+# Desde cuándo se exige. Ver el comentario en el chequeo 5.
+DESDE = "2026-10-05"
+
+
 def normalizar(ruta: str) -> str:
     """`/admin/tenants/{tenantId}/roles` y `/admin/tenants/{id}/roles` son la
     misma ruta. `:roleId` también, que es como la escribe Gin."""
@@ -170,7 +188,7 @@ def main() -> int:
 
     ids = ids_conocidos()
     fallas: list[str] = []
-    mirados = {"rutas": 0, "commits": 0, "tareas": 0, "entregas": 0}
+    mirados = {"rutas": 0, "commits": 0, "tareas": 0, "entregas": 0, "pedidos": 0}
 
     for doc in sorted(DOCS.rglob("*.md")):
         # `historico/` está vencido a propósito y lleva su aviso adentro.
@@ -280,6 +298,53 @@ def main() -> int:
                     f"que exista · los archivos se suben y el mensaje dice dónde"
                 )
 
+        # ── 5 · UN PEDIDO DECLARA QUÉ MEDIMOS DE NUESTRO LADO ───────────────
+        #
+        # **Agregado el 2026-10-05, y lo pagó el equipo de backend.** Les pedimos
+        # los períodos semanales como si destrabaran seis métricas. No las
+        # destraban, y la prueba era NUESTRA: `coarsestRequired` toma el grano más
+        # grueso de la pestaña, así que una métrica semanal nunca apaga los meses.
+        # Trabajaron un viernes sobre un pedido que se caía leyendo
+        # `src/.../periodGrain.ts`.
+        #
+        # **Y no fue aislado.** El mismo mes pedimos `MXN` cuando `/config/catalog`
+        # ya servía `unit: USD`, y `UNIT = 'x'` sobre dos métricas que son
+        # correctamente sin unidad. **Tres veces la respuesta estaba de este
+        # lado.**
+        #
+        # `para-backend` ya exigía esta marca, pero **sólo sobre
+        # `plan-de-trabajo.md`**: un pedido escrito directo como `MENSAJE-*` no
+        # pasaba por ningún chequeo. Medido ese día: 13 de los 14 mensajes de
+        # octubre sin marca, y **el único con marca es el único que no costó
+        # tiempo ajeno**.
+        #
+        # **Lo que esta regla NO hace es verificar que la medición sea buena.** Es
+        # deliberado y es la misma forma que `pen-pantallas`: ahí tampoco se
+        # compara el dibujo con la pantalla —eso no se automatiza—, se obliga a
+        # que la comparación se haya hecho y su resultado esté escrito. Acá igual:
+        # obliga a que la frase «antes de pedir esto, medí X» exista. La frase es
+        # el trabajo; escribirla sin hacerlo es mentir, no distraerse.
+        #
+        # La salida es la misma marca que ya usa el plan, para no tener dos
+        # convenciones. Y hay escape explícito, porque no todo mensaje pide algo:
+        # un relevo de lo que ellos midieron no tiene nada nuestro que medir.
+        # **La regla arranca el día que se escribe, y no es indulgencia.** Los
+        # mensajes anteriores llevan adentro «**Histórico.** … No se actualiza»,
+        # que es una decisión de esta casa: un mensaje mandado es un corte con
+        # fecha. Exigirles la marca obligaría a escribir hoy qué se midió
+        # entonces — o sea, **de memoria**, que es la falla que esta regla
+        # existe para atajar. Un chequeo que para pasar pide inventar evidencia
+        # es peor que no tenerlo.
+        fecha = re.match(r"MENSAJE-(\d{4}-\d{2}-\d{2})-", doc.name)
+        if fecha and fecha.group(1) >= DESDE:
+            mirados["pedidos"] += 1
+            if not (MEDIDO.search(texto) or SIN_MEDIR.search(texto)):
+                fallas.append(
+                    f"{rel} · no declara qué medimos de nuestro lado antes de "
+                    f"escribirlo · va «**Medido contra `<sha>` el <fecha>**» o "
+                    f"«**Sin medición previa:** <por qué>»"
+                )
+
         # ── 3 · identificadores de tarea ─────────────────────────────────────
         if ids:
             for m in re.finditer(r"\b([FB]\d+\.\d+[a-z]?)\b", texto):
@@ -309,7 +374,8 @@ def main() -> int:
     print(
         f"afirmaciones ✓ {mirados['rutas']} método+ruta · "
         f"{mirados['commits']} commit(s) · {mirados['tareas']} identificador(es) · "
-        f"{mirados['entregas']} entrega(s)"
+        f"{mirados['entregas']} entrega(s) · "
+        f"{mirados['pedidos']} pedido(s) con medición declarada"
     )
     return 0
 

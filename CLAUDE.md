@@ -490,6 +490,36 @@ plan. **No verifica que algo sea verdadero, solo que sea citable** — lo que cu
 es citar mal lo que está a dos archivos de distancia, que es la clase barata y
 frecuente.
 
+**ANTES DE PEDIRLE ALGO A OTRO EQUIPO, SE MIDE LO NUESTRO.**
+
+**Agregado el 2026-10-05, y lo pagó el equipo de backend.** Les pedimos los
+períodos semanales como si destrabaran seis métricas. **No las destraban**, y la
+prueba era nuestra: `coarsestRequired` toma el grano más grueso de la pestaña,
+así que una métrica semanal nunca apaga los meses. Trabajaron un viernes sobre un
+pedido que se caía leyendo `src/surfaces/console/periodGrain.ts`.
+
+**No fue aislado, y eso es lo que importa.** El mismo mes pedimos `MXN` cuando
+`/config/catalog` ya servía `unit: USD`, y `UNIT = 'x'` sobre dos métricas que son
+correctamente sin unidad. **Tres pedidos, y las tres respuestas estaban de este
+lado.**
+
+**La regla ya existía y no cubría el caso.** `para-backend` exige
+«**Medido contra `<sha>` el `<fecha>`**» desde el 2026-09-28 — pero **sólo sobre
+`plan-de-trabajo.md`**. Un pedido escrito directo como `MENSAJE-*` no pasaba por
+ningún chequeo, y los tres se escribieron así. Medido ese día: **cero de catorce**
+mensajes de octubre llevaban la marca.
+
+**Desde el 2026-10-05 la pide `afirmaciones`**, en la puerta: todo `MENSAJE-*`
+declara qué se midió de nuestro lado, o dice
+«**Sin medición previa:** `<por qué>`» con la razón en la misma línea. Los
+anteriores quedan afuera a propósito — llevan «Histórico · no se actualiza», y
+exigirles la marca sería escribir hoy qué se midió entonces, o sea **de memoria**,
+que es la falla que la regla ataja.
+
+**Lo que el chequeo NO hace es verificar que la medición sea buena**, igual que
+`pen-pantallas` no compara el dibujo con la pantalla. Obliga a que la frase
+exista; hacerla es el trabajo.
+
 **UN BLOQUEO ESCRITO NO SE RAZONA POR ENCIMA.** El 2026-09-16 se tomaron
 F4.17–F4.20 con el plan diciendo «se construyen cuando el backend envíe esas
 formas, no antes» y la instrucción diciendo «no tomar». Había un argumento —que
