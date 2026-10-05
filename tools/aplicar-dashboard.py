@@ -36,6 +36,17 @@ def main():
     ap.add_argument('--nombre', required=True)
     ap.add_argument('--slug', required=True)
     ap.add_argument('--version', default='v1')
+    # **`--sin-graficos` y no un segundo JSON**, a propósito: una copia del
+    # archivo con tres campos menos deriva del original en la primera edición, y
+    # el día que el repertorio esté desplegado nadie se acuerda de cuál es cuál.
+    #
+    # Existe por una razón con fecha: el 2026-10-05 QA corría un binario anterior
+    # a `c8b9247`, donde `GET /config/plots` da 404. Sin repertorio el front no
+    # puede resolver un `chart`, y un panel que lo declara cae en
+    # `UnknownPlotState` — se pinta nombrando el error. **Tres paneles pintados
+    # como error son peores que tres paneles con su gráfico por defecto.**
+    ap.add_argument('--sin-graficos', action='store_true',
+                    help='quita el campo `chart` de los paneles · para un servicio sin GET /config/plots')
     args = ap.parse_args()
 
     correo, clave = os.environ.get('SYNAPSE_EMAIL'), os.environ.get('SYNAPSE_PASSWORD')
@@ -59,6 +70,16 @@ def main():
         for p in t['panels']:
             p['metric_id'] = catalogo[p.pop('metric_key')]
 
+    # **Se dice QUÉ se quitó, no cuántos.** Un «3 gráficos omitidos» no deja
+    # reponerlos después; con la lista, agregarlos es leer esta salida.
+    if args.sin_graficos:
+        quitados = []
+        for t in comp['tabs']:
+            for p in t['panels']:
+                if p.pop('chart', None):
+                    quitados.append(f"{t['key']}/{p['metric_id'][:8]}")
+        print(f'sin gráficos · {len(quitados)} quitado(s): {", ".join(quitados) or "ninguno"}')
+
     db = pedir('POST', f'/admin/tenants/{tenant}/dashboards', token,
                {'name': args.nombre, 'slug': args.slug})
     print(f'dashboard {db["id"]}')
@@ -77,11 +98,29 @@ def main():
     # dashboard publicado que no aparece se lee como un fallo del publish.
     claves = [t['key'] for t in comp['tabs']]
     for rol in pedir('GET', f'/admin/tenants/{tenant}/roles/composition', token):
-        nuevas = [k for k in claves if k not in (rol.get('tab_keys') or [])]
+        # ── UN `tab_keys` VACÍO NO ES «NINGUNA»: ES «TODAS» ───────────────────
+        #
+        # **Y agregarle una clave lo convierte en un filtro.** Pasó el 2026-10-05
+        # aplicando esto contra QA: los roles `Admin` y `Planner` —los que tienen
+        # los 12 usuarios— estaban en `[]`, quedaron en `['resumen']`, y
+        # `/config/me` pasó de devolver una pestaña a devolver **cero**. La
+        # consola se quedó sin nada que dibujar.
+        #
+        # Su código lo dice —`dd_config_service.go`, leído en `c8b9247`—:
+        #
+        #     if len(role.TabKeys) > 0 { … return false }   ← filtra
+        #                                                     vacío cae a «todas»
+        #
+        # Así que un rol en `[]` **ya ve la pestaña nueva** y no hay que tocarlo.
+        # Tocarlo es lo que rompe.
+        if not (rol.get('tab_keys') or []):
+            print(f'  rol {rol["name"]} · sin tocar · `tab_keys` vacío ya significa todas')
+            continue
+        nuevas = [k for k in claves if k not in rol['tab_keys']]
         if not nuevas or not rol.get('is_active'):
             continue
         pedir('PUT', f'/admin/roles/{rol["id"]}', token,
-              {'name': rol['name'], 'tab_keys': (rol.get('tab_keys') or []) + nuevas,
+              {'name': rol['name'], 'tab_keys': rol['tab_keys'] + nuevas,
                'hidden_metric_ids': rol.get('hidden_metric_ids') or []})
         print(f'  rol {rol["name"]} · + {", ".join(nuevas)}')
 
