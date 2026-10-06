@@ -137,7 +137,7 @@ export function BuilderChrome({
                   el capítulo `Identidad` corrige**: el logotipo tiene su propia
                   tipografía, no la del producto. Ahora es el arte. */}
               <div className="flex items-center gap-3">
-                <Wordmark />
+                <Wordmark variante="marca" />
                 <Label>Builder</Label>
               </div>
 

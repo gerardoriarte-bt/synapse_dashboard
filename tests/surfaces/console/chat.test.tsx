@@ -324,32 +324,25 @@ describe('§PEN · la identidad de la plataforma', () => {
     expect(screen.getByRole('img', { name: 'Synapse' }).className).toContain('bg-ink')
   })
 
-  /** **La regla de qué versión va dónde es del `.pen`, no nuestra** · su
-   *  capítulo `Identidad` reserva el degradado para superficies SIN datos y lo
-   *  prohíbe en el chrome: «el azul y el violeta caen sobre las familias
-   *  demanda e inventario · usarlos como chrome rompería la persistencia
-   *  cromática». Estas dos la fijan por los dos lados. */
-  it('el defecto es `mono` · quien se olvide se equivoca del lado permitido', () => {
+  /** **Desde el 2026-10-06 el degradado va también al chrome**, por decisión
+   *  humana que contradice el capítulo `Identidad` del `.pen` · ver
+   *  `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` §3. Los navbars lo
+   *  piden explícito; el defecto sigue siendo `mono`. */
+  it('el defecto es `mono` · máscara pintada con token, sin arte a color', () => {
     render(<Wordmark />)
     const marca = screen.getByRole('img', { name: 'Synapse' })
     expect(marca.className).toContain('bg-ink')
-    expect(marca.style.backgroundImage).toBe('')
+    expect(marca.tagName).toBe('SPAN')
   })
 
-  it('la variante de marca es degradado de TOKENS, sin hex ni `bg-ink`', () => {
-    // «Naranja a violeta a azul» · el orden lo declara el `.pen`. Que salga de
-    // tokens es lo que impide que entre un hex literal, que es regla dura.
+  it('la variante de marca es el ARTE REAL a color, no la máscara', () => {
+    // El degradado del logotipo es en dos ejes y un `linear-gradient` de tres
+    // tokens no lo reproduce: va el archivo recortado del arte entregado.
     render(<Wordmark variante="marca" />)
     const marca = screen.getByRole('img', { name: 'Synapse' })
 
+    expect(marca.tagName).toBe('IMG')
+    expect(marca.getAttribute('src')).toContain('wordmark-marca')
     expect(marca.className).not.toContain('bg-ink')
-    const fondo = marca.style.backgroundImage
-    expect(fondo).toContain('--color-brand-naranja')
-    expect(fondo).toContain('--color-brand-violeta')
-    expect(fondo).toContain('--color-brand-azul')
-    expect(fondo).not.toMatch(/#[0-9a-f]{3,8}/i)
-    // Y en ese orden: invertirlo daría otra marca.
-    expect(fondo.indexOf('naranja')).toBeLessThan(fondo.indexOf('violeta'))
-    expect(fondo.indexOf('violeta')).toBeLessThan(fondo.indexOf('azul'))
   })
 })

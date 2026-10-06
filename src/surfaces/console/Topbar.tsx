@@ -76,7 +76,7 @@ export function Topbar({
           plataforma: no cambian con la pestaña ni con el período. Al lado del
           título parecían parte de la pantalla. */}
       <div className="flex h-15 items-center gap-3 border-b border-w2 bg-dock px-6">
-        <Wordmark />
+        <Wordmark variante="marca" />
 
         {/* El divisor del dibujo: la marca es de la plataforma y el cliente es
             de quien mira. Son dos cosas y se ven como dos. */}

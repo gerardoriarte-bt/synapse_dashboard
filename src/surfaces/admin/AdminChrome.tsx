@@ -81,7 +81,7 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
           {/* §PEN:A1 y §PEN:A2 encabezan con «Synapse · ADMINISTRACIÓN», y
               recién debajo va la pantalla. Faltaban las dos cosas. */}
           <div className="flex items-center gap-3">
-            <Wordmark />
+            <Wordmark variante="marca" />
             <Label>Administración</Label>
           </div>
 

@@ -174,6 +174,25 @@ chrome de la consola conserva el monocromo.
 **Si la intención era el chrome**, eso sí es una decisión de marca que cambia el
 capítulo `Identidad`, y el agente no lo edita: se dice y se decide.
 
+### ⚠️ REABIERTA Y DECIDIDA · 2026-10-06 (humano) · el degradado va también al chrome
+
+Llegó el arte real del logotipo —`design/SYNAPSE BT COLORS - LIGHT BKG (3).png`— y
+con él la instrucción de usarlo en el header. **Se le señaló la regla del `.pen`
+antes de ejecutar** —«NUNCA EN DATOS NI EN CHROME DE PANEL»— y la decisión fue
+llevar el degradado igual a los tres navbars: consola, admin y builder.
+
+**Contradice el capítulo `Identidad`, y por eso es un pedido a diseño:** que el
+`.pen` lo refleje, o que lo discuta. El agente no edita el `.pen`.
+
+Lo que cambió en el código, en `src/surfaces/console/Wordmark.tsx`:
+
+- **La letra es la real.** La máscara anterior era una grotesca portada de
+  `synapse_v2`; la nueva sale del arte, recortada a la palabra.
+- **El degradado es el del arte, no tres tokens.** Es en dos ejes —el naranja se
+  aclara hacia abajo— y un `linear-gradient` de tres paradas no lo reproduce.
+- **La bajada «A LICENSED SOLUTION BY LO.BUENO GROUP» queda afuera**: va en azul
+  marino, desaparece en tema oscuro y a 20px no se lee.
+
 ## 4 · El punto decimal, que el `.pen` usa para las dos cosas
 
 **Quién decide** · diseño · **Bloquea** · nada
