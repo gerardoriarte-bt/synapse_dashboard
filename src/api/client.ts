@@ -41,11 +41,12 @@ import type {
   TabWithPanels,
 } from './types'
 import { currentToken } from '../app/auth/session'
+import { apiBase } from './base'
 
 import { esDePanel } from './chat'
 import type { ContextoDeChat } from './chat'
 
-const BASE = import.meta.env.VITE_API_URL ?? '/api/v1'
+const BASE = apiBase()
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = currentToken()

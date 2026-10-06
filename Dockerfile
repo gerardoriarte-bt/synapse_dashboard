@@ -95,11 +95,18 @@ RUN set -eux; \
 
 USER 101:101
 
-EXPOSE 8080
+# El puerto publicado lo decide el compose (`SYNAPSE_PORT`, hoy 5173). No se
+# declara 8080 acá: `EXPOSE` es solo documentación, y 8080 inédito es lo que
+# hacía verse `80/tcp, 8080/tcp, 5173->5173` en `docker ps`. El `80` lo hereda
+# la imagen de nginx y no se puede borrar.
+EXPOSE 5173
 
-# El chequeo mira `/`, que `try_files` resuelve siempre a `index.html`. **No
-# apunta a `/api/v1`** a propósito: el front está sano aunque el backend no lo
-# esté, y si el healthcheck dependiera de la API, un backend caído reiniciaría el
-# front en un bucle sin arreglar nada.
+# El chequeo mira `/` en el puerto en el que nginx ESTÁ escuchando, no uno fijo.
+# Con `NGINX_PORT=5173` un wget a :8080 deja el contenedor `unhealthy` aunque
+# sirva bien. `$$` para que Docker no lo resuelva en el build.
+#
+# **No apunta a `/api/v1`** a propósito: el front está sano aunque el backend no
+# lo esté, y si el healthcheck dependiera de la API, un backend caído reiniciaría
+# el front en un bucle sin arreglar nada.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:8080/ || exit 1
+  CMD wget --quiet --tries=1 --spider http://127.0.0.1:$$NGINX_PORT/ || exit 1

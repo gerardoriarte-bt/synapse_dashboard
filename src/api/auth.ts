@@ -38,11 +38,12 @@
  */
 import { ApiError } from './types'
 import { currentToken } from '../app/auth/session'
+import { authBase } from './base'
 import type { components } from './auth-generated'
 
 type AuthSchemas = components['schemas']
 
-const BASE = import.meta.env['VITE_AUTH_URL'] ?? import.meta.env.VITE_API_URL ?? '/api/v1'
+const BASE = authBase()
 
 /** Lo que el servicio devuelve al entrar.
  *
