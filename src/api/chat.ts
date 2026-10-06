@@ -61,11 +61,12 @@ import { CAPAS, FAMILIAS, adaptValue } from './adapt'
 import type { components as wire } from './console-generated'
 import type { ChatEvent } from './types'
 import { currentToken } from '../app/auth/session'
+import { apiBase } from './base'
 
 type WireSchemas = wire['schemas']
 type WireChatFrameData = WireSchemas['ChatFrameData']
 
-const BASE = import.meta.env['VITE_API_URL'] ?? '/api/v1'
+const BASE = apiBase()
 
 /** El contexto de una pregunta · **uno de los dos, nunca los dos**.
  *

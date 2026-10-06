@@ -35,6 +35,7 @@ import { adaptCatalog } from './adapt'
 import type { AdaptedCatalog, WireMetric } from './adapt'
 import type { components as admin } from './admin-generated'
 import { currentToken } from '../app/auth/session'
+import { apiBase } from './base'
 
 type A = admin['schemas']
 
@@ -48,7 +49,7 @@ export type WireTenantOption = A['TenantOption']
 export type WireRole = A['Role']
 export type WirePreview = A['Preview']
 
-const BASE = import.meta.env.VITE_API_URL ?? '/api/v1'
+const BASE = apiBase()
 
 /** El mismo desenvolvimiento que `client.ts`, y por las mismas razones: el
  *  envelope se lee en un solo lugar, `error` es una cadena en este servicio, y
