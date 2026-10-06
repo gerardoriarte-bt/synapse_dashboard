@@ -63,6 +63,9 @@
  *  **§PEN:B5** · B5 · «Vista previa · rol Planner sin componer».
  */
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
+import { Accion } from '../../render/primitives/Accion'
+import { nombreDeTipo } from './rotulos'
 import { gridStyle, panelStyle } from '../../render/grid'
 import type { LayoutDetalle, PreviewDeRol } from '../../api/admin'
 import type { PanelConfig } from '../../api/types'
@@ -104,19 +107,15 @@ export function RolePreview({ preview, completo, onVolver }: Props) {
             un BORRADOR, y sin decirlo alguien compara «lo que ve el Planner»
             contra algo que el Planner todavía no ve. */}
         <Label as="div">{preview.estado === 'borrador' ? 'Borrador' : 'Publicado'}</Label>
-        <button
-          type="button"
-          onClick={onVolver}
-          className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2 ml-auto"
-        >
-          Volver a edición
-        </button>
+        <div className="ml-auto">
+          <Accion onClick={onVolver}>Volver a edición</Accion>
+        </div>
       </div>
 
       {preview.tabs.length === 0 && (
         // No es un error: es un rol al que no le asignaron ninguna pestaña, y
         // eso es exactamente lo que esta pantalla existe para mostrar.
-        <Label as="div">Este rol no ve ninguna pestaña de este layout</Label>
+        <Ayuda>Este rol no ve ninguna pestaña de esta versión.</Ayuda>
       )}
 
       {preview.tabs.map(({ tab, paneles }) => {
@@ -146,7 +145,7 @@ export function RolePreview({ preview, completo, onVolver }: Props) {
                   style={panelStyle(p)}
                   className="rounded-xl border border-w4 bg-panel p-3 flex flex-col gap-1 min-w-0"
                 >
-                  <Label as="div">{p.tipo}</Label>
+                  <Label as="div">{nombreDeTipo(p.tipo)}</Label>
                   <Label as="div">{`${String(p.colSpan)} × ${String(p.rowSpan)}`}</Label>
                   {p.nota !== undefined && <Label as="div">{p.nota}</Label>}
                 </div>
@@ -179,20 +178,18 @@ export function RolePreview({ preview, completo, onVolver }: Props) {
 
             Para que no quede como leyenda, lo que se declara es lo que se PUEDE
             comprobar mirando la pantalla: que no hay paneles. */}
-        <Label as="div">
-          Esta vista muestra la composición · sin cifras, que el preview no manda
-        </Label>
-        <Label as="div">
-          Los dos recortes los hizo el servidor · `roles.tab_ids` y `hidden_metric_ids`
-        </Label>
+        <Ayuda>Esta vista muestra la composición, sin cifras: la vista previa no trae datos.</Ayuda>
+        {/* Nombraba los dos campos del cable —`roles.tab_ids` y
+            `hidden_metric_ids`— en la pantalla · 2026-10-06. Se dice qué son. */}
+        <Ayuda>
+          Los dos recortes los hizo el servidor: qué pestañas ve el rol y qué métricas tiene ocultas.
+        </Ayuda>
         {completo === undefined && (
           // **Se declara en vez de inferirlos.** Sin el layout completo un hueco
           // sería un espacio vacío, y un espacio vacío puede ser una decisión
           // del admin. Decir «no llega a este rol» ahí afirmaría una causa que
           // nadie verificó.
-          <Label as="div">
-            Los huecos no se pueden calcular sin el layout sin lente
-          </Label>
+          <Ayuda>Los huecos no se pueden calcular sin la versión completa.</Ayuda>
         )}
       </div>
     </div>

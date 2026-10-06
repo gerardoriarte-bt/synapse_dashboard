@@ -20,7 +20,7 @@
  *  el canvas tiene que abrir con esa.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { http } from 'msw'
@@ -108,10 +108,14 @@ describe('B1 abre el canvas con la pestaña elegida', () => {
     await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
     await userEvent.click(await screen.findByRole('button', { name: /Componer Detalle/ }))
 
-    // Cambió de pantalla…
-    await waitFor(() => expect(screen.getByText(/Grilla 12/)).toBeInTheDocument())
+    // Cambió de pantalla… · desde el 2026-10-06 el lienzo ya no rotula «Grilla
+    // 12»; se lo encuentra por su rol, que es lo que no cambia con el copy.
+    const lienzo = await screen.findByRole('grid', { name: 'Lienzo de composición' })
+    expect(screen.getByRole('button', { name: 'Canvas' })).toHaveAttribute('aria-current', 'page')
     // …y compone la SEGUNDA. Sin fijar la pestaña esto abriría «Resumen» y la
     // pantalla se vería igual de bien.
     expect(screen.getByRole('combobox', { name: /Componiendo/i })).toHaveValue('1')
+    // Y el lienzo pinta SUS paneles —dos—, no el único de «Resumen».
+    expect(within(lienzo).getAllByRole('gridcell', { name: /^Indicador · / })).toHaveLength(2)
   })
 })

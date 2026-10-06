@@ -73,6 +73,8 @@ import { validarBorrador } from './validar'
 import {
   agregar,
   agregarPanel,
+  asignarRoles,
+  laVe,
   cambiarTipo,
   redimensionarPanel,
   reubicarPanel,
@@ -88,6 +90,8 @@ import {
 import { blockTable } from '../../catalog/blocks'
 import { SurfaceMessage } from '../console/SurfaceMessage'
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
+import { Accion } from '../../render/primitives/Accion'
 import { ApiError } from '../../api/types'
 import type { TabParaGuardar } from '../../api/admin'
 import type { PanelConfig } from '../../api/types'
@@ -136,15 +140,12 @@ const PENDIENTES: Partial<Record<PantallaId, { razon: string; desbloqueaCon: str
  *  pantalla suelta obligaría a duplicar la selección de pestaña y de panel para
  *  llegar al mismo formulario. Es una desviación de la spec y va dicha. */
 const EN_OTRA_PANTALLA: Partial<Record<PantallaId, string>> = {
-  metrica:
-    // F4.10 · es una desviación de §7.2 y va dicha, no escondida.
-    'Está en «Contexto de edición»: se elige un panel de una pestaña y se configura ahí. Configurar un panel exige tenerlo elegido.',
-  // **Mudado desde `PENDIENTES` el 2026-09-30**, y es la misma razón que el
-  // binder: elegir el gráfico de un panel exige tener el panel elegido. El
-  // selector se construyó en F4.21 y lo monta `PanelConfigurator`.
-  grafico:
-    // F4.21 · misma resolución que el binder y por la misma razón.
-    'Está en «Contexto de edición»: se elige un panel y el gráfico se elige ahí, con su repertorio y sus mínimos. Elegir el gráfico de un panel exige tener el panel elegido.',
+  // **2026-10-06 · se mudaron al inspector del canvas** y salieron de la
+  // navegación (D3). F4.10 y F4.21 siguen siendo una desviación de §7.2, que las
+  // describe como pantallas propias, y va dicha: configurar un panel exige
+  // tenerlo elegido, y donde se lo elige es el lienzo.
+  metrica: 'La métrica de un panel se elige en el lienzo: tocá un panel y se abre su configuración a la derecha.',
+  grafico: 'El gráfico de un panel se elige en el lienzo: tocá un panel y se abre su configuración a la derecha.',
 }
 
 export function Builder() {
@@ -154,9 +155,16 @@ export function Builder() {
   const yo = useMe()
   // El tema guardado lo aplica la superficie · ver `useTemaGuardado`.
   useTemaGuardado(yo.data?.user.preferencias?.tema)
-  const [pantalla, setPantalla] = useState<PantallaId>('contexto')
+  const [pantalla, irAPantalla] = useState<PantallaId>('contexto')
+  /** **Cambiar de pantalla vuelve arriba** · visto el 2026-10-06: «Componer»
+   *  se aprieta al fondo de B1 y el lienzo abría con el scroll de B1, a media
+   *  grilla. Asignación y no `scrollTo`, que jsdom no implementa. */
+  const setPantalla = (p: PantallaId) => {
+    irAPantalla(p)
+    document.documentElement.scrollTop = 0
+  }
   const [tenant, setTenant] = useState<string | null>(null)
-  const [version, setVersion] = useState<string | null>(null)
+  const [versionElegida, setVersion] = useState<string | null>(null)
 
   const tenants = useTenants()
   const lista = tenants.data ?? []
@@ -166,6 +174,14 @@ export function Builder() {
   // colgar de `pantalla` sin violar las reglas de hooks, y además calientan el
   // cache: cambiar de pantalla no espera una vuelta de red.
   const versiones = useLayouts(tenantActivo)
+  /** **La versión se elige sola si nadie eligió** · 2026-10-06. B1 abría con la
+   *  lista de versiones y nada más, y el canvas decía «Elegí una versión»: dos
+   *  pasos antes de ver una pestaña. El borrador es casi siempre lo que se viene
+   *  a editar; si no hay, la más reciente. Elegir otra sigue a un toque. */
+  const version =
+    versionElegida ??
+    (versiones.data?.find((v) => v.estado === 'borrador') ?? versiones.data?.[0])?.id ??
+    null
   const detalle = useLayoutDetail(version)
 
   // **El borrador se ata al layout que lo originó y se deriva en el render.**
@@ -217,8 +233,13 @@ export function Builder() {
    *  las pantallas de composición. */
   const [rol, setRol] = useState<string | null>(null)
   const roles = useRoles(tenantActivo)
-  const rolActivo = rol ?? roles.data?.[0]?.id ?? null
-  const preview = usePreview(pantalla === 'preview' ? version : null, rolActivo)
+  /** **`null` es «todos los roles»**, el filtro apagado · D5 de la auditoría
+   *  del 2026-10-06. Hasta hoy caía al primer rol, y el selector se movía sin
+   *  cambiar nada en pantalla. Ahora filtra las pestañas de B1 y del canvas. */
+  const rolActivo = rol !== null && roles.data?.some((r) => r.id === rol) === true ? rol : null
+  /** **B5 sí necesita UN rol**: previsualizar «todos» no es una vista de nadie. */
+  const rolDePreview = rolActivo ?? roles.data?.[0]?.id ?? null
+  const preview = usePreview(pantalla === 'preview' ? version : null, rolDePreview)
 
   const guardar = useSaveLayout(version)
   const validar = useValidateLayout(version)
@@ -334,6 +355,123 @@ export function Builder() {
     })
   }
 
+  /** Las pestañas que ve el rol del filtro, con su índice en el borrador
+   *  entero · D5. El filtro sólo decide qué se pinta. */
+  const visibles = tabs.map((t, i) => ({ t, i })).filter(({ t }) => laVe(t, rolActivo))
+  /** La pestaña del lienzo · si la elegida quedó fuera del filtro, la primera
+   *  visible. Sin esto, cambiar de rol dejaba el lienzo en una pestaña que el
+   *  selector ya no ofrece. */
+  const tabEnLienzo = visibles.some(({ i }) => i === tabActiva) ? tabActiva : (visibles[0]?.i ?? 0)
+
+  /** Ir a un problema · lleva al panel en el lienzo, o a B1 si es de la
+   *  pestaña. Es lo que la lista de problemas no tenía. */
+  const irA = (tab: number, panel: number | null) => {
+    setTabActiva(tab)
+    if (panel === null) {
+      setSeleccion(null)
+      setPantalla('contexto')
+    } else {
+      setSeleccion({ tab, panel })
+      setPantalla('canvas')
+    }
+  }
+
+  const revisionDelBorrador =
+    semilla === null ? null : (
+      <>
+        <SaveBar
+          publicada={publicada}
+          error={errorAlGuardar}
+          onDuplicar={() => {
+            const v = detalle.data?.layout.versionId
+            duplicar.mutate({ ...(v === undefined ? {} : { versionId: v }), tabs }, {
+              onSuccess: (nuevo) => {
+                setBorrador(null)
+                setSeleccion(null)
+                setVersion(nuevo.id)
+              },
+            })
+          }}
+          duplicando={duplicar.isPending}
+        />
+        <PublishBar
+          sucio={sucio(tabs, semilla)}
+          publicada={publicada}
+          veredicto={
+            validar.data === undefined
+              ? null
+              : { valido: validar.data.valido, problemas: validar.data.problemas }
+          }
+          nombreDeTab={(tabId) =>
+            detalle.data?.tabs.find((t) => t.tab.id === tabId)?.tab.nombre ?? 'El layout'
+          }
+          error={
+            publicar.error === null
+              ? validar.error === null
+                ? null
+                : `No se pudo validar · ${validar.error.message}`
+              : // 422 es «hay paneles inválidos», que es información, no un
+                // fallo de red: se dice con las palabras del caso.
+                publicar.error instanceof ApiError && publicar.error.httpStatus === 422
+                ? 'El servidor rechazó la publicación: hay paneles inválidos'
+                : `No se pudo publicar · ${publicar.error.message}`
+          }
+        />
+        <ValidationSummary problemas={problemas} nombres={tabs.map((t) => t.nombre)} onIr={irA} />
+      </>
+    )
+
+  const configurador =
+    configurable === null ? null : (
+      <PanelConfigurator
+        plots={plots.data ?? []}
+        onGrafico={(id) => {
+          if (seleccion === null) return
+          cambiar(quitarOPonerGrafico(tabs, seleccion.tab, seleccion.panel, id))
+        }}
+        panel={configurable}
+        bloques={listaDeBloques}
+        tabla={tabla}
+        metrics={catalogo.data?.metrics ?? []}
+        problemas={problemas.filter(
+          (p) => p.tab === seleccion?.tab && p.panel === seleccion.panel,
+        )}
+        onTipo={(tipo) => {
+          const b = tabla.get(tipo as PanelConfig['tipo'])
+          if (b === undefined || seleccion === null) return
+          cambiar(
+            cambiarTipo(
+              tabs,
+              seleccion.tab,
+              seleccion.panel,
+              tipo,
+              b.colSpanMin,
+              b.colSpanMax,
+              b.rowSpanMin,
+              b.rowSpanMax,
+            ),
+          )
+        }}
+        onMetrica={(metricId) => {
+          if (seleccion === null) return
+          cambiar(editarPanel(tabs, seleccion.tab, seleccion.panel, { metricId }))
+        }}
+        onSpan={(campo, valor) => {
+          if (seleccion === null) return
+          cambiar(editarPanel(tabs, seleccion.tab, seleccion.panel, { [campo]: valor }))
+        }}
+        onOpcion={(nombre, valor) => {
+          if (seleccion === null) return
+          cambiar(editarOpcion(tabs, seleccion.tab, seleccion.panel, nombre, valor))
+        }}
+        onQuitar={() => {
+          if (seleccion === null) return
+          cambiar(quitarPanel(tabs, seleccion.tab, seleccion.panel))
+          setSeleccion(null)
+        }}
+      />
+    )
+
   return (
     <BuilderChrome
       onChangeTheme={(theme) => saveTheme.mutate(theme)}
@@ -365,6 +503,19 @@ export function Builder() {
         semilla !== null && sucio(tabs, semilla) && !publicada ? guardarBorrador : null
       }
       guardando={guardar.isPending}
+      onValidar={
+        semilla !== null && !sucio(tabs, semilla) && !publicada ? () => validar.mutate() : null
+      }
+      validando={validar.isPending}
+      porQueNoPublicar={
+        semilla === null || publicada
+          ? null
+          : sucio(tabs, semilla)
+            ? 'Para publicar, guardá y validá.'
+            : validar.data?.valido === false
+              ? 'El servidor encontró problemas.'
+              : 'Para publicar, validá.'
+      }
       onPublicar={
         // El permiso es el mismo que usa `PublishBar`: el servidor dijo válido y
         // no se tocó nada desde entonces. Sin él, el chrome dice por qué en vez
@@ -375,96 +526,144 @@ export function Builder() {
       }
     >
       {reubicada !== undefined ? (
-        <div className="flex flex-col gap-2">
-          <Label as="div">Está construida, en otra pantalla</Label>
-          <Label as="div">{reubicada}</Label>
+        <div className="flex flex-col items-start gap-3">
+          <Ayuda>{reubicada}</Ayuda>
+          <Accion onClick={() => setPantalla('canvas')}>Ir al lienzo</Accion>
         </div>
       ) : pendiente !== undefined ? (
         <div className="flex flex-col gap-2">
           <Label as="div">Pendiente</Label>
-          <Label as="div">{pendiente.razon}</Label>
-          <Label as="div">Se desbloquea con · {pendiente.desbloqueaCon}</Label>
+          <Ayuda>{pendiente.razon}</Ayuda>
+          <Ayuda>{`Se desbloquea con: ${pendiente.desbloqueaCon}`}</Ayuda>
         </div>
       ) : pantalla === 'canvas' ? (
         semilla === null ? (
-          <Label as="div">Elegí una versión en «Contexto de edición» para componerla</Label>
-        ) : tabs.length === 0 ? (
-          <Label as="div">Esta versión no tiene pestañas · se agregan en «Contexto de edición»</Label>
+          <div className="flex flex-col items-start gap-3">
+            <Ayuda>Elegí una versión en «Contexto de edición» para componerla.</Ayuda>
+            <Accion onClick={() => setPantalla('contexto')}>Ir a contexto de edición</Accion>
+          </div>
+        ) : visibles.length === 0 ? (
+          <div className="flex flex-col items-start gap-3">
+            <Ayuda>
+              {tabs.length === 0
+                ? 'Esta versión no tiene pestañas. Se agregan en «Contexto de edición».'
+                : 'Este rol no ve ninguna pestaña de esta versión.'}
+            </Ayuda>
+            <Accion onClick={() => setPantalla('contexto')}>Ir a contexto de edición</Accion>
+          </div>
         ) : (
-          <div className="flex gap-6">
-            <Library
-              bloques={listaDeBloques}
-              arrastrando={arrastrando}
-              onArrastrar={setArrastrando}
-            />
-            <div className="flex-1 flex flex-col gap-3">
-              <div className="flex items-center gap-3">
-                <Label id="canvas-pestana">Componiendo</Label>
-                <select
-                  aria-labelledby="canvas-pestana"
-                  className="bg-w2 text-ink text-celda rounded-sm px-2 py-1 border border-w4"
-                  value={String(tabActiva)}
-                  onChange={(e) => {
-                    setTabActiva(Number(e.target.value))
-                    // La selección era de otra pestaña: su índice de panel no
-                    // significa nada acá.
-                    setSeleccion(null)
-                  }}
-                >
-                  {tabs.map((t, i) => (
-                    <option key={t.id ?? `nueva-${String(i)}`} value={String(i)}>
-                      {t.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <Canvas
-                panels={tabs[tabActiva]?.panels ?? []}
-                tabla={tabla}
-                metricas={catalogo.data?.metrics ?? []}
-                seleccionado={seleccion?.tab === tabActiva ? seleccion.panel : null}
-                onSeleccionar={(i) =>
-                  setSeleccion(i === null ? null : { tab: tabActiva, panel: i })
-                }
-                onReubicar={(i, colStart, destino) =>
-                  cambiar(reubicarPanel(tabs, tabActiva, i, colStart, destino))
-                }
-                onRedimensionar={(i, campo, delta) => {
-                  const p = tabs[tabActiva]?.panels[i]
-                  const b = p === undefined ? undefined : tabla.get(p.tipo as PanelConfig['tipo'])
-                  if (b === undefined) return
-                  // **El tope es el rango del TIPO, no la grilla.** Un `kpi`
-                  // ocupa entre 3 y 4 columnas, no entre 1 y 12.
-                  cambiar(
-                    redimensionarPanel(
-                      tabs,
-                      tabActiva,
-                      i,
-                      campo,
-                      delta,
-                      campo === 'colSpan' ? b.colSpanMin : b.rowSpanMin,
-                      campo === 'colSpan' ? b.colSpanMax : b.rowSpanMax,
-                    ),
-                  )
-                }}
-                onSoltarTipo={(tipo, colStart, destino) => {
+          <div className="flex flex-col gap-4">
+            {revisionDelBorrador}
+            <div className="flex gap-6">
+              <Library
+                bloques={listaDeBloques}
+                arrastrando={arrastrando}
+                onArrastrar={setArrastrando}
+                onAgregar={(tipo) => {
                   const b = tabla.get(tipo as PanelConfig['tipo'])
                   if (b === undefined) return
-                  const conNuevo = agregarPanel(tabs, tabActiva, tipo, b.colSpanMin, b.rowSpanMin)
-                  const ultimo = (conNuevo[tabActiva]?.panels.length ?? 1) - 1
-                  cambiar(reubicarPanel(conNuevo, tabActiva, ultimo, colStart, destino))
-                  setArrastrando(null)
+                  const conNuevo = agregarPanel(tabs, tabEnLienzo, tipo, b.colSpanMin, b.rowSpanMin)
+                  cambiar(conNuevo)
+                  setSeleccion({ tab: tabEnLienzo, panel: (conNuevo[tabEnLienzo]?.panels.length ?? 1) - 1 })
                 }}
-                arrastrando={arrastrando}
               />
+              <div className="flex-1 flex flex-col gap-3 min-w-0">
+                <div className="flex items-center gap-3">
+                  <Label id="canvas-pestana">Componiendo</Label>
+                  {/* Sólo las pestañas que ve el rol del filtro · D5. */}
+                  <select
+                    aria-labelledby="canvas-pestana"
+                    className="h-8 bg-w2 text-ink text-cuerpo font-medium rounded-md px-3 border border-w5 cursor-pointer"
+                    value={String(tabEnLienzo)}
+                    onChange={(e) => {
+                      setTabActiva(Number(e.target.value))
+                      // La selección era de otra pestaña: su índice de panel no
+                      // significa nada acá.
+                      setSeleccion(null)
+                    }}
+                  >
+                    {visibles.map(({ t, i }) => (
+                      <option key={t.id ?? `nueva-${String(i)}`} value={String(i)}>
+                        {t.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <Canvas
+                  panels={tabs[tabEnLienzo]?.panels ?? []}
+                  tabla={tabla}
+                  metricas={catalogo.data?.metrics ?? []}
+                  seleccionado={seleccion?.tab === tabEnLienzo ? seleccion.panel : null}
+                  onSeleccionar={(i) =>
+                    setSeleccion(i === null ? null : { tab: tabEnLienzo, panel: i })
+                  }
+                  onReubicar={(i, colStart, destino) =>
+                    cambiar(reubicarPanel(tabs, tabEnLienzo, i, colStart, destino))
+                  }
+                  onRedimensionar={(i, campo, delta) => {
+                    const p = tabs[tabEnLienzo]?.panels[i]
+                    const b = p === undefined ? undefined : tabla.get(p.tipo as PanelConfig['tipo'])
+                    if (b === undefined) return
+                    cambiar(
+                      redimensionarPanel(
+                        tabs,
+                        tabEnLienzo,
+                        i,
+                        campo,
+                        delta,
+                        campo === 'colSpan' ? b.colSpanMin : b.rowSpanMin,
+                        campo === 'colSpan' ? b.colSpanMax : b.rowSpanMax,
+                      ),
+                    )
+                  }}
+                  onSoltarTipo={(tipo, colStart, destino) => {
+                    const b = tabla.get(tipo as PanelConfig['tipo'])
+                    if (b === undefined) return
+                    const conNuevo = agregarPanel(tabs, tabEnLienzo, tipo, b.colSpanMin, b.rowSpanMin)
+                    const ultimo = (conNuevo[tabEnLienzo]?.panels.length ?? 1) - 1
+                    cambiar(reubicarPanel(conNuevo, tabEnLienzo, ultimo, colStart, destino))
+                    setSeleccion({ tab: tabEnLienzo, panel: ultimo })
+                    setArrastrando(null)
+                  }}
+                  arrastrando={arrastrando}
+                />
+              </div>
             </div>
+
+            {/* ── EL INSPECTOR · D1 de la auditoría del 2026-10-06 ─────────────
+             *
+             * **El canvas no configuraba**: movía y redimensionaba, y para
+             * cambiar la métrica había que volver a B1 y bajar dos alturas de
+             * scroll. Ahora el panel elegido se configura acá.
+             *
+             * **Encima del lienzo y no al costado**, porque al costado achicaría
+             * los 1200 del lienzo 1:1 —«a otra escala las unidades de arrastre
+             * mentirían»— y la cuenta 1200 + 300 = 1600 es del `.pen`. Tapa el
+             * borde derecho mientras está abierto; `Escape` o «Cerrar» lo
+             * cierran, y el panel sigue elegido en el lienzo. */}
+            {configurable !== null && seleccion !== null && seleccion.tab === tabEnLienzo && (
+              <aside
+                aria-label="Configuración del panel"
+                className="fixed right-0 top-0 bottom-0 z-20 w-[440px] overflow-y-auto border-l border-w4 bg-panel p-6 shadow-2xl"
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setSeleccion(null)
+                }}
+              >
+                <div className="flex justify-end pb-2">
+                  <Accion tamano="compacta" onClick={() => setSeleccion(null)} etiqueta="Cerrar la configuración del panel">
+                    Cerrar
+                  </Accion>
+                </div>
+                {configurador}
+              </aside>
+            )}
           </div>
         )
       ) : pantalla === 'preview' ? (
         <Preview
           roles={roles.data ?? []}
-          rolActivo={rolActivo}
+          rolActivo={rolDePreview}
           onRol={setRol}
           query={preview}
           onVolver={() => setPantalla('contexto')}
@@ -485,14 +684,8 @@ export function Builder() {
           // un texto que manda a otra pantalla sin forma de llegar es «un
           // estado sin salida», que §8 llama una queja.
           <div className="flex flex-col items-start gap-3">
-            <Label as="div">Elegí una versión en «Contexto de edición» para ver su historial</Label>
-            <button
-              type="button"
-              onClick={() => setPantalla('contexto')}
-              className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2"
-            >
-              Ir a contexto de edición
-            </button>
+            <Ayuda>Elegí una versión en «Contexto de edición» para ver su historial.</Ayuda>
+            <Accion onClick={() => setPantalla('contexto')}>Ir a contexto de edición</Accion>
           </div>
         ) : publicaciones.isError ? (
           <SurfaceMessage
@@ -537,169 +730,47 @@ export function Builder() {
           </div>
         )
       ) : (
-        <ContextView
-          tenants={lista}
-          tenantActivo={tenantActivo}
-          onTenant={(id) => {
-            setTenant(id)
-            // **La versión se olvida al cambiar de cliente.** Un `layoutId` de
-            // otro tenant sigue resolviendo —la ruta es `/admin/layouts/{id}` y
-            // no cuelga del tenant—, así que sin esto la pantalla mostraría las
-            // pestañas de un cliente bajo el nombre de otro.
-            setVersion(null)
-          }}
-          roles={roles.data ?? []}
-          rolActivo={rolActivo}
-          onRol={setRol}
-          versiones={versiones.data ?? []}
-          versionActiva={version}
-          onVersion={setVersion}
-        >
-          {semilla === null ? null : (
-            <TabEditor
-              tabs={tabs}
-              onEditar={(i, campo, valor) => cambiar(editar(tabs, i, campo, valor))}
-              onAgregar={() => cambiar(agregar(tabs))}
-              onQuitar={(i) => cambiar(quitar(tabs, i))}
-              onMover={(i, d) => cambiar(mover(tabs, i, d))}
-              // **Las dos cosas a la vez, y ese es el punto.** El `.pen` dice
-              // «al entrar se abre B2 CON ESTE CONTEXTO»: elegir la pestaña y
-              // cambiar de pantalla son un solo gesto. Separado —elegí versión,
-              // ahora andá a Canvas— es lo que hacía que el canvas pareciera no
-              // existir.
-              onComponer={(i) => {
-                setTabActiva(i)
-                setPantalla('canvas')
-              }}
-              onPanel={(tab, panel) => setSeleccion({ tab, panel })}
-              onAgregarPanel={(i) => {
-                const primero = listaDeBloques[0]
-                if (primero === undefined) return
-                // **El primer tipo de la tabla y sus mínimos, no un default
-                // escrito acá.** `col_span` en 0 lo reemplaza el servicio por 3,
-                // y 3 puede estar fuera del rango del tipo.
-                cambiar(agregarPanel(tabs, i, primero.tipo, primero.colSpanMin, primero.rowSpanMin))
-                setSeleccion({ tab: i, panel: tabs[i]?.panels.length ?? 0 })
-              }}
-              seleccion={seleccion}
-              problemas={problemas}
-            />
-          )}
-          {semilla === null ? null : (
-            <SaveBar
-              problemas={problemas.length}
-              publicada={publicada}
-              error={errorAlGuardar}
-              onDuplicar={() => {
-                // **Se le pasan las pestañas que se están viendo**, no sólo el
-                // nombre de la versión: el `POST` crea un borrador VACÍO y el
-                // botón promete duplicar. Van las de `tabs` y no las del
-                // servidor, que es lo que el botón significa — se duplica para
-                // seguir trabajando sobre lo que hay en pantalla.
-                // El spread condicional es obligatorio con
-                // `exactOptionalPropertyTypes`, y trae su costo conocido: una
-                // clave mal escrita compila. Por eso la prueba de esto afirma
-                // que el `PUT` SALE con los paneles, no que el botón exista.
-                const v = detalle.data?.layout.versionId
-                duplicar.mutate({ ...(v === undefined ? {} : { versionId: v }), tabs }, {
-                  onSuccess: (nuevo) => {
-                    setBorrador(null)
-                    setSeleccion(null)
-                    setVersion(nuevo.id)
-                  },
-                })
-              }}
-              duplicando={duplicar.isPending}
-            />
-          )}
-
-          {semilla === null ? null : (
-            <PublishBar
-              sucio={sucio(tabs, semilla)}
-              publicada={publicada}
-              validando={validar.isPending}
-              veredicto={
-                validar.data === undefined
-                  ? null
-                  : { valido: validar.data.valido, problemas: validar.data.problemas }
-              }
-              nombreDeTab={(tabId) =>
-                detalle.data?.tabs.find((t) => t.tab.id === tabId)?.tab.nombre ?? 'El layout'
-              }
-              error={
-                publicar.error === null
-                  ? validar.error === null
-                    ? null
-                    : `No se pudo validar · ${validar.error.message}`
-                  : // 422 es «hay paneles inválidos», que es información, no un
-                    // fallo del sistema · B4.15.
-                    publicar.error instanceof ApiError && publicar.error.httpStatus === 422
-                    ? 'El servidor rechazó la publicación: hay paneles inválidos'
-                    : `No se pudo publicar · ${publicar.error.message}`
-              }
-              onValidar={() => validar.mutate()}
-            />
-          )}
-
-          {semilla === null ? null : (
-            <ValidationSummary problemas={problemas} nombres={tabs.map((t) => t.nombre)} />
-          )}
-
-          {configurable !== null && (
-            <PanelConfigurator
-              plots={plots.data ?? []}
-              onGrafico={(id) => {
-                if (seleccion === null) return
-                // **`undefined` QUITA el gráfico, y por eso no puede ir por
-                // `editarPanel`**: su `Partial` mezcla con spread, así que un
-                // `undefined` explícito no borra la clave — la deja igual. Es el
-                // mismo modo de falla que el spread condicional de JSX, y acá se
-                // ve al revés: querer borrar y que no pase nada.
-                cambiar(quitarOPonerGrafico(tabs, seleccion.tab, seleccion.panel, id))
-              }}
-              panel={configurable}
-              bloques={listaDeBloques}
-              tabla={tabla}
-              metrics={catalogo.data?.metrics ?? []}
-              problemas={problemas.filter(
-                (p) => p.tab === seleccion?.tab && p.panel === seleccion.panel,
-              )}
-              onTipo={(tipo) => {
-                const b = tabla.get(tipo as PanelConfig['tipo'])
-                if (b === undefined || seleccion === null) return
-                cambiar(
-                  cambiarTipo(
-                    tabs,
-                    seleccion.tab,
-                    seleccion.panel,
-                    tipo,
-                    b.colSpanMin,
-                    b.colSpanMax,
-                    b.rowSpanMin,
-                    b.rowSpanMax,
-                  ),
-                )
-              }}
-              onMetrica={(metricId) => {
-                if (seleccion === null) return
-                cambiar(editarPanel(tabs, seleccion.tab, seleccion.panel, { metricId }))
-              }}
-              onSpan={(campo, valor) => {
-                if (seleccion === null) return
-                cambiar(editarPanel(tabs, seleccion.tab, seleccion.panel, { [campo]: valor }))
-              }}
-              onOpcion={(nombre, valor) => {
-                if (seleccion === null) return
-                cambiar(editarOpcion(tabs, seleccion.tab, seleccion.panel, nombre, valor))
-              }}
-              onQuitar={() => {
-                if (seleccion === null) return
-                cambiar(quitarPanel(tabs, seleccion.tab, seleccion.panel))
-                setSeleccion(null)
-              }}
-            />
-          )}
-        </ContextView>
+        <div className="flex flex-col gap-6">
+          {revisionDelBorrador}
+          <ContextView
+            tenants={lista}
+            tenantActivo={tenantActivo}
+            onTenant={(id) => {
+              setTenant(id)
+              setVersion(null)
+              setRol(null)
+            }}
+            roles={roles.data ?? []}
+            rolActivo={rolActivo}
+            onRol={(id) => {
+              setRol(id)
+              setSeleccion(null)
+            }}
+            versiones={versiones.data ?? []}
+            versionActiva={version}
+            onVersion={setVersion}
+            fecha={(iso) => format.calendar(iso)}
+          >
+            {semilla === null ? null : (
+              <TabEditor
+                tabs={tabs}
+                roles={roles.data ?? []}
+                rolActivo={rolActivo}
+                onEditar={(i, campo, valor) => cambiar(editar(tabs, i, campo, valor))}
+                onAgregar={() => cambiar(agregar(tabs, rolActivo === null ? [] : [rolActivo]))}
+                onQuitar={(i) => cambiar(quitar(tabs, i))}
+                onMover={(i, d) => cambiar(mover(tabs, i, d))}
+                onRoles={(i, r) => cambiar(asignarRoles(tabs, i, r))}
+                onComponer={(i) => {
+                  setTabActiva(i)
+                  setSeleccion(null)
+                  setPantalla('canvas')
+                }}
+                problemas={problemas.filter((p) => p.panel === null)}
+              />
+            )}
+          </ContextView>
+        </div>
       )}
     </BuilderChrome>
   )
@@ -747,21 +818,16 @@ function Preview({
   if (!hayVersion) {
     return (
       <div className="flex flex-col items-start gap-3">
-        <Label as="div">Elegí una versión en «Contexto de edición» para previsualizarla</Label>
-        <button type="button" onClick={onVolver} className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2">
-          Ir a contexto de edición
-        </button>
+        <Ayuda>Elegí una versión en «Contexto de edición» para previsualizarla.</Ayuda>
+        <Accion onClick={onVolver}>Ir a contexto de edición</Accion>
       </div>
     )
   }
   if (roles.length === 0) {
     return (
       <div className="flex flex-col items-start gap-3">
-        <Label as="div">Este cliente no tiene roles definidos</Label>
-        <Label as="div">Se definen en la ficha de cliente de administración · F4.3</Label>
-        <button type="button" onClick={onVolver} className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2">
-          Ir a contexto de edición
-        </button>
+        <Ayuda>Este cliente todavía no tiene roles. Se definen en su ficha, en administración.</Ayuda>
+        <Accion onClick={onVolver}>Ir a contexto de edición</Accion>
       </div>
     )
   }

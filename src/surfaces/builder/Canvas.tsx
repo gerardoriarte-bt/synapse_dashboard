@@ -50,6 +50,8 @@
  */
 import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
+import { nombreDeTipo } from './rotulos'
 import { COLUMNS } from '../../render/grid'
 import { choqueCon, disposicion, huecos, ordenPara } from './disposicion'
 import type { PanelDeBorrador } from './borrador'
@@ -187,24 +189,18 @@ export function Canvas({
 
   return (
     <div className="flex-1 flex flex-col gap-2">
-      {/* La regla del `.pen`, literal: son los números con los que se compone. */}
-      <div className="flex items-center gap-6">
-        <Label as="div">Grilla 12 · columna 80 · gap 16 · fila base 80</Label>
-        <Label as="div">El alto se declara en rowSpan · nunca en píxeles</Label>
-        {/* **El gesto de mover, dicho.** Reportado el 2026-09-17: «no veo la
-            capacidad de mover un bloque». La capacidad estaba y funcionaba —el
-            panel es `draggable` desde F4.9— y **no había nada que la anunciara**:
-            `cursor: grab` solo aparece al pasar por encima, y el `.pen` dibuja
-            «ARRASTRAR AL LIENZO» para la biblioteca y nada para el lienzo.
+      {/* **D7 de la auditoría del 2026-10-06**: las reglas de la grilla —«GRILLA
+          12 · COLUMNA 80 · GAP 16», «EL ALTO SE DECLARA EN rowSpan»— son
+          literales del `.pen`, pero hablan del handoff y no de quien compone:
+          `rowSpan` es un nombre de campo. El humano dejó la decisión a la
+          usabilidad, y lo que sirve acá es decir los gestos, en una frase.
 
-            Va acá y no en el panel por lo que la propuesta del canvas ya
-            resolvió en su punto 1: se descartó una manija de arrastre dedicada
-            porque «§4 ya gastó el espacio de cabecera» —título, BASE y
-            procedencia son shell que nunca se reemplaza—. La regla es donde el
-            lienzo ya declara sus reglas, y queda simétrico con la biblioteca,
-            que sí anuncia el suyo. */}
-        <Label as="div">Arrastrá un panel para moverlo · los handles redimensionan</Label>
-      </div>
+          El gesto de mover tiene historia: reportado el 2026-09-17, «no veo la
+          capacidad de mover un bloque». Estaba, y nada lo anunciaba. */}
+      <Ayuda>
+        Arrastrá un tipo de la biblioteca a un espacio libre. Elegí un panel para configurarlo:
+        arrastralo para moverlo, o usá las flechas; con Shift y las flechas cambiás su tamaño.
+      </Ayuda>
 
       <div
         role="grid"
@@ -259,7 +255,7 @@ export function Canvas({
               }
             >
               <Label>
-                {problema ?? `${arrastrando} · ${String(colSpan)} × ${String(rowSpan)}`}
+                {problema ?? `${nombreDeTipo(arrastrando)} · ${String(colSpan)} × ${String(rowSpan)}`}
               </Label>
             </div>
           )
@@ -319,7 +315,7 @@ export function Canvas({
               draggable
               tabIndex={0}
               role="gridcell"
-              aria-label={`${p.tipo} · ${nombre(p.metricId)}`}
+              aria-label={`${nombreDeTipo(p.tipo)} · ${nombre(p.metricId)}`}
               aria-selected={elegido}
               onDragStart={(e) => {
                 e.dataTransfer.setData('text/plain', String(c.indice))
@@ -336,36 +332,47 @@ export function Canvas({
                 (elegido ? 'border-2 border-acc' : 'border border-w3')
               }
             >
-              <Label as="div">{p.tipo}</Label>
-              <span className="text-ink text-celda">{nombre(p.metricId)}</span>
-              {/* La medida en unidades y en píxeles · `px = 96·N − 16`. */}
-              <Label as="div">
-                {`${String(c.colSpan)} × ${String(c.rowSpan)} · ${String(FILA * c.rowSpan - 16)} px de alto`}
-              </Label>
+              <Label as="div">{nombreDeTipo(p.tipo)}</Label>
+              <span className="font-body text-cuerpo font-medium text-ink">{nombre(p.metricId)}</span>
+              {/* La medida en unidades de grilla · las mismas que pide el
+                  configurador. Los píxeles los decide `96·N − 16`, no quien
+                  compone. */}
+              <Label as="div">{`${String(c.colSpan)} col × ${String(c.rowSpan)} filas`}</Label>
 
               {elegido && b !== undefined && (
-                // Los handles · redimensionan de a una celda. No hay arrastre
-                // continuo, y no hace falta: la unidad es la grilla.
-                <div className="flex gap-1">
+                // Los handles · redimensionan de a una celda. **Dos grupos de
+                // − y +** donde había cuatro palabras que desbordaban un panel
+                // de 3 columnas —«AGRANDA» cortado, medido el 2026-10-06—. El
+                // nombre accesible sigue diciendo la acción entera.
+                <div className="mt-2 flex flex-wrap gap-3" onClick={(e) => e.stopPropagation()}>
                   {(
                     [
-                      ['colSpan', -1, 'Angostar'],
-                      ['colSpan', 1, 'Ensanchar'],
-                      ['rowSpan', -1, 'Achicar'],
-                      ['rowSpan', 1, 'Agrandar'],
+                      ['colSpan', 'Ancho', 'Angostar', 'Ensanchar'],
+                      ['rowSpan', 'Alto', 'Achicar', 'Agrandar'],
                     ] as const
-                  ).map(([campo, delta, texto]) => (
-                    <button
-                      key={texto}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onRedimensionar(c.indice, campo, delta)
-                      }}
-                      className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-dim hover:bg-elev"
-                    >
-                      {texto}
-                    </button>
+                  ).map(([campo, rotulo, menos, mas]) => (
+                    <div key={campo} className="flex items-center gap-1">
+                      <Label>{rotulo}</Label>
+                      {(
+                        [
+                          [-1, '−', menos],
+                          [1, '+', mas],
+                        ] as const
+                      ).map(([delta, signo, accion]) => (
+                        <button
+                          key={accion}
+                          type="button"
+                          aria-label={accion}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onRedimensionar(c.indice, campo, delta)
+                          }}
+                          className="size-7 inline-flex items-center justify-center rounded-md border border-w5 font-body text-cuerpo font-semibold text-ink cursor-pointer hover:bg-w2"
+                        >
+                          {signo}
+                        </button>
+                      ))}
+                    </div>
                   ))}
                 </div>
               )}

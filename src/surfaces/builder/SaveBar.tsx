@@ -16,55 +16,37 @@
  *  3. **Guardar con problemas de composición no se bloquea.** Un borrador es
  *     justamente el lugar donde una composición a medias puede vivir; lo que no
  *     se puede es PUBLICARLA, y eso lo decide el servidor en F4.14 y F4.15. Se
- *     avisa cuántos quedan, no se impide.
+ *     avisa, no se impide — desde el 2026-10-06 lo avisa `ValidationSummary`,
+ *     que es el único que cuenta.
  */
-import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
+import { Accion } from '../../render/primitives/Accion'
 
 type Props = {
-  /** Cuántos problemas ve el front. **No bloquean guardar** · ver arriba. */
-  problemas: number
-  /** Una versión publicada no acepta `PUT`. */
   publicada: boolean
-  /** El 409 ya ocurrido, o cualquier otro error del PUT. */
   error: string | null
   onDuplicar: () => void
   duplicando: boolean
 }
 
-export function SaveBar({ problemas, publicada, error, onDuplicar, duplicando }: Props) {
+/** **La cuenta de problemas se fue de acá** · 2026-10-06. Se decía tres veces
+ *  —arriba, acá y en el resumen— y ahora la dice sólo `ValidationSummary`, que
+ *  además lleva a cada uno · §2.5 de la auditoría. Esta barra queda para lo que
+ *  NO es global: por qué no se puede guardar esta versión, y cómo salir. Y no
+ *  se pinta vacía. */
+export function SaveBar({ publicada, error, onDuplicar, duplicando }: Props) {
+  if (!publicada && error === null) return null
   return (
-    <div className="flex flex-col gap-2 rounded-sm bg-w2 p-3">
-      <div className="flex items-center gap-3">
-        {/* **El botón de guardar y el contador se mudaron al chrome** el
-            2026-09-15: el `.pen` los tiene en la cabecera y ahí siguen al
-            usuario. Lo que queda acá es lo que NO es global — por qué no se
-            puede guardar esta versión, y cómo salir de eso. */}
-        {problemas > 0 && (
-          // **Se avisa, no se impide.** Un borrador es donde una composición a
-          // medias puede vivir; lo que no se puede es publicarla.
-          <Label as="div">
-            {`${String(problemas)} problema(s) de composición · se guardan igual, no se publican`}
-          </Label>
-        )}
-      </div>
-
+    <div className="flex flex-col gap-2 rounded-xl border border-w4 bg-panel p-4">
       {publicada && (
-        <div className="flex items-center gap-3">
-          <Label as="div">
-            Esta versión está publicada y no se edita · duplicala para trabajar sobre ella
-          </Label>
-          <button
-            type="button"
-            onClick={onDuplicar}
-            disabled={duplicando}
-            className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-elev disabled:opacity-40"
-          >
+        <div className="flex flex-wrap items-center gap-3">
+          <Ayuda as="span">Esta versión está publicada y no se edita. Creá un borrador para trabajar sobre ella.</Ayuda>
+          <Accion variante="primaria" onClick={onDuplicar} deshabilitada={duplicando}>
             {duplicando ? 'Creando…' : 'Crear borrador desde esta versión'}
-          </button>
+          </Accion>
         </div>
       )}
-
-      {error !== null && <Label as="div">{error}</Label>}
+      {error !== null && <Ayuda>{error}</Ayuda>}
     </div>
   )
 }

@@ -135,13 +135,13 @@ const DETALLE = {
   tabs: [],
 }
 
-function montar(publicaciones: unknown[] = [publicacion({})]) {
+function montar(publicaciones: unknown[] = [publicacion({})], layouts: unknown[] = LAYOUTS) {
   const pedidas: string[] = []
   server.use(
     http.get(`${API}/admin/tenants`, () =>
       ok([{ id: TENANT, name: 'Under Armour México', locale: 'es-CO' }]),
     ),
-    http.get(`${API}/admin/tenants/:id/layouts`, () => ok(LAYOUTS)),
+    http.get(`${API}/admin/tenants/:id/layouts`, () => ok(layouts)),
     http.get(`${API}/admin/tenants/:id/catalog`, () => ok(CATALOGO)),
     http.get(`${API}/admin/tenants/:id/users`, () => ok(USUARIOS)),
     http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([])),
@@ -168,8 +168,8 @@ function montar(publicaciones: unknown[] = [publicacion({})]) {
 /** B1 → elegir la versión publicada → B6. Es el camino real: el historial se pide
  *  por dashboard y lo único que el builder elige es un layout. */
 async function abrirHistorial() {
-  const versiones = await screen.findByText('Versiones de este cliente')
-  expect(versiones).toBeInTheDocument()
+  // La versión de «Marca» se aprieta aunque haya una elegida sola: desde el
+  // 2026-10-06 el builder toma el primer borrador, que acá es de «Overview».
   await userEvent.click(await screen.findByRole('button', { name: /v-1790712673/ }))
   await userEvent.click(screen.getByRole('button', { name: 'Historial de versiones' }))
 }
@@ -188,17 +188,21 @@ describe('B6 · el dashboard sale de la VERSIÓN abierta', () => {
   })
 
   it('sin versión elegida no pide nada y ofrece la salida, que DISPARA', async () => {
-    // `enabled` es lo único que impide `/admin/dashboards//publications`, y el
-    // caso ocurre en el arranque: el builder monta antes de saber el dashboard.
-    const { pedidas } = montar()
-    await screen.findByText('Versiones de este cliente')
+    // `enabled` es lo único que impide `/admin/dashboards//publications`.
+    // **Desde la autoselección del 2026-10-06** —auditoría de ese día— un
+    // cliente con versiones nunca queda sin una, así que el caso es el de un
+    // cliente sin ninguna: la lista vacía que la ruta devuelve.
+    const { pedidas } = montar([publicacion({})], [])
+    await screen.findByText('Este cliente todavía no tiene versiones.')
     await userEvent.click(screen.getByRole('button', { name: 'Historial de versiones' }))
 
     expect(pedidas).toEqual([])
-    expect(screen.getByText(/ELEGÍ UNA VERSIÓN/i)).toBeInTheDocument()
+    expect(
+      screen.getByText('Elegí una versión en «Contexto de edición» para ver su historial.'),
+    ).toBeInTheDocument()
     // **Que el botón DISPARE, no que exista**: un estado sin salida es una queja.
     await userEvent.click(screen.getByRole('button', { name: 'Ir a contexto de edición' }))
-    expect(await screen.findByLabelText('Cliente')).toBeInTheDocument()
+    expect(await screen.findByRole('combobox', { name: 'Cliente' })).toBeInTheDocument()
   })
 })
 
@@ -292,16 +296,21 @@ describe('B6 · el chrome de `contexto` · §PEN:B6 frame `Volver`', () => {
     const cabecera = within(screen.getByRole('banner'))
     await userEvent.click(cabecera.getByRole('button', { name: 'Volver a editar' }))
     // Vuelve a B1, que es la que tiene el selector de cliente.
-    expect(await screen.findByLabelText('Cliente')).toBeInTheDocument()
+    expect(await screen.findByRole('combobox', { name: 'Cliente' })).toBeInTheDocument()
   })
 
   it('el contexto sigue visible · es lo que el `.pen` dibuja en el navbar de B6', async () => {
     montar()
     await abrirHistorial()
     const cabecera = within(screen.getByRole('banner'))
-    for (const rotulo of ['Cliente', 'Rol', 'Pestaña']) {
+    for (const rotulo of ['Cliente', 'Rol']) {
       expect(cabecera.getByText(rotulo)).toBeInTheDocument()
     }
+    expect(cabecera.getByText('Under Armour México')).toBeInTheDocument()
+    // Sin filtro de rol el chrome lo dice, en vez de un guion que parece un hueco.
+    expect(cabecera.getByText('Todos los roles')).toBeInTheDocument()
+    // La pestaña salió del chrome el 2026-10-06: B6 es del dashboard entero.
+    expect(cabecera.queryByText('Pestaña')).toBeNull()
   })
 })
 

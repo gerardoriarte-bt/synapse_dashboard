@@ -51,6 +51,8 @@
  */
 import { useMemo } from 'react'
 import { Label } from '../../render/primitives/Label'
+import { Accion } from '../../render/primitives/Accion'
+import { nombreDeForma, nombreDeTipo } from './rotulos'
 import { Note } from '../../render/primitives/Note'
 import type { ChartId, Plot, Shape } from '../../catalog/types'
 
@@ -106,11 +108,11 @@ export function PlotPicker({ tipo, formasDelTipo, plots, actual, onElegir, onVol
           <Label as="div">{`${String(mostrados.size)} gráficos de los ${String(DIBUJADOS_EN_EL_PEN)} del repertorio`}</Label>
         </div>
         <div className="flex items-center gap-2">
-          <Label as="div">{`Tipo ${tipo}`}</Label>
+          <Label as="div">{nombreDeTipo(tipo)}</Label>
           <Note as="span">acepta</Note>
           {formasDelTipo.map((f) => (
             <Note key={f} as="span">
-              {f}
+              {nombreDeForma(f)}
             </Note>
           ))}
         </div>
@@ -124,7 +126,7 @@ export function PlotPicker({ tipo, formasDelTipo, plots, actual, onElegir, onVol
         {grupos.map(({ forma, todos }) => (
           <div key={forma} className="flex flex-col gap-2.5">
             <div className="flex items-baseline gap-2">
-              <Label as="div">{forma}</Label>
+              <Label as="div">{nombreDeForma(forma)}</Label>
               {/* **El frame dice «2 DE 6 MOSTRADOS» y acá va sólo el conteo.**
                   Ese literal existe porque el MOCKUP trunca la lista para que
                   entre en la hoja; la pantalla real las muestra todas, así que
@@ -163,13 +165,7 @@ export function PlotPicker({ tipo, formasDelTipo, plots, actual, onElegir, onVol
           Elegido el gráfico, el binder filtra las métricas que puede renderizar
         </Note>
         <div className="flex-1" />
-        <button
-          type="button"
-          onClick={onVolver}
-          className="h-8 cursor-pointer rounded-lg border border-w4 bg-transparent px-3.5 font-mono text-label leading-rotulo tracking-rotulo uppercase text-ink"
-        >
-          Volver
-        </button>
+        <Accion onClick={onVolver}>Volver</Accion>
       </div>
     </div>
   )

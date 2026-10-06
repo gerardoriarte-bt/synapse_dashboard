@@ -35,6 +35,8 @@
 import { IdentityBlock } from '../IdentityBlock'
 import type { Theme } from '../../tokens/theme'
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
+import { Accion } from '../../render/primitives/Accion'
 import { Wordmark } from '../console/Wordmark'
 import { PANTALLAS } from './pantallas'
 import type { FormaDeChrome, PantallaId } from './pantallas'
@@ -107,6 +109,16 @@ type Props = {
   /** `null` cuando no hay cambios, o cuando la versión no admite escritura. */
   onGuardar: (() => void) | null
   guardando: boolean
+  /** **Validar vive al lado de guardar y publicar** · 2026-10-06. Estaba en el
+   *  cuerpo, a media página, y publicar obligaba a ir y volver entre la cabecera
+   *  y el medio de la pantalla para una sola intención · §2.4 de la auditoría.
+   *  `null` cuando no corresponde validar: hay cambios sin guardar, o la versión
+   *  ya está publicada. */
+  onValidar?: (() => void) | null
+  validando?: boolean
+  /** Por qué no se puede publicar todavía, en una frase · `null` si se puede o
+   *  si no corresponde decirlo. */
+  porQueNoPublicar?: string | null
   children: React.ReactNode
 }
 
@@ -120,6 +132,9 @@ export function BuilderChrome({
   onPublicar,
   onGuardar,
   guardando,
+  onValidar = null,
+  validando = false,
+  porQueNoPublicar = null,
   children,
 }: Props) {
   const pantalla = PANTALLAS.find((p) => p.id === activa) ?? PANTALLAS[0]
@@ -131,138 +146,113 @@ export function BuilderChrome({
           colapso». Abajo del mínimo hay scroll, que es visible. */}
       <div className={ANCHO[pantalla.ancho] ?? ANCHO[1600]}>
         {sinChrome(forma) ? null : (
-          <header className="flex flex-col gap-4 px-6 pt-6 pb-4 border-b border-w4">
-            <div className="flex items-baseline justify-between gap-6">
+          <header className="flex flex-col gap-4 px-6 pt-5 border-b border-w4">
+            <div className="flex items-center justify-between gap-6">
               {/* **Era la palabra en `font-display`, y ésa es la invención que
                   el capítulo `Identidad` corrige**: el logotipo tiene su propia
-                  tipografía, no la del producto. Ahora es el arte. */}
+                  tipografía, no la del producto. Ahora es el arte.
+
+                  `marca` y no `mono`: decisión humana del 2026-10-06, escrita en
+                  la §3 de `PROPUESTA-2026-09-22-divergencias-con-el-pen.md`. */}
               <div className="flex items-center gap-3">
                 <Wordmark variante="marca" />
                 <Label>Builder</Label>
               </div>
 
-              {/* **El ancho, dicho.** Y acá siempre es 1600: **la única pantalla
-                  de 1440 es B5, que no lleva chrome** — lo dijo el compilador al
-                  narrowear por `forma`, no una prueba. El 1440 sigue declarado en
-                  `pantallas.ts` y verificado ahí; lo que no existe es un lugar en
-                  la UI donde decirlo, porque esa pantalla no tiene cabecera. */}
-              <div className="flex items-center gap-4">
-                {/* ── EL PUNTO DE IDENTIDAD · §PEN «B2/Identidad» ─────────────
-                    **Acá había un «← Consola»**, puesto porque «el `.pen` no la
-                    dibuja y sin ella se entra y no se sale sin escribir la URL».
-                    Esa razón venció: `B2 · Canvas de composición` gana un bloque
-                    `Identidad` idéntico al de A1, y las tres superficies pasan a
-                    salir por el mismo lugar.
-
-                    **Sigue siendo un callback y no un `useNavigate` adentro**,
-                    que es la regla de arriba: «la navegación es del contenedor,
-                    no del chrome». Escrito con el hook rompía doce pruebas que
-                    montan el chrome sin router, y tenían razón en romperse — por
-                    eso `IdentityBlock` también recibe `onIr`. */}
-                {identidad !== undefined && (
-                  <IdentityBlock
-                    rol={identidad.rol}
-                    nombre={identidad.nombre}
-                    desde="builder"
-                    esAdmin
-                    onIr={onSalir}
-                    {...(onChangeTheme === undefined ? {} : { onChangeTheme })}
+              {/* «Ancho 1600 · lienzo 1:1 a 1200 más 300 de biblioteca» vivía
+                  acá, siempre a la vista. Es la regla de §4 para quien
+                  implementa, no para quien compone · §3.4 de la auditoría del
+                  2026-10-06. Sigue en `pantallas.ts`, que es donde sirve. */}
+              {identidad !== undefined && (
+                <IdentityBlock
+                  rol={identidad.rol}
+                  nombre={identidad.nombre}
+                  desde="builder"
+                  esAdmin
+                  onIr={onSalir}
                   {...(onChangeTheme === undefined ? {} : { onChangeTheme })}
-                  />
-                )}
-                <Label>Ancho 1600 · lienzo 1:1 a 1200 más 300 de biblioteca</Label>
-              </div>
+                />
+              )}
             </div>
 
             {conContexto(forma) && (
-              <div className="flex items-center gap-6">
-                {/* El contexto. **Cada uno con su rótulo**: sin él, tres nombres
-                    seguidos no dicen cuál es cuál. */}
-                <div className="flex items-center gap-2">
-                  <Label>Cliente</Label>
-                  <span className="text-ink text-celda">{contexto.tenant ?? '—'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label>Rol</Label>
-                  <span className="text-ink text-celda">{contexto.rol ?? '—'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label>Pestaña</Label>
-                  <span className="text-ink text-celda">{contexto.pestana ?? 'Todas'}</span>
-                </div>
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                {/* El contexto, **salvo en B1**: ahí son los controles del
+                    cuerpo, y repetirlos arriba como texto con el mismo rótulo
+                    hacía que uno pareciera un control y el otro no. La pestaña
+                    tampoco va: en el canvas es el selector del cuerpo. */}
+                {activa !== 'contexto' && (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <Label>Cliente</Label>
+                      <span className="font-body text-cuerpo font-medium text-ink">{contexto.tenant ?? '—'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label>Rol</Label>
+                      <span className="font-body text-cuerpo font-medium text-ink">{contexto.rol ?? 'Todos los roles'}</span>
+                    </div>
+                  </>
+                )}
 
                 {soloContexto(forma) ? (
                   /* **La única acción de B6, y es la del dibujo.** Una pantalla
                      que se mira no ofrece guardar ni publicar: lo que ofrece es
                      la vuelta a la que sí compone. El literal es del `.pen`. */
-                  <div className="flex items-center gap-2 ml-auto">
-                    <button
-                      type="button"
-                      onClick={() => onIr('contexto')}
-                      className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2"
-                    >
-                      Volver a editar
-                    </button>
+                  <div className="ml-auto">
+                    <Accion onClick={() => onIr('contexto')}>Volver a editar</Accion>
                   </div>
                 ) : (
-                  <>
-                    {/* **El contador va acá y sigue al usuario.** Es lo que §7.2
-                        pide con «guardado explícito, con indicador de cambios
-                        sin guardar», y en una barra del cuerpo se perdía al
-                        navegar. */}
+                  <div className="ml-auto flex flex-wrap items-center gap-2">
+                    {/* **El contador sigue al usuario** · §7.2: «guardado
+                        explícito, con indicador de cambios sin guardar». */}
                     {contexto.cambios > 0 && (
-                      <Label>{`${String(contexto.cambios)} cambio(s) sin guardar`}</Label>
+                      <Ayuda as="span">
+                        {contexto.cambios === 1
+                          ? '1 pestaña con cambios sin guardar'
+                          : `${String(contexto.cambios)} pestañas con cambios sin guardar`}
+                      </Ayuda>
                     )}
                     {onGuardar !== null && (
-                      <button
-                        type="button"
-                        onClick={onGuardar}
-                        disabled={guardando}
-                        className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2 disabled:opacity-40"
-                      >
+                      <Accion onClick={onGuardar} deshabilitada={guardando}>
                         {guardando ? 'Guardando…' : NOTA_GUARDAR}
-                      </button>
+                      </Accion>
                     )}
-
-                    <div className="flex items-center gap-2 ml-auto">
-                      <button
-                        type="button"
-                        onClick={() => onIr('preview')}
-                        className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2"
-                      >
-                        Vista previa
-                      </button>
-                      {/* **Un CTA sin manejador no se pinta** · la misma regla
-                          que `RecoBody`: un botón que se aprieta y no hace nada
-                          es peor que uno ausente. La razón la da la pantalla,
-                          que es donde hay lugar para decirla entera. */}
-                      {onPublicar === null ? (
-                        <Label>Publicar · falta validar en el servidor</Label>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={onPublicar}
-                          className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2"
-                        >
-                          Publicar
-                        </button>
-                      )}
-                    </div>
-                  </>
+                    {onValidar !== null && (
+                      <Accion onClick={onValidar} deshabilitada={validando}>
+                        {validando ? 'Validando…' : 'Validar'}
+                      </Accion>
+                    )}
+                    <Accion onClick={() => onIr('preview')}>Vista previa</Accion>
+                    {/* **Un CTA sin manejador no se pinta** · la misma regla que
+                        `RecoBody`. En su lugar, en el registro de ayuda —antes
+                        era un rótulo en el lugar exacto del botón, y se leía
+                        como uno—, qué falta para poder publicar. */}
+                    {onPublicar === null ? (
+                      porQueNoPublicar === null ? null : <Ayuda as="span">{porQueNoPublicar}</Ayuda>
+                    ) : (
+                      <Accion variante="primaria" onClick={onPublicar}>
+                        Publicar
+                      </Accion>
+                    )}
+                  </div>
                 )}
               </div>
             )}
 
-            <nav className="flex gap-1" aria-label="Builder">
-              {PANTALLAS.map((p) => (
+            {/* **Sólo las pantallas que se navegan** · D3. Las demás siguen
+                declaradas en `pantallas.ts`. */}
+            <nav className="flex gap-1 -mb-px" aria-label="Builder">
+              {PANTALLAS.filter((p) => p.enNav).map((p) => (
                 <button
                   key={p.id}
                   type="button"
                   onClick={() => onIr(p.id)}
                   aria-current={p.id === activa ? 'page' : undefined}
                   className={
-                    'text-label tracking-rotulo uppercase px-3 py-2 rounded-sm ' +
-                    (p.id === activa ? 'bg-w3 text-ink' : 'text-dim hover:bg-w2')
+                    'px-3 py-3 font-body text-cuerpo cursor-pointer border-b-2 ' +
+                    (p.id === activa
+                      ? 'border-acc text-ink font-semibold'
+                      : 'border-transparent text-dim font-medium hover:text-ink')
                   }
                 >
                   {p.nombre}

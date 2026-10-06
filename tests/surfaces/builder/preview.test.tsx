@@ -22,7 +22,7 @@
  */
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
@@ -162,11 +162,21 @@ function montar() {
   )
 }
 
+/** **Se llega por el botón `Vista previa` del chrome** · D3 de la auditoría del
+ *  2026-10-06: la pestaña «Vista previa por rol» salió del nav porque repetía el
+ *  botón. La versión se elige sola —el único borrador—, pero se aprieta igual:
+ *  es el camino de quien llega. */
 async function abrirPreview() {
   await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
   await screen.findByDisplayValue('Resumen')
-  await userEvent.click(screen.getByRole('button', { name: 'Vista previa por rol' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Vista previa' }))
 }
+
+/** El servicio sin versiones para el cliente · la lista vacía es la forma que
+ *  `GET /admin/tenants/{id}/layouts` devuelve para un tenant recién dado de alta.
+ *  **Es el único camino a «sin versión elegida» desde el 2026-10-06**: con la
+ *  autoselección, un cliente con versiones nunca queda sin una. */
+const sinVersiones = http.get(`${API}/admin/tenants/:id/layouts`, () => ok([]))
 
 describe('§7.2 · como lo verá el rol seleccionado', () => {
   it('pinta las PESTAÑAS que el servidor devolvió para ese rol', async () => {
@@ -247,7 +257,7 @@ describe('§7.2 · como lo verá el rol seleccionado', () => {
     montar()
     await abrirPreview()
 
-    expect(await screen.findByText(/no ve ninguna pestaña de este layout/)).toBeInTheDocument()
+    expect(await screen.findByText(/no ve ninguna pestaña de esta versión/)).toBeInTheDocument()
   })
 })
 
@@ -306,7 +316,10 @@ describe('la grilla volvió · B4.9 llegó el 2026-09-28', () => {
     expect(texto).not.toContain('no hay otra que acepte el rol como lente')
     // Lo que SÍ sigue siendo cierto: no hay cifras.
     expect(texto).toContain('sin cifras')
-    expect(texto).toContain('`roles.tab_ids` y `hidden_metric_ids`')
+    // Nombraba los dos campos del cable en pantalla; desde el 2026-10-06 dice
+    // qué son, y los nombres del cable no aparecen (copy de producto).
+    expect(texto).toContain('qué pestañas ve el rol y qué métricas tiene ocultas')
+    expect(texto).not.toContain('hidden_metric_ids')
   })
 
   it('los paneles NO se dibujan con un payload inventado', async () => {
@@ -326,21 +339,39 @@ describe('la grilla volvió · B4.9 llegó el 2026-09-28', () => {
 
 describe('los estados de B5', () => {
   it('sin versión elegida invita a elegir una', async () => {
-    base()
+    // Antes se entraba sin apretar la versión. Con la autoselección del
+    // 2026-10-06 eso ya no deja el builder sin versión: hace falta un cliente
+    // que no tenga ninguna.
+    base([sinVersiones])
     montar()
-    await screen.findByRole('button', { name: /v4/ })
-    await userEvent.click(screen.getByRole('button', { name: 'Vista previa por rol' }))
+    await screen.findByText('Este cliente todavía no tiene versiones.')
+    await userEvent.click(screen.getByRole('button', { name: 'Vista previa' }))
 
-    expect(await screen.findByText(/Elegí una versión en «Contexto de edición»/)).toBeInTheDocument()
+    expect(
+      await screen.findByText('Elegí una versión en «Contexto de edición» para previsualizarla.'),
+    ).toBeInTheDocument()
   })
 
   it('sin roles manda a definirlos, no se muestra vacía', async () => {
-    base([http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([]))])
+    const pedidos: string[] = []
+    base([
+      http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([])),
+      http.get(`${API}/admin/layouts/:id/preview`, ({ request }) => {
+        pedidos.push(new URL(request.url).searchParams.get('role_id') ?? '')
+        return ok(previews['r-ceo'])
+      }),
+    ])
     montar()
     await abrirPreview()
 
-    expect(await screen.findByText(/no tiene roles definidos/)).toBeInTheDocument()
-    expect(screen.getByText(/F4.3/)).toBeInTheDocument()
+    // El texto dice DÓNDE se definen · antes nombraba la tarea, «F4.3», que no
+    // es un lugar al que quien compone pueda ir.
+    expect(
+      await screen.findByText('Este cliente todavía no tiene roles. Se definen en su ficha, en administración.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ir a contexto de edición' })).toBeInTheDocument()
+    // Sin rol no hay de quién previsualizar: no se pide nada.
+    expect(pedidos).toEqual([])
   })
 
   it('un 404 dice que el fork no está desplegado', async () => {
@@ -380,17 +411,82 @@ describe('B5 no tiene chrome · su vacío lleva salida propia · 2026-09-25', ()
    *  Vite. Se repitió desde una carga limpia antes de afirmarlo.
    */
   it('entrar al preview SIN versión deja salida, y el botón devuelve al contexto', async () => {
-    base()
+    // Sin versión hace falta un cliente sin versiones · autoselección, 2026-10-06.
+    base([sinVersiones])
     montar()
 
-    // Sin elegir versión: se va derecho a la pestaña del preview.
-    await userEvent.click(await screen.findByRole('button', { name: 'Vista previa por rol' }))
+    await screen.findByText('Este cliente todavía no tiene versiones.')
+    await userEvent.click(screen.getByRole('button', { name: 'Vista previa' }))
     expect(await screen.findByText(/Elegí una versión/i)).toBeVisible()
 
     // **La aserción es que el callback LLEVA a algún lado**, no que el botón
     // esté: un botón muerto se ve igual que uno que funciona, y acá la cadena
     // pasa por el spread condicional del contenedor.
-    await userEvent.click(screen.getByRole('button', { name: /contexto de edición/i }))
-    expect(await screen.findByRole('button', { name: /v4/ })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Ir a contexto de edición' }))
+    expect(
+      await screen.findByRole('heading', { name: '¿Sobre qué se va a componer?' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Este cliente todavía no tiene versiones.')).toBeInTheDocument()
+  })
+})
+
+describe('B5 se abre desde el chrome · D3 de la auditoría del 2026-10-06', () => {
+  it('«Vista previa por rol» NO está en el nav, y el botón «Vista previa» lleva a B5', async () => {
+    base()
+    montar()
+    await screen.findByDisplayValue('Resumen')
+
+    const nav = within(screen.getByRole('navigation', { name: 'Builder' }))
+    expect(nav.queryByRole('button', { name: 'Vista previa por rol' })).toBeNull()
+    // Las tres que SÍ se navegan, para que un nav vacío no pase por «no está».
+    for (const nombre of ['Contexto de edición', 'Canvas', 'Historial de versiones']) {
+      expect(nav.getByRole('button', { name: nombre })).toBeInTheDocument()
+    }
+
+    // Que DISPARE: llegar a B5 es ver lo que el servidor devolvió para un rol.
+    await userEvent.click(screen.getByRole('button', { name: 'Vista previa' }))
+    expect(await screen.findByText('Como lo ve · CEO')).toBeInTheDocument()
+  })
+
+  it('con «Todos los roles» la vista previa pide el preview del PRIMER rol', async () => {
+    // Previsualizar «todos» no es la vista de nadie: B5 necesita UN rol, y sin
+    // filtro toma el primero de la lista que el servicio devolvió.
+    const pedidos: string[] = []
+    base([
+      http.get(`${API}/admin/layouts/:id/preview`, ({ request }) => {
+        const r = new URL(request.url).searchParams.get('role_id') ?? ''
+        pedidos.push(r)
+        return ok(previews[r])
+      }),
+    ])
+    montar()
+    await screen.findByDisplayValue('Resumen')
+    expect(screen.getByRole('button', { name: 'Todos los roles' })).toHaveAttribute('aria-pressed', 'true')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Vista previa' }))
+    await screen.findByText('Como lo ve · CEO')
+
+    expect(pedidos).toEqual(['r-ceo'])
+    expect(screen.getByLabelText('Rol')).toHaveValue('r-ceo')
+  })
+
+  it('elegir un rol en B1 hace que la vista previa pida ESE rol', async () => {
+    const pedidos: string[] = []
+    base([
+      http.get(`${API}/admin/layouts/:id/preview`, ({ request }) => {
+        const r = new URL(request.url).searchParams.get('role_id') ?? ''
+        pedidos.push(r)
+        return ok(previews[r])
+      }),
+    ])
+    montar()
+    await screen.findByDisplayValue('Resumen')
+    await userEvent.click(screen.getByRole('button', { name: 'Planner' }))
+    expect(screen.getByRole('button', { name: 'Planner' })).toHaveAttribute('aria-pressed', 'true')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Vista previa' }))
+
+    expect(await screen.findByText('Como lo ve · Planner')).toBeInTheDocument()
+    expect(pedidos).toEqual(['r-pla'])
   })
 })

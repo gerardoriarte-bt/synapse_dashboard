@@ -16,7 +16,10 @@
  *  arrastre mienten.
  */
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
+import { Accion } from '../../render/primitives/Accion'
 import { agrupar } from './grupos'
+import { nombreDeForma, nombreDeTipo } from './rotulos'
 import type { Block } from '../../api/types'
 
 type Props = {
@@ -24,16 +27,21 @@ type Props = {
   /** Qué tipo se está arrastrando, para que el ítem lo diga. */
   arrastrando: string | null
   onArrastrar: (tipo: string | null) => void
+  /** Agregar sin arrastrar · al final de la pestaña. Es la salida para el
+   *  teclado y para quien no descubre el gesto, y la acción que la caja anuncia. */
+  onAgregar: (tipo: string) => void
 }
 
 function Item({
   b,
   activo,
   onArrastrar,
+  onAgregar,
 }: {
   b: Block
   activo: boolean
   onArrastrar: (tipo: string | null) => void
+  onAgregar: (tipo: string) => void
 }) {
   return (
     <li
@@ -49,22 +57,29 @@ function Item({
       }}
       onDragEnd={() => onArrastrar(null)}
       className={
-        'flex flex-col gap-1 rounded-sm px-3 py-2 cursor-grab ' +
-        (activo ? 'bg-w3' : 'bg-w2 hover:bg-elev')
+        'flex items-start gap-2 rounded-md border px-3 py-2 cursor-grab ' +
+        (activo ? 'border-acc bg-w2' : 'border-w4 bg-panel hover:bg-w2')
       }
     >
-      <span className="text-ink text-celda">{b.tipo}</span>
-      {/* Las formas que acepta · es la mitad que evita elegir un tipo que
-          después ninguna métrica va a poder llenar. */}
-      <Label as="div">{b.formasAceptadas.join(' · ')}</Label>
-      <Label as="div">
-        {`${String(b.colSpanMin)}–${String(b.colSpanMax)} × ${String(b.rowSpanMin)}–${String(b.rowSpanMax)}`}
-      </Label>
+      <div className="flex flex-col gap-1 min-w-0">
+        <span className="font-body text-cuerpo font-semibold text-ink">{nombreDeTipo(b.tipo)}</span>
+        {/* Las formas que acepta · es la mitad que evita elegir un tipo que
+            después ninguna métrica va a poder llenar. */}
+        <Label as="div">{b.formasAceptadas.map(nombreDeForma).join(' · ')}</Label>
+        <Label as="div">
+          {`${String(b.colSpanMin)}–${String(b.colSpanMax)} col × ${String(b.rowSpanMin)}–${String(b.rowSpanMax)} filas`}
+        </Label>
+      </div>
+      <div className="ml-auto">
+        <Accion tamano="compacta" onClick={() => onAgregar(b.tipo)} etiqueta={`Agregar ${nombreDeTipo(b.tipo)}`}>
+          +
+        </Accion>
+      </div>
     </li>
   )
 }
 
-export function Library({ bloques, arrastrando, onArrastrar }: Props) {
+export function Library({ bloques, arrastrando, onArrastrar, onAgregar }: Props) {
   const { grupos, sinGrupo } = agrupar(bloques)
 
   return (
@@ -88,7 +103,7 @@ export function Library({ bloques, arrastrando, onArrastrar }: Props) {
     >
       <div className="flex flex-col gap-1">
         <Label as="div">Biblioteca de tipos</Label>
-        <Label as="div">Arrastrar al lienzo · el span se ajusta al rango del tipo</Label>
+        <Ayuda>Arrastrá un tipo al lienzo, o tocá + para agregarlo al final.</Ayuda>
       </div>
 
       {grupos.map(({ grupo, bloques: items }) => (
@@ -97,11 +112,11 @@ export function Library({ bloques, arrastrando, onArrastrar }: Props) {
           {items.length === 0 ? (
             // El grupo va igual, vacío y dicho: uno que desaparece se lee como
             // que no existe.
-            <Label as="div">Sin tipos en este grupo</Label>
+            <Ayuda>Sin tipos en este grupo.</Ayuda>
           ) : (
             <ul className="flex flex-col gap-1 m-0 p-0 list-none">
               {items.map((b) => (
-                <Item key={b.tipo} b={b} activo={arrastrando === b.tipo} onArrastrar={onArrastrar} />
+                <Item key={b.tipo} b={b} activo={arrastrando === b.tipo} onArrastrar={onArrastrar} onAgregar={onAgregar} />
               ))}
             </ul>
           )}
@@ -112,10 +127,10 @@ export function Library({ bloques, arrastrando, onArrastrar }: Props) {
         // **Un tipo que el servicio agregó y esta tabla no conoce.** No se
         // descarta: se ofrece, y se dice que el agrupado vive en el front.
         <div className="flex flex-col gap-2">
-          <Label as="div">Sin grupo · el agrupado vive en el front, no en /config/blocks</Label>
+          <Label as="div">Otros</Label>
           <ul className="flex flex-col gap-1 m-0 p-0 list-none">
             {sinGrupo.map((b) => (
-              <Item key={b.tipo} b={b} activo={arrastrando === b.tipo} onArrastrar={onArrastrar} />
+              <Item key={b.tipo} b={b} activo={arrastrando === b.tipo} onArrastrar={onArrastrar} onAgregar={onAgregar} />
             ))}
           </ul>
         </div>

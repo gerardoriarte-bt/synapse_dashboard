@@ -1,266 +1,207 @@
-/** Editor de pestañas · F4.8
+/** Las pestañas de la versión elegida · F4.8 · reescrita el 2026-10-06
  *
- *  §7.2 le pide cuatro campos: **nombre, pregunta operativa, orden y
- *  sugerencias**. El cable sostiene tres.
+ *  Cuelga de B1 como `children`. Hasta hoy listaba también los paneles de cada
+ *  pestaña como chips que abrían el configurador **al fondo de la página**, dos
+ *  alturas de scroll más abajo. La auditoría del 2026-10-06 lo levantó en §2.3, y
+ *  con D1 y D2 el configurador se mudó al inspector del canvas: un panel se
+ *  configura donde se lo ve. Acá queda lo que es de la pestaña.
  *
- *  ── LA PREGUNTA OPERATIVA NO ES UN SUBTÍTULO ────────────────────────────────
+ *  **Cada pestaña dice quién la ve, y lo deja cambiar** · D5. Vacío es «todos
+ *  los roles», que es lo que declara el cable.
  *
- *  «**Una pestaña que no contesta una pregunta no se compone.**» Lo dicen igual
- *  §7.2 y la descripción de `Pestana` en el contrato, y **el cable la deja pasar
- *  como cadena vacía** —`OperationalQuestion` no es requerido—. La diferencia
- *  entre lo que el servicio acepta y lo que el producto permite se sostiene acá:
- *  la pestaña inválida se marca, se cuenta y bloquea la composición. No se
- *  esconde en un `title` ni en un borde rojo — §2 prohíbe el rojo semántico, y de
- *  todas formas un color no dice qué hacer.
- *
- *  ── LAS SUGERENCIAS NO ESTÁN, Y SON DE C3 ───────────────────────────────────
- *
- *  `chatSugerencias[]` está en el modelo de §2 y en el contrato, y es lo que C3
- *  pinta como «chips de consulta sugerida por pestaña». `LayoutTab` no lo trae y
- *  `TabInput` no lo acepta: no hay dónde escribirlas ni de dónde leerlas. Se
- *  declara. Lo mismo `icono` y `heredadaDe`.
- *
- *  ── Y LO QUE EL EDITOR NO MUESTRA, IGUAL VIAJA ──────────────────────────────
- *
- *  Roles y paneles. El PUT es un reemplazo completo, así que un cuerpo armado
- *  solo con lo que esta pantalla edita **borraría los dos**. El borrador los
- *  arrastra · ver `borrador.ts`.
+ *  **El CTA es el del `.pen`**: `COMPONER ECOMMERCE OVERVIEW`, relleno, el único
+ *  primario de la tarjeta. Las demás acciones tienen caja y van en secundario, y
+ *  la que borra va en `peligro` (D4).
  */
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
+import { Accion } from '../../render/primitives/Accion'
+import { Opcion } from '../../render/primitives/Opcion'
+import { laVe } from './borrador'
 import type { TabParaGuardar } from '../../api/admin'
 import type { ProblemaLocal } from './validar'
 
-/** LO QUE ESTA PANTALLA TODAVÍA NO MUESTRA · reescrito el 2026-09-30 (humano)
- *
- *  **Esto se PINTA, así que es copy de producto y no una nota nuestra.** Hasta
- *  hoy citaba §7.3, nombraba rutas del servicio y hablaba de «el cable» en la
- *  pantalla de un cliente — la auditoría de usabilidad lo puso primero en su
- *  lista: `docs/AUDITORIA-2026-09-30-usabilidad.md` §1.1.
- *
- *  **Declarar lo que falta se conserva**, que es la mejor costumbre de este
- *  repositorio y la misma gramática de §8: un panel apagado dice qué pasa. Lo
- *  que cambia es a quién se le habla. **La razón técnica de cada línea no se
- *  pierde: baja al comentario**, que es donde le sirve a quien la va a
- *  construir.
- */
-const FALTANTES = [
-    // `chatSugerencias[]` está en el contrato y en §2; el cable no lo trae ni lo acepta.
-    'Las preguntas sugeridas de su chat',
-    // Mismo caso.
-    'Su ícono',
-    // `heredadaDe` no existe en el cable.
-    'De qué plantilla hereda',
-] as const
-
 type Props = {
   tabs: readonly TabParaGuardar[]
+  roles: readonly { id: string; nombre: string }[]
+  /** El filtro de B1 · `null` es «todos los roles». */
+  rolActivo: string | null
   onEditar: (indice: number, campo: 'nombre' | 'pregunta', valor: string) => void
   onAgregar: () => void
   onQuitar: (indice: number) => void
   onMover: (indice: number, direccion: -1 | 1) => void
-  /** Elegir un panel para configurarlo · F4.10. El configurador no va adentro
-   *  de acá: necesita la tabla de bloques y el catálogo, que son del
-   *  contenedor. */
-  onPanel: (indiceTab: number, indicePanel: number) => void
-  onAgregarPanel: (indiceTab: number) => void
-  /** Abrir el canvas CON esta pestaña · el CTA que pide B1. `undefined` no lo
-   *  pinta, que es la regla del CTA sin manejador. */
-  onComponer?: (indiceTab: number) => void
-  seleccion: { tab: number; panel: number } | null
-  /** **Ya calculados, no se recalculan acá** · F4.11. Tres lugares de la pantalla
-   *  muestran problemas de composición —la pestaña, el botón del panel y el
-   *  resumen— y con tres cálculos podrían discrepar. `validarBorrador` corre una
-   *  vez en el contenedor y los tres leen de ahí. */
+  onRoles: (indice: number, roles: string[]) => void
+  onComponer: (indice: number) => void
   problemas: readonly ProblemaLocal[]
 }
 
 export function TabEditor({
   tabs,
+  roles,
+  rolActivo,
   onEditar,
   onAgregar,
   onQuitar,
   onMover,
-  onPanel,
-  onAgregarPanel,
+  onRoles,
   onComponer,
-  seleccion,
   problemas,
 }: Props) {
-  const invalidas = new Set(problemas.map((p) => p.tab)).size
+  // El índice del arreglo entero viaja con cada una: el filtro sólo decide qué
+  // se pinta, y las funciones del borrador trabajan sobre todas.
+  const visibles = tabs.map((t, i) => ({ t, i })).filter(({ t }) => laVe(t, rolActivo))
+  const ocultas = tabs.length - visibles.length
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-4">
-        <Label as="div">{`Pestañas · ${String(tabs.length)}`}</Label>
-        {invalidas > 0 && (
-          <Label as="div">{`${String(invalidas)} pestaña(s) con problemas de composición`}</Label>
+    <section className="flex flex-col gap-4" aria-labelledby="builder-pestanas">
+      <div className="flex items-baseline gap-3">
+        <Label id="builder-pestanas" as="div">
+          {`Pestañas · ${String(visibles.length)}`}
+        </Label>
+        {ocultas > 0 && (
+          <Ayuda as="span">{`${String(ocultas)} más no las ve este rol.`}</Ayuda>
         )}
       </div>
 
-      <ul className="flex flex-col gap-3 m-0 p-0 list-none">
-        {tabs.map((t, i) => {
-          // Las de la PESTAÑA · las de sus paneles se marcan en cada botón.
-          const fallas = problemas.filter((p) => p.tab === i && p.panel === null)
-          return (
-            <li key={t.id ?? `nueva-${String(i)}`} className="flex flex-col gap-2 rounded-sm bg-w2 p-3">
-              <div className="flex items-center gap-3">
-                <Label>{`Orden ${String(t.orden)}`}</Label>
-                {/* **Un botón deshabilitado en el extremo**, y la función que
-                    mueve además se defiende: las dos mitades, porque una sola
-                    deja el primer elemento a merced de un `splice` negativo. */}
-                <button
-                  type="button"
-                  onClick={() => onMover(i, -1)}
-                  disabled={i === 0}
-                  aria-label={`Subir ${t.nombre}`}
-                  className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-dim hover:bg-elev disabled:opacity-40"
-                >
-                  Subir
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onMover(i, 1)}
-                  disabled={i === tabs.length - 1}
-                  aria-label={`Bajar ${t.nombre}`}
-                  className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-dim hover:bg-elev disabled:opacity-40"
-                >
-                  Bajar
-                </button>
-                {/* **`COMPONER ‹pestaña›` · el `.pen` lo pide y era por qué B2
-                    parecía no existir.**
+      {visibles.length === 0 ? (
+        <Ayuda>Este rol todavía no ve ninguna pestaña. Agregá una para empezar.</Ayuda>
+      ) : (
+        <ul className="flex flex-col gap-3 m-0 p-0 list-none">
+          {visibles.map(({ t, i }) => {
+            const fallas = problemas.filter((p) => p.tab === i)
+            const nPaneles = t.panels.length
+            return (
+              <li
+                key={t.id ?? `nueva-${String(i)}`}
+                className="flex flex-col gap-4 rounded-xl border border-w4 bg-panel p-5"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-display text-titulo leading-titulo tracking-titulo font-medium text-ink">
+                    {t.nombre === '' ? 'Pestaña sin nombre' : t.nombre}
+                  </span>
+                  <Label>{`${String(nPaneles)} ${nPaneles === 1 ? 'panel' : 'paneles'}`}</Label>
+                  {t.id === undefined && <Label>Nueva · se crea al guardar</Label>}
+                  <div className="ml-auto flex items-center gap-2">
+                    {/* Deshabilitado en el extremo, y la función que mueve además
+                        se defiende: las dos mitades. */}
+                    <Accion
+                      tamano="compacta"
+                      onClick={() => onMover(i, -1)}
+                      deshabilitada={i === 0}
+                      etiqueta={`Subir ${t.nombre}`}
+                    >
+                      Subir
+                    </Accion>
+                    <Accion
+                      tamano="compacta"
+                      onClick={() => onMover(i, 1)}
+                      deshabilitada={i === tabs.length - 1}
+                      etiqueta={`Bajar ${t.nombre}`}
+                    >
+                      Bajar
+                    </Accion>
+                    <Accion
+                      tamano="compacta"
+                      variante="peligro"
+                      onClick={() => onQuitar(i)}
+                      etiqueta={`Quitar ${t.nombre}`}
+                    >
+                      Quitar
+                    </Accion>
+                  </div>
+                </div>
 
-                    La nota de B1 lo llama «el punto de entrada del builder» y
-                    cada pestaña lleva su CTA con el rótulo
-                    `AL ENTRAR SE ABRE B2 CON ESTE CONTEXTO`. Sin él había que
-                    elegir versión y después acordarse de ir a «Canvas»; quien no
-                    hacía las dos cosas veía «Elegí una versión…» y concluía que
-                    el canvas no estaba construido.
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <Label id={`tab-nombre-${String(i)}`} as="div">
+                      Nombre
+                    </Label>
+                    <input
+                      type="text"
+                      aria-labelledby={`tab-nombre-${String(i)}`}
+                      value={t.nombre}
+                      onChange={(e) => onEditar(i, 'nombre', e.target.value)}
+                      className="h-8 bg-w1 text-ink text-cuerpo rounded-md px-3 border border-w5"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label id={`tab-pregunta-${String(i)}`} as="div">
+                      Pregunta operativa
+                    </Label>
+                    <input
+                      type="text"
+                      aria-labelledby={`tab-pregunta-${String(i)}`}
+                      value={t.pregunta}
+                      placeholder="¿Qué pregunta contesta esta pestaña?"
+                      onChange={(e) => onEditar(i, 'pregunta', e.target.value)}
+                      aria-invalid={t.pregunta.trim() === '' ? 'true' : undefined}
+                      className="h-8 bg-w1 text-ink text-cuerpo rounded-md px-3 border border-w5"
+                    />
+                  </div>
+                </div>
 
-                    **Sin el conteo, y no es un olvido.** La fila ya lo declara
-                    arriba —«N panel(es) · N rol(es)»— y el `.pen` tampoco lo
-                    pone en el CTA: dice `COMPONER ECOMMERCE OVERVIEW` a secas.
-                    Repetirlo lo destapó una prueba que ya buscaba ese texto en
-                    la misma fila y encontró dos.
-
-                    Lo que el `.pen` sí pide ahí y no se puede pintar es la
-                    proporción entre heredados y propios: ningún contrato declara
-                    herencia, y está dicho en `ContextView`. */}
-                {onComponer !== undefined && (
-                  <button
-                    type="button"
-                    onClick={() => onComponer(i)}
-                    className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-ink border border-w4 hover:bg-elev ml-auto"
-                  >
-                    {`Componer ${t.nombre}`}
-                  </button>
+                {roles.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <Label id={`tab-roles-${String(i)}`} as="div">
+                      La ven
+                    </Label>
+                    <div className="flex flex-wrap gap-2" role="group" aria-labelledby={`tab-roles-${String(i)}`}>
+                      <Opcion
+                        elegida={t.roles.length === 0}
+                        onClick={() => onRoles(i, [])}
+                        etiqueta={`${t.nombre} · la ven todos los roles`}
+                      >
+                        Todos los roles
+                      </Opcion>
+                      {roles.map((r) => {
+                        const incluido = t.roles.includes(r.id)
+                        return (
+                          <Opcion
+                            key={r.id}
+                            elegida={incluido}
+                            etiqueta={`${t.nombre} · la ve ${r.nombre}`}
+                            onClick={() =>
+                              onRoles(
+                                i,
+                                incluido ? t.roles.filter((x) => x !== r.id) : [...t.roles, r.id],
+                              )
+                            }
+                          >
+                            {r.nombre}
+                          </Opcion>
+                        )
+                      })}
+                    </div>
+                  </div>
                 )}
-                <button
-                  type="button"
-                  onClick={() => onQuitar(i)}
-                  aria-label={`Quitar ${t.nombre}`}
-                  className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-acc hover:bg-elev"
-                >
-                  Quitar
-                </button>
-              </div>
 
-              <label className="flex flex-col gap-1">
-                <Label as="div">Nombre</Label>
-                <input
-                  type="text"
-                  value={t.nombre}
-                  onChange={(e) => onEditar(i, 'nombre', e.target.value)}
-                  className="bg-w1 text-ink text-celda rounded-sm px-2 py-1 border border-w4"
-                />
-              </label>
+                {fallas.length > 0 && (
+                  <ul className="flex flex-col gap-1 m-0 p-0 list-none">
+                    {fallas.map((f) => (
+                      <li key={`${String(f.panel)}-${f.campo}-${f.mensaje}`}>
+                        <Ayuda as="span">
+                          {f.panel === null ? f.mensaje : `Panel ${String(f.panel + 1)} · ${f.mensaje}`}
+                        </Ayuda>
+                      </li>
+                    ))}
+                  </ul>
+                )}
 
-              <label className="flex flex-col gap-1">
-                <Label as="div">Pregunta operativa</Label>
-                <input
-                  type="text"
-                  value={t.pregunta}
-                  onChange={(e) => onEditar(i, 'pregunta', e.target.value)}
-                  aria-invalid={t.pregunta.trim() === '' ? 'true' : undefined}
-                  className="bg-w1 text-ink text-celda rounded-sm px-2 py-1 border border-w4"
-                />
-              </label>
+                <div className="flex items-center gap-3">
+                  <Accion variante="primaria" onClick={() => onComponer(i)}>
+                    {`Componer ${t.nombre}`}
+                  </Accion>
+                  <Ayuda as="span">Abre el lienzo con esta pestaña.</Ayuda>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
 
-              {/* **Lo que el editor no toca y sí viaja.** Decirlo evita la
-                  lectura de que quitar la pestaña de la lista es lo único que
-                  borra algo: renombrarla manda el layout entero. */}
-              <Label as="div">
-                {`${String(t.panels.length)} panel(es) · ${t.roles.length === 0 ? 'todos los roles' : `${String(t.roles.length)} rol(es)`} · se conservan al guardar`}
-              </Label>
-
-              {/* Los paneles de la pestaña · F4.10. Sin canvas todavía, así que
-                  se listan en el orden en que están y se configuran uno a uno. */}
-              <div className="flex flex-wrap items-center gap-2">
-                {t.panels.map((pan, j) => (
-                  <button
-                    key={pan.id ?? `nuevo-${String(j)}`}
-                    type="button"
-                    onClick={() => onPanel(i, j)}
-                    aria-pressed={seleccion?.tab === i && seleccion.panel === j}
-                    className={
-                      'text-label tracking-rotulo uppercase px-2 py-1 rounded-sm ' +
-                      (seleccion?.tab === i && seleccion.panel === j
-                        ? 'bg-w3 text-ink'
-                        : 'text-dim hover:bg-elev')
-                    }
-                  >
-                    {/* El tipo y no el nombre de la métrica: el nombre vive en el
-                        catálogo y esta lista no lo tiene. Un id crudo sería
-                        plomería. */}
-                    {pan.tipo}
-                    {pan.metricId === '' ? ' · sin métrica' : ''}
-                    {/* El panel con problemas se marca en su botón. El detalle
-                        está en el resumen y en el configurador: acá alcanza con
-                        que se vea cuál, sin abrir los doce. */}
-                    {problemas.some((pr) => pr.tab === i && pr.panel === j) ? ' ·' : ''}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => onAgregarPanel(i)}
-                  aria-label={`Agregar panel a ${t.nombre}`}
-                  className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm border border-w4 text-ink hover:bg-elev"
-                >
-                  Agregar panel
-                </button>
-              </div>
-
-              {t.id === undefined && (
-                // Sin `id` el servicio la CREA. No es un detalle de implementación:
-                // es la diferencia entre editar y duplicar.
-                <Label as="div">Nueva · se crea al guardar</Label>
-              )}
-
-              {fallas.map((f) => (
-                <Label key={f.campo + f.mensaje} as="div">
-                  {f.mensaje}
-                </Label>
-              ))}
-            </li>
-          )
-        })}
-      </ul>
-
-      <button
-        type="button"
-        onClick={onAgregar}
-        className="self-start font-mono text-label tracking-rotulo uppercase rounded-md px-4 py-2 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2"
-      >
-        Agregar pestaña
-      </button>
-
-      <div className="flex flex-col gap-1 rounded-sm bg-w2 p-3">
-        <Label as="div">{`Cada pestaña va a poder declarar más cosas`}</Label>
-        {FALTANTES.map((f) => (
-          <Label key={f} as="div">
-            {f}
-          </Label>
-        ))}
+      <div>
+        <Accion onClick={onAgregar}>Agregar pestaña</Accion>
       </div>
-    </div>
+    </section>
   )
 }

@@ -98,7 +98,7 @@ describe('sin el layout sin lente NO se inventan', () => {
     render(<RolePreview preview={preview} onVolver={vi.fn()} />)
 
     expect(screen.queryByText(/Hueco ·/)).toBeNull()
-    expect(screen.getByText('Los huecos no se pueden calcular sin el layout sin lente')).toBeVisible()
+    expect(screen.getByText('Los huecos no se pueden calcular sin la versión completa.')).toBeVisible()
   })
 })
 

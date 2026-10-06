@@ -60,6 +60,7 @@
  *  y 120 de cada lado no dejarían nada.
  */
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
 import { Note } from '../../render/primitives/Note'
 import { VersionCard } from './VersionCard'
 import type { LayoutVersion, Publicacion, Usuario } from '../../api/admin'
@@ -196,10 +197,10 @@ export function VersionHistory({
         // un dashboard sin publicar — y decir «cargando» acá sería mentir.
         <div className="flex flex-col gap-2 rounded-sm bg-w2 p-3">
           <Label as="div">Sin publicaciones registradas para este dashboard</Label>
-          <Label as="div">
-            La auditoría empezó a escribirse después de las primeras publicaciones · la próxima que
-            se publique deja su fila
-          </Label>
+          <Ayuda>
+            El registro empezó después de las primeras publicaciones: la próxima que se publique deja
+            su fila.
+          </Ayuda>
         </div>
       ) : (
         <ul className="flex flex-col gap-3 m-0 p-0">
@@ -232,11 +233,12 @@ export function VersionHistory({
       )}
 
       <div className="flex flex-col gap-1 rounded-sm bg-w2 p-3">
-        <Label as="div">{`Esta pantalla va a crecer`}</Label>
+        {/* En el registro de ayuda, igual que en administración · 2026-10-06. */}
+        <Ayuda>Esta pantalla va a crecer. Falta:</Ayuda>
+        {/* Filas y no `<li>`: la lista de la pantalla son las publicaciones, y
+            sus pruebas cuentan `listitem`. */}
         {FALTANTES.map((f) => (
-          <Label key={f} as="div">
-            {f}
-          </Label>
+          <Ayuda key={f}>{f}</Ayuda>
         ))}
       </div>
     </div>

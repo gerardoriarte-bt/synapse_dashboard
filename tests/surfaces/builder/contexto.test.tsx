@@ -125,11 +125,30 @@ describe('§7.2 · B1 es el punto de entrada', () => {
 
     const borrador = await screen.findByRole('button', { name: /v4/ })
     expect(within(borrador).getByText(/sin publicar/i)).toBeInTheDocument()
-    expect(borrador.textContent).toContain('borrador')
+    // **El estado va primero, y es la palabra** · desde el 2026-10-06 la opción
+    // dice «Borrador v4», con mayúscula: es una frase, no un rótulo.
+    expect(borrador.textContent).toContain('Borrador v4')
 
     const publicada = screen.getByRole('button', { name: /v3/ })
-    expect(publicada.textContent).toContain('publicado')
-    expect(publicada.textContent).toContain('2026-09-10')
+    expect(publicada.textContent).toContain('Publicada v3')
+    // La fecha pasa por `format.calendar` con el locale del tenant —`es-MX` en
+    // el mock de `/config/me`—, no el ISO crudo que se pintaba antes.
+    expect(publicada.textContent).toContain('10 sep 2026')
+    expect(publicada.textContent).not.toContain('2026-09-10')
+    expect(within(publicada).queryByText(/sin publicar/i)).toBeNull()
+  })
+
+  it('la versión se elige SOLA · el primer borrador, antes que la publicada', async () => {
+    // **Nuevo el 2026-10-06** · auditoría §2.1: B1 abría sin versión elegida y
+    // no mostraba ninguna pestaña hasta que alguien apretaba una. El servicio
+    // devuelve la publicada PRIMERO a propósito: tomar `[0]` elegiría la que no
+    // se edita.
+    servir()
+    montar()
+
+    expect(await screen.findByDisplayValue('Resumen')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /v4/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /v3/ })).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('al elegir una versión muestra sus pestañas, ordenadas por `orden`', async () => {
@@ -158,10 +177,36 @@ describe('§7.2 · los roles', () => {
     montar()
     await screen.findByRole('button', { name: /v4/ })
 
-    const selector = await screen.findByLabelText('Rol')
-    expect(within(selector).getByText('CEO')).toBeInTheDocument()
+    // **Desde el 2026-10-06 son opciones, no un `select`** · D5 de la auditoría:
+    // el rol es un filtro, y «Todos los roles» es la opción que lo apaga.
+    const selector = await screen.findByRole('group', { name: 'Rol' })
+    expect(within(selector).getByRole('button', { name: 'Todos los roles' })).toBeInTheDocument()
+    expect(within(selector).getByRole('button', { name: 'CEO' })).toBeInTheDocument()
     // El que no tiene ninguna pestaña asignada también está.
-    expect(within(selector).getByText('Sin pestañas')).toBeInTheDocument()
+    expect(within(selector).getByRole('button', { name: 'Sin pestañas' })).toBeInTheDocument()
+  })
+
+  it('el rol FILTRA las pestañas · y «Todos los roles» las vuelve a mostrar', async () => {
+    // **D5 de la auditoría del 2026-10-06**: «debería funcionar como un filtro».
+    // Hasta ese día el selector se movía sin cambiar nada en la pantalla.
+    // `Resumen` no declara roles —la ven todos— e `Inventario` sólo la ve un rol
+    // que no es CEO, así que elegir CEO tiene que esconder exactamente una.
+    servir()
+    montar()
+    await screen.findByDisplayValue('Inventario')
+
+    const selector = screen.getByRole('group', { name: 'Rol' })
+    await userEvent.click(within(selector).getByRole('button', { name: 'CEO' }))
+
+    await waitFor(() => expect(screen.queryByDisplayValue('Inventario')).toBeNull())
+    expect(screen.getByDisplayValue('Resumen')).toBeInTheDocument()
+    expect(within(selector).getByRole('button', { name: 'CEO' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('1 más no las ve este rol.')).toBeInTheDocument()
+
+    await userEvent.click(within(selector).getByRole('button', { name: 'Todos los roles' }))
+    expect(await screen.findByDisplayValue('Inventario')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Resumen')).toBeInTheDocument()
+    expect(screen.queryByText(/no las ve este rol/)).toBeNull()
   })
 
   it('sin roles definidos manda a la ficha de cliente', async () => {
@@ -172,23 +217,29 @@ describe('§7.2 · los roles', () => {
     )
     montar()
     await screen.findByRole('button', { name: /v4/ })
-    expect(screen.getByText(/Sin roles definidos/)).toBeInTheDocument()
+    expect(
+      screen.getByText('Este cliente todavía no tiene roles. Se definen en su ficha, en administración.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Rol' })).toBeNull()
   })
 })
 
 describe('§7.2 · la herencia de plantilla, que no existe en el cable', () => {
-  it('declara las tres cosas que faltan en vez de inventar la distinción', async () => {
+  it('ya NO la anuncia en pantalla · era una nota del plan, no del producto', async () => {
+    // **Cambió el 2026-10-06** · `docs/AUDITORIA-2026-10-06-builder-contexto-y-canvas.md`.
+    // Esta prueba exigía el bloque «Esta pantalla va a crecer», que le contaba a
+    // quien compone lo que el contrato todavía no declara —herencia, plantilla,
+    // override—. Sigue sin declararse y sigue escrito en el encabezado de
+    // `ContextView.tsx`; lo que se quitó es decírselo al usuario. Tampoco se
+    // inventa la distinción: ninguna pestaña se rotula heredada ni propia.
     servir()
     const { container } = montar()
-    await screen.findByRole('button', { name: /v4/ })
+    await screen.findByDisplayValue('Resumen')
 
     const texto = container.textContent ?? ''
-    expect(texto).toContain('Esta pantalla va a crecer')
-    // El `.pen` pide «la proporción real entre paneles heredados de la plantilla
-    // y propios del tenant» · «UA MX hereda 11 de 12 paneles en su overview».
-    expect(texto).toContain('vienen de la plantilla y cuántos son propios')
-    expect(texto).toContain('se apartaron de la plantilla')
-    expect(texto).toContain('plantilla de vertical')
+    expect(texto).not.toContain('Esta pantalla va a crecer')
+    expect(texto).not.toMatch(/plantilla/i)
+    expect(texto).not.toMatch(/heredad|override/i)
   })
 })
 
@@ -203,7 +254,9 @@ describe('cambiar de cliente', () => {
     await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
     await screen.findByDisplayValue('Resumen')
 
-    await userEvent.selectOptions(screen.getByLabelText('Cliente'), 't-2')
+    // `getByRole` y no `getByLabelText`: la sección y el `select` se rotulan
+    // con el mismo «Cliente».
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Cliente' }), 't-2')
 
     await waitFor(() => expect(screen.queryByDisplayValue('Resumen')).toBeNull())
     expect(await screen.findByRole('button', { name: /k1/ })).toBeInTheDocument()
@@ -211,13 +264,18 @@ describe('cambiar de cliente', () => {
 })
 
 describe('sin versiones', () => {
-  it('invita a crear un borrador en vez de mostrarse vacía', async () => {
+  it('dice que no hay versiones en vez de mostrarse vacía', async () => {
+    // **Cambió el 2026-10-06** con la reescritura de B1: el copy viejo —«Ninguna
+    // todavía · se crea un borrador para empezar a componer»— prometía una
+    // acción que esta pantalla no ofrece. Ahora lo dice en el registro de ayuda
+    // y no muestra ni opciones de versión ni pestañas.
     server.use(
       http.get(`${API}/admin/tenants`, () => ok(tenants)),
       http.get(`${API}/admin/tenants/:id/layouts`, () => ok([])),
     )
     montar()
-    expect(await screen.findByText(/Ninguna todavía/i)).toBeInTheDocument()
-    expect(screen.getByText(/se crea un borrador para empezar a componer/i)).toBeInTheDocument()
+    expect(await screen.findByText('Este cliente todavía no tiene versiones.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Borrador|Publicada/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Componer / })).toBeNull()
   })
 })

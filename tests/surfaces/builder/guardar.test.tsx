@@ -183,17 +183,79 @@ describe('§7.2 · guardado explícito', () => {
     await userEvent.type(await screen.findByDisplayValue('Resumen'), ' ejecutivo')
     // **El contador vive en el chrome desde el 2026-09-15** y cuenta pestañas
     // tocadas, no pulsaciones: un contador de teclas diría «10 cambios» por
-    // escribir una palabra.
-    expect(screen.getByText('1 cambio(s) sin guardar')).toBeInTheDocument()
+    // escribir una palabra. Desde el 2026-10-06 dice «pestaña» y no
+    // «cambio(s)», que es lo que cuenta.
+    expect(screen.getByText('1 pestaña con cambios sin guardar')).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Guardar' }))
-    await waitFor(() => expect(screen.queryByText(/cambio\(s\) sin guardar/)).toBeNull())
+    await waitFor(() => expect(screen.queryByText(/con cambios sin guardar/)).toBeNull())
     expect(screen.queryByRole('button', { name: 'Guardar' })).toBeNull()
+  })
+
+  it('el contador cuenta PESTAÑAS, en plural cuando son varias', async () => {
+    // Dos pestañas tocadas son dos, aunque una tenga diez teclas.
+    base([
+      http.get(`${API}/admin/tenants/:id/layouts`, () => ok([borrador])),
+      http.get(`${API}/admin/layouts/:id`, () =>
+        ok({
+          layout: borrador,
+          tabs: [
+            ...tabDe(borrador, 'tab-a', 'Resumen').tabs,
+            {
+              ...tabDe(borrador, 'tab-b', 'Marca').tabs[0],
+              tab: { ...tabDe(borrador, 'tab-b', 'Marca').tabs[0]?.tab, sort_order: 2 },
+            },
+          ],
+        }),
+      ),
+    ])
+    montar()
+
+    await userEvent.type(await screen.findByDisplayValue('Resumen'), ' ejecutivo')
+    expect(screen.getByText('1 pestaña con cambios sin guardar')).toBeInTheDocument()
+    await userEvent.type(screen.getByDisplayValue('Marca'), '!')
+    expect(screen.getByText('2 pestañas con cambios sin guardar')).toBeInTheDocument()
+  })
+
+  it('mientras guarda dice «Guardando…» y no deja apretar dos veces', async () => {
+    // Dos PUT seguidos con el mismo borrador crearían dos veces lo que todavía
+    // no tiene id · es la misma familia que el segundo guardado.
+    let soltar: () => void = () => {}
+    const espera = new Promise<void>((r) => {
+      soltar = r
+    })
+    let puts = 0
+    base([
+      http.get(`${API}/admin/tenants/:id/layouts`, () => ok([borrador])),
+      http.get(`${API}/admin/layouts/:id`, () => ok(tabDe(borrador, 'tab-a', 'Resumen'))),
+      http.put(`${API}/admin/layouts/:id`, async () => {
+        puts += 1
+        await espera
+        return ok(tabDe(borrador, 'tab-a', 'Resumen!'))
+      }),
+    ])
+    montar()
+
+    await userEvent.type(await screen.findByDisplayValue('Resumen'), '!')
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    const ocupado = await screen.findByRole('button', { name: 'Guardando…' })
+    expect(ocupado).toBeDisabled()
+    await userEvent.click(ocupado)
+    soltar()
+    await waitFor(() => expect(screen.queryByText(/con cambios sin guardar/)).toBeNull())
+    expect(puts).toBe(1)
   })
 
   it('los problemas de composición NO bloquean guardar', async () => {
     // Un borrador es donde una composición a medias puede vivir. Lo que no se
     // puede es publicarla, y eso lo decide el servidor.
+    //
+    // **La frase se mudó** de `SaveBar` a `ValidationSummary` el 2026-10-06:
+    // se decía tres veces y quedó una · §2.5 de la auditoría de ese día. Y la
+    // prueba pasó de «el botón existe» a «el PUT sale»: un botón muerto se ve
+    // igual que uno que anda.
+    let puts = 0
     base([
       http.get(`${API}/admin/tenants/:id/layouts`, () => ok([borrador])),
       http.get(`${API}/admin/layouts/:id`, () =>
@@ -210,15 +272,22 @@ describe('§7.2 · guardado explícito', () => {
           ],
         }),
       ),
-      http.put(`${API}/admin/layouts/:id`, () => ok(tabDe(borrador, 'tab-a', 'Resumen'))),
+      http.put(`${API}/admin/layouts/:id`, () => {
+        puts += 1
+        return ok(tabDe(borrador, 'tab-a', 'Resumen'))
+      }),
     ])
     montar()
 
     await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
     await userEvent.type(await screen.findByDisplayValue('Resumen'), '!')
 
-    expect(screen.getByText(/se guardan igual, no se publican/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Guardar' })).toBeInTheDocument()
+    expect(screen.getByText('1 problema de composición')).toBeInTheDocument()
+    expect(
+      screen.getByText('Se puede guardar igual; no se publica hasta corregirlos. El servidor tiene la última palabra.'),
+    ).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(puts).toBe(1))
   })
 })
 
@@ -254,8 +323,13 @@ describe('una versión publicada no se edita', () => {
     await userEvent.click(await screen.findByRole('button', { name: /v3/ }))
     await userEvent.type(await screen.findByDisplayValue('Resumen'), '!')
 
-    expect(screen.getByText('1 cambio(s) sin guardar')).toBeInTheDocument()
+    expect(screen.getByText('1 pestaña con cambios sin guardar')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Guardar' })).toBeNull()
+    // Validar tampoco: una versión publicada no tiene nada que validar, y el
+    // chrome no explica por qué no se publica lo que ya está publicado.
+    expect(screen.queryByRole('button', { name: 'Validar' })).toBeNull()
+    expect(screen.queryByText(/^Para publicar/)).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
   })
 
   it('duplicar COPIA la composición · el POST crea un borrador vacío', async () => {

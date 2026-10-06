@@ -47,9 +47,24 @@
  *  `colStart` no se edita. §7.2 lo pone en B2 —el canvas, F4.9— y un número
  *  elegido en un formulario es una columna que nadie eligió mirando.
  *
+ *  ── DESDE EL 2026-10-06 ES EL INSPECTOR DEL CANVAS ──────────────────────────
+ *
+ *  Vivía al fondo de «Contexto de edición», dos alturas de scroll debajo del
+ *  chip que lo abría, y el canvas —donde el panel está a la vista— no podía
+ *  cambiarle ni la métrica ni el tipo. D1 y D2 de
+ *  `docs/AUDITORIA-2026-10-06-builder-contexto-y-canvas.md`: ahora se abre al
+ *  costado del lienzo al elegir un panel, y es el único lugar donde se configura.
+ *
+ *  Y habla en los tres registros: rótulo para nombrar, frase para explicar,
+ *  caja para lo que se toca. Los ids del contrato —`bars`, `escalarConIntervalo`—
+ *  se nombran con `rotulos.ts` (D6).
+ *
  *  **§PEN:B4** · B4 · «Binder de métrica».
  */
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
+import { Accion } from '../../render/primitives/Accion'
+import { Opcion } from '../../render/primitives/Opcion'
 import { invalidReason } from '../../catalog/blocks'
 import { useState } from 'react'
 import type { ChartId, Plot } from '../../catalog/types'
@@ -59,6 +74,7 @@ import type { BlockTable } from '../../catalog/blocks'
 import type { Block, Metric, PanelType } from '../../api/types'
 import type { PanelDeBorrador } from './borrador'
 import type { ProblemaLocal } from './validar'
+import { descripcionDeTipo, nombreDeForma, nombreDeTipo } from './rotulos'
 
 type Props = {
   panel: PanelDeBorrador
@@ -73,13 +89,14 @@ type Props = {
   /** El gráfico elegido · `undefined` lo quita y devuelve al de por defecto. */
   onGrafico: (id: ChartId | undefined) => void
   /** El repertorio, de `/config/plots`. **Vacío apaga la sección entera** en vez
-   *  de mostrar un selector sin nada: la ruta puede fallar sola, y un control que
-   *  se abre vacío promete una elección que no se puede hacer. */
+   *  de ofrecer un selector sin opciones. */
   plots: readonly Plot[]
   /** Los de ESTE panel, ya calculados · una sola corrida de `validarBorrador`. */
   problemas: readonly ProblemaLocal[]
   onQuitar: () => void
 }
+
+const CAMPO = 'h-8 bg-w1 text-ink text-cuerpo rounded-md px-3 border border-w5'
 
 export function PanelConfigurator({
   panel,
@@ -100,165 +117,135 @@ export function PanelConfigurator({
   const [abierto, setAbierto] = useState(false)
   const esquema = PARAM_SCHEMAS[tipo] ?? {}
 
-
-  /** La razón por la que una métrica no sirve para este tipo, o `null`.
-   *
-   *  Se pregunta solo por la FORMA y con los spans del bloque, no con los del
-   *  panel: si el panel tuviera un span fuera de rango, todas las métricas
-   *  saldrían rechazadas por una razón que no es de la métrica. */
+  /** La razón por la que una métrica no sirve para este tipo, o `null`. */
   const razon = (m: Metric): string | null =>
     bloque === undefined
-      ? `El tipo «${panel.tipo}» no está en la tabla de bloques.`
+      ? `El tipo «${nombreDeTipo(panel.tipo)}» no está en la tabla de bloques.`
       : invalidReason(tabla, tipo, m.forma, bloque.colSpanMin, bloque.rowSpanMin)
 
-  /** La razón **desde la métrica**, que es como el `.pen` la escribe: «REQUIERE
-   *  serieTemporal · ESTA ES escalar».
-   *
-   *  `invalidReason` la dice desde el bloque —«un bloque kpi no sabe dibujar la
-   *  forma escalar»— y ahí está bien: lo consume también la consola, donde el
-   *  sujeto es el panel que no pudo dibujar. **Acá el sujeto es la métrica que
-   *  se está por elegir**, y la frase tiene que contestar «¿por qué no puedo
-   *  usar ésta?». `invalidReason` no se toca. */
+  /** La razón **desde la métrica**, que es como el `.pen` la escribe: «requiere
+   *  … · esta es …». Contesta «¿por qué no puedo usar ésta?». */
   const porQueNo = (m: Metric): string =>
     bloque === undefined
-      ? `El tipo «${panel.tipo}» no está en la tabla de bloques`
-      : `Requiere ${bloque.formasAceptadas.join(' o ')} · esta es ${m.forma}`
+      ? `El tipo «${nombreDeTipo(panel.tipo)}» no está en la tabla de bloques`
+      : `Requiere ${bloque.formasAceptadas.map(nombreDeForma).join(' o ')} · esta es ${nombreDeForma(m.forma)}`
 
   const compatibles = metrics.filter((m) => razon(m) === null)
   const incompatibles = metrics.filter((m) => razon(m) !== null)
 
   /** **Agrupadas por razón**, que con 34 métricas es la diferencia entre una
-   *  lista y un muro. El `.pen`: «30 · AGRUPADAS POR RAZÓN» y después
-   *  «+ 24 MÁS · escalar (13) · prosa (2) · categorica (2)…».
-   *
-   *  La razón de una métrica incompatible **es su forma**: todas las escalares
-   *  fallan por lo mismo contra un tipo dado. Agrupar por el mensaje completo
-   *  daría los mismos grupos con un rótulo más largo. */
-  const porForma = new Map<string, number>()
-  for (const m of incompatibles) porForma.set(m.forma, (porForma.get(m.forma) ?? 0) + 1)
-
-  /** Seis individuales y el resto en el resumen · es lo que el `.pen` muestra:
-   *  treinta incompatibles, «+ 24 MÁS». Ver algunas con su razón enseña la
-   *  regla; ver las treinta la esconde. */
+   *  lista que se lee y una que se recorre. */
+  /** Seis individuales y el resto en el resumen · es lo que el `.pen` muestra. */
   const A_LA_VISTA = 6
   const visiblesNo = incompatibles.slice(0, A_LA_VISTA)
   const resto = incompatibles.length - visiblesNo.length
 
+  /** **Sólo las que quedaron ocultas** · 2026-10-06. Contaba todas las
+   *  incompatibles, así que «Y 14 más» venía con conteos que sumaban 20: las
+   *  seis de arriba aparecían otra vez en el resumen. */
+  const porForma = new Map<string, number>()
+  for (const m of incompatibles.slice(A_LA_VISTA))
+    porForma.set(m.forma, (porForma.get(m.forma) ?? 0) + 1)
+
+  const nombreDelGrafico = (id: string) => plots.find((p) => p.id === id)?.nombre ?? id
+  const descripcion = descripcionDeTipo(panel.tipo)
+
   return (
-    <div className="flex flex-col gap-4 rounded-sm bg-w2 p-4">
-      <div className="flex items-center gap-4">
-        <Label as="div">Panel</Label>
-        {panel.id === undefined && <Label as="div">Nuevo · se crea al guardar</Label>}
-        <button
-          type="button"
-          onClick={onQuitar}
-          className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-acc hover:bg-elev ml-auto"
-        >
-          Quitar panel
-        </button>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-3">
+          <Label as="div">Panel</Label>
+          {panel.id === undefined && <Label as="div">Nuevo · se crea al guardar</Label>}
+          <div className="ml-auto">
+            <Accion variante="peligro" tamano="compacta" onClick={onQuitar}>
+              Quitar panel
+            </Accion>
+          </div>
+        </div>
+        <span className="font-display text-titulo leading-titulo tracking-titulo font-medium text-ink">
+          {nombreDeTipo(panel.tipo)}
+        </span>
+        {descripcion !== null && <Ayuda>{descripcion}</Ayuda>}
       </div>
 
-      <label className="flex flex-col gap-1">
-        <Label as="div">Tipo</Label>
+      <section className="flex flex-col gap-2">
+        <Label id="panel-tipo" as="div">
+          Tipo
+        </Label>
         <select
           aria-label="Tipo de panel"
           value={panel.tipo}
           onChange={(e) => onTipo(e.target.value)}
-          className="bg-w1 text-ink text-celda rounded-sm px-2 py-1 border border-w4"
+          className={`${CAMPO} cursor-pointer`}
         >
           {bloques.map((b) => (
             <option key={b.tipo} value={b.tipo}>
-              {b.tipo}
+              {nombreDeTipo(b.tipo)}
             </option>
           ))}
         </select>
-      </label>
-
-      <div className="flex flex-col gap-3">
-        {/* Qué acepta este tipo · es la regla que gobierna las dos listas. */}
         {bloque !== undefined && (
+          <Ayuda>{`Acepta métricas de forma ${bloque.formasAceptadas.map(nombreDeForma).join(', ')}.`}</Ayuda>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <div className="flex items-baseline gap-3">
+          <Label as="div">Métrica</Label>
           <Label as="div">
-            {`Tipo ${panel.tipo} · acepta ${bloque.formasAceptadas.join(' · ')}`}
+            {`${String(compatibles.length)} de ${String(metrics.length)} compatibles`}
           </Label>
-        )}
-        <Label as="div">
-          §5 gobierna esta lista · el binder no ofrece lo que el tipo no puede renderizar
-        </Label>
-
+        </div>
         {panel.metricId === '' && (
-          // Un panel sin métrica no se ancla a nada · §4: «un panel se ancla a un
-          // metricId, jamás a un SQL ni a un nombre de tabla».
-          <Label as="div">Sin métrica · el panel no se puede componer</Label>
+          <Ayuda>Elegí una métrica: sin ella el panel no se puede publicar.</Ayuda>
         )}
-
-        <Label as="div">
-          {`Compatibles · ${String(compatibles.length)} de ${String(metrics.length)} métricas del catálogo`}
-        </Label>
         {compatibles.length === 0 ? (
-          // Ninguna sirve: no es un error de la pantalla, es que el tipo elegido
-          // no tiene con qué. La salida es cambiar de tipo.
-          <Label as="div">Ninguna métrica de este cliente tiene una forma que este tipo acepte</Label>
+          <Ayuda>Ninguna métrica de este cliente tiene una forma que este tipo acepte.</Ayuda>
         ) : (
           <ul className="flex flex-col gap-1 m-0 p-0 list-none">
             {compatibles.map((m) => (
               <li key={m.id}>
-                <button
-                  type="button"
-                  onClick={() => onMetrica(m.id)}
-                  aria-pressed={m.id === panel.metricId}
-                  className={
-                    'w-full text-left text-celda px-3 py-2 rounded-sm ' +
-                    (m.id === panel.metricId ? 'bg-w3 text-ink' : 'text-dim hover:bg-elev')
-                  }
-                >
-                  {m.nombre} <Label>{`${m.forma} · ${m.capa} · ${m.fuente}`}</Label>
-                </button>
+                <Opcion forma="fila" elegida={m.id === panel.metricId} onClick={() => onMetrica(m.id)}>
+                  <span className="flex flex-col gap-1">
+                    <span>{m.nombre}</span>
+                    <Label>{`${nombreDeForma(m.forma)} · ${m.capa} · ${m.fuente}`}</Label>
+                  </span>
+                </Opcion>
               </li>
             ))}
           </ul>
         )}
 
         {incompatibles.length > 0 && (
-          <>
-            <Label as="div">
-              {`No compatibles · ${String(incompatibles.length)} · agrupadas por razón`}
-            </Label>
-            <ul className="flex flex-col gap-1 m-0 p-0 list-none">
+          <details className="flex flex-col gap-1">
+            <summary className="cursor-pointer font-body text-cuerpo text-dim">
+              {`${String(incompatibles.length)} no compatibles con este tipo · por qué`}
+            </summary>
+            <ul className="flex flex-col gap-2 m-0 mt-2 p-0 list-none">
               {visiblesNo.map((m) => (
-                <li key={m.id}>
-                  <button
-                    type="button"
-                    disabled
-                    className="w-full text-left text-celda px-3 py-2 rounded-sm opacity-40 text-dim"
-                  >
-                    {/* **La razón, no un asterisco** · «el rechazo explicado es
-                        lo que enseña el sistema». Y escrita desde la métrica:
-                        contesta «¿por qué no puedo usar ésta?». */}
-                    {m.nombre} <Label>{porQueNo(m)}</Label>
-                  </button>
+                <li key={m.id} className="flex flex-col gap-0.5 px-3">
+                  {/* **La razón, no un asterisco** · «el rechazo explicado es lo
+                      que enseña el sistema». Sin caja: no se puede elegir, y una
+                      caja deshabilitada sigue diciendo «tocame». */}
+                  <span className="font-body text-cuerpo text-dim">{m.nombre}</span>
+                  <Label>{porQueNo(m)}</Label>
                 </li>
               ))}
             </ul>
             {resto > 0 && (
-              // El resumen · con 34 métricas, ver las treinta esconde la regla
-              // que ver seis enseña.
-              <Label as="div">
-                {`+ ${String(resto)} más · ${[...porForma]
-                  .map(([forma, n]) => `${forma} (${String(n)})`)
-                  .join(' · ')}`}
-              </Label>
+              <Ayuda>
+                {`Y ${String(resto)} más: ${[...porForma]
+                  .map(([forma, n]) => `${nombreDeForma(forma)} (${String(n)})`)
+                  .join(', ')}.`}
+              </Ayuda>
             )}
-          </>
+          </details>
         )}
-      </div>
+      </section>
 
-      {/* ── EL GRÁFICO · §PEN:B3 · F4.21 ────────────────────────────────────
-          **Va después de la métrica y no antes**, al revés de lo que el `.pen`
-          dibuja —ahí el selector se abre al soltar el tipo, antes de elegir la
-          métrica—. Reordenar el flujo entero es F4.10; acá el selector se abre
-          desde donde hoy se configura todo lo demás. Anotado en `PlotPicker`. */}
+      {/* ── EL GRÁFICO · §PEN:B3 · F4.21 ──────────────────────────────────── */}
       {bloque !== undefined && plots.length > 0 && (
-        <div className="flex flex-col gap-2">
+        <section className="flex flex-col gap-2">
           <Label as="div">Gráfico</Label>
           {abierto ? (
             <div className="h-100">
@@ -275,119 +262,124 @@ export function PanelConfigurator({
               />
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              {/* **Ausente es válido y se dice**, que es el cuarto bullet del
-                  criterio: no elegir nada usa el gráfico por defecto del tipo. */}
-              <Label as="div">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* **Ausente es válido y se dice**: no elegir nada usa el gráfico
+                  por defecto del tipo. */}
+              <span className="font-body text-cuerpo text-ink">
                 {panel.grafico === undefined
-                  ? 'Sin elegir · usa el de por defecto del tipo'
-                  : panel.grafico}
-              </Label>
-              <button
-                type="button"
-                onClick={() => setAbierto(true)}
-                className="h-7 cursor-pointer rounded-md border border-w4 bg-transparent px-2.5 font-mono text-label leading-rotulo tracking-rotulo uppercase text-ink"
-              >
+                  ? 'El de por defecto del tipo'
+                  : nombreDelGrafico(panel.grafico)}
+              </span>
+              <Accion tamano="compacta" onClick={() => setAbierto(true)}>
                 Elegir gráfico
-              </button>
+              </Accion>
               {panel.grafico !== undefined && (
-                <button
-                  type="button"
-                  onClick={() => onGrafico(undefined)}
-                  className="h-7 cursor-pointer rounded-md border-0 bg-transparent px-1 font-mono text-nota leading-rotulo tracking-rotulo uppercase text-dim"
-                >
-                  Quitar
-                </button>
+                <Accion tamano="compacta" onClick={() => onGrafico(undefined)} etiqueta="Quitar el gráfico elegido">
+                  Usar el de por defecto
+                </Accion>
               )}
             </div>
           )}
-        </div>
+        </section>
       )}
 
       {bloque !== undefined && (
-        <div className="flex gap-6">
-          <label className="flex flex-col gap-1">
-            <Label as="div">{`Columnas · ${String(bloque.colSpanMin)} a ${String(bloque.colSpanMax)}`}</Label>
-            <input
-              type="number"
-              value={panel.colSpan}
-              min={bloque.colSpanMin}
-              max={bloque.colSpanMax}
-              onChange={(e) => onSpan('colSpan', Number(e.target.value))}
-              className="bg-w1 text-ink text-celda rounded-sm px-2 py-1 border border-w4 w-24"
-            />
-          </label>
-          <label className="flex flex-col gap-1">
-            {/* **La altura se dice en filas y en píxeles**, porque la fórmula es
-                la regla: `px = 96·N − 16`, y ninguna altura sale de otro lado. */}
-            <Label as="div">{`Filas · ${String(bloque.rowSpanMin)} a ${String(bloque.rowSpanMax)}`}</Label>
-            <input
-              type="number"
-              value={panel.rowSpan}
-              min={bloque.rowSpanMin}
-              max={bloque.rowSpanMax}
-              onChange={(e) => onSpan('rowSpan', Number(e.target.value))}
-              className="bg-w1 text-ink text-celda rounded-sm px-2 py-1 border border-w4 w-24"
-            />
-            <Label as="div">{`${String(96 * panel.rowSpan - 16)} px`}</Label>
-          </label>
-          <div className="flex flex-col gap-1">
-            <Label as="div">Columna de inicio</Label>
-            <Label as="div">{`${String(panel.colStart)} · se coloca en el canvas · F4.9`}</Label>
+        <section className="flex flex-col gap-2">
+          <Label as="div">Tamaño</Label>
+          <div className="flex gap-4">
+            <div className="flex flex-col gap-1">
+              <Label id="panel-columnas" as="div">
+                {`Columnas · ${String(bloque.colSpanMin)} a ${String(bloque.colSpanMax)}`}
+              </Label>
+              <input
+                type="number"
+                aria-labelledby="panel-columnas"
+                value={panel.colSpan}
+                min={bloque.colSpanMin}
+                max={bloque.colSpanMax}
+                onChange={(e) => onSpan('colSpan', Number(e.target.value))}
+                className={`${CAMPO} w-24`}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label id="panel-filas" as="div">
+                {`Filas · ${String(bloque.rowSpanMin)} a ${String(bloque.rowSpanMax)}`}
+              </Label>
+              <input
+                type="number"
+                aria-labelledby="panel-filas"
+                value={panel.rowSpan}
+                min={bloque.rowSpanMin}
+                max={bloque.rowSpanMax}
+                onChange={(e) => onSpan('rowSpan', Number(e.target.value))}
+                className={`${CAMPO} w-24`}
+              />
+            </div>
           </div>
-        </div>
+          <Ayuda>La posición se cambia arrastrando el panel en el lienzo.</Ayuda>
+        </section>
       )}
 
-      <div className="flex flex-col gap-1">
+      <section className="flex flex-col gap-3">
         <Label as="div">Opciones de este tipo</Label>
-        {bloque?.paramsDisponibles === undefined ? (
-          <Label as="div">El bloque no declara paramsDisponibles · no se ofrece ninguna</Label>
-        ) : bloque.paramsDisponibles.length === 0 ? (
-          <Label as="div">Ninguna</Label>
+        {bloque?.paramsDisponibles === undefined || bloque.paramsDisponibles.length === 0 ? (
+          <Ayuda>Este tipo no tiene opciones.</Ayuda>
         ) : (
           bloque.paramsDisponibles.map((nombre) => {
             const spec = esquema[nombre]
             const valor = panel.opciones?.[nombre]
+            const id = `opcion-${nombre}`
 
-            // El backend lo declara disponible y el front no sabe qué valores
-            // acepta. **No se ofrece un campo libre**: escribir ahí produce un
-            // param que `validateParams` va a descartar, que es el silencio que
-            // F1.29 vino a cerrar.
-            if (spec === undefined) {
+            if (spec === undefined || spec.kind === 'array' || spec.kind === 'object') {
+              // Sin esquema, o una estructura que un campo suelto no puede
+              // editar sin volverse un textarea de JSON. Se nombra y se dice.
               return (
-                <Label key={nombre} as="div">
-                  {`${nombre} · el contrato no declara sus valores · B0.9`}
-                </Label>
+                <div key={nombre} className="flex flex-col gap-1">
+                  <Label as="div">{nombre}</Label>
+                  <Ayuda>Esta opción todavía no se puede editar desde acá.</Ayuda>
+                </div>
               )
             }
 
-            // **`array` y `object` tampoco se editan acá**, y no es lo mismo que
-            // el caso de arriba: el esquema sí los declara, pero son estructuras
-            // —`columnas` es una lista de definiciones de columna, `banda` un
-            // objeto con dos umbrales—. Un textarea de JSON compilaría y sería
-            // la peor de las opciones: el error aparecería al publicar.
-            if (spec.kind === 'array' || spec.kind === 'object') {
+            if (spec.kind === 'boolean') {
+              // **Un sí o no se elige, no se escribe** · antes era un campo de
+              // texto que pedía «true» o «false».
               return (
-                <Label key={nombre} as="div">
-                  {`${nombre} · ${describirParam(spec)} · no se edita acá · hace falta un editor propio`}
-                </Label>
+                <div key={nombre} className="flex flex-col gap-1">
+                  <Label id={id} as="div">
+                    {nombre}
+                  </Label>
+                  <div className="flex gap-2" role="group" aria-labelledby={id}>
+                    <Opcion elegida={valor === undefined} onClick={() => onOpcion(nombre, undefined)} etiqueta={`${nombre} · por defecto`}>
+                      Por defecto
+                    </Opcion>
+                    <Opcion elegida={valor === true} onClick={() => onOpcion(nombre, true)} etiqueta={`${nombre} · sí`}>
+                      Sí
+                    </Opcion>
+                    <Opcion elegida={valor === false} onClick={() => onOpcion(nombre, false)} etiqueta={`${nombre} · no`}>
+                      No
+                    </Opcion>
+                  </div>
+                </div>
               )
             }
 
             return (
-              <label key={nombre} className="flex items-center gap-2">
-                <Label>{`${nombre} · espera ${describirParam(spec)}`}</Label>
+              <div key={nombre} className="flex flex-col gap-1">
+                <Label id={id} as="div">
+                  {nombre}
+                </Label>
                 {spec.kind === 'enum' ? (
                   <select
                     aria-label={nombre}
                     value={typeof valor === 'string' ? valor : ''}
                     onChange={(e) => onOpcion(nombre, e.target.value === '' ? undefined : e.target.value)}
-                    className="bg-w1 text-ink text-celda rounded-sm px-2 py-1 border border-w4"
+                    className={`${CAMPO} self-start cursor-pointer`}
                   >
-                    {/* **El vacío es «sin declarar», no un valor.** El default lo
+                    {/* **El vacío es «por defecto», no un valor.** El default lo
                         aplica el cuerpo; escribirlo acá lo congelaría el día que
                         el cuerpo cambie de opinión. */}
-                    <option value="">Sin declarar</option>
+                    <option value="">Por defecto</option>
                     {spec.values.map((v) => (
                       <option key={v} value={v}>
                         {v}
@@ -398,43 +390,32 @@ export function PanelConfigurator({
                   <input
                     type={spec.kind === 'number' ? 'number' : 'text'}
                     aria-label={nombre}
+                    placeholder="Por defecto"
                     value={valor === undefined ? '' : String(valor)}
                     {...(spec.kind === 'number' && spec.min !== undefined ? { min: spec.min } : {})}
                     {...(spec.kind === 'number' && spec.integer === true ? { step: 1 } : {})}
                     onChange={(e) => {
                       const texto = e.target.value
                       if (texto === '') return onOpcion(nombre, undefined)
-                      // **Un número se manda como número.** `opciones` viaja
-                      // como JSON y `validateParams` pide `typeof === 'number'`:
-                      // mandar «100» degradaría el panel con razón visible, que
-                      // es correcto y es un error que este campo no debe crear.
                       return onOpcion(nombre, spec.kind === 'number' ? Number(texto) : texto)
                     }}
-                    className="bg-w1 text-ink text-celda rounded-sm px-2 py-1 border border-w4 w-32"
+                    className={`${CAMPO} w-40`}
                   />
                 )}
-              </label>
+                {spec.kind === 'number' && <Ayuda>{`Espera ${describirParam(spec)}.`}</Ayuda>}
+              </div>
             )
           })
         )}
         {/* **Lo que este panel tendría si se guardara así.** Sale de la misma
-            corrida de `validarBorrador` que alimenta el resumen: es lo que hace
-            que el campo de un número mande un número —un `"10"` viaja igual por
-            JSON y recién degradaría el panel la próxima vez que alguien lo
-            abriera— y se ve mientras se escribe. La razón sale del validador,
-            no de una frase escrita a mano. */}
+            corrida de `validarBorrador` que alimenta la revisión, y se ve
+            mientras se escribe. */}
         {problemas
           .filter((p) => p.campo !== 'tipo' && p.campo !== 'metricId')
           .map((p) => (
-            <Label key={p.campo} as="div">
-              {p.mensaje}
-            </Label>
+            <Ayuda key={p.campo}>{p.mensaje}</Ayuda>
           ))}
-
-        <Label as="div">
-          Y falta elegir por qué dimensión se desagrega · ningún tipo de panel lo admite todavía
-        </Label>
-      </div>
+      </section>
     </div>
   )
 }

@@ -19,6 +19,7 @@ import { fireEvent } from '@testing-library/dom'
 import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { Builder } from '@/surfaces/builder/Builder'
+import { nombreDeTipo } from '@/surfaces/builder/rotulos'
 import { ok } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
 
@@ -112,20 +113,29 @@ describe('§7.2 · la grilla de 12 es visible, con guías', () => {
     expect(screen.queryByRole('gridcell', { name: 'Columna 13, fila 1' })).toBeNull()
   })
 
-  it('declara los números con los que se compone', async () => {
+  it('NO le habla del handoff a quien compone · las reglas de grilla se fueron', async () => {
+    // **Reemplaza a «declara los números con los que se compone»** · D7 de la
+    // auditoría del 2026-10-06: «GRILLA 12 · COLUMNA 80 · GAP 16» y «EL ALTO SE
+    // DECLARA EN rowSpan» son literales del `.pen` para quien implementa, y
+    // `rowSpan` es un nombre de campo. La grilla sigue siendo la regla; la
+    // aplica el lienzo, no la lee el usuario.
     base()
     montar()
     await abrirCanvas()
-    expect(screen.getByText(/Grilla 12 · columna 80 · gap 16 · fila base 80/)).toBeInTheDocument()
-    expect(screen.getByText(/El alto se declara en rowSpan · nunca en píxeles/)).toBeInTheDocument()
+    expect(screen.queryByText(/Grilla 12 · columna 80/)).toBeNull()
+    expect(screen.queryByText(/rowSpan/)).toBeNull()
   })
 
-  it('cada panel dice su medida en unidades Y en píxeles', async () => {
-    // `px = 96·N − 16` · la fórmula es la regla.
+  it('cada panel dice su medida en columnas y filas · sin píxeles', async () => {
+    // **Reemplaza a «cada panel dice su medida en unidades Y en píxeles»** · D7
+    // de la auditoría del 2026-10-06: `px = 96·N − 16` sigue mandando, pero la
+    // aplica la grilla; quien compone ajusta en las mismas unidades que pide el
+    // inspector.
     base()
     montar()
     await abrirCanvas()
-    expect(within(panelDe('Ventas')).getByText('6 × 4 · 368 px de alto')).toBeInTheDocument()
+    expect(within(panelDe('Ventas')).getByText('6 col × 4 filas')).toBeInTheDocument()
+    expect(panelDe('Ventas').textContent).not.toMatch(/px/)
   })
 })
 
@@ -140,10 +150,13 @@ describe('el lienzo anuncia sus gestos · 2026-09-17', () => {
     montar()
     await abrirCanvas()
 
-    expect(screen.getByText(/Arrastrá un panel para moverlo/)).toBeInTheDocument()
-    // La otra mitad del gesto, y son distintas: el cuerpo mueve, los handles
-    // redimensionan · propuesta del canvas, punto 1.
-    expect(screen.getByText(/los handles redimensionan/)).toBeInTheDocument()
+    // **Una sola frase desde el 2026-10-06** (D7): las reglas de la grilla se
+    // fueron y quedaron los gestos, que es lo que quien compone necesita.
+    const ayuda = screen.getByText(/Arrastrá un tipo de la biblioteca a un espacio libre/)
+    expect(ayuda.textContent).toMatch(/arrastralo para moverlo, o usá las flechas/)
+    // La otra mitad del gesto, y son distintas: mover y cambiar el tamaño ·
+    // propuesta del canvas, punto 1.
+    expect(ayuda.textContent).toMatch(/con Shift y las flechas cambiás su tamaño/)
   })
 
   it('y el panel sigue siendo arrastrable · el rótulo no reemplaza al gesto', async () => {
@@ -167,8 +180,28 @@ describe('§7.2 · la biblioteca, agrupada', () => {
     for (const g of ['Comparación', 'Composición', 'Evolución', 'Distribución', 'Estado']) {
       expect(biblioteca.getByText(g)).toBeInTheDocument()
     }
-    // «bars · categorica · ranking · 4–8 ×4–5» en el `.pen`: el rango va con el tipo.
-    expect(biblioteca.getByText('3–8 × 3–6')).toBeInTheDocument()
+    // «bars · categorica · ranking · 4–8 ×4–5» en el `.pen`: el rango va con el
+    // tipo. Desde el 2026-10-06 dice en qué unidad (D7).
+    expect(biblioteca.getByText('3–8 col × 3–6 filas')).toBeInTheDocument()
+    expect(biblioteca.getByText('6–12 col × 4–8 filas')).toBeInTheDocument()
+  })
+
+  it('nombra los tipos y las formas como PRODUCTO, no por su id · D6', async () => {
+    // «Definirlo» · D6 de la auditoría del 2026-10-06. `kpi` y `escalar` son
+    // del contrato; quien compone lee «Indicador» y «Cifra única».
+    base()
+    montar()
+    await abrirCanvas()
+
+    const biblioteca = within(screen.getByRole('complementary', { name: 'Biblioteca de tipos' }))
+    expect(biblioteca.getByText('Indicador')).toBeInTheDocument()
+    expect(biblioteca.getByText('Cifra única')).toBeInTheDocument()
+    for (const id of ['kpi', 'series', 'escalar', 'serieTemporal']) {
+      expect(biblioteca.queryByText(id)).toBeNull()
+    }
+    // Y el lienzo, igual.
+    expect(within(panelDe('Ventas')).getByText('Indicador')).toBeInTheDocument()
+    expect(within(panelDe('Ventas')).queryByText('kpi')).toBeNull()
   })
 
   it('queda PEGADA al scroll · y no se le esconden los últimos grupos', async () => {
@@ -201,8 +234,24 @@ describe('§7.2 · al soltar, los tres casos', () => {
 
     soltarEn(1, 5, 'series')
 
-    const nuevo = await screen.findByRole('gridcell', { name: /series/ })
-    expect(within(nuevo).getByText('6 × 4 · 368 px de alto')).toBeInTheDocument()
+    const nuevo = await screen.findByRole('gridcell', { name: /Sin métrica/ })
+    expect(within(nuevo).getByText('6 col × 4 filas')).toBeInTheDocument()
+    expect(nuevo.style.gridColumn).toBe('1 / span 6')
+  })
+
+  it('el panel soltado QUEDA ELEGIDO y abre su configuración', async () => {
+    // Soltar y después tener que buscarlo para elegirle la métrica era un paso
+    // de más: lo primero que pide un panel nuevo es su métrica.
+    base()
+    montar()
+    await abrirCanvas()
+
+    soltarEn(1, 5, 'series')
+
+    const nuevo = await screen.findByRole('gridcell', { name: /Sin métrica/ })
+    expect(nuevo).toHaveAttribute('aria-selected', 'true')
+    const inspector = await screen.findByRole('complementary', { name: 'Configuración del panel' })
+    expect(within(inspector).getByLabelText<HTMLSelectElement>('Tipo de panel').value).toBe('series')
   })
 
   it('sobre otro panel NO SE SUELTA, y dice CON CUÁL choca', async () => {
@@ -216,12 +265,9 @@ describe('§7.2 · al soltar, los tres casos', () => {
     // meses», que está en 7–12.
     soltarEn(8, 1, '0')
 
-    await waitFor(() =>
-      expect(within(panelDe('Ventas')).getByText('6 × 4 · 368 px de alto')).toBeInTheDocument(),
-    )
-    // No se movió: sigue arrancando en la columna 1.
-    const celdaUno = screen.getByRole('gridcell', { name: 'Columna 1, fila 1' })
-    expect(celdaUno).toBeInTheDocument()
+    // No se movió: sigue arrancando en la columna 1, con su medida.
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 6'))
+    expect(within(panelDe('Ventas')).getByText('6 col × 4 filas')).toBeInTheDocument()
   })
 
   it('un tipo que se pasa del borde de la grilla no se suelta', async () => {
@@ -363,28 +409,97 @@ describe('los handles del panel seleccionado', () => {
 
     await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 4'))
   })
+
+  it('los cuatro disparan, cada uno sobre su eje y en su sentido', async () => {
+    // **Un botón muerto se ve igual que uno que funciona.** Desde el 2026-10-06
+    // son dos grupos «Ancho − +» y «Alto − +»: se verifica que cada uno mueva
+    // el eje que nombra, en el sentido que nombra. `kpi` va de 3 a 8 columnas y
+    // de 3 a 6 filas; arranca en 4 × 4 para que los cuatro tengan lugar.
+    base([
+      http.get(`${API}/admin/layouts/:id`, () =>
+        ok({
+          layout: layouts[0],
+          tabs: [
+            {
+              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+              panels: [panel('p-1', 'm-1', 1, 4)],
+            },
+          ],
+        }),
+      ),
+    ])
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ensanchar' }))
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 5'))
+    expect(panelDe('Ventas').style.gridRow).toBe('1 / span 4')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Angostar' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Angostar' }))
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 3'))
+    expect(panelDe('Ventas').style.gridRow).toBe('1 / span 4')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Agrandar' }))
+    await waitFor(() => expect(panelDe('Ventas').style.gridRow).toBe('1 / span 5'))
+    expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 3')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Achicar' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Achicar' }))
+    await waitFor(() => expect(panelDe('Ventas').style.gridRow).toBe('1 / span 3'))
+    expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 3')
+  })
 })
 
-describe('el canvas compone UNA pestaña', () => {
-  it('ofrece elegir cuál, y el chrome la dice', async () => {
-    // Un lienzo con los paneles de las cuatro pestañas encimados no es una
-    // composición, es una superposición.
+describe('el «+» de la biblioteca · agregar sin arrastrar', () => {
+  it('agrega el tipo AL FINAL de la pestaña y lo deja elegido', async () => {
+    // La salida para el teclado y para quien no descubre el gesto. Se verifica
+    // que el panel llegue al lienzo con el ancho de su tipo y que quede elegido,
+    // no que el botón exista.
     base()
     montar()
     await abrirCanvas()
 
-    expect(screen.getByLabelText('Componiendo')).toBeInTheDocument()
-    const cabecera = within(screen.getByRole('banner'))
-    expect(cabecera.getByText('Resumen')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Agregar Serie temporal' }))
+
+    const nuevo = await screen.findByRole('gridcell', { name: /Sin métrica/ })
+    // Al final: debajo de los dos que llenan la fila 1, con el mínimo del tipo.
+    expect(nuevo.style.gridColumn).toBe('1 / span 6')
+    expect(nuevo.style.gridRow).toBe('5 / span 4')
+    expect(nuevo).toHaveAttribute('aria-selected', 'true')
+    expect(within(nuevo).getByText('Serie temporal')).toBeInTheDocument()
+    expect(
+      await screen.findByRole('complementary', { name: 'Configuración del panel' }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('el canvas compone UNA pestaña', () => {
+  it('ofrece elegir cuál, y la dice UNA vez', async () => {
+    // Un lienzo con los paneles de las cuatro pestañas encimados no es una
+    // composición, es una superposición.
+    //
+    // **El chrome ya no la repite** · §2.2 de la auditoría del 2026-10-06: la
+    // pestaña estaba como texto en el chrome y como selector en el cuerpo, uno
+    // que se tocaba y otro que no. Queda el selector.
+    base()
+    montar()
+    await abrirCanvas()
+
+    expect(screen.getByLabelText('Componiendo')).toHaveDisplayValue('Resumen')
+    expect(within(screen.getByRole('banner')).queryByText('Resumen')).toBeNull()
   })
 })
 
 describe('«Span al soltar» · lo que va a ocupar, antes de soltar', () => {
   /** Arrastrar un tipo desde la biblioteca y entrar en una celda. */
   async function arrastrarTipoHasta(tipo: string, col: number, fila: number) {
-    const item = within(screen.getByRole('complementary', { name: 'Biblioteca de tipos' })).getByText(
-      tipo,
-    ).closest('li')
+    // Por el «+» de su ítem, que lleva el nombre de producto: el texto suelto
+    // no alcanza, porque «Serie temporal» es a la vez un tipo y una forma.
+    const item = within(screen.getByRole('complementary', { name: 'Biblioteca de tipos' }))
+      .getByRole('button', { name: `Agregar ${nombreDeTipo(tipo)}` })
+      .closest('li')
     const dt = { getData: () => tipo, setData: () => undefined, effectAllowed: '' }
     fireEvent.dragStart(item as HTMLElement, { dataTransfer: dt })
     fireEvent.dragEnter(
@@ -470,7 +585,8 @@ describe('«Span al soltar» · lo que va a ocupar, antes de soltar', () => {
     await abrirCanvas()
 
     await arrastrarTipoHasta('series', 1, 6)
-    expect(await screen.findByText('series · 6 × 4')).toBeInTheDocument()
+    // El tipo, con su nombre de producto (D6).
+    expect(await screen.findByText('Serie temporal · 6 × 4')).toBeInTheDocument()
   })
 
   it('cuando NO entra, dice por qué en el mismo lugar', async () => {

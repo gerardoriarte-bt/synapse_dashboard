@@ -40,7 +40,7 @@
  *  versiones`, con sus cuatro instancias leídas campo por campo: `Borrador`
  *  (`OgPAE`), `v4` (el master), `v3` (`kxd7w`), `v2` (`c4cLM`) y `v1` (`PrznY`).
  */
-import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
 import { Note } from '../../render/primitives/Note'
 import { Value } from '../../render/primitives/Value'
 import { cambios } from './cambios'
@@ -171,7 +171,7 @@ export function VersionCard({
             // `MarshalJSON` emite `null` con el valor vacío, así que esto es «no
             // hay registro de qué cambió». Colapsarlo a cinco ceros afirmaría lo
             // que no se sabe.
-            <Label as="div">Sin registro de qué cambió</Label>
+            <Ayuda>Sin registro de qué cambió.</Ayuda>
           ) : (
             <div className="flex flex-wrap gap-4">
               <Value label="Pestañas añadidas" size="cell">
@@ -242,11 +242,11 @@ export function VersionCard({
           suelto: se ve como algo que no cargó. */}
       <div className="border-t border-w2 pt-3 flex flex-col gap-1.5">
         {lineas.length === 0 ? (
-          <Label as="div">
+          <Ayuda>
             {publicacion.diff === null
-              ? 'El servicio no guardó el detalle de esta publicación'
-              : 'Sin cambios de composición'}
-          </Label>
+              ? 'El servicio no guardó el detalle de esta publicación.'
+              : 'Sin cambios de composición.'}
+          </Ayuda>
         ) : (
           lineas.map((c, i) => (
             // **El índice va SIEMPRE en la clave, y no sólo cuando falta la

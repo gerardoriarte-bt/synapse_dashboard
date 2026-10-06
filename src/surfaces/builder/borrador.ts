@@ -66,11 +66,29 @@ export function editar(
  *  Y nace con la pregunta vacía, que es lo que la deja inválida desde el primer
  *  render: el producto dice que una pestaña que no contesta una pregunta no se
  *  compone, así que la pantalla tiene que pedirla, no aceptarla en blanco. */
-export function agregar(tabs: readonly TabParaGuardar[]): TabParaGuardar[] {
+export function agregar(tabs: readonly TabParaGuardar[], roles: readonly string[] = []): TabParaGuardar[] {
   return [
     ...tabs,
-    { nombre: 'Pestaña nueva', pregunta: '', orden: tabs.length + 1, roles: [], panels: [] },
+    { nombre: 'Pestaña nueva', pregunta: '', orden: tabs.length + 1, roles: [...roles], panels: [] },
   ]
+}
+
+/** Qué roles ven una pestaña · D5 de la auditoría del 2026-10-06.
+ *
+ *  **Vacío significa «la ven todos»**, que es lo que el cable declara en
+ *  `roles` de `TabParaGuardar`. Por eso quitar el último rol no deja la pestaña
+ *  invisible: la deja para todos. Lo dice la pantalla, no esta función. */
+export function asignarRoles(
+  tabs: readonly TabParaGuardar[],
+  indice: number,
+  roles: readonly string[],
+): TabParaGuardar[] {
+  return tabs.map((t, i) => (i === indice ? { ...t, roles: [...roles] } : t))
+}
+
+/** Si una pestaña la ve un rol · `null` es «todos los roles», el filtro apagado. */
+export function laVe(tab: TabParaGuardar, rol: string | null): boolean {
+  return rol === null || tab.roles.length === 0 || tab.roles.includes(rol)
 }
 
 /** **Quitar renumera.** El `sort_order` que llegue en 0 lo reemplaza el servicio

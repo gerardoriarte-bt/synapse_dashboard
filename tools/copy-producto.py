@@ -85,8 +85,15 @@ EXENTAS = [
     #
     # La exención es por el TEXTO EXACTO: si alguien lo cambia, deja de coincidir
     # y el chequeo vuelve a saltar. Es lo que la hace una decisión y no un hueco.
-    "ocultar no es permitir (§3.3)",
-    "§5 gobierna esta lista",
+    # «ocultar no es permitir (§3.3)» estuvo eximida acá: la nota de `RoleCard`
+    # la pintaba literal del `.pen`. El 2026-10-06 se reescribió sin la cita al
+    # pasarla al registro de ayuda, y la exención se va con ella. La divergencia
+    # contra el dibujo sigue levantada en la propuesta de arriba.
+    # `§5 gobierna esta lista` estuvo eximida acá hasta el 2026-10-06: el
+    # configurador la pintaba porque el `.pen` de B4 la dibuja así. Se quitó del
+    # producto cuando el configurador pasó a ser el inspector del canvas —
+    # decisión humana sobre la auditoría de ese día— y la exención se va con
+    # ella: una exención que no coincide con nada es un agujero esperando.
 ]
 
 
@@ -117,6 +124,29 @@ def cadenas(texto: str):
             continue
         for m in re.finditer(r"'([^'\\]{6,})'|\"([^\"\\]{6,})\"|`([^`\\$]{6,})`", sin_linea):
             yield n, m.group(1) or m.group(2) or m.group(3), linea
+        # ── LAS DOS FORMAS QUE SE ESCAPABAN · 2026-10-06 ──────────────────────
+        #
+        # La auditoría del builder encontró dos fugas que este chequeo daba por
+        # buenas, y las dos eran de forma, no de contenido:
+        #
+        #   <Label as="div">{`${String(panel.colStart)} · se coloca en el canvas · F4.9`}</Label>
+        #   <Label as="div">Sin roles definidos · se definen en la ficha · F4.3</Label>
+        #
+        # La primera es una **plantilla con interpolación**: el patrón de arriba
+        # excluye el `$` para no partir la cadena en un `${…}`, y con eso dejaba
+        # afuera toda plantilla que interpola. Se miran sus partes literales.
+        #
+        # La segunda es **texto JSX en la misma línea que la etiqueta**: la regla
+        # del texto suelto, abajo, saltea toda línea que empieza con `<`, que es
+        # justo donde vive el texto corto. Se mira lo que queda entre `>` y `<`.
+        for m in re.finditer(r"`([^`]*\$\{[^`]*)`", sin_linea):
+            literal = re.sub(r"\$\{[^}]*\}", " ", m.group(1))
+            if re.search(r"[A-Za-zÁÉÍÓÚÑáéíóúñ]{3}", literal):
+                yield n, literal.strip(), linea
+        for m in re.finditer(r">([^<>{}]{6,})<", sin_linea):
+            texto = m.group(1).strip()
+            if re.search(r"[A-Za-zÁÉÍÓÚÑáéíóúñ]{3}", texto) and "=>" not in texto:
+                yield n, texto, linea
         # **El texto suelto del JSX**: una línea que no abre etiqueta, no es
         # código y tiene letras. Es deliberadamente conservador —una línea que
         # empieza con `<`, `{`, `}` o una palabra clave se saltea— porque un

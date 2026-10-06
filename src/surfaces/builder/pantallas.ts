@@ -64,16 +64,36 @@ export const PANTALLAS = [
      *  Mientras haga las dos cosas necesita el chrome de las dos: sin el
      *  contador y el botón de guardar, la pantalla donde se edita no tiene cómo
      *  guardar. **El día que F4.9 mueva la composición a B2, esto vuelve a
-     *  `identidad`** y el cambio es esta línea. */
+     *  `identidad`** y el cambio es esta línea.
+     *
+     *  **2026-10-06: la composición se mudó, y la línea sigue igual.** El
+     *  configurador de panel ya vive en el inspector del canvas, pero B1 todavía
+     *  edita lo que es de la pestaña —nombre, pregunta, quién la ve— y eso hay
+     *  que poder guardarlo sin ir a otra pantalla. Lo que sí cambió: el chrome no
+     *  repite acá el cliente y el rol, que son los controles del cuerpo. */
     chrome: 'composicion',
+    enNav: true,
   },
-  { id: 'canvas', ruta: '/builder/canvas', nombre: 'Canvas', ancho: 1600, chrome: 'composicion' },
+  {
+    id: 'canvas',
+    ruta: '/builder/canvas',
+    nombre: 'Canvas',
+    ancho: 1600,
+    chrome: 'composicion',
+    enNav: true,
+  },
   {
     id: 'grafico',
     ruta: '/builder/grafico',
     nombre: 'Selector de gráfico',
     ancho: 1600,
     chrome: 'composicion',
+    /** **D3 de la auditoría del 2026-10-06: fuera de la navegación.** Llevaba a
+     *  un texto que decía que la pantalla estaba en otra. Sigue declarada —
+     *  `pen-pantallas` pide que B3 tenga quien la implemente, y la implementa
+     *  `PlotPicker` dentro del inspector— pero declarar una pantalla no obliga a
+     *  ofrecerle una pestaña. */
+    enNav: false,
   },
   {
     id: 'metrica',
@@ -81,6 +101,8 @@ export const PANTALLAS = [
     nombre: 'Binder de métrica',
     ancho: 1600,
     chrome: 'composicion',
+    /** Igual que el selector de gráfico: vive en el inspector del canvas. */
+    enNav: false,
   },
   {
     id: 'preview',
@@ -89,6 +111,8 @@ export const PANTALLAS = [
     /** La excepción de §4: la consola del cliente a su ancho real. */
     ancho: 1440,
     chrome: 'ninguno',
+    /** Repetía el botón `Vista previa` del chrome, a 40px. Se llega por el botón. */
+    enNav: false,
   },
   {
     id: 'historial',
@@ -96,6 +120,7 @@ export const PANTALLAS = [
     nombre: 'Historial de versiones',
     ancho: 1600,
     chrome: 'contexto',
+    enNav: true,
   },
 ] as const satisfies readonly {
   id: string
@@ -103,6 +128,8 @@ export const PANTALLAS = [
   nombre: string
   ancho: 1600 | 1440
   chrome: FormaDeChrome
+  /** Si lleva pestaña en la navegación · ver D3 arriba. */
+  enNav: boolean
 }[]
 
 export type PantallaId = (typeof PANTALLAS)[number]['id']

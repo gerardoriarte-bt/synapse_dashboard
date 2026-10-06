@@ -83,8 +83,17 @@ const detalles: Record<string, unknown> = {
   'l-9': { layout: versiones['t-2'][0], tabs: [] },
 }
 
+/** Los roles del tenant · `GET /admin/tenants/{id}/roles/composition`, del
+ *  cable. Sin ellos `TabEditor` no pinta las opciones de «La ven», y desde el
+ *  2026-10-06 son la forma en que una pestaña dice quién la ve. */
+const roles = [
+  { id: 'r-1', tenant_id: 't-1', name: 'CEO', tab_ids: [], hidden_metric_ids: [], layout_overrides: {}, user_count: 1 },
+  { id: 'r-2', tenant_id: 't-1', name: 'Planner', tab_ids: [], hidden_metric_ids: [], layout_overrides: {}, user_count: 3 },
+]
+
 function servir() {
   server.use(
+    http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok(roles)),
     http.get(`${API}/admin/tenants`, () => ok(tenants)),
     http.get(`${API}/admin/tenants/:id/layouts`, ({ params }) =>
       ok(versiones[params['id'] as keyof typeof versiones] ?? []),
@@ -166,10 +175,16 @@ describe('§7.2 · la pregunta operativa es una regla, no un campo opcional', ()
     const { container } = montar()
     await abrirVersion()
 
-    expect(container.textContent).toContain('1 pestaña(s) con problemas de composición')
+    // Desde el 2026-10-06 el resumen cuenta PROBLEMAS, no pestañas, y vive
+    // plegado arriba del cuerpo · `ValidationSummary`.
+    expect(container.textContent).toContain('1 problema de composición')
     // Dos veces: junto a la pestaña y en el resumen. Las dos salen de la misma
     // corrida de `validarBorrador`, así que no pueden discrepar.
     expect(screen.getAllByText(/una pestaña que no contesta una pregunta no se compone/)).toHaveLength(2)
+    // Y la marca es de ESA pestaña, no de la otra.
+    const fila = screen.getByDisplayValue('Inventario').closest('li') as HTMLElement
+    expect(within(fila).getByText(/no contesta una pregunta/)).toBeInTheDocument()
+    expect(within(fila).getByLabelText('Pregunta operativa')).toHaveAttribute('aria-invalid', 'true')
   })
 
   it('escribirla baja la cuenta a cero', async () => {
@@ -184,7 +199,7 @@ describe('§7.2 · la pregunta operativa es una regla, no un campo opcional', ()
     )
 
     await waitFor(() =>
-      expect(container.textContent).not.toContain('pestaña(s) con problemas'),
+      expect(container.textContent).not.toContain('problema de composición'),
     )
   })
 
@@ -194,33 +209,82 @@ describe('§7.2 · la pregunta operativa es una regla, no un campo opcional', ()
     await abrirVersion()
 
     await userEvent.click(screen.getByRole('button', { name: 'Agregar pestaña' }))
-    expect(container.textContent).toContain('2 pestaña(s) con problemas de composición')
+    expect(container.textContent).toContain('2 problemas de composición')
     expect(screen.getByText(/Nueva · se crea al guardar/)).toBeInTheDocument()
   })
 })
 
 describe('lo que el editor no toca y sí viaja', () => {
-  it('declara paneles y roles por pestaña · el PUT los borraría', async () => {
-    // Renombrar manda el layout entero. Decirlo evita la lectura de que «quitar»
-    // es lo único que borra algo.
+  it('declara cuántos paneles tiene cada pestaña', async () => {
+    // **Cambió el 2026-10-06** · auditoría §2.3 y D1–D2: la tarjeta ya no lista
+    // los paneles ni dice «se conservan al guardar», porque configurarlos se
+    // mudó al inspector del canvas. Lo que queda es el conteo, en singular y
+    // plural de verdad —«1 panel», no «1 panel(es)»—.
     servir()
     montar()
     await abrirVersion()
 
-    const fila = screen.getByDisplayValue('Inventario').closest('li')
-    expect(within(fila as HTMLElement).getByText(/1 panel\(es\)/)).toBeInTheDocument()
-    expect(within(fila as HTMLElement).getByText(/se conservan al guardar/)).toBeInTheDocument()
+    const inventario = screen.getByDisplayValue('Inventario').closest('li') as HTMLElement
+    expect(within(inventario).getByText('1 panel')).toBeInTheDocument()
+    const resumen = screen.getByDisplayValue('Resumen').closest('li') as HTMLElement
+    expect(within(resumen).getByText('0 paneles')).toBeInTheDocument()
+    // Y no ofrece agregar paneles acá: eso es del lienzo.
+    expect(screen.queryByRole('button', { name: /Agregar panel/ })).toBeNull()
   })
 
   it('«vacío» significa TODOS los roles, y se dice · no «ninguno»', async () => {
     // Es la mitad del dato: una pestaña sin roles la ve todo el mundo, y
-    // «ninguno» diría lo contrario.
+    // «ninguno» diría lo contrario. Desde el 2026-10-06 se dice con la opción
+    // «Todos los roles» elegida en «La ven».
     servir()
     montar()
     await abrirVersion()
 
-    const fila = screen.getByDisplayValue('Resumen').closest('li')
-    expect(within(fila as HTMLElement).getByText(/todos los roles/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Resumen · la ven todos los roles' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Resumen · la ve CEO' })).toHaveAttribute('aria-pressed', 'false')
+    // `Inventario` declara un rol —que no es ninguno de estos dos—, así que NO
+    // la ven todos.
+    expect(screen.getByRole('button', { name: 'Inventario · la ven todos los roles' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('elegir un rol en «La ven» se lo asigna a la pestaña · el callback dispara', async () => {
+    // **Nuevo el 2026-10-06** · D5. Un `Opcion` sin `onRoles` cableado se ve
+    // idéntico, así que se mira el efecto: la opción queda elegida, «Todos» se
+    // apaga, y el contador del chrome lo cuenta como cambio sin guardar.
+    servir()
+    montar()
+    await abrirVersion()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Resumen · la ve CEO' }))
+
+    expect(screen.getByRole('button', { name: 'Resumen · la ve CEO' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Resumen · la ven todos los roles' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'Resumen · la ve Planner' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByText('1 pestaña con cambios sin guardar')).toBeInTheDocument()
+
+    // Volver a «Todos» la deja como venía del servidor: el contador se apaga.
+    await userEvent.click(screen.getByRole('button', { name: 'Resumen · la ven todos los roles' }))
+    expect(screen.getByRole('button', { name: 'Resumen · la ve CEO' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByText(/con cambios sin guardar/)).toBeNull()
+  })
+
+  it('agregar una pestaña con un rol filtrado la crea PARA ese rol', async () => {
+    // **Nuevo el 2026-10-06** · D5: con el filtro en un rol, una pestaña nueva
+    // que naciera para todos aparecería igual —vacío es «todos»— y la prueba
+    // pasaría mirando sólo que esté. Se mira a quién se le asignó.
+    servir()
+    montar()
+    await abrirVersion()
+
+    await userEvent.click(
+      within(screen.getByRole('group', { name: 'Rol' })).getByRole('button', { name: 'Planner' }),
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Agregar pestaña' }))
+
+    expect(await screen.findByDisplayValue('Pestaña nueva')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Pestaña nueva · la ve Planner' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Pestaña nueva · la ven todos los roles' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'Pestaña nueva · la ve CEO' })).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('NO pinta los UUID de rol', async () => {
@@ -271,9 +335,12 @@ describe('el indicador de cambios sin guardar', () => {
     montar()
     await abrirVersion()
 
-    expect(screen.queryByText(/cambio\(s\) sin guardar/)).toBeNull()
+    // Desde el 2026-10-06 el contador cuenta PESTAÑAS con cambios, en frase.
+    expect(screen.queryByText(/con cambios sin guardar/)).toBeNull()
     await userEvent.type(screen.getByDisplayValue('Resumen'), '!')
-    expect(screen.getByText('1 cambio(s) sin guardar')).toBeInTheDocument()
+    expect(screen.getByText('1 pestaña con cambios sin guardar')).toBeInTheDocument()
+    await userEvent.type(screen.getByDisplayValue('Inventario'), '!')
+    expect(screen.getByText('2 pestañas con cambios sin guardar')).toBeInTheDocument()
   })
 
   it('guardar está deshabilitado mientras no haya cambios · F4.13', async () => {
@@ -320,20 +387,27 @@ describe('el borrador se ata a SU versión', () => {
     await userEvent.type(screen.getByDisplayValue('Resumen'), ' editado')
     expect(screen.getByDisplayValue('Resumen editado')).toBeInTheDocument()
 
-    await userEvent.selectOptions(screen.getByLabelText('Cliente'), 't-2')
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Cliente' }), 't-2')
     await waitFor(() => expect(screen.queryByDisplayValue('Resumen editado')).toBeNull())
   })
 })
 
 describe('§7.2 · los campos del modelo que el cable no tiene', () => {
-  it('declara los tres en vez de ofrecerlos vacíos', async () => {
+  it('ni los anuncia ni los ofrece vacíos', async () => {
+    // **Cambió el 2026-10-06** · `docs/AUDITORIA-2026-10-06-builder-contexto-y-canvas.md`.
+    // Esta prueba exigía el bloque «Cada pestaña va a poder declarar más cosas»
+    // —preguntas sugeridas, plantilla—. Era una nota del plan dicha al usuario y
+    // se quitó. La mitad que sigue en pie es la otra: no se pinta un campo que
+    // el cable no tiene. La tarjeta tiene Nombre y Pregunta operativa, y nada más.
     servir()
     const { container } = montar()
     await abrirVersion()
 
     const texto = container.textContent ?? ''
-    expect(texto).toContain('Cada pestaña va a poder declarar más cosas')
-    expect(texto).toContain('preguntas sugeridas de su chat')
-    expect(texto).toContain('De qué plantilla hereda')
+    expect(texto).not.toContain('Cada pestaña va a poder declarar más cosas')
+    expect(texto).not.toMatch(/preguntas sugeridas/i)
+    expect(texto).not.toMatch(/plantilla/i)
+    const fila = screen.getByDisplayValue('Resumen').closest('li') as HTMLElement
+    expect(within(fila).getAllByRole('textbox')).toHaveLength(2)
   })
 })
