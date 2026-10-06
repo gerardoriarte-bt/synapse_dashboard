@@ -10,21 +10,16 @@
  *  renderiza» deja de ser una regla que alguien puede olvidar.
  */
 import type { ReactNode } from 'react'
-import { Label } from '../primitives/Label'
 import { DegradedBadge } from './DegradedBadge'
 import { DegradedNote } from './DegradedNote'
-import { Provenance } from './Provenance'
+import { MetaInfo } from './MetaInfo'
+import { Label } from '../primitives/Label'
 import { resolveGovernance, visualState } from '../state'
 import { panelStyle, COLUMNS } from '../grid'
 import { familyVar } from '../../tokens/tokens'
 import type { Formatter } from '../format'
 import type { Placement } from '../../catalog/types'
 import type { Metric, Payload } from '../../api/types'
-
-/** Debajo de este colSpan la anatomía no entra en una línea y el shell apila la
- *  meta bajo el título · §4.1. Es una VARIANTE del mismo componente, no otro
- *  componente: misma información, otro reparto. */
-const COMPACT_UP_TO = 4
 
 type Props = {
   metric: Metric
@@ -57,11 +52,6 @@ export function PanelShell({
   const state = visualState(payload)
   const governance = resolveGovernance(metric, payload)
 
-  // El compacto también depende del colapso: a una columna TODO panel es
-  // angosto, sin importar el colSpan que declare.
-  const effectiveSpan = Math.min(placement.colSpan, columns)
-  const compact = effectiveSpan <= COMPACT_UP_TO
-
   return (
     <section
       className={[
@@ -73,80 +63,49 @@ export function PanelShell({
       style={panelStyle(placement, columns)}
       aria-label={metric.nombre}
     >
-      {/* **El título tiene PISO y la meta cede** · corregido el 2026-09-24.
-          §PEN:§6 dibuja el `Título` con `width: fill_container` y la `Meta`
-          abrazando su contenido, y así estaba escrito: `min-w-0` a la izquierda
-          y `shrink-0` a la derecha. Con el texto del dibujo funciona.
+      {/* ── LA CABECERA ES UNA LÍNEA · 2026-10-06 ──────────────────────────────
+          Título a lo ancho, y a la derecha el estado y el ⓘ. **La BASE y la
+          procedencia se fueron a `MetaInfo`** por decisión humana, contra las
+          reglas 8 y 9 de `design.md`: ver la cabecera de ese archivo, que dice
+          qué se midió y qué se eligió.
 
-          **Con la gobernanza real no.** El día que el catálogo salió de
-          Snowflake, la BASE de un panel pasó a medir tres veces más —«Venta,
-          visitas e inversión de cada día, sin agregar · GOLD · Reporte diario
-          de ecommerce del cliente · …»— y como la meta no cedía, el título se
-          encogió a cero: `truncate` sobre una caja de ancho cero no pinta ni
-          una letra. **El panel se quedó sin nombre y nadie lo vio hasta
-          abrirlo con datos del negocio.**
+          Con eso se cae lo que esta cabecera arrastraba desde el 2026-09-24
+          —el piso de 128px del título, el reparto con una meta de tres
+          líneas— y también la variante compacta de la cabecera: §6.1 apilaba la
+          meta bajo el título porque no entraban en una línea, y sin meta
+          visible entran siempre.
 
-          El dibujo no puede expresar «abrazá, pero no más de esto», así que la
-          regla la pone el producto: **el nombre del panel es su identidad y la
-          BASE es contexto**. El título no baja de `min-w-32` —128px, de la
-          escala de espaciado— y la meta se achica y envuelve. La BASE sigue
-          entera, que es regla dura: no se trunca, se acomoda. */}
-      <header className={compact ? 'flex flex-col gap-2' : 'flex items-start justify-between gap-4'}>
-        <div className={compact ? 'flex items-center gap-2 min-w-0' : 'flex items-center gap-2 min-w-32 flex-1'}>
-          {/* La familia se LEE del catálogo, nunca se elige acá · regla dura 1.
-              Va como estilo en línea y no como utilidad porque el nombre de la
-              familia llega en runtime desde el catálogo: Tailwind no puede
-              generar una clase que su escáner nunca vio. Es el mismo motivo por
-              el que `tokens.css` necesita `@theme static`. */}
-          <span
-            className="w-2 h-2 rounded-xs shrink-0"
-            style={{ background: familyVar(metric.familia) }}
-            aria-hidden
-          />
-          {/* h2 y no h3: el único nivel por encima es el h1 de la pregunta de la
-              pestaña, y saltarse un nivel rompe la navegación por encabezados,
-              que es como se recorre una pantalla de doce paneles con un lector. */}
-          {/* `title` porque con nombres reales truncar pasó a ser lo normal, no
-              la excepción: «Tendencia diaria» no entra en el piso de 128px
-              cuando la BASE ocupa el resto. El nombre completo ya viaja en el
-              `aria-label` del panel —así que un lector de pantalla nunca lo
-              pierde—, y esto lo alcanza también con el mouse.
-
-              **El piso de 128px es una elección, no una medida del dibujo**, y
-              queda por ajustar: más ancho muestra más nombre y empuja la BASE a
-              una línea más, que come alto del cuerpo. Con doce paneles reales
-              delante conviene mirarlo antes de moverlo. */}
-          <h2
-            title={metric.nombre}
-            className="font-display text-titulo tracking-titulo leading-titulo text-ink m-0 truncate"
-          >
-            {metric.nombre}
-          </h2>
-        </div>
-
-        <div className={compact ? 'flex flex-col gap-1' : 'flex flex-col items-end gap-1 min-w-0 text-right'}>
-          {/* BASE = denominador + ventana. El denominador del payload cuando hay
-              cifra y del catálogo cuando no.
-
-              **Se unen las partes que EXISTEN** · corregido el 2026-09-26. El
-              template literal ponía el separador siempre, así que con `ventana`
-              vacía salía `Base · COMPLETED · MONTH ·` con el `·` colgando — es
-              lo que `CLAUDE.md` listaba como «lo que se ve mal». Con `ventana`
-              llegando (B1.25) el caso no desaparece: vacío es el valor real de
-              las 8 métricas de 18 que la vista de Snowflake no tiene.
-
-              Vacío se lee como ausente y un segmento ausente no se pinta, que es
-              la misma regla que «un CTA sin manejador no se pinta». */}
-          <Label>{['Base', governance.base, governance.ventana].filter((p) => p !== '').join(' · ')}</Label>
-          <Provenance
-            capa={governance.capa}
-            fuente={governance.fuente}
-            frescura={governance.frescura}
-            format={format}
-            now={now}
-          />
-          {state === 'DEGRADADO' && <DegradedBadge>Degradado</DegradedBadge>}
-        </div>
+          **El título envuelve en vez de truncar**, que es lo que §6.1 pide para
+          los dos shells: «el peor caso es feo, nunca ilegible». Con el ancho
+          entero, envolver es raro; truncar era lo normal. */}
+      <header className="flex items-start gap-2">
+        {/* La familia se LEE del catálogo, nunca se elige acá · regla dura 1.
+            Va como estilo en línea y no como utilidad porque el nombre de la
+            familia llega en runtime desde el catálogo: Tailwind no puede
+            generar una clase que su escáner nunca vio. Es el mismo motivo por
+            el que `tokens.css` necesita `@theme static`. */}
+        <span
+          className="w-2 h-2 rounded-xs shrink-0 mt-2"
+          style={{ background: familyVar(metric.familia) }}
+          aria-hidden
+        />
+        {/* h2 y no h3: el único nivel por encima es el h1 de la pregunta de la
+            pestaña, y saltarse un nivel rompe la navegación por encabezados,
+            que es como se recorre una pantalla de doce paneles con un lector. */}
+        <h2 className="flex-1 min-w-0 font-display text-titulo tracking-titulo leading-titulo text-ink m-0">
+          {metric.nombre}
+        </h2>
+        {/* El degradado NO se esconde: es estado, no procedencia. */}
+        {state === 'DEGRADADO' && <DegradedBadge>Degradado</DegradedBadge>}
+        <MetaInfo
+          base={governance.base}
+          ventana={governance.ventana}
+          capa={governance.capa}
+          fuente={governance.fuente}
+          frescura={governance.frescura}
+          format={format}
+          now={now}
+        />
       </header>
 
       {/* La limitación del degradado · §8 pide que el badge «declare la

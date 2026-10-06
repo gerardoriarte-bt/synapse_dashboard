@@ -495,12 +495,51 @@ no todas son divergencias:
 | Eje del tiempo | «1 OCT», «NOV 25» | El dibujo lo tiene en los plots; `PlotSeries` no lo pintaba |
 | Unidad en barras | «26.5%» | Regla dura: ningún número desnudo |
 | **Hover con lectura** | Guía vertical, un punto por serie y una caja con la fecha y la cifra **entera** de cada serie; también con flechas del teclado | **No.** Ni el `.pen` ni `design.md` dibujan una interacción así. Decisión humana |
-| **Título del panel** | Ancho natural hasta la mitad del panel | §6 pone título y meta lado a lado; la Chart Card los apila. Se quedó con §6 y el título deja de ceder |
+| **Título del panel** | ~~Ancho natural hasta la mitad del panel~~ · **superado el mismo día por §12**: sin meta visible, el título toma la línea entera | §6 pone título y meta lado a lado; la Chart Card los apila |
 
 **Lo que diseño tendría que decidir:** cómo se ve la caja de lectura (hoy
 `$elev` con borde `w3`, mono de 10 para la fecha y de 11 para la cifra, igual
 que «Legend Item»), y si en barras alcanza con el `title` nativo, que es lo que
 hay hoy.
+
+## 12 · La BASE y la procedencia detrás de un ⓘ · 2026-10-06 · CONTRA DOS REGLAS DURAS
+
+**Quién decide** · diseño, sobre `design.md` §1.2 y §6 · **Bloquea** · nada, ya está construido
+
+**Es la divergencia más grande de este documento, y es deliberada.** `design.md`
+pide que toda métrica declare su BASE «en label arriba a la derecha» (regla 8) y
+su procedencia, que «no es letra chica» (regla 9), y §6 dice que el badge «es
+obligatorio. No es opcional». **El humano decidió el 2026-10-06 esconder las dos
+detrás de un ícono `info`**, mirando los diez paneles de UA en QA: «ensucian la
+lectura […] mientras más pequeña es la card es más molesto».
+
+**Lo que se midió antes de decidir**, en los diez paneles:
+
+| | `design.md` pide | El catálogo firmado manda |
+|---|---|---|
+| BASE | «unos 30 caracteres», una línea (§6.2) | **51 a 147** |
+| Fuente del badge | `ERP`, `Ads API` | **39 a 94** |
+
+Son descripciones donde la spec espera rótulos. Se ofrecieron tres salidas
+—dos capas (ventana y badge cortos visibles, la descripción en la ficha), todo
+detrás del ícono, o pedir a datos rótulos cortos sin tocar la interfaz— y se
+eligió **todo detrás del ícono**.
+
+**Cómo quedó** · `src/render/Panel/MetaInfo.tsx`:
+
+- La cabecera es una línea: bullet de familia, título a lo ancho, y el ⓘ.
+- La ficha se abre **pasando el cursor, con el foco del teclado o con un toque**
+  (que la deja fijada hasta tocar afuera o Escape). Trae BASE, ventana y
+  procedencia completas, sin recortar.
+- **El badge de DEGRADADO sigue visible**: es estado, no procedencia, y no
+  puede depender de que alguien abra algo.
+- La variante compacta de la cabecera (§6.1) se cayó sola: apilaba la meta
+  porque no entraba en una línea, y sin meta visible entra siempre.
+
+**Lo que conviene que diseño decida, porque cambia la spec:** reescribir las
+reglas 8 y 9 y la anatomía de §6, o volver a dos capas cuando datos entregue
+rótulos cortos. Las pruebas de §5.2 no se borraron: ahora afirman que la
+gobernanza sigue **declarada** en los siete estados, abriendo el ícono.
 
 ## Dónde vive cada una de las demás
 

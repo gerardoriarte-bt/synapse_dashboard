@@ -11,8 +11,9 @@
  *  verificaría que `Panel` llama a `PanelShell` — que es cierto por
  *  construcción y no demuestra nada.
  */
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { abrirGobierno } from '../../gobierno'
 import { Panel } from '@/render/Panel/Panel'
 import { createFormat } from '@/render/format'
 import type { Metric, Payload, Value } from '@/api/types'
@@ -91,16 +92,21 @@ describe('§5.2 · un estado reemplaza el cuerpo, nunca el shell', () => {
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Venta diaria en riesgo')
   })
 
-  it.each(ESTADOS)('en %s la BASE sigue visible con denominador y ventana', (_, payload) => {
+  // **«Sigue visible» pasó a «sigue declarada, detrás del ⓘ»** · 2026-10-06,
+  // decisión humana contra las reglas 8 y 9. La invariante de §5.2 no cambió:
+  // en los siete estados el shell la tiene, y un estado no puede borrarla.
+  it.each(ESTADOS)('en %s la BASE sigue declarada con denominador y ventana', async (_, payload) => {
     montar(payload)
+    const ficha = await abrirGobierno()
     // Los dos, siempre: el denominador y la ventana. Sin denominador la cifra
     // no se puede interpretar, y sin ventana no se sabe de cuándo es.
-    expect(screen.getByText(/^Base ·/)).toHaveTextContent('Últimos 30 días')
-    expect(screen.getByText(/^Base ·/).textContent).toMatch(/Base · .+ · Últimos 30 días/)
+    expect(within(ficha).getByText('Base').nextElementSibling?.textContent).not.toBe('')
+    expect(ficha).toHaveTextContent('Últimos 30 días')
   })
 
-  it.each(ESTADOS)('en %s la procedencia sigue visible con capa y fuente', (_, payload) => {
+  it.each(ESTADOS)('en %s la procedencia sigue declarada con capa y fuente', async (_, payload) => {
     const { container } = montar(payload)
+    await abrirGobierno()
     expect(container.textContent).toMatch(/GOLD|SILVER/)
     expect(container.textContent).toMatch(/Snowflake|ERP/)
   })
@@ -265,11 +271,10 @@ describe('el título no desaparece cuando la gobernanza es larga · 2026-09-24',
     expect(screen.getByRole('heading', { name: 'Venta diaria en riesgo' })).toBeVisible()
   })
 
-  it('el título tiene un PISO de ancho, que es lo que impide que se encoja a cero', () => {
-    // La aserción es sobre la regla, no sobre el píxel: lo que importa es que
-    // la caja del título declare un mínimo y que la meta pueda ceder. Sin el
-    // mínimo, flexbox achica el título hasta cero antes de tocar la meta.
-    const { container } = render(
+  it('la gobernanza larga ya no comparte la cabecera · vive detrás del ⓘ', () => {
+    // Lo que el piso de 128px defendía —que una BASE de tres líneas no dejara al
+    // título en cero— se resolvió sacando la BASE de la cabecera visible.
+    render(
       <Panel
         metric={metric}
         payload={conBaseLarga}
@@ -280,15 +285,11 @@ describe('el título no desaparece cuando la gobernanza es larga · 2026-09-24',
         <p>EL CUERPO</p>
       </Panel>,
     )
-    const titulo = screen.getByRole('heading', { name: 'Venta diaria en riesgo' })
-      .parentElement as HTMLElement
-    expect(titulo.className).toContain('min-w-32')
-
-    const meta = container.querySelector('header > div:last-child') as HTMLElement
-    expect(meta.className).not.toContain('shrink-0')
+    expect(screen.getByRole('heading', { name: 'Venta diaria en riesgo' })).toBeVisible()
+    expect(screen.queryByText(baseLarga)).toBeNull()
   })
 
-  it('y la BASE sigue ENTERA · no se trunca, se acomoda', () => {
+  it('y la BASE sigue ENTERA al abrirla · no se trunca', async () => {
     // «Toda métrica declara su BASE» es regla dura. Resolver el apretón
     // recortándola habría escondido gobierno para salvar el título.
     const { container } = render(
@@ -302,6 +303,7 @@ describe('el título no desaparece cuando la gobernanza es larga · 2026-09-24',
         <p>EL CUERPO</p>
       </Panel>,
     )
+    await abrirGobierno()
     expect(container.textContent).toContain(baseLarga)
   })
 })

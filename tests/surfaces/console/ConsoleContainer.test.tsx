@@ -13,6 +13,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
+import { abrirGobierno } from '../../gobierno'
 import { ConsoleContainer } from '@/surfaces/console/ConsoleContainer'
 import { API, context, fail, kpiMetric, kpiPanel, ok, tab } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
@@ -101,7 +102,7 @@ describe('F1.26 · la carga y el error viven en la superficie', () => {
 
     // El shell sigue en pie con su título y su BASE.
     expect(await screen.findByRole('heading', { level: 2 })).toHaveTextContent('Venta diaria')
-    expect(screen.getByText(/^Base ·/)).toHaveTextContent('48 tiendas sobre 52')
+    expect(await abrirGobierno()).toHaveTextContent('48 tiendas sobre 52')
     // Y el cuerpo es el estado de error, con reintento POR PANEL.
     expect(await screen.findByText('No se pudieron traer los datos.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /reintentar este panel/i })).toBeInTheDocument()
@@ -207,7 +208,7 @@ describe('F1.29 · un param inválido degrada el panel con la razón visible', (
 
     // Y §5.2 se sostiene: el estado reemplaza el cuerpo, nunca el shell.
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Venta diaria')
-    expect(screen.getByText(/^Base ·/)).toBeInTheDocument()
+    expect(await abrirGobierno()).toHaveTextContent('48 tiendas sobre 52')
     expect(screen.getByText(/Corregir las opciones del panel/)).toBeInTheDocument()
   })
 

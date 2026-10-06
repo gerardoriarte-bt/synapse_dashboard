@@ -25,6 +25,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
+import { abrirGobierno } from '../../gobierno'
 import { ConsoleContainer } from '@/surfaces/console/ConsoleContainer'
 import { API, ok, tab } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
@@ -142,7 +143,7 @@ describe('por debajo del mínimo no se dibuja, y se dice por qué', () => {
     // §4.1: título, BASE y procedencia siguen visibles. El panel dice qué mide
     // aunque no pueda dibujarlo.
     expect(await screen.findByText('Venta por división')).toBeVisible()
-    expect(screen.getByText(/48 tiendas sobre 52/)).toBeVisible()
+    expect(await abrirGobierno()).toHaveTextContent('48 tiendas sobre 52')
   })
 
   it('con TRES el mismo gráfico dibuja · el umbral es el del repertorio', async () => {
