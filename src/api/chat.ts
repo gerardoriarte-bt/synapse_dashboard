@@ -99,6 +99,11 @@ export type ChatRequest = {
   pregunta: string
   contexto: ContextoDeChat
   hiloId?: string
+  /** El agente que eligió un admin · 2026-10-06. **Sólo viaja en el primer
+   *  turno**: con `hiloId` el servicio lo ignora porque el agente quedó fijado
+   *  al crear el hilo, y mandarlo igual sugeriría que se puede cambiar a mitad
+   *  de conversación. */
+  agenteId?: string
 }
 
 /** Lo que el stream devolvió antes de cortarse. `parcial` sale del evento
@@ -155,8 +160,14 @@ export async function* askSynapse(
   })
 
   if (!res.ok || res.body === null) {
+    // **El motivo es del servicio y se muestra** · 2026-10-06. Hasta acá se
+    // tiraba el cuerpo y quedaba sólo el código: en QA un admin veía «(409)» y
+    // nada más, cuando el servicio decía «no hay agente activo disponible para
+    // este tenant y rol», que es exactamente lo que había que saber. Es la
+    // misma decisión que `ErrorState`: la frase del servidor tal cual.
+    const motivo = await motivoDelServicio(res)
     throw new ChatStreamError(
-      `El agente no pudo abrir la conversación (${res.status}).`,
+      `El agente no pudo abrir la conversación (${res.status})${motivo === null ? '.' : `: ${motivo}`}`,
       false,
     )
   }
@@ -204,6 +215,17 @@ export async function* askSynapse(
   }
 }
 
+/** La frase de error del envelope, si la hay. Un cuerpo que no es JSON —un 502
+ *  de un proxy, con HTML— no se pinta: se cae al código solo. */
+async function motivoDelServicio(res: Response): Promise<string | null> {
+  try {
+    const cuerpo = (await res.json()) as { error?: unknown }
+    return typeof cuerpo.error === 'string' && cuerpo.error.trim() !== '' ? cuerpo.error.trim() : null
+  } catch {
+    return null
+  }
+}
+
 /** El cuerpo del contrato al cuerpo del cable. */
 function alCable(body: ChatRequest): WireSchemas['ChatAskRequest'] {
   return {
@@ -218,6 +240,7 @@ function alCable(body: ChatRequest): WireSchemas['ChatAskRequest'] {
     // devuelve como número porque el binding de Gin lo pide `*int64`: un texto
     // ahí da 400.
     ...(body.hiloId === undefined ? {} : { thread_id: Number(body.hiloId) }),
+    ...(body.agenteId === undefined || body.hiloId !== undefined ? {} : { agent_id: body.agenteId }),
   }
 }
 

@@ -446,6 +446,45 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   # ── F3.7 · el historial de hilos · TRANSCRITO DE 82da946 ─────────────────
+  # ── El selector de agente del admin · 2026-10-06 ───────────────────────────
+  /chat/agents:
+    # **Medida en QA el 2026-10-06** con rol `Admin`: 200 con cinco agentes de
+    # cuatro tenants. Y leída en `7b717aa`: `router.go:70` la cuelga de
+    # `AdminOnlyMiddleware`, que normaliza la mayúscula igual que `esAdmin`.
+    #
+    # **Vive fuera de `/config`** pero va en este cable porque sólo la usa el
+    # chat de la consola. No es el CRUD de `/admin/tenants/{id}/agents`, que
+    # incluye inactivos y trae otro DTO.
+    x-verificado-en: 7b717aa
+    get:
+      tags: [chat]
+      operationId: listChatAgents
+      summary: Los agentes activos de todos los tenants · sólo admin
+      x-origen: 7b717aa
+      description: |
+        `ChatHandler.ListAgents` → `AgentService.ListAll` → `ports.AgentOption`.
+        **Sólo `is_active = true`**, y de todos los tenants: un admin de
+        plataforma puede preguntarle al agente de otro cliente.
+      responses:
+        '200':
+          description: La lista, sin paginar.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/ChatAgentOption' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: El rol no es admin · «acceso no autorizado»
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
   /config/chat/threads:
     x-verificado-en: d9147c3
     get:
@@ -887,6 +926,22 @@ components:
       required: [success]
       properties:
         success: { type: boolean, enum: [true] }
+
+    ChatAgentOption:
+      type: object
+      description: |
+        `ports.AgentOption` de `internal/core/ports/agent.go` en `7b717aa`.
+        **`target_role` es el NOMBRE del rol tal como está guardado**, con su
+        mayúscula: en QA conviven `Planner` y `admin`.
+      required: [id, name, target_role, tenant_id, tenant_name]
+      properties:
+        id: { type: string, format: uuid }
+        name:
+          type: string
+          description: Puede traer espacios al final · medido en QA, «Terpel Lubricantes ».
+        target_role: { type: string }
+        tenant_id: { type: string, format: uuid }
+        tenant_name: { type: string }
 
     ErrorResponse:
       type: object
@@ -1779,6 +1834,23 @@ components:
                 `dd_chat_service.go`. Otro formato devuelve 400 con
                 «período inválido, formato esperado YYYY-MM».
               examples: ['2026-09']
+        agent_id:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            **Sólo para `admin`** · leído en `7b717aa` el 2026-10-06
+            (`dd_chat_handler.go:45`, `parseOptionalChatAgentID`) y medido en QA
+            el mismo día: con él la pregunta contesta 200, sin él 409.
+
+            Omitido, el servicio busca el agente con `target_role` igual al rol
+            del JWT **en el tenant del JWT**. Si el tenant no tiene agente para
+            `admin` —el caso de UA en QA, cuyo único agente es `Planner`— eso es
+            409 y el admin no puede preguntar nada sin elegir.
+
+            Otro rol que lo mande recibe 403 «solo administradores pueden
+            seleccionar un agente». **Se ignora si va `thread_id`**: el agente
+            queda fijado al crear el hilo, así que cambiar de agente es empezar
+            un hilo nuevo.
         thread_id:
           type: [integer, 'null']
           format: int64

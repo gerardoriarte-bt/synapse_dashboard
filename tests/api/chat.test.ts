@@ -301,7 +301,63 @@ describe('la pregunta viaja en el CUERPO, con el contexto de panel', () => {
   })
 })
 
+describe('el agente que elige un admin · 2026-10-06', () => {
+  const AGENTE = '6deffca1-013a-4489-9a98-5b0d8f1c8ced'
+
+  it('`agent_id` viaja en el PRIMER turno', async () => {
+    responde([INFO, DONE])
+    await recolectar(askSynapse({ ...PREGUNTA, agenteId: AGENTE }))
+
+    const [, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit]
+    expect(JSON.parse(init.body as string).agent_id).toBe(AGENTE)
+  })
+
+  it('con hilo NO viaja · el servicio lo ignora y el agente ya quedó fijado', async () => {
+    responde([INFO, DONE])
+    await recolectar(askSynapse({ ...PREGUNTA, hiloId: '41', agenteId: AGENTE }))
+
+    const [, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit]
+    const cuerpo = JSON.parse(init.body as string)
+    expect(cuerpo).not.toHaveProperty('agent_id')
+    expect(cuerpo.thread_id).toBe(41)
+  })
+
+  it('sin elegir no viaja · ni un null, que el binding leería como uuid inválido', async () => {
+    responde([INFO, DONE])
+    await recolectar(askSynapse(PREGUNTA))
+
+    const [, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit]
+    expect(JSON.parse(init.body as string)).not.toHaveProperty('agent_id')
+  })
+})
+
 describe('cortes y errores', () => {
+  it('un 409 dice el MOTIVO del servicio, no sólo el código', async () => {
+    // Medido en QA el 2026-10-06 con un admin sin agente para su rol. Antes la
+    // hoja decía «(409)» y nada más.
+    vi.stubGlobal('fetch', vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          success: false,
+          error: 'no hay agente activo disponible para este tenant y rol',
+          code: 'CONFLICT_STATE',
+        }),
+        { status: 409, headers: { 'content-type': 'application/json' } },
+      ),
+    ))
+    await expect(recolectar(askSynapse(PREGUNTA))).rejects.toThrow(
+      'El agente no pudo abrir la conversación (409): no hay agente activo disponible para este tenant y rol',
+    )
+  })
+
+  it('un cuerpo que no es JSON —un 502 de proxy— cae al código solo', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('<html>bad gateway</html>', { status: 502 })))
+    await expect(recolectar(askSynapse(PREGUNTA))).rejects.toThrow(
+      /^El agente no pudo abrir la conversación \(502\)\.$/,
+    )
+  })
+
+
   it('`parcial` sale de si ya se entregó contenido · el cable no lo declara', async () => {
     // El frame `error` del cable es `{code, message}`: no dice si lo recibido
     // sigue valiendo. Lo que sí es un hecho es si algo se entregó, y el servicio

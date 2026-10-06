@@ -34,6 +34,7 @@ export const keys = {
       contexto === undefined ? null : esDePanel(contexto) ? `panel:${contexto.panelId}` : `tab:${contexto.tabId}`,
       periodo ?? null,
     ] as const,
+  agentesDeChat: ['chat', 'agentes'] as const,
   sugerencias: (panelId: string, periodo: string) =>
     ['chat', 'sugerencias', panelId, periodo] as const,
 
@@ -230,6 +231,20 @@ export function useThreads(contexto?: ContextoDeChat, periodo?: string) {
   return useQuery({
     queryKey: keys.threads(contexto, periodo),
     queryFn: () => api.threads(contexto, periodo),
+  })
+}
+
+/** Los agentes del selector del chat · sólo para admin.
+ *
+ *  **`enabled` es la mitad de «ocultar no es permitir»**: sin él un planner
+ *  pediría la ruta, recibiría 403 y el error quedaría en la caché. El servidor
+ *  ya dice que no; el front no pregunta lo que sabe que le van a negar. */
+export function useChatAgents(enabled: boolean) {
+  return useQuery({
+    queryKey: keys.agentesDeChat,
+    queryFn: api.chatAgents,
+    enabled,
+    staleTime: 5 * 60_000,
   })
 }
 

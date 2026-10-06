@@ -68,7 +68,10 @@ export function apply(previa: Answer, evento: ChatEvent): Answer {
  *  resto —la métrica, el valor, los paneles de la pestaña— leyendo por id, así
  *  que el front no los transcribe. Esa parte del criterio de F3.2 se retiró el
  *  2026-09-17 y esto no la reabre. */
-export function useChat(contexto: ContextoDeChat) {
+/** `agenteId` es el que eligió un admin en el selector · 2026-10-06. Ausente,
+ *  el servicio resuelve el agente por rol y tenant, que es el camino de
+ *  cualquier otro usuario. */
+export function useChat(contexto: ContextoDeChat, agenteId?: string) {
   const clave = esDePanel(contexto)
     ? `panel:${contexto.panelId}:${contexto.periodo}`
     : `tab:${contexto.tabId}:${contexto.periodo}`
@@ -106,6 +109,18 @@ export function useChat(contexto: ContextoDeChat) {
     setTurns([])
   }, [])
 
+  /** **Cambiar de agente es una conversación nueva.** El servicio fija el
+   *  agente al crear el hilo e ignora `agent_id` cuando va `thread_id`, así que
+   *  seguir el hilo después de cambiar mostraría un agente en el selector y
+   *  contestaría otro. Se compara contra el anterior y no se usa un efecto
+   *  sobre `agenteId` a secas: el primer render no es un cambio. */
+  const agenteAnterior = useRef(agenteId)
+  useEffect(() => {
+    if (agenteAnterior.current === agenteId) return
+    agenteAnterior.current = agenteId
+    reset()
+  }, [agenteId, reset])
+
   // Una sola limpieza, al desmontar. El `ref` sostiene el controlador del turno
   // en curso, sea cual sea.
   useEffect(() => () => abort.current?.abort(), [])
@@ -131,6 +146,7 @@ export function useChat(contexto: ContextoDeChat) {
         // reconstruir la unión, y ahí es donde alguien manda las dos ramas.
         contexto,
         ...(threadId === null ? {} : { hiloId: threadId }),
+        ...(agenteId === undefined ? {} : { agenteId }),
       }
 
       try {
@@ -175,7 +191,7 @@ export function useChat(contexto: ContextoDeChat) {
     // **Una clave derivada y no el objeto**: el llamador pasa un literal, así
     // que `[contexto]` recrearía `ask` en cada render. Y con la unión ya no
     // alcanza `contexto.panelId` — la rama de pestaña no lo tiene.
-    [clave, threadId, turns.length],
+    [clave, threadId, turns.length, agenteId],
   )
 
   return { turns, threadId, ask, resume, reset }

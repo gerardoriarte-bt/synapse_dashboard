@@ -18,6 +18,7 @@ import {
   useSaveTheme,
   useSelectDashboard,
   useTab,
+  useChatAgents,
 } from '../../api/hooks'
 import { adaptPanelParams } from '../../api/params'
 import { hasValue } from '../../render/state'
@@ -31,6 +32,8 @@ import { currentTheme } from '../../tokens/theme'
 import { markTabConfig } from '../../render/budget'
 import { Console } from './Console'
 import { ChatSheet } from './ChatSheet'
+import { agentePorDefecto } from './agenteDeChat'
+import { esAdmin } from '../../api/rol'
 import { DrillSheet } from './DrillSheet'
 import { SurfaceMessage } from './SurfaceMessage'
 import type { Metric, PanelType, Payload } from '../../api/types'
@@ -70,6 +73,29 @@ export function ConsoleContainer() {
   const [drillingPanelId, setDrillingPanelId] = useState<string | null>(null)
 
   const context = useMe()
+  /** **El agente del chat que eligió el admin** · 2026-10-06. Vive acá y no en
+   *  la hoja porque la hoja se desmonta al cerrarla —y su `key` cambia con el
+   *  panel—: elegir un agente para cada pregunta sería volver a elegirlo cada
+   *  vez. `null` es «todavía no eligió», y ahí manda `agentePorDefecto`;
+   *  `undefined` es «eligió que lo resuelva el servicio». */
+  const [agenteElegido, setAgenteElegido] = useState<string | undefined | null>(null)
+  const admin = esAdmin(context.data?.role)
+  const agentesDeChat = useChatAgents(admin)
+  /** Lo que la hoja necesita para pintar el selector, o nada. **Vacío para quien
+   *  no es admin**, y entonces la hoja no lo pinta: ver la regla del CTA sin
+   *  manejador. Mientras la lista carga tampoco, para no mostrar un selector
+   *  con una sola opción que después cambia. */
+  const selectorDeAgente =
+    admin && agentesDeChat.data !== undefined && context.data !== undefined
+      ? {
+          agentes: agentesDeChat.data,
+          agenteId:
+            agenteElegido === null
+              ? agentePorDefecto(agentesDeChat.data, context.data.tenant.id)
+              : agenteElegido,
+          onAgente: (id: string | undefined) => setAgenteElegido(id),
+        }
+      : {}
   const catalog = useCatalog()
   // La tabla de bloques trae `paramsDisponibles`: es la mitad del esquema de
   // params que sí declara el contrato · F1.29.
@@ -552,6 +578,7 @@ export function ConsoleContainer() {
         bloques={blockTable(blocks.data?.blocks ?? [])}
         format={format}
         onClose={() => setAskingPanelId(null)}
+        {...selectorDeAgente}
       />
     ) : null}
 
@@ -575,6 +602,7 @@ export function ConsoleContainer() {
         bloques={blockTable(blocks.data?.blocks ?? [])}
         format={format}
         onClose={() => setAskingTab(false)}
+        {...selectorDeAgente}
       />
     ) : null}
     </>

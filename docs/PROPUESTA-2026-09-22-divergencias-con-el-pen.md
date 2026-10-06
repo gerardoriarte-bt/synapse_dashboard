@@ -461,6 +461,25 @@ así que si la transcripción es mala las dos capas coinciden igual; y
 componente se parezca al dibujo. Es el mismo hueco que la hoja del chat de 480
 contra 940, y lo encontró lo mismo: abrirlo.
 
+## 10 · El selector de agente del admin, que el `.pen` no dibuja · 2026-10-06
+
+**Quién decide** · diseño · **Bloquea** · nada, ya está construido
+
+En QA un admin de UA no podía preguntar nada: sin `agent_id`, el servicio
+busca el agente del rol `admin` en el tenant del usuario, y UA sólo tiene uno
+`Planner`. **Medido el 2026-10-06**: 409 sin el campo, 200 con él.
+
+El backend resolvió dejar elegir al admin —`GET /chat/agents` y `agent_id`
+en `POST /config/chat`, en `7b717aa`— y **C3 no dibuja dónde se elige**. Se
+construyó lo mínimo, en `ChatSheet.tsx`: un `<select>` bajo la línea de
+contexto, con el rótulo `AGENTE` y la etiqueta que sugiere el backend
+—`TENANT · AGENTE · ROL`—, que sólo ve quien es admin.
+
+**Lo que diseño tendría que decidir:** dónde va y cómo se ve, y si cambiar
+de agente a mitad de una conversación debe avisar que empieza otra. Hoy
+empieza otra **sin avisar**, porque el servicio fija el agente al crear el
+hilo; el riel lo muestra como una fila nueva.
+
 ## Dónde vive cada una de las demás
 
 Para que este documento no crezca hasta pisar a los otros:

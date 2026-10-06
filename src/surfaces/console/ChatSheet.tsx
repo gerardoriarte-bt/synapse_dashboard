@@ -49,6 +49,8 @@ import { groupByRecency } from './threads'
 import type { Formatter } from '../../render/format'
 import type { BlockTable } from '../../catalog/blocks'
 import type { PanelType } from '../../catalog/types'
+import type { ChatAgent } from '../../api/types'
+import { etiquetaDeAgente } from './agenteDeChat'
 
 const ROTULO = 'font-mono text-label tracking-rotulo leading-rotulo uppercase text-dim'
 
@@ -75,10 +77,29 @@ type Props = {
   /** Para el agrupado del riel · «HOY», «ESTA SEMANA», «JULIO». */
   format: Formatter
   onClose: () => void
+  /** **El selector de agente, sólo para admin** · 2026-10-06. Sin
+   *  `onAgente` no se pinta: un planner no puede elegir —el servicio le
+   *  devuelve 403— y un control que promete lo que no hay no se muestra. El
+   *  `.pen` no lo dibuja; ver la propuesta del 2026-09-22 §10. */
+  agentes?: ChatAgent[] | undefined
+  /** `undefined` es «el que resuelva el servicio por rol». */
+  agenteId?: string | undefined
+  onAgente?: ((id: string | undefined) => void) | undefined
 }
 
-export function ChatSheet({ contexto, periodo, titulo, panelTipo, bloques, format, onClose }: Props) {
-  const { turns, threadId, ask, resume, reset } = useChat(contexto)
+export function ChatSheet({
+  contexto,
+  periodo,
+  titulo,
+  panelTipo,
+  bloques,
+  format,
+  onClose,
+  agentes,
+  agenteId,
+  onAgente,
+}: Props) {
+  const { turns, threadId, ask, resume, reset } = useChat(contexto, agenteId)
   const dePanel = esDePanel(contexto)
   const [texto, setTexto] = useState('')
   /** El riel colapsado es una pantalla propia del `.pen`. Vive acá y no en el
@@ -212,6 +233,29 @@ export function ChatSheet({ contexto, periodo, titulo, panelTipo, bloques, forma
             <Label as="div">
               Contexto · {titulo} · {periodo}
             </Label>
+            {onAgente !== undefined && agentes !== undefined && agentes.length > 0 ? (
+              <div className="flex items-center gap-2 pt-1">
+                <label htmlFor="chat-agente" className={ROTULO}>
+                  Agente
+                </label>
+                {/* **Cambiar de agente empieza otra conversación**: el servicio
+                    fija el agente al crear el hilo. Lo hace `useChat`; acá sólo
+                    se elige. */}
+                <select
+                  id="chat-agente"
+                  value={agenteId ?? ''}
+                  onChange={(e) => onAgente(e.target.value === '' ? undefined : e.target.value)}
+                  className="font-mono text-label tracking-rotulo uppercase text-ink bg-panel border border-w3 rounded-md px-2 py-1 outline-none focus:border-w5 min-w-0 cursor-pointer"
+                >
+                  <option value="">Por rol · el del servicio</option>
+                  {agentes.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {etiquetaDeAgente(a)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
           </div>
           {/* Dice `ESC` y no «Cerrar»: es la tecla que además funciona, así que
               el rótulo enseña el atajo. El nombre accesible sigue siendo

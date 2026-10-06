@@ -59,6 +59,7 @@ import type {
   Tab,
   TabWithPanels,
   ThreadSummary,
+  ChatAgent,
   Value,
 } from './types'
 
@@ -1312,6 +1313,22 @@ function adaptPresentation(raw: unknown): Presentation | undefined {
 
 export type WireChatThread = W['ChatThread']
 export type WireChatSuggestion = W['ChatSuggestion']
+export type WireChatAgentOption = W['ChatAgentOption']
+
+/** Una opción de `GET /chat/agents` a `ChatAgent` · 2026-10-06.
+ *
+ *  **El `trim` del nombre es reformateo, no copy**: en QA llegan
+ *  «Terpel Lubricantes » y «Terpel Combustibles » con el espacio de la carga, y
+ *  en un selector eso desalinea la etiqueta. El texto es el del servicio. */
+export function adaptChatAgent(w: WireChatAgentOption): ChatAgent {
+  return {
+    id: w.id,
+    nombre: w.name.trim(),
+    rolObjetivo: w.target_role,
+    tenantId: w.tenant_id,
+    tenantNombre: w.tenant_name.trim(),
+  }
+}
 
 /** Un hilo del cable a `HiloResumen`.
  *

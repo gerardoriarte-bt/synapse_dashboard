@@ -54,6 +54,21 @@ export type AppContext = Schemas['Contexto']
 export type Period = Schemas['Periodo']
 export type ChatEvent = Schemas['EventoDeChat']
 export type ThreadSummary = Schemas['HiloResumen']
+
+/** Un agente que el admin puede elegir para el chat · 2026-10-06.
+ *
+ *  **No está en `synapse-api.yaml`, y a propósito**: el contrato describe lo que
+ *  un panel necesita, y esto es una opción del selector de un solo rol. Sale de
+ *  `GET /chat/agents` —ver el cable— y lo arma `adaptChatAgent`. */
+export type ChatAgent = {
+  id: string
+  nombre: string
+  /** El rol para el que el agente está configurado, tal como lo guarda el
+   *  servicio: `Planner`, `admin`. */
+  rolObjetivo: string
+  tenantId: string
+  tenantNombre: string
+}
 export type Thread = Schemas['Hilo']
 
 export type Point = Schemas['Punto']

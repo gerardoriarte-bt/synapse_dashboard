@@ -425,6 +425,15 @@ export const worker = setupWorker(
    *  **Manda `event: data` desde el 2026-09-22** · F3.6 se destrabó con
    *  `55e8419`, que agregó la BASE, la familia, la capa, la fuente, la versión
    *  del catálogo y las dos frescuras. */
+  // **El selector del admin** · 2026-10-06. La forma es la medida en QA ese
+  // día; los nombres de tenant son los del mock, para que el defecto —el agente
+  // del tenant del usuario— caiga en uno que exista acá.
+  http.get(`${API}/chat/agents`, () =>
+    ok([
+      { id: '0b7e1d2c-0000-4000-8000-000000000001', name: 'Under Armour México', target_role: 'Planner', tenant_id: contexto.tenant.id, tenant_name: contexto.tenant.name },
+      { id: '0b7e1d2c-0000-4000-8000-000000000002', name: 'Terpel Lubricantes ', target_role: 'admin', tenant_id: '0b7e1d2c-0000-4000-8000-0000000000aa', tenant_name: 'Lobueno Analytics Terpel' },
+    ]),
+  ),
   /** El historial de hilos · F3.7. **Con los DOS ids**, que es lo que hay que
    *  poder mirar: el uuid nombra la fila y el entero continúa la conversación.
    *  Uno de los tres va sin contexto de panel, como los hilos viejos. */

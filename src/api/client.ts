@@ -7,6 +7,7 @@
 import { ApiError, SIN_CODIGO } from './types'
 import {
   adaptBlocks,
+  adaptChatAgent,
   adaptPlots,
   adaptCatalog,
   adaptContext,
@@ -22,6 +23,7 @@ import type {
   DrillDimensions,
   DrillResult,
   WireBlock,
+  WireChatAgentOption,
   WirePlot,
   WireChatSuggestion,
   WireChatThread,
@@ -35,6 +37,7 @@ import type {
 import type {
   AppContext,
   Block,
+  ChatAgent,
   Envelope,
   Payload,
   Plot,
@@ -180,6 +183,13 @@ export const api = {
       `/config/chat/threads${cola === '' ? '' : `?${cola}`}`,
     ).then((hilos) => hilos.map(adaptThread))
   },
+
+  /** Los agentes que un admin puede elegir para el chat · 2026-10-06.
+   *
+   *  **Sólo se pide con rol admin**: a cualquier otro el servicio le devuelve
+   *  403, y el selector no se pinta. Ver `esAdmin` y el cable. */
+  chatAgents: async (): Promise<ChatAgent[]> =>
+    (await request<WireChatAgentOption[]>('/chat/agents')).map(adaptChatAgent),
 
   /** Qué preguntar sobre un panel · B3.2 · §PEN:C3.
    *

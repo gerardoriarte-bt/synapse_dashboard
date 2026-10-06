@@ -225,6 +225,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/chat/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Los agentes activos de todos los tenants · sólo admin
+         * @description `ChatHandler.ListAgents` → `AgentService.ListAll` → `ports.AgentOption`.
+         *     **Sólo `is_active = true`**, y de todos los tenants: un admin de
+         *     plataforma puede preguntarle al agente de otro cliente.
+         */
+        get: operations["listChatAgents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/config/chat/threads": {
         parameters: {
             query?: never;
@@ -410,6 +432,21 @@ export interface components {
         Envelope: {
             /** @enum {boolean} */
             success: true;
+        };
+        /**
+         * @description `ports.AgentOption` de `internal/core/ports/agent.go` en `7b717aa`.
+         *     **`target_role` es el NOMBRE del rol tal como está guardado**, con su
+         *     mayúscula: en QA conviven `Planner` y `admin`.
+         */
+        ChatAgentOption: {
+            /** Format: uuid */
+            id: string;
+            /** @description Puede traer espacios al final · medido en QA, «Terpel Lubricantes ». */
+            name: string;
+            target_role: string;
+            /** Format: uuid */
+            tenant_id: string;
+            tenant_name: string;
         };
         /**
          * @description **`error` es una CADENA, no un objeto.** `handler/response.go`:
@@ -1245,6 +1282,23 @@ export interface components {
                 period: string;
             };
             /**
+             * Format: uuid
+             * @description **Sólo para `admin`** · leído en `7b717aa` el 2026-10-06
+             *     (`dd_chat_handler.go:45`, `parseOptionalChatAgentID`) y medido en QA
+             *     el mismo día: con él la pregunta contesta 200, sin él 409.
+             *
+             *     Omitido, el servicio busca el agente con `target_role` igual al rol
+             *     del JWT **en el tenant del JWT**. Si el tenant no tiene agente para
+             *     `admin` —el caso de UA en QA, cuyo único agente es `Planner`— eso es
+             *     409 y el admin no puede preguntar nada sin elegir.
+             *
+             *     Otro rol que lo mande recibe 403 «solo administradores pueden
+             *     seleccionar un agente». **Se ignora si va `thread_id`**: el agente
+             *     queda fijado al crear el hilo, así que cambiar de agente es empezar
+             *     un hilo nuevo.
+             */
+            agent_id?: string | null;
+            /**
              * Format: int64
              * @description **Es un ENTERO, no un uuid.** Sale del frame `thread_info` y es lo
              *     que continúa la conversación. Ausente en la primera pregunta.
@@ -1907,6 +1961,39 @@ export interface operations {
             };
             /** @description Rate limit por usuario, compartido con `/chat/*`. */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listChatAgents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La lista, sin paginar. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ChatAgentOption"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description El rol no es admin · «acceso no autorizado» */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
