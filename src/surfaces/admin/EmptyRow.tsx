@@ -31,7 +31,8 @@
  *  «A4 · Métricas · filtro sin resultados». El `.pen` los dibuja con la misma
  *  anatomía y distinto texto, que es exactamente lo que este componente hace.
  */
-import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
+import { Accion } from '../../render/primitives/Accion'
 
 export type ClaseDeVacio = 'sistema' | 'filtro' | 'alta'
 
@@ -53,19 +54,17 @@ export function EmptyRow({ clase, columnas, razon, salida, onLimpiarFiltro }: Pr
           arriba, diciendo qué habría acá. */}
       <td colSpan={columnas} className="py-6">
         <div className="flex flex-col gap-2 items-start">
-          <Label as="div">{razon}</Label>
-          <Label as="div">{salida}</Label>
+          {/* **Frases y no rótulos** · 2026-10-06: qué pasó y qué hacer se
+              explican, no se nombran. Ver `Ayuda`. */}
+          <Ayuda>{razon}</Ayuda>
+          <Ayuda>{salida}</Ayuda>
           {clase === 'filtro' && onLimpiarFiltro !== undefined && (
             // **La salida del vacío de filtro es deshacer**, no crear: los datos
             // están y el filtro los esconde. Un CTA de alta acá manda a crear lo
             // que ya existe.
-            <button
-              type="button"
-              onClick={onLimpiarFiltro}
-              className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2"
-            >
+            <Accion tamano="compacta" onClick={onLimpiarFiltro}>
               Limpiar el filtro
-            </button>
+            </Accion>
           )}
         </div>
       </td>

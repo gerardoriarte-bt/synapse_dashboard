@@ -129,6 +129,18 @@ describe('el año se elige, y sale del DATO', () => {
     expect(screen.queryByText('2026-03')).toBeNull()
   })
 
+  it('los años son OPCIONES: el elegido se anuncia con aria-pressed · 2026-10-06', async () => {
+    // Elegir un año no ejecuta nada, cambia qué se mira. La marca tiene que
+    // seguir al clic, no quedarse en el año por defecto.
+    render(<RunHistory corridas={dosAnios} format={format} />)
+    expect(screen.getByRole('button', { name: '2026' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: '2025' })).toHaveAttribute('aria-pressed', 'false')
+
+    await userEvent.click(screen.getByRole('button', { name: '2025' }))
+    expect(screen.getByRole('button', { name: '2025' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: '2026' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
   it('un año que nadie corrió NO se ofrece', () => {
     // Ofrecer 2024 porque «existió» llevaría a una tabla vacía sin razón.
     render(<RunHistory corridas={dosAnios} format={format} />)

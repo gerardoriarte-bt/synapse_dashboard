@@ -192,10 +192,14 @@ describe('F4.2 · la lista de clientes', () => {
     expect(screen.getByText(/Faltan 2 columnas/)).toBeVisible()
 
     expect(
-      screen.getByText('estado · Decidido · ACTIVO, PILOTO y SUSPENDIDO · falta la columna en el servicio'),
+      screen.getByText(
+        'Estado: los valores ya están decididos (activo, piloto y suspendido). Para mostrarla, falta que el servicio lo envíe.',
+      ),
     ).toBeVisible()
     expect(
-      screen.getByText('vertical · Son dos campos · la vertical y su plantilla de origen · falta que la plantilla entre en alcance'),
+      screen.getByText(
+        'Vertical: son dos campos, la vertical y su plantilla de origen. Para mostrarla, falta que la plantilla entre en alcance.',
+      ),
     ).toBeVisible()
 
     // Las dos razones vencidas: la de B4.1, y la compartida que dejó de ser

@@ -35,6 +35,8 @@
  *  **§PEN:A1** · A1 · «Clientes y plataforma».
  */
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
+import { Accion } from '../../render/primitives/Accion'
 import { EmptyRow } from './EmptyRow'
 import { SkeletonRows } from './SkeletonRows'
 import type { Formatter } from '../../render/format'
@@ -68,13 +70,14 @@ import type { Tenant } from '../../api/admin'
  *  a quien ya contestó manda a buscar el trabajo al equipo equivocado. */
 const COLUMNAS_QUE_FALTAN = [
   {
-    nombre: 'estado',
-    razon: 'Decidido · ACTIVO, PILOTO y SUSPENDIDO',
-    desbloquea: 'falta la columna en el servicio',
+    // Frases desde el 2026-10-06 · se pintan con `Ayuda`, no como rótulo.
+    nombre: 'Estado',
+    razon: 'los valores ya están decididos (activo, piloto y suspendido)',
+    desbloquea: 'falta que el servicio lo envíe',
   },
   {
-    nombre: 'vertical',
-    razon: 'Son dos campos · la vertical y su plantilla de origen',
+    nombre: 'Vertical',
+    razon: 'son dos campos, la vertical y su plantilla de origen',
     desbloquea: 'falta que la plantilla entre en alcance',
   },
 ] as const
@@ -144,7 +147,7 @@ export function TenantList({ format, tenants, onAbrir, cargando = false }: Props
                  pantalla, así que el alta la hace el equipo interno y acá se
                  ADOPTA — es D1, decidida ese día. Nombrar el endpoint además
                  prometía una acción que esta pantalla no tiene. */
-              salida="Un cliente aparece acá cuando se lo da de alta · después se elige su plantilla"
+              salida="Un cliente aparece acá cuando se lo da de alta; después se elige su plantilla."
             />
           )}
           {tenants.map((t) => (
@@ -168,13 +171,9 @@ export function TenantList({ format, tenants, onAbrir, cargando = false }: Props
                 {t.publicadoEn === null ? 'Nunca' : format.calendar(t.publicadoEn)}
               </td>
               <td className="py-3 text-right">
-                <button
-                  type="button"
-                  onClick={() => onAbrir(t.id)}
-                  className="text-label tracking-rotulo uppercase text-acc px-2 py-1 rounded-sm hover:bg-w2"
-                >
+                <Accion tamano="compacta" onClick={() => onAbrir(t.id)} etiqueta={`Ver ficha de ${t.nombre}`}>
                   Ver ficha
-                </button>
+                </Accion>
               </td>
             </tr>
           ))}
@@ -185,15 +184,13 @@ export function TenantList({ format, tenants, onAbrir, cargando = false }: Props
           aplicada a una carencia de datos y no a un panel: estado, razón, y qué
           lo desbloquea. Sin esto la tabla se lee como completa. */}
       <div className="flex flex-col gap-1 rounded-sm bg-w2 p-3">
-        <Label as="div">Faltan {COLUMNAS_QUE_FALTAN.length} columnas que el diseño pide</Label>
+        <Ayuda>Faltan {COLUMNAS_QUE_FALTAN.length} columnas que el diseño pide:</Ayuda>
         {/* **Una razón por columna** · 2026-09-26. Antes acá había una sola línea
             para las dos —«el campo llega vacío · falta que definamos qué valores
             toma cada una»— y dejó de ser cierta de `estado` el día que se
             definió. Un aviso que promedia dos razones no sirve para ninguna. */}
         {COLUMNAS_QUE_FALTAN.map((c) => (
-          <Label as="div" key={c.nombre}>
-            {c.nombre} · {c.razon} · {c.desbloquea}
-          </Label>
+          <Ayuda key={c.nombre}>{`${c.nombre}: ${c.razon}. Para mostrarla, ${c.desbloquea}.`}</Ayuda>
         ))}
       </div>
     </div>

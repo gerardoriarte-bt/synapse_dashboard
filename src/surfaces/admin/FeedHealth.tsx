@@ -23,6 +23,7 @@
  */
 import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
 import { EmptyRow } from './EmptyRow'
 import { SkeletonRows } from './SkeletonRows'
 import { limiteHoras, resumen, saludDe } from './saludDeFuente'
@@ -118,7 +119,7 @@ export function FeedHealth({ fuentes, tenant, format, cargando = false }: Props)
             pregunta operativa SÍ es de la vista —es lo que esta pantalla
             contesta— y se queda. */}
         {/* La pregunta operativa, literal del frame. §1.1 la hace obligatoria. */}
-        <Label as="div">¿Por qué una métrica está degradada, y qué la desbloquea?</Label>
+        <Ayuda>¿Por qué una métrica está degradada, y qué la desbloquea?</Ayuda>
         <div className="flex items-center gap-3">
           {/* El alcance, que acá es TENANT — por eso esta pantalla lleva
               selector de cliente y A1 no: A1 opera sobre la plataforma. */}
@@ -171,10 +172,17 @@ export function FeedHealth({ fuentes, tenant, format, cargando = false }: Props)
                       <span className="text-ink text-celda">{f.nombre}</span>
                       {f.tablaGold !== '' && <span className={NOTA}>{f.tablaGold}</span>}
                       {expandida && <Expansion fuente={f} salud={salud} />}
+                      {/* **En registro de acción, no de rótulo** · 2026-10-06.
+                          Era mono 9 en mayúsculas y se leía como la nota de la
+                          celda. Queda como enlace —`acc` es color de enlace,
+                          dentro de sus usos permitidos— y no como `Accion`
+                          porque vive dentro de una celda angosta, debajo del
+                          nombre. */}
                       <button
                         type="button"
                         onClick={() => setAbierta(expandida ? null : f.clave)}
-                        className="self-start font-mono text-nota tracking-rotulo uppercase text-acc cursor-pointer bg-transparent border-0 p-0"
+                        aria-expanded={expandida}
+                        className="self-start font-body text-celda font-semibold text-acc underline cursor-pointer bg-transparent border-0 p-0 hover:text-acc-hover"
                       >
                         {expandida ? 'Plegar' : 'Por qué'}
                       </button>
@@ -229,21 +237,20 @@ export function FeedHealth({ fuentes, tenant, format, cargando = false }: Props)
         {/* Las tres reglas del pie, literales del dibujo. No son decoración:
             explican por qué la columna de estado dice lo que dice. */}
         <div className="flex flex-col gap-1 border-t border-w2 pt-3">
-          <Label as="div">
-            El estado no se escribe, se deriva · si frescura &gt; cadencia × tolerancia, degradado
-          </Label>
-          <Label as="div">
-            Una métrica compuesta hereda la peor capa y la frescura más vieja
-          </Label>
-          <Label as="div">
-            Una métrica puede endurecer su estado —degradado a bloqueado— pero nunca ablandarlo
-          </Label>
+          <Ayuda>
+            El estado no se escribe, se deriva: si la frescura supera cadencia × tolerancia, la
+            fuente está degradada.
+          </Ayuda>
+          <Ayuda>Una métrica compuesta hereda la peor capa y la frescura más vieja.</Ayuda>
+          <Ayuda>
+            Una métrica puede endurecer su estado —de degradado a bloqueado— pero nunca ablandarlo.
+          </Ayuda>
         </div>
 
         <div className="flex flex-col gap-1 border-t border-w2 pt-3">
-          <Label as="div">{`Esta pantalla va a crecer`}</Label>
+          <Ayuda>Esta pantalla va a crecer. Falta:</Ayuda>
           {FALTANTES.map((f) => (
-            <Label as="div" key={f}>{f}</Label>
+            <Ayuda key={f}>{f}</Ayuda>
           ))}
         </div>
       </section>
@@ -265,11 +272,11 @@ function Expansion({ fuente, salud }: { fuente: Fuente; salud: SaludDeFuente }) 
       {/* **Qué lo desbloquea sale del estado, no de un campo**: el cable no
           manda un `unlocks_with` por fuente. Se dice lo que es cierto en cada
           caso y no se inventa una acción que nadie puede ejecutar. */}
-      <Label as="div">
+      <Ayuda>
         {salud === 'SIN_CARGA'
-          ? 'Lo desbloquea · conectar su tabla Gold y correr la primera carga'
-          : 'Lo desbloquea · una carga más reciente que el límite de la fuente'}
-      </Label>
+          ? 'Lo desbloquea conectar su tabla Gold y correr la primera carga.'
+          : 'Lo desbloquea una carga más reciente que el límite de la fuente.'}
+      </Ayuda>
       <div className="flex flex-wrap items-center gap-2">
         <Label>Pega en</Label>
         {fuente.metricas.map((m) => (

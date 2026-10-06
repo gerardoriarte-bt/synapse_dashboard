@@ -33,6 +33,8 @@
  */
 import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
+import { Accion } from '../../render/primitives/Accion'
 import { RoleCard } from './RoleCard'
 import type { PestanaDeRol } from './RoleCard'
 import type { Rol, RolParaGuardar } from '../../api/admin'
@@ -170,13 +172,7 @@ export function RoleEditor({
             dos botones idénticos a diez píxeles uno de otro — **se vio al
             abrirla**, no lo dijo ninguna prueba. */}
         {!vacioDeAlta && (
-          <button
-            type="button"
-            onClick={() => abrir(null)}
-            className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2"
-          >
-            Nuevo rol
-          </button>
+          <Accion onClick={() => abrir(null)}>Nuevo rol</Accion>
         )}
       </div>
 
@@ -204,7 +200,7 @@ export function RoleEditor({
               no pinta un solo icono ni tiene la biblioteca; y el padding es 32
               donde toda la superficie usa 24. Las dos son previas y de la
               superficie entera, y están anotadas en el registro. */}
-          <p className="font-body text-celda leading-cuerpo text-ink m-0">
+          <p className="font-body text-cuerpo leading-cuerpo text-ink m-0">
             Todavía no hay roles definidos, así que este cliente no tiene composición ni usuarios
             que puedan entrar.
           </p>
@@ -217,13 +213,14 @@ export function RoleEditor({
 
               **Y hace lo mismo que «Nuevo rol»** —abre el formulario—, no algo
               parecido: dos caminos al mismo estado y no dos estados. */}
-          <button
-            type="button"
-            onClick={() => abrir(null)}
-            className="self-start inline-flex h-7.5 items-center gap-1.75 rounded-lg px-3.5 cursor-pointer border-0 bg-acc font-mono text-label leading-rotulo tracking-rotulo uppercase font-medium text-on-acc hover:bg-acc-hover"
-          >
-            Definir primer rol
-          </button>
+          {/* **La primaria de la zona** · 2026-10-06: el relleno `acc` lo
+              conserva, el traje de rótulo no. `self-start` en el envoltorio
+              porque `Accion` no acepta clases de afuera. */}
+          <div className="self-start">
+            <Accion variante="primaria" onClick={() => abrir(null)}>
+              Definir primer rol
+            </Accion>
+          </div>
         </div>
       )}
 
@@ -266,10 +263,10 @@ export function RoleEditor({
           plomería —«el servidor», «el batch»—; se deja donde tiene sentido
           porque ahí le habla a quien compone, que es quien va a usar el campo. */}
       {roles.length > 0 && (
-        <Label as="div">
-          Ocultar una métrica NO es un permiso · el servidor la vuelve a verificar en el
-          catálogo y en el batch
-        </Label>
+        <Ayuda>
+          Ocultar una métrica NO es un permiso: al servir el dato se vuelve a verificar qué
+          puede ver cada rol.
+        </Ayuda>
       )}
 
       {editando !== null && (
@@ -297,11 +294,12 @@ export function RoleEditor({
           </label>
 
           <fieldset className="flex flex-col gap-1 border border-w4 rounded-sm p-2">
-            <legend>
-              <Label>Pestañas · ninguna marcada = ve todas</Label>
+            <legend className="flex items-baseline gap-2">
+              <Label>Pestañas</Label>
+              <Ayuda as="span">Sin ninguna marcada, el rol las ve todas.</Ayuda>
             </legend>
             {pestanas.length === 0 ? (
-              <Label as="div">Este cliente no tiene pestañas publicadas</Label>
+              <Ayuda>Este cliente todavía no tiene pestañas publicadas.</Ayuda>
             ) : (
               pestanas.map((t) => (
                 <label key={t.id} className="flex items-center gap-2 text-ink text-celda">
@@ -317,8 +315,9 @@ export function RoleEditor({
           </fieldset>
 
           <fieldset className="flex flex-col gap-1 border border-w4 rounded-sm p-2">
-            <legend>
-              <Label>Métricas ocultas · oculta, no impide</Label>
+            <legend className="flex items-baseline gap-2">
+              <Label>Métricas ocultas</Label>
+              <Ayuda as="span">Las saca de la vista del rol; no es un permiso.</Ayuda>
             </legend>
             {metricas.map((m) => (
               <label key={m.id} className="flex items-center gap-2 text-ink text-celda">
@@ -333,33 +332,23 @@ export function RoleEditor({
           </fieldset>
 
           <div className="flex items-center gap-3">
-            <button
-              type="submit"
-              disabled={nombre.trim() === '' || guardando}
-              className="font-mono text-label tracking-rotulo uppercase rounded-md px-4 py-2 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-elev disabled:opacity-40"
-            >
+            {/* `submit` y sin `onClick`: lo maneja el `onSubmit` del
+                formulario, que es lo que hace funcionar Enter. */}
+            <Accion tipo="submit" deshabilitada={nombre.trim() === '' || guardando}>
               {guardando ? 'Guardando…' : 'Guardar rol'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditando(null)}
-              className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-dim hover:bg-elev"
-            >
-              Cancelar
-            </button>
-            {nombre.trim() === '' && <Label>Un rol sin nombre no se puede guardar</Label>}
+            </Accion>
+            <Accion onClick={() => setEditando(null)}>Cancelar</Accion>
+            {nombre.trim() === '' && <Ayuda as="span">Un rol sin nombre no se puede guardar.</Ayuda>}
           </div>
         </form>
       )}
 
-      {error !== null && <Label as="div">{error}</Label>}
+      {error !== null && <Ayuda>{error}</Ayuda>}
 
       <div className="flex flex-col gap-1 rounded-sm bg-w2 p-3">
-        <Label as="div">{`Esta ficha va a crecer`}</Label>
+        <Ayuda>Esta ficha va a crecer. Falta:</Ayuda>
         {FALTANTES.map((f) => (
-          <Label key={f} as="div">
-            {f}
-          </Label>
+          <Ayuda key={f}>{f}</Ayuda>
         ))}
         {/* **Decía «ninguna ruta los lista · solo existe POST /admin/users»** y
             eran dos defectos en una línea: una ruta y un identificador de tarea
@@ -367,10 +356,9 @@ export function RoleEditor({
             infraestructura, acá aplicado a la nuestra— y, desde que la ruta
             global contesta, **una afirmación falsa**. `copy-producto` no la vio
             porque es texto suelto entre etiquetas; se vio al abrir la pantalla. */}
-        <Label as="div">
-          Y quiénes son los usuarios de este cliente · hoy se ven en la pantalla de usuarios,
-          no acá
-        </Label>
+        <Ayuda>
+          Quiénes son los usuarios de este cliente: hoy se ven en la pantalla de usuarios, no acá.
+        </Ayuda>
       </div>
     </div>
   )

@@ -50,6 +50,7 @@
  */
 import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
 import { EmptyRow } from './EmptyRow'
 import { SkeletonRows } from './SkeletonRows'
 import type { Metric } from '../../api/types'
@@ -185,7 +186,7 @@ export function CatalogView({ metrics, rejected, uso, cargando = false }: Props)
               : `${String(visibles.length)} de ${String(metrics.length)} métricas`}
         </Label>
         {/* Se declara que este NO es el filtro de §7.3. */}
-        <Label>El filtro por estado no se puede ofrecer · el estado no llega</Label>
+        <Ayuda as="span">El filtro por estado no se puede ofrecer todavía: el estado de cada métrica no llega.</Ayuda>
       </div>
 
       <table className="w-full border-collapse" aria-busy={cargando}>
@@ -255,11 +256,11 @@ export function CatalogView({ metrics, rejected, uso, cargando = false }: Props)
 
       {rejected.length > 0 && (
         <div className="flex flex-col gap-1 rounded-sm bg-w2 p-3">
-          <Label as="div">
-            {`${String(rejected.length)} métrica(s) del catálogo no se pueden componer`}
-          </Label>
+          <Ayuda>
+            {`${String(rejected.length)} métrica(s) del catálogo no se pueden componer:`}
+          </Ayuda>
           {rejected.map((r) => (
-            <Label key={r.id} as="div">{`${r.key} · ${r.razon}`}</Label>
+            <Ayuda key={r.id}>{`${r.key} · ${r.razon}`}</Ayuda>
           ))}
         </div>
       )}
@@ -268,11 +269,11 @@ export function CatalogView({ metrics, rejected, uso, cargando = false }: Props)
           se lee como completo, que es justo lo contrario de lo que §7.3 quiere de
           él. */}
       <div className="flex flex-col gap-1 rounded-sm bg-w2 p-3">
-        <Label as="div">{`Esta pantalla va a crecer`}</Label>
+        {/* **Frases y no rótulos** · 2026-10-06: el bloque explica, no nombra.
+            Ver `Ayuda`. */}
+        <Ayuda>Esta pantalla va a crecer. Falta:</Ayuda>
         {FALTANTES.map((f) => (
-          <Label key={f} as="div">
-            {f}
-          </Label>
+          <Ayuda key={f}>{f}</Ayuda>
         ))}
         {/* **Estas dos también se pintan**, y se les cambió el idioma junto con
             `FALTANTES` · 2026-09-30. Decían «ninguna de las seis rutas de admin
@@ -281,10 +282,8 @@ export function CatalogView({ metrics, rejected, uso, cargando = false }: Props)
             pantalla no puede correr.
             Las razones: no hay ruta de sincronización —`POST /admin/tenants/{id}/sync-catalog`
             da 404— ni de escritura sobre el catálogo. */}
-        <Label as="div">Pedir una sincronización del catálogo desde acá</Label>
-        <Label as="div">
-          Editar una métrica, con el aviso de a qué paneles afecta el cambio
-        </Label>
+        <Ayuda>Pedir una sincronización del catálogo desde acá</Ayuda>
+        <Ayuda>Editar una métrica, con el aviso de a qué paneles afecta el cambio</Ayuda>
       </div>
     </div>
   )
@@ -299,7 +298,7 @@ export function CatalogView({ metrics, rejected, uso, cargando = false }: Props)
  */
 function Uso({ uso }: { uso: UsoDeMetrica | undefined }) {
   if (uso === undefined) {
-    return <Label as="div">Sin uso publicado · puede estar en un borrador</Label>
+    return <Ayuda as="div">Sin uso publicado: puede estar en un borrador.</Ayuda>
   }
   return (
     <div className="flex flex-col gap-1">
@@ -309,7 +308,7 @@ function Uso({ uso }: { uso: UsoDeMetrica | undefined }) {
           VEN 2 ROLES». Es lo que §7.3 pide antes de guardar una edición, y
           mientras editar no exista, es lo que hace útil al conteo. */}
       {uso.roles.length > 0 && (
-        <Label as="div">{`Editarla cambia lo que ven ${String(uso.roles.length)} rol(es) · ${uso.roles.join(' y ')}`}</Label>
+        <Ayuda as="div">{`Editarla cambia lo que ven ${String(uso.roles.length)} rol(es): ${uso.roles.join(' y ')}.`}</Ayuda>
       )}
     </div>
   )

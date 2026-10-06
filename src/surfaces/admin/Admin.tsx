@@ -53,6 +53,8 @@ import { TenantList } from './TenantList'
 import { SurfaceMessage } from '../console/SurfaceMessage'
 import { AgentConfig } from './AgentConfig'
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
+import { Accion } from '../../render/primitives/Accion'
 import { ApiError } from '../../api/types'
 import type { EstadoDeAlta } from './alta'
 import type { Tenant } from '../../api/admin'
@@ -187,8 +189,8 @@ export function Admin() {
       {pendiente !== undefined ? (
         <div className="flex flex-col gap-2">
           <Label as="div">Pendiente</Label>
-          <Label as="div">{pendiente.razon}</Label>
-          <Label as="div">Se desbloquea con · {pendiente.desbloqueaCon}</Label>
+          <Ayuda>{pendiente.razon}</Ayuda>
+          <Ayuda>Se desbloquea con {pendiente.desbloqueaCon}</Ayuda>
         </div>
       ) : pantalla === 'cliente' ? (
         <Cliente
@@ -290,19 +292,16 @@ function Catalogo({
   if (query.isError) {
     return (
       <div className="flex flex-col gap-2">
-        <Label as="div">No se pudo cargar el catálogo de este cliente</Label>
-        <Label as="div">
+        <Ayuda>No se pudo cargar el catálogo de este cliente.</Ayuda>
+        <Ayuda>
           {query.error instanceof ApiError && query.error.httpStatus === 403
             ? 'Esta pantalla pide rol de administrador.'
             : (query.error.message === '' ? 'Sin detalle del servidor' : query.error.message)}
-        </Label>
-        <button
-          type="button"
-          onClick={() => void query.refetch()}
-          className="self-start font-mono text-label tracking-rotulo uppercase rounded-md px-4 py-2 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2"
-        >
-          Reintentar
-        </button>
+        </Ayuda>
+        {/* `self-start` en un envoltorio: `Accion` no acepta clases de afuera. */}
+        <div className="self-start">
+          <Accion onClick={() => void query.refetch()}>Reintentar</Accion>
+        </div>
       </div>
     )
   }
@@ -366,8 +365,8 @@ function Cliente({
   if (roles.isError) {
     return (
       <div className="flex flex-col gap-2">
-        <Label as="div">No se pudieron cargar los roles</Label>
-        <Label as="div">{mensajeDeRol(roles.error) ?? 'Sin detalle del servidor'}</Label>
+        <Ayuda>No se pudieron cargar los roles.</Ayuda>
+        <Ayuda>{mensajeDeRol(roles.error) ?? 'Sin detalle del servidor'}</Ayuda>
       </div>
     )
   }
@@ -389,10 +388,10 @@ function Cliente({
       {agentes.isError ? (
         <section className="flex flex-col gap-2">
           <Label as="div">Agente de datos</Label>
-          <Label as="div">No se pudo cargar la configuración del agente</Label>
-          <Label as="div">
+          <Ayuda>No se pudo cargar la configuración del agente.</Ayuda>
+          <Ayuda>
             {agentes.error instanceof Error ? agentes.error.message : 'Sin detalle del servidor'}
-          </Label>
+          </Ayuda>
         </section>
       ) : (
         // **`sinRoles` y no `estado === 'EN_ALTA'`**, que es la distinción que el

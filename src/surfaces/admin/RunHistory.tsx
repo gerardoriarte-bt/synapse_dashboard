@@ -32,6 +32,8 @@
  */
 import { useMemo, useState } from 'react'
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
+import { Opcion } from '../../render/primitives/Opcion'
 import { Note } from '../../render/primitives/Note'
 import { EmptyRow } from './EmptyRow'
 import type { Corrida } from '../../api/admin'
@@ -76,20 +78,12 @@ export function RunHistory({ corridas, format, cargando = false }: Props) {
         {/* **Los años salen del dato.** Con uno solo igual se pinta: decir «2026»
             es contexto, y esconderlo haría que la tabla no dijera de cuándo es. */}
         <div className="flex items-center gap-2">
+          {/* **`Opcion` y no `Accion`** · 2026-10-06: elegir un año no ejecuta
+              nada, cambia qué se mira. */}
           {disponibles.map((a) => (
-            <button
-              key={a}
-              type="button"
-              onClick={() => setAnio(a)}
-              aria-pressed={a === activo}
-              className={
-                a === activo
-                  ? 'rounded-md border border-w4 bg-elev px-2 py-0.5 text-ink text-label'
-                  : 'rounded-md border border-w3 px-2 py-0.5 text-dim text-label'
-              }
-            >
+            <Opcion key={a} elegida={a === activo} onClick={() => setAnio(a)}>
               {a}
-            </button>
+            </Opcion>
           ))}
         </div>
       </div>
@@ -165,9 +159,9 @@ export function RunHistory({ corridas, format, cargando = false }: Props) {
       </table>
 
       {/* La razón de que los cinco no se sumen, dicha donde se ven. */}
-      <Label as="div">
-        Preservadas son las que ya tenían un valor y no se recalcularon · no son una falla
-      </Label>
+      <Ayuda>
+        Preservadas son las que ya tenían un valor y no se recalcularon: no son una falla.
+      </Ayuda>
     </div>
   )
 }

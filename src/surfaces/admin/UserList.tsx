@@ -32,6 +32,7 @@
  */
 import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
 import { EmptyRow } from './EmptyRow'
 import { SkeletonRows } from './SkeletonRows'
 import type { Formatter } from '../../render/format'
@@ -115,7 +116,7 @@ export function UserList({ format, usuarios, total, clientes, cargando = false }
             contra 26 y la respuesta resultó ser que sobraba un título. La
             pregunta operativa SÍ es de la vista —es lo que esta pantalla
             contesta— y se queda. */}
-        <Label as="div">¿Quién entra a qué cliente, y con qué rol?</Label>
+        <Ayuda>¿Quién entra a qué cliente, y con qué rol?</Ayuda>
         {/* **El resumen literal del dibujo** —«17 usuarios · 2 clientes con
             usuarios»— y los dos números salen del servicio.
 
@@ -168,7 +169,7 @@ export function UserList({ format, usuarios, total, clientes, cargando = false }
                 clase="alta"
                 columnas={COLUMNAS.length}
                 razon="Todavía no hay usuarios en ningún cliente."
-                salida="El alta es por invitación · nadie fija la contraseña de otro."
+                salida="El alta es por invitación: nadie fija la contraseña de otro."
               />
             )}
 
@@ -221,24 +222,24 @@ export function UserList({ format, usuarios, total, clientes, cargando = false }
             explican por qué esta pantalla no ofrece editar el cliente ni fijar
             una contraseña. */}
         <div className="flex flex-col gap-1 border-t border-w2 pt-3">
-          <Label as="div">
-            El cliente no se edita después de crear · mover un usuario de cliente es eliminarlo y
-            volver a invitarlo
-          </Label>
-          <Label as="div">
-            El alta es por invitación · nadie fija la contraseña de otro, ni siquiera un
-            super-admin
-          </Label>
-          <Label as="div">
-            Suspender corta el acceso sin borrar el registro · la auditoría de quién vio qué se
-            conserva
-          </Label>
+          <Ayuda>
+            El cliente no se edita después de crear: mover un usuario de cliente es eliminarlo y
+            volver a invitarlo.
+          </Ayuda>
+          <Ayuda>
+            El alta es por invitación: nadie fija la contraseña de otro, ni siquiera un
+            super-admin.
+          </Ayuda>
+          <Ayuda>
+            Suspender corta el acceso sin borrar el registro: la auditoría de quién vio qué se
+            conserva.
+          </Ayuda>
         </div>
 
         <div className="flex flex-col gap-1 border-t border-w2 pt-3">
-          <Label as="div">{`Esta pantalla va a crecer`}</Label>
+          <Ayuda>Esta pantalla va a crecer. Falta:</Ayuda>
           {FALTANTES.map((f) => (
-            <Label as="div" key={f}>{f}</Label>
+            <Ayuda key={f}>{f}</Ayuda>
           ))}
         </div>
       </section>

@@ -137,6 +137,25 @@ describe('las métricas que un rol no recibe', () => {
 })
 
 describe('borrar sigue dependiendo de los usuarios', () => {
+  it('Borrar viste la señal de PELIGRO y no la del CTA · 2026-10-06', () => {
+    // Iba en `text-acc`, el naranja de «adelante»: una acción que borra con esa
+    // señal la invierte. Y sigue siendo la única que la lleva — «Editar» al
+    // lado es secundaria.
+    montar(rol({ usuarios: 0 }))
+    const borrar = screen.getByRole('button', { name: 'Borrar CEO' })
+    expect(borrar.className).toContain('text-peligro')
+    expect(borrar.className).not.toContain('text-acc')
+    expect(screen.getByRole('button', { name: 'Editar' }).className).not.toContain('text-peligro')
+  })
+
+  it('la razón de no poder borrar es una FRASE, no un rótulo · 2026-10-06', () => {
+    // Mono en mayúsculas se lee como el nombre de algo; esto explica qué hacer.
+    montar(rol({ usuarios: 3 }))
+    const razon = screen.getByText(/reasignalos primero/)
+    expect(razon.className).toContain('font-body')
+    expect(razon.className).not.toContain('uppercase')
+  })
+
   it('con usuarios asignados no hay botón, y se dice por qué', () => {
     const { container } = montar(rol({ usuarios: 3 }))
     expect(screen.queryByRole('button', { name: /borrar/i })).toBeNull()

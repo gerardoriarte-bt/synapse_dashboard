@@ -77,7 +77,7 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
     // pierde columnas sin decirlo; el scroll es visible.
     <div className="min-h-screen bg-bg">
       <div className="min-w-[1280px]">
-        <header className="flex flex-col gap-4 px-6 pt-6 pb-4 border-b border-w4">
+        <header className="flex flex-col gap-4 px-6 pt-6 border-b border-w4">
           {/* §PEN:A1 y §PEN:A2 encabezan con «Synapse · ADMINISTRACIÓN», y
               recién debajo va la pantalla. Faltaban las dos cosas. */}
           <div className="flex items-center gap-3">
@@ -154,7 +154,12 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
             </div>
           </div>
 
-          <nav className="flex gap-1" aria-label="Administración">
+          {/* **La navegación en registro de acción, como la del builder** ·
+              2026-10-06. Vestía el traje del rótulo —mono, mayúsculas, gris— y
+              se leía como un encabezado más. Ahora es Inter, y la activa se
+              marca con el borde `acc` —«estado activo», uno de sus usos
+              permitidos— y el peso, no sólo con un fondo. */}
+          <nav className="flex gap-1 -mb-px" aria-label="Administración">
             {PANTALLAS.map((p) => (
               <button
                 key={p.id}
@@ -162,8 +167,10 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
                 onClick={() => onIr(p.id)}
                 aria-current={p.id === activa ? 'page' : undefined}
                 className={
-                  'text-label tracking-rotulo uppercase px-3 py-2 rounded-sm ' +
-                  (p.id === activa ? 'bg-w3 text-ink' : 'text-dim hover:bg-w2')
+                  'px-3 py-3 font-body text-cuerpo cursor-pointer border-b-2 ' +
+                  (p.id === activa
+                    ? 'border-acc text-ink font-semibold'
+                    : 'border-transparent text-dim font-medium hover:text-ink')
                 }
               >
                 {p.nombre}

@@ -48,6 +48,7 @@
  */
 import { Label } from '../../render/primitives/Label'
 import { Note } from '../../render/primitives/Note'
+import { Ayuda } from '../../render/primitives/Ayuda'
 import { StatusChip } from './StatusChip'
 import type { Agente } from '../../api/admin'
 
@@ -161,7 +162,7 @@ export function AgentConfig({ agentes, sinRoles }: Props) {
           verificó por última vez. «Activo» solo dice que nadie lo dio de baja: un agente
           activo con la credencial vencida se ve igual que uno que funciona.
         </p>
-        <Label as="div">Se desbloquea con · una comprobación del acceso</Label>
+        <Ayuda>Se desbloquea con una comprobación del acceso.</Ayuda>
       </div>
 
       {/* **La nota dura del permiso** · §PEN:A2 la escribe al pie del bloque, y
@@ -169,10 +170,10 @@ export function AgentConfig({ agentes, sinRoles }: Props) {
           un rol no va a poder ver, y eso no es un error de composición. Es la
           misma regla que `RoleEditor` ya declara para las métricas ocultas,
           dicha para el acceso. */}
-      <Label as="div">
-        El permiso se aplica al servir el dato, no al componer · un rol sin acceso no ve el
-        dato aunque el panel exista
-      </Label>
+      <Ayuda>
+        El permiso se aplica al servir el dato, no al componer: un rol sin acceso no ve el
+        dato aunque el panel exista.
+      </Ayuda>
     </section>
   )
 }

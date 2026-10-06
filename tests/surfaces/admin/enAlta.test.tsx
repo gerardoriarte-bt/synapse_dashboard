@@ -362,6 +362,17 @@ describe('el vacío de roles · el CTA DISPARA, no sólo existe', () => {
     expect(screen.queryByRole('button', { name: 'Nuevo rol' })).toBeNull()
   })
 
+  it('«Definir primer rol» es LA primaria de la zona · 2026-10-06', async () => {
+    // Relleno `acc`: es el siguiente paso del alta y la única acción del vacío.
+    base()
+    montar()
+    await abrirFicha()
+
+    const cta = await screen.findByRole('button', { name: 'Definir primer rol' })
+    expect(cta.className).toContain('bg-acc')
+    expect(cta.className).not.toContain('uppercase')
+  })
+
   it('con roles, la cabecera SÍ lleva su CTA', async () => {
     // La otra mitad: esconderlo siempre dejaría al cliente en servicio sin forma
     // de crear un rol, que es peor que el botón repetido.

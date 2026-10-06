@@ -430,7 +430,7 @@ describe('A4 · la columna USO · divergencia 6', () => {
 
     const fila = (await screen.findByText('Ventas')).closest('tr')
     expect(
-      within(fila as HTMLElement).getByText(/Editarla cambia lo que ven 2 rol\(es\) · CEO y Planner/),
+      within(fila as HTMLElement).getByText(/Editarla cambia lo que ven 2 rol\(es\): CEO y Planner/),
     ).toBeInTheDocument()
   })
 
@@ -443,7 +443,7 @@ describe('A4 · la columna USO · divergencia 6', () => {
 
     const fila = (await screen.findByText('Margen')).closest('tr')
     expect(
-      within(fila as HTMLElement).getByText(/Sin uso publicado · puede estar en un borrador/),
+      within(fila as HTMLElement).getByText(/Sin uso publicado: puede estar en un borrador/),
     ).toBeInTheDocument()
     expect(within(fila as HTMLElement).queryByText('0 panel(es)')).toBeNull()
   })
