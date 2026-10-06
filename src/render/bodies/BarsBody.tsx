@@ -218,10 +218,15 @@ export function BarsBody({
 
   return (
     <div className="h-full min-h-0">
+      {/* **La cifra lleva su unidad** · 2026-10-06. En QA `Cumplimiento de
+          objetivo` decía «26.5» y «11.8» sueltos, con el catálogo declarando
+          `unit: %`: un número sin unidad al lado de una barra se lee como
+          cualquier cosa. Y la lectura, con la cifra entera. */}
       <PlotBars
         value={{ forma: 'categorica', items: trimmed }}
         family={family}
-        format={figure}
+        format={(v) => format.withUnit(figure(v), unit)}
+        leer={(v) => format.withUnit(format.number(v), unit)}
       />
     </div>
   )

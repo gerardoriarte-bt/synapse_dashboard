@@ -9,6 +9,7 @@ import { PlotSmallMult } from '../plots/PlotSmallMult'
 import { EmptyState } from '../states/EmptyState'
 import { UnknownPlotState } from '../states/UnknownPlotState'
 import type { DrawableSeries } from '../plots/PlotSeries'
+import { granoDe } from '../plots/core/grano'
 import type { BodyProps } from '../types'
 
 /** Los gráficos que este cuerpo sabe dibujar HOY, POR FORMA.
@@ -227,6 +228,10 @@ export function SeriesBody({
     )
   }
 
+  // **La lectura escribe la cifra entera y con su unidad** · 2026-10-06. Con
+  // `base100` la unidad deja de valer —la cifra es un índice, no un monto— y
+  // por eso se cae: «USD 112» sobre una serie normalizada sería mentir.
+  const unidadDeLectura = params.normalizacion === 'base100' ? undefined : unit
   return (
     <div className="h-full min-h-0">
       <PlotSeries
@@ -234,6 +239,8 @@ export function SeriesBody({
         family={family}
         format={(v) => format.number(v, { abbreviate: true })}
         area={normalized.length === 1}
+        fechar={(t) => format.axisDate(t, granoDe(normalized))}
+        leer={(v) => format.withUnit(format.number(v), unidadDeLectura)}
       />
     </div>
   )

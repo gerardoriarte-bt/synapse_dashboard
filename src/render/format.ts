@@ -95,6 +95,15 @@ export type Formatter = {
    *  El riel de hilos es otra cosa — ahí la retención es de doce meses y el año
    *  sólo aparece cuando no es el corriente. */
   calendar: (iso: string) => string
+  /** El rótulo de un punto en el eje del tiempo · «1 oct», «oct 25» · 2026-10-06.
+   *
+   *  **El grano lo dice el llamador**, que mira la serie entera: un punto solo
+   *  no sabe si es un día o el primero de un mes. Con `dia` va día y mes; con
+   *  `mes`, mes y año corto, porque doce meses cruzan un año casi siempre.
+   *
+   *  Un `t` que no es fecha —una etiqueta como `'jul'`— vuelve tal cual: el eje
+   *  pinta lo que llegó, no lo inventa. */
+  axisDate: (t: string, grano: 'dia' | 'mes') => string
   /** La hora de un instante · «06:00». 24 horas, igual que `threadStamp`: en el
    *  producto el corte del día importa más que la costumbre local. */
   clock: (iso: string) => string
@@ -236,6 +245,17 @@ export function createFormat(locale: string): Formatter {
       if (hours < 1) return 'RECIÉN'
       if (hours < 48) return `HACE ${hours} H`
       return `HACE ${Math.floor(hours / 24)} D`
+    },
+
+    axisDate(t, grano) {
+      if (!SOLO_FECHA.test(t)) return t
+      const opciones: Intl.DateTimeFormatOptions =
+        grano === 'dia' ? { day: 'numeric', month: 'short' } : { month: 'short', year: '2-digit' }
+      // UTC por la misma razón que `calendar`: `YYYY-MM-DD` es un día del
+      // calendario, y mirado desde Ciudad de México el 1 de octubre es el 30.
+      return new Intl.DateTimeFormat(locale, { ...opciones, timeZone: 'UTC' })
+        .format(new Date(t))
+        .replace(/\./g, '')
     },
 
     calendar(iso) {

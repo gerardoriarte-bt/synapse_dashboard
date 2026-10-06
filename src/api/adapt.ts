@@ -895,12 +895,36 @@ const lista = (o: Record<string, unknown>, k: string): Record<string, unknown>[]
   return out
 }
 
-/** Puntos `{t, v}` · los dos son iguales de los dos lados. */
+/** Días desde epoch en una cadena · `"20727"`, y nada más que dígitos. */
+const DIAS_EPOCH = /^\d{1,6}$/
+const MS_POR_DIA = 86_400_000
+
+/** `t` a ISO cuando llega como días desde epoch · 2026-10-06.
+ *
+ *  **La interpretación la declara el backend, no nosotros.** El contrato midió
+ *  el 2026-09-29 que `t` llegaba como `"20362"` y se negó a interpretarlo porque
+ *  el cable no lo decía. `c8b9247` lo dice en su mensaje —«la SQL API devuelve
+ *  DATE como días desde epoch; `formatDateLabel` convierte a ISO»— y desde ahí
+ *  manda `"2026-09-01"`.
+ *
+ *  **Pero las filas ya materializadas conservan el número** hasta que su período
+ *  se rematerialice: medido en QA el 2026-10-06, `daily_trend` y
+ *  `media_efficiency_12m` seguían en `"20727"`. Con un eje X que ahora sí se
+ *  pinta, eso es «20727» en pantalla. Esto hace del lado de acá la misma
+ *  conversión que el servicio hace del suyo: reformatea, no calcula, y una `t`
+ *  que ya es ISO o que es una etiqueta —`'jul'`— pasa tal cual. */
+function tIso(t: string): string {
+  if (!DIAS_EPOCH.test(t)) return t
+  return new Date(Number(t) * MS_POR_DIA).toISOString().slice(0, 10)
+}
+
+/** Puntos `{t, v}` · los dos son iguales de los dos lados, salvo el formato de
+ *  `t` cuando viene de una fila vieja · ver `tIso`. */
 function puntos(filas: Record<string, unknown>[]): { t: string; v: number }[] {
   return filas.flatMap((p) => {
     const t = cadena(p, 't')
     const v = numero(p, 'v')
-    return t === null || v === null ? [] : [{ t, v }]
+    return t === null || v === null ? [] : [{ t: tIso(t), v }]
   })
 }
 

@@ -55,7 +55,16 @@ const FIGURE = {
   fontVariantNumeric: 'tabular-nums',
 } as const
 
-export function PlotBars({ value, family, format }: PlotProps<'categorica'>) {
+export function PlotBars({
+  value,
+  family,
+  format,
+  leer,
+}: PlotProps<'categorica'> & {
+  /** La cifra completa para el hover · 2026-10-06. Sin él la barra no se
+   *  nombra al pasar: el plot no inventa cómo se escribe un monto. */
+  leer?: ((v: number) => string) | undefined
+}) {
   const { ref, w, h } = useSize()
 
   const items = value.items.map((i) => ({ k: i.etiqueta, v: i.v }))
@@ -94,6 +103,26 @@ export function PlotBars({ value, family, format }: PlotProps<'categorica'>) {
                 cada una: el dibujo las pone todas en la misma `x`, que es lo que
                 deja compararlas de un vistazo. Van ancladas al final porque la
                 columna crece hacia la izquierda cuando la cifra es más larga. */}
+            {/* **El hover de la barra** · 2026-10-06. Una franja invisible del
+                alto de la banda, de punta a punta, con su `<title>`: el
+                navegador lo muestra al pasar y el lector de pantalla lo lee. Va
+                sobre todo el ancho y no sólo sobre la barra, porque una barra
+                de 0,2 no se puede apuntar. */}
+            {leer === undefined
+              ? null
+              : items.map((i) => (
+                  <rect
+                    key={`h-${i.k}`}
+                    x={0}
+                    y={y(i.k) ?? 0}
+                    width={width + figureW}
+                    height={y.bandwidth}
+                    fill="transparent"
+                  >
+                    <title>{`${i.k} · ${leer(i.v)}`}</title>
+                  </rect>
+                ))}
+
             {items.map((i) => (
               <text
                 key={`f-${i.k}`}

@@ -480,6 +480,28 @@ de agente a mitad de una conversación debe avisar que empieza otra. Hoy
 empieza otra **sin avisar**, porque el servicio fija el agente al crear el
 hilo; el riel lo muestra como una fila nueva.
 
+## 11 · Leer un gráfico: el hover que el `.pen` no dibuja · 2026-10-06
+
+**Quién decide** · diseño · **Bloquea** · nada, ya está construido
+
+El humano, mirando los gráficos de UA en QA: «no se entiende qué está
+mostrando, desde el título hasta los detalles […] debería haber hovers que
+indiquen los montos y detallar qué son los ejes». Se construyeron cinco cosas, y
+no todas son divergencias:
+
+| | Qué | ¿Del `.pen`? |
+|---|---|---|
+| Leyenda | Trazo de 18×3, nombre y valor | **Sí**: «Legend Item» de «Componentes de gráfico». No se había portado |
+| Eje del tiempo | «1 OCT», «NOV 25» | El dibujo lo tiene en los plots; `PlotSeries` no lo pintaba |
+| Unidad en barras | «26.5%» | Regla dura: ningún número desnudo |
+| **Hover con lectura** | Guía vertical, un punto por serie y una caja con la fecha y la cifra **entera** de cada serie; también con flechas del teclado | **No.** Ni el `.pen` ni `design.md` dibujan una interacción así. Decisión humana |
+| **Título del panel** | Ancho natural hasta la mitad del panel | §6 pone título y meta lado a lado; la Chart Card los apila. Se quedó con §6 y el título deja de ceder |
+
+**Lo que diseño tendría que decidir:** cómo se ve la caja de lectura (hoy
+`$elev` con borde `w3`, mono de 10 para la fecha y de 11 para la cifra, igual
+que «Legend Item»), y si en barras alcanza con el `title` nativo, que es lo que
+hay hoy.
+
 ## Dónde vive cada una de las demás
 
 Para que este documento no crezca hasta pisar a los otros:
