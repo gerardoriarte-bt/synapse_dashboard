@@ -13,6 +13,25 @@ openapi: 3.1.0
 #
 # ── LA VERIFICACIÓN ES POR RUTA, DESDE EL 2026-09-25 ─────────────────────────
 #
+# ── 2026-10-06 · LAS DOCE RUTAS PASARON A `7b717aa`, REVERIFICADAS POR LECTURA ──
+#
+# Al traer `feature/dynamic-dashboard-backend` de upstream, su cabeza era
+# `7b717aa`. Cada marca se movió **comparando el código que sirve la ruta**
+# entre el commit de su marca y `7b717aa`, no midiendo el servicio:
+#
+#   · `dd_config_handler.go`, `dd_config_service.go`, `transform_v11.go`,
+#     `dd_drilldown_handler.go`, `dd_drilldown_service.go`, `thread_handler.go`
+#     e `history_handler.go`: **sin cambios** desde `d9147c3`.
+#   · Lo que sí cambió —`queries.go`, el materializador, la prosa— cambia
+#     VALORES, no formas: más tablas Gold, moneda de la prosa, y `t` en ISO en
+#     vez de días desde epoch (lo absorbe `tIso` en `adapt.ts`).
+#   · `/config/chat` suma `agent_id` opcional, ya transcripto abajo.
+#   · `/config/plots` **ahora lo sirve upstream** (`c8b9247`), con las mismas
+#     49 filas que `tools/gen-plots.py`, idénticas y en el mismo orden.
+#
+# Ninguna se volvió a pedir al servicio: QA sigue en `c8b9247`, que es ancestro
+# de `7b717aa` y difiere sólo en el `agent_id` del chat.
+#
 # Cada ruta declara `x-verificado-en` con el commit contra el que se leyó. La
 # línea `commit` de arriba es la procedencia del archivo; `x-verificado-en` es
 # lo que `backend-drift` mira.
@@ -106,7 +125,7 @@ tags:
 
 paths:
   /config/me:
-    x-verificado-en: d9147c3
+    x-verificado-en: 7b717aa
     get:
       tags: [config]
       operationId: getMe
@@ -129,7 +148,7 @@ paths:
         '500': { $ref: '#/components/responses/ServerError' }
 
   /config/catalog:
-    x-verificado-en: d9147c3
+    x-verificado-en: 7b717aa
     get:
       tags: [config]
       operationId: getCatalog
@@ -153,7 +172,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/blocks:
-    x-verificado-en: d9147c3
+    x-verificado-en: 7b717aa
     get:
       tags: [config]
       operationId: getBlocks
@@ -177,7 +196,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/plots:
-    x-verificado-en: b6f0e09
+    x-verificado-en: 7b717aa
     get:
       tags: [config]
       operationId: getPlots
@@ -188,24 +207,18 @@ paths:
         entradas en 5 ms**. Estuvo pedida tres veces y no llegaba; la tabla era
         nuestra entera, así que lo que faltaba era la ruta.
 
-        ── **CONTRA UPSTREAM DA 404** · medido el 2026-10-01 ────────────────────
+        ── **UPSTREAM LA TOMÓ EN `c8b9247`** · leído el 2026-10-06 ─────────────
 
-        Levantado `d9147c3` —su rama, limpia— esta ruta **no existe**: `git grep`
-        no encuentra `config/plots` en una sola línea de su código, y el servicio
-        contesta 404. Upstream no tomó `b6f0e09`.
+        Hasta el 2026-10-01 contra upstream daba 404: no la habían tomado. En
+        `c8b9247` —«plots, matriz a mes, cuatro métricas y fechas ISO»— la
+        sirven ellos, desde un `plots.json` embebido en el binario y no desde
+        una tabla. **Sus 49 filas son idénticas a las de `tools/gen-plots.py`**,
+        comparadas campo por campo y en el mismo orden. Con eso el selector de
+        gráfico del builder anda contra su servicio, no sólo contra el fork.
 
-        **Y eso se vio recién hoy porque el binario de `:4010` era el fork.** Es
-        la trampa registrada en `CLAUDE.md` —«antes de medir, mirá qué binario
-        está corriendo»— con la cara más cara: no hace que su código se vea como
-        avance, hace que **nuestra propia ruta se vea como suya**. Comprobado
-        levantando los dos: el viejo da 200 con 49 filas, `d9147c3` da 404.
-
-        **Lo que se apaga sin ella:** el selector de gráfico del builder entero.
-        `PanelConfigurator` declara que un repertorio vacío apaga la sección —«un
-        control que se abre vacío promete una elección que no se puede hacer»—
-        así que contra upstream **no hay forma de elegir gráfico**, ni de ver el
-        que el panel ya tiene. La consola sigue dibujando: el `chart` viaja en el
-        layout y los cuerpos despachan sin el repertorio.
+        Antes de eso, el 404 se vio tarde porque el binario de `:4010` era el
+        fork: nuestra propia ruta se veía como suya. Es la trampa de `CLAUDE.md`
+        —«antes de medir, mirá qué binario está corriendo»—.
 
         Catálogo **GLOBAL, no por tenant** —qué puede dibujar un gráfico no
         depende del cliente— y `data` es un **arreglo desnudo**, igual que
@@ -234,7 +247,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/tabs/{tabId}:
-    x-verificado-en: d9147c3
+    x-verificado-en: 7b717aa
     get:
       tags: [config]
       operationId: getTab
@@ -270,7 +283,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   /config/panels:batch:
-    x-verificado-en: d9147c3
+    x-verificado-en: 7b717aa
     post:
       tags: [config]
       operationId: batchPanels
@@ -304,7 +317,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/me/preferences:
-    x-verificado-en: d9147c3
+    x-verificado-en: 7b717aa
     put:
       tags: [config]
       operationId: updatePreferences
@@ -389,7 +402,7 @@ paths:
     #
     # **Las seis formas `ChatFrame*` siguen sin verse contra el servicio.** Eso
     # es cobertura que falta, y queda dicho acá y en la salida de `humo`.
-    x-verificado-en: de881e1
+    x-verificado-en: 7b717aa
     post:
       tags: [config]
       operationId: askChat
@@ -486,7 +499,7 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   /config/chat/threads:
-    x-verificado-en: d9147c3
+    x-verificado-en: 7b717aa
     get:
       tags: [config]
       operationId: listChatThreads
@@ -549,7 +562,7 @@ paths:
 
   # ── B3.2 · las preguntas sugeridas · TRANSCRITO DE 82da946 ───────────────
   /config/panels/{panelId}/chat-suggestions:
-    x-verificado-en: d9147c3
+    x-verificado-en: 7b717aa
     get:
       tags: [config]
       operationId: panelChatSuggestions
@@ -647,7 +660,7 @@ paths:
   # redactado, y `daily_trend` corrige su forma sembrada. Eso le toca a
   # `Payload.message` de `/config/panels:batch`, que sigue declarando `de881e1`.
   /config/panels/{panelId}/drilldown/dimensions:
-    x-verificado-en: fa8ac88
+    x-verificado-en: 7b717aa
     get:
       tags: [config]
       operationId: panelDrillDownDimensions
@@ -732,7 +745,7 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   /config/panels/{panelId}/drilldown:
-    x-verificado-en: fa8ac88
+    x-verificado-en: 7b717aa
     post:
       tags: [config]
       operationId: panelDrillDown

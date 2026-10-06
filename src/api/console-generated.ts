@@ -81,24 +81,18 @@ export interface paths {
          *     entradas en 5 ms**. Estuvo pedida tres veces y no llegaba; la tabla era
          *     nuestra entera, así que lo que faltaba era la ruta.
          *
-         *     ── **CONTRA UPSTREAM DA 404** · medido el 2026-10-01 ────────────────────
+         *     ── **UPSTREAM LA TOMÓ EN `c8b9247`** · leído el 2026-10-06 ─────────────
          *
-         *     Levantado `d9147c3` —su rama, limpia— esta ruta **no existe**: `git grep`
-         *     no encuentra `config/plots` en una sola línea de su código, y el servicio
-         *     contesta 404. Upstream no tomó `b6f0e09`.
+         *     Hasta el 2026-10-01 contra upstream daba 404: no la habían tomado. En
+         *     `c8b9247` —«plots, matriz a mes, cuatro métricas y fechas ISO»— la
+         *     sirven ellos, desde un `plots.json` embebido en el binario y no desde
+         *     una tabla. **Sus 49 filas son idénticas a las de `tools/gen-plots.py`**,
+         *     comparadas campo por campo y en el mismo orden. Con eso el selector de
+         *     gráfico del builder anda contra su servicio, no sólo contra el fork.
          *
-         *     **Y eso se vio recién hoy porque el binario de `:4010` era el fork.** Es
-         *     la trampa registrada en `CLAUDE.md` —«antes de medir, mirá qué binario
-         *     está corriendo»— con la cara más cara: no hace que su código se vea como
-         *     avance, hace que **nuestra propia ruta se vea como suya**. Comprobado
-         *     levantando los dos: el viejo da 200 con 49 filas, `d9147c3` da 404.
-         *
-         *     **Lo que se apaga sin ella:** el selector de gráfico del builder entero.
-         *     `PanelConfigurator` declara que un repertorio vacío apaga la sección —«un
-         *     control que se abre vacío promete una elección que no se puede hacer»—
-         *     así que contra upstream **no hay forma de elegir gráfico**, ni de ver el
-         *     que el panel ya tiene. La consola sigue dibujando: el `chart` viaja en el
-         *     layout y los cuerpos despachan sin el repertorio.
+         *     Antes de eso, el 404 se vio tarde porque el binario de `:4010` era el
+         *     fork: nuestra propia ruta se veía como suya. Es la trampa de `CLAUDE.md`
+         *     —«antes de medir, mirá qué binario está corriendo»—.
          *
          *     Catálogo **GLOBAL, no por tenant** —qué puede dibujar un gráfico no
          *     depende del cliente— y `data` es un **arreglo desnudo**, igual que
