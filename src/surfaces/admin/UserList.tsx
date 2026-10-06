@@ -61,14 +61,20 @@ const COLUMNAS = ['Usuario', 'Cliente', 'Rol', 'Estado', 'Último acceso', 'Alta
  *  pierde: baja al comentario**, que es donde le sirve a quien la va a
  *  construir.
  */
-const FALTANTES = [
-    // El cable sólo trae activo o suspendido.
-    'Las invitaciones pendientes, además de los usuarios activos y suspendidos',
-    // El dibujo pone «por M. Benítez» y no hay campo.
-    'Quién dio de alta a cada usuario',
-    // No hay ruta.
-    'Volver a enviar una invitación que nadie aceptó',
-] as const
+/** **Lo que esta pantalla todavía no tiene** · fuera de la pantalla desde el 2026-10-06.
+ *
+ *  Se pintaba como «Esta pantalla va a crecer · Falta: …». Decisión humana
+ *  sobre la auditoría del builder de ese día: «si no suman para el uso,
+ *  quitar». No suman: quien usa la pantalla no puede hacer nada con eso. Queda
+ *  acá, que es donde le sirve a quien lo vaya a construir.
+ *
+ *    El cable sólo trae activo o suspendido.
+ *  · 'Las invitaciones pendientes, además de los usuarios activos y suspendidos'
+ *    El dibujo pone «por M. Benítez» y no hay campo.
+ *  · 'Quién dio de alta a cada usuario'
+ *    No hay ruta.
+ *  · 'Volver a enviar una invitación que nadie aceptó'
+ */
 
 
 type Props = {
@@ -234,15 +240,7 @@ export function UserList({ format, usuarios, total, clientes, cargando = false }
             Suspender corta el acceso sin borrar el registro: la auditoría de quién vio qué se
             conserva.
           </Ayuda>
-        </div>
-
-        <div className="flex flex-col gap-1 border-t border-w2 pt-3">
-          <Ayuda>Esta pantalla va a crecer. Falta:</Ayuda>
-          {FALTANTES.map((f) => (
-            <Ayuda key={f}>{f}</Ayuda>
-          ))}
-        </div>
-      </section>
+        </div>      </section>
     </div>
   )
 }

@@ -193,7 +193,7 @@ describe('B6 · el dashboard sale de la VERSIÓN abierta', () => {
     // cliente con versiones nunca queda sin una, así que el caso es el de un
     // cliente sin ninguna: la lista vacía que la ruta devuelve.
     const { pedidas } = montar([publicacion({})], [])
-    await screen.findByText('Este cliente todavía no tiene versiones.')
+    await screen.findByText('Este cliente todavía no tiene versiones. Creá el primer borrador para empezar a componer.')
     await userEvent.click(screen.getByRole('button', { name: 'Historial de versiones' }))
 
     expect(pedidas).toEqual([])

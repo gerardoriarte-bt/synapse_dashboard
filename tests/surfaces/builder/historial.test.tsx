@@ -294,14 +294,17 @@ describe('B6 · el vacío y el diff sin cambios', () => {
 })
 
 describe('B6 · lo que el dibujo pide y no se compone', () => {
-  it('declara los cinco huecos en vez de inventar la prosa', () => {
+  it('no inventa la prosa del dibujo · y ya no anuncia que le falta', () => {
     // Una divergencia sin prueba deriva en silencio el día que alguien la
-    // «arregle» componiendo la frase.
+    // «arregle» componiendo la frase: el resumen de quien publicó no existe en
+    // el cable, y no se escribe uno.
+    // **Desde el 2026-10-06 lo que falta no se pinta** · decisión humana sobre la
+    // auditoría del builder: «si no suman para el uso, quitar». La lista vive en
+    // el comentario del componente. Esta prueba fija que no vuelva a la pantalla.
     pintar()
-    expect(screen.getByText(/va a crecer/i)).toBeInTheDocument()
-    expect(screen.getByText(/resumen que escribió quien publicó/i)).toBeInTheDocument()
-    expect(screen.getByText(/La razón de cada cambio/i)).toBeInTheDocument()
-    expect(screen.getByText(/El borrador en curso/i)).toBeInTheDocument()
+    expect(screen.queryByText(/va a crecer/i)).toBeNull()
+    expect(screen.queryByText(/resumen que escribió quien publicó/i)).toBeNull()
+    expect(screen.queryByText(/La razón de cada cambio/i)).toBeNull()
   })
 
   it('«REVERSIÓN» se ve, y sólo en la fila que llegó por rollback', () => {

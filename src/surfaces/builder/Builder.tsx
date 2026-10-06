@@ -750,6 +750,20 @@ export function Builder() {
             versionActiva={version}
             onVersion={setVersion}
             fecha={(iso) => format.calendar(iso)}
+            // **Nace como `v1`**: es la primera versión del cliente, y el
+            // contrato deja el `version_id` opcional al crear. Sin nombre, la
+            // lista de versiones mostraría un borrador sin número.
+            onCrearBorrador={() =>
+              duplicar.mutate({ versionId: 'v1' }, { onSuccess: (nuevo) => setVersion(nuevo.id) })
+            }
+            creando={duplicar.isPending}
+            errorAlCrear={
+              duplicar.error === null
+                ? null
+                : duplicar.error.message === ''
+                  ? 'No se pudo crear el borrador.'
+                  : duplicar.error.message
+            }
           >
             {semilla === null ? null : (
               <TabEditor

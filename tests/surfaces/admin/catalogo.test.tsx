@@ -171,17 +171,19 @@ describe('§7.3 · los cuatro campos que la pantalla NO puede afirmar', () => {
     expect(encabezado).not.toContain('estado')
   })
 
-  it('los declara ausentes con su razón y qué los desbloquea · §8', async () => {
+  it('ya NO pinta lo que le falta · y tampoco su plomería', async () => {
     conCatalogo()
     const { container } = montar()
     await abrirCatalogo()
     await screen.findByText('Ventas')
 
     const texto = container.textContent ?? ''
-    expect(texto).toContain('Esta pantalla va a crecer')
-    for (const campo of ['frescura', 'ventana', 'estado']) {
-      expect(texto).toContain(campo)
-    }
+    // **Desde el 2026-10-06 lo que falta no se pinta** · decisión humana sobre la
+    // auditoría del builder: «si no suman para el uso, quitar». La lista vive en
+    // el comentario del componente. Esta prueba fija que no vuelva a la pantalla.
+    expect(texto).not.toContain('va a crecer')
+    expect(texto).not.toContain('La frescura de cada métrica, cuando llegue')
+    expect(texto).not.toContain('La ventana con la que se mide cada métrica')
     // **NO se nombra la tarea que lo desbloquea, y ese cambio es el punto.**
     // Decía `B1.17` en la pantalla de un cliente. La razón técnica no se perdió:
     // bajó al comentario de `FALTANTES`, que es donde le sirve a quien lo va a
@@ -189,8 +191,8 @@ describe('§7.3 · los cuatro campos que la pantalla NO puede afirmar', () => {
     expect(texto).not.toMatch(/B\d\.\d/)
     // Las dos acciones también dejaron de nombrar su plomería: decían
     // «hoy es make sync-catalog», un comando que quien lee no puede correr.
-    expect(texto).toContain('Pedir una sincronización del catálogo')
-    expect(texto).toContain('Editar una métrica')
+    expect(texto).not.toContain('Pedir una sincronización del catálogo')
+    expect(texto).not.toContain('Editar una métrica')
     expect(texto).not.toContain('sync-catalog')
     // **«En cuántos paneles se usa» salió de la lista el 2026-09-15**: la
     // columna `USO` lo cuenta sobre el layout publicado. Es el único de los
@@ -199,7 +201,7 @@ describe('§7.3 · los cuatro campos que la pantalla NO puede afirmar', () => {
     expect(texto).toContain('del layout publicado')
   })
 
-  it('declara que la acción de sincronizar no existe como ruta', async () => {
+  it('sin ruta de sincronizar no hay botón, ni aviso de que falta', async () => {
     // §7.3 pide «acción de sincronizar desde el modelo semántico». Ninguna de
     // las seis rutas de `synapse-admin-wire.yaml` la expone. Un botón que no
     // llama a nada es peor que uno ausente.
@@ -212,7 +214,10 @@ describe('§7.3 · los cuatro campos que la pantalla NO puede afirmar', () => {
     // **La declaración se conserva; lo que cambió es que ya no nombra el
     // comando.** Que la acción NO exista como botón y SÍ esté declarada es lo
     // que esta prueba fija, y eso no se tocó.
-    expect((container.textContent ?? '').toLowerCase()).toContain('sincronización')
+    // **Desde el 2026-10-06 lo que falta no se pinta** · decisión humana sobre la
+    // auditoría del builder: «si no suman para el uso, quitar». La lista vive en
+    // el comentario del componente. Esta prueba fija que no vuelva a la pantalla.
+    expect((container.textContent ?? '').toLowerCase()).not.toContain('sincronización')
   })
 })
 

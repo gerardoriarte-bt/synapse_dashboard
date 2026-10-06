@@ -173,7 +173,7 @@ describe('F4.2 · la lista de clientes', () => {
     expect(keralty.getByText('0')).toBeVisible()
   })
 
-  it('DECLARA las dos que faltan, y cada una con SU razón', async () => {
+  it('ya NO declara las dos columnas que faltan · tampoco sus razones vencidas', async () => {
     // **La razón cambió de dueño dos veces, y la segunda las separó.** Primero
     // decía «GET /admin/tenants devuelve solo id y nombre · se desbloquea con
     // B4.1»; B4.1 llegó y pasó a «falta que definamos qué valores toma cada
@@ -189,18 +189,12 @@ describe('F4.2 · la lista de clientes', () => {
     const { container } = montar()
     await screen.findByText('Under Armour México')
 
-    expect(screen.getByText(/Faltan 2 columnas/)).toBeVisible()
-
-    expect(
-      screen.getByText(
-        'Estado: los valores ya están decididos (activo, piloto y suspendido). Para mostrarla, falta que el servicio lo envíe.',
-      ),
-    ).toBeVisible()
-    expect(
-      screen.getByText(
-        'Vertical: son dos campos, la vertical y su plantilla de origen. Para mostrarla, falta que la plantilla entre en alcance.',
-      ),
-    ).toBeVisible()
+    // **Desde el 2026-10-06 lo que falta no se pinta** · decisión humana sobre la
+    // auditoría del builder: «si no suman para el uso, quitar». La lista vive en
+    // el comentario del componente. Esta prueba fija que no vuelva a la pantalla.
+    // Las razones de cada columna viven en el comentario de `TenantList`.
+    expect(screen.queryByText(/Faltan 2 columnas/)).toBeNull()
+    expect(screen.queryByText(/Para mostrarla, falta/)).toBeNull()
 
     // Las dos razones vencidas: la de B4.1, y la compartida que dejó de ser
     // cierta de `estado` el día que se decidió.

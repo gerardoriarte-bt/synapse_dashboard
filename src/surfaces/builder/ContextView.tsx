@@ -34,6 +34,7 @@
 import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
 import { Opcion } from '../../render/primitives/Opcion'
+import { Accion } from '../../render/primitives/Accion'
 import type { EstadoDeLayout, LayoutVersion, Tenant } from '../../api/admin'
 
 /** El estado en palabras de producto · el cable dice `publicado` en minúscula,
@@ -57,6 +58,13 @@ type Props = {
   onVersion: (id: string) => void
   /** La fecha de publicación, ya formateada con el locale de quien mira. */
   fecha: (iso: string) => string
+  /** **Crear el primer borrador** · 2026-10-06. Sin versiones la pantalla lo
+   *  decía y no ofrecía salida, con un comentario prometiendo «la salida es
+   *  concreta». Decisión humana: ofrecerlo, y que nazca con su versión. */
+  onCrearBorrador: () => void
+  creando: boolean
+  /** Por qué no se pudo crear · `null` si no falló. */
+  errorAlCrear: string | null
   /** Las pestañas de la versión elegida · `TabEditor`. Va como `children`: B1
    *  es dueña del contexto, y el borrador es del contenedor, que lo guarda. */
   children?: React.ReactNode
@@ -73,6 +81,9 @@ export function ContextView({
   versionActiva,
   onVersion,
   fecha,
+  onCrearBorrador,
+  creando,
+  errorAlCrear,
   children,
 }: Props) {
   const nombreDelRol = roles.find((r) => r.id === rolActivo)?.nombre ?? null
@@ -145,7 +156,13 @@ export function ContextView({
         </Label>
         {versiones.length === 0 ? (
           // §8: el vacío invita a actuar. Y acá la salida es concreta.
-          <Ayuda>Este cliente todavía no tiene versiones.</Ayuda>
+          <div className="flex flex-col items-start gap-3">
+            <Ayuda>Este cliente todavía no tiene versiones. Creá el primer borrador para empezar a componer.</Ayuda>
+            <Accion variante="primaria" onClick={onCrearBorrador} deshabilitada={creando}>
+              {creando ? 'Creando…' : 'Crear el primer borrador'}
+            </Accion>
+            {errorAlCrear !== null && <Ayuda>{errorAlCrear}</Ayuda>}
+          </div>
         ) : (
           <ul className="flex flex-wrap gap-2 m-0 p-0 list-none">
             {versiones.map((v) => (

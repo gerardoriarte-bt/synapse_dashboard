@@ -344,7 +344,7 @@ describe('los estados de B5', () => {
     // que no tenga ninguna.
     base([sinVersiones])
     montar()
-    await screen.findByText('Este cliente todavía no tiene versiones.')
+    await screen.findByText('Este cliente todavía no tiene versiones. Creá el primer borrador para empezar a componer.')
     await userEvent.click(screen.getByRole('button', { name: 'Vista previa' }))
 
     expect(
@@ -415,7 +415,7 @@ describe('B5 no tiene chrome · su vacío lleva salida propia · 2026-09-25', ()
     base([sinVersiones])
     montar()
 
-    await screen.findByText('Este cliente todavía no tiene versiones.')
+    await screen.findByText('Este cliente todavía no tiene versiones. Creá el primer borrador para empezar a componer.')
     await userEvent.click(screen.getByRole('button', { name: 'Vista previa' }))
     expect(await screen.findByText(/Elegí una versión/i)).toBeVisible()
 
@@ -426,7 +426,7 @@ describe('B5 no tiene chrome · su vacío lleva salida propia · 2026-09-25', ()
     expect(
       await screen.findByRole('heading', { name: '¿Sobre qué se va a componer?' }),
     ).toBeInTheDocument()
-    expect(screen.getByText('Este cliente todavía no tiene versiones.')).toBeInTheDocument()
+    expect(screen.getByText('Este cliente todavía no tiene versiones. Creá el primer borrador para empezar a componer.')).toBeInTheDocument()
   })
 })
 

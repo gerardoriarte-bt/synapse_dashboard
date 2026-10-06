@@ -78,10 +78,16 @@ import type { Metric } from '../../api/types'
  *  pantalla**, que es exactamente el defecto que esta lista ya cometió con el
  *  estado del acceso y que se vio al abrirla. La declaración no se borra: se mudó
  *  a donde se ve el hueco. */
-const FALTANTES = [
-    // El `.pen` la dibuja; el contrato declara «descripcion» y el cable no la trae.
-    'La descripción de cada rol, debajo de su nombre',
-] as const
+/** **Lo que esta pantalla todavía no tiene** · fuera de la pantalla desde el 2026-10-06.
+ *
+ *  Se pintaba como «Esta pantalla va a crecer · Falta: …». Decisión humana
+ *  sobre la auditoría del builder de ese día: «si no suman para el uso,
+ *  quitar». No suman: quien usa la pantalla no puede hacer nada con eso. Queda
+ *  acá, que es donde le sirve a quien lo vaya a construir.
+ *
+ *    El `.pen` la dibuja; el contrato declara «descripcion» y el cable no la trae.
+ *  · 'La descripción de cada rol, debajo de su nombre'
+ */
 
 type Props = {
   roles: readonly Rol[]
@@ -345,21 +351,15 @@ export function RoleEditor({
 
       {error !== null && <Ayuda>{error}</Ayuda>}
 
-      <div className="flex flex-col gap-1 rounded-sm bg-w2 p-3">
-        <Ayuda>Esta ficha va a crecer. Falta:</Ayuda>
-        {FALTANTES.map((f) => (
-          <Ayuda key={f}>{f}</Ayuda>
-        ))}
-        {/* **Decía «ninguna ruta los lista · solo existe POST /admin/users»** y
-            eran dos defectos en una línea: una ruta y un identificador de tarea
-            pintados en la ficha de un cliente —lo que §7.3 llama vocabulario de
-            infraestructura, acá aplicado a la nuestra— y, desde que la ruta
-            global contesta, **una afirmación falsa**. `copy-producto` no la vio
-            porque es texto suelto entre etiquetas; se vio al abrir la pantalla. */}
-        <Ayuda>
-          Quiénes son los usuarios de este cliente: hoy se ven en la pantalla de usuarios, no acá.
-        </Ayuda>
-      </div>
+      {/* **Decía «ninguna ruta los lista · solo existe POST /admin/users»** y
+          eran dos defectos en una línea: una ruta y un identificador de tarea
+          pintados en la ficha de un cliente —lo que §7.3 llama vocabulario de
+          infraestructura, acá aplicado a la nuestra— y, desde que la ruta
+          global contesta, **una afirmación falsa**. `copy-producto` no la vio
+          porque es texto suelto entre etiquetas; se vio al abrir la pantalla. */}
+      <Ayuda>
+        Quiénes son los usuarios de este cliente: hoy se ven en la pantalla de usuarios, no acá.
+      </Ayuda>
     </div>
   )
 }

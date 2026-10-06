@@ -158,10 +158,13 @@ describe('el alcance NO se copia del dibujo', () => {
     expect(within(filas[1] as HTMLElement).getByText('Otro Cliente')).toBeVisible()
   })
 
-  it('y los TRES huecos que quedan siguen declarados', () => {
+  it('ya NO pinta los huecos que le faltan', () => {
+    // **Desde el 2026-10-06 lo que falta no se pinta** · decisión humana sobre la
+    // auditoría del builder: «si no suman para el uso, quitar». La lista vive en
+    // el comentario del componente. Esta prueba fija que no vuelva a la pantalla.
     render(<UserList format={format} usuarios={[usuario({ id: 'u-1' })]} total={1} clientes={1} />)
-    expect(screen.getByText(/va a crecer/i)).toBeVisible()
-    expect(screen.getByText(/invitaciones pendientes/i)).toBeVisible()
+    expect(screen.queryByText(/va a crecer/i)).toBeNull()
+    expect(screen.queryByText(/invitaciones pendientes/i)).toBeNull()
   })
 
   it('no ofrece «invitar usuario» ni «reenviar invitación» · sin ruta no hay CTA', () => {

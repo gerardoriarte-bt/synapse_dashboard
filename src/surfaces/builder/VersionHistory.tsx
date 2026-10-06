@@ -82,21 +82,27 @@ import type { Formatter } from '../../render/format'
  *  pierde: baja al comentario**, que es donde le sirve a quien la va a
  *  construir.
  */
-const FALTANTES = [
-    // El dibujo pinta una frase redactada y el cable manda contadores. Se pide
-    // un `note` de publicación · ver la propuesta.
-    'El resumen que escribió quien publicó cada versión',
-    // El porqué de una decisión humana. No hay campo y NO se compone.
-    'La razón de cada cambio, en las palabras de quien lo hizo',
-    // Hace falta `GET /admin/layouts/{layoutId}/diff?against=…`, que del lado
-    // suyo es exponer una función pura que ya tienen.
-    'El borrador en curso, con sus cambios todavía sin publicar',
-    // «EDITANDO AHORA» no tiene equivalente en ningún cable.
-    'Quién está editando en este momento',
-    // El diff cubre pestañas, posición, tipo y parámetros; la dirección
-    // semántica es de la MÉTRICA y vive en el catálogo.
-    'Cuándo una métrica cambia de dirección semántica',
-] as const
+/** **Lo que esta pantalla todavía no tiene** · fuera de la pantalla desde el 2026-10-06.
+ *
+ *  Se pintaba como «Esta pantalla va a crecer · Falta: …». Decisión humana
+ *  sobre la auditoría del builder de ese día: «si no suman para el uso,
+ *  quitar». No suman: quien usa la pantalla no puede hacer nada con eso. Queda
+ *  acá, que es donde le sirve a quien lo vaya a construir.
+ *
+ *    El dibujo pinta una frase redactada y el cable manda contadores. Se pide
+ *    un `note` de publicación · ver la propuesta.
+ *  · 'El resumen que escribió quien publicó cada versión'
+ *    El porqué de una decisión humana. No hay campo y NO se compone.
+ *  · 'La razón de cada cambio, en las palabras de quien lo hizo'
+ *    Hace falta `GET /admin/layouts/{layoutId}/diff?against=…`, que del lado
+ *    suyo es exponer una función pura que ya tienen.
+ *  · 'El borrador en curso, con sus cambios todavía sin publicar'
+ *    «EDITANDO AHORA» no tiene equivalente en ningún cable.
+ *  · 'Quién está editando en este momento'
+ *    El diff cubre pestañas, posición, tipo y parámetros; la dirección
+ *    semántica es de la MÉTRICA y vive en el catálogo.
+ *  · 'Cuándo una métrica cambia de dirección semántica'
+ */
 
 type Props = {
   /** Más recientes primero · el orden lo decide el servicio y acá no se reordena. */
@@ -231,16 +237,6 @@ export function VersionHistory({
           })}
         </ul>
       )}
-
-      <div className="flex flex-col gap-1 rounded-sm bg-w2 p-3">
-        {/* En el registro de ayuda, igual que en administración · 2026-10-06. */}
-        <Ayuda>Esta pantalla va a crecer. Falta:</Ayuda>
-        {/* Filas y no `<li>`: la lista de la pantalla son las publicaciones, y
-            sus pruebas cuentan `listitem`. */}
-        {FALTANTES.map((f) => (
-          <Ayuda key={f}>{f}</Ayuda>
-        ))}
-      </div>
     </div>
   )
 }

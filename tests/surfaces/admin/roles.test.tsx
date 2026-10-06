@@ -350,7 +350,7 @@ describe('el 404 mientras el fork no esté desplegado', () => {
 })
 
 describe('lo que A2 y A3 todavía no pueden mostrar', () => {
-  it('declara lo que le falta a la ficha, y una vez sola', async () => {
+  it('ya NO declara lo que le falta a la ficha · y sigue diciendo dónde están los usuarios', async () => {
     // **Eran cuatro hasta el 2026-09-30 y quedó una.** Las otras tres no
     // llegaron: se MUDARON, al construir `A2 · Ficha · tenant en alta`. Los
     // datos del cliente los pinta la tarjeta de identidad —con un guión donde el
@@ -369,8 +369,13 @@ describe('lo que A2 y A3 todavía no pueden mostrar', () => {
     // se puede vencer; escribirlo acá sí — y se venció el 2026-09-22, cuando
     // §9 sumó dos carencias más. Lo que la prueba fija es que cada carencia
     // esté nombrada, que es lo que vale.
-    expect(texto).toMatch(/va a crecer/i)
-    expect(texto).toContain('La descripción de cada rol')
+    // **Desde el 2026-10-06 lo que falta no se pinta** · decisión humana sobre la
+    // auditoría del builder: «si no suman para el uso, quitar». La lista vive en
+    // el comentario del componente. Esta prueba fija que no vuelva a la pantalla.
+    expect(texto).not.toMatch(/va a crecer/i)
+    expect(texto).not.toContain('La descripción de cada rol')
+    // La única línea que se quedó es la que SÍ sirve para usar la ficha.
+    expect(texto).toContain('hoy se ven en la pantalla de usuarios')
     // Y las dos que se mudaron, cada una en su bloque nuevo: acá se afirma que
     // NO están duplicadas, que es la mitad que puede volver sin que nadie mire.
     expect(texto).not.toContain('Quiénes tratan los datos de este cliente')
@@ -462,7 +467,10 @@ describe('A4 · la columna USO · divergencia 6', () => {
     const { container } = montar()
     await abrirCatalogo()
 
-    expect(container.textContent).toContain('Esta pantalla va a crecer')
+    // **Desde el 2026-10-06 lo que falta no se pinta** · decisión humana sobre la
+    // auditoría del builder: «si no suman para el uso, quitar». La lista vive en
+    // el comentario del componente. Esta prueba fija que no vuelva a la pantalla.
+    expect(container.textContent).not.toContain('va a crecer')
     expect(container.textContent).not.toContain('en cuántos paneles se usa')
   })
 })

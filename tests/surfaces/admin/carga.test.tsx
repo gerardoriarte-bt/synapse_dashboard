@@ -121,7 +121,7 @@ describe('A1 · la lista de clientes mientras carga', () => {
 })
 
 describe('A4 · el catálogo mientras carga', () => {
-  it('conserva el filtro y la declaración de lo que falta', async () => {
+  it('conserva el filtro mientras carga', async () => {
     // **Reemplazar la pantalla por «Cargando…» tira información que ya estaba
     // lista.** El filtro, el encabezado y los cuatro campos que §7.3 pide y el
     // cable no trae no dependen de los datos.
@@ -134,7 +134,10 @@ describe('A4 · el catálogo mientras carga', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
 
     expect(await screen.findByLabelText('Capa')).toBeInTheDocument()
-    expect(container.textContent).toContain('Esta pantalla va a crecer')
+    // **Desde el 2026-10-06 lo que falta no se pinta** · decisión humana sobre la
+    // auditoría del builder: «si no suman para el uso, quitar». La lista vive en
+    // el comentario del componente. Esta prueba fija que no vuelva a la pantalla.
+    expect(container.textContent).not.toContain('va a crecer')
 
     const tabla = screen.getByRole('table')
     expect(tabla).toHaveAttribute('aria-busy', 'true')

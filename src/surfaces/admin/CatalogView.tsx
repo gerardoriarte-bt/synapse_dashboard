@@ -90,14 +90,24 @@ const COLUMNAS = [
  *  pierde: baja al comentario**, que es donde le sirve a quien la va a
  *  construir.
  */
-const FALTANTES = [
-    // Es del payload y depende del período · llega con B2.13.
-    'La frescura de cada métrica, cuando llegue la salud de sus fuentes',
-    // El cable no la trae y el adaptador la deja vacía · B1.17 y B1.25.
-    'La ventana con la que se mide cada métrica',
-    // Se DERIVA de la salud de la fuente, que no llega · B2.13.
-    'El estado de cada métrica, y poder filtrar por él',
-] as const
+/** **Lo que esta pantalla todavía no tiene** · fuera de la pantalla desde el 2026-10-06.
+ *
+ *  Se pintaba como «Esta pantalla va a crecer · Falta: …». Decisión humana
+ *  sobre la auditoría del builder de ese día: «si no suman para el uso,
+ *  quitar». No suman: quien usa la pantalla no puede hacer nada con eso. Queda
+ *  acá, que es donde le sirve a quien lo vaya a construir.
+ *
+ *    Es del payload y depende del período · llega con B2.13.
+ *  · 'La frescura de cada métrica, cuando llegue la salud de sus fuentes'
+ *    El cable no la trae y el adaptador la deja vacía · B1.17 y B1.25.
+ *  · 'La ventana con la que se mide cada métrica'
+ *    Se DERIVA de la salud de la fuente, que no llega · B2.13.
+ *  · 'El estado de cada métrica, y poder filtrar por él'
+ *  · Pedir una sincronización del catálogo desde acá: no hay ruta de
+ *    sincronización —`POST /admin/tenants/{id}/sync-catalog` da 404—.
+ *  · Editar una métrica, con el aviso de a qué paneles afecta: no hay ruta de
+ *    escritura sobre el catálogo.
+ */
 
 type Props = {
   metrics: readonly Metric[]
@@ -264,27 +274,6 @@ export function CatalogView({ metrics, rejected, uso, cargando = false }: Props)
           ))}
         </div>
       )}
-
-      {/* **La pantalla declara lo que no puede afirmar.** Sin esto el inventario
-          se lee como completo, que es justo lo contrario de lo que §7.3 quiere de
-          él. */}
-      <div className="flex flex-col gap-1 rounded-sm bg-w2 p-3">
-        {/* **Frases y no rótulos** · 2026-10-06: el bloque explica, no nombra.
-            Ver `Ayuda`. */}
-        <Ayuda>Esta pantalla va a crecer. Falta:</Ayuda>
-        {FALTANTES.map((f) => (
-          <Ayuda key={f}>{f}</Ayuda>
-        ))}
-        {/* **Estas dos también se pintan**, y se les cambió el idioma junto con
-            `FALTANTES` · 2026-09-30. Decían «ninguna de las seis rutas de admin
-            la expone · hoy es `make sync-catalog`», que es exactamente la
-            plomería que §7.3 prohíbe mostrar: nombra un comando que quien lee la
-            pantalla no puede correr.
-            Las razones: no hay ruta de sincronización —`POST /admin/tenants/{id}/sync-catalog`
-            da 404— ni de escritura sobre el catálogo. */}
-        <Ayuda>Pedir una sincronización del catálogo desde acá</Ayuda>
-        <Ayuda>Editar una métrica, con el aviso de a qué paneles afecta el cambio</Ayuda>
-      </div>
     </div>
   )
 }

@@ -264,18 +264,51 @@ describe('cambiar de cliente', () => {
 })
 
 describe('sin versiones', () => {
-  it('dice que no hay versiones en vez de mostrarse vacía', async () => {
-    // **Cambió el 2026-10-06** con la reescritura de B1: el copy viejo —«Ninguna
-    // todavía · se crea un borrador para empezar a componer»— prometía una
-    // acción que esta pantalla no ofrece. Ahora lo dice en el registro de ayuda
-    // y no muestra ni opciones de versión ni pestañas.
+  it('ofrece crear el primer borrador, y lo crea como v1 y lo deja elegido', async () => {
+    // **Cambió dos veces el 2026-10-06.** Primero el copy viejo —«se crea un
+    // borrador para empezar a componer»— prometía una acción que la pantalla no
+    // ofrecía, y se sacó la promesa. Después la decisión humana fue la otra
+    // salida: ofrecer la acción, «y asigna una versión». Se afirma que DISPARA
+    // el POST con `version_id: 'v1'`, no que el botón exista.
+    let creadas: unknown[] = []
+    const cuerpos: unknown[] = []
     server.use(
       http.get(`${API}/admin/tenants`, () => ok(tenants)),
-      http.get(`${API}/admin/tenants/:id/layouts`, () => ok([])),
+      http.get(`${API}/admin/tenants/:id/layouts`, () => ok(creadas)),
+      http.post(`${API}/admin/tenants/:id/layouts`, async ({ request }) => {
+        cuerpos.push(await request.json())
+        const nuevo = {
+          id: 'l-nuevo',
+          tenant_id: 't-1',
+          dashboard_id: 'd-1',
+          status: 'draft',
+          version_id: 'v1',
+          published_at: null,
+        }
+        creadas = [nuevo]
+        return ok(nuevo)
+      }),
+      http.get(`${API}/admin/layouts/l-nuevo`, () =>
+        ok({ layout: creadas[0], tabs: [] }),
+      ),
     )
     montar()
-    expect(await screen.findByText('Este cliente todavía no tiene versiones.')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Borrador|Publicada/ })).toBeNull()
+    expect(
+      await screen.findByText(
+        'Este cliente todavía no tiene versiones. Creá el primer borrador para empezar a componer.',
+      ),
+    ).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^Componer / })).toBeNull()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Crear el primer borrador' }))
+
+    await waitFor(() => expect(cuerpos).toEqual([{ version_id: 'v1' }]))
+    // Que quede elegida lo garantizan DOS cosas —el `setVersion` del alta y la
+    // autoselección del borrador—, así que quitar una sola no rompe esta
+    // aserción. Medido: la mutación que borra el `setVersion` sobrevive. Lo que
+    // la prueba fija es el resultado, no cuál de las dos lo produce.
+    const elegida = await screen.findByRole('button', { name: /Borrador v1/ })
+    expect(elegida).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('button', { name: 'Crear el primer borrador' })).toBeNull()
   })
 })

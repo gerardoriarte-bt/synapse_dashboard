@@ -68,14 +68,20 @@ const horas = (n: number) => `${String(Math.round(n))} h`
  *  pierde: baja al comentario**, que es donde le sirve a quien la va a
  *  construir.
  */
-const FALTANTES = [
-    // El dibujo la pone como columna y el cable no la manda · pedido a backend.
-    'De qué capa viene cada fuente',
-    // No hay ruta que liste los rechazos Silver→Gold.
-    'Ver las filas que una carga dejó afuera',
-    // No hay ruta que dispare una carga.
-    'Pedir una sincronización desde acá',
-] as const
+/** **Lo que esta pantalla todavía no tiene** · fuera de la pantalla desde el 2026-10-06.
+ *
+ *  Se pintaba como «Esta pantalla va a crecer · Falta: …». Decisión humana
+ *  sobre la auditoría del builder de ese día: «si no suman para el uso,
+ *  quitar». No suman: quien usa la pantalla no puede hacer nada con eso. Queda
+ *  acá, que es donde le sirve a quien lo vaya a construir.
+ *
+ *    El dibujo la pone como columna y el cable no la manda · pedido a backend.
+ *  · 'De qué capa viene cada fuente'
+ *    No hay ruta que liste los rechazos Silver→Gold.
+ *  · 'Ver las filas que una carga dejó afuera'
+ *    No hay ruta que dispare una carga.
+ *  · 'Pedir una sincronización desde acá'
+ */
 
 /** **Acá se armaban dos `Intl` con `'es-MX'` fijo** y su comentario prometía
  *  cambiar una línea el día que el locale llegara · F1.13b. Llegó el
@@ -245,15 +251,7 @@ export function FeedHealth({ fuentes, tenant, format, cargando = false }: Props)
           <Ayuda>
             Una métrica puede endurecer su estado —de degradado a bloqueado— pero nunca ablandarlo.
           </Ayuda>
-        </div>
-
-        <div className="flex flex-col gap-1 border-t border-w2 pt-3">
-          <Ayuda>Esta pantalla va a crecer. Falta:</Ayuda>
-          {FALTANTES.map((f) => (
-            <Ayuda key={f}>{f}</Ayuda>
-          ))}
-        </div>
-      </section>
+        </div>      </section>
     </div>
   )
 }

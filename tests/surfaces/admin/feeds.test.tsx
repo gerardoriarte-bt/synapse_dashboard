@@ -151,10 +151,13 @@ describe('el vacío de ALTA · el tercer tipo', () => {
 })
 
 describe('lo que el cable NO manda se declara', () => {
-  it('nombra los tres huecos, y la capa entre ellos', () => {
+  it('ya NO pinta los huecos que le faltan', () => {
+    // **Desde el 2026-10-06 lo que falta no se pinta** · decisión humana sobre la
+    // auditoría del builder: «si no suman para el uso, quitar». La lista vive en
+    // el comentario del componente. Esta prueba fija que no vuelva a la pantalla.
     render(<FeedHealth format={format} fuentes={[fuente({ clave: 'x' })]} tenant="UA MX" />)
-    expect(screen.getByText(/va a crecer/i)).toBeVisible()
-    expect(screen.getByText(/De qué capa viene cada fuente/i)).toBeVisible()
+    expect(screen.queryByText(/va a crecer/i)).toBeNull()
+    expect(screen.queryByText(/De qué capa viene cada fuente/i)).toBeNull()
   })
 
   it('y NO pinta «sincronizar todo» ni «ver rechazos» · sin ruta no hay CTA', () => {
