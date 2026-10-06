@@ -386,6 +386,32 @@ Hasta entonces los dos paneles de prosa se sirven con el valor de la semilla, **
 
 ---
 
+## ⚠️ 8 pedido(s) sin reverificar
+
+**Estos se midieron contra un commit suyo que ya no es el último.**
+No quiere decir que sigan faltando: quiere decir que **no lo
+sabemos**, y un pedido que no sabemos si sigue vigente no debería
+hacerles perder tiempo.
+
+El 2026-09-28 revalidamos los doce que había y **cinco ya estaban
+resueltos** — llevaban días acá diciendo que faltaban. Por eso esta
+sección existe.
+
+
+| Pedido | Medido contra | Cuándo |
+|---|---|---|
+| **B1.21** · Declarar los mínimos de datos por gráfico | `de881e1` | 2026-09-29 |
+| **B1.31** · La plataforma genera el par de claves del usuario de servicio | `de881e1` | 2026-09-29 |
+| **B1.34** · Declarar qué es el t de una serie, o mandar el tramo vencido | `de881e1` | 2026-09-29 |
+| **B2.12** · Correr el materializador contra datos reales y verificar los seis estados | `de881e1` | 2026-09-29 |
+| **F1.42** · El mes en curso está incompleto y el selector no lo dice | `de881e1` | 2026-09-29 |
+| **F1.44** · El orden de una tabla se anuncia, no se aplica | `de881e1` | 2026-09-29 |
+| **B2.14** · /config/solicitudes · pedir acceso a una métrica que no se ve | `de881e1` | 2026-09-29 |
+| **B2.15** · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | `de881e1` | 2026-09-29 |
+
+
+---
+
 ## Y esto frena al front · 4 tarea(s)
 
 **No todo lo de acá es suyo**, y por eso no está arriba: son los
