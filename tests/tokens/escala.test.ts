@@ -19,7 +19,12 @@ import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const RAIZ = process.cwd()
-const TOKENS = readFileSync(resolve(RAIZ, 'src/tokens/tokens.css'), 'utf-8')
+// `decisiones.css` cuenta igual · 2026-10-06: son tokens que una decisión humana
+// agregó y el `.pen` todavía no emite —`peligro`—. Una utilidad que los nombra
+// no es huérfana; una que nombra uno que no está en NINGUNO de los dos, sí.
+const TOKENS =
+  readFileSync(resolve(RAIZ, 'src/tokens/tokens.css'), 'utf-8') +
+  readFileSync(resolve(RAIZ, 'src/tokens/decisiones.css'), 'utf-8')
 
 const declarados = (prefijo: string): Map<string, string> =>
   new Map(
