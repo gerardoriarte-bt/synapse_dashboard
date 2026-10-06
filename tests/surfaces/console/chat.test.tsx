@@ -7,7 +7,7 @@
  *  probar la UI hiciera falta un stream, el componente conocería SSE.
  */
 import { useState } from 'react'
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ChatOverlay } from '@/surfaces/console/ChatOverlay'
@@ -134,6 +134,44 @@ describe('F3.5 · los mensajes', () => {
     )
     expect(screen.queryByText('Consultando')).toBeNull()
     expect(screen.getByText(/Las ventas/)).toBeInTheDocument()
+  })
+
+  /** **La espera tiene que verse viva** · 2026-10-06. Medido contra QA: 5,8 s
+   *  hasta la primera palabra. Un rótulo quieto ese tiempo se lee como una hoja
+   *  colgada. */
+  it('el «Consultando» CUENTA los segundos · es la prueba de vida', () => {
+    vi.useFakeTimers()
+    try {
+      render(<ChatThread turns={[turno({ streaming: true })]} {...conChrome} />)
+      act(() => vi.advanceTimersByTime(3000))
+      expect(screen.getByText(/Consultando/)).toHaveTextContent('Consultando · 3 s')
+      act(() => vi.advanceTimersByTime(2000))
+      expect(screen.getByText(/Consultando/)).toHaveTextContent('Consultando · 5 s')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('el contador NO se anuncia · dentro de la región viva sonaría cada segundo', () => {
+    vi.useFakeTimers()
+    try {
+      render(<ChatThread turns={[turno({ streaming: true })]} {...conChrome} />)
+      act(() => vi.advanceTimersByTime(2000))
+      expect(screen.getByText(/· 2 s/)).toHaveAttribute('aria-hidden', 'true')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('con texto y el turno abierto dice «Escribiendo» · y se va al cerrar', () => {
+    const texto = { ...VACIA, texto: 'Las ventas ' }
+    const { rerender } = render(
+      <ChatThread turns={[turno({ streaming: true, respuesta: texto })]} {...conChrome} />,
+    )
+    expect(screen.getByText('Escribiendo')).toBeInTheDocument()
+
+    rerender(<ChatThread turns={[turno({ streaming: false, respuesta: texto })]} {...conChrome} />)
+    expect(screen.queryByText('Escribiendo')).toBeNull()
   })
 
   it('la región viva es la RESPUESTA, no la hoja entera', () => {
