@@ -9,7 +9,7 @@
  */
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
@@ -23,10 +23,12 @@ const API = '*/api/v1'
 /** B1 ya trae datos —es F4.7— así que el chrome se monta con proveedor y con
  *  servicio. Lo que estas pruebas miran sigue siendo el chrome. */
 function montar(extra: Parameters<typeof server.use> = []) {
+  // **Los de la prueba primero**: MSW prueba en orden, y así un `extra` puede
+  // pisar un default —`conVersion` pisa la lista vacía de layouts—.
   server.use(
+    ...extra,
     http.get(`${API}/admin/tenants`, () => ok([{ id: 't-1', name: 'Under Armour México' }])),
     http.get(`${API}/admin/tenants/:id/layouts`, () => ok([])),
-    ...extra,
   )
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
@@ -41,6 +43,24 @@ function montar(extra: Parameters<typeof server.use> = []) {
     </QueryClientProvider>,
   )
 }
+
+/** **Un cliente con una versión** · 2026-10-06. «Vista previa» sólo se ofrece
+ *  con una versión elegida —sin ella no hay nada que previsualizar—, así que las
+ *  pruebas que entran a B5 la necesitan. El layout del cable, con `dashboard_id`
+ *  para que B6 tenga de qué pedir el historial. */
+const VERSION = {
+  id: 'l-1',
+  tenant_id: 't-1',
+  dashboard_id: 'd-1',
+  status: 'draft',
+  version_id: 'v1',
+  published_at: null,
+}
+const conVersion = [
+  http.get(`${API}/admin/tenants/:id/layouts`, () => ok([VERSION])),
+  http.get(`${API}/admin/layouts/l-1`, () => ok({ layout: VERSION, tabs: [] })),
+  http.get(`${API}/admin/dashboards/:id/publications`, () => ok([])),
+]
 
 /** **La cabecera del chrome, no cualquier `banner`.** Desde el 2026-10-06 B1
  *  abre con su propio `<header>` —el título «¿Sobre qué se va a componer?»— y
@@ -89,11 +109,11 @@ describe('§4 · el ancho mínimo, que no es uniforme', () => {
   it('el chrome PINTA el mínimo de la pantalla activa', async () => {
     // Un `min-w-[1600px]` interpolado compilaría y no pintaría nada: Tailwind
     // poda lo que su escáner no ve escrito. Es el silencio de `text-labell`.
-    const { container } = montar()
+    const { container } = montar(conVersion)
     expect(container.querySelector('.min-w-\\[1600px\\]')).not.toBeNull()
 
     // Desde el 2026-10-06 B5 se abre con el botón del chrome, no con una pestaña.
-    await userEvent.click(screen.getByRole('button', { name: 'Vista previa' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Vista previa' }))
     expect(container.querySelector('.min-w-\\[1440px\\]')).not.toBeNull()
     expect(container.querySelector('.min-w-\\[1600px\\]')).toBeNull()
   })
@@ -137,7 +157,7 @@ describe('las pantallas que todavía no se pueden construir · ninguna', () => {
     // **Desde el 2026-10-06 sólo tres llevan pestaña** (D3), así que se recorren
     // esas por la navegación y B5 por su botón, al final. B3 y B4 no tienen
     // forma de abrirse: se cubre abajo que no estén en la navegación.
-    montar()
+    montar(conVersion)
     for (const p of PANTALLAS.filter((x) => x.enNav)) {
       await userEvent.click(screen.getByRole('button', { name: p.nombre }))
       expect(screen.queryByText('Pendiente')).toBeNull()
@@ -145,7 +165,7 @@ describe('las pantallas que todavía no se pueden construir · ninguna', () => {
     }
     // B6 es de sólo lectura y no ofrece «Vista previa»: se vuelve a B1 primero.
     await userEvent.click(screen.getByRole('button', { name: 'Contexto de edición' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Vista previa' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Vista previa' }))
     expect(screen.queryByText('Pendiente')).toBeNull()
     expect(screen.queryByText(/Se desbloquea con/)).toBeNull()
   })
@@ -175,7 +195,7 @@ describe('las pantallas que todavía no se pueden construir · ninguna', () => {
     // La otra mitad de D3: sacarla de la navegación no puede dejarla sin
     // entrada. Se verifica que el botón LLEVE —el chrome desaparece, que es la
     // marca de B5—, no que exista.
-    const { container } = montar()
+    const { container } = montar(conVersion)
     await userEvent.click(await screen.findByRole('button', { name: 'Vista previa' }))
     expect(screen.queryByRole('navigation', { name: 'Builder' })).toBeNull()
     expect(container.querySelector('.min-w-\\[1440px\\]')).not.toBeNull()
@@ -184,7 +204,15 @@ describe('las pantallas que todavía no se pueden construir · ninguna', () => {
   it('B1 NO se declara pendiente · está construida', async () => {
     montar()
     expect(screen.queryByText('Pendiente')).toBeNull()
-    expect(await screen.findByRole('combobox', { name: 'Cliente' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '¿Sobre qué se va a componer?' })).toBeInTheDocument()
+  })
+
+  it('sin versión NO se ofrece «Vista previa» · no hay nada que previsualizar', async () => {
+    // **Nuevo el 2026-10-06** (pedido humano). El botón llevaba a una pantalla
+    // que sólo decía «elegí una versión». Con una versión vuelve: ver abajo.
+    montar()
+    await screen.findByText(/todavía no tiene versiones/)
+    expect(screen.queryByRole('button', { name: 'Vista previa' })).toBeNull()
   })
 
   it('B2 ya NO se declara pendiente · la decisión de diseño llegó', async () => {
@@ -237,49 +265,57 @@ describe('el chrome NO es uniforme · corregido contra el `.pen`', () => {
   })
 
   it('B5 NO lleva chrome · «SIN CHROME DE EDICIÓN»', async () => {
-    montar()
+    montar(conVersion)
     expect(screen.getByRole('navigation', { name: 'Builder' })).toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Vista previa' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Vista previa' }))
     expect(screen.queryByRole('navigation', { name: 'Builder' })).toBeNull()
   })
 
-  it('el contexto es PERSISTENTE · se ve al cambiar de pantalla', async () => {
-    // La razón de la corrección: con el contexto en una barra del cuerpo, al
-    // salir de B1 se perdía de vista sobre qué cliente y qué rol se componía.
-    //
-    // **Acotado a la cabecera**, porque B1 también nombra al cliente en su
-    // selector: sin acotar, la prueba pasaría por el selector y no por el
-    // chrome, que es justo lo que se quiere verificar.
-    //
-    // **Desde el 2026-10-06 arranca en el canvas y no en B1**: B1 ya no lo
-    // repite en la cabecera —ver la prueba de abajo—.
+  it('el cliente está en la cabecera, en TODAS las pantallas · y una sola vez', async () => {
+    // **Cambió el 2026-10-06** (pedido humano: «en el header se debe destacar
+    // bien el tenant que se está trabajando»). El cliente se elegía en el cuerpo
+    // de B1 y se repetía como texto en la cabecera de las demás. Ahora vive
+    // sólo en la cabecera, en las tres pantallas.
     montar()
-    await screen.findByRole('combobox', { name: 'Cliente' })
-
-    await userEvent.click(screen.getByRole('button', { name: 'Canvas' }))
-    expect(await (await cabeceraDelChrome()).findByText('Under Armour México')).toBeInTheDocument()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Historial de versiones' }))
-    expect((await cabeceraDelChrome()).getByText('Under Armour México')).toBeInTheDocument()
-    // Y en esa pantalla el selector de B1 ya no está: el nombre solo puede
-    // venir del chrome.
-    expect(screen.queryByRole('combobox', { name: 'Cliente' })).toBeNull()
+    for (const pantalla of ['Contexto de edición', 'Canvas', 'Historial de versiones']) {
+      await userEvent.click(screen.getByRole('button', { name: pantalla }))
+      const cabecera = await cabeceraDelChrome()
+      expect(cabecera.getByText('Cliente')).toBeInTheDocument()
+      expect(await cabecera.findByText('Under Armour México')).toBeInTheDocument()
+      // Ningún segundo lugar lo dice.
+      expect(screen.getAllByText('Under Armour México')).toHaveLength(1)
+    }
   })
 
-  it('B1 NO repite cliente ni rol en la cabecera · son los controles del cuerpo', async () => {
-    // **Nuevo el 2026-10-06** · auditoría §2.1: en B1 el chrome decía «CLIENTE
-    // Under Armour México» arriba y el cuerpo tenía el selector con el mismo
-    // rótulo, y uno parecía un control y el otro no.
-    montar()
-    await screen.findByRole('combobox', { name: 'Cliente' })
+  it('con varios clientes se ELIGE en la cabecera, y el cambio se aplica', async () => {
+    const pedidos: string[] = []
+    montar([
+      http.get(`${API}/admin/tenants`, () =>
+        ok([
+          { id: 't-1', name: 'Under Armour México' },
+          { id: 't-2', name: 'Terpel Colombia' },
+        ]),
+      ),
+      http.get(`${API}/admin/tenants/:id/layouts`, ({ params }) => {
+        pedidos.push(String(params['id']))
+        return ok([])
+      }),
+    ])
+    const selector = await (await cabeceraDelChrome()).findByRole('combobox', { name: 'Cliente' })
+    await userEvent.selectOptions(selector, 't-2')
+    await waitFor(() => expect(pedidos).toContain('t-2'))
+    expect(selector).toHaveValue('t-2')
+  })
 
+  it('B1 NO repite el rol en la cabecera · es el control del cuerpo', async () => {
+    // **Nuevo el 2026-10-06** · auditoría §2.1: el chrome repetía arriba lo que
+    // el cuerpo de B1 tiene como control.
+    montar(conVersion)
     const cabecera = await cabeceraDelChrome()
-    // Que la cabecera esté y tenga sus acciones: sin esto, una cabecera vacía
-    // pasaría las tres negaciones de abajo.
-    expect(cabecera.getByRole('button', { name: 'Vista previa' })).toBeInTheDocument()
-    expect(cabecera.queryByText('Cliente')).toBeNull()
-    expect(cabecera.queryByText('Under Armour México')).toBeNull()
+    // Que la cabecera tenga sus acciones: sin esto, una cabecera vacía pasaría
+    // la negación de abajo.
+    expect(await cabecera.findByRole('button', { name: 'Vista previa' })).toBeInTheDocument()
     expect(cabecera.queryByText('Todos los roles')).toBeNull()
   })
 

@@ -352,6 +352,13 @@ hayan derivado.
   **Nuestra imagen no tiene el problema** —`nginx:alpine` sirviendo estáticos, y
   todo el `Intl` corre en el navegador— pero se comprobó en vez de suponerlo.
 
+- **El cliente de la consola es el del TOKEN, y el front no lo puede cambiar.**
+  `JWTMiddleware` pone `claims.TenantID` y ninguna ruta de `/config/*` acepta
+  otro — leído el 2026-10-06. Los botones de cliente del navbar de la consola
+  nunca hicieron nada (`onSelectTenant` no estaba conectado) y se quitaron.
+  Administración y builder sí comparten un **cliente de trabajo**
+  (`surfaces/useClienteDeTrabajo.ts`) que arranca en el propio; que la consola
+  lo siga es un pedido al backend.
 - **`params` de layout llega como `Record<string, unknown>`.** Un param mal
   escrito hoy se ignora en silencio; F1.29 lo resuelve validando en el adaptador
   de `api/`, no en `render/`.

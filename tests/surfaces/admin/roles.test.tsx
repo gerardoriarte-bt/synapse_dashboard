@@ -294,6 +294,58 @@ describe('crear y editar', () => {
   })
 })
 
+describe('«admin» y «Admin» · el mismo rol para el servicio · 2026-10-06', () => {
+  /** Visto en QA: dos filas de rol que sólo difieren en mayúsculas. El servicio
+   *  compara el rol con `EqualFold`, así que para los permisos son uno solo. El
+   *  front no fusiona datos del cliente: lo dice, e impide crear otro par. */
+  const conDuplicado = http.get(`${API}/admin/tenants/:id/roles/composition`, () =>
+    ok([
+      ...roles,
+      { id: 'r-a1', tenant_id: 't-1', name: 'admin', tab_keys: [], tab_ids: [], hidden_metric_ids: [], layout_overrides: {}, user_count: 1 },
+      { id: 'r-a2', tenant_id: 't-1', name: 'Admin', tab_keys: [], tab_ids: [], hidden_metric_ids: [], layout_overrides: {}, user_count: 3 },
+    ]),
+  )
+
+  it('avisa que hay dos roles con el mismo nombre en distinta caja', async () => {
+    base([conDuplicado])
+    montar()
+    await abrirFicha()
+    expect(
+      await screen.findByText(/Hay roles con el mismo nombre en distinta caja: «admin», «Admin»/),
+    ).toBeInTheDocument()
+  })
+
+  it('sin duplicados no avisa nada', async () => {
+    base()
+    montar()
+    await abrirFicha()
+    expect(screen.queryByText(/mismo nombre en distinta caja/)).toBeNull()
+  })
+
+  it('no deja crear «PLANNER» si ya existe «Planner», y no manda nada', async () => {
+    const enviados: unknown[] = []
+    base([
+      http.post(`${API}/admin/tenants/:id/roles`, async ({ request }) => {
+        enviados.push(await request.json())
+        return ok({})
+      }),
+    ])
+    montar()
+    await abrirFicha()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Nuevo rol' }))
+    await userEvent.type(screen.getByRole('textbox'), 'PLANNER{Enter}')
+
+    expect(screen.getByRole('button', { name: 'Guardar rol' })).toBeDisabled()
+    expect(screen.getByText('Ya existe el rol «Planner». Las mayúsculas no cuentan: sería el mismo.')).toBeInTheDocument()
+    // Enter también intentó enviar, y no salió nada. **Lo frena el botón
+    // deshabilitado**: con el botón de envío deshabilitado el navegador no hace
+    // el envío implícito. El `return` del `onSubmit` es una segunda defensa que
+    // esta prueba no distingue — medido: quitarlo sobrevive.
+    expect(enviados).toEqual([])
+  })
+})
+
 describe('las pestañas que se ofrecen salen del layout PUBLICADO', () => {
   it('no ofrece las de un borrador', async () => {
     // `tab_ids` apunta a pestañas concretas. Marcar una de un borrador dejaría

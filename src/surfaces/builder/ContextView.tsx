@@ -35,7 +35,7 @@ import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
 import { Opcion } from '../../render/primitives/Opcion'
 import { Accion } from '../../render/primitives/Accion'
-import type { EstadoDeLayout, LayoutVersion, Tenant } from '../../api/admin'
+import type { EstadoDeLayout, LayoutVersion } from '../../api/admin'
 
 /** El estado en palabras de producto · el cable dice `publicado` en minúscula,
  *  que se pintaba tal cual dentro de un rótulo. */
@@ -46,9 +46,6 @@ const ESTADO: Readonly<Record<EstadoDeLayout, string>> = {
 }
 
 type Props = {
-  tenants: readonly Tenant[]
-  tenantActivo: string | null
-  onTenant: (id: string) => void
   roles: readonly { id: string; nombre: string }[]
   /** `null` es «todos los roles»: el filtro apagado. */
   rolActivo: string | null
@@ -71,9 +68,6 @@ type Props = {
 }
 
 export function ContextView({
-  tenants,
-  tenantActivo,
-  onTenant,
   roles,
   rolActivo,
   onRol,
@@ -99,27 +93,14 @@ export function ContextView({
           ¿Sobre qué se va a componer?
         </h1>
         <Ayuda>
-          El cliente define el catálogo de métricas. El rol define qué pestañas se ven y se editan.
+          El cliente de la cabecera define el catálogo de métricas. El rol define qué pestañas se ven y se editan.
         </Ayuda>
       </header>
 
-      <section className="flex flex-col gap-3" aria-labelledby="builder-cliente">
-        <Label id="builder-cliente" as="div">
-          Cliente
-        </Label>
-        <select
-          aria-labelledby="builder-cliente"
-          className="self-start h-8 bg-w2 text-ink text-cuerpo font-medium rounded-md px-3 border border-w5 cursor-pointer"
-          value={tenantActivo ?? ''}
-          onChange={(e) => onTenant(e.target.value)}
-        >
-          {tenants.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.nombre}
-            </option>
-          ))}
-        </select>
-      </section>
+      {/* **El cliente se elige en la cabecera** · 2026-10-06. Estaba acá y,
+          como texto, también arriba: dos lugares con el mismo rótulo, uno que
+          se tocaba y otro que no. Ahora hay uno solo, destacado, y es el mismo
+          que usa administración · `SelectorDeCliente`. */}
 
       <section className="flex flex-col gap-3" aria-labelledby="builder-rol">
         <Label id="builder-rol" as="div">

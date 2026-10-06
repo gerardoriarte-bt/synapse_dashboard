@@ -145,6 +145,23 @@ export function RoleEditor({
    *  condición escrita dos veces una de las dos se olvida. */
   const vacioDeAlta = roles.length === 0 && !cargando
 
+  /** **Dos roles con el mismo nombre en distinta caja** · 2026-10-06.
+   *
+   *  Visto en QA: «admin» y «Admin» en el mismo cliente. El servicio compara el
+   *  rol SIN distinguir mayúsculas —`RoleAllowedMiddleware` y `isAdmin` usan
+   *  `EqualFold`, leído ese día—, así que para los permisos son el mismo, pero
+   *  son dos filas con sus propios usuarios, pestañas y métricas ocultas. El
+   *  front no puede fusionarlas —es un dato del cliente—; lo que sí hace es
+   *  decirlo, e impedir que se cree otro par. */
+  const clave = (n: string) => n.trim().toLowerCase()
+  const repetidos = roles.filter((r) =>
+    roles.some((o) => o.id !== r.id && clave(o.nombre) === clave(r.nombre)),
+  )
+  const yaExiste =
+    nombre.trim() === ''
+      ? null
+      : (roles.find((r) => r.id !== editando && clave(r.nombre) === clave(nombre))?.nombre ?? null)
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
@@ -275,11 +292,20 @@ export function RoleEditor({
         </Ayuda>
       )}
 
+      {repetidos.length > 0 && (
+        <Ayuda>
+          {`Hay roles con el mismo nombre en distinta caja: ${repetidos
+            .map((r) => `«${r.nombre}»`)
+            .join(', ')}. Para los permisos cuentan como uno solo; conviene dejar uno y pasarle los usuarios del otro.`}
+        </Ayuda>
+      )}
+
       {editando !== null && (
         <form
           className="flex flex-col gap-3 rounded-sm bg-w2 p-3"
           onSubmit={(e) => {
             e.preventDefault()
+            if (yaExiste !== null) return
             onGuardar(editando === '' ? undefined : editando, {
               nombre,
               pestanas: elegidas,
@@ -340,11 +366,14 @@ export function RoleEditor({
           <div className="flex items-center gap-3">
             {/* `submit` y sin `onClick`: lo maneja el `onSubmit` del
                 formulario, que es lo que hace funcionar Enter. */}
-            <Accion tipo="submit" deshabilitada={nombre.trim() === '' || guardando}>
+            <Accion tipo="submit" deshabilitada={nombre.trim() === '' || yaExiste !== null || guardando}>
               {guardando ? 'Guardando…' : 'Guardar rol'}
             </Accion>
             <Accion onClick={() => setEditando(null)}>Cancelar</Accion>
             {nombre.trim() === '' && <Ayuda as="span">Un rol sin nombre no se puede guardar.</Ayuda>}
+            {yaExiste !== null && (
+              <Ayuda as="span">{`Ya existe el rol «${yaExiste}». Las mayúsculas no cuentan: sería el mismo.`}</Ayuda>
+            )}
           </div>
         </form>
       )}

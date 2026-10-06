@@ -37,6 +37,7 @@ import type { Theme } from '../../tokens/theme'
 import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
 import { Accion } from '../../render/primitives/Accion'
+import { SelectorDeCliente } from '../SelectorDeCliente'
 import { Wordmark } from '../console/Wordmark'
 import { PANTALLAS } from './pantallas'
 import type { FormaDeChrome, PantallaId } from './pantallas'
@@ -104,6 +105,13 @@ type Props = {
   onChangeTheme?: (theme: Theme) => void
 
   contexto: ContextoDeEdicion
+  /** **El cliente de trabajo, en la cabecera y destacado** · 2026-10-06. Es el
+   *  único lugar del builder donde se elige. */
+  clientes: readonly { id: string; nombre: string }[]
+  clienteActivo: string | null
+  onCliente: (id: string) => void
+  /** `null` sin versión: no hay nada que previsualizar. */
+  onVistaPrevia: (() => void) | null
   /** `null` cuando no hay nada que publicar todavía · la razón la da la pantalla. */
   onPublicar: (() => void) | null
   /** `null` cuando no hay cambios, o cuando la versión no admite escritura. */
@@ -129,6 +137,10 @@ export function BuilderChrome({
   onSalir,
   onChangeTheme,
   contexto,
+  clientes,
+  clienteActivo,
+  onCliente,
+  onVistaPrevia,
   onPublicar,
   onGuardar,
   guardando,
@@ -154,9 +166,13 @@ export function BuilderChrome({
 
                   `marca` y no `mono`: decisión humana del 2026-10-06, escrita en
                   la §3 de `PROPUESTA-2026-09-22-divergencias-con-el-pen.md`. */}
-              <div className="flex items-center gap-3">
-                <Wordmark variante="marca" />
-                <Label>Builder</Label>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-3">
+                  <Wordmark variante="marca" />
+                  <Label>Builder</Label>
+                </div>
+                <span aria-hidden className="h-6 w-px shrink-0 bg-w3" />
+                <SelectorDeCliente clientes={clientes} activo={clienteActivo} onElegir={onCliente} />
               </div>
 
               {/* «Ancho 1600 · lienzo 1:1 a 1200 más 300 de biblioteca» vivía
@@ -181,17 +197,12 @@ export function BuilderChrome({
                     cuerpo, y repetirlos arriba como texto con el mismo rótulo
                     hacía que uno pareciera un control y el otro no. La pestaña
                     tampoco va: en el canvas es el selector del cuerpo. */}
+                {/* El cliente ya no se repite acá: está arriba, en el selector. */}
                 {activa !== 'contexto' && (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <Label>Cliente</Label>
-                      <span className="font-body text-cuerpo font-medium text-ink">{contexto.tenant ?? '—'}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Label>Rol</Label>
-                      <span className="font-body text-cuerpo font-medium text-ink">{contexto.rol ?? 'Todos los roles'}</span>
-                    </div>
-                  </>
+                  <div className="flex items-center gap-2">
+                    <Label>Rol</Label>
+                    <span className="font-body text-cuerpo font-medium text-ink">{contexto.rol ?? 'Todos los roles'}</span>
+                  </div>
                 )}
 
                 {soloContexto(forma) ? (
@@ -222,7 +233,7 @@ export function BuilderChrome({
                         {validando ? 'Validando…' : 'Validar'}
                       </Accion>
                     )}
-                    <Accion onClick={() => onIr('preview')}>Vista previa</Accion>
+                    {onVistaPrevia !== null && <Accion onClick={onVistaPrevia}>Vista previa</Accion>}
                     {/* **Un CTA sin manejador no se pinta** · la misma regla que
                         `RecoBody`. En su lugar, en el registro de ayuda —antes
                         era un rótulo en el lugar exacto del botón, y se leía

@@ -92,6 +92,7 @@ import { SurfaceMessage } from '../console/SurfaceMessage'
 import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
 import { Accion } from '../../render/primitives/Accion'
+import { useClienteDeTrabajo } from '../useClienteDeTrabajo'
 import { ApiError } from '../../api/types'
 import type { TabParaGuardar } from '../../api/admin'
 import type { PanelConfig } from '../../api/types'
@@ -163,12 +164,14 @@ export function Builder() {
     irAPantalla(p)
     document.documentElement.scrollTop = 0
   }
-  const [tenant, setTenant] = useState<string | null>(null)
   const [versionElegida, setVersion] = useState<string | null>(null)
 
   const tenants = useTenants()
   const lista = tenants.data ?? []
-  const tenantActivo = tenant ?? lista[0]?.id ?? null
+  /** **El cliente de trabajo, compartido con administración** · 2026-10-06.
+   *  Caía a `lista[0]` —en QA, Keralty— aunque se viniera de trabajar sobre
+   *  UA. Ver `clienteDeTrabajo.ts`. */
+  const [tenantActivo, setTenant] = useClienteDeTrabajo(lista, yo.data?.tenant.id ?? null)
 
   // **Los tres hooks se llaman siempre y se apagan por `enabled`.** No pueden
   // colgar de `pantalla` sin violar las reglas de hooks, y además calientan el
@@ -479,6 +482,17 @@ export function Builder() {
       // no hay una fuente de identidad por superficie. Sin contexto no se pinta
       // el bloque — el chrome no inventa un nombre.
       onSalir={(ruta) => void navegar(ruta)}
+      clientes={lista}
+      clienteActivo={tenantActivo}
+      onCliente={(id) => {
+        setTenant(id)
+        setVersion(null)
+        setRol(null)
+        setSeleccion(null)
+      }}
+      // **Sin versión no hay nada que previsualizar** · 2026-10-06. El botón
+      // llevaba a una pantalla que pedía elegir una; ahora no se ofrece.
+      onVistaPrevia={version === null ? null : () => setPantalla('preview')}
       {...(yo.data === undefined
         ? {}
         : { identidad: { rol: yo.data.role.nombre, nombre: yo.data.user.nombre } })}
@@ -733,13 +747,6 @@ export function Builder() {
         <div className="flex flex-col gap-6">
           {revisionDelBorrador}
           <ContextView
-            tenants={lista}
-            tenantActivo={tenantActivo}
-            onTenant={(id) => {
-              setTenant(id)
-              setVersion(null)
-              setRol(null)
-            }}
             roles={roles.data ?? []}
             rolActivo={rolActivo}
             onRol={(id) => {

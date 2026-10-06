@@ -50,6 +50,7 @@ import { TenantIdentity } from './TenantIdentity'
 import { estadoDeAlta, versionDeCatalogo } from './alta'
 import { usoPorMetrica } from './uso'
 import { TenantList } from './TenantList'
+import { useClienteDeTrabajo } from '../useClienteDeTrabajo'
 import { SurfaceMessage } from '../console/SurfaceMessage'
 import { AgentConfig } from './AgentConfig'
 import { Label } from '../../render/primitives/Label'
@@ -74,7 +75,6 @@ const PENDIENTES: Partial<Record<PantallaId, { razon: string; desbloqueaCon: str
 export function Admin() {
   const navegar = useNavigate()
   const [pantalla, setPantalla] = useState<PantallaId>('clientes')
-  const [tenant, setTenant] = useState<string | null>(null)
   // La identidad del navbar · §PEN:A1. Sale del mismo `/config/me` que la
   // consola: no hay una fuente de identidad por superficie.
   // El tema se escribe igual que en la consola · `useSaveTheme` invalida `me`.
@@ -101,7 +101,9 @@ export function Admin() {
   const tenants = useTenants()
 
   const lista = tenants.data ?? []
-  const activo = tenant ?? lista[0]?.id ?? null
+  /** **El cliente de trabajo, compartido con el builder** · 2026-10-06. Antes
+   *  era un `useState` propio que caía a `lista[0]`. Ver `clienteDeTrabajo.ts`. */
+  const [activo, setTenant] = useClienteDeTrabajo(lista, contexto.data?.tenant.id ?? null)
 
   // **El hook del catálogo se llama siempre y se apaga por `enabled`**, que es lo
   // que las reglas de hooks exigen: no puede colgar de `pantalla`. Mientras A4 no

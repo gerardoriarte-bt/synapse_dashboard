@@ -30,6 +30,7 @@
  *  (PS-5). Por eso acá no hay colapso: hay scroll horizontal, que es visible.
  */
 import { IdentityBlock } from '../IdentityBlock'
+import { SelectorDeCliente } from '../SelectorDeCliente'
 import type { Theme } from '../../tokens/theme'
 import { Label } from '../../render/primitives/Label'
 import { Wordmark } from '../console/Wordmark'
@@ -132,24 +133,14 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
                   {...(onChangeTheme === undefined ? {} : { onChangeTheme })}
                 />
               )}
-              <Label>{porTenant ? 'Alcance · cliente' : 'Alcance · plataforma'}</Label>
+              {/* **El cliente de trabajo, destacado y el mismo del builder** ·
+                  2026-10-06. Antes era un `<select>` de 12px junto a un rótulo de
+                  alcance. Las pantallas de plataforma cruzan todas las cuentas y lo
+                  dicen. */}
               {porTenant ? (
-                <select
-                  aria-label="Cliente"
-                  className="bg-w2 text-ink text-celda rounded-sm px-2 py-1 border border-w4"
-                  value={tenantActivo ?? ''}
-                  onChange={(e) => onTenant(e.target.value)}
-                >
-                  {tenants.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.nombre}
-                    </option>
-                  ))}
-                </select>
+                <SelectorDeCliente clientes={tenants} activo={tenantActivo} onElegir={onTenant} />
               ) : (
-                // **Sin selector, y se dice por qué.** A1 y A3 cruzan clientes:
-                // un selector ahí sugeriría que se está mirando uno solo.
-                <Label>Todas las cuentas</Label>
+                <Label>Alcance · todas las cuentas</Label>
               )}
             </div>
           </div>

@@ -33,7 +33,6 @@ type Props = {
   format: Formatter
   onSelectTab: (id: string) => void
   onSelectPeriod: (id: string) => void
-  onSelectTenant?: (id: string) => void
   onChangeTheme?: (theme: Theme) => void
   /** Abre el chat con contexto de PESTAÑA · F3.15. **Sin él no hay botón.** */
   onAskTab?: (() => void) | undefined
@@ -51,7 +50,6 @@ export function Topbar({
   format,
   onSelectTab,
   onSelectPeriod,
-  onSelectTenant,
   onChangeTheme,
   onAskTab,
   onSelectDashboard,
@@ -61,8 +59,6 @@ export function Topbar({
   const dashboardActivo =
     context.dashboards.find((d) => d.id === context.dashboardActivoId)?.nombre ?? 'Dashboard'
 
-  const platform = context.alcance === 'plataforma'
-  const tenants = context.tenantsDisponibles ?? []
 
   return (
     <header className="flex flex-col">
@@ -82,30 +78,27 @@ export function Topbar({
             de quien mira. Son dos cosas y se ven como dos. */}
         <span aria-hidden className="h-4 w-px shrink-0 bg-w3" />
 
-        {platform && tenants.length > 0 ? (
-          <div className="flex min-w-0 items-center gap-2">
-            <Label as="span">Tenant · el acceso queda auditado</Label>
-            <div className="flex items-center gap-1">
-              {tenants.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => onSelectTenant?.(t.id)}
-                  aria-current={t.id === context.tenant.id ? 'true' : undefined}
-                  className={[
-                    'font-mono text-label tracking-rotulo uppercase rounded-md px-2 py-1',
-                    'cursor-pointer bg-transparent border-0',
-                    t.id === context.tenant.id ? 'text-acc' : 'text-dim hover:text-ink',
-                  ].join(' ')}
-                >
-                  {t.etiqueta}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <Label as="span">{context.tenant.etiqueta}</Label>
-        )}
+        {/* **El cliente, destacado y sin botones que no hacen nada** · 2026-10-06.
+
+            Para un usuario de plataforma acá había un botón por cliente —el
+            `.pen` de C1 los dibuja con «TENANT · EL ACCESO QUEDA AUDITADO»—, y
+            **ninguno hacía nada**: `onSelectTenant` nunca se conectó desde
+            `ConsoleContainer`. No podía conectarse: el cliente de la consola es el
+            del token de sesión —`JWTMiddleware` pone `claims.TenantID`— y ninguna
+            ruta de `/config/*` acepta otro. Leído en el código del servicio ese
+            día. Un CTA sin manejador no se pinta.
+
+            Pedido humano del mismo día: «en el header se debe destacar bien el
+            tenant que se está trabajando». Va con el mismo tratamiento que el
+            selector de administración y del builder, sin la caja: acá no se
+            elige. Que la consola siga la elección de esas dos superficies es un
+            pedido al backend. */}
+        <div className="flex min-w-0 items-center gap-3">
+          <Label as="span">Cliente</Label>
+          <span className="truncate font-display text-titulo leading-titulo tracking-titulo font-medium text-ink">
+            {context.tenant.etiqueta}
+          </span>
+        </div>
 
         {/* ── SELECTOR DE DASHBOARD · §PEN:C6 ──────────────────────────────
             **Era un `<select>` en el navbar hasta el 2026-09-28**, puesto por

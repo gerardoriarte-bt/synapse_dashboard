@@ -338,18 +338,15 @@ describe('la grilla volvió · B4.9 llegó el 2026-09-28', () => {
 })
 
 describe('los estados de B5', () => {
-  it('sin versión elegida invita a elegir una', async () => {
-    // Antes se entraba sin apretar la versión. Con la autoselección del
-    // 2026-10-06 eso ya no deja el builder sin versión: hace falta un cliente
-    // que no tenga ninguna.
+  it('sin versión NO se ofrece la vista previa · no hay nada que previsualizar', async () => {
+    // **Cambió el 2026-10-06** (pedido humano). Antes el botón llevaba a B5 y B5
+    // decía «Elegí una versión…»: una entrada que sólo sirve para salir. Ahora,
+    // sin versión, el botón no está. La rama de B5 sin versión queda como
+    // defensa y ya no se alcanza desde la superficie.
     base([sinVersiones])
     montar()
     await screen.findByText('Este cliente todavía no tiene versiones. Creá el primer borrador para empezar a componer.')
-    await userEvent.click(screen.getByRole('button', { name: 'Vista previa' }))
-
-    expect(
-      await screen.findByText('Elegí una versión en «Contexto de edición» para previsualizarla.'),
-    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Vista previa' })).toBeNull()
   })
 
   it('sin roles manda a definirlos, no se muestra vacía', async () => {
@@ -410,23 +407,18 @@ describe('B5 no tiene chrome · su vacío lleva salida propia · 2026-09-25', ()
    *  **Casi se reporta mal**: la primera medición cayó durante una recarga de
    *  Vite. Se repitió desde una carga limpia antes de afirmarlo.
    */
-  it('entrar al preview SIN versión deja salida, y el botón devuelve al contexto', async () => {
-    // Sin versión hace falta un cliente sin versiones · autoselección, 2026-10-06.
-    base([sinVersiones])
+  it('entrar al preview CON versión y volver deja a B1 donde estaba', async () => {
+    // **Era «entrar SIN versión deja salida»**, y ese camino ya no existe desde
+    // el 2026-10-06: sin versión no se ofrece la vista previa. Lo que la prueba
+    // cuidaba —que el botón de vuelta LLEVE, pasando por el spread condicional
+    // del contenedor— se sostiene con versión.
+    base()
     montar()
-
-    await screen.findByText('Este cliente todavía no tiene versiones. Creá el primer borrador para empezar a componer.')
-    await userEvent.click(screen.getByRole('button', { name: 'Vista previa' }))
-    expect(await screen.findByText(/Elegí una versión/i)).toBeVisible()
-
-    // **La aserción es que el callback LLEVA a algún lado**, no que el botón
-    // esté: un botón muerto se ve igual que uno que funciona, y acá la cadena
-    // pasa por el spread condicional del contenedor.
-    await userEvent.click(screen.getByRole('button', { name: 'Ir a contexto de edición' }))
+    await abrirPreview()
+    await userEvent.click(screen.getByRole('button', { name: 'Volver a edición' }))
     expect(
       await screen.findByRole('heading', { name: '¿Sobre qué se va a componer?' }),
     ).toBeInTheDocument()
-    expect(screen.getByText('Este cliente todavía no tiene versiones. Creá el primer borrador para empezar a componer.')).toBeInTheDocument()
   })
 })
 

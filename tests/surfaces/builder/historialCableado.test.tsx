@@ -202,7 +202,9 @@ describe('B6 · el dashboard sale de la VERSIÓN abierta', () => {
     ).toBeInTheDocument()
     // **Que el botón DISPARE, no que exista**: un estado sin salida es una queja.
     await userEvent.click(screen.getByRole('button', { name: 'Ir a contexto de edición' }))
-    expect(await screen.findByRole('combobox', { name: 'Cliente' })).toBeInTheDocument()
+    // B1 ya no tiene el selector de cliente —subió a la cabecera el 2026-10-06—:
+    // se la reconoce por su pregunta.
+    expect(await screen.findByRole('heading', { name: '¿Sobre qué se va a componer?' })).toBeInTheDocument()
   })
 })
 
@@ -295,8 +297,8 @@ describe('B6 · el chrome de `contexto` · §PEN:B6 frame `Volver`', () => {
     await abrirHistorial()
     const cabecera = within(screen.getByRole('banner'))
     await userEvent.click(cabecera.getByRole('button', { name: 'Volver a editar' }))
-    // Vuelve a B1, que es la que tiene el selector de cliente.
-    expect(await screen.findByRole('combobox', { name: 'Cliente' })).toBeInTheDocument()
+    // Vuelve a B1, que se reconoce por su pregunta.
+    expect(await screen.findByRole('heading', { name: '¿Sobre qué se va a componer?' })).toBeInTheDocument()
   })
 
   it('el contexto sigue visible · es lo que el `.pen` dibuja en el navbar de B6', async () => {

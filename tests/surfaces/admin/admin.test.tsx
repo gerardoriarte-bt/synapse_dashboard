@@ -92,7 +92,7 @@ describe('§7.3 · las cinco pantallas y su alcance', () => {
     await screen.findByText('Under Armour México')
 
     expect(screen.queryByLabelText('Cliente')).toBeNull()
-    expect(screen.getByText(/Alcance · plataforma/)).toBeInTheDocument()
+    expect(screen.getByText(/Alcance · todas las cuentas/)).toBeInTheDocument()
   })
 
   it('una pantalla de tenant SÍ lo muestra, con los clientes', async () => {
@@ -102,9 +102,12 @@ describe('§7.3 · las cinco pantallas y su alcance', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Ficha de cliente' }))
 
-    const selector = await screen.findByLabelText('Cliente')
+    // **Desde el 2026-10-06 es el selector destacado y compartido con el
+    // builder** · `SelectorDeCliente`. Ya no lleva el rótulo «Alcance · cliente»:
+    // el rótulo es «Cliente», que es lo que se elige.
+    const selector = await screen.findByRole('combobox', { name: 'Cliente' })
     expect(within(selector).getByText('Keralty Colombia')).toBeInTheDocument()
-    expect(screen.getByText(/Alcance · cliente/)).toBeInTheDocument()
+    expect(screen.queryByText(/Alcance · /)).toBeNull()
   })
 })
 
