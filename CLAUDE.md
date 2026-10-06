@@ -222,6 +222,19 @@ equivocado.
 - **Ámbar y amarillo: prohibidos.**
 - **Deltas en color neutro.** El signo comunica dirección; prohibido verde/rojo
   semántico.
+- **El rojo `--color-peligro` es de ACCIÓN, nunca de dato** · decisión humana del
+  2026-10-06 (D4 de `docs/AUDITORIA-2026-10-06-builder-contexto-y-canvas.md`).
+  Sólo para lo que borra —quitar una pestaña, un panel, un rol—, vía
+  `<Accion variante="peligro">`. Vive en `src/tokens/decisiones.css`, escrito a
+  mano porque el `.pen` todavía no lo emite: es una propuesta de spec para
+  diseño, y el día que el `.pen` lo declare se borra de ahí.
+
+**Cuatro registros de texto en builder y administración** · 2026-10-06. Rótulo
+(`Label`, mono mayúsculas) nombra algo; ayuda (`Ayuda`, frase en Inter) explica;
+acción (`Accion`, siempre con caja) ejecuta; opción (`Opcion`, `aria-pressed`)
+se elige. **Un botón con el traje del rótulo es el defecto que esto corrige**:
+medido ese día, 18 de 21 botones del builder se veían como texto. La consola
+queda como está: ahí casi todo es dato con su rótulo.
 - La familia cromática **se lee del catálogo, nunca se elige en el componente**.
 
 ## Reglas de panel que el código tiene que sostener

@@ -222,10 +222,17 @@ plomería»— y **en el builder se pintan cuatro que sí la nombran**:
 | `ContextView.tsx:113` | «Sin roles definidos · se definen en la ficha de cliente · F4.3» |
 | `Builder.tsx:761` | «Se definen en la ficha de cliente de administración · F4.3» |
 
-**El chequeo tiene un agujero**: las dos primeras son texto JSX o plantilla
-dentro de `Label`, y las otras dos son texto JSX suelto. Es un hallazgo sobre la
-herramienta, no sólo sobre el copy, y merece su prueba de mutación al
-arreglarlo.
+> **Corregido el mismo día, al implementarlo.** Acá decía que las cuatro eran un
+> agujero del chequeo. **Tres sí lo eran y una no**: «§5 gobierna esta lista»
+> estaba **eximida a propósito** en `copy-producto.py`, con su razón —es literal
+> del `.pen` de B4— y su propuesta abierta,
+> `PROPUESTA-2026-09-30-citas-de-spec-en-el-pen.md`. Se escribió sin abrir la
+> lista de exenciones, que es la falla de «nada se escribe de memoria».
+>
+> Los dos agujeros reales eran de **forma**: una plantilla con `${…}` —el patrón
+> excluía el `$`— y un texto JSX en la misma línea que su etiqueta —la regla del
+> texto suelto salteaba toda línea que empieza con `<`—. Los dos se taparon y se
+> comprobaron reintroduciendo las fugas.
 
 Y hay otra clase que el chequeo no puede ver porque no nombra plomería pero es
 igual de nuestra: textos que le explican **al equipo** cómo está hecho el
@@ -289,15 +296,23 @@ elegido es el que produce el scroll de §2.3.
 
 ### Con decisión de diseño o de producto
 
-| # | Pregunta | Por qué no la decidimos nosotros |
-|---|---|---|
-| D1 | ¿El canvas lleva un **inspector** del panel elegido? | Rompe la cuenta 1200 + 300 = 1600 del `.pen`, o pide escala distinta de 1:1 |
-| D2 | ¿Se parte «Contexto de edición» en **B1 como está dibujada** (decidir) + edición de pestañas + configurador? | Es una reestructura que el `.pen` sugiere pero no dibuja entera |
-| D3 | ¿Se ocultan las pestañas «Selector de gráfico», «Binder de métrica» y «Vista previa por rol»? | `pantallas.ts` las declara por §7.2; quitarlas de la navegación es una lectura de la spec |
-| D4 | ¿Cómo se pinta lo **destructivo** sin rojo y sin el naranja de los CTA? | Regla dura de color de `design.md` |
-| D5 | ¿Qué hace el **selector de rol** en la pantalla de contexto? | El `.pen` dice que define qué pestañas se editan; hoy no filtra nada |
-| D6 | **Rótulos de producto** para los tipos de panel y las formas (`bars` → «Barras») | El dueño del copy que describe datos es el catálogo; el de tipos de panel no está definido |
-| D7 | ¿Las reglas de grilla del `.pen` (`rowSpan`, `GAP 16`) son para el usuario? | Literal del `.pen`, que no modificamos |
+Las respuestas son del humano, el mismo 2026-10-06, y se transcriben literales.
+
+| # | Pregunta | Por qué no la decidimos nosotros | Respuesta (humano) | Cómo se implementó |
+|---|---|---|---|---|
+| D1 | ¿El canvas lleva un **inspector** del panel elegido? | Rompe la cuenta 1200 + 300 = 1600 del `.pen`, o pide escala distinta de 1:1 | «Si no genera ninguna mejora importante en la experiencia y configuración, quitarla» | **Sí la genera**, y es la mayor: era la única forma de que el canvas configure. Va **encima** del lienzo, a la derecha, para no achicar los 1200 |
+| D2 | ¿Se parte «Contexto de edición» en **B1 como está dibujada** (decidir) + edición de pestañas + configurador? | Es una reestructura que el `.pen` sugiere pero no dibuja entera | «Hay que completarla como debe quedar» | B1 es la pantalla de decisión del `.pen`: título, cliente, rol, versión y tarjetas de pestaña con `Componer`. El configurador se mudó al inspector |
+| D3 | ¿Se ocultan las pestañas «Selector de gráfico», «Binder de métrica» y «Vista previa por rol»? | `pantallas.ts` las declara por §7.2; quitarlas de la navegación es una lectura de la spec | «Quitarlas si no suman» | Las tres salen del nav (`enNav: false`). Siguen declaradas para `pen-pantallas`; la vista previa se abre con su botón |
+| D4 | ¿Cómo se pinta lo **destructivo** sin rojo y sin el naranja de los CTA? | Regla dura de color de `design.md` | «Creo que debemos implementar el rojo, es lo mejor en entendimiento visual» | Token `peligro` en `src/tokens/decisiones.css` —escrito a mano, porque `tokens.css` lo genera el `.pen`—, medido por `contraste` en los dos temas. Es color de **acción**, nunca de dato |
+| D5 | ¿Qué hace el **selector de rol** en la pantalla de contexto? | El `.pen` dice que define qué pestañas se editan; hoy no filtra nada | «Debería funcionar como un filtro para poder seleccionar y editar los dashboard por cada rol dentro del cliente, en este momento no está bien comprensible, hay que mejorar» | Filtro con «Todos los roles» + cada rol; filtra B1 y el selector del canvas. Cada pestaña dice quién la ve y lo deja cambiar; la pestaña nueva nace para el rol filtrado |
+| D6 | **Rótulos de producto** para los tipos de panel y las formas (`bars` → «Barras») | El dueño del copy que describe datos es el catálogo; el de tipos de panel no está definido | «Definirlo» | `src/surfaces/builder/rotulos.ts`, sobre la unión del contrato: un tipo nuevo del yaml deja de compilar en vez de pintarse crudo |
+| D7 | ¿Las reglas de grilla del `.pen` (`rowSpan`, `GAP 16`) son para el usuario? | Literal del `.pen`, que no modificamos | «Lo que consideres mejor para la usabilidad» | Fuera: hablan del handoff. En su lugar, una frase con los gestos. «Slot vacío» **se queda**, que es literal del `.pen` y no regla de grilla |
+
+Y una decisión más, sobre la tipografía, que no estaba en la tabla: **se mantienen
+las tres familias y se usan sus ejes**. Inter, JetBrains Mono y Space Grotesk ya
+son variables; lo que faltaba era una escala de pesos —en todo `src/` había tres
+`font-medium` y dos `font-bold`—. El alcance es builder y administración; la
+consola, que es casi toda dato con su rótulo, queda como está.
 
 D1, D2 y D3 se pueden juntar en una sola propuesta: son la misma pregunta —**dónde
 vive la edición de un panel**— vista desde tres lados.
