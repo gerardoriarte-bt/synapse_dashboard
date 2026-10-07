@@ -103,10 +103,17 @@ EXPOSE 5173
 
 # El chequeo mira `/` en el puerto en el que nginx ESTÁ escuchando, no uno fijo.
 # Con `NGINX_PORT=5173` un wget a :8080 deja el contenedor `unhealthy` aunque
-# sirva bien. `$$` para que Docker no lo resuelva en el build.
+# sirva bien.
+#
+# **`$NGINX_PORT` con UN signo, no `$$`** · corregido el 2026-10-07. Docker no
+# sustituye variables en `HEALTHCHECK CMD`: la línea llega tal cual al shell, y
+# ahí `$$` es el PID. Medido: el wget pedía `127.0.0.1:46NGINX_PORT` y con
+# `docker run` el contenedor quedaba `unhealthy` tras tres fallas. El `$$` es el
+# escape de COMPOSE, y por eso el despliegue no lo notaba: `docker-compose.yml`
+# sobrescribe este chequeo con `$${NGINX_PORT}`, que allá sí es correcto.
 #
 # **No apunta a `/api/v1`** a propósito: el front está sano aunque el backend no
 # lo esté, y si el healthcheck dependiera de la API, un backend caído reiniciaría
 # el front en un bucle sin arreglar nada.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://127.0.0.1:$$NGINX_PORT/ || exit 1
+  CMD wget --quiet --tries=1 --spider http://127.0.0.1:$NGINX_PORT/ || exit 1
