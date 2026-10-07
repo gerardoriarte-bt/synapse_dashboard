@@ -31,8 +31,9 @@
  */
 import { ApiError, SIN_CODIGO } from './types'
 import type { PanelConfig } from './types'
-import { adaptCatalog } from './adapt'
-import type { AdaptedCatalog, WireMetric } from './adapt'
+import { adaptCatalog, adaptPayload } from './adapt'
+import type { AdaptedCatalog, WireMetric, WirePayload } from './adapt'
+import type { NetworkPayload } from './types'
 import type { components as admin } from './admin-generated'
 import { currentToken } from '../app/auth/session'
 import { apiBase } from './base'
@@ -222,6 +223,17 @@ export type PreviewDeRol = {
    *  `hidden_metric_ids` y con los `layout_overrides` aplicados — el servidor
    *  usa el mismo código que sirve la consola, así que no pueden divergir. */
   tabs: { tab: TabDeLayout; paneles: PanelConfig[] }[]
+  /** **El dato de cada panel** · sólo si se pidió `conDatos` · 2026-10-07.
+   *
+   *  `include=payloads` existe desde `d9147c3` y no se había transcripto: B5,
+   *  el lienzo y el selector de gráfico se dibujaban sin dato con una razón
+   *  —«el preview va sin payloads»— que venció ese día. Ver
+   *  `docs/AUDITORIA-2026-10-07-editor-sin-previsualizacion.md`.
+   *
+   *  **Por panel, adaptado con el MISMO `adaptPayload` de la consola**: es el
+   *  mismo `Payload` del mismo código, y dos adaptadores de un hecho se
+   *  separan. */
+  datos?: { periodo: string; porPanel: ReadonlyMap<string, NetworkPayload> }
 }
 
 export type LayoutVersion = {
@@ -803,8 +815,23 @@ function adaptarPreview(w: WirePreview): PreviewDeRol {
         ...(x.options === undefined ? {} : { opciones: x.options }),
         // La nota vacía se omite · misma regla que en el cable de consola.
         ...(x.note === '' ? {} : { nota: x.note }),
+        // **El gráfico, que este adaptador tiraba** · 2026-10-07. El cable lo
+        // trae desde `f70cec2` y su descripción dice por qué importa: «si el
+        // preview no trajera el gráfico mostraría una cascada como dona». Sin
+        // dato no se notaba; con dato, B5 dibujaba el de por defecto.
+        ...(x.chart === undefined || x.chart === '' ? {} : { grafico: x.chart as NonNullable<PanelConfig['grafico']> }),
       })),
     })),
+    ...(w.payloads === undefined
+      ? {}
+      : {
+          datos: {
+            periodo: w.period ?? '',
+            porPanel: new Map(
+              Object.entries(w.payloads).map(([id, x]) => [id, adaptPayload(x as unknown as WirePayload)]),
+            ),
+          },
+        }),
   }
 }
 
@@ -965,7 +992,8 @@ export const adminApi = {
     )
   },
 
-  previewPorRol: async (layoutId: string, rolId: string): Promise<PreviewDeRol> =>
+  /** `conDatos` pide `include=payloads` · ver `PreviewDeRol.datos`. */
+  previewPorRol: async (layoutId: string, rolId: string, conDatos = false): Promise<PreviewDeRol> =>
     adaptarPreview(
       await pedir<WirePreview>(
         // **`role_id`, snake_case** · corregido el 2026-09-26. Mandaba `roleId`
@@ -977,7 +1005,7 @@ export const adminApi = {
         // en camelCase, en el mismo binario. Y **MSW no podía verlo** — su
         // handler leía la misma grafía que mandábamos, así que respondía igual.
         // Ahora el mock exige `role_id` y devuelve 400 sin él.
-        `/admin/layouts/${encodeURIComponent(layoutId)}/preview?role_id=${encodeURIComponent(rolId)}`,
+        `/admin/layouts/${encodeURIComponent(layoutId)}/preview?role_id=${encodeURIComponent(rolId)}${conDatos ? '&include=payloads' : ''}`,
       ),
     ),
 

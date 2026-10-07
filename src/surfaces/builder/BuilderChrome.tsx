@@ -34,6 +34,8 @@
  */
 import { useLayoutEffect, useRef } from 'react'
 import { IdentityBlock } from '../IdentityBlock'
+import { MenuDeTrabajo } from '../MenuDeTrabajo'
+import { VolverAlDashboard } from '../VolverAlDashboard'
 import type { Theme } from '../../tokens/theme'
 import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
@@ -127,9 +129,12 @@ type Props = {
   /** Volver a la consola · `undefined` no pinta el control. */
   /** Quién compone · el bloque de identidad de `B2`. Sin él no se pinta: el
    *  chrome no inventa un nombre. */
-  identidad?: { rol: string; nombre: string } | undefined
-  /** Salir a otra superficie · la navegación es del contenedor. */
+  identidad?: { rol: string; nombre: string; correo?: string } | undefined
+  /** Ir a una RUTA · el menú de trabajo y «Volver al dashboard». La navegación
+   *  es del contenedor. */
   onSalir: (ruta: string) => void
+  /** Cerrar sesión, desde el menú del nombre · sin manejador no se pinta. */
+  onCerrarSesion?: (() => void) | undefined
   /** **El tema, que viaja hasta `IdentityBlock`** · 2026-10-02. Opcional por la
    *  misma razón que allá: sin manejador la sección no se pinta. */
   onChangeTheme?: (theme: Theme) => void
@@ -163,6 +168,7 @@ export function BuilderChrome({
   onIr,
   identidad,
   onSalir,
+  onCerrarSesion,
   onChangeTheme,
   contexto,
   clientes,
@@ -225,16 +231,22 @@ export function BuilderChrome({
                   acá, siempre a la vista. Es la regla de §4 para quien
                   implementa, no para quien compone · §3.4 de la auditoría del
                   2026-10-06. Sigue en `pantallas.ts`, que es donde sirve. */}
-              {identidad !== undefined && (
-                <IdentityBlock
-                  rol={identidad.rol}
-                  nombre={identidad.nombre}
-                  desde="builder"
-                  esAdmin
-                  onIr={onSalir}
-                  {...(onChangeTheme === undefined ? {} : { onChangeTheme })}
-                />
-              )}
+              {/* A la derecha, con aire: el acceso rápido al dashboard, la
+                  persona y el menú de trabajo al final · decisión humana del
+                  2026-10-07. */}
+              <div className="flex items-center gap-6">
+                <VolverAlDashboard onIr={onSalir} />
+                {identidad !== undefined && (
+                  <IdentityBlock
+                    rol={identidad.rol}
+                    nombre={identidad.nombre}
+                    {...(identidad.correo === undefined ? {} : { correo: identidad.correo })}
+                    {...(onChangeTheme === undefined ? {} : { onChangeTheme })}
+                    {...(onCerrarSesion === undefined ? {} : { onCerrarSesion })}
+                  />
+                )}
+                <MenuDeTrabajo esAdmin rutaActual={pantalla.ruta} onIr={onSalir} />
+              </div>
             </div>
 
             {conContexto(forma) && (

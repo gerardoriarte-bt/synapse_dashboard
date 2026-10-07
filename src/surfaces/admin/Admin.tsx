@@ -20,9 +20,10 @@
  *  Una pantalla que se declara pendiente **no es lo mismo que una que no está**:
  *  la primera dice qué la desbloquea, que es lo que §8 pide de cualquier estado.
  */
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useTemaGuardado } from '../useTemaGuardado'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { useCerrarSesion } from '../useCerrarSesion'
 import {
   useAgents,
   useFeeds,
@@ -60,6 +61,7 @@ import { ApiError } from '../../api/types'
 import type { EstadoDeAlta } from './alta'
 import type { Tenant } from '../../api/admin'
 import type { Formatter } from '../../render/format'
+import { PANTALLAS } from './pantallas'
 import type { PantallaId } from './pantallas'
 
 /** Lo que cada pantalla pendiente espera. Acá y no en un comentario: la pantalla
@@ -74,7 +76,18 @@ const PENDIENTES: Partial<Record<PantallaId, { razon: string; desbloqueaCon: str
 
 export function Admin() {
   const navegar = useNavigate()
-  const [pantalla, setPantalla] = useState<PantallaId>('clientes')
+  const cerrarSesion = useCerrarSesion()
+  /** **La pantalla la decide la URL** · 2026-10-07. Era estado interno, y el
+   *  menú de trabajo ofrece entrar directo a cada pantalla desde cualquier
+   *  superficie: sin la URL no había cómo llegar a «Usuarios» desde el builder.
+   *  De paso, recargar y «atrás» dejan de devolver a «Clientes». Una ruta que
+   *  no es de acá —las pruebas montan en `/`— cae en la primera. */
+  const { pathname } = useLocation()
+  const pantalla: PantallaId = PANTALLAS.find((p) => p.ruta === pathname)?.id ?? 'clientes'
+  const setPantalla = (id: PantallaId) => {
+    const destino = PANTALLAS.find((p) => p.id === id)
+    if (destino !== undefined) void navegar(destino.ruta)
+  }
   // La identidad del navbar · §PEN:A1. Sale del mismo `/config/me` que la
   // consola: no hay una fuente de identidad por superficie.
   // El tema se escribe igual que en la consola · `useSaveTheme` invalida `me`.
@@ -186,7 +199,14 @@ export function Admin() {
       onTenant={setTenant}
       {...(contexto.data === undefined
         ? {}
-        : { identidad: { rol: contexto.data.role.nombre, nombre: contexto.data.user.nombre } })}
+        : {
+            identidad: {
+              rol: contexto.data.role.nombre,
+              nombre: contexto.data.user.nombre,
+              correo: contexto.data.user.email,
+            },
+          })}
+      onCerrarSesion={cerrarSesion}
     >
       {pendiente !== undefined ? (
         <div className="flex flex-col gap-2">

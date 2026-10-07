@@ -3,6 +3,10 @@
  *  **Una sola lista, y de acá salen las dos cosas que hoy estaban separadas**:
  *  las rutas que el router monta y las salidas que el menú de usuario ofrece.
  *
+ *  **Desde el 2026-10-07 las salidas no viven en el menú de usuario** sino en el
+ *  menú de trabajo —`trabajo.ts`, que lee este registro y los de pantallas—, y
+ *  `salidasDesde` se borró con ellas.
+ *
  *  ── POR QUÉ EXISTE ─────────────────────────────────────────────────────────
  *
  *  Hasta hoy eran **dos listas del mismo hecho**: `app/router/routes.tsx` con
@@ -59,13 +63,3 @@ export const SUPERFICIES: readonly Superficie[] = [
   { id: 'admin', ruta: '/admin', nombre: 'Administración', alcance: 'admin', etiqueta: 'Administración' },
   { id: 'builder', ruta: '/builder', nombre: 'Builder', alcance: 'admin', etiqueta: 'Builder' },
 ] as const
-
-/** Las que puede abrir quien tenga este rol, **menos la que está mirando**.
- *
- *  Excluir la actual es lo que evita el «ir a donde ya estás», y que sea un
- *  parámetro y no una condición escrita en cada chrome es lo que hace que una
- *  superficie nueva aparezca en todas sin tocar ninguna.
- */
-export function salidasDesde(actual: Superficie['id'], esAdmin: boolean): readonly Superficie[] {
-  return SUPERFICIES.filter((s) => s.id !== actual && (s.alcance === 'todos' || esAdmin))
-}

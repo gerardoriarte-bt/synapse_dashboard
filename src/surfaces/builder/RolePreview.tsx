@@ -66,7 +66,8 @@ import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
 import { Accion } from '../../render/primitives/Accion'
 import { nombreDeTipo } from './rotulos'
-import { gridStyle, panelStyle } from '../../render/grid'
+import { GAP, ROW, gridStyle, panelStyle } from '../../render/grid'
+import type { ReactNode } from 'react'
 import type { LayoutDetalle, PreviewDeRol } from '../../api/admin'
 import type { PanelConfig } from '../../api/types'
 
@@ -79,6 +80,10 @@ type Props = {
   completo?: LayoutDetalle | undefined
   /** El toggle de §7.2 · «un toggle vuelve a edición». */
   onVolver: () => void
+  /** **El panel dibujado con su dato** · 2026-10-07. Lo resuelve el contenedor
+   *  —tiene el catálogo, el repertorio y el formato del cliente—. Sin él, o sin
+   *  `preview.datos`, la caja con el tipo y el tamaño. */
+  dibujar?: (panel: PanelConfig) => ReactNode
 }
 
 /** Los paneles que el layout tiene y este rol no ve · §3.4 regla 3.
@@ -95,7 +100,8 @@ function huecosDe(
   return completos.filter((x) => !visibles.has(x.id))
 }
 
-export function RolePreview({ preview, completo, onVolver }: Props) {
+export function RolePreview({ preview, completo, onVolver, dibujar }: Props) {
+  const conDatos = dibujar !== undefined && preview.datos !== undefined
   const total = preview.tabs.reduce((s, x) => s + x.paneles.length, 0)
 
   return (
@@ -135,11 +141,25 @@ export function RolePreview({ preview, completo, onVolver }: Props) {
             )}
 
             <div style={gridStyle()}>
-              {paneles.map((p) => (
-                // **No se dibuja con `render/Panel`**, y la razón no cambió: el
-                // preview va sin payloads, así que habría que inventarle uno —un
-                // `BLOQUEADO` que nadie emitió— y eso es lo que este repositorio
-                // persigue. Se pinta la CAJA con su posición real.
+              {paneles.map((p) =>
+                conDatos ? (
+                  // **Con su dato, como lo va a ver el rol** · 2026-10-07. La
+                  // razón por la que acá había una caja —«el preview va sin
+                  // payloads»— venció con `d9147c3`. Una grilla del ancho del
+                  // panel con las filas de la consola: mide lo mismo que allá.
+                  <div
+                    key={p.id}
+                    style={{
+                      ...panelStyle(p),
+                      display: 'grid',
+                      gridTemplateColumns: `repeat(${String(p.colSpan)}, minmax(0, 1fr))`,
+                      gridAutoRows: `${String(ROW)}px`,
+                      gap: `${String(GAP)}px`,
+                    }}
+                  >
+                    {dibujar({ ...p, colStart: 1 })}
+                  </div>
+                ) : (
                 <div
                   key={p.id}
                   style={panelStyle(p)}
@@ -149,7 +169,8 @@ export function RolePreview({ preview, completo, onVolver }: Props) {
                   <Label as="div">{`${String(p.colSpan)} × ${String(p.rowSpan)}`}</Label>
                   {p.nota !== undefined && <Label as="div">{p.nota}</Label>}
                 </div>
-              ))}
+                ),
+              )}
 
               {huecos.map((h) => (
                 // **En su posición original** · §3.4 regla 3. Punteado y sin
@@ -178,7 +199,11 @@ export function RolePreview({ preview, completo, onVolver }: Props) {
 
             Para que no quede como leyenda, lo que se declara es lo que se PUEDE
             comprobar mirando la pantalla: que no hay paneles. */}
-        <Ayuda>Esta vista muestra la composición, sin cifras: la vista previa no trae datos.</Ayuda>
+        <Ayuda>
+          {conDatos
+            ? `Con el dato de ${preview.datos?.periodo ?? 'el período abierto'}, como lo va a ver este rol.`
+            : 'Esta vista muestra la composición, sin cifras: el dato todavía no llegó.'}
+        </Ayuda>
         {/* Nombraba los dos campos del cable —`roles.tab_ids` y
             `hidden_metric_ids`— en la pantalla · 2026-10-06. Se dice qué son. */}
         <Ayuda>

@@ -4,6 +4,12 @@
 > quince pantallas, y lo que hay hoy lo inventamos nosotros. El agente no
 > modifica el `.pen` ni `design.md`.
 
+> **REEMPLAZADA EN PARTE el 2026-10-07 · decisión humana.** Las salidas dejaron
+> el punto de identidad: van en un menú de trabajo —hamburguesa, a la derecha del
+> usuario— con acceso directo a cada pantalla, y el nombre queda para lo de la
+> persona y cerrar sesión. La simetría entre superficies se conserva. Ver
+> `PROPUESTA-2026-10-07-header-usuario-y-trabajo.md`.
+
 > **CONTESTADA el 2026-09-28 · dibujando**, con permiso escrito para modificar el
 > `.pen` —`docs/INSTRUCCIONES-2026-09-28-diseno-en-el-pen.md`—. Las cuatro
 > preguntas se resolvieron con una decisión sola: **todo vive DENTRO del punto de

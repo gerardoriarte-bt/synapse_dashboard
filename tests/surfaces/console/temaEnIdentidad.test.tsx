@@ -9,10 +9,15 @@
  *    adentro del panel, con **las dos opciones a la vista**.
  *  - El `IR A` era invención nuestra del 2026-09-16 y el dibujo lo sancionó, con
  *    su `arrow-right` por salida.
+ *
+ *  **El `IR A` se fue del panel el 2026-10-07** —decisión humana— al menú de
+ *  trabajo. Lo que este archivo afirma de él ahora es el orden de lo que quedó:
+ *  la preferencia y después la salida de la sesión.
  */
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 import { UserMenu } from '@/surfaces/console/UserMenu'
 import type { AppContext } from '@/api/types'
@@ -33,9 +38,12 @@ const contexto = (rol: string, alcance: 'usuario' | 'plataforma' = 'usuario') =>
 
 const montar = (ctx: AppContext, onChangeTheme?: (t: 'dark' | 'light') => void) =>
   render(
-    <MemoryRouter>
-      <UserMenu context={ctx} {...(onChangeTheme === undefined ? {} : { onChangeTheme })} />
-    </MemoryRouter>,
+    // Con su `QueryClient` desde el 2026-10-07: cerrar sesión vacía el cache.
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter>
+        <UserMenu context={ctx} {...(onChangeTheme === undefined ? {} : { onChangeTheme })} />
+      </MemoryRouter>
+    </QueryClientProvider>,
   )
 
 const abrir = async () => userEvent.click(screen.getByRole('button', { name: /Prueba Uno/ }))
@@ -84,25 +92,22 @@ describe('el tema vive acá, con las DOS opciones a la vista', () => {
   })
 })
 
-describe('las salidas llevan su flecha, y el texto basta', () => {
-  it('cada salida trae el `arrow-right` y va `aria-hidden`', async () => {
-    const { container } = montar(contexto('Admin'), vi.fn())
+describe('el tema, y después cerrar sesión', () => {
+  it('ya no hay salidas a superficies · ni siquiera para el admin', async () => {
+    montar(contexto('Admin'), vi.fn())
     await abrir()
 
-    const salida = screen.getByRole('menuitem', { name: 'Administración' })
-    expect(salida).toBeVisible()
-    // El icono no se anuncia: el texto ya dice a dónde lleva.
-    expect(salida.querySelector('svg')).toHaveAttribute('aria-hidden')
-    expect(container.textContent).toContain('Ir a')
+    expect(screen.queryByText('Ir a')).toBeNull()
+    expect(screen.queryByRole('menuitem', { name: 'Administración' })).toBeNull()
   })
 
-  it('un rol que NO es admin no ve salidas · ocultar no es permitir', async () => {
+  it('el tema va ANTES de cerrar sesión, para cualquier rol', async () => {
     montar(contexto('Planner'), vi.fn())
     await abrir()
 
-    expect(screen.queryByRole('menuitem')).toBeNull()
-    // Y el tema sigue estando: no es una entrada de admin.
-    expect(screen.getByRole('button', { name: 'Oscuro' })).toBeVisible()
+    const texto = screen.getByRole('menu').textContent ?? ''
+    expect(texto.indexOf('Tema')).toBeGreaterThanOrEqual(0)
+    expect(texto.indexOf('Tema')).toBeLessThan(texto.indexOf('Cerrar sesión'))
   })
 })
 

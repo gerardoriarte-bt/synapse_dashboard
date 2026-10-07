@@ -61,9 +61,45 @@ const bloques = [
   { type: 'series', ui_name: 'Serie', accepted_shapes: ['time_series'], col_span_min: 6, col_span_max: 12, row_span_min: 4, row_span_max: 8, layout_params: [] },
 ]
 
+/** Un payload del cable de consola, forma capturada contra `7b717aa` el
+ *  2026-10-07 · valores sintéticos. */
+const disponible = (v: number) => ({
+  status: 'AVAILABLE',
+  value: { shape: 'scalar', v },
+  governance: {
+    base: 'x', layer: 'GOLD', source: 'ERP', freshness: '2026-10-07T00:00:00Z',
+    catalog_version: 1, measurement_window: 'Mes calendario seleccionado',
+  },
+})
+
+/** **El preview con datos**, que el lienzo pide desde el 2026-10-07 · forma de
+ *  `Preview` en `synapse-admin-wire.yaml`. Se registra lo pedido. */
+const pedidosDePreview: URL[] = []
+const preview = (payloads: Record<string, unknown>) =>
+  http.get(`${API}/admin/layouts/:id/preview`, ({ request }) => {
+    pedidosDePreview.push(new URL(request.url))
+    return ok({
+      layout_id: 'l-2', dashboard_id: 'd-1', status: 'draft',
+      role: { id: 'r-admin', name: 'admin' },
+      tabs: [{
+        id: 'tab-a', name: 'Resumen', key: 'resumen', operational_question: '¿?', sort_order: 1, icon: '', chat_suggestions: [],
+        panels: detalle.tabs[0]?.panels.map((x) => ({ ...x, options: {}, note: '', chart: '' })) ?? [],
+      }],
+      period: '2026-10',
+      payloads,
+    })
+  })
+
+/** Roles del cable · `RoleComposition`. Con `admin` el lienzo tiene lente. */
+const rolesConAdmin = [
+  { id: 'r-admin', tenant_id: 't-1', name: 'admin', tab_ids: [], tab_keys: [], hidden_metric_ids: [], layout_overrides: {}, user_count: 1 },
+  { id: 'r-pla', tenant_id: 't-1', name: 'Planner', tab_ids: [], tab_keys: [], hidden_metric_ids: ['m-2'], layout_overrides: {}, user_count: 2 },
+]
+
 function base(extra: Parameters<typeof server.use> = []) {
   server.use(
     ...extra,
+    preview({ 'p-1': disponible(48362), 'p-2': disponible(1234) }),
     http.get(`${API}/admin/tenants`, () => ok(tenants)),
     http.get(`${API}/admin/tenants/:id/layouts`, () => ok(layouts)),
     http.get(`${API}/admin/tenants/:id/dashboards`, () => ok(dashboards)),
@@ -144,7 +180,8 @@ describe('§7.2 · la grilla de 12 es visible, con guías', () => {
     base()
     montar()
     await abrirCanvas()
-    expect(within(panelDe('Ventas')).getByText('6 col × 4 filas')).toBeInTheDocument()
+    // **La ficha ahora es una banda** sobre el panel dibujado · 2026-10-07.
+    expect(within(panelDe('Ventas')).getByText('6 × 4')).toBeInTheDocument()
     expect(panelDe('Ventas').textContent).not.toMatch(/px/)
   })
 })
@@ -245,7 +282,7 @@ describe('§7.2 · al soltar, los tres casos', () => {
     soltarEn(1, 5, 'series')
 
     const nuevo = await screen.findByRole('gridcell', { name: /Sin métrica/ })
-    expect(within(nuevo).getByText('6 col × 4 filas')).toBeInTheDocument()
+    expect(within(nuevo).getByText('6 × 4')).toBeInTheDocument()
     expect(nuevo.style.gridColumn).toBe('1 / span 6')
   })
 
@@ -261,7 +298,12 @@ describe('§7.2 · al soltar, los tres casos', () => {
     const nuevo = await screen.findByRole('gridcell', { name: /Sin métrica/ })
     expect(nuevo).toHaveAttribute('aria-selected', 'true')
     const inspector = await screen.findByRole('complementary', { name: 'Configuración del panel' })
-    expect(within(inspector).getByLabelText<HTMLSelectElement>('Tipo de panel').value).toBe('series')
+    // **Desde el 2026-10-07 el tipo se lee en «Cómo se ve»**, y un panel nuevo
+    // abre directo en «Qué muestra», que es lo único que le falta.
+    expect(within(inspector).getByRole('button', { name: /Cómo se ve/ })).toHaveTextContent(
+      `${nombreDeTipo('series')} · por defecto`,
+    )
+    expect(screen.getByRole('region', { name: 'Qué muestra' })).toBeInTheDocument()
   })
 
   it('sobre otro panel NO SE SUELTA, y dice CON CUÁL choca', async () => {
@@ -277,7 +319,7 @@ describe('§7.2 · al soltar, los tres casos', () => {
 
     // No se movió: sigue arrancando en la columna 1, con su medida.
     await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 6'))
-    expect(within(panelDe('Ventas')).getByText('6 col × 4 filas')).toBeInTheDocument()
+    expect(within(panelDe('Ventas')).getByText('6 × 4')).toBeInTheDocument()
   })
 
   it('un tipo que se pasa del borde de la grilla no se suelta', async () => {
@@ -619,5 +661,114 @@ describe('«Span al soltar» · lo que va a ocupar, antes de soltar', () => {
     // «Doce meses» ocupa 7–12 de la fila 1.
     await arrastrarTipoHasta('kpi', 8, 1)
     expect(await screen.findByText(/Se solapa con «Doce meses»/)).toBeInTheDocument()
+  })
+})
+
+/** ── EL LIENZO DIBUJA CON DATO · D1 del 2026-10-07 ─────────────────────────
+ *
+ *  «No hay una previsualización del gráfico, entonces es como construir de
+ *  memoria.» Ver `docs/AUDITORIA-2026-10-07-editor-sin-previsualizacion.md`.
+ */
+describe('el lienzo dibuja cada panel con su dato', () => {
+  it('pide el preview CON DATOS, con el lente admin cuando no hay rol elegido', async () => {
+    pedidosDePreview.length = 0
+    base([http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok(rolesConAdmin))])
+    montar()
+    await abrirCanvas()
+    await waitFor(() => expect(pedidosDePreview.length).toBeGreaterThan(0))
+    expect(pedidosDePreview[0]?.searchParams.get('include')).toBe('payloads')
+    expect(pedidosDePreview[0]?.searchParams.get('role_id')).toBe('r-admin')
+  })
+
+  it('cada panel muestra SU cifra, del servidor', async () => {
+    base([http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok(rolesConAdmin))])
+    montar()
+    await abrirCanvas()
+    expect(await within(panelDe('Ventas')).findByText(/48[.,]362/)).toBeInTheDocument()
+    expect(within(panelDe('Doce meses')).getByText(/1[.,]234/)).toBeInTheDocument()
+  })
+
+  it('un panel cuya métrica no está en el preview dice que se dibuja al guardar · no inventa', async () => {
+    base([
+      http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok(rolesConAdmin)),
+      preview({ 'p-1': disponible(48362) }),
+    ])
+    montar()
+    await abrirCanvas()
+    await within(panelDe('Ventas')).findByText(/48[.,]362/)
+    expect(within(panelDe('Doce meses')).getByText('Se dibuja al guardar.')).toBeInTheDocument()
+  })
+
+  it('con un rol elegido, lo que ese rol no ve lo DICE en el lienzo', async () => {
+    base([http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok(rolesConAdmin))])
+    montar()
+    await userEvent.click(await screen.findByRole('button', { name: /Overview/ }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Planner' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Abrir el editor de Overview' }))
+    expect(
+      await within(panelDe('Doce meses')).findByText('Planner no ve esta métrica: la tiene oculta.'),
+    ).toBeInTheDocument()
+  })
+
+  it('sin roles NO promete un dato que no se puede pedir', async () => {
+    // La ruta exige `role_id`: sin roles, «Trayendo el dato…» quedaría para
+    // siempre.
+    base()
+    montar()
+    await abrirCanvas()
+    expect(
+      await within(panelDe('Ventas')).findByText('Este cliente todavía no tiene roles, y el dato se pide como lo ve un rol.'),
+    ).toBeInTheDocument()
+  })
+
+  it('un panel NUEVO con una métrica que ya está en el lienzo se dibuja SIN esperar al guardado', async () => {
+    // **El dato es por métrica y período**, no por panel —`dd_panel_data`—: el
+    // de «Ventas» ya llegó con el preview, y sirve igual para el panel nuevo.
+    base([http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok(rolesConAdmin))])
+    montar()
+    await abrirCanvas()
+    await within(panelDe('Ventas')).findByText(/48[.,]362/)
+
+    await userEvent.click(screen.getByRole('button', { name: `Agregar ${nombreDeTipo('kpi')}` }))
+    const columna = await screen.findByRole('region', { name: 'Qué muestra' })
+    await userEvent.click(within(columna).getByRole('button', { name: /Ventas/ }))
+
+    // Dos cifras iguales: el panel de antes y el nuevo, que no tiene id todavía.
+    // En el LIENZO: «Cómo se ve» se abre sola y dibuja su muestra con la misma
+    // cifra.
+    const lienzo = screen.getByRole('grid', { name: 'Lienzo de composición' })
+    expect(within(lienzo).getAllByText(/48[.,]362/)).toHaveLength(2)
+    expect(screen.queryByText('Se dibuja al guardar.')).toBeNull()
+  })
+
+  it('guardar vuelve a pedir el dato · el preview quedó viejo', async () => {
+    // Un panel nuevo o una métrica cambiada se ven recién cuando el preview se
+    // vuelve a leer: sin invalidarlo, «se dibuja al guardar» no se cumpliría.
+    pedidosDePreview.length = 0
+    base([
+      http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok(rolesConAdmin)),
+      http.put(`${API}/admin/layouts/:id`, () => ok(detalle)),
+    ])
+    montar()
+    await abrirCanvas()
+    await within(panelDe('Ventas')).findByText(/48[.,]362/)
+    const antes = pedidosDePreview.length
+
+    await userEvent.click(screen.getByRole('button', { name: `Agregar ${nombreDeTipo('kpi')}` }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(pedidosDePreview.length).toBeGreaterThan(antes))
+  })
+
+  it('las filas miden lo de la consola · 80 y 16, no 96 más 16', () => {
+    // **Contaba la separación dos veces**: filas de 96 más 16, y un panel de
+    // 4 filas medía 432 en vez de los 368 de `96·N − 16`. Con el panel real
+    // adentro quedaba un hueco abajo — visto en pantalla el 2026-10-07.
+    base()
+    montar()
+    return abrirCanvas().then(() => {
+      const lienzo = screen.getByRole('grid', { name: 'Lienzo de composición' })
+      expect(lienzo.style.gridAutoRows).toBe('80px')
+      expect(lienzo.style.gap).toBe('16px')
+    })
   })
 })

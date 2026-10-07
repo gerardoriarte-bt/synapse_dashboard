@@ -30,6 +30,8 @@
  *  (PS-5). Por eso acá no hay colapso: hay scroll horizontal, que es visible.
  */
 import { IdentityBlock } from '../IdentityBlock'
+import { MenuDeTrabajo } from '../MenuDeTrabajo'
+import { VolverAlDashboard } from '../VolverAlDashboard'
 import { SelectorDeCliente } from '../SelectorDeCliente'
 import type { Theme } from '../../tokens/theme'
 import { Label } from '../../render/primitives/Label'
@@ -42,15 +44,14 @@ type Props = {
   activa: PantallaId
   /** Qué pantalla se pide. La navegación es del contenedor, no del chrome. */
   onIr: (id: PantallaId) => void
-  /** Salir a OTRA superficie · distinto de `onIr`, que navega entre las
-   *  pantallas de acá. La navegación es del contenedor y no del chrome. */
+  /** Ir a una RUTA · el menú de trabajo y «Volver al dashboard». Distinto de
+   *  `onIr`, que elige entre las pantallas de acá. La navegación es del
+   *  contenedor y no del chrome. */
   onSalir: (ruta: string) => void
   /** **El tema, que viaja hasta `IdentityBlock`** · 2026-10-02. Opcional por la
    *  misma razón que allá: sin manejador la sección no se pinta. */
   onChangeTheme?: (theme: Theme) => void
 
-  /** Volver a la consola · `undefined` no pinta el control, que es la regla del
-   *  CTA sin manejador. */
   /** Quién está mirando · **§PEN:A1 lo dibuja**: el navbar de `A1 · Clientes y
    *  plataforma` lleva un bloque `Identidad` con el ROL en `$dim` y el NOMBRE en
    *  `$ink`, los dos en mono de 9. Hasta el 2026-09-25 no se pintaba, y nada en
@@ -61,7 +62,9 @@ type Props = {
    *  pregunta que importa antes de tocar algo. Dónde vive la salida a otra
    *  superficie es otra decisión, y está preguntada al `.pen` en
    *  `docs/PROPUESTA-2026-09-25-navegacion-entre-superficies.md`. */
-  identidad?: { rol: string; nombre: string }
+  identidad?: { rol: string; nombre: string; correo?: string }
+  /** Cerrar sesión, desde el menú del nombre · sin manejador no se pinta. */
+  onCerrarSesion?: () => void
   /** El tenant en contexto, para las pantallas de alcance `tenant`. */
   tenants: readonly { id: string; nombre: string }[]
   tenantActivo: string | null
@@ -69,7 +72,7 @@ type Props = {
   children: React.ReactNode
 }
 
-export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantActivo, onTenant, onChangeTheme, children }: Props) {
+export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantActivo, onTenant, onChangeTheme, onCerrarSesion, children }: Props) {
   const pantalla = PANTALLAS.find((p) => p.id === activa) ?? PANTALLAS[0]
   const porTenant = pantalla.alcance === 'tenant'
 
@@ -81,9 +84,32 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
         <header className="flex flex-col gap-4 px-6 pt-6 border-b border-w4">
           {/* §PEN:A1 y §PEN:A2 encabezan con «Synapse · ADMINISTRACIÓN», y
               recién debajo va la pantalla. Faltaban las dos cosas. */}
-          <div className="flex items-center gap-3">
-            <Wordmark variante="marca" />
-            <Label>Administración</Label>
+          {/* ── EL NAVBAR · decisión humana del 2026-10-07 ─────────────────
+              A la derecha, con aire: el acceso rápido al dashboard, la persona
+              y el menú de trabajo —el hamburguesa, con cada pantalla de
+              administración y del builder—, que empezó a la izquierda y se
+              pidió moverlo el mismo día. La identidad subió a esta
+              fila, que es donde el navbar de A1 la dibuja. */}
+          <div className="flex items-center justify-between gap-6">
+            <div className="flex items-center gap-3">
+              <Wordmark variante="marca" />
+              <Label>Administración</Label>
+            </div>
+            {/* Con aire entre los tres, y el menú de trabajo AL FINAL · decisión
+                humana del 2026-10-07. */}
+            <div className="flex items-center gap-6">
+              <VolverAlDashboard onIr={onSalir} />
+              {identidad !== undefined && (
+                <IdentityBlock
+                  rol={identidad.rol}
+                  nombre={identidad.nombre}
+                  {...(identidad.correo === undefined ? {} : { correo: identidad.correo })}
+                  {...(onChangeTheme === undefined ? {} : { onChangeTheme })}
+                  {...(onCerrarSesion === undefined ? {} : { onCerrarSesion })}
+                />
+              )}
+              <MenuDeTrabajo esAdmin rutaActual={pantalla.ruta} onIr={onSalir} />
+            </div>
           </div>
 
           <div className="flex items-baseline justify-between gap-6">
@@ -103,36 +129,6 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
                 eso tiene consecuencias —lo que se hace acá afecta a todos—, así
                 que no se deduce del contenido: se declara. */}
             <div className="flex items-center gap-4">
-              {/* **La vuelta a la consola.** El `.pen` no la dibuja —ninguna de las
-                  quince pantallas navega hacia otra superficie— y sin ella se
-                  entra acá y no se sale sin escribir la URL.
-
-                  **Es un callback y no un `useNavigate` acá adentro**, que es la
-                  regla que este archivo ya declaraba arriba: «la navegación es
-                  del contenedor, no del chrome». Escrito con el hook, además,
-                  rompía doce pruebas que montan el chrome sin router — y tenían
-                  razón en romperse. */}
-              {/* La identidad va PRIMERO en la fila, como en el dibujo: el
-                  navbar de A1 la pone antes que nada a la derecha. Y con
-                  `gap-2` entre rol y nombre, que son los 7 del `.pen`. */}
-              {/* ── EL PUNTO DE IDENTIDAD · §PEN «A1/Identidad» ──────────────
-                  **Reemplaza al «← Consola»**, que era invención nuestra y, peor,
-                  asimétrica: desde la consola se salía por el panel de
-                  identidad, desde acá por una flecha, y desde el builder no se
-                  salía. Tres formas para la misma acción y una faltante.
-
-                  Ahora las tres superficies se salen por el mismo lugar, y qué
-                  se ofrece sale de `salidasDesde`, que excluye la que se mira. */}
-              {identidad !== undefined && (
-                <IdentityBlock
-                  rol={identidad.rol}
-                  nombre={identidad.nombre}
-                  desde="admin"
-                  esAdmin
-                  onIr={onSalir}
-                  {...(onChangeTheme === undefined ? {} : { onChangeTheme })}
-                />
-              )}
               {/* **El cliente de trabajo, destacado y el mismo del builder** ·
                   2026-10-06. Antes era un `<select>` de 12px junto a un rótulo de
                   alcance. Las pantallas de plataforma cruzan todas las cuentas y lo

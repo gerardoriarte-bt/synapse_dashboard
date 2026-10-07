@@ -26,6 +26,11 @@
  *  **Decisión humana del 2026-09-16: el builder y administración los ve solo el
  *  admin.**
  *
+ *  **Y desde el 2026-10-07 ya no viven acá**: se fueron a `MenuDeTrabajo`, el
+ *  menú hamburguesa, con acceso directo a cada pantalla. Este panel queda para
+ *  la persona —identidad, rol, cliente, tema— y gana «Cerrar sesión». Lo de
+ *  abajo sobre esconder sigue valiendo, ahora para aquel menú.
+ *
  *  ── ESCONDER NO ES PROTEGER, Y ESTÁ BIEN ────────────────────────────────────
  *
  *  Las entradas aparecen solo si `esAdmin`, y eso **no es el permiso**: el
@@ -35,16 +40,11 @@
  *  llamadas fallan igual. Ocultar no es permitir.
  */
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Note } from '../../render/primitives/Note'
 import { ThemeOptions } from '../ThemeOptions'
-import { esAdmin } from '../../api/rol'
-/** **El registro, no una lista propia** · 2026-09-25. Acá vivían dos entradas
- *  escritas a mano —«son dos y agregar una tercera es una decisión»— y esa
- *  decisión ya estaba tomada en `app/router/routes.tsx`, que monta las mismas
- *  rutas. Dos fuentes del mismo hecho: la que se olvidara dejaba una superficie
- *  montada y sin forma de llegar. */
-import { salidasDesde } from '../superficies'
+import { ChipDeUsuario } from '../ChipDeUsuario'
+import { DISPARADOR_DE_USUARIO } from '../usuario'
+import { useCerrarSesion } from '../useCerrarSesion'
 import type { AppContext } from '../../api/types'
 import type { Theme } from '../../tokens/theme'
 
@@ -60,8 +60,7 @@ type Props = {
 export function UserMenu({ context, onChangeTheme }: Props) {
   const [abierto, setAbierto] = useState(false)
   const caja = useRef<HTMLDivElement>(null)
-  const navegar = useNavigate()
-  const admin = esAdmin(context.role)
+  const cerrarSesion = useCerrarSesion()
 
   // Cerrar al hacer clic afuera y con Escape. Sin esto el panel queda abierto
   // tapando la grilla, que es el modo en que un menú se vuelve molesto.
@@ -88,9 +87,15 @@ export function UserMenu({ context, onChangeTheme }: Props) {
         onClick={() => setAbierto((v) => !v)}
         aria-expanded={abierto}
         aria-haspopup="menu"
-        className="font-mono text-label tracking-rotulo uppercase text-dim hover:text-ink cursor-pointer bg-transparent border-0 p-0"
+        // **El nombre accesible es el nombre**, sin las iniciales del círculo,
+        // que van `aria-hidden`.
+        aria-label={context.user.nombre}
+        className={DISPARADOR_DE_USUARIO}
       >
-        {context.user.nombre}
+        {/* **Con presencia** · decisión humana del 2026-10-07: era el nombre en
+            mono gris de 10 —el traje del rótulo— y no se distinguía del resto
+            de la barra. */}
+        <ChipDeUsuario nombre={context.user.nombre} />
       </button>
 
       {abierto && (
@@ -147,34 +152,22 @@ export function UserMenu({ context, onChangeTheme }: Props) {
             </div>
           )}
 
-          {/* **Las superficies, solo para el admin.** Sin esto el panel es la
-              identidad que §7.1 ya pedía; con esto es además por dónde se sale. */}
-          {admin && (
-            <div className="flex flex-col gap-1">
-              <Note as="div">Ir a</Note>
-              {salidasDesde('consola', admin).map((s) => (
-                <button
-                  key={s.ruta}
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setAbierto(false)
-                    void navegar(s.ruta)
-                  }}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-sm border-0 bg-transparent px-1 py-1 text-left font-mono text-label tracking-rotulo text-ink uppercase hover:bg-elev"
-                >
-                  {s.nombre}
-                  <span className="flex-1" />
-                  {/* `arrow-right` de 13 en `$dim` · el del dibujo. Va
-                      `aria-hidden`: el texto ya dice a dónde lleva. */}
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-dim" aria-hidden>
-                    <path d="M5 12h14" />
-                    <path d="m12 5 7 7-7 7" />
-                  </svg>
-                </button>
-              ))}
-            </div>
-          )}
+          {/* **Las superficies se fueron al menú de trabajo** · decisión humana
+              del 2026-10-07. El nombre queda para lo de la persona, y salir es
+              lo más de la persona que hay: no existía en ninguna superficie. El
+              separador, sólo si arriba hubo tema: si no, ya está el de antes. */}
+          {onChangeTheme !== undefined && <div className="h-px bg-w2" />}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setAbierto(false)
+              cerrarSesion()
+            }}
+            className="-mx-1 cursor-pointer rounded-sm border-0 bg-transparent px-1 py-1 text-left font-body text-cuerpo font-medium text-ink hover:bg-elev"
+          >
+            Cerrar sesión
+          </button>
         </div>
       )}
     </div>

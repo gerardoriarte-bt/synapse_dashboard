@@ -424,10 +424,16 @@ export function useDeleteRole(tenantId: string | null) {
 /** **No cachea entre roles por accidente**: la clave lleva los dos ids. Un
  *  preview servido desde el cache de otro rol es exactamente la mentira que
  *  B4.9 existe para no cometer. */
-export function usePreview(layoutId: string | null, rolId: string | null) {
+/** `conDatos` trae el dato de cada panel · `include=payloads`. Va en la clave:
+ *  la respuesta con y sin datos son dos cosas distintas en el cache. */
+export function usePreview(layoutId: string | null, rolId: string | null, conDatos = false) {
   return useQuery({
-    queryKey: keys.preview(layoutId ?? '', rolId ?? ''),
-    queryFn: () => adminApi.previewPorRol(layoutId as string, rolId as string),
+    queryKey: [...keys.preview(layoutId ?? '', rolId ?? ''), conDatos ? 'con-datos' : 'sin-datos'],
+    queryFn: () => adminApi.previewPorRol(layoutId as string, rolId as string, conDatos),
+    // **El lienzo y la vista previa piden lo mismo** con el mismo lente: sin
+    // vigencia, pasar de uno a otro lo volvía a pedir. Lo que lo hace viejo
+    // es guardar, y `useSaveLayout` lo invalida.
+    staleTime: 60_000,
     enabled: layoutId !== null && layoutId !== '' && rolId !== null && rolId !== '',
   })
 }
@@ -486,7 +492,13 @@ export function useSaveLayout(layoutId: string | null) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (tabs: readonly TabParaGuardar[]) => adminApi.guardar(layoutId as string, tabs),
-    onSuccess: (detalle) => qc.setQueryData(keys.layout(layoutId ?? ''), detalle),
+    onSuccess: (detalle) => {
+      qc.setQueryData(keys.layout(layoutId ?? ''), detalle)
+      // **El preview de esta versión quedó viejo** · 2026-10-07. Desde que el
+      // lienzo dibuja con su dato, un panel nuevo o una métrica cambiada se ve
+      // recién cuando el preview se vuelve a leer —«se dibuja al guardar»—.
+      void qc.invalidateQueries({ queryKey: ['admin', 'preview', layoutId ?? ''] })
+    },
   })
 }
 

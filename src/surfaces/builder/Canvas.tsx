@@ -48,19 +48,16 @@
  *
  *  **§PEN:B2** · B2 · «Canvas de composición».
  */
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
 import { nombreDeTipo } from './rotulos'
-import { COLUMNS } from '../../render/grid'
+import { COLUMNS, GAP, ROW } from '../../render/grid'
 import { choqueCon, disposicion, huecos, ordenPara } from './disposicion'
 import type { PanelDeBorrador } from './borrador'
 import type { Metric } from '../../api/types'
 import type { BlockTable } from '../../catalog/blocks'
-
-/** Alto de fila del `.pen`: «FILA BASE 80» más el gap de 16. Es el mismo 96 del
- *  que sale `px = 96·N − 16`, escrito una sola vez. */
-const FILA = 96
 
 type Props = {
   panels: readonly PanelDeBorrador[]
@@ -78,6 +75,17 @@ type Props = {
   /** **La versión publicada no se edita en el lugar** · 2026-10-07. Sin
    *  arrastre, sin teclas que muevan y sin controles de tamaño: se mira. */
   soloLectura?: boolean
+  /** **El panel dibujado con su dato** · 2026-10-07, D1 de
+   *  `docs/AUDITORIA-2026-10-07-editor-sin-previsualizacion.md`: «es como
+   *  construir de memoria». Lo resuelve el contenedor —tiene el dato, el
+   *  catálogo y el repertorio— y el lienzo sólo lo ubica. Sin él, la ficha. */
+  dibujar?: (indice: number) => ReactNode
+  /** El nombre del gráfico elegido · la ficha decía el BLOQUE —«Barras»— de un
+   *  panel que se dibuja como anillo. Visto en pantalla el 2026-10-07. */
+  nombreDeGrafico?: (id: string) => string
+  /** Cambia cuando la configuración se abre más o menos: el lienzo se corrió y
+   *  el panel elegido se vuelve a traer a la vista. */
+  encuadre?: string
 }
 
 export function Canvas({
@@ -91,7 +99,22 @@ export function Canvas({
   onSoltarTipo,
   arrastrando,
   soloLectura = false,
+  dibujar,
+  nombreDeGrafico,
+  encuadre,
 }: Props) {
+  /** **El panel elegido, a la vista** · D6 del 2026-10-07. Las columnas de la
+   *  configuración corren el lienzo hacia la derecha, y el panel que se está
+   *  configurando no puede quedar fuera de la pantalla: es lo que hay que
+   *  mirar. `scrollIntoView` no existe en jsdom; ahí no hace falta. */
+  const grilla = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (seleccionado === null) return
+    const el = grilla.current?.querySelector<HTMLElement>(`[data-panel="${String(seleccionado)}"]`)
+    if (el !== null && el !== undefined && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' })
+    }
+  }, [seleccionado, encuadre])
   /** La celda bajo el cursor mientras se arrastra. **Solo para la vista previa
    *  del span** —«Span al soltar» en el `.pen`—: no decide nada, porque las
    *  decisiones salen del dato del soltado. */
@@ -208,14 +231,21 @@ export function Canvas({
       </Ayuda>}
 
       <div
+        ref={grilla}
         role="grid"
         aria-label="Lienzo de composición"
         className="relative w-full"
+        // **Filas de 80 y separación de 16, las de la consola** · corregido el
+        // 2026-10-07. Eran filas de 96 MÁS la separación de 16: el espacio
+        // entre filas se contaba dos veces y un panel de 4 filas medía 432 en
+        // vez de los 368 de `96·N − 16`. Con la ficha no se notaba; con el panel
+        // real adentro quedaba un hueco abajo. Las constantes son las de
+        // `render/grid`, para que el lienzo no pueda volver a medir distinto.
         style={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${String(COLUMNS)}, 1fr)`,
-          gridAutoRows: `${String(FILA)}px`,
-          gap: '16px',
+          gridTemplateColumns: `repeat(${String(COLUMNS)}, minmax(0, 1fr))`,
+          gridAutoRows: `${String(ROW)}px`,
+          gap: `${String(GAP)}px`,
         }}
       >
         {/* Las guías · son las celdas de soltado y se ven. Una cosa para las dos. */}
@@ -320,6 +350,7 @@ export function Canvas({
               draggable={!soloLectura}
               tabIndex={0}
               role="gridcell"
+              data-panel={c.indice}
               aria-label={`${nombreDeTipo(p.tipo)} · ${nombre(p.metricId)}`}
               aria-selected={elegido}
               onDragStart={(e) => {
@@ -333,23 +364,65 @@ export function Canvas({
                 gridRow: `${String(c.filaInicio)} / span ${String(c.rowSpan)}`,
               }}
               className={
-                'relative rounded-xl bg-panel p-6 flex flex-col gap-1 ' + (soloLectura ? 'cursor-default ' : 'cursor-grab ') +
-                (elegido ? 'border-2 border-acc' : 'border border-w3')
+                'relative rounded-xl ' + (soloLectura ? 'cursor-default ' : 'cursor-grab ') +
+                (dibujar === undefined
+                  ? 'bg-panel p-6 flex flex-col gap-1 ' + (elegido ? 'border-2 border-acc' : 'border border-w3')
+                  : // **Con dato, el borde es del panel**: la selección va como
+                    // anillo por FUERA para no correr el dibujo un píxel.
+                    elegido
+                    ? 'outline-2 outline-offset-2 outline-acc'
+                    : '')
               }
             >
-              <Label as="div">{nombreDeTipo(p.tipo)}</Label>
-              <span className="font-body text-cuerpo font-medium text-ink">{nombre(p.metricId)}</span>
-              {/* La medida en unidades de grilla · las mismas que pide el
-                  configurador. Los píxeles los decide `96·N − 16`, no quien
-                  compone. */}
-              <Label as="div">{`${String(c.colSpan)} col × ${String(c.rowSpan)} filas`}</Label>
+              {dibujar === undefined ? (
+                <>
+                  <Label as="div">{p.grafico !== undefined && nombreDeGrafico !== undefined ? nombreDeGrafico(p.grafico) : nombreDeTipo(p.tipo)}</Label>
+                  <span className="font-body text-cuerpo font-medium text-ink">{nombre(p.metricId)}</span>
+                  {/* La medida en unidades de grilla · las mismas que pide el
+                      configurador. Los píxeles los decide `96·N − 16`, no quien
+                      compone. */}
+                  <Label as="div">{`${String(c.colSpan)} col × ${String(c.rowSpan)} filas`}</Label>
+                </>
+              ) : (
+                <>
+                  {/* **El panel como lo verá el cliente**, en una grilla del
+                      ancho de la celda con las filas de la consola: mide lo
+                      mismo que allá sin tocar `render/`. **Sin eventos**: es un
+                      dibujo; tocarlo elige el panel, no abre su ⓘ. */}
+                  <div
+                    aria-hidden
+                    className="pointer-events-none h-full"
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: `repeat(${String(c.colSpan)}, minmax(0, 1fr))`,
+                      gridAutoRows: `${String(ROW)}px`,
+                      gap: `${String(GAP)}px`,
+                    }}
+                  >
+                    {dibujar(c.indice)}
+                  </div>
+                  {/* **La ficha, como banda** · qué gráfico y de qué tamaño. Es
+                      lo que el dibujo no dice solo. */}
+                  <div className="absolute -top-2.5 left-4 flex items-center gap-2 rounded-sm border border-w4 bg-bg px-2 py-0.5">
+                    <Label>{p.grafico !== undefined && nombreDeGrafico !== undefined ? nombreDeGrafico(p.grafico) : nombreDeTipo(p.tipo)}</Label>
+                    <Label>{`${String(c.colSpan)} × ${String(c.rowSpan)}`}</Label>
+                  </div>
+                </>
+              )}
 
               {elegido && b !== undefined && !soloLectura && (
                 // Los handles · redimensionan de a una celda. **Dos grupos de
                 // − y +** donde había cuatro palabras que desbordaban un panel
                 // de 3 columnas —«AGRANDA» cortado, medido el 2026-10-06—. El
                 // nombre accesible sigue diciendo la acción entera.
-                <div className="mt-2 flex flex-wrap gap-3" onClick={(e) => e.stopPropagation()}>
+                <div
+                  className={
+                    dibujar === undefined
+                      ? 'mt-2 flex flex-wrap gap-3'
+                      : 'absolute bottom-3 right-3 flex flex-wrap gap-3 rounded-md border border-w4 bg-bg p-2 shadow-[0_8px_24px_var(--color-shad)]'
+                  }
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {(
                     [
                       ['colSpan', 'Ancho', 'Angostar', 'Ensanchar'],

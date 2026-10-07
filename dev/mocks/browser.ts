@@ -280,6 +280,62 @@ function valorPara(forma: string, i: number): Record<string, unknown> {
   }
 }
 
+/** El payload de un panel · lo comparten el batch y el preview con datos
+ *  (`include=payloads`), igual que en el servicio, donde los arma el mismo
+ *  `batchForRole`. Dos generadores de datos falsos se separan. */
+function payloadDelMock(id: string, i: number): Record<string, unknown> {
+  return (
+    PANELES_MUESTRARIO.has(id)
+      ? {
+          status: 'AVAILABLE',
+          governance: {
+            base: '312 SKU críticos sobre 18.240 activos',
+            layer: 'GOLD',
+            source: 'ERP',
+            freshness: new Date().toISOString(),
+            catalog_version: 4,
+          },
+          value: valorPara(formaDe(id), i),
+        }
+      : i % 4 === 3
+      ? { status: 'BLOCKED', reason: 'Su fuente tiene 31 h y se refresca cada hora', unlocks_with: 'Esperar la próxima materialización' }
+      : {
+          status: i % 4 === 2 ? 'DEGRADED' : 'AVAILABLE',
+          governance: {
+            base: '312 SKU críticos sobre 18.240 activos',
+            layer: 'GOLD',
+            source: 'ERP',
+            freshness: new Date().toISOString(),
+            catalog_version: 4,
+          },
+          // **El valor tiene que corresponder a la FORMA de su métrica.**
+          // Hasta el 2026-09-16 esto emitía `{ valor, delta }` para todos:
+          // ni la forma del cable ni la del contrato. El adaptador lo
+          // rechazaba con razón —«El valor no declara su forma»— y **la
+          // consola del modo mock se veía rota**, que es justo lo que este
+          // modo existe para evitar. Se descubrió abriéndolo en el
+          // navegador por primera vez.
+          value: valorPara(formaDe(id), i),
+          // **En español desde el 2026-09-28, porque el servicio lo
+          // cambió y nosotros no lo pedimos.** El copy medido contra
+          // `f70cec2`, textual — un mock que se queda con la frase vieja
+          // hace que el modo mock muestre un idioma que el producto ya no
+          // habla, y es lo que se ve al abrirlo.
+          //
+          // Va con `unlocks_with`, que el real también manda: §8 pide que
+          // un estado diga qué lo desbloquea, y sin las dos frases este
+          // modo no deja mirar la gramática completa.
+          ...(i % 4 === 2
+            ? {
+                reason:
+                  'Esta métrica todavía no se calculó con datos reales; el valor que se muestra es de referencia',
+                unlocks_with: 'Falta registrar la fuente de datos de esta métrica',
+              }
+            : {}),
+        }
+  )
+}
+
 export const worker = setupWorker(
   /* ── Acceso ─────────────────────────────────────────────────────────────── */
   http.post(`${API}/auth/login`, async () => {
@@ -358,65 +414,7 @@ export const worker = setupWorker(
     // **Uno de cada cuatro llega degradado y uno bloqueado.** Con todo en
     // DISPONIBLE, los siete estados de §8 no se ven nunca — que es justamente lo
     // que este modo existe para poder mirar.
-    return ok(
-      Object.fromEntries(
-        panel_ids.map((id, i) => [
-          id,
-          // **El muestrario queda fuera de la rotación** · ver
-          // `PANELES_MUESTRARIO`. La rotación existe para mirar los estados y
-          // esa pestaña existe para mirar dibujos; dejarla adentro escondía dos
-          // de sus nueve gráficos y ninguno de los dos propósitos se cumplía.
-          PANELES_MUESTRARIO.has(id)
-            ? {
-                status: 'AVAILABLE',
-                governance: {
-                  base: '312 SKU críticos sobre 18.240 activos',
-                  layer: 'GOLD',
-                  source: 'ERP',
-                  freshness: new Date().toISOString(),
-                  catalog_version: 4,
-                },
-                value: valorPara(formaDe(id), i),
-              }
-            : i % 4 === 3
-            ? { status: 'BLOCKED', reason: 'Su fuente tiene 31 h y se refresca cada hora', unlocks_with: 'Esperar la próxima materialización' }
-            : {
-                status: i % 4 === 2 ? 'DEGRADED' : 'AVAILABLE',
-                governance: {
-                  base: '312 SKU críticos sobre 18.240 activos',
-                  layer: 'GOLD',
-                  source: 'ERP',
-                  freshness: new Date().toISOString(),
-                  catalog_version: 4,
-                },
-                // **El valor tiene que corresponder a la FORMA de su métrica.**
-                // Hasta el 2026-09-16 esto emitía `{ valor, delta }` para todos:
-                // ni la forma del cable ni la del contrato. El adaptador lo
-                // rechazaba con razón —«El valor no declara su forma»— y **la
-                // consola del modo mock se veía rota**, que es justo lo que este
-                // modo existe para evitar. Se descubrió abriéndolo en el
-                // navegador por primera vez.
-                value: valorPara(formaDe(id), i),
-                // **En español desde el 2026-09-28, porque el servicio lo
-                // cambió y nosotros no lo pedimos.** El copy medido contra
-                // `f70cec2`, textual — un mock que se queda con la frase vieja
-                // hace que el modo mock muestre un idioma que el producto ya no
-                // habla, y es lo que se ve al abrirlo.
-                //
-                // Va con `unlocks_with`, que el real también manda: §8 pide que
-                // un estado diga qué lo desbloquea, y sin las dos frases este
-                // modo no deja mirar la gramática completa.
-                ...(i % 4 === 2
-                  ? {
-                      reason:
-                        'Esta métrica todavía no se calculó con datos reales; el valor que se muestra es de referencia',
-                      unlocks_with: 'Falta registrar la fuente de datos de esta métrica',
-                    }
-                  : {}),
-              },
-        ]),
-      ),
-    )
+    return ok(Object.fromEntries(panel_ids.map((id, i) => [id, payloadDelMock(id, i)])))
   }),
   http.put(`${API}/config/me/preferences`, () => ok({ theme: 'dark' })),
 
@@ -547,7 +545,7 @@ export const worker = setupWorker(
   }),
 
   http.post(`${API}/config/chat`, async ({ request }) => {
-    const { question } = (await request.json()) as { question: string }
+    const { question, tab_context } = (await request.json()) as { question: string; tab_context?: unknown }
 
     const trama = (evento: string, datos: unknown) =>
       `event: ${evento}\ndata: ${JSON.stringify(datos)}\n\n`
@@ -556,6 +554,13 @@ export const worker = setupWorker(
       'Cayó 12% contra el mes anterior. ',
       'El quiebre se concentra en 312 SKU de la familia de inventario, ',
       'todos con cobertura menor a siete días.\n\n',
+      // Una tabla y recomendaciones · 2026-10-07. Es lo que el agente escribe
+      // en Snowflake Intelligence, y hasta hoy la tabla se unía en un párrafo.
+      '| Canal | Ventas | Variación |\n|---|---:|---:|\n',
+      '| Web | $82,300 | **-14%** |\n| App | $46,100 | -8% |\n\n',
+      '### Recomendaciones\n',
+      '1. Reponer los 312 SKU antes del fin de semana.\n',
+      '2. Pausar la pauta de los productos sin cobertura.\n\n',
       '### Límite declarado\n',
       'No cubre las tiendas sin lectura de inventario en el período.',
     ]
@@ -594,6 +599,49 @@ export const worker = setupWorker(
                   family: 'demand', layer: 'GOLD', source_system: 'ERP',
                   catalog_version: 4,
                   freshness: '2026-09-21T08:00:00Z',
+                  queried_at: new Date().toISOString(),
+                },
+              }),
+            ),
+          )
+          // **El gráfico del agente, como lo manda `7b717aa`** · 2026-10-07.
+          // `response.chart` sale como `raw` con el spec Vega-Lite adentro, y
+          // en la PESTAÑA la procedencia viaja sin familia: es lo que hace
+          // `provenanceFromContext`, y por eso ahí se ve declarado.
+          controller.enqueue(
+            encoder.encode(
+              trama('data', {
+                shape: 'raw',
+                data: {
+                  shape: 'chart',
+                  chart_spec: JSON.stringify({
+                    title: 'Ventas diarias · últimas cuatro semanas',
+                    mark: { type: 'line', color: '#E11A2B' },
+                    encoding: {
+                      x: { field: 'SEMANA', type: 'temporal' },
+                      y: { field: 'VENTAS', type: 'quantitative' },
+                    },
+                    data: {
+                      values: [
+                        { SEMANA: '2026-09-01', VENTAS: '146200' },
+                        { SEMANA: '2026-09-08', VENTAS: '141800' },
+                        { SEMANA: '2026-09-15', VENTAS: '133900' },
+                        { SEMANA: '2026-09-22', VENTAS: '128400' },
+                      ],
+                    },
+                  }),
+                },
+                provenance: {
+                  source: 'cortex_agent', tool: 'data_to_chart',
+                  metric_key: tab_context === undefined ? 'ventas_dia' : '',
+                  period: '2026-09', sql_available: true,
+                  base: tab_context === undefined ? 'Pedidos completados' : '',
+                  base_source: tab_context === undefined ? 'catalog' : '',
+                  family: tab_context === undefined ? 'demand' : '',
+                  layer: tab_context === undefined ? 'GOLD' : '',
+                  source_system: tab_context === undefined ? 'ERP' : '',
+                  catalog_version: 4,
+                  freshness: '',
                   queried_at: new Date().toISOString(),
                 },
               }),
@@ -955,11 +1003,25 @@ export const worker = setupWorker(
     return new HttpResponse(null, { status: 204 })
   }),
 
+  /** **La forma medida contra `7b717aa` el 2026-10-07**, no la del fork.
+   *
+   *  Hasta ese día leía `roleId` —el servicio pide `role_id` y da 400 sin él—
+   *  y devolvía pestañas envueltas en `{tab, panels}` con `without_payloads`,
+   *  que es la forma de nuestro fork de septiembre. **La vista previa del modo
+   *  mock no podía funcionar con el cliente actual**, y nadie lo notó porque B5
+   *  no dibujaba nada que se viera roto.
+   *
+   *  Con `include=payloads` arma el dato con `payloadDelMock`, el mismo del
+   *  batch: en el servicio los dos salen de `batchForRole`. */
   http.get(`${API}/admin/layouts/:id/preview`, async ({ params, request }) => {
     await delay(300)
-    const rolId = new URL(request.url).searchParams.get('roleId') ?? ''
+    const url = new URL(request.url)
+    const rolId = url.searchParams.get('role_id') ?? ''
+    if (rolId === '') return mal('role_id es requerido y debe ser un uuid', 400)
+    const include = url.searchParams.get('include')
+    if (include !== null && include !== 'payloads') return mal('include solo admite el valor payloads', 400)
     const rol = estado.roles.find((r) => r.id === rolId)
-    if (rol === undefined) return mal('role not found', 404)
+    if (rol === undefined) return mal('el rol no existe o no pertenece al tenant del layout', 404)
     const d = estado.detalles.get(params['id'] as string)
 
     // **El recorte lo hace el servidor** · acá se simula con las mismas reglas:
@@ -967,24 +1029,32 @@ export const worker = setupWorker(
     const tabs = (d?.tabs ?? [])
       .filter((t) => rol.tab_ids.length === 0 || rol.tab_ids.includes(t.tab.id))
       .map((t) => ({
-        tab: {
-          id: t.tab.id, name: t.tab.name,
-          operational_question: t.tab.operational_question, sort_order: t.tab.sort_order,
-        },
+        id: t.tab.id,
+        name: t.tab.name,
+        key: t.tab.id,
+        operational_question: t.tab.operational_question,
+        sort_order: t.tab.sort_order,
+        icon: '',
+        chat_suggestions: [],
         panels: t.panels
           .filter((p) => !rol.hidden_metric_ids.includes(p.metric_id))
           .map((p) => ({
             id: p.id, metric_id: p.metric_id, type: p.type,
             col_start: p.col_start, col_span: p.col_span, row_span: p.row_span,
+            options: p.options ?? {}, note: '', chart: p.chart ?? '',
           })),
       }))
 
+    const ids = tabs.flatMap((t) => t.panels.map((p) => p.id))
     return ok({
       layout_id: params['id'],
-      role_id: rolId,
-      role_name: rol.name,
+      dashboard_id: d?.layout?.dashboard_id ?? '',
+      status: d?.layout?.status ?? 'draft',
+      role: { id: rol.id, name: rol.name },
       tabs,
-      without_payloads: true,
+      ...(include === 'payloads'
+        ? { period: '2026-09', payloads: Object.fromEntries(ids.map((id, i) => [id, payloadDelMock(id, i)])) }
+        : {}),
     })
   }),
 )

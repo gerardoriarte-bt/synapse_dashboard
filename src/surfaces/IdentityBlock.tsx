@@ -30,42 +30,40 @@
  *  es el orden que esto respeta. Hasta hoy el tema existía sólo en la consola:
  *  admin y builder tenían identidad y salidas, y ninguna forma de cambiarlo.
  *
- *  **Lo que sí se comparte es el registro de superficies**, que es donde vivía
- *  el riesgo de divergir.
+ *  ── **SÓLO LO DE LA PERSONA** · decisión humana del 2026-10-07 ─────────────
+ *
+ *  Las salidas a otras superficies —la sección «IR A»— se fueron al menú
+ *  hamburguesa, `MenuDeTrabajo`, junto con el acceso directo a cada pantalla.
+ *  Acá queda quién sos —nombre, correo, rol—, el tema y **cerrar sesión**, que
+ *  no existía en ninguna superficie. Ver
+ *  `docs/PROPUESTA-2026-10-07-header-usuario-y-trabajo.md`.
  */
 import { useEffect, useRef, useState } from 'react'
 import { Note } from '../render/primitives/Note'
 import { ThemeOptions } from './ThemeOptions'
-import { salidasDesde } from './superficies'
+import { ChipDeUsuario } from './ChipDeUsuario'
+import { DISPARADOR_DE_USUARIO } from './usuario'
 import type { Theme } from '../tokens/theme'
-import type { Superficie } from './superficies'
 
 type Props = {
   /** Quién es · rol y nombre, en ese orden, como el dibujo los pone. */
   rol: string
   nombre: string
-  /** Desde dónde se mira · decide qué salidas se ofrecen. */
-  desde: Superficie['id']
-  /** **Sin esto no hay salidas**, y no es lo mismo que una lista vacía: quien no
-   *  administra no ve entradas a superficies que le devolverían 403. Ocultar no
-   *  es permitir — el permiso lo aplica el servidor. */
-  esAdmin: boolean
-  /** **Navegar es del CONTENEDOR, no del chrome.** `BuilderChrome` ya lo
-   *  declaraba: escribir el hook adentro «rompía doce pruebas que montan el
-   *  chrome sin router — y tenían razón en romperse». Un bloque de chrome que
-   *  navega solo no se puede montar sin un router, y eso lo vuelve imposible de
-   *  probar aislado. */
-  onIr: (ruta: string) => void
+  /** Se pinta dentro del panel, debajo del nombre · opcional porque el cable
+   *  de identidad de las superficies no siempre lo baja. */
+  correo?: string
   /** **Opcional, y su ausencia apaga la sección entera** · mismo idioma que
    *  `UserMenu`. Un selector de tema que no escribe la preferencia promete algo
    *  que no hace, y «un CTA sin manejador no se pinta». */
   onChangeTheme?: (theme: Theme) => void
+  /** Cerrar sesión · **del contenedor**, que es quien navega y limpia el cache.
+   *  Sin manejador no se pinta. */
+  onCerrarSesion?: () => void
 }
 
-export function IdentityBlock({ rol, nombre, desde, esAdmin, onIr, onChangeTheme }: Props) {
+export function IdentityBlock({ rol, nombre, correo, onChangeTheme, onCerrarSesion }: Props) {
   const [abierto, setAbierto] = useState(false)
   const caja = useRef<HTMLDivElement>(null)
-  const salidas = salidasDesde(desde, esAdmin)
 
   // Cerrar con Escape y con clic afuera. **El contenedor entero**, no sólo el
   // panel: así el chevron que lo abrió queda adentro y no se reabre solo al
@@ -93,87 +91,56 @@ export function IdentityBlock({ rol, nombre, desde, esAdmin, onIr, onChangeTheme
         aria-expanded={abierto}
         aria-haspopup="menu"
         aria-label={`Identidad · ${nombre}`}
-        className="flex h-6.5 cursor-pointer items-center gap-2 rounded-sm border-0 bg-elev px-2"
+        className={DISPARADOR_DE_USUARIO}
       >
-        <Note as="span">{rol}</Note>
-        <span className="font-mono text-nota leading-rotulo tracking-rotulo text-ink uppercase">
-          {nombre}
-        </span>
-        {/* `chevrons-up-down` de 13 en `$dim` · el mismo del bloque de cliente
-            de C1, que es el control de contexto del producto. */}
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="text-dim"
-          aria-hidden
-        >
-          <path d="m7 15 5 5 5-5" />
-          <path d="m7 9 5-5 5 5" />
-        </svg>
+        {/* **Con presencia** · decisión humana del 2026-10-07: el nombre en
+            nota de 9 se leía como un dato más de la barra. */}
+        <ChipDeUsuario nombre={nombre} rol={rol} />
       </button>
 
-      {/* **Abre si hay ALGO adentro, no sólo salidas** · 2026-10-02. La
-          condición era `salidas.length > 0`, que con el tema adentro dejaba la
-          preferencia inalcanzable para quien no administra: el chevron se
-          pintaba y no abría nada. */}
-      {abierto && (salidas.length > 0 || onChangeTheme !== undefined) && (
+      {/* **Siempre abre**: la identidad misma es contenido —nombre, correo,
+          rol—, no sólo las preferencias. */}
+      {abierto && (
         <div
           role="menu"
-          className="absolute top-full right-0 z-20 mt-2 flex w-60 flex-col gap-1 rounded-xl border border-w3 bg-panel p-3 shadow-[0_8px_24px_var(--color-shad)]"
+          aria-label={`Usuario · ${nombre}`}
+          className="absolute top-full right-0 z-40 mt-2 flex w-64 flex-col gap-3 rounded-xl border border-w3 bg-panel p-4 shadow-[0_8px_24px_var(--color-shad)]"
         >
-          {/* **El TEMA va primero** · el dibujo lo pone entre el separador y
-              `IR A` dentro de `Console/Panel de usuario`. Se reusa el mismo
-              componente que la consola, no una copia: dos selectores del mismo
-              estado se separan el día que uno cambie. */}
+          <div className="flex flex-col gap-1">
+            <span className="text-ink text-cuerpo">{nombre}</span>
+            {correo !== undefined && <Note as="div">{correo}</Note>}
+          </div>
+          <div className="flex flex-col gap-1">
+            <Note as="div">Rol</Note>
+            <span className="text-ink text-celda">{rol}</span>
+          </div>
+
           {onChangeTheme !== undefined && (
-            <div className="flex flex-col gap-1">
-              <Note as="div">Tema</Note>
-              <ThemeOptions onChange={onChangeTheme} />
-            </div>
+            <>
+              <div className="h-px bg-w2" />
+              <div className="flex flex-col gap-1">
+                <Note as="div">Tema</Note>
+                <ThemeOptions onChange={onChangeTheme} />
+              </div>
+            </>
           )}
 
-          {/* **El separador sólo si hay las dos cosas.** Una línea sobre una
-              sección sola es un borde que no separa nada. */}
-          {onChangeTheme !== undefined && salidas.length > 0 && <div className="h-px bg-w2" />}
-
-          {salidas.length > 0 && <Note as="div">Ir a</Note>}
-          {salidas.map((s) => (
-            <button
-              key={s.ruta}
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setAbierto(false)
-                onIr(s.ruta)
-              }}
-              className="flex w-full cursor-pointer items-center gap-2 rounded-sm border-0 bg-transparent px-1 py-1 text-left font-mono text-label tracking-rotulo text-ink uppercase hover:bg-elev"
-            >
-              {s.nombre}
-              <span className="flex-1" />
-              {/* `arrow-right` de 13 · el texto ya dice a dónde lleva. */}
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-dim"
-                aria-hidden
+          {onCerrarSesion !== undefined && (
+            <>
+              <div className="h-px bg-w2" />
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setAbierto(false)
+                  onCerrarSesion()
+                }}
+                className="-mx-1 cursor-pointer rounded-sm border-0 bg-transparent px-1 py-1 text-left font-body text-cuerpo font-medium text-ink hover:bg-elev"
               >
-                <path d="M5 12h14" />
-                <path d="m12 5 7 7-7 7" />
-              </svg>
-            </button>
-          ))}
+                Cerrar sesión
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

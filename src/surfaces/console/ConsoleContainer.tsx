@@ -20,10 +20,9 @@ import {
   useTab,
   useChatAgents,
 } from '../../api/hooks'
-import { adaptPanelParams } from '../../api/params'
-import { hasValue } from '../../render/state'
+import { conParams, problemaDeGrafico } from '../resolverPanel'
 import { blockTable } from '../../catalog/blocks'
-import { invalidPlotReason, plotTable } from '../../catalog/plots'
+import { plotTable } from '../../catalog/plots'
 import type { PlotProblem } from '../../catalog/plots'
 import { useTemaGuardado } from '../useTemaGuardado'
 import { preloadBodies } from '../../render/bodies/registry'
@@ -392,68 +391,29 @@ export function ConsoleContainer() {
 
   /* ── F1.29 · los params se validan ACÁ, en el adaptador de api/ ─────────── */
 
-  const paramsOf = (panelId: string) => {
-    const panel = panels.find((p) => p.id === panelId)
-    if (panel === undefined) return { params: {}, unknown: [], invalid: [] }
-    return adaptPanelParams(panel, blocks.data?.blocks)
-  }
-
-  /* ── F1.31 · el repertorio decide si el gráfico puede dibujar ──────────── */
-
+  /* ── F1.29 y F1.31 · params y repertorio · `resolverPanel.ts` ────────────
+   *
+   *  **La regla vive en `surfaces/resolverPanel.ts` desde el 2026-10-07**, que
+   *  la comparte con el builder: el lienzo, la vista previa y el selector de
+   *  gráfico dibujan con dato desde ese día, y cuatro copias de la misma regla
+   *  se separan. Acá sólo se le pasa lo que el contenedor tiene. */
   const repertorio = plotTable(plots.data ?? [])
+  const panelDe = (panelId: string) => panels.find((p) => p.id === panelId)
 
-  /** Por qué el gráfico de un panel no puede dibujar su valor. `undefined` si
-   *  puede, o si todavía no hay con qué decidir.
-   *
-   *  **Mientras el repertorio no llegó, NO se bloquea nada.** `/config/plots` es
-   *  una consulta aparte y puede fallar sola —igual que `/config/blocks`—, y un
-   *  panel apagado por una tabla que no cargó es peor que uno dibujado sin
-   *  verificar: el segundo es lo que hacía ayer, el primero es una regresión que
-   *  el usuario no puede distinguir de un fallo de datos.
-   *
-   *  **`indeterminado` tampoco se propaga.** `invalidPlotReason` lo devuelve
-   *  para que se vea en desarrollo, y apagar un panel porque este build no sabe
-   *  contar un sustantivo nuevo del repertorio sería castigar al usuario por una
-   *  deriva entre las dos mitades. Se avisa y se dibuja. */
-  const plotProblemOf = (panelId: string): PlotProblem | undefined => {
-    const panel = panels.find((p) => p.id === panelId)
-    if (panel === undefined || panel.grafico === undefined) return undefined
-    if (repertorio.size === 0) return undefined
-    const payload = payloadOf(panelId)
-    if (!hasValue(payload)) return undefined
-
-    const problema = invalidPlotReason(repertorio, panel.grafico, payload.valor)
-    if (problema === null) return undefined
-    if (problema.clase === 'indeterminado') {
-      // Mismo trato y mismo lugar que el aviso de params desconocidos: es de
-      // DESARROLLO. En producción el panel se dibujó igual, y llenar la consola
-      // del navegador con algo que sólo puede resolver quien compone el
-      // repertorio no le sirve a nadie.
-      if (import.meta.env.DEV) {
-        console.warn(`[synapse] panel ${panelId} (${panel.grafico}): ${problema.razon}`)
-      }
-      return undefined
-    }
-    return problema
+  const paramsOf = (panelId: string) => {
+    const panel = panelDe(panelId)
+    if (panel === undefined) return { params: {} }
+    return { params: conParams(panel, payloadOf(panelId), blocks.data?.blocks).params }
   }
 
-  /** Un param inválido DEGRADA el panel, no se ignora ni se reemplaza por el
-   *  default. Ignorarlo es el defecto que F1.29 arregla; reemplazarlo en
-   *  silencio es peor, porque el panel se ve bien mostrando otra cosa.
-   *
-   *  Sale como `BLOQUEADO` y no como `ERROR` porque no es un fallo del sistema:
-   *  es una composición que no se puede dibujar, tiene razón y tiene quien la
-   *  arregle. El shell conserva título, BASE y procedencia · §5.2. */
+  const plotProblemOf = (panelId: string): PlotProblem | undefined => {
+    const panel = panelDe(panelId)
+    return panel === undefined ? undefined : problemaDeGrafico(repertorio, panel, payloadOf(panelId))
+  }
+
   const payloadWithParams = (panelId: string): Payload => {
-    const { invalid } = paramsOf(panelId)
-    if (invalid.length > 0) {
-      return {
-        estado: 'BLOQUEADO',
-        razon: `La composición de este panel no es válida · ${invalid.map((i) => i.reason).join(' · ')}`,
-        desbloqueaCon: 'Corregir las opciones del panel en el builder',
-      } as Payload
-    }
-    return payloadOf(panelId)
+    const panel = panelDe(panelId)
+    return panel === undefined ? payloadOf(panelId) : conParams(panel, payloadOf(panelId), blocks.data?.blocks).payload
   }
 
   /* ── F3.3 · «Preguntar» ──────────────────────────────────────────────────

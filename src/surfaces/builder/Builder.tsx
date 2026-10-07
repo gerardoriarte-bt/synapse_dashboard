@@ -34,9 +34,11 @@
  *  Una pantalla que se declara pendiente no es lo mismo que una que no está: la
  *  primera dice qué la desbloquea, que es lo que §8 pide de cualquier estado.
  */
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { useCerrarSesion } from '../useCerrarSesion'
 import { useTemaGuardado } from '../useTemaGuardado'
 import { useEffect, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import {
   useAdminCatalog,
   useBlocks,
@@ -65,6 +67,9 @@ import type { DashboardEnLista } from './ContextView'
 import { Canvas } from './Canvas'
 import { Library } from './Library'
 import { PanelConfigurator } from './PanelConfigurator'
+import type { Profundidad } from './PanelConfigurator'
+import { tipoPara } from './tipoPara'
+import type { PanelDeBorrador } from './borrador'
 import { PublishBar } from './PublishBar'
 import { RolePreview } from './RolePreview'
 import { VersionHistory } from './VersionHistory'
@@ -99,7 +104,11 @@ import { Accion } from '../../render/primitives/Accion'
 import { useClienteDeTrabajo } from '../useClienteDeTrabajo'
 import { ApiError } from '../../api/types'
 import type { TabParaGuardar } from '../../api/admin'
-import type { PanelConfig } from '../../api/types'
+import type { PanelConfig, Payload } from '../../api/types'
+import { PanelConDato } from './PanelConDato'
+import { plotTable } from '../../catalog/plots'
+import { CANVAS_WIDTH } from '../../render/grid'
+import { PANTALLAS } from './pantallas'
 import type { PantallaId } from './pantallas'
 
 /** Qué espera cada pantalla. Acá y no en un comentario: la pantalla lo pinta, así
@@ -163,14 +172,22 @@ export function Builder() {
   const yo = useMe()
   // El tema guardado lo aplica la superficie · ver `useTemaGuardado`.
   useTemaGuardado(yo.data?.user.preferencias?.tema)
-  const [pantalla, irAPantalla] = useState<PantallaId>('contexto')
+  /** **La pantalla la decide la URL** · 2026-10-07. Era estado interno, y el
+   *  menú de trabajo ofrece entrar directo a «Editor» o «Historial» desde
+   *  cualquier superficie. De paso, recargar y «atrás» dejan de devolver a
+   *  «Dashboards». Una ruta que no es de acá —las pruebas montan en `/`— cae
+   *  en la primera. */
+  const { pathname } = useLocation()
+  const pantalla: PantallaId = PANTALLAS.find((p) => p.ruta === pathname)?.id ?? 'contexto'
   /** **Cambiar de pantalla vuelve arriba** · visto el 2026-10-06: «Componer»
    *  se aprieta al fondo de B1 y el lienzo abría con el scroll de B1, a media
    *  grilla. Asignación y no `scrollTo`, que jsdom no implementa. */
   const setPantalla = (p: PantallaId) => {
-    irAPantalla(p)
+    const destino = PANTALLAS.find((x) => x.id === p)
+    if (destino !== undefined && destino.ruta !== pathname) void navegar(destino.ruta)
     document.documentElement.scrollTop = 0
   }
+  const cerrarSesion = useCerrarSesion()
   const [versionElegida, setVersion] = useState<string | null>(null)
 
   const tenants = useTenants()
@@ -235,7 +252,19 @@ export function Builder() {
   // sincronice, el primer render pinta el borrador viejo y el segundo lo
   // corrige, que es un parpadeo y una ventana donde `sucio` miente.
   const [borrador, setBorrador] = useState<{ layoutId: string; tabs: TabParaGuardar[] } | null>(null)
-  const [seleccion, setSeleccion] = useState<{ tab: number; panel: number } | null>(null)
+  const [seleccion, elegirPanel] = useState<{ tab: number; panel: number } | null>(null)
+  /** **Qué profundidad del panel está abierta** · D6 del 2026-10-07. Elegir
+   *  otro panel empieza de cero; uno sin métrica abre en «Qué muestra», que es
+   *  lo único que le falta. */
+  const [profundidad, setProfundidad] = useState<Profundidad | null>(null)
+  const setSeleccion = (s: { tab: number; panel: number } | null) => {
+    elegirPanel(s)
+    if (s === null) return setProfundidad(null)
+    // Un panel recién agregado todavía no está en `tabs` de este render: es
+    // nuevo, y lo que le falta es la métrica.
+    const p = tabs[s.tab]?.panels[s.panel]
+    setProfundidad(p === undefined || p.metricId === '' ? 'metrica' : null)
+  }
   /** **La pestaña que se compone en B2.** El `.pen` la pone en el chrome —
    *  `PESTAÑA · eCommerce Overview`— porque el canvas compone UNA, no todas: un
    *  lienzo con los paneles de las cuatro pestañas encimados no es una
@@ -284,7 +313,31 @@ export function Builder() {
   const rolActivo = rol !== null && roles.data?.some((r) => r.id === rol) === true ? rol : null
   /** **B5 sí necesita UN rol**: previsualizar «todos» no es una vista de nadie. */
   const rolDePreview = rolActivo ?? roles.data?.[0]?.id ?? null
-  const preview = usePreview(pantalla === 'preview' ? version : null, rolDePreview)
+  // **Con datos** · 2026-10-07: B5 dibuja los paneles con su cifra.
+  const preview = usePreview(pantalla === 'preview' ? version : null, rolDePreview, true)
+
+  /** ── EL DATO DEL LIENZO · 2026-10-07 ──────────────────────────────────────
+   *
+   *  D1 de `docs/AUDITORIA-2026-10-07-editor-sin-previsualizacion.md`: el lienzo
+   *  dibuja cada panel con su gráfico y su cifra. Sale del preview del borrador
+   *  abierto con `include=payloads`, que usa **el cliente del layout** —el
+   *  batch de la consola usaría el del token, que puede ser otro—.
+   *
+   *  **El lente (D2)**: el rol del filtro si hay uno —así lo que ese rol no ve
+   *  se ve donde se compone—; con «Todos los roles», `admin`, que ve todo. */
+  const rolDeDatos =
+    rolActivo ?? roles.data?.find((r) => r.nombre.toLowerCase() === 'admin')?.id ?? roles.data?.[0]?.id ?? null
+  const datosDelLienzo = usePreview(pantalla === 'canvas' ? version : null, rolDeDatos, true)
+  /** **El dato es por métrica y período**, no por panel —`dd_panel_data`—: un
+   *  panel nuevo con una métrica que ya está en el lienzo se dibuja sin esperar
+   *  al guardado. */
+  const datoPorMetrica = new Map<string, Payload>()
+  for (const t of datosDelLienzo.data?.tabs ?? []) {
+    for (const x of t.paneles) {
+      const d = datosDelLienzo.data?.datos?.porPanel.get(x.id)
+      if (d !== undefined && !datoPorMetrica.has(x.metricId)) datoPorMetrica.set(x.metricId, d)
+    }
+  }
 
   const guardar = useSaveLayout(version)
   const validar = useValidateLayout(version)
@@ -561,27 +614,75 @@ export function Builder() {
       </>
     )
 
-  const configurador =
-    configurable === null ? null : (
-      <PanelConfigurator
-        plots={plots.data ?? []}
-        onGrafico={(id) => {
-          if (seleccion === null) return
-          cambiar(quitarOPonerGrafico(tabs, seleccion.tab, seleccion.panel, id))
-        }}
-        panel={configurable}
+  /** ── DIBUJAR UN PANEL DEL LIENZO CON SU DATO · 2026-10-07 ─────────────── */
+  const metricasPorId = new Map((catalogo.data?.metrics ?? []).map((m) => [m.id, m]))
+  const repertorio = plotTable(plots.data ?? [])
+  /** **Los números en el idioma del CLIENTE**, como los ve él en la consola. El
+   *  `format` del builder es el de quien mira —ver arriba—, y sirve para las
+   *  fechas de las tablas del builder, no para el dibujo de un panel ajeno. */
+  const clienteDeTrabajo = lista.find((t) => t.id === tenantActivo)
+  const formatDelCliente = createFormat(clienteDeTrabajo?.locale || LOCALE_POR_DEFECTO)
+  const ahora = new Date()
+  const rolDelLente = roles.data?.find((r) => r.id === rolDeDatos)
+  const nombreDeGrafico = (id: string) => plots.data?.find((x) => x.id === id)?.nombre ?? id
+  const ocultaParaElLente = (p: PanelDeBorrador) =>
+    rolActivo !== null && rolDelLente?.metricasOcultas.includes(p.metricId) === true
+  /** El dato de un panel del borrador · por su id si ya se guardó, y si no por
+   *  su métrica, que es como el servicio lo guarda. */
+  const payloadDe = (p: PanelDeBorrador): Payload | undefined =>
+    ocultaParaElLente(p)
+      ? undefined
+      : ((p.id === undefined ? undefined : datosDelLienzo.data?.datos?.porPanel.get(p.id)) ??
+        datoPorMetrica.get(p.metricId))
+  const dibujarPanel = (indice: number) => {
+    const p = tabs[tabEnLienzo]?.panels[indice]
+    if (p === undefined) return null
+    const oculta = ocultaParaElLente(p)
+    const payload = payloadDe(p)
+    const sinDato = oculta
+      ? `${rolDelLente?.nombre ?? 'Este rol'} no ve esta métrica: la tiene oculta.`
+      : roles.data !== undefined && roles.data.length === 0
+        ? // **Sin roles no hay con qué pedirlo**: la ruta exige `role_id`, y
+          // «Trayendo el dato…» quedaría para siempre.
+          'Este cliente todavía no tiene roles, y el dato se pide como lo ve un rol.'
+        : datosDelLienzo.isError
+        ? `No se pudo traer el dato · ${datosDelLienzo.error.message === '' ? 'sin detalle del servidor' : datosDelLienzo.error.message}`
+        : datosDelLienzo.data === undefined
+          ? 'Trayendo el dato…'
+          : 'Se dibuja al guardar.'
+    return (
+      <PanelConDato
+        // **`colStart` 1**: la celda del lienzo ya ubica el panel; adentro es
+        // una grilla de su propio ancho.
+        panel={{ ...p, id: p.id ?? `nuevo-${String(indice)}`, colStart: 1 } as PanelConfig}
+        metrica={p.metricId === '' ? undefined : metricasPorId.get(p.metricId)}
+        payload={payload}
+        sinDato={sinDato}
         bloques={listaDeBloques}
-        tabla={tabla}
-        metrics={catalogo.data?.metrics ?? []}
-        problemas={problemas.filter(
-          (p) => p.tab === seleccion?.tab && p.panel === seleccion.panel,
-        )}
-        onTipo={(tipo) => {
-          const b = tabla.get(tipo as PanelConfig['tipo'])
-          if (b === undefined || seleccion === null) return
-          cambiar(
-            cambiarTipo(
-              tabs,
+        repertorio={repertorio}
+        format={formatDelCliente}
+        now={ahora}
+      />
+    )
+  }
+
+  const configurador =
+    configurable === null || seleccion === null ? null : (
+      <PanelConfigurator
+        // **Una instancia por panel**: la profundidad abierta es de ESTE panel,
+        // y elegir otro empieza de cero.
+        key={`${String(seleccion.tab)}-${String(seleccion.panel)}`}
+        plots={plots.data ?? []}
+        repertorio={repertorio}
+        payload={payloadDe(configurable)}
+        format={formatDelCliente}
+        onComoSeVe={(tipo, grafico) => {
+          let siguiente = tabs
+          if (tipo !== configurable.tipo) {
+            const b = tabla.get(tipo as PanelConfig['tipo'])
+            if (b === undefined) return
+            siguiente = cambiarTipo(
+              siguiente,
               seleccion.tab,
               seleccion.panel,
               tipo,
@@ -589,26 +690,51 @@ export function Builder() {
               b.colSpanMax,
               b.rowSpanMin,
               b.rowSpanMax,
-            ),
-          )
+            )
+          }
+          cambiar(quitarOPonerGrafico(siguiente, seleccion.tab, seleccion.panel, grafico))
         }}
+        panel={configurable}
+        bloques={listaDeBloques}
+        tabla={tabla}
+        metrics={catalogo.data?.metrics ?? []}
+        problemas={problemas.filter(
+          (p) => p.tab === seleccion.tab && p.panel === seleccion.panel,
+        )}
         onMetrica={(metricId) => {
-          if (seleccion === null) return
-          cambiar(editarPanel(tabs, seleccion.tab, seleccion.panel, { metricId }))
+          // **Una métrica de otra forma cambia el tipo** al que la dibuja · la
+          // lista lo dijo antes de apretar. Sin esto, «qué muestra» primero
+          // obligaría a elegir el dibujo antes que el dato.
+          const m = metricasPorId.get(metricId)
+          const actual = tabla.get(configurable.tipo as PanelConfig['tipo'])
+          let siguiente = tabs
+          if (m !== undefined && actual !== undefined && !actual.formasAceptadas.includes(m.forma)) {
+            const otro = tipoPara(listaDeBloques, m.forma)
+            const b = otro === undefined ? undefined : tabla.get(otro as PanelConfig['tipo'])
+            if (otro !== undefined && b !== undefined) {
+              siguiente = cambiarTipo(
+                siguiente,
+                seleccion.tab,
+                seleccion.panel,
+                otro,
+                b.colSpanMin,
+                b.colSpanMax,
+                b.rowSpanMin,
+                b.rowSpanMax,
+              )
+            }
+          }
+          cambiar(editarPanel(siguiente, seleccion.tab, seleccion.panel, { metricId }))
         }}
-        onSpan={(campo, valor) => {
-          if (seleccion === null) return
-          cambiar(editarPanel(tabs, seleccion.tab, seleccion.panel, { [campo]: valor }))
-        }}
-        onOpcion={(nombre, valor) => {
-          if (seleccion === null) return
-          cambiar(editarOpcion(tabs, seleccion.tab, seleccion.panel, nombre, valor))
-        }}
+        onSpan={(campo, valor) => cambiar(editarPanel(tabs, seleccion.tab, seleccion.panel, { [campo]: valor }))}
+        onOpcion={(nombre, valor) => cambiar(editarOpcion(tabs, seleccion.tab, seleccion.panel, nombre, valor))}
         onQuitar={() => {
-          if (seleccion === null) return
           cambiar(quitarPanel(tabs, seleccion.tab, seleccion.panel))
           setSeleccion(null)
         }}
+        onCerrar={() => setSeleccion(null)}
+        abierta={profundidad}
+        onAbrir={setProfundidad}
       />
     )
 
@@ -647,7 +773,14 @@ export function Builder() {
       onVistaPrevia={version === null ? null : () => setPantalla('preview')}
       {...(yo.data === undefined
         ? {}
-        : { identidad: { rol: yo.data.role.nombre, nombre: yo.data.user.nombre } })}
+        : {
+            identidad: {
+              rol: yo.data.role.nombre,
+              nombre: yo.data.user.nombre,
+              correo: yo.data.user.email,
+            },
+          })}
+      onCerrarSesion={cerrarSesion}
       activa={pantalla}
       onIr={(p) => {
         // **Ir al editor sin borrador lo resuelve igual que el paso 3**: abre el
@@ -838,23 +971,78 @@ export function Builder() {
                   : 'Este rol no ve ninguna pestaña de este dashboard. Agregá una con «+ Pestaña».'}
               </Ayuda>
             ) : (
-              <div className="flex gap-6">
-                {!publicada && (
-                  <Library
-                    bloques={listaDeBloques}
-                    arrastrando={arrastrando}
-                    onArrastrar={setArrastrando}
-                    onAgregar={(tipo) => {
-                      const b = tabla.get(tipo as PanelConfig['tipo'])
-                      if (b === undefined) return
-                      const conNuevo = agregarPanel(tabs, tabEnLienzo, tipo, b.colSpanMin, b.rowSpanMin)
-                      cambiar(conNuevo)
-                      setAjustesDe(null)
-                      setSeleccion({ tab: tabEnLienzo, panel: (conNuevo[tabEnLienzo]?.panels.length ?? 1) - 1 })
-                    }}
-                  />
-                )}
-                <div className="flex-1 flex flex-col gap-3 min-w-0">
+              <div className="flex items-start gap-6">
+                {/* ── LA COLUMNA DE LA IZQUIERDA · D6 del 2026-10-07 ──────────
+                    La biblioteca, o —con algo elegido— la configuración en
+                    columnas que se abren hacia el lienzo. **No lo tapan: lo
+                    corren**, y el lienzo trae el panel elegido a la vista. Eran
+                    paneles fijos a la derecha que tapaban un tercio del lienzo,
+                    a veces el panel que se estaba configurando. */}
+                {!publicada &&
+                  (configurador !== null && seleccion?.tab === tabEnLienzo ? (
+                    configurador
+                  ) : ajustesDe !== null && tabs[ajustesDe] !== undefined ? (
+                    <aside
+                      aria-label="Ajustes de la pestaña"
+                      className="sticky top-[calc(var(--alto-cabecera-builder,0px)+16px)] flex w-75 shrink-0 flex-col gap-3 self-start"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') setAjustesDe(null)
+                      }}
+                    >
+                      <div className="flex justify-end">
+                        <Accion
+                          tamano="compacta"
+                          onClick={() => setAjustesDe(null)}
+                          etiqueta="Cerrar los ajustes de la pestaña"
+                        >
+                          Cerrar
+                        </Accion>
+                      </div>
+                        <TabInspector
+                          tab={tabs[ajustesDe]}
+                          indice={ajustesDe}
+                          total={tabs.length}
+                          roles={roles.data ?? []}
+                          problemas={problemas
+                            .filter((pr) => pr.tab === ajustesDe && pr.panel === null)
+                            .map((pr) => pr.mensaje)}
+                          onEditar={(campo, valor) => cambiar(editar(tabs, ajustesDe, campo, valor))}
+                          onRoles={(r) => cambiar(asignarRoles(tabs, ajustesDe, r))}
+                          onMover={(d) => {
+                            cambiar(mover(tabs, ajustesDe, d))
+                            setTabActiva(ajustesDe + d)
+                            setAjustesDe(ajustesDe + d)
+                          }}
+                          onQuitar={() => {
+                            cambiar(quitar(tabs, ajustesDe))
+                            setAjustesDe(null)
+                            setTabActiva(0)
+                          }}
+                        />
+                    </aside>
+                  ) : (
+                    <Library
+                      bloques={listaDeBloques}
+                      arrastrando={arrastrando}
+                      onArrastrar={setArrastrando}
+                      onAgregar={(tipo) => {
+                        const b = tabla.get(tipo as PanelConfig['tipo'])
+                        if (b === undefined) return
+                        const conNuevo = agregarPanel(tabs, tabEnLienzo, tipo, b.colSpanMin, b.rowSpanMin)
+                        cambiar(conNuevo)
+                        setAjustesDe(null)
+                        setSeleccion({ tab: tabEnLienzo, panel: (conNuevo[tabEnLienzo]?.panels.length ?? 1) - 1 })
+                      }}
+                    />
+                  ))}
+                {/* **El lienzo a su ancho 1:1** —las 12 columnas de 80 con su
+                    separación, `CANVAS_WIDTH`—: las columnas lo corren, no lo
+                    achican. A otra escala las unidades de arrastre mentirían. */}
+                {/* **Con su propio scroll horizontal**: las columnas no se mueven
+                    y el lienzo se recorre al lado, así ni el panel elegido ni la
+                    configuración quedan fuera de la pantalla. */}
+                <div className="min-w-0 flex-1 overflow-x-auto pt-3">
+                <div className="flex flex-col gap-3" style={{ width: CANVAS_WIDTH }}>
                   <Canvas
                     panels={tabs[tabEnLienzo]?.panels ?? []}
                     tabla={tabla}
@@ -895,76 +1083,15 @@ export function Builder() {
                       setArrastrando(null)
                     }}
                     arrastrando={arrastrando}
+                    dibujar={dibujarPanel}
+                    nombreDeGrafico={nombreDeGrafico}
+                    encuadre={profundidad ?? ''}
                   />
+                </div>
                 </div>
               </div>
             )}
 
-            {/* ── EL INSPECTOR · un panel o una pestaña ────────────────────────
-             *
-             * **Encima del lienzo y no al costado**, para no achicar los 1200 del
-             * lienzo 1:1. Desde el 2026-10-07 también ajusta la PESTAÑA —nombre,
-             * pregunta, quién la ve—, que antes vivía en otra pantalla. */}
-            {!publicada &&
-              (configurable !== null && seleccion !== null && seleccion.tab === tabEnLienzo ? (
-                <aside
-                  aria-label="Configuración del panel"
-                  className="fixed right-0 top-[var(--alto-cabecera-builder,0px)] bottom-0 z-20 w-[440px] overflow-y-auto border-l border-w4 bg-panel p-6 shadow-2xl"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') setSeleccion(null)
-                  }}
-                >
-                  <div className="flex justify-end pb-2">
-                    <Accion
-                      tamano="compacta"
-                      onClick={() => setSeleccion(null)}
-                      etiqueta="Cerrar la configuración del panel"
-                    >
-                      Cerrar
-                    </Accion>
-                  </div>
-                  {configurador}
-                </aside>
-              ) : ajustesDe !== null && tabs[ajustesDe] !== undefined ? (
-                <aside
-                  aria-label="Ajustes de la pestaña"
-                  className="fixed right-0 top-[var(--alto-cabecera-builder,0px)] bottom-0 z-20 w-[440px] overflow-y-auto border-l border-w4 bg-panel p-6 shadow-2xl"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') setAjustesDe(null)
-                  }}
-                >
-                  <div className="flex justify-end pb-2">
-                    <Accion
-                      tamano="compacta"
-                      onClick={() => setAjustesDe(null)}
-                      etiqueta="Cerrar los ajustes de la pestaña"
-                    >
-                      Cerrar
-                    </Accion>
-                  </div>
-                  <TabInspector
-                    tab={tabs[ajustesDe]}
-                    indice={ajustesDe}
-                    total={tabs.length}
-                    roles={roles.data ?? []}
-                    problemas={problemas
-                      .filter((pr) => pr.tab === ajustesDe && pr.panel === null)
-                      .map((pr) => pr.mensaje)}
-                    onEditar={(campo, valor) => cambiar(editar(tabs, ajustesDe, campo, valor))}
-                    onRoles={(r) => cambiar(asignarRoles(tabs, ajustesDe, r))}
-                    onMover={(d) => {
-                      cambiar(mover(tabs, ajustesDe, d))
-                      setTabActiva(ajustesDe + d)
-                      setAjustesDe(ajustesDe + d)
-                    }}
-                    onQuitar={() => {
-                      cambiar(quitar(tabs, ajustesDe))
-                      setAjustesDe(null)
-                      setTabActiva(0)
-                    }}
-                  />
-                </aside>
-              ) : null)}
           </div>
         )
       ) : pantalla === 'preview' ? (
@@ -977,6 +1104,18 @@ export function Builder() {
           onVolver={() => setPantalla('canvas')}
           hayVersion={version !== null}
           {...(detalle.data === undefined ? {} : { completo: detalle.data })}
+          dibujar={(x) => (
+            <PanelConDato
+              panel={x}
+              metrica={metricasPorId.get(x.metricId)}
+              payload={preview.data?.datos?.porPanel.get(x.id)}
+              sinDato="El servidor no mandó dato para este panel."
+              bloques={listaDeBloques}
+              repertorio={repertorio}
+              format={formatDelCliente}
+              now={ahora}
+            />
+          )}
         />
       ) : pantalla === 'historial' ? (
         /* ── B6 · §PEN:B6 ──────────────────────────────────────────────────
@@ -1114,6 +1253,7 @@ function Preview({
   onVolver,
   hayVersion,
   completo,
+  dibujar,
 }: {
   roles: readonly { id: string; nombre: string }[]
   rolActivo: string | null
@@ -1125,6 +1265,8 @@ function Preview({
    *  que el preview devuelve. Ya está cargado para el editor, así que no cuesta
    *  una consulta más. */
   completo?: LayoutDetalle | undefined
+  /** Dibujar un panel con su dato · ver `RolePreview`. */
+  dibujar: (panel: PanelConfig) => ReactNode
 }) {
   // ── LOS DOS VACÍOS DE B5 LLEVAN SALIDA · 2026-09-25 ────────────────────────
   //
@@ -1192,6 +1334,7 @@ function Preview({
           preview={query.data}
           {...(completo === undefined ? {} : { completo })}
           onVolver={onVolver}
+          dibujar={dibujar}
         />
       )}
     </div>

@@ -95,9 +95,9 @@ export const PANTALLAS = [
     chrome: 'composicion',
     /** **D3 de la auditoría del 2026-10-06: fuera de la navegación.** Llevaba a
      *  un texto que decía que la pantalla estaba en otra. Sigue declarada —
-     *  `pen-pantallas` pide que B3 tenga quien la implemente, y la implementa
-     *  `PlotPicker` dentro del inspector— pero declarar una pantalla no obliga a
-     *  ofrecerle una pestaña. */
+     *  `pen-pantallas` pide que B3 tenga quien la implemente, y desde el
+     *  2026-10-07 la implementa la columna «Cómo se ve» de `PanelConfigurator`—
+     *  pero declarar una pantalla no obliga a ofrecerle una pestaña. */
     enNav: false,
   },
   {

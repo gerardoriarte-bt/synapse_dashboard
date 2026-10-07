@@ -528,3 +528,45 @@ describe('B5 se abre desde el chrome · D3 de la auditoría del 2026-10-06', () 
     expect(pedidos).toEqual(['r-pla'])
   })
 })
+
+/** ── B5 DIBUJA CON DATO · 2026-10-07 ─────────────────────────────────────
+ *
+ *  §7.2: «Renderiza la composición exactamente como la verá el rol
+ *  seleccionado, **con datos reales**». La razón por la que pintaba cajas —«el
+ *  preview va sin payloads»— venció con `d9147c3`.
+ */
+describe('B5 dibuja cada panel con su dato', () => {
+  const conDatos = http.get(`${API}/admin/layouts/:id/preview`, ({ request }) => {
+    const params = new URL(request.url).searchParams
+    const rol = params.get('role_id') ?? ''
+    const base = previews[rol] as Record<string, unknown>
+    if (params.get('include') !== 'payloads') return ok(base)
+    return ok({
+      ...base,
+      period: '2026-10',
+      payloads: {
+        'p-1': {
+          status: 'AVAILABLE',
+          value: { shape: 'scalar', v: 48362 },
+          governance: { base: 'x', layer: 'GOLD', source: 'ERP', freshness: '2026-10-07T00:00:00Z', catalog_version: 1 },
+        },
+      },
+    })
+  })
+
+  it('pide CON datos y pinta la cifra del servidor, y dice de qué período es', async () => {
+    base([conDatos])
+    montar()
+    await abrirPreview()
+    expect(await screen.findByText(/48[.,]362/)).toBeInTheDocument()
+    expect(screen.getByText('Con el dato de 2026-10, como lo va a ver este rol.')).toBeInTheDocument()
+  })
+
+  it('un panel sin dato lo DICE · no se le inventa un estado', async () => {
+    base([conDatos])
+    montar()
+    await abrirPreview()
+    await screen.findByText(/48[.,]362/)
+    expect(screen.getByText('El servidor no mandó dato para este panel.')).toBeInTheDocument()
+  })
+})

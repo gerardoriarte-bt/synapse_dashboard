@@ -1580,6 +1580,34 @@ export interface components {
          *     pedirlo.
          */
         Preview: {
+            /**
+             * @description **Sólo con `include=payloads`** · el período de los payloads. Medido
+             *     el 2026-10-07 contra `7b717aa`.
+             * @example 2026-10
+             */
+            period?: string;
+            /**
+             * @description **Sólo con `include=payloads`** · `panel_id` → payload, el MISMO
+             *     `Payload` de `POST /config/panels:batch` —`synapse-console-wire.yaml`—,
+             *     armado por el mismo código con el rol del lente: las métricas
+             *     ocultas salen `FORBIDDEN`. Medido el 2026-10-07: las mismas siete
+             *     claves —`status`, `value`, `governance`, `presentation`, `reason`,
+             *     `unlocks_with`, `stale_since`—.
+             *
+             *     **El dato es por métrica y período**, no por panel —`dd_panel_data`
+             *     tiene índice único `(tenant_id, metric_id, period)`—, así que un
+             *     panel recién creado en un borrador ya tiene dato si su métrica lo
+             *     tiene.
+             *
+             *     Se declara abierto y el adaptador lo lee con el tipo del cable de
+             *     consola: copiar el esquema acá sería una segunda fuente del mismo
+             *     hecho.
+             */
+            payloads?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
             /** Format: uuid */
             layout_id: string;
             /** Format: uuid */
@@ -2129,6 +2157,29 @@ export interface operations {
                  *     `/config/tabs`. Se leyó del handler; mandarlo en camelCase da 400.
                  */
                 role_id: string;
+                /**
+                 * @description **`payloads` trae el DATO de cada panel** · llegó en `d9147c3`
+                 *     (2026-10-01) y se transcribió el 2026-10-07, leído en
+                 *     `dd_config_handler.go:238` de `7b717aa` y medido contra el servicio
+                 *     levantado acá: un borrador de 10 paneles devolvió **10 payloads**.
+                 *
+                 *     **Es el único valor que acepta**: cualquier otro da **400 ·
+                 *     «include solo admite el valor payloads»**, medido. Omitido, la
+                 *     respuesta no trae `period` ni `payloads`.
+                 *
+                 *     **Usa el cliente DEL LAYOUT, no el del token** —`batchForRole` recibe
+                 *     `layout.TenantID`, `dd_config_service.go:686`—. Es la diferencia con
+                 *     `POST /config/panels:batch`, que toma el del token: para el builder,
+                 *     que trabaja sobre un cliente que puede no ser el propio, ésta es la
+                 *     ruta correcta.
+                 */
+                include?: "payloads";
+                /**
+                 * @description El período del dato · `YYYY-MM`. Omitido, el servicio elige y lo
+                 *     devuelve en `period` —medido: `2026-10` el 2026-10-07—. Sólo tiene
+                 *     efecto con `include=payloads`.
+                 */
+                period?: string;
             };
             header?: never;
             path: {
