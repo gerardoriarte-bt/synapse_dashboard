@@ -26,7 +26,15 @@ import { server } from '../../mocks/server'
 const API = '*/api/v1'
 
 const tenants = [{ id: 't-1', name: 'Under Armour México' }]
-const layouts = [{ id: 'l-2', tenant_id: 't-1', status: 'draft', version_id: 'v4', published_at: null }]
+const layouts = [
+  { id: 'l-2', tenant_id: 't-1', dashboard_id: 'd-1', status: 'draft', version_id: 'v4', published_at: null },
+]
+
+/** `GET /admin/tenants/{tenantId}/dashboards` · `LayoutDashboard` del cable.
+ *  Desde el 2026-10-07 el builder entra por acá: Cliente → Dashboard → Editor. */
+const dashboards = [
+  { id: 'd-1', tenant_id: 't-1', name: 'Overview', slug: 'overview', is_default: true, history_months: 12 },
+]
 
 const panel = (id: string, metricId: string, colStart: number, colSpan: number) => ({
   id: id, tab_id: 'tab-a', metric_id: metricId, type: 'kpi',
@@ -58,6 +66,7 @@ function base(extra: Parameters<typeof server.use> = []) {
     ...extra,
     http.get(`${API}/admin/tenants`, () => ok(tenants)),
     http.get(`${API}/admin/tenants/:id/layouts`, () => ok(layouts)),
+    http.get(`${API}/admin/tenants/:id/dashboards`, () => ok(dashboards)),
     http.get(`${API}/admin/layouts/:id`, () => ok(detalle)),
     http.get(`${API}/admin/tenants/:id/catalog`, () => ok(metricas)),
     http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([])),
@@ -80,10 +89,11 @@ function montar() {
   )
 }
 
+/** El camino de 2026-10-07 · el dashboard en el paso 1 y «Abrir el editor» en
+ *  el 3. Con un borrador del dashboard, abrir lo abre: no crea nada. */
 async function abrirCanvas() {
-  await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
-  await screen.findByDisplayValue('Resumen')
-  await userEvent.click(screen.getByRole('button', { name: 'Canvas' }))
+  await userEvent.click(await screen.findByRole('button', { name: /Overview/ }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Abrir el editor de Overview' }))
   await screen.findByRole('grid', { name: 'Lienzo de composición' })
 }
 
@@ -482,12 +492,14 @@ describe('el canvas compone UNA pestaña', () => {
     //
     // **El chrome ya no la repite** · §2.2 de la auditoría del 2026-10-06: la
     // pestaña estaba como texto en el chrome y como selector en el cuerpo, uno
-    // que se tocaba y otro que no. Queda el selector.
+    // que se tocaba y otro que no. Queda el selector — desde el 2026-10-07 son
+    // pestañas de verdad (`role="tab"`) y no el `<select>` «Componiendo».
     base()
     montar()
     await abrirCanvas()
 
-    expect(screen.getByLabelText('Componiendo')).toHaveDisplayValue('Resumen')
+    const pestanas = screen.getByRole('tablist', { name: 'Pestañas del dashboard' })
+    expect(within(pestanas).getByRole('tab', { name: 'Resumen' })).toHaveAttribute('aria-selected', 'true')
     expect(within(screen.getByRole('banner')).queryByText('Resumen')).toBeNull()
   })
 })

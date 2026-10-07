@@ -150,10 +150,58 @@ arriba, «Editar en un borrador».
 
 ### Con decisión
 
-| # | Pregunta | Por qué no la decidimos nosotros |
+Las respuestas son del humano, el mismo 2026-10-07, transcriptas literales.
+
+| # | Pregunta | Respuesta (humano) | Cómo se implementó |
+|---|---|---|---|
+| D1 | ¿Se reorganiza el builder en **Dashboards → Editor** (§2)? | «Si, debe ser entendible el proceso de identificación el Cliente - Dashboard - Editor (Selección de rol y guardado)» | El cliente en la cabecera; la pantalla «Dashboards» en tres pasos —dashboard, rol, abrir el editor— que se van abriendo; el editor con las pestañas como pestañas. La cabecera del editor dice «Dashboard · Borrador vN» y el rol |
+| D2 | ¿Guardado **explícito con estado visible**, o **automático**? | «Ambos pero el guardar se debe ver explicito, mostrando los estados del boton cuando quede guardado.» | Se guarda solo a los 3 s sin editar, y el botón no desaparece: «Guardar» con cambios, «Guardando…», «✓ Guardado» con la hora, o el error con «Reintentar». Avisa al salir con cambios |
+| D3 | ¿El filtro de rol vive en la lista de dashboards o en el editor? | «En el dashboard, pero debe mostrarse de una manera más clara y progrresiva» | Es el paso 2 de «Dashboards», que aparece recién con un dashboard elegido, y dice qué va a pasar con cada opción |
+| D4 | ¿Se corre `POST …/dashboards` en QA para medirlo? | «Si medirlo, se debería poder borrarse dashboards, pero con doble verificación.» | «Nuevo dashboard» está construido; **la medición en QA se hace usándolo**, con el front local apuntando a QA. Borrar necesita una ruta que el servicio no tiene: pedida en `MENSAJE-2026-10-07-backend-borrar-dashboards.md`. El botón no se pinta hasta que exista |
+| D5 | ¿«Canvas» pasa a llamarse «Editor»? | «Si mejor Editor, Luego debemos hacer doble click sobre la página de editor para mejorar la experiencia» | Renombrado. **El doble clic queda para la próxima vuelta**, como se pidió («luego») |
+
+## 4 · Lo implementado, además de las decisiones
+
+- **El borrador con su dashboard** (§1.4): `crearBorrador` manda `dashboard_id`, y
+  la copia nace con la versión siguiente (`vN`) en vez de repetir la de origen.
+  El campo quedó transcripto en el cable, leído en `7b717aa`.
+- **La versión publicada no se edita en el lugar** (§2.4): el lienzo pasa a sólo
+  lectura, sin biblioteca ni inspector, con «Editar en un borrador».
+- **La cabecera queda fija** y el inspector abre debajo: a toda la altura tapaba
+  el estado del guardado, justo mientras se editaba. Visto en pantalla.
+- **El modo mock dejó de esconder el defecto**: su `POST …/layouts` ponía todo en
+  un dashboard fijo y copiaba solo; ahora se comporta como el servicio.
+
+## 5 · Al cerrarla · las pruebas, y cuatro defectos que salieron de ellas y de mirarla
+
+**Las pruebas del builder quedaron describiendo el flujo viejo**: 150 en rojo en
+diez archivos, porque elegían versión en B1 y editaban pestañas fuera del lienzo.
+Se reescribieron contra Cliente → Dashboard → Editor —ninguna se borró sin
+reemplazo, y cada reescritura dice por qué en el archivo—, y lo nuevo se verificó
+con **22 mutaciones**, las 22 muertas. Cuatro sobrevivieron en la primera vuelta
+y obligaron a corregir pruebas, no código:
+
+- **El guardado automático se afirmaba con el reloj síncrono.** `puts === 0` justo
+  después de adelantar el reloj pasaba aunque el `PUT` ya estuviera en camino, así
+  que una cuenta que NO se reiniciaba y un error que SÍ se reintentaba solo pasaban
+  igual. Ahora el avance es asíncrono y se afirma que lo guardado es lo último
+  escrito.
+- La biblioteca en la versión publicada y el foco del campo nuevo no tenían
+  aserción.
+
+**Los defectos de producto, corregidos:**
+
+| | Qué pasaba | Cómo salió |
 |---|---|---|
-| D1 | ¿Se reorganiza el builder en **Dashboards → Editor** (§2)? | Reemplaza la estructura de B1 que el `.pen` dibuja |
-| D2 | ¿Guardado **explícito con estado visible**, o **automático** en el borrador? | Cambia el modelo de trabajo; §7.2 pide «guardado explícito» |
-| D3 | ¿El filtro de rol vive en la lista de dashboards o en el editor? | Las dos son razonables |
-| D4 | ¿Se corre `POST …/dashboards` en QA para medirlo? | Deja un dashboard que no se puede borrar —no hay `DELETE`— y puede cambiar cuál es el por defecto |
-| D5 | ¿«Canvas» pasa a llamarse «Editor» o «Composición»? | Es copy de producto |
+| `adoptarIds` | Una pestaña nueva **renombrada mientras viajaba su primer guardado** perdía el id, y el guardado siguiente **la duplicaba** en el servicio: se la reconocía por el nombre. Ahora se empareja contra lo ENVIADO, por posición | Una prueba, al reescribir `guardar` |
+| La publicada | El aviso «no se edita» salía **dos veces**, con dos botones que hacían lo mismo. Queda el del editor; `SaveBar` sólo dice el error | Al reescribir `guardar` |
+| B6 sin versiones | Con un dashboard recién creado y elegido, decía «Elegí un dashboard». Ahora lo nombra y dice que no tiene versiones | Mirando la pantalla |
+| «Nuevo dashboard» | El campo abría sin foco, y lo tipeado no iba a ningún lado | Mirando la pantalla |
+
+**Y una deuda que se cerró sola**: el título de B6 sacaba el nombre del dashboard
+de `/config/me`, que sólo sirve para el cliente propio, y el comentario pedía
+transcribir `GET /admin/tenants/{tenantId}/dashboards`. Ya estaba transcripta: el
+nombre sale de ahí para cualquier cliente.
+
+**Lo que NO se hizo:** la medición de `POST …/dashboards` en QA (D4). Necesita
+iniciar sesión en QA con una cuenta real, y eso lo hace el humano.

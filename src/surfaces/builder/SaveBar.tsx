@@ -20,33 +20,25 @@
  *     que es el único que cuenta.
  */
 import { Ayuda } from '../../render/primitives/Ayuda'
-import { Accion } from '../../render/primitives/Accion'
 
 type Props = {
-  publicada: boolean
   error: string | null
-  onDuplicar: () => void
-  duplicando: boolean
 }
 
 /** **La cuenta de problemas se fue de acá** · 2026-10-06. Se decía tres veces
  *  —arriba, acá y en el resumen— y ahora la dice sólo `ValidationSummary`, que
- *  además lleva a cada uno · §2.5 de la auditoría. Esta barra queda para lo que
- *  NO es global: por qué no se puede guardar esta versión, y cómo salir. Y no
- *  se pinta vacía. */
-export function SaveBar({ publicada, error, onDuplicar, duplicando }: Props) {
-  if (!publicada && error === null) return null
+ *  además lleva a cada uno · §2.5 de la auditoría.
+ *
+ *  **Y el aviso de la versión publicada también** · 2026-10-07. Desde que el
+ *  editor la abre en sólo lectura lo dice el propio editor, con «Editar en un
+ *  borrador»; acá quedaba el mismo aviso con otro texto y un segundo botón que
+ *  hacía lo mismo. Esta barra queda para el error de guardado, y no se pinta
+ *  vacía. */
+export function SaveBar({ error }: Props) {
+  if (error === null) return null
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-w4 bg-panel p-4">
-      {publicada && (
-        <div className="flex flex-wrap items-center gap-3">
-          <Ayuda as="span">Esta versión está publicada y no se edita. Creá un borrador para trabajar sobre ella.</Ayuda>
-          <Accion variante="primaria" onClick={onDuplicar} deshabilitada={duplicando}>
-            {duplicando ? 'Creando…' : 'Crear borrador desde esta versión'}
-          </Accion>
-        </div>
-      )}
-      {error !== null && <Ayuda>{error}</Ayuda>}
+      <Ayuda>{error}</Ayuda>
     </div>
   )
 }

@@ -198,6 +198,19 @@ export type RolParaGuardar = {
  *  Lo que se pierde es el nivel de panel, que es la mitad de §7.2. Queda pedido
  *  a backend; hasta entonces `RolePreview` declara el hueco en vez de pintar una
  *  grilla vacía. */
+/** Un dashboard del cliente · `GET /admin/tenants/{tenantId}/dashboards`.
+ *
+ *  **Dashboard es lo que se elige; layout es su composición** —la palabra la
+ *  fijó C6 del `.pen`—. Desde el 2026-10-07 el builder se organiza por acá:
+ *  Cliente → Dashboard → Editor. */
+export type Dashboard = {
+  id: string
+  tenantId: string
+  nombre: string
+  /** El que resuelve cuando el rol no declara preferencia. */
+  porDefecto: boolean
+}
+
 export type PreviewDeRol = {
   layoutId: string
   dashboardId: string
@@ -968,6 +981,26 @@ export const adminApi = {
       ),
     ),
 
+  dashboards: async (tenantId: string): Promise<Dashboard[]> =>
+    (
+      await pedir<A['LayoutDashboard'][]>(
+        `/admin/tenants/${encodeURIComponent(tenantId)}/dashboards`,
+      )
+    ).map((d) => ({ id: d.id, tenantId: d.tenant_id, nombre: d.name, porDefecto: d.is_default })),
+
+  /** **`is_default` va SIEMPRE explícito.** Omitido, el servicio lo pone en
+   *  `true` si es el primero del tenant; y en `true` **desplaza al anterior** en
+   *  la misma transacción. Un dashboard nuevo no debería cambiar lo que ven
+   *  los usuarios al entrar, así que se manda `false` salvo cuando no hay otro.
+   *  Ver el cable, `createDashboard`. */
+  crearDashboard: async (tenantId: string, nombre: string, primero: boolean): Promise<Dashboard> => {
+    const d = await pedir<A['LayoutDashboard']>(
+      `/admin/tenants/${encodeURIComponent(tenantId)}/dashboards`,
+      { method: 'POST', body: JSON.stringify({ name: nombre, is_default: primero }) },
+    )
+    return { id: d.id, tenantId: d.tenant_id, nombre: d.name, porDefecto: d.is_default }
+  },
+
   layouts: async (tenantId: string): Promise<LayoutVersion[]> =>
     (await pedir<WireLayoutVersion[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/layouts`)).map(
       adaptarVersion,
@@ -1000,11 +1033,18 @@ export const adminApi = {
     tenantId: string,
     versionId?: string,
     tabs?: readonly TabParaGuardar[],
+    dashboardId?: string,
   ): Promise<LayoutVersion> => {
     const creado = adaptarVersion(
       await pedir<WireLayoutVersion>(`/admin/tenants/${encodeURIComponent(tenantId)}/layouts`, {
         method: 'POST',
-        body: JSON.stringify({ version_id: versionId ?? '' }),
+        // **Con su dashboard** · 2026-10-07. Sin `dashboard_id` el servicio
+        // usa el POR DEFECTO, y duplicar una versión de otro dashboard dejaba
+        // el borrador en el equivocado.
+        body: JSON.stringify({
+          version_id: versionId ?? '',
+          ...(dashboardId === undefined ? {} : { dashboard_id: dashboardId }),
+        }),
       }),
     )
     // Sin pestañas que copiar es un borrador nuevo de verdad, y el `PUT` de más

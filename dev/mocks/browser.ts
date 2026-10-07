@@ -29,7 +29,7 @@
 import { http, HttpResponse, delay } from 'msw'
 import { setupWorker } from 'msw/browser'
 import repertorio from './repertorio.json'
-import { DASH_A, LAYOUT_PUB, TENANT_EN_ALTA, bloques, catalogo, contexto, detalle, layouts, publicaciones, roles, tenants, usuario, PANELES_MUESTRARIO } from './datos'
+import { DASH_A, DASH_B, LAYOUT_PUB, TENANT_EN_ALTA, bloques, catalogo, contexto, detalle, layouts, publicaciones, roles, tenants, usuario, PANELES_MUESTRARIO } from './datos'
 
 const API = '*/api/v1'
 const ok = <T,>(data: T) => HttpResponse.json({ success: true, data })
@@ -60,6 +60,12 @@ const estado = {
   roles: structuredClone(roles),
   // B6 · el historial crece con cada reversión, igual que en el servicio.
   publicaciones: structuredClone(publicaciones),
+  /** Los dashboards del cliente · 2026-10-07, para el primer nivel del builder.
+   *  `Marca` sin layouts: es el caso «Todavía no se compuso». */
+  dashboards: [
+    { id: DASH_A, tenant_id: tenants[0]!.id, name: 'Overview', slug: 'overview', is_default: true, history_months: 12 },
+    { id: DASH_B, tenant_id: tenants[0]!.id, name: 'Marca', slug: 'marca', is_default: false, history_months: 12 },
+  ],
 }
 
 /** `panelId` → la forma de la métrica que ese panel dibuja.
@@ -629,20 +635,35 @@ export const worker = setupWorker(
     ok(params['id'] === TENANT_EN_ALTA ? [] : estado.layouts),
   ),
 
+  /** **Igual que el servicio desde el 2026-10-07**: `dashboard_id` omitido es
+   *  el por defecto, y el borrador nace VACÍO —la copia la hace el front con un
+   *  `PUT`, ver `crearBorrador`—. Antes este mock copiaba solo y ponía todo en
+   *  `DASH_A`, que escondía el defecto de no mandar el dashboard. */
   http.post(`${API}/admin/tenants/:id/layouts`, async ({ request }) => {
-    const { version_id } = (await request.json()) as { version_id?: string }
+    const { version_id, dashboard_id } = (await request.json()) as { version_id?: string; dashboard_id?: string }
     const nuevo = {
-      // **`dashboard_id` también se copia** · el duplicado es del mismo
-      // dashboard que el origen, y de ese campo sale qué historial pedir.
-      id: crypto.randomUUID(), tenant_id: tenants[0]!.id, dashboard_id: DASH_A,
+      id: crypto.randomUUID(), tenant_id: tenants[0]!.id,
+      dashboard_id: dashboard_id ?? estado.dashboards.find((d) => d.is_default)?.id ?? DASH_A,
       status: 'draft' as string,
-      version_id: `${version_id ?? 'v'}-copia`, published_at: null as string | null,
+      version_id: version_id ?? '', published_at: null as string | null,
     }
     estado.layouts = [nuevo, ...estado.layouts]
-    // Duplicar copia el contenido de la versión de origen, que es lo que hace
-    // que «duplicar para editar» sirva de algo.
-    const origen = estado.detalles.get(LAYOUT_PUB)
-    estado.detalles.set(nuevo.id, { layout: nuevo, tabs: structuredClone(origen?.tabs ?? []) })
+    estado.detalles.set(nuevo.id, { layout: nuevo, tabs: [] })
+    return HttpResponse.json({ success: true, data: nuevo }, { status: 201 })
+  }),
+
+  http.get(`${API}/admin/tenants/:id/dashboards`, ({ params }) =>
+    ok(params['id'] === TENANT_EN_ALTA ? [] : estado.dashboards),
+  ),
+
+  http.post(`${API}/admin/tenants/:id/dashboards`, async ({ request }) => {
+    const { name, is_default } = (await request.json()) as { name: string; is_default?: boolean }
+    const nuevo = {
+      id: crypto.randomUUID(), tenant_id: tenants[0]!.id, name,
+      slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), is_default: is_default === true, history_months: 12,
+    }
+    if (nuevo.is_default) estado.dashboards = estado.dashboards.map((d) => ({ ...d, is_default: false }))
+    estado.dashboards = [...estado.dashboards, nuevo]
     return HttpResponse.json({ success: true, data: nuevo }, { status: 201 })
   }),
 

@@ -22,7 +22,13 @@ import { server } from '../../mocks/server'
 const API = '*/api/v1'
 
 const tenants = [{ id: 't-1', name: 'Under Armour México' }]
-const borrador = { id: 'l-2', tenant_id: 't-1', status: 'draft', version_id: 'v4', published_at: null }
+/** `LayoutDashboard` del cable · `contracts/synapse-admin-wire.yaml`. */
+const dashboards = [
+  { id: 'd-1', tenant_id: 't-1', name: 'Overview', slug: 'overview', is_default: true, history_months: 12 },
+]
+const borrador = {
+  id: 'l-2', tenant_id: 't-1', dashboard_id: 'd-1', status: 'draft', version_id: 'v4', published_at: null,
+}
 
 const detalle = {
   layout: borrador,
@@ -62,6 +68,12 @@ function base(extra: Parameters<typeof server.use> = []) {
   server.use(
     ...extra,
     http.get(`${API}/admin/tenants`, () => ok(tenants)),
+    http.get(`${API}/admin/tenants/:id/dashboards`, () => ok(dashboards)),
+    http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([])),
+    // Los pide el contenedor siempre —B6 y sus autores—, aunque estas pruebas
+    // no los miren.
+    http.get(`${API}/admin/dashboards/:id/publications`, () => ok([])),
+    http.get(`${API}/admin/tenants/:id/users`, () => ok([])),
     http.get(`${API}/admin/tenants/:id/catalog`, () => ok(metricas)),
     http.get(`${API}/config/blocks`, () => ok(bloques)),
     http.get(`${API}/admin/tenants/:id/layouts`, () => ok([borrador])),
@@ -87,12 +99,24 @@ function montar() {
   )
 }
 
+/** Cliente → Dashboard → Editor · 2026-10-07. Validar y publicar son del
+ *  EDITOR: en «Dashboards» todavía no se eligió qué editar. */
 async function abrir() {
-  // **Sin elegir la versión**: desde el 2026-10-06 se autoelige el primer
-  // borrador · auditoría de ese día. Que la pestaña aparezca sin tocar nada es
-  // parte de lo que se prueba.
-  await screen.findByDisplayValue('Resumen')
+  await userEvent.click(await screen.findByRole('button', { name: /Overview/ }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Abrir el editor de Overview' }))
+  await screen.findByRole('tab', { name: 'Resumen' })
 }
+
+/** Una edición cualquiera · el nombre de la pestaña, en su inspector. */
+async function editar() {
+  await userEvent.click(screen.getByRole('button', { name: 'Ajustes de la pestaña' }))
+  const insp = within(await screen.findByRole('complementary', { name: 'Ajustes de la pestaña' }))
+  await userEvent.type(insp.getByDisplayValue('Resumen'), '!')
+}
+
+/** El porqué de no publicar, con cambios sin guardar · desde el guardado
+ *  automático no pide «guardá» sino esperar a que se guarde. */
+const ESPERAR_Y_VALIDAR = 'Para publicar, esperá a que se guarde y validá.'
 
 /** El botón de validar vive en el chrome desde el 2026-10-06, al lado de
  *  guardar y publicar · §2.4 de `docs/AUDITORIA-2026-10-06-builder-contexto-y-canvas.md`.
@@ -111,9 +135,9 @@ describe('F4.14 · el servidor valida lo GUARDADO', () => {
     await abrir()
     expect(validarBtn()).toBeInTheDocument()
 
-    await userEvent.type(screen.getByDisplayValue('Resumen'), '!')
+    await editar()
     expect(screen.queryByRole('button', { name: 'Validar' })).toBeNull()
-    expect(screen.getByText('Para publicar, guardá y validá.')).toBeInTheDocument()
+    expect(screen.getByText(ESPERAR_Y_VALIDAR)).toBeInTheDocument()
   })
 
   it('«Validar» del chrome manda el POST /validate de la versión abierta', async () => {
@@ -250,21 +274,37 @@ describe('F4.15 · publicar', () => {
     expect(await screen.findByText('El servidor encontró problemas.')).toBeInTheDocument()
     expect(screen.queryByText('Para publicar, validá.')).toBeNull()
 
-    await userEvent.type(screen.getByDisplayValue('Resumen'), '!')
-    expect(screen.getByText('Para publicar, guardá y validá.')).toBeInTheDocument()
+    await editar()
+    expect(screen.getByText(ESPERAR_Y_VALIDAR)).toBeInTheDocument()
     expect(screen.queryByText('El servidor encontró problemas.')).toBeNull()
   })
 
-  it('una versión publicada no ofrece validar ni explica por qué no se publica', async () => {
-    const publicado = { ...borrador, status: 'published', published_at: '2026-09-10T12:00:00Z' }
+  it('al publicar, el editor queda en SÓLO LECTURA y deja de ofrecer validar', async () => {
+    // **Era «una versión publicada no ofrece validar…»** sobre una publicada
+    // abierta de entrada. Desde el 2026-10-07 abrir el editor siempre da un
+    // borrador —lo abre o lo crea—, así que el camino real a una publicada en
+    // el editor es publicar la que se tiene abierta. Es además la prueba de que
+    // publicar INVALIDA la lista y el detalle: sin eso, el editor seguiría
+    // ofreciendo editar lo que ya está publicado.
+    let estado: 'draft' | 'published' = 'draft'
+    const layout = () => ({ ...borrador, status: estado, published_at: estado === 'draft' ? null : '2026-10-07T12:00:00Z' })
     base([
-      http.get(`${API}/admin/tenants/:id/layouts`, () => ok([publicado])),
-      http.get(`${API}/admin/layouts/:id`, () => ok({ ...detalle, layout: publicado })),
+      http.get(`${API}/admin/tenants/:id/layouts`, () => ok([layout()])),
+      http.get(`${API}/admin/layouts/:id`, () => ok({ ...detalle, layout: layout() })),
+      http.post(`${API}/admin/layouts/:id/validate`, () => ok({ valid: true, errors: [] })),
+      http.post(`${API}/admin/layouts/:id/publish`, () => {
+        estado = 'published'
+        return ok(layout())
+      }),
     ])
     montar()
     await abrir()
 
-    expect(screen.getByText(/está publicada y no se edita/)).toBeInTheDocument()
+    await userEvent.click(validarBtn())
+    await userEvent.click(await screen.findByRole('button', { name: 'Publicar' }))
+
+    expect(await screen.findByText(/Estás viendo la versión publicada: no se edita/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Editar en un borrador' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Validar' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
     expect(screen.queryByText(/^Para publicar/)).toBeNull()
@@ -286,11 +326,11 @@ describe('F4.15 · publicar', () => {
       expect(screen.getByRole('button', { name: 'Publicar' })).toBeInTheDocument(),
     )
 
-    await userEvent.type(screen.getByDisplayValue('Resumen'), '!')
+    await editar()
     expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
     // Y el veredicto viejo deja de mostrarse: era sobre otra composición.
     expect(screen.queryByText(/El servidor la dio por válida/)).toBeNull()
-    expect(screen.getByText('Para publicar, guardá y validá.')).toBeInTheDocument()
+    expect(screen.getByText(ESPERAR_Y_VALIDAR)).toBeInTheDocument()
   })
 
   it('GUARDAR después de validar también lo retira', async () => {
@@ -307,10 +347,10 @@ describe('F4.15 · publicar', () => {
       expect(screen.getByRole('button', { name: 'Publicar' })).toBeInTheDocument(),
     )
 
-    await userEvent.type(screen.getByDisplayValue('Resumen'), '!')
+    await editar()
     await userEvent.click(screen.getByRole('button', { name: 'Guardar' }))
 
-    await waitFor(() => expect(screen.queryByText(/con cambios sin guardar/)).toBeNull())
+    await screen.findByRole('button', { name: 'Guardado' })
     expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
     // **Reemplaza «todavía no vio esta composición»** · 2026-10-06: ahora es
     // la ayuda del chrome, y la barra del veredicto desaparece.
@@ -416,17 +456,21 @@ describe('F4.11 · cada problema de composición lleva a su lugar', () => {
     await userEvent.click(screen.getByText('2 problemas de composición'))
   }
 
-  it('«Ir al panel» abre el lienzo en esa pestaña con el panel elegido', async () => {
+  it('«Ir al panel» lleva el lienzo a esa pestaña con el panel elegido', async () => {
     base([http.get(`${API}/admin/layouts/:id`, () => ok(conProblemas))])
     montar()
     await abrir()
+    // Se arranca en «Resumen»: ir al panel exige cambiar también la pestaña.
+    expect(screen.getByRole('tab', { name: 'Resumen' })).toHaveAttribute('aria-selected', 'true')
     await abrirResumen()
 
     expect(screen.getByText('Marca · panel 2')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Ir al panel' }))
 
-    expect(screen.getByRole('button', { name: 'Canvas' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('combobox', { name: 'Componiendo' })).toHaveValue('1')
+    expect(screen.getByRole('button', { name: 'Editor' })).toHaveAttribute('aria-current', 'page')
+    // **Era el `<select>` «Componiendo»** · desde el 2026-10-07 las pestañas
+    // son pestañas.
+    expect(screen.getByRole('tab', { name: 'Marca' })).toHaveAttribute('aria-selected', 'true')
     const inspector = screen.getByRole('complementary', { name: 'Configuración del panel' })
     expect(inspector).toBeInTheDocument()
     // El elegido es el del problema, no el primero de la pestaña.
@@ -440,22 +484,26 @@ describe('F4.11 · cada problema de composición lleva a su lugar', () => {
     expect(celdas[0]).toHaveAttribute('aria-label', 'Indicador · —')
   })
 
-  it('«Ir a la pestaña» vuelve a contexto de edición', async () => {
+  it('«Ir a la pestaña» abre los AJUSTES de esa pestaña en el editor', async () => {
+    // **Volvía a «Contexto de edición»**, que era donde se editaban las
+    // pestañas. Desde el 2026-10-07 se ajustan en el inspector del editor, así
+    // que el problema lleva ahí, sin salir del lienzo.
     base([http.get(`${API}/admin/layouts/:id`, () => ok(conProblemas))])
     montar()
     await abrir()
 
-    // Se arranca en el lienzo: el resumen se pinta en las dos pantallas, y
-    // desde contexto «ir a contexto» no probaría nada.
-    await userEvent.click(screen.getByRole('button', { name: 'Canvas' }))
     await abrirResumen()
     await userEvent.click(screen.getByRole('button', { name: 'Ir a la pestaña' }))
 
-    expect(screen.getByRole('button', { name: 'Contexto de edición' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    )
+    expect(screen.getByRole('button', { name: 'Editor' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('tab', { name: 'Marca' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.queryByRole('complementary', { name: 'Configuración del panel' })).toBeNull()
-    expect(screen.getByDisplayValue('Marca')).toBeInTheDocument()
+    const ajustes = within(screen.getByRole('complementary', { name: 'Ajustes de la pestaña' }))
+    expect(ajustes.getByDisplayValue('Marca')).toBeInTheDocument()
+    // El problema de la pestaña se dice ahí mismo, junto al campo vacío.
+    expect(ajustes.getByPlaceholderText('¿Qué pregunta contesta esta pestaña?')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    )
   })
 })

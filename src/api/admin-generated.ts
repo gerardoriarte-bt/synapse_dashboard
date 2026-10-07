@@ -1853,6 +1853,20 @@ export interface operations {
                 "application/json": {
                     /** @example borrador-f4 */
                     version_id?: string;
+                    /**
+                     * Format: uuid
+                     * @description **De qué dashboard es el borrador** · leído en `7b717aa` el
+                     *     2026-10-07 (`ports.DDLayoutCreateRequest`, `*uuid.UUID`).
+                     *     **Omitido, el servicio usa el dashboard POR DEFECTO del
+                     *     tenant** —`resolveDashboard`, `dd_layout_builder_service.go:102`—,
+                     *     y si el tenant no tiene ninguno contesta 409. Un dashboard
+                     *     de otro tenant es 404 `NOT_FOUND_DASHBOARD`.
+                     *
+                     *     Hasta el 2026-10-07 el builder no lo mandaba, y duplicar una
+                     *     versión de un dashboard que no era el por defecto dejaba el
+                     *     borrador en el otro.
+                     */
+                    dashboard_id?: string;
                 };
             };
         };

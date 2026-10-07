@@ -6,6 +6,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
+  adoptarIds,
   agregar,
   agregarPanel,
   cambiarTipo,
@@ -301,5 +302,73 @@ describe('redimensionarPanel · el tope es el rango del TIPO', () => {
     let t = sembrar(detalle)
     for (let i = 0; i < 10; i++) t = redimensionarPanel(t, 0, 0, 'colSpan', -1, 3, 8)
     expect(t[0]?.panels[0]?.colSpan).toBe(3)
+  })
+})
+
+/** **El guardado automático deja seguir editando mientras el `PUT` viaja** ·
+ *  2026-10-07. Lo que vuelve del servidor sólo aporta los ids de lo creado; el
+ *  resto es lo local. */
+describe('adoptarIds · los ids de lo recién creado, sin perder lo editado en el medio', () => {
+  const panel = (id?: string) => ({
+    ...(id === undefined ? {} : { id }),
+    tipo: 'kpi',
+    metricId: 'm-1',
+    colStart: 1,
+    colSpan: 3,
+    rowSpan: 4,
+  })
+  const pestana = (nombre: string, id?: string, panels = [panel()]) => ({
+    ...(id === undefined ? {} : { id }),
+    nombre,
+    pregunta: '¿?',
+    orden: 1,
+    roles: [],
+    panels,
+  })
+
+  it('una pestaña nueva RENOMBRADA mientras viajaba adopta su id igual · si no, el próximo guardado la duplica', () => {
+    // **El defecto que encontró una prueba el mismo día**: la primera versión
+    // reconocía la pestaña por su nombre, y renombrarla la dejaba sin id.
+    const enviado = [pestana('Nueva')]
+    const guardado = [pestana('Nueva', 'tab-9', [panel('p-9')])]
+    const local = [pestana('Ventas')]
+    const r = adoptarIds(local, enviado, guardado)
+    expect(r[0]?.id).toBe('tab-9')
+    expect(r[0]?.nombre).toBe('Ventas')
+    expect(r[0]?.panels[0]?.id).toBe('p-9')
+  })
+
+  it('un panel nuevo cuyo TIPO cambió mientras viajaba adopta su id', () => {
+    const enviado = [pestana('A', 'tab-1', [panel()])]
+    const guardado = [pestana('A', 'tab-1', [panel('p-1')])]
+    const local = [pestana('A', 'tab-1', [{ ...panel(), tipo: 'series' }])]
+    const r = adoptarIds(local, enviado, guardado)
+    expect(r[0]?.panels[0]?.id).toBe('p-1')
+    expect(r[0]?.panels[0]?.tipo).toBe('series')
+  })
+
+  it('una pestaña agregada DESPUÉS de enviar no se lleva el id de otra', () => {
+    // Lo enviado en esa posición ya tenía id: no es la fila que el servidor creó.
+    const enviado = [pestana('A', 'tab-1')]
+    const guardado = [pestana('A', 'tab-1')]
+    const local = [pestana('Recién agregada'), pestana('A', 'tab-1')]
+    const r = adoptarIds(local, enviado, guardado)
+    expect(r[0]?.id).toBeUndefined()
+    expect(r[1]?.id).toBe('tab-1')
+  })
+
+  it('no adopta un id que ya tiene otra fila local', () => {
+    const enviado = [pestana('Nueva')]
+    const guardado = [pestana('Nueva', 'tab-1')]
+    const local = [pestana('Otra'), pestana('A', 'tab-1')]
+    const r = adoptarIds(local, enviado, guardado)
+    expect(r[0]?.id).toBeUndefined()
+  })
+
+  it('lo que ya tenía id no cambia, y lo editado se conserva', () => {
+    const enviado = [pestana('A', 'tab-1', [panel('p-1')])]
+    const guardado = [pestana('A', 'tab-1', [panel('p-1')])]
+    const local = [{ ...pestana('A editada', 'tab-1', [panel('p-1')]), pregunta: 'nueva' }]
+    expect(adoptarIds(local, enviado, guardado)).toEqual(local)
   })
 })

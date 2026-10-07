@@ -33,8 +33,12 @@ import { server } from '../../mocks/server'
 const API = '*/api/v1'
 
 const tenants = [{ id: 't-1', name: 'Under Armour México' }]
+/** `LayoutDashboard` del cable · `contracts/synapse-admin-wire.yaml`. */
+const dashboards = [
+  { id: 'd-1', tenant_id: 't-1', name: 'Overview', slug: 'overview', is_default: true, history_months: 12 },
+]
 const layouts = [
-  { id: 'l-2', tenant_id: 't-1', status: 'draft', version_id: 'v4', published_at: null },
+  { id: 'l-2', tenant_id: 't-1', dashboard_id: 'd-1', status: 'draft', version_id: 'v4', published_at: null },
 ]
 const detalle = {
   layout: layouts[0],
@@ -138,7 +142,12 @@ function base(extra: Parameters<typeof server.use> = []) {
   server.use(
     ...extra,
     http.get(`${API}/admin/tenants`, () => ok(tenants)),
+    http.get(`${API}/admin/tenants/:id/dashboards`, () => ok(dashboards)),
     http.get(`${API}/admin/tenants/:id/layouts`, () => ok(layouts)),
+    // Los pide el contenedor siempre —B6 y sus autores—, aunque estas pruebas
+    // no los miren.
+    http.get(`${API}/admin/dashboards/:id/publications`, () => ok([])),
+    http.get(`${API}/admin/tenants/:id/users`, () => ok([])),
     http.get(`${API}/admin/layouts/:id`, () => ok(detalle)),
     http.get(`${API}/admin/tenants/:id/catalog`, () => ok(metricas)),
     http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok(roles)),
@@ -162,20 +171,26 @@ function montar() {
   )
 }
 
+/** Cliente → Dashboard → Editor · 2026-10-07. El rol, si se pasa, se elige
+ *  en el paso 2, antes de abrir. */
+async function abrirEditor(rol?: string) {
+  await userEvent.click(await screen.findByRole('button', { name: /Overview/ }))
+  if (rol !== undefined) await userEvent.click(await screen.findByRole('button', { name: rol }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Abrir el editor de Overview' }))
+  await screen.findByRole('tab', { name: 'Resumen' })
+}
+
 /** **Se llega por el botón `Vista previa` del chrome** · D3 de la auditoría del
  *  2026-10-06: la pestaña «Vista previa por rol» salió del nav porque repetía el
- *  botón. La versión se elige sola —el único borrador—, pero se aprieta igual:
- *  es el camino de quien llega. */
+ *  botón. Y desde el 2026-10-07 el botón es del EDITOR: en «Dashboards» todavía
+ *  no se eligió qué previsualizar. */
 async function abrirPreview() {
-  await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
-  await screen.findByDisplayValue('Resumen')
+  await abrirEditor()
   await userEvent.click(screen.getByRole('button', { name: 'Vista previa' }))
 }
 
 /** El servicio sin versiones para el cliente · la lista vacía es la forma que
- *  `GET /admin/tenants/{id}/layouts` devuelve para un tenant recién dado de alta.
- *  **Es el único camino a «sin versión elegida» desde el 2026-10-06**: con la
- *  autoselección, un cliente con versiones nunca queda sin una. */
+ *  `GET /admin/tenants/{id}/layouts` devuelve para un dashboard recién creado. */
 const sinVersiones = http.get(`${API}/admin/tenants/:id/layouts`, () => ok([]))
 
 describe('§7.2 · como lo verá el rol seleccionado', () => {
@@ -281,7 +296,10 @@ describe('§7.2 · sin chrome de edición, y con toggle', () => {
     await screen.findByText('Como lo ve · CEO')
 
     await userEvent.click(screen.getByRole('button', { name: 'Volver a edición' }))
-    expect(await screen.findByDisplayValue('Resumen')).toBeInTheDocument()
+    // **Al EDITOR**, que es de donde se vino · 2026-10-07. Volvía a «Contexto de
+    // edición», que desde ese día es la elección del dashboard.
+    expect(await screen.findByRole('tab', { name: 'Resumen' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Editor' })).toHaveAttribute('aria-current', 'page')
   })
 })
 
@@ -338,14 +356,29 @@ describe('la grilla volvió · B4.9 llegó el 2026-09-28', () => {
 })
 
 describe('los estados de B5', () => {
-  it('sin versión NO se ofrece la vista previa · no hay nada que previsualizar', async () => {
-    // **Cambió el 2026-10-06** (pedido humano). Antes el botón llevaba a B5 y B5
-    // decía «Elegí una versión…»: una entrada que sólo sirve para salir. Ahora,
-    // sin versión, el botón no está. La rama de B5 sin versión queda como
-    // defensa y ya no se alcanza desde la superficie.
+  it('en «Dashboards» NO se ofrece la vista previa · es del editor', async () => {
+    // **Cambió dos veces.** El 2026-10-06 dejó de ofrecerse sin versión —una
+    // entrada que sólo sirve para salir—. El 2026-10-07 dejó de ofrecerse en
+    // «Dashboards» del todo, con versión o sin ella: ahí todavía no se eligió
+    // qué editar, y guardar, validar y previsualizar son del editor.
+    base()
+    montar()
+    await userEvent.click(await screen.findByRole('button', { name: /Overview/ }))
+    await screen.findByRole('button', { name: 'Abrir el editor de Overview' })
+    expect(screen.queryByRole('button', { name: 'Vista previa' })).toBeNull()
+
+    // Y en el editor, sí: que la diferencia sea la pantalla y no la versión.
+    await userEvent.click(screen.getByRole('button', { name: 'Abrir el editor de Overview' }))
+    expect(await screen.findByRole('button', { name: 'Vista previa' })).toBeInTheDocument()
+  })
+
+  it('un dashboard sin versiones dice qué va a pasar, y no ofrece la vista previa', async () => {
     base([sinVersiones])
     montar()
-    await screen.findByText('Este cliente todavía no tiene versiones. Creá el primer borrador para empezar a componer.')
+    await userEvent.click(await screen.findByRole('button', { name: /Overview/ }))
+    expect(
+      await screen.findByText('Todavía no se compuso. Se va a crear su primer borrador, vacío.'),
+    ).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Vista previa' })).toBeNull()
   })
 
@@ -366,9 +399,12 @@ describe('los estados de B5', () => {
     expect(
       await screen.findByText('Este cliente todavía no tiene roles. Se definen en su ficha, en administración.'),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Ir a contexto de edición' })).toBeInTheDocument()
     // Sin rol no hay de quién previsualizar: no se pide nada.
     expect(pedidos).toEqual([])
+    // **La salida DISPARA** y lleva al editor · B5 no tiene chrome, así que sin
+    // este botón el vacío no tendría salida.
+    await userEvent.click(screen.getByRole('button', { name: 'Volver' }))
+    expect(await screen.findByRole('tab', { name: 'Resumen' })).toBeInTheDocument()
   })
 
   it('un 404 dice que el fork no está desplegado', async () => {
@@ -407,18 +443,23 @@ describe('B5 no tiene chrome · su vacío lleva salida propia · 2026-09-25', ()
    *  **Casi se reporta mal**: la primera medición cayó durante una recarga de
    *  Vite. Se repitió desde una carga limpia antes de afirmarlo.
    */
-  it('entrar al preview CON versión y volver deja a B1 donde estaba', async () => {
-    // **Era «entrar SIN versión deja salida»**, y ese camino ya no existe desde
-    // el 2026-10-06: sin versión no se ofrece la vista previa. Lo que la prueba
-    // cuidaba —que el botón de vuelta LLEVE, pasando por el spread condicional
-    // del contenedor— se sostiene con versión.
-    base()
+  it('entrar al preview y volver deja el EDITOR donde estaba, con lo no guardado', async () => {
+    // **Era «… deja a B1 donde estaba»**: B5 volvía a «Contexto de edición».
+    // Desde el 2026-10-07 vuelve al editor, y lo que tiene que sobrevivir el
+    // viaje es el borrador local. El PUT queda en vuelo a propósito: así el
+    // guardado automático no reemplaza lo escrito por la respuesta.
+    base([http.put(`${API}/admin/layouts/:id`, () => new Promise<never>(() => {}))])
     montar()
-    await abrirPreview()
-    await userEvent.click(screen.getByRole('button', { name: 'Volver a edición' }))
-    expect(
-      await screen.findByRole('heading', { name: '¿Sobre qué se va a componer?' }),
-    ).toBeInTheDocument()
+    await abrirEditor()
+    await userEvent.click(screen.getByRole('button', { name: 'Ajustes de la pestaña' }))
+    const insp = within(await screen.findByRole('complementary', { name: 'Ajustes de la pestaña' }))
+    await userEvent.type(insp.getByDisplayValue('Resumen'), '!')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Vista previa' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Volver a edición' }))
+
+    expect(await screen.findByRole('tab', { name: 'Resumen!' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.queryByRole('heading', { name: '¿Sobre qué se va a componer?' })).toBeNull()
   })
 })
 
@@ -426,12 +467,13 @@ describe('B5 se abre desde el chrome · D3 de la auditoría del 2026-10-06', () 
   it('«Vista previa por rol» NO está en el nav, y el botón «Vista previa» lleva a B5', async () => {
     base()
     montar()
-    await screen.findByDisplayValue('Resumen')
+    await abrirEditor()
 
     const nav = within(screen.getByRole('navigation', { name: 'Builder' }))
     expect(nav.queryByRole('button', { name: 'Vista previa por rol' })).toBeNull()
     // Las tres que SÍ se navegan, para que un nav vacío no pase por «no está».
-    for (const nombre of ['Contexto de edición', 'Canvas', 'Historial de versiones']) {
+    // «Dashboards» y «Editor» desde el 2026-10-07 · D1 y D5.
+    for (const nombre of ['Dashboards', 'Editor', 'Historial de versiones']) {
       expect(nav.getByRole('button', { name: nombre })).toBeInTheDocument()
     }
 
@@ -452,8 +494,10 @@ describe('B5 se abre desde el chrome · D3 de la auditoría del 2026-10-06', () 
       }),
     ])
     montar()
-    await screen.findByDisplayValue('Resumen')
-    expect(screen.getByRole('button', { name: 'Todos los roles' })).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(await screen.findByRole('button', { name: /Overview/ }))
+    expect(await screen.findByRole('button', { name: 'Todos los roles' })).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(screen.getByRole('button', { name: 'Abrir el editor de Overview' }))
+    await screen.findByRole('tab', { name: 'Resumen' })
 
     await userEvent.click(screen.getByRole('button', { name: 'Vista previa' }))
     await screen.findByText('Como lo ve · CEO')
@@ -462,7 +506,7 @@ describe('B5 se abre desde el chrome · D3 de la auditoría del 2026-10-06', () 
     expect(screen.getByLabelText('Rol')).toHaveValue('r-ceo')
   })
 
-  it('elegir un rol en B1 hace que la vista previa pida ESE rol', async () => {
+  it('elegir un rol en el paso 2 de «Dashboards» hace que la vista previa pida ESE rol', async () => {
     const pedidos: string[] = []
     base([
       http.get(`${API}/admin/layouts/:id/preview`, ({ request }) => {
@@ -472,9 +516,11 @@ describe('B5 se abre desde el chrome · D3 de la auditoría del 2026-10-06', () 
       }),
     ])
     montar()
-    await screen.findByDisplayValue('Resumen')
-    await userEvent.click(screen.getByRole('button', { name: 'Planner' }))
+    await userEvent.click(await screen.findByRole('button', { name: /Overview/ }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Planner' }))
     expect(screen.getByRole('button', { name: 'Planner' })).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(screen.getByRole('button', { name: 'Abrir el editor de Overview' }))
+    await screen.findByRole('tab', { name: 'Resumen' })
 
     await userEvent.click(screen.getByRole('button', { name: 'Vista previa' }))
 

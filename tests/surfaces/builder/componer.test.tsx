@@ -1,23 +1,21 @@
 // @vitest-environment jsdom
 
-/** «Componer ‹pestaña›» · el punto de entrada de B1 al canvas · 2026-09-16
+/** Abrir el editor componiendo la pestaña elegida · 2026-09-16, rehecho el 2026-10-07
  *
  *  ── POR QUÉ EXISTE ──────────────────────────────────────────────────────────
  *
- *  La nota de B1 en el `.pen` lo llama «el punto de entrada del builder», y cada
- *  pestaña lleva su CTA con el rótulo **`AL ENTRAR SE ABRE B2 CON ESTE
- *  CONTEXTO`**. No lo teníamos: había que elegir versión y después acordarse de
- *  ir a «Canvas» por la navegación. Quien no hacía las dos cosas veía «Elegí una
- *  versión…» y concluía que el canvas no estaba construido — que es exactamente
- *  lo que pasó al revisar el diseño contra lo hecho.
+ *  La nota de B1 en el `.pen` lo llama «el punto de entrada del builder». Hasta
+ *  el 2026-10-07 era un CTA «Componer ‹pestaña›» por pestaña en B1; con la
+ *  reorganización Cliente → Dashboard → Editor
+ *  (`docs/AUDITORIA-2026-10-07-flujo-de-edicion.md`, D1) B1 elige el
+ *  dashboard y **las pestañas viven en el editor, como pestañas**.
  *
  *  ── LO QUE SE AFIRMA ────────────────────────────────────────────────────────
  *
- *  **Que el gesto haga las DOS cosas.** Cambiar de pantalla sin fijar la pestaña
- *  deja el canvas componiendo otra, y fijar la pestaña sin cambiar de pantalla
- *  no lleva a ningún lado. Cada mitad por separado se ve bien y no resuelve
- *  nada, así que la prueba las mira juntas: se aprieta en la SEGUNDA pestaña y
- *  el canvas tiene que abrir con esa.
+ *  **Que el gesto haga las DOS cosas**, igual que antes: elegir la pestaña tiene
+ *  que marcarla Y cambiar lo que pinta el lienzo. Cada mitad por separado se ve
+ *  bien y no resuelve nada, así que la prueba las mira juntas: se aprieta la
+ *  SEGUNDA pestaña y el lienzo tiene que pintar sus paneles.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, within } from '@testing-library/react'
@@ -31,7 +29,14 @@ import { server } from '../../mocks/server'
 
 const API = '*/api/v1'
 
-const version = { id: 'l-2', tenant_id: 't-1', status: 'draft', version_id: 'v4', published_at: null }
+const version = {
+  id: 'l-2', tenant_id: 't-1', dashboard_id: 'd-1', status: 'draft', version_id: 'v4', published_at: null,
+}
+
+/** `LayoutDashboard` del cable. */
+const dashboard = {
+  id: 'd-1', tenant_id: 't-1', name: 'Overview', slug: 'overview', is_default: true, history_months: 12,
+}
 
 /** Dos pestañas con distinta cantidad de paneles · del cable, en PascalCase. */
 const panel = (n: number, tab: string) => ({
@@ -57,6 +62,10 @@ function servir() {
   server.use(
     http.get(`${API}/admin/tenants`, () => ok([{ id: 't-1', name: 'Under Armour México' }])),
     http.get(`${API}/admin/tenants/:id/layouts`, () => ok([version])),
+    http.get(`${API}/admin/tenants/:id/dashboards`, () => ok([dashboard])),
+    http.get(`${API}/admin/dashboards/:id/publications`, () => ok([])),
+    http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([])),
+    http.get(`${API}/admin/tenants/:id/users`, () => ok([])),
     http.get(`${API}/admin/layouts/:id`, () => ok(detalle)),
     http.get(`${API}/admin/tenants/:id/catalog`, () =>
       ok([
@@ -90,32 +99,44 @@ function montar() {
   )
 }
 
-describe('B1 abre el canvas con la pestaña elegida', () => {
-  it('hay un CTA por pestaña, con su nombre', async () => {
+/** Dashboards → «Overview» → «Abrir el editor de Overview». */
+async function abrirEditor() {
+  await userEvent.click(await screen.findByRole('button', { name: /Overview/ }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Abrir el editor de Overview' }))
+  return screen.findByRole('grid', { name: 'Lienzo de composición' })
+}
+
+describe('el editor compone la pestaña elegida', () => {
+  it('hay una pestaña por cada una del dashboard, con su nombre y en orden', async () => {
     servir()
     montar()
-    await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
+    await abrirEditor()
 
-    // **Sin conteo en el CTA**: la fila ya lo declara y el `.pen` dice
-    // `COMPONER ECOMMERCE OVERVIEW` a secas. Uno por pestaña, con su nombre.
-    expect(await screen.findByRole('button', { name: 'Componer Resumen' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Componer Detalle' })).toBeInTheDocument()
+    const pestanas = within(screen.getByRole('tablist', { name: 'Pestañas del dashboard' })).getAllByRole('tab')
+    expect(pestanas.map((t) => t.textContent)).toEqual(['Resumen', 'Detalle'])
+    // Abre en la primera.
+    expect(pestanas[0]).toHaveAttribute('aria-selected', 'true')
   })
 
-  it('apretar en la SEGUNDA pestaña abre el canvas componiendo ESA', async () => {
+  it('apretar la SEGUNDA pestaña compone ESA', async () => {
     servir()
     montar()
-    await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
-    await userEvent.click(await screen.findByRole('button', { name: /Componer Detalle/ }))
+    const lienzo = await abrirEditor()
 
-    // Cambió de pantalla… · desde el 2026-10-06 el lienzo ya no rotula «Grilla
-    // 12»; se lo encuentra por su rol, que es lo que no cambia con el copy.
-    const lienzo = await screen.findByRole('grid', { name: 'Lienzo de composición' })
-    expect(screen.getByRole('button', { name: 'Canvas' })).toHaveAttribute('aria-current', 'page')
-    // …y compone la SEGUNDA. Sin fijar la pestaña esto abriría «Resumen» y la
-    // pantalla se vería igual de bien.
-    expect(screen.getByRole('combobox', { name: /Componiendo/i })).toHaveValue('1')
-    // Y el lienzo pinta SUS paneles —dos—, no el único de «Resumen».
-    expect(within(lienzo).getAllByRole('gridcell', { name: /^Indicador · / })).toHaveLength(2)
+    // Se llegó al editor…
+    expect(screen.getByRole('button', { name: 'Editor' })).toHaveAttribute('aria-current', 'page')
+    expect(within(lienzo).getAllByRole('gridcell', { name: /^Indicador · / })).toHaveLength(1)
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Detalle' }))
+
+    // …la pestaña queda marcada…
+    expect(screen.getByRole('tab', { name: 'Detalle' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: 'Resumen' })).toHaveAttribute('aria-selected', 'false')
+    // …y el lienzo pinta SUS paneles —dos—, no el único de «Resumen».
+    expect(
+      within(screen.getByRole('grid', { name: 'Lienzo de composición' })).getAllByRole('gridcell', {
+        name: /^Indicador · /,
+      }),
+    ).toHaveLength(2)
   })
 })

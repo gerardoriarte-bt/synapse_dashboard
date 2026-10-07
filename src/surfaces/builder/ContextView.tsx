@@ -1,170 +1,226 @@
-/** B1 · Selector de contexto de edición · F4.7 · reescrita el 2026-10-06
+/** B1 · Dashboards del cliente · el primer nivel del builder · 2026-10-07
  *
- *  §7.2: «Elegir **tenant y rol**. Muestra qué pestañas existen, cuáles heredan
- *  de la **plantilla de vertical** y cuáles tienen **override**. Punto de entrada
- *  de todo el builder.»
+ *  §7.2: «Elegir **tenant y rol**. Muestra qué pestañas existen … Punto de
+ *  entrada de todo el builder.»
  *
- *  ── POR QUÉ SE REESCRIBIÓ ───────────────────────────────────────────────────
+ *  ── POR QUÉ SE REORGANIZÓ ───────────────────────────────────────────────────
  *
- *  `docs/AUDITORIA-2026-10-06-builder-contexto-y-canvas.md` · D2, decidido por
- *  el humano: «hay que completarla como debe quedar». Hasta hoy esta pantalla
- *  eran cinco apiladas —contexto, editor de pestañas, binder, selector de
- *  gráfico y el ciclo de publicar— en unas cinco alturas de scroll, y todo su
- *  texto vestía el mismo mono de 10 en mayúsculas, se tocara o no.
+ *  `docs/AUDITORIA-2026-10-07-flujo-de-edicion.md`. El builder estaba armado por
+ *  VERSIONES —«Borrador v4», «Publicada v3»— y quien compone piensa en
+ *  DASHBOARDS: la lista mezclaba los de todos los dashboards del cliente sin
+ *  decir de cuál era cada una, no había cómo crear uno, y el lienzo era el
+ *  segundo paso de una pantalla de formulario.
  *
- *  Ahora es lo que el `.pen` dibuja: una pantalla de **decisión** —cliente,
- *  rol, versión— que termina en `COMPONER ‹pestaña›`. Configurar un panel se
- *  mudó al inspector del canvas, que es donde el panel está a la vista.
+ *  Decisión humana del mismo día (D1): «debe ser entendible el proceso
+ *  Cliente → Dashboard → Editor», con la elección de rol y el guardado claros. Y
+ *  sobre el rol (D3): «en el dashboard, pero de una manera más clara y
+ *  progresiva». De ahí los tres pasos, que se van abriendo:
  *
- *  ── EL ROL ES UN FILTRO, Y SE VE QUE LO ES ──────────────────────────────────
+ *    1 · Dashboard  →  2 · Rol  →  3 · Abrir el editor
  *
- *  D5: «debería funcionar como un filtro para poder seleccionar y editar los
- *  dashboards por cada rol». El `.pen` lo dice igual —«EL ROL DEFINE QUÉ
- *  PESTAÑAS SE EDITAN»— y hasta hoy el selector se movía sin cambiar nada en
- *  la pantalla. Ahora filtra la lista de pestañas, y cada pestaña dice quién la
- *  ve y deja cambiarlo.
+ *  El cliente se elige antes, en la cabecera · `SelectorDeCliente`.
  *
- *  **Lo que el `.pen` pide y sigue sin poderse pintar** es la proporción entre
- *  paneles heredados y propios: ningún contrato declara herencia —ni vertical,
- *  ni plantilla, ni override—. Ya no se anuncia en pantalla: era una nota del
- *  plan, no del producto.
+ *  **Las versiones salieron del camino principal.** El editor abre el borrador
+ *  del dashboard, o crea uno a partir de lo publicado, y lo dice antes de
+ *  apretar. Las versiones siguen en «Historial de versiones».
+ *
+ *  **La pregunta del `.pen` se conserva** —«¿Sobre qué se va a componer?»—: el
+ *  dibujo de B1 es exactamente esta decisión. Lo que cambió es qué se elige.
  *
  *  **§PEN:B1** · B1 · «Selector de contexto».
  */
+import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
-import { Opcion } from '../../render/primitives/Opcion'
 import { Accion } from '../../render/primitives/Accion'
-import type { EstadoDeLayout, LayoutVersion } from '../../api/admin'
+import { Opcion } from '../../render/primitives/Opcion'
 
-/** El estado en palabras de producto · el cable dice `publicado` en minúscula,
- *  que se pintaba tal cual dentro de un rótulo. */
-const ESTADO: Readonly<Record<EstadoDeLayout, string>> = {
-  borrador: 'Borrador',
-  publicado: 'Publicada',
-  archivado: 'Archivada',
+export type DashboardEnLista = {
+  id: string
+  nombre: string
+  porDefecto: boolean
+  /** En palabras · «Publicado v3 · 10 sep 2026», «Borrador sin publicar»,
+   *  «Todavía no se compuso» (literal de C6). */
+  estado: string
 }
 
 type Props = {
+  dashboards: readonly DashboardEnLista[]
+  /** `true` mientras la lista no llegó: no se dice «no hay» antes de saberlo. */
+  cargando: boolean
+  elegido: string | null
+  onElegir: (id: string) => void
+  onCrear: (nombre: string) => void
+  creando: boolean
+  errorAlCrear: string | null
+
   roles: readonly { id: string; nombre: string }[]
   /** `null` es «todos los roles»: el filtro apagado. */
   rolActivo: string | null
   onRol: (id: string | null) => void
-  versiones: readonly LayoutVersion[]
-  versionActiva: string | null
-  onVersion: (id: string) => void
-  /** La fecha de publicación, ya formateada con el locale de quien mira. */
-  fecha: (iso: string) => string
-  /** **Crear el primer borrador** · 2026-10-06. Sin versiones la pantalla lo
-   *  decía y no ofrecía salida, con un comentario prometiendo «la salida es
-   *  concreta». Decisión humana: ofrecerlo, y que nazca con su versión. */
-  onCrearBorrador: () => void
-  creando: boolean
-  /** Por qué no se pudo crear · `null` si no falló. */
-  errorAlCrear: string | null
-  /** Las pestañas de la versión elegida · `TabEditor`. Va como `children`: B1
-   *  es dueña del contexto, y el borrador es del contenedor, que lo guarda. */
-  children?: React.ReactNode
+
+  /** Qué va a pasar al abrir, dicho antes de apretar. */
+  queVaAPasar: string
+  onAbrir: () => void
+  abriendo: boolean
+  errorAlAbrir: string | null
+}
+
+function Paso({ n, titulo, children }: { n: number; titulo: string; children: React.ReactNode }) {
+  return (
+    <section className="flex flex-col gap-3" aria-label={`Paso ${String(n)} · ${titulo}`}>
+      <div className="flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          className="inline-flex size-6 items-center justify-center rounded-full border border-w5 font-body text-celda font-semibold text-ink"
+        >
+          {n}
+        </span>
+        <span className="font-display text-titulo leading-titulo tracking-titulo font-medium text-ink">
+          {titulo}
+        </span>
+      </div>
+      <div className="flex flex-col gap-3 pl-9">{children}</div>
+    </section>
+  )
 }
 
 export function ContextView({
+  dashboards,
+  cargando,
+  elegido,
+  onElegir,
+  onCrear,
+  creando,
+  errorAlCrear,
   roles,
   rolActivo,
   onRol,
-  versiones,
-  versionActiva,
-  onVersion,
-  fecha,
-  onCrearBorrador,
-  creando,
-  errorAlCrear,
-  children,
+  queVaAPasar,
+  onAbrir,
+  abriendo,
+  errorAlAbrir,
 }: Props) {
+  const [creandoNombre, setCreandoNombre] = useState<string | null>(null)
   const nombreDelRol = roles.find((r) => r.id === rolActivo)?.nombre ?? null
+  const dashboard = dashboards.find((d) => d.id === elegido) ?? null
+
+  const crear = () => {
+    if (creandoNombre === null || creandoNombre.trim() === '') return
+    onCrear(creandoNombre.trim())
+    setCreandoNombre(null)
+  }
 
   return (
     <div className="flex flex-col gap-8 max-w-5xl">
       <header className="flex flex-col gap-2">
-        <Label as="div">Contexto de edición</Label>
-        {/* El literal del `.pen`. 26px en el dibujo; la escala no lo emite y
-            `titulo-lg` es el más cercano · mismo criterio que la propuesta del
-            2026-09-22 sobre los tamaños que la escala no tiene. */}
+        <Label as="div">Dashboards</Label>
         <h1 className="font-display text-titulo-lg leading-titulo tracking-titulo font-medium text-ink m-0">
           ¿Sobre qué se va a componer?
         </h1>
         <Ayuda>
-          El cliente de la cabecera define el catálogo de métricas. El rol define qué pestañas se ven y se editan.
+          Elegí el dashboard del cliente de la cabecera, después para qué rol lo vas a editar, y abrí el
+          editor.
         </Ayuda>
       </header>
 
-      {/* **El cliente se elige en la cabecera** · 2026-10-06. Estaba acá y,
-          como texto, también arriba: dos lugares con el mismo rótulo, uno que
-          se tocaba y otro que no. Ahora hay uno solo, destacado, y es el mismo
-          que usa administración · `SelectorDeCliente`. */}
-
-      <section className="flex flex-col gap-3" aria-labelledby="builder-rol">
-        <Label id="builder-rol" as="div">
-          Rol
-        </Label>
-        {roles.length === 0 ? (
-          // No es un error: es un cliente al que todavía no le definieron roles,
-          // y la salida está en otra superficie.
-          <Ayuda>Este cliente todavía no tiene roles. Se definen en su ficha, en administración.</Ayuda>
+      <Paso n={1} titulo="Dashboard">
+        {cargando ? (
+          <Ayuda>Trayendo los dashboards…</Ayuda>
+        ) : dashboards.length === 0 ? (
+          <Ayuda>Este cliente todavía no tiene dashboards. Creá el primero.</Ayuda>
         ) : (
-          <>
-            <div className="flex flex-wrap gap-2" role="group" aria-labelledby="builder-rol">
-              <Opcion elegida={rolActivo === null} onClick={() => onRol(null)}>
-                Todos los roles
-              </Opcion>
-              {roles.map((r) => (
-                <Opcion key={r.id} elegida={r.id === rolActivo} onClick={() => onRol(r.id)}>
-                  {r.nombre}
-                </Opcion>
-              ))}
-            </div>
-            <Ayuda>
-              {nombreDelRol === null
-                ? 'Se muestran todas las pestañas. Elegí un rol para ver y editar sólo las que ese rol ve.'
-                : `Se muestran las pestañas que ve ${nombreDelRol}. Las pestañas nuevas se crean para este rol.`}
-            </Ayuda>
-          </>
-        )}
-      </section>
-
-      <section className="flex flex-col gap-3" aria-labelledby="builder-version">
-        <Label id="builder-version" as="div">
-          Versión
-        </Label>
-        {versiones.length === 0 ? (
-          // §8: el vacío invita a actuar. Y acá la salida es concreta.
-          <div className="flex flex-col items-start gap-3">
-            <Ayuda>Este cliente todavía no tiene versiones. Creá el primer borrador para empezar a componer.</Ayuda>
-            <Accion variante="primaria" onClick={onCrearBorrador} deshabilitada={creando}>
-              {creando ? 'Creando…' : 'Crear el primer borrador'}
-            </Accion>
-            {errorAlCrear !== null && <Ayuda>{errorAlCrear}</Ayuda>}
-          </div>
-        ) : (
-          <ul className="flex flex-wrap gap-2 m-0 p-0 list-none">
-            {versiones.map((v) => (
-              <li key={v.id}>
-                <Opcion elegida={v.id === versionActiva} onClick={() => onVersion(v.id)}>
-                  {/* **El estado va primero y sin color.** §2: lo que distingue
-                      un borrador de una versión publicada es la palabra. */}
-                  <span>{`${ESTADO[v.estado]} ${v.versionId}`}</span>
-                  <Label>
-                    {/* Un borrador no tiene fecha de publicación, y poner la de
-                        creación diría que se publicó cuando no. */}
-                    {v.publicadoEn === null ? 'Sin publicar' : fecha(v.publicadoEn)}
-                  </Label>
+          <ul className="grid grid-cols-2 gap-3 m-0 p-0 list-none">
+            {dashboards.map((d) => (
+              <li key={d.id}>
+                <Opcion forma="fila" elegida={d.id === elegido} onClick={() => onElegir(d.id)}>
+                  <span className="flex flex-col gap-1">
+                    <span className="flex items-center gap-2">
+                      <span className="font-display text-titulo leading-titulo tracking-titulo">{d.nombre}</span>
+                      {d.porDefecto && <Label>Por defecto</Label>}
+                    </span>
+                    <Label>{d.estado}</Label>
+                  </span>
                 </Opcion>
               </li>
             ))}
           </ul>
         )}
-      </section>
 
-      {children}
+        {creandoNombre === null ? (
+          <div>
+            <Accion onClick={() => setCreandoNombre('')} deshabilitada={creando}>
+              {creando ? 'Creando…' : 'Nuevo dashboard'}
+            </Accion>
+          </div>
+        ) : (
+          <form
+            className="flex flex-wrap items-center gap-2"
+            onSubmit={(e) => {
+              e.preventDefault()
+              crear()
+            }}
+          >
+            <input
+              type="text"
+              aria-label="Nombre del dashboard nuevo"
+              // Se abrió para escribir · visto en pantalla el 2026-10-07: sin
+              // foco, lo tipeado no iba a ningún lado.
+              // eslint-disable-next-line jsx-a11y/no-autofocus
+              autoFocus
+              placeholder="Nombre del dashboard"
+              value={creandoNombre}
+              onChange={(e) => setCreandoNombre(e.target.value)}
+              className="h-8 w-72 bg-w1 text-ink text-cuerpo rounded-md px-3 border border-w5"
+            />
+            <Accion tipo="submit" variante="primaria" deshabilitada={creandoNombre.trim() === ''}>
+              Crear dashboard
+            </Accion>
+            <Accion onClick={() => setCreandoNombre(null)}>Cancelar</Accion>
+          </form>
+        )}
+        {errorAlCrear !== null && <Ayuda>{errorAlCrear}</Ayuda>}
+      </Paso>
+
+      {/* **Progresivo** · D3. El rol se pregunta recién con un dashboard
+          elegido: antes no hay qué filtrar. */}
+      {dashboard !== null && (
+        <Paso n={2} titulo="Rol">
+          {roles.length === 0 ? (
+            <Ayuda>Este cliente todavía no tiene roles. Se definen en su ficha, en administración.</Ayuda>
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Rol">
+                <Opcion elegida={rolActivo === null} onClick={() => onRol(null)}>
+                  Todos los roles
+                </Opcion>
+                {roles.map((r) => (
+                  <Opcion key={r.id} elegida={r.id === rolActivo} onClick={() => onRol(r.id)}>
+                    {r.nombre}
+                  </Opcion>
+                ))}
+              </div>
+              <Ayuda>
+                {nombreDelRol === null
+                  ? 'Vas a ver y editar todas las pestañas del dashboard.'
+                  : `Vas a ver y editar sólo las pestañas que ve ${nombreDelRol}. Las que agregues, las va a ver ${nombreDelRol}.`}
+              </Ayuda>
+            </>
+          )}
+        </Paso>
+      )}
+
+      {dashboard !== null && (
+        <Paso n={3} titulo="Editor">
+          <Ayuda>{queVaAPasar}</Ayuda>
+          <div>
+            <Accion variante="primaria" onClick={onAbrir} deshabilitada={abriendo}>
+              {abriendo ? 'Abriendo…' : `Abrir el editor de ${dashboard.nombre}`}
+            </Accion>
+          </div>
+          {errorAlAbrir !== null && <Ayuda>{errorAlAbrir}</Ayuda>}
+        </Paso>
+      )}
     </div>
   )
 }

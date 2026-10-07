@@ -9,7 +9,8 @@
  *
  *  **Desde el 2026-10-06 es el inspector del canvas** (D1 de
  *  `docs/AUDITORIA-2026-10-06-builder-contexto-y-canvas.md`): las pruebas llegan
- *  por «Componer», eligen el panel en el lienzo y miran dentro del inspector.
+ *  al editor —desde el 2026-10-07 por «Dashboards» y «Abrir el editor»—, eligen
+ *  el panel en el lienzo y miran dentro del inspector.
  *
  *  Los fixtures salen de los dos cables: `BlockRule` de
  *  `synapse-console-wire.yaml` —snake_case, `accepted_shapes` en inglés— y
@@ -30,7 +31,12 @@ const API = '*/api/v1'
 
 const tenants = [{ id: 't-1', name: 'Under Armour México' }]
 const versiones = [
-  { id: 'l-2', tenant_id: 't-1', status: 'draft', version_id: 'v4', published_at: null },
+  { id: 'l-2', tenant_id: 't-1', dashboard_id: 'd-1', status: 'draft', version_id: 'v4', published_at: null },
+]
+
+/** `LayoutDashboard` del cable · desde el 2026-10-07 el builder entra por acá. */
+const dashboards = [
+  { id: 'd-1', tenant_id: 't-1', name: 'Overview', slug: 'overview', is_default: true, history_months: 12 },
 ]
 
 const detalle = {
@@ -126,6 +132,12 @@ function servir() {
   server.use(
     http.get(`${API}/admin/tenants`, () => ok(tenants)),
     http.get(`${API}/admin/tenants/:id/layouts`, () => ok(versiones)),
+    http.get(`${API}/admin/tenants/:id/dashboards`, () => ok(dashboards)),
+    // Con `dashboard_id` en la versión el editor ya sabe de qué dashboard es, y
+    // el historial, los roles y los usuarios se piden igual · se sirven vacíos.
+    http.get(`${API}/admin/dashboards/:id/publications`, () => ok([])),
+    http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([])),
+    http.get(`${API}/admin/tenants/:id/users`, () => ok([])),
     http.get(`${API}/admin/tenants/:id/catalog`, () => ok(metricas)),
     http.get(`${API}/admin/layouts/:id`, () => ok(detalle)),
     http.get(`${API}/config/blocks`, () => ok(bloques)),
@@ -149,11 +161,14 @@ function montar() {
 
 /** **Desde el 2026-10-06 el configurador es el inspector del canvas** · D1 y
  *  D2 de `docs/AUDITORIA-2026-10-06-builder-contexto-y-canvas.md`. B1 ya no
- *  lista paneles ni configura: se llega por «Componer», se elige el panel en el
+ *  lista paneles ni configura: se llega al editor, se elige el panel en el
  *  lienzo y se abre el inspector. La versión se elige sola —el primer borrador—,
  *  así que no hace falta tocarla. */
 async function componer() {
-  await userEvent.click(await screen.findByRole('button', { name: 'Componer Resumen' }))
+  // **Desde el 2026-10-07 se entra por «Dashboards»** · Cliente → Dashboard →
+  // Editor: se elige el dashboard y se abre su editor, que abre el borrador.
+  await userEvent.click(await screen.findByRole('button', { name: /Overview/ }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Abrir el editor de Overview' }))
   await screen.findByRole('grid', { name: 'Lienzo de composición' })
 }
 
@@ -403,12 +418,21 @@ describe('agregar y quitar paneles', () => {
     montar()
     await abrirPanel()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Contexto de edición' }))
-    await userEvent.click(await screen.findByRole('button', { name: 'Agregar pestaña' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Quitar Resumen' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Canvas' }))
+    // Desde el 2026-10-07 las pestañas se agregan y se quitan en el editor, y
+    // abrir los ajustes de una pestaña cierra el panel elegido: lo que se
+    // verifica es que quitar «Resumen» con su panel abierto antes no deje el
+    // configurador leyendo un hueco.
+    await userEvent.click(screen.getByRole('button', { name: 'Agregar una pestaña' }))
+    await userEvent.click(screen.getByRole('tab', { name: 'Resumen' }))
+    await userEvent.click(screen.getByRole('tab', { name: 'Resumen' }))
+    await userEvent.click(
+      within(screen.getByRole('complementary', { name: 'Ajustes de la pestaña' })).getByRole('button', {
+        name: 'Quitar Resumen',
+      }),
+    )
 
-    await screen.findByRole('grid', { name: 'Lienzo de composición' })
+    await waitFor(() => expect(screen.queryByRole('tab', { name: 'Resumen' })).toBeNull())
+    expect(screen.getByRole('tab', { name: 'Pestaña nueva' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.queryByRole('complementary', { name: INSPECTOR })).toBeNull()
     expect(screen.queryByLabelText('Tipo de panel')).toBeNull()
   })
@@ -579,7 +603,7 @@ describe('§7.2 · editar las opciones del panel', () => {
     expect(no()).toHaveAttribute('aria-pressed', 'false')
     expect(porDefecto()).toHaveAttribute('aria-pressed', 'false')
     // Y escribirlo ensucia el borrador: el valor llegó al borrador, no al botón.
-    expect(screen.getByText('1 pestaña con cambios sin guardar')).toBeInTheDocument()
+    expect(screen.getByText('1 pestaña con cambios · se guarda solo en unos segundos')).toBeInTheDocument()
 
     await userEvent.click(no())
     await waitFor(() => expect(no()).toHaveAttribute('aria-pressed', 'true'))
@@ -590,7 +614,7 @@ describe('§7.2 · editar las opciones del panel', () => {
     // Borrarlo devuelve el borrador a la semilla: `undefined` quita la clave, no
     // deja un `opciones: {}` colgado.
     await waitFor(() =>
-      expect(screen.queryByText(/con cambios sin guardar/)).toBeNull(),
+      expect(screen.queryByText(/con cambios · se guarda solo/)).toBeNull(),
     )
   })
 
@@ -603,7 +627,7 @@ describe('§7.2 · editar las opciones del panel', () => {
     const orden = await inspector().findByLabelText<HTMLSelectElement>('orden')
 
     await userEvent.selectOptions(orden, 'asc')
-    expect(screen.getByText('1 pestaña con cambios sin guardar')).toBeInTheDocument()
+    expect(screen.getByText('1 pestaña con cambios · se guarda solo en unos segundos')).toBeInTheDocument()
 
     await userEvent.selectOptions(inspector().getByLabelText('orden'), '')
     // Sigue sucio porque el TIPO cambió; lo que se verifica es que la opción se
@@ -659,9 +683,10 @@ describe('§F4.11 · el resumen dice dónde y que NO decide', () => {
     expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
     expect(screen.getByText('Para publicar, validá.')).toBeInTheDocument()
 
-    // Con cambios, primero hay que guardar.
+    // Con cambios, primero tiene que guardarse · desde el 2026-10-07 se guarda
+    // solo, y el chrome lo dice así.
     await userEvent.selectOptions(inspector().getByLabelText('Tipo de panel'), 'series')
-    expect(await screen.findByText('Para publicar, guardá y validá.')).toBeInTheDocument()
+    expect(await screen.findByText('Para publicar, esperá a que se guarde y validá.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
   })
 
@@ -699,14 +724,15 @@ describe('el contador cuenta PESTAÑAS, no cambios ni problemas', () => {
 
     // Uno: el tipo deja de aceptar la forma de la métrica.
     await userEvent.selectOptions(inspector().getByLabelText('Tipo de panel'), 'series')
-    // Dos: la pregunta operativa se borra, en B1.
-    await userEvent.click(screen.getByRole('button', { name: 'Contexto de edición' }))
+    // Dos: la pregunta operativa se borra, en los ajustes de la pestaña ·
+    // tocar la pestaña activa los abre (2026-10-07).
+    await userEvent.click(screen.getByRole('tab', { name: 'Resumen' }))
     await userEvent.clear(await screen.findByDisplayValue('¿Cómo vamos?'))
 
     await waitFor(() =>
       expect(screen.getByText('2 problemas de composición')).toBeInTheDocument(),
     )
-    expect(screen.getByText('1 pestaña con cambios sin guardar')).toBeInTheDocument()
+    expect(screen.getByText('1 pestaña con cambios · se guarda solo en unos segundos')).toBeInTheDocument()
   })
 })
 

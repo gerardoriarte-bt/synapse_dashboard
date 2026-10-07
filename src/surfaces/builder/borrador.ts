@@ -347,3 +347,53 @@ export function redimensionarPanel(
       : t,
   )
 }
+
+/** **Los ids que el servidor acaba de asignar, adoptados por el borrador local**
+ *  · 2026-10-07, con el guardado automático.
+ *
+ *  Guardar devuelve el layout con `id` para lo que se creó. Hasta hoy el
+ *  borrador local se descartaba al guardar —`setBorrador(null)`— y eso estaba
+ *  bien porque guardar era un acto explícito y nadie editaba mientras tanto.
+ *  **Con el guardado automático se puede seguir editando mientras el `PUT`
+ *  viaja**, y descartar el borrador tiraría esas ediciones.
+ *
+ *  Así que lo que se conserva es el borrador local, y lo único que se le pide
+ *  al servidor son los ids de lo nuevo.
+ *
+ *  **Se empareja contra lo ENVIADO, no contra el nombre.** La primera versión
+ *  reconocía una pestaña nueva por su nombre, y renombrarla mientras el `PUT`
+ *  viajaba la dejaba sin id: el guardado siguiente la mandaba otra vez como
+ *  nueva y **el servicio la duplicaba**. Lo encontró una prueba el mismo día.
+ *  Ahora una fila local sin id adopta el de la fila guardada en su posición si
+ *  la ENVIADA en esa posición también iba sin id —o sea, si esa fila es la que
+ *  el servidor acaba de crear— y si ese id no lo tiene ya otra fila local.
+ *  Nombre, tipo o métrica pueden haber cambiado en el medio: no importa, es la
+ *  misma fila. */
+export function adoptarIds(
+  local: readonly TabParaGuardar[],
+  enviado: readonly TabParaGuardar[],
+  guardado: readonly TabParaGuardar[],
+): TabParaGuardar[] {
+  const tabsEnUso = new Set(local.flatMap((t) => (t.id === undefined ? [] : [t.id])))
+  return local.map((t, i) => {
+    const e = enviado[i]
+    const g = guardado[i]
+    const adoptaTab =
+      t.id === undefined && e !== undefined && e.id === undefined && g?.id !== undefined && !tabsEnUso.has(g.id)
+    const id = adoptaTab ? g.id : t.id
+    // Los paneles sólo se emparejan dentro de la MISMA pestaña: la local tiene
+    // que ser la enviada —por id, o recién adoptada—.
+    const misma = e !== undefined && g !== undefined && (adoptaTab || (t.id !== undefined && t.id === e.id && e.id === g.id))
+    const panelesEnUso = new Set(t.panels.flatMap((p) => (p.id === undefined ? [] : [p.id])))
+    const panels = !misma
+      ? t.panels
+      : t.panels.map((p, j) => {
+          const ep = e.panels[j]
+          const gp = g.panels[j]
+          if (p.id !== undefined || ep === undefined || ep.id !== undefined || gp?.id === undefined) return p
+          if (panelesEnUso.has(gp.id)) return p
+          return { ...p, id: gp.id }
+        })
+    return { ...t, ...(id === undefined ? {} : { id }), panels }
+  })
+}

@@ -36,12 +36,14 @@
  */
 import { useNavigate } from 'react-router-dom'
 import { useTemaGuardado } from '../useTemaGuardado'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   useAdminCatalog,
   useBlocks,
   usePlots,
   useCreateDraft,
+  useCreateDashboard,
+  useDashboards,
   useLayoutDetail,
   useLayouts,
   usePreview,
@@ -58,7 +60,8 @@ import {
 } from '../../api/hooks'
 import { BuilderChrome } from './BuilderChrome'
 import { ContextView } from './ContextView'
-import { TabEditor } from './TabEditor'
+import { TabInspector } from './TabInspector'
+import type { DashboardEnLista } from './ContextView'
 import { Canvas } from './Canvas'
 import { Library } from './Library'
 import { PanelConfigurator } from './PanelConfigurator'
@@ -71,6 +74,7 @@ import { SaveBar } from './SaveBar'
 import { ValidationSummary } from './ValidationSummary'
 import { validarBorrador } from './validar'
 import {
+  adoptarIds,
   agregar,
   agregarPanel,
   asignarRoles,
@@ -145,9 +149,12 @@ const EN_OTRA_PANTALLA: Partial<Record<PantallaId, string>> = {
   // navegación (D3). F4.10 y F4.21 siguen siendo una desviación de §7.2, que las
   // describe como pantallas propias, y va dicha: configurar un panel exige
   // tenerlo elegido, y donde se lo elige es el lienzo.
-  metrica: 'La métrica de un panel se elige en el lienzo: tocá un panel y se abre su configuración a la derecha.',
-  grafico: 'El gráfico de un panel se elige en el lienzo: tocá un panel y se abre su configuración a la derecha.',
+  metrica: 'La métrica de un panel se elige en el editor: tocá un panel y se abre su configuración a la derecha.',
+  grafico: 'El gráfico de un panel se elige en el editor: tocá un panel y se abre su configuración a la derecha.',
 }
+
+/** Cuánto se espera sin editar antes de guardar solo. */
+const AUTOGUARDADO_MS = 3000
 
 export function Builder() {
   const navegar = useNavigate()
@@ -177,13 +184,48 @@ export function Builder() {
   // colgar de `pantalla` sin violar las reglas de hooks, y además calientan el
   // cache: cambiar de pantalla no espera una vuelta de red.
   const versiones = useLayouts(tenantActivo)
+
+  /** ── EL DASHBOARD DE TRABAJO · 2026-10-07 ─────────────────────────────────
+   *
+   *  El builder se organiza Cliente → Dashboard → Editor
+   *  (`docs/AUDITORIA-2026-10-07-flujo-de-edicion.md`, D1). Las versiones se
+   *  listaban por cliente, mezclando dashboards; ahora se miran las del
+   *  dashboard elegido, y sin elección, las del POR DEFECTO.
+   *
+   *  **Si la lista de dashboards no llegó** —un servicio sin la ruta, un mock que
+   *  no la sirve—, `dashboardDeTrabajo` es `null` y no se filtra: se vuelve al
+   *  comportamiento anterior en vez de mostrar un builder vacío. */
+  const dashboards = useDashboards(tenantActivo)
+  const crearDashboard = useCreateDashboard(tenantActivo)
+  const [dashboardElegido, setDashboardElegido] = useState<string | null>(null)
+  /** **Sin la ruta de dashboards, se arman desde las versiones** · cada una
+   *  dice de qué dashboard es. El nombre sale de `/config/me` cuando es el
+   *  cliente propio; si no, se numera. Mejor un builder que funciona con
+   *  nombres genéricos que uno vacío. */
+  const listaDeDashboards =
+    dashboards.data ??
+    (dashboards.isError
+      ? [...new Set((versiones.data ?? []).map((v) => v.dashboardId))].map((id, i) => ({
+          id,
+          tenantId: tenantActivo ?? '',
+          nombre: yo.data?.dashboards.find((d) => d.id === id)?.nombre ?? `Dashboard ${String(i + 1)}`,
+          porDefecto: i === 0,
+        }))
+      : null)
+  const dashboardDeTrabajo =
+    dashboardElegido !== null && listaDeDashboards?.some((d) => d.id === dashboardElegido) === true
+      ? dashboardElegido
+      : ((listaDeDashboards?.find((d) => d.porDefecto) ?? listaDeDashboards?.[0])?.id ?? null)
+  const deEsteDashboard = (versiones.data ?? []).filter(
+    (v) => dashboardDeTrabajo === null || v.dashboardId === dashboardDeTrabajo,
+  )
   /** **La versión se elige sola si nadie eligió** · 2026-10-06. B1 abría con la
    *  lista de versiones y nada más, y el canvas decía «Elegí una versión»: dos
    *  pasos antes de ver una pestaña. El borrador es casi siempre lo que se viene
    *  a editar; si no hay, la más reciente. Elegir otra sigue a un toque. */
   const version =
     versionElegida ??
-    (versiones.data?.find((v) => v.estado === 'borrador') ?? versiones.data?.[0])?.id ??
+    (deEsteDashboard.find((v) => v.estado === 'borrador') ?? deEsteDashboard[0])?.id ??
     null
   const detalle = useLayoutDetail(version)
 
@@ -287,11 +329,19 @@ export function Builder() {
    *
    *  **El caso se ve de entrada**, medido el 2026-09-30: la base local tiene dos
    *  clientes con el nombre «Under Armour México» y el que el builder elige por
-   *  defecto —`lista[0]`— no es el del usuario sembrado. */
+   *  defecto —`lista[0]`— no es el del usuario sembrado.
+   *
+   *  **Desde el 2026-10-07 la ruta está transcripta** y es la primera fuente:
+   *  sirve para cualquier cliente. `/config/me` queda como respaldo cuando la
+   *  ruta no contesta. **No se usa `listaDeDashboards`**: en ese respaldo numera
+   *  —«Dashboard 2»— y un título no lleva un nombre inventado. */
   const dashboardNombre =
-    yo.data === undefined || yo.data.tenant.id !== tenantActivo || dashboardId === null
+    dashboardId === null
       ? null
-      : (yo.data.dashboards.find((d) => d.id === dashboardId)?.nombre ?? null)
+      : (dashboards.data?.find((d) => d.id === dashboardId)?.nombre ??
+        (yo.data !== undefined && yo.data.tenant.id === tenantActivo
+          ? (yo.data.dashboards.find((d) => d.id === dashboardId)?.nombre ?? null)
+          : null))
 
   /** El cliente, por nombre. `null` mientras `GET /admin/tenants` no volvió. */
   const clienteNombre = lista.find((t) => t.id === tenantActivo)?.nombre ?? null
@@ -320,8 +370,119 @@ export function Builder() {
   // Elegir otra versión no necesita limpiar el borrador: se descarta por
   // identidad, porque su `layoutId` deja de coincidir.
   const cambiar = (siguiente: TabParaGuardar[]) => {
-    if (version === null) return
+    if (version === null || publicada) return
+    // Un error de guardado se olvida al seguir editando: el próximo guardado
+    // automático lo vuelve a intentar con lo nuevo.
+    if (guardar.isError) guardar.reset()
     setBorrador({ layoutId: version, tabs: siguiente })
+  }
+
+  /** ── GUARDAR · AUTOMÁTICO Y EXPLÍCITO · 2026-10-07 ────────────────────────
+   *
+   *  Decisión humana (D2 de `docs/AUDITORIA-2026-10-07-flujo-de-edicion.md`):
+   *  «ambos, pero el guardar se debe ver explícito, mostrando los estados del
+   *  botón cuando quede guardado». Hasta hoy «Guardar» aparecía sólo con
+   *  cambios y desaparecía al guardar, sin dejar nada: se veía igual que si se
+   *  hubiera roto.
+   *
+   *  **Guardar invalida el veredicto anterior**, igual que antes. Lo que cambió
+   *  es qué pasa con el borrador local: se descartaba entero, y con el guardado
+   *  automático **se puede seguir editando mientras el `PUT` viaja**. Si nada
+   *  cambió desde que salió, se descarta como antes; si cambió, se conserva y
+   *  sólo adopta los ids que el servidor asignó · `adoptarIds`. */
+  /** **De QUÉ versión es la hora** · visto en pantalla el 2026-10-07: al pasar
+   *  a otro dashboard seguía diciendo «Guardado a las 09:49», que era la hora
+   *  del anterior. */
+  const [ultimoGuardado, setUltimoGuardado] = useState<{ layoutId: string; hora: string } | null>(null)
+  const hayCambios = semilla !== null && sucio(tabs, semilla)
+  const guardarBorrador = () => {
+    if (version === null || publicada) return
+    const enviado = tabs
+    const layoutId = version
+    validar.reset()
+    guardar.mutate(enviado, {
+      onSuccess: (guardadoDetalle) => {
+        setUltimoGuardado({ layoutId, hora: new Date().toISOString() })
+        setBorrador((actual) =>
+          actual === null || actual.layoutId !== layoutId || actual.tabs === enviado
+            ? null
+            : { layoutId, tabs: adoptarIds(actual.tabs, enviado, sembrar(guardadoDetalle)) },
+        )
+      },
+    })
+  }
+
+  // **El automático espera a que se deje de editar** · cada cambio reinicia la
+  // cuenta. No corre con un guardado en vuelo ni después de un error: el error
+  // se muestra y espera «Reintentar» o el próximo cambio.
+  useEffect(() => {
+    if (!hayCambios || publicada || guardar.isPending || guardar.isError) return
+    const t = window.setTimeout(guardarBorrador, AUTOGUARDADO_MS)
+    return () => window.clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabs, hayCambios, publicada, guardar.isPending, guardar.isError])
+
+  // **Salir con cambios sin guardar avisa.** El navegador pone su propio texto;
+  // lo que importa es que pregunte.
+  useEffect(() => {
+    if (!hayCambios) return
+    const avisar = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+    }
+    window.addEventListener('beforeunload', avisar)
+    return () => window.removeEventListener('beforeunload', avisar)
+  }, [hayCambios])
+
+  /** ── ABRIR EL EDITOR · resuelve el borrador del dashboard ─────────────────
+   *
+   *  Tres casos, y la pantalla dice cuál antes de apretar · `queVaAPasar`:
+   *  hay borrador → se abre; sólo hay publicada → se crea un borrador a partir
+   *  de ella; no hay nada → se crea el primero, vacío. **Siempre con el
+   *  `dashboard_id`**: sin él el servicio usa el dashboard por defecto. */
+  const versionDeTrabajo = (versiones.data ?? []).find((v) => v.id === version) ?? null
+  const siguienteVersion = () => {
+    const numeros = (versiones.data ?? [])
+      .map((v) => /^v(\d+)$/.exec(v.versionId)?.[1])
+      .filter((n): n is string => n !== undefined)
+      .map(Number)
+    return `v${String(Math.max(0, ...numeros) + 1)}`
+  }
+  const [avisoDelEditor, setAvisoDelEditor] = useState<string | null>(null)
+  /** La pestaña cuyos ajustes están abiertos en el inspector · `null` cerrado. */
+  const [ajustesDe, setAjustesDe] = useState<number | null>(null)
+  const crearBorradorDesde = (origen: 'publicada' | 'vacio', alAbrir: boolean) => {
+    const nueva = siguienteVersion()
+    duplicar.mutate(
+      {
+        versionId: nueva,
+        ...(dashboardDeTrabajo === null ? {} : { dashboardId: dashboardDeTrabajo }),
+        ...(origen === 'publicada' && semilla !== null ? { tabs: semilla } : {}),
+      },
+      {
+        onSuccess: (nuevo) => {
+          setBorrador(null)
+          setSeleccion(null)
+          setVersion(nuevo.id)
+          setAvisoDelEditor(
+            origen === 'publicada'
+              ? `Se creó el borrador ${nuevo.versionId} a partir de la versión publicada ${versionDeTrabajo?.versionId ?? ''}. Lo publicado no cambia hasta que publiques.`
+              : `Se creó el borrador ${nuevo.versionId}, vacío. Empezá agregando una pestaña.`,
+          )
+          if (alAbrir) setPantalla('canvas')
+        },
+      },
+    )
+  }
+  const queVaAPasar =
+    versionDeTrabajo === null
+      ? 'Todavía no se compuso. Se va a crear su primer borrador, vacío.'
+      : versionDeTrabajo.estado === 'borrador'
+        ? `Vas a editar el borrador ${versionDeTrabajo.versionId}. Los cambios se guardan solos.`
+        : `Se va a crear un borrador a partir de la versión publicada ${versionDeTrabajo.versionId}. Lo publicado no cambia hasta que publiques.`
+  const abrirEditor = () => {
+    if (versionDeTrabajo === null) return crearBorradorDesde('vacio', true)
+    if (versionDeTrabajo.estado === 'borrador') return setPantalla('canvas')
+    return crearBorradorDesde('publicada', true)
   }
 
   if (tenants.isError) {
@@ -344,19 +505,6 @@ export function Builder() {
   const pendiente = PENDIENTES[pantalla]
   const reubicada = EN_OTRA_PANTALLA[pantalla]
 
-  /** **Guardar invalida el veredicto anterior**, y **el borrador local se
-   *  descarta**. Lo segundo es lo que importa: la respuesta trae los `id` que el
-   *  servidor acaba de asignar a lo nuevo, y si el borrador sobreviviera esos
-   *  seguirían sin `id` — el guardado siguiente los crearía otra vez. */
-  const guardarBorrador = () => {
-    validar.reset()
-    guardar.mutate(tabs, {
-      onSuccess: () => {
-        setBorrador(null)
-        setSeleccion(null)
-      },
-    })
-  }
 
   /** Las pestañas que ve el rol del filtro, con su índice en el borrador
    *  entero · D5. El filtro sólo decide qué se pinta. */
@@ -368,35 +516,24 @@ export function Builder() {
 
   /** Ir a un problema · lleva al panel en el lienzo, o a B1 si es de la
    *  pestaña. Es lo que la lista de problemas no tenía. */
+  /** Ir a un problema · al panel, o a los ajustes de la pestaña. Desde el
+   *  2026-10-07 los dos viven en el editor. */
   const irA = (tab: number, panel: number | null) => {
     setTabActiva(tab)
     if (panel === null) {
       setSeleccion(null)
-      setPantalla('contexto')
+      setAjustesDe(tab)
     } else {
+      setAjustesDe(null)
       setSeleccion({ tab, panel })
-      setPantalla('canvas')
     }
+    setPantalla('canvas')
   }
 
   const revisionDelBorrador =
     semilla === null ? null : (
       <>
-        <SaveBar
-          publicada={publicada}
-          error={errorAlGuardar}
-          onDuplicar={() => {
-            const v = detalle.data?.layout.versionId
-            duplicar.mutate({ ...(v === undefined ? {} : { versionId: v }), tabs }, {
-              onSuccess: (nuevo) => {
-                setBorrador(null)
-                setSeleccion(null)
-                setVersion(nuevo.id)
-              },
-            })
-          }}
-          duplicando={duplicar.isPending}
-        />
+        <SaveBar error={errorAlGuardar} />
         <PublishBar
           sucio={sucio(tabs, semilla)}
           publicada={publicada}
@@ -475,66 +612,102 @@ export function Builder() {
       />
     )
 
+  /** El estado de cada dashboard, en palabras, para la tarjeta del paso 1. */
+  const dashboardsParaElegir: DashboardEnLista[] = (listaDeDashboards ?? []).map((d) => {
+    const suyas = (versiones.data ?? []).filter((v) => v.dashboardId === d.id)
+    const enCurso = suyas.find((v) => v.estado === 'borrador')
+    const publicadaDe = suyas.find((v) => v.estado === 'publicado')
+    const estado =
+      enCurso !== undefined
+        ? `Borrador ${enCurso.versionId} en curso${publicadaDe === undefined ? '' : ` · publicada ${publicadaDe.versionId}`}`
+        : publicadaDe !== undefined
+          ? `Publicado ${publicadaDe.versionId}${publicadaDe.publicadoEn === null ? '' : ` · ${format.calendar(publicadaDe.publicadoEn)}`}`
+          : 'Todavía no se compuso'
+    return { id: d.id, nombre: d.nombre, porDefecto: d.porDefecto, estado }
+  })
+
   return (
     <BuilderChrome
       onChangeTheme={(theme) => saveTheme.mutate(theme)}
       // **La identidad sale del mismo `/config/me` que la consola y admin**:
-      // no hay una fuente de identidad por superficie. Sin contexto no se pinta
-      // el bloque — el chrome no inventa un nombre.
+      // no hay una fuente de identidad por superficie.
       onSalir={(ruta) => void navegar(ruta)}
       clientes={lista}
       clienteActivo={tenantActivo}
       onCliente={(id) => {
         setTenant(id)
+        setDashboardElegido(null)
         setVersion(null)
         setRol(null)
         setSeleccion(null)
+        setAjustesDe(null)
+        setPantalla('contexto')
       }}
-      // **Sin versión no hay nada que previsualizar** · 2026-10-06. El botón
-      // llevaba a una pantalla que pedía elegir una; ahora no se ofrece.
+      // **Sin versión no hay nada que previsualizar** · 2026-10-06.
       onVistaPrevia={version === null ? null : () => setPantalla('preview')}
       {...(yo.data === undefined
         ? {}
         : { identidad: { rol: yo.data.role.nombre, nombre: yo.data.user.nombre } })}
       activa={pantalla}
-      onIr={setPantalla}
+      onIr={(p) => {
+        // **Ir al editor sin borrador lo resuelve igual que el paso 3**: abre el
+        // borrador, o lo crea. Sin esto, la pestaña «Editor» abría la versión
+        // publicada, donde no se puede guardar.
+        if (p === 'canvas' && pantalla !== 'canvas' && versionDeTrabajo?.estado !== 'borrador') {
+          abrirEditor()
+          return
+        }
+        setPantalla(p)
+      }}
       contexto={{
         tenant: lista.find((t) => t.id === tenantActivo)?.nombre ?? null,
+        dashboard: listaDeDashboards?.find((d) => d.id === dashboardDeTrabajo)?.nombre ?? null,
+        version:
+          versionDeTrabajo === null
+            ? null
+            : `${versionDeTrabajo.estado === 'borrador' ? 'Borrador' : 'Publicada'} ${versionDeTrabajo.versionId}`,
         rol: roles.data?.find((r) => r.id === rolActivo)?.nombre ?? null,
-        // La pestaña en foco sale de qué panel se está configurando. Sin
-        // selección no hay una: se dice «Todas», que es lo que el editor muestra.
-        pestana:
-          pantalla === 'canvas'
-            ? (tabs[tabActiva]?.nombre ?? null)
-            : seleccion === null
-              ? null
-              : (tabs[seleccion.tab]?.nombre ?? null),
-        // **Cuenta pestañas tocadas, no pulsaciones.** Un contador de teclas
-        // diría «47 cambios» por escribir un nombre.
+        pestana: pantalla === 'canvas' ? (tabs[tabEnLienzo]?.nombre ?? null) : null,
+        // **Cuenta pestañas tocadas, no pulsaciones.**
         cambios: semilla === null ? 0 : tabs.filter((t, i) => JSON.stringify(t) !== JSON.stringify(semilla[i])).length,
       }}
-      onGuardar={
-        semilla !== null && sucio(tabs, semilla) && !publicada ? guardarBorrador : null
-      }
-      guardando={guardar.isPending}
+      guardado={{
+        estado:
+          semilla === null
+            ? 'sin-borrador'
+            : publicada
+              ? 'lectura'
+              : guardar.isPending
+                ? 'guardando'
+                : guardar.isError
+                  ? 'error'
+                  : hayCambios
+                    ? 'sucio'
+                    : 'limpio',
+        ultimo:
+          ultimoGuardado === null || ultimoGuardado.layoutId !== version
+            ? null
+            : format.clock(ultimoGuardado.hora),
+        error: errorAlGuardar,
+        onGuardar: guardarBorrador,
+      }}
       onValidar={
-        semilla !== null && !sucio(tabs, semilla) && !publicada ? () => validar.mutate() : null
+        semilla !== null && !hayCambios && !publicada ? () => validar.mutate() : null
       }
       validando={validar.isPending}
       porQueNoPublicar={
         semilla === null || publicada
           ? null
-          : sucio(tabs, semilla)
-            ? 'Para publicar, guardá y validá.'
+          : hayCambios
+            ? 'Para publicar, esperá a que se guarde y validá.'
             : validar.data?.valido === false
               ? 'El servidor encontró problemas.'
               : 'Para publicar, validá.'
       }
       onPublicar={
         // El permiso es el mismo que usa `PublishBar`: el servidor dijo válido y
-        // no se tocó nada desde entonces. Sin él, el chrome dice por qué en vez
-        // de ofrecer un botón que no puede cumplir.
-        validar.data?.valido === true && semilla !== null && !sucio(tabs, semilla) && !publicada
+        // no se tocó nada desde entonces.
+        validar.data?.valido === true && semilla !== null && !hayCambios && !publicada
           ? () => publicar.mutate(detalle.data?.layout.versionId)
           : null
       }
@@ -542,7 +715,7 @@ export function Builder() {
       {reubicada !== undefined ? (
         <div className="flex flex-col items-start gap-3">
           <Ayuda>{reubicada}</Ayuda>
-          <Accion onClick={() => setPantalla('canvas')}>Ir al lienzo</Accion>
+          <Accion onClick={() => setPantalla('canvas')}>Ir al editor</Accion>
         </div>
       ) : pendiente !== undefined ? (
         <div className="flex flex-col gap-2">
@@ -553,125 +726,245 @@ export function Builder() {
       ) : pantalla === 'canvas' ? (
         semilla === null ? (
           <div className="flex flex-col items-start gap-3">
-            <Ayuda>Elegí una versión en «Contexto de edición» para componerla.</Ayuda>
-            <Accion onClick={() => setPantalla('contexto')}>Ir a contexto de edición</Accion>
-          </div>
-        ) : visibles.length === 0 ? (
-          <div className="flex flex-col items-start gap-3">
-            <Ayuda>
-              {tabs.length === 0
-                ? 'Esta versión no tiene pestañas. Se agregan en «Contexto de edición».'
-                : 'Este rol no ve ninguna pestaña de esta versión.'}
-            </Ayuda>
-            <Accion onClick={() => setPantalla('contexto')}>Ir a contexto de edición</Accion>
+            <Ayuda>Elegí un dashboard para abrir su editor.</Ayuda>
+            <Accion onClick={() => setPantalla('contexto')}>Ir a Dashboards</Accion>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
             {revisionDelBorrador}
-            <div className="flex gap-6">
-              <Library
-                bloques={listaDeBloques}
-                arrastrando={arrastrando}
-                onArrastrar={setArrastrando}
-                onAgregar={(tipo) => {
-                  const b = tabla.get(tipo as PanelConfig['tipo'])
-                  if (b === undefined) return
-                  const conNuevo = agregarPanel(tabs, tabEnLienzo, tipo, b.colSpanMin, b.rowSpanMin)
-                  cambiar(conNuevo)
-                  setSeleccion({ tab: tabEnLienzo, panel: (conNuevo[tabEnLienzo]?.panels.length ?? 1) - 1 })
-                }}
-              />
-              <div className="flex-1 flex flex-col gap-3 min-w-0">
-                <div className="flex items-center gap-3">
-                  <Label id="canvas-pestana">Componiendo</Label>
-                  {/* Sólo las pestañas que ve el rol del filtro · D5. */}
-                  <select
-                    aria-labelledby="canvas-pestana"
-                    className="h-8 bg-w2 text-ink text-cuerpo font-medium rounded-md px-3 border border-w5 cursor-pointer"
-                    value={String(tabEnLienzo)}
-                    onChange={(e) => {
-                      setTabActiva(Number(e.target.value))
-                      // La selección era de otra pestaña: su índice de panel no
-                      // significa nada acá.
-                      setSeleccion(null)
-                    }}
-                  >
-                    {visibles.map(({ t, i }) => (
-                      <option key={t.id ?? `nueva-${String(i)}`} value={String(i)}>
-                        {t.nombre}
-                      </option>
-                    ))}
-                  </select>
-                </div>
 
-                <Canvas
-                  panels={tabs[tabEnLienzo]?.panels ?? []}
-                  tabla={tabla}
-                  metricas={catalogo.data?.metrics ?? []}
-                  seleccionado={seleccion?.tab === tabEnLienzo ? seleccion.panel : null}
-                  onSeleccionar={(i) =>
-                    setSeleccion(i === null ? null : { tab: tabEnLienzo, panel: i })
-                  }
-                  onReubicar={(i, colStart, destino) =>
-                    cambiar(reubicarPanel(tabs, tabEnLienzo, i, colStart, destino))
-                  }
-                  onRedimensionar={(i, campo, delta) => {
-                    const p = tabs[tabEnLienzo]?.panels[i]
-                    const b = p === undefined ? undefined : tabla.get(p.tipo as PanelConfig['tipo'])
-                    if (b === undefined) return
-                    cambiar(
-                      redimensionarPanel(
-                        tabs,
-                        tabEnLienzo,
-                        i,
-                        campo,
-                        delta,
-                        campo === 'colSpan' ? b.colSpanMin : b.rowSpanMin,
-                        campo === 'colSpan' ? b.colSpanMax : b.rowSpanMax,
-                      ),
-                    )
-                  }}
-                  onSoltarTipo={(tipo, colStart, destino) => {
-                    const b = tabla.get(tipo as PanelConfig['tipo'])
-                    if (b === undefined) return
-                    const conNuevo = agregarPanel(tabs, tabEnLienzo, tipo, b.colSpanMin, b.rowSpanMin)
-                    const ultimo = (conNuevo[tabEnLienzo]?.panels.length ?? 1) - 1
-                    cambiar(reubicarPanel(conNuevo, tabEnLienzo, ultimo, colStart, destino))
-                    setSeleccion({ tab: tabEnLienzo, panel: ultimo })
-                    setArrastrando(null)
-                  }}
-                  arrastrando={arrastrando}
-                />
-              </div>
-            </div>
-
-            {/* ── EL INSPECTOR · D1 de la auditoría del 2026-10-06 ─────────────
-             *
-             * **El canvas no configuraba**: movía y redimensionaba, y para
-             * cambiar la métrica había que volver a B1 y bajar dos alturas de
-             * scroll. Ahora el panel elegido se configura acá.
-             *
-             * **Encima del lienzo y no al costado**, porque al costado achicaría
-             * los 1200 del lienzo 1:1 —«a otra escala las unidades de arrastre
-             * mentirían»— y la cuenta 1200 + 300 = 1600 es del `.pen`. Tapa el
-             * borde derecho mientras está abierto; `Escape` o «Cerrar» lo
-             * cierran, y el panel sigue elegido en el lienzo. */}
-            {configurable !== null && seleccion !== null && seleccion.tab === tabEnLienzo && (
-              <aside
-                aria-label="Configuración del panel"
-                className="fixed right-0 top-0 bottom-0 z-20 w-[440px] overflow-y-auto border-l border-w4 bg-panel p-6 shadow-2xl"
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') setSeleccion(null)
-                }}
-              >
-                <div className="flex justify-end pb-2">
-                  <Accion tamano="compacta" onClick={() => setSeleccion(null)} etiqueta="Cerrar la configuración del panel">
-                    Cerrar
+            {/* El aviso de lo que pasó al abrir · «se creó un borrador a partir
+                de la publicada». Se puede cerrar: se dice una vez. */}
+            {avisoDelEditor !== null && (
+              <div className="flex items-center gap-3 rounded-xl border border-w4 bg-panel p-4">
+                <Ayuda as="span">{avisoDelEditor}</Ayuda>
+                <div className="ml-auto">
+                  <Accion tamano="compacta" onClick={() => setAvisoDelEditor(null)}>
+                    Entendido
                   </Accion>
                 </div>
-                {configurador}
-              </aside>
+              </div>
             )}
+
+            {/* **La versión publicada no se edita en el lugar** · §2.4 de la
+                auditoría del flujo. Antes se podía arrastrar, cambiar métricas y
+                sumar cambios sobre ella, y «Guardar» nunca aparecía. */}
+            {publicada && (
+              <div className="flex items-center gap-3 rounded-xl border border-acc bg-panel p-4">
+                <Ayuda as="span">
+                  Estás viendo la versión publicada: no se edita. Para cambiarla, creá un borrador a partir
+                  de ella.
+                </Ayuda>
+                <div className="ml-auto">
+                  <Accion
+                    variante="primaria"
+                    onClick={() => crearBorradorDesde('publicada', false)}
+                    deshabilitada={duplicar.isPending}
+                  >
+                    {duplicar.isPending ? 'Creando…' : 'Editar en un borrador'}
+                  </Accion>
+                </div>
+              </div>
+            )}
+
+            {/* ── LAS PESTAÑAS, COMO PESTAÑAS · §2.2 de la auditoría del flujo ──
+                Reemplazan al `<select>` «Componiendo». Sólo las que ve el rol
+                del filtro · D5. Tocar la activa abre sus ajustes. */}
+            <div
+              className="flex flex-wrap items-end gap-1 border-b border-w4"
+              role="tablist"
+              aria-label="Pestañas del dashboard"
+            >
+              {visibles.map(({ t, i }) => (
+                <button
+                  key={t.id ?? `nueva-${String(i)}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={i === tabEnLienzo}
+                  onClick={() => {
+                    if (i === tabEnLienzo) {
+                      setSeleccion(null)
+                      setAjustesDe(i)
+                      return
+                    }
+                    setTabActiva(i)
+                    setSeleccion(null)
+                    setAjustesDe(null)
+                  }}
+                  className={
+                    'px-3 py-2 -mb-px font-body text-cuerpo cursor-pointer border-b-2 ' +
+                    (i === tabEnLienzo
+                      ? 'border-acc text-ink font-semibold'
+                      : 'border-transparent text-dim font-medium hover:text-ink')
+                  }
+                >
+                  {t.nombre === '' ? 'Pestaña sin nombre' : t.nombre}
+                </button>
+              ))}
+              {!publicada && (
+                <div className="ml-2 mb-1 flex gap-2">
+                  <Accion
+                    tamano="compacta"
+                    onClick={() => {
+                      const conNueva = agregar(tabs, rolActivo === null ? [] : [rolActivo])
+                      cambiar(conNueva)
+                      setTabActiva(conNueva.length - 1)
+                      setSeleccion(null)
+                      setAjustesDe(conNueva.length - 1)
+                    }}
+                    etiqueta="Agregar una pestaña"
+                  >
+                    + Pestaña
+                  </Accion>
+                  {visibles.length > 0 && (
+                    <Accion
+                      tamano="compacta"
+                      onClick={() => {
+                        setSeleccion(null)
+                        setAjustesDe(tabEnLienzo)
+                      }}
+                    >
+                      Ajustes de la pestaña
+                    </Accion>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {visibles.length === 0 ? (
+              <Ayuda>
+                {tabs.length === 0
+                  ? 'Este dashboard todavía no tiene pestañas. Agregá la primera con «+ Pestaña».'
+                  : 'Este rol no ve ninguna pestaña de este dashboard. Agregá una con «+ Pestaña».'}
+              </Ayuda>
+            ) : (
+              <div className="flex gap-6">
+                {!publicada && (
+                  <Library
+                    bloques={listaDeBloques}
+                    arrastrando={arrastrando}
+                    onArrastrar={setArrastrando}
+                    onAgregar={(tipo) => {
+                      const b = tabla.get(tipo as PanelConfig['tipo'])
+                      if (b === undefined) return
+                      const conNuevo = agregarPanel(tabs, tabEnLienzo, tipo, b.colSpanMin, b.rowSpanMin)
+                      cambiar(conNuevo)
+                      setAjustesDe(null)
+                      setSeleccion({ tab: tabEnLienzo, panel: (conNuevo[tabEnLienzo]?.panels.length ?? 1) - 1 })
+                    }}
+                  />
+                )}
+                <div className="flex-1 flex flex-col gap-3 min-w-0">
+                  <Canvas
+                    panels={tabs[tabEnLienzo]?.panels ?? []}
+                    tabla={tabla}
+                    metricas={catalogo.data?.metrics ?? []}
+                    soloLectura={publicada}
+                    seleccionado={seleccion?.tab === tabEnLienzo ? seleccion.panel : null}
+                    onSeleccionar={(i) => {
+                      setAjustesDe(null)
+                      setSeleccion(i === null ? null : { tab: tabEnLienzo, panel: i })
+                    }}
+                    onReubicar={(i, colStart, destino) =>
+                      cambiar(reubicarPanel(tabs, tabEnLienzo, i, colStart, destino))
+                    }
+                    onRedimensionar={(i, campo, delta) => {
+                      const p = tabs[tabEnLienzo]?.panels[i]
+                      const b = p === undefined ? undefined : tabla.get(p.tipo as PanelConfig['tipo'])
+                      if (b === undefined) return
+                      cambiar(
+                        redimensionarPanel(
+                          tabs,
+                          tabEnLienzo,
+                          i,
+                          campo,
+                          delta,
+                          campo === 'colSpan' ? b.colSpanMin : b.rowSpanMin,
+                          campo === 'colSpan' ? b.colSpanMax : b.rowSpanMax,
+                        ),
+                      )
+                    }}
+                    onSoltarTipo={(tipo, colStart, destino) => {
+                      const b = tabla.get(tipo as PanelConfig['tipo'])
+                      if (b === undefined) return
+                      const conNuevo = agregarPanel(tabs, tabEnLienzo, tipo, b.colSpanMin, b.rowSpanMin)
+                      const ultimo = (conNuevo[tabEnLienzo]?.panels.length ?? 1) - 1
+                      cambiar(reubicarPanel(conNuevo, tabEnLienzo, ultimo, colStart, destino))
+                      setAjustesDe(null)
+                      setSeleccion({ tab: tabEnLienzo, panel: ultimo })
+                      setArrastrando(null)
+                    }}
+                    arrastrando={arrastrando}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* ── EL INSPECTOR · un panel o una pestaña ────────────────────────
+             *
+             * **Encima del lienzo y no al costado**, para no achicar los 1200 del
+             * lienzo 1:1. Desde el 2026-10-07 también ajusta la PESTAÑA —nombre,
+             * pregunta, quién la ve—, que antes vivía en otra pantalla. */}
+            {!publicada &&
+              (configurable !== null && seleccion !== null && seleccion.tab === tabEnLienzo ? (
+                <aside
+                  aria-label="Configuración del panel"
+                  className="fixed right-0 top-[var(--alto-cabecera-builder,0px)] bottom-0 z-20 w-[440px] overflow-y-auto border-l border-w4 bg-panel p-6 shadow-2xl"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') setSeleccion(null)
+                  }}
+                >
+                  <div className="flex justify-end pb-2">
+                    <Accion
+                      tamano="compacta"
+                      onClick={() => setSeleccion(null)}
+                      etiqueta="Cerrar la configuración del panel"
+                    >
+                      Cerrar
+                    </Accion>
+                  </div>
+                  {configurador}
+                </aside>
+              ) : ajustesDe !== null && tabs[ajustesDe] !== undefined ? (
+                <aside
+                  aria-label="Ajustes de la pestaña"
+                  className="fixed right-0 top-[var(--alto-cabecera-builder,0px)] bottom-0 z-20 w-[440px] overflow-y-auto border-l border-w4 bg-panel p-6 shadow-2xl"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') setAjustesDe(null)
+                  }}
+                >
+                  <div className="flex justify-end pb-2">
+                    <Accion
+                      tamano="compacta"
+                      onClick={() => setAjustesDe(null)}
+                      etiqueta="Cerrar los ajustes de la pestaña"
+                    >
+                      Cerrar
+                    </Accion>
+                  </div>
+                  <TabInspector
+                    tab={tabs[ajustesDe]}
+                    indice={ajustesDe}
+                    total={tabs.length}
+                    roles={roles.data ?? []}
+                    problemas={problemas
+                      .filter((pr) => pr.tab === ajustesDe && pr.panel === null)
+                      .map((pr) => pr.mensaje)}
+                    onEditar={(campo, valor) => cambiar(editar(tabs, ajustesDe, campo, valor))}
+                    onRoles={(r) => cambiar(asignarRoles(tabs, ajustesDe, r))}
+                    onMover={(d) => {
+                      cambiar(mover(tabs, ajustesDe, d))
+                      setTabActiva(ajustesDe + d)
+                      setAjustesDe(ajustesDe + d)
+                    }}
+                    onQuitar={() => {
+                      cambiar(quitar(tabs, ajustesDe))
+                      setAjustesDe(null)
+                      setTabActiva(0)
+                    }}
+                  />
+                </aside>
+              ) : null)}
           </div>
         )
       ) : pantalla === 'preview' ? (
@@ -680,7 +973,8 @@ export function Builder() {
           rolActivo={rolDePreview}
           onRol={setRol}
           query={preview}
-          onVolver={() => setPantalla('contexto')}
+          // Se vuelve al EDITOR, que es de donde se vino · 2026-10-07.
+          onVolver={() => setPantalla('canvas')}
           hayVersion={version !== null}
           {...(detalle.data === undefined ? {} : { completo: detalle.data })}
         />
@@ -698,8 +992,15 @@ export function Builder() {
           // un texto que manda a otra pantalla sin forma de llegar es «un
           // estado sin salida», que §8 llama una queja.
           <div className="flex flex-col items-start gap-3">
-            <Ayuda>Elegí una versión en «Contexto de edición» para ver su historial.</Ayuda>
-            <Accion onClick={() => setPantalla('contexto')}>Ir a contexto de edición</Accion>
+            {/* **Con un dashboard elegido y sin versiones, decirlo** · visto en
+                pantalla el 2026-10-07: un dashboard recién creado pedía «elegí
+                un dashboard» teniéndolo elegido. */}
+            <Ayuda>
+              {dashboardDeTrabajo === null
+                ? 'Elegí un dashboard en «Dashboards» para ver su historial.'
+                : `${listaDeDashboards?.find((d) => d.id === dashboardDeTrabajo)?.nombre ?? 'Este dashboard'} todavía no tiene versiones: el historial empieza con la primera.`}
+            </Ayuda>
+            <Accion onClick={() => setPantalla('contexto')}>Ir a Dashboards</Accion>
           </div>
         ) : publicaciones.isError ? (
           <SurfaceMessage
@@ -744,54 +1045,56 @@ export function Builder() {
           </div>
         )
       ) : (
-        <div className="flex flex-col gap-6">
-          {revisionDelBorrador}
-          <ContextView
-            roles={roles.data ?? []}
-            rolActivo={rolActivo}
-            onRol={(id) => {
-              setRol(id)
-              setSeleccion(null)
-            }}
-            versiones={versiones.data ?? []}
-            versionActiva={version}
-            onVersion={setVersion}
-            fecha={(iso) => format.calendar(iso)}
-            // **Nace como `v1`**: es la primera versión del cliente, y el
-            // contrato deja el `version_id` opcional al crear. Sin nombre, la
-            // lista de versiones mostraría un borrador sin número.
-            onCrearBorrador={() =>
-              duplicar.mutate({ versionId: 'v1' }, { onSuccess: (nuevo) => setVersion(nuevo.id) })
-            }
-            creando={duplicar.isPending}
-            errorAlCrear={
-              duplicar.error === null
-                ? null
-                : duplicar.error.message === ''
-                  ? 'No se pudo crear el borrador.'
-                  : duplicar.error.message
-            }
-          >
-            {semilla === null ? null : (
-              <TabEditor
-                tabs={tabs}
-                roles={roles.data ?? []}
-                rolActivo={rolActivo}
-                onEditar={(i, campo, valor) => cambiar(editar(tabs, i, campo, valor))}
-                onAgregar={() => cambiar(agregar(tabs, rolActivo === null ? [] : [rolActivo]))}
-                onQuitar={(i) => cambiar(quitar(tabs, i))}
-                onMover={(i, d) => cambiar(mover(tabs, i, d))}
-                onRoles={(i, r) => cambiar(asignarRoles(tabs, i, r))}
-                onComponer={(i) => {
-                  setTabActiva(i)
-                  setSeleccion(null)
-                  setPantalla('canvas')
-                }}
-                problemas={problemas.filter((p) => p.panel === null)}
-              />
-            )}
-          </ContextView>
-        </div>
+        <ContextView
+          dashboards={dashboardsParaElegir}
+          cargando={listaDeDashboards === null}
+          elegido={dashboardElegido}
+          onElegir={(id) => {
+            setDashboardElegido(id)
+            setVersion(null)
+            setSeleccion(null)
+            setAjustesDe(null)
+          }}
+          onCrear={(nombre) =>
+            crearDashboard.mutate(
+              // **`is_default` sólo para el primero**: un dashboard nuevo no
+              // cambia lo que ven los usuarios al entrar · `crearDashboard`.
+              { nombre, primero: (listaDeDashboards?.length ?? 0) === 0 },
+              {
+                onSuccess: (d) => {
+                  setDashboardElegido(d.id)
+                  setVersion(null)
+                },
+              },
+            )
+          }
+          creando={crearDashboard.isPending}
+          errorAlCrear={
+            crearDashboard.error === null
+              ? null
+              : crearDashboard.error.message === ''
+                ? 'No se pudo crear el dashboard.'
+                : crearDashboard.error.message
+          }
+          roles={roles.data ?? []}
+          rolActivo={rolActivo}
+          onRol={(id) => {
+            setRol(id)
+            setSeleccion(null)
+          }}
+          queVaAPasar={queVaAPasar}
+          onAbrir={abrirEditor}
+          // Con sólo una publicada, abrir copia sus pestañas: hasta que llegan
+          // no hay qué copiar.
+          abriendo={duplicar.isPending || (versionDeTrabajo?.estado === 'publicado' && semilla === null)}
+          errorAlAbrir={
+            duplicar.error === null
+              ? null
+              : duplicar.error.message === ''
+                ? 'No se pudo crear el borrador.'
+                : duplicar.error.message
+          }
+        />
       )}
     </BuilderChrome>
   )
@@ -839,8 +1142,8 @@ function Preview({
   if (!hayVersion) {
     return (
       <div className="flex flex-col items-start gap-3">
-        <Ayuda>Elegí una versión en «Contexto de edición» para previsualizarla.</Ayuda>
-        <Accion onClick={onVolver}>Ir a contexto de edición</Accion>
+        <Ayuda>Elegí un dashboard en «Dashboards» para previsualizarlo.</Ayuda>
+        <Accion onClick={onVolver}>Volver</Accion>
       </div>
     )
   }
@@ -848,7 +1151,7 @@ function Preview({
     return (
       <div className="flex flex-col items-start gap-3">
         <Ayuda>Este cliente todavía no tiene roles. Se definen en su ficha, en administración.</Ayuda>
-        <Accion onClick={onVolver}>Ir a contexto de edición</Accion>
+        <Accion onClick={onVolver}>Volver</Accion>
       </div>
     )
   }

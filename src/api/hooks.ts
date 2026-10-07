@@ -61,6 +61,7 @@ export const keys = {
    */
   tenants: ['admin', 'tenants'] as const,
   layouts: (tenantId: string) => ['admin', 'layouts', tenantId] as const,
+  dashboards: (tenantId: string) => ['admin', 'dashboards', tenantId] as const,
   adminCatalog: (tenantId: string) => ['admin', 'catalog', tenantId] as const,
   roles: (tenantId: string) => ['admin', 'roles', tenantId] as const,
   agentes: (tenantId: string) => ['admin', 'agentes', tenantId] as const,
@@ -431,6 +432,24 @@ export function usePreview(layoutId: string | null, rolId: string | null) {
   })
 }
 
+/** Los dashboards del cliente · el primer nivel del builder desde el 2026-10-07. */
+export function useDashboards(tenantId: string | null) {
+  return useQuery({
+    queryKey: keys.dashboards(tenantId ?? ''),
+    queryFn: () => adminApi.dashboards(tenantId as string),
+    enabled: tenantId !== null && tenantId !== '',
+  })
+}
+
+export function useCreateDashboard(tenantId: string | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { nombre: string; primero: boolean }) =>
+      adminApi.crearDashboard(tenantId as string, v.nombre, v.primero),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.dashboards(tenantId ?? '') }),
+  })
+}
+
 export function useLayouts(tenantId: string | null) {
   return useQuery({
     queryKey: keys.layouts(tenantId ?? ''),
@@ -452,8 +471,8 @@ export function useCreateDraft(tenantId: string | null) {
   return useMutation({
     /** Lleva las pestañas que se están viendo · el `POST` solo crea un borrador
      *  VACÍO, y el botón promete duplicar. Ver `crearBorrador`. */
-    mutationFn: (v: { versionId?: string; tabs?: readonly TabParaGuardar[] }) =>
-      adminApi.crearBorrador(tenantId as string, v.versionId, v.tabs),
+    mutationFn: (v: { versionId?: string; tabs?: readonly TabParaGuardar[]; dashboardId?: string }) =>
+      adminApi.crearBorrador(tenantId as string, v.versionId, v.tabs, v.dashboardId),
     onSuccess: () => void qc.invalidateQueries({ queryKey: keys.layouts(tenantId ?? '') }),
   })
 }

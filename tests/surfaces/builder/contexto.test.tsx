@@ -1,27 +1,29 @@
 // @vitest-environment jsdom
 
-/** B1 · Contexto de edición · F4.7
+/** B1 · Dashboards · F4.7, reorganizada el 2026-10-07
  *
  *  **Los fixtures salen de `contracts/synapse-admin-wire.yaml`, no de memoria.**
  *  Ese cable mezcla dos convenciones en la misma respuesta: las dos claves de
  *  afuera de `LayoutDetail` llevan etiqueta `json:` —`layout`, `tabs`— y todo lo
- *  de adentro sale con el nombre del campo de Go: `ID`, `Status`, `RoleIDs`. Un
- *  fixture escrito en snake_case pasaría por el adaptador dando `undefined` en
- *  todo y la prueba «pasaría» contra una pantalla vacía.
+ *  de adentro sale con el nombre del campo de Go. Un fixture escrito en otra
+ *  forma pasaría por el adaptador dando `undefined` en todo y la prueba
+ *  «pasaría» contra una pantalla vacía.
  *
- *  **Desde F4.8 la lista de pestañas la pinta `TabEditor`**, y lo que era la
- *  tabla de solo lectura de acá —conteo de paneles, roles, la pestaña sin
- *  pregunta— lo cubre `editor.test.tsx`. No se duplica: dos pruebas del mismo
- *  hecho es la otra forma de deriva.
+ *  **Desde el 2026-10-07 B1 elige DASHBOARDS, no versiones** ·
+ *  `docs/AUDITORIA-2026-10-07-flujo-de-edicion.md`, D1 y D3: paso 1 el
+ *  dashboard, paso 2 el rol —recién con un dashboard elegido—, paso 3 abrir el
+ *  editor, que dice antes de apretar qué va a pasar. Las pruebas que elegían
+ *  una versión en B1 y miraban sus pestañas acá se reescribieron contra eso:
+ *  las pestañas viven en el editor, y las cubre `editor.test.tsx`.
  */
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { Builder } from '@/surfaces/builder/Builder'
-import { ok } from '../../mocks/handlers'
+import { fail, ok } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
 
 const API = '*/api/v1'
@@ -31,12 +33,27 @@ const tenants = [
   { id: 't-2', name: 'Keralty Colombia' },
 ]
 
+/** `LayoutDashboard` del cable · los seis `required`. Tres dashboards, uno por
+ *  cada caso de «qué va a pasar al abrir»: con borrador, sólo publicado, y sin
+ *  componer. */
+const dashboards = {
+  't-1': [
+    { id: 'd-1', tenant_id: 't-1', name: 'Overview', slug: 'overview', is_default: true, history_months: 12 },
+    { id: 'd-2', tenant_id: 't-1', name: 'Marca', slug: 'marca', is_default: false, history_months: 12 },
+    { id: 'd-3', tenant_id: 't-1', name: 'Medios', slug: 'medios', is_default: false, history_months: 12 },
+  ],
+  't-2': [{ id: 'd-9', tenant_id: 't-2', name: 'Salud', slug: 'salud', is_default: true, history_months: 12 }],
+}
+
+/** **La publicada primero, a propósito**: el servicio las devuelve así, y
+ *  tomar `[0]` elegiría la que no se edita. */
 const versiones = {
   't-1': [
-    { id: 'l-1', tenant_id: 't-1', status: 'published', version_id: 'v3', published_at: '2026-09-10T12:00:00Z' },
-    { id: 'l-2', tenant_id: 't-1', status: 'draft', version_id: 'v4', published_at: null },
+    { id: 'l-1', tenant_id: 't-1', dashboard_id: 'd-1', status: 'published', version_id: 'v3', published_at: '2026-09-10T12:00:00Z' },
+    { id: 'l-2', tenant_id: 't-1', dashboard_id: 'd-1', status: 'draft', version_id: 'v4', published_at: null },
+    { id: 'l-5', tenant_id: 't-1', dashboard_id: 'd-2', status: 'published', version_id: 'v2', published_at: '2026-09-10T12:00:00Z' },
   ],
-  't-2': [{ id: 'l-9', tenant_id: 't-2', status: 'draft', version_id: 'k1', published_at: null }],
+  't-2': [{ id: 'l-9', tenant_id: 't-2', dashboard_id: 'd-9', status: 'draft', version_id: 'k1', published_at: null }],
 }
 
 const detalles: Record<string, unknown> = {
@@ -63,35 +80,58 @@ const detalles: Record<string, unknown> = {
           sort_order: 1,
           role_ids: [],
         },
-        panels: [
-          { id: 'p-1', tab_id: 'tab-a', metric_id: 'm-1', type: 'kpi', col_start: 1, col_span: 3, row_span: 4 },
-          { id: 'p-2', tab_id: 'tab-a', metric_id: 'm-2', type: 'series', col_start: 4, col_span: 6, row_span: 4 },
-        ],
+        panels: [],
+      },
+    ],
+  },
+  'l-5': {
+    layout: versiones['t-1'][2],
+    tabs: [
+      {
+        tab: {
+          id: 'tab-m',
+          layout_version_id: 'l-5',
+          name: 'Portada',
+          operational_question: '¿Crece la marca?',
+          sort_order: 1,
+          role_ids: [],
+        },
+        panels: [],
       },
     ],
   },
   'l-9': { layout: versiones['t-2'][0], tabs: [] },
 }
 
+const roles = [
+  { id: 'r-1', tenant_id: 't-1', name: 'CEO', tab_ids: ['tab-a'], hidden_metric_ids: [], layout_overrides: {}, user_count: 1 },
+  // **El que destapa la vieja aproximación**: no tiene ninguna pestaña, así
+  // que la unión de `RoleIDs` no lo habría encontrado nunca.
+  { id: 'r-2', tenant_id: 't-1', name: 'Sin pestañas', tab_ids: [], hidden_metric_ids: [], layout_overrides: {}, user_count: 0 },
+]
+
 function servir() {
   server.use(
-    http.get(`${API}/admin/tenants/:id/roles/composition`, () =>
-      ok([
-        { id: 'r-1', tenant_id: 't-1', name: 'CEO', tab_ids: ['tab-a'], hidden_metric_ids: [], layout_overrides: {}, user_count: 1 },
-        // **El que destapa la vieja aproximación**: no tiene ninguna pestaña, así
-        // que la unión de `RoleIDs` no lo habría encontrado nunca.
-        { id: 'r-2', tenant_id: 't-1', name: 'Sin pestañas', tab_ids: [], hidden_metric_ids: [], layout_overrides: {}, user_count: 0 },
-      ]),
-    ),
+    http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok(roles)),
     http.get(`${API}/admin/tenants`, () => ok(tenants)),
+    http.get(`${API}/admin/tenants/:id/dashboards`, ({ params }) =>
+      ok(dashboards[params['id'] as keyof typeof dashboards] ?? []),
+    ),
     http.get(`${API}/admin/tenants/:id/layouts`, ({ params }) =>
       ok(versiones[params['id'] as keyof typeof versiones] ?? []),
     ),
-    http.get(`${API}/admin/layouts/:id`, ({ params }) =>
-      ok(detalles[params['id'] as string] ?? { layout: versiones['t-1'][1], tabs: [] }),
-    ),
+    http.get(`${API}/admin/layouts/:id`, ({ params }) => ok(detalles[params['id'] as string])),
+    // Las tres que el contenedor pide siempre —el editor y B6 calientan su
+    // cache— y que estas pruebas no miran.
+    http.get(`${API}/admin/tenants/:id/catalog`, () => ok([])),
+    http.get(`${API}/admin/tenants/:id/users`, () => ok([])),
+    http.get(`${API}/admin/dashboards/:id/publications`, () => ok([])),
   )
 }
+
+/** **Los de cada prueba ganan**: MSW prueba el último `server.use` primero,
+ *  así que los de acá van antes de que la prueba registre los suyos. */
+beforeEach(servir)
 
 function montar() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -99,8 +139,7 @@ function montar() {
     <QueryClientProvider client={client}>
       {/* **En un router, porque el contenedor navega.** Desde el 2026-09-16
           `Admin`/`Builder` ofrecen «volver a la consola» y eso es `useNavigate`,
-          que fuera de un router lanza. Montarlos sin él probaba una app que la
-          real no es. */}
+          que fuera de un router lanza. */}
       <MemoryRouter>
         <Builder />
       </MemoryRouter>
@@ -108,133 +147,354 @@ function montar() {
   )
 }
 
-describe('§7.2 · B1 es el punto de entrada', () => {
-  it('lista los clientes y las versiones del elegido', async () => {
-    servir()
+/** La tarjeta de un dashboard en el paso 1. */
+const tarjeta = (nombre: RegExp) => screen.findByRole('button', { name: nombre })
+
+describe('§7.2 · B1 es el punto de entrada · paso 1, el dashboard', () => {
+  it('lista los dashboards del cliente, cada uno con su estado en palabras', async () => {
     montar()
 
-    expect(await screen.findByRole('button', { name: /v4/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /v3/ })).toBeInTheDocument()
-  })
+    const overview = await tarjeta(/Overview/)
+    // El borrador va primero porque es lo que se viene a editar; la publicada
+    // se nombra al lado.
+    expect(overview.textContent).toContain('Borrador v4 en curso · publicada v3')
+    expect(within(overview).getByText('Por defecto')).toBeInTheDocument()
 
-  it('un borrador dice «sin publicar», no una fecha de creación', async () => {
-    // `publicadoEn` es `null` mientras sea borrador. Poner la fecha de creación
-    // diría que se publicó cuando no.
-    servir()
-    montar()
-
-    const borrador = await screen.findByRole('button', { name: /v4/ })
-    expect(within(borrador).getByText(/sin publicar/i)).toBeInTheDocument()
-    // **El estado va primero, y es la palabra** · desde el 2026-10-06 la opción
-    // dice «Borrador v4», con mayúscula: es una frase, no un rótulo.
-    expect(borrador.textContent).toContain('Borrador v4')
-
-    const publicada = screen.getByRole('button', { name: /v3/ })
-    expect(publicada.textContent).toContain('Publicada v3')
+    const marca = screen.getByRole('button', { name: /Marca/ })
     // La fecha pasa por `format.calendar` con el locale del tenant —`es-MX` en
-    // el mock de `/config/me`—, no el ISO crudo que se pintaba antes.
-    expect(publicada.textContent).toContain('10 sep 2026')
-    expect(publicada.textContent).not.toContain('2026-09-10')
-    expect(within(publicada).queryByText(/sin publicar/i)).toBeNull()
+    // el mock de `/config/me`—, no el ISO crudo.
+    expect(marca.textContent).toContain('Publicado v2 · 10 sep 2026')
+    expect(marca.textContent).not.toContain('2026-09-10')
+    expect(within(marca).queryByText('Por defecto')).toBeNull()
+
+    // El literal de C6 para un dashboard sin layout.
+    expect(screen.getByRole('button', { name: /Medios/ }).textContent).toContain('Todavía no se compuso')
   })
 
-  it('la versión se elige SOLA · el primer borrador, antes que la publicada', async () => {
-    // **Nuevo el 2026-10-06** · auditoría §2.1: B1 abría sin versión elegida y
-    // no mostraba ninguna pestaña hasta que alguien apretaba una. El servicio
-    // devuelve la publicada PRIMERO a propósito: tomar `[0]` elegiría la que no
-    // se edita.
-    servir()
+  it('elegir un dashboard lo marca · el callback dispara', async () => {
     montar()
 
-    expect(await screen.findByDisplayValue('Resumen')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /v4/ })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: /v3/ })).toHaveAttribute('aria-pressed', 'false')
-  })
-
-  it('al elegir una versión muestra sus pestañas, ordenadas por `orden`', async () => {
-    // El servicio devuelve las dos al revés a propósito: §7.2 pide el orden de
-    // la pestaña, y confiar en el orden del arreglo es confiar en el servidor.
-    servir()
-    const { container } = montar()
-
-    await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
-
-    await screen.findByDisplayValue('Resumen')
-    const nombres = Array.from(container.querySelectorAll('li input')).map(
-      (i) => (i as HTMLInputElement).value,
-    )
-    expect(nombres[0]).toBe('Resumen')
-    expect(nombres[2]).toBe('Inventario')
+    const marca = await tarjeta(/Marca/)
+    expect(marca).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(marca)
+    expect(marca).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /Overview/ })).toHaveAttribute('aria-pressed', 'false')
   })
 })
 
-describe('§7.2 · los roles', () => {
-  it('SÍ ofrece selector de rol desde B4.8, con la lista completa', async () => {
-    // **F4.7 lo declaró imposible y tenía razón entonces**: el único origen era
-    // `RoleIDs`, UUID sin nombre, y su unión deja afuera al rol que todavía no
-    // tiene pestaña. `GET /admin/tenants/:id/roles` devuelve todos, con nombre.
-    servir()
+describe('progresivo · D3: el rol y el editor aparecen recién con un dashboard elegido', () => {
+  it('sin dashboard elegido no hay paso 2 ni paso 3', async () => {
     montar()
-    await screen.findByRole('button', { name: /v4/ })
+    await tarjeta(/Overview/)
 
-    // **Desde el 2026-10-06 son opciones, no un `select`** · D5 de la auditoría:
-    // el rol es un filtro, y «Todos los roles» es la opción que lo apaga.
-    const selector = await screen.findByRole('group', { name: 'Rol' })
-    expect(within(selector).getByRole('button', { name: 'Todos los roles' })).toBeInTheDocument()
-    expect(within(selector).getByRole('button', { name: 'CEO' })).toBeInTheDocument()
-    // El que no tiene ninguna pestaña asignada también está.
-    expect(within(selector).getByRole('button', { name: 'Sin pestañas' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Paso 1 · Dashboard' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Paso 2 · Rol' })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Paso 3 · Editor' })).toBeNull()
+    expect(screen.queryByRole('group', { name: 'Rol' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Abrir el editor/ })).toBeNull()
   })
 
-  it('el rol FILTRA las pestañas · y «Todos los roles» las vuelve a mostrar', async () => {
-    // **D5 de la auditoría del 2026-10-06**: «debería funcionar como un filtro».
-    // Hasta ese día el selector se movía sin cambiar nada en la pantalla.
-    // `Resumen` no declara roles —la ven todos— e `Inventario` sólo la ve un rol
-    // que no es CEO, así que elegir CEO tiene que esconder exactamente una.
-    servir()
+  it('al elegir uno aparecen los dos', async () => {
     montar()
-    await screen.findByDisplayValue('Inventario')
+    await userEvent.click(await tarjeta(/Overview/))
 
-    const selector = screen.getByRole('group', { name: 'Rol' })
+    expect(await screen.findByRole('region', { name: 'Paso 2 · Rol' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Paso 3 · Editor' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Abrir el editor de Overview' })).toBeInTheDocument()
+  })
+})
+
+describe('§7.2 · los roles · paso 2', () => {
+  it('ofrece la lista completa, con «Todos los roles» elegido de entrada', async () => {
+    // `GET /admin/tenants/:id/roles/composition` devuelve todos, con nombre,
+    // incluido el que todavía no tiene pestaña.
+    montar()
+    await userEvent.click(await tarjeta(/Overview/))
+
+    const selector = await screen.findByRole('group', { name: 'Rol' })
+    expect(within(selector).getByRole('button', { name: 'Todos los roles' })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(selector).getByRole('button', { name: 'CEO' })).toBeInTheDocument()
+    expect(within(selector).getByRole('button', { name: 'Sin pestañas' })).toBeInTheDocument()
+    expect(screen.getByText('Vas a ver y editar todas las pestañas del dashboard.')).toBeInTheDocument()
+  })
+
+  it('elegir un rol dice qué va a pasar con él · el callback dispara', async () => {
+    montar()
+    await userEvent.click(await tarjeta(/Overview/))
+
+    const selector = await screen.findByRole('group', { name: 'Rol' })
     await userEvent.click(within(selector).getByRole('button', { name: 'CEO' }))
 
-    await waitFor(() => expect(screen.queryByDisplayValue('Inventario')).toBeNull())
-    expect(screen.getByDisplayValue('Resumen')).toBeInTheDocument()
     expect(within(selector).getByRole('button', { name: 'CEO' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByText('1 más no las ve este rol.')).toBeInTheDocument()
+    expect(within(selector).getByRole('button', { name: 'Todos los roles' })).toHaveAttribute('aria-pressed', 'false')
+    expect(
+      screen.getByText('Vas a ver y editar sólo las pestañas que ve CEO. Las que agregues, las va a ver CEO.'),
+    ).toBeInTheDocument()
+  })
 
-    await userEvent.click(within(selector).getByRole('button', { name: 'Todos los roles' }))
-    expect(await screen.findByDisplayValue('Inventario')).toBeInTheDocument()
-    expect(screen.getByDisplayValue('Resumen')).toBeInTheDocument()
-    expect(screen.queryByText(/no las ve este rol/)).toBeNull()
+  it('el rol FILTRA las pestañas del editor · y «Todos los roles» las vuelve a mostrar', async () => {
+    // **D5 de la auditoría del 2026-10-06**: «debería funcionar como un filtro».
+    // `Resumen` no declara roles —la ven todos— e `Inventario` sólo la ve un rol
+    // que no es CEO, así que con CEO el editor tiene que esconder exactamente una.
+    montar()
+    await userEvent.click(await tarjeta(/Overview/))
+    await userEvent.click(within(await screen.findByRole('group', { name: 'Rol' })).getByRole('button', { name: 'CEO' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Abrir el editor de Overview' }))
+
+    const pestanas = await screen.findByRole('tablist', { name: 'Pestañas del dashboard' })
+    expect(within(pestanas).getAllByRole('tab').map((t) => t.textContent)).toEqual(['Resumen'])
+
+    await userEvent.click(screen.getByRole('button', { name: 'Dashboards' }))
+    await userEvent.click(within(await screen.findByRole('group', { name: 'Rol' })).getByRole('button', { name: 'Todos los roles' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Abrir el editor de Overview' }))
+
+    const todas = await screen.findByRole('tablist', { name: 'Pestañas del dashboard' })
+    expect(within(todas).getAllByRole('tab').map((t) => t.textContent)).toEqual(['Resumen', 'Inventario'])
   })
 
   it('sin roles definidos manda a la ficha de cliente', async () => {
-    server.use(
-      http.get(`${API}/admin/tenants`, () => ok(tenants)),
-      http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([])),
-      http.get(`${API}/admin/tenants/:id/layouts`, () => ok(versiones['t-1'])),
-    )
+    server.use(http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([])))
     montar()
-    await screen.findByRole('button', { name: /v4/ })
+    await userEvent.click(await tarjeta(/Overview/))
     expect(
-      screen.getByText('Este cliente todavía no tiene roles. Se definen en su ficha, en administración.'),
+      await screen.findByText('Este cliente todavía no tiene roles. Se definen en su ficha, en administración.'),
     ).toBeInTheDocument()
     expect(screen.queryByRole('group', { name: 'Rol' })).toBeNull()
+  })
+})
+
+describe('paso 3 · abrir el editor dice qué va a pasar, y lo hace', () => {
+  it('con borrador · lo abre, sin crear nada', async () => {
+    // El borrador se elige solo aunque la publicada venga primero.
+    const creados: unknown[] = []
+    server.use(
+      http.post(`${API}/admin/tenants/:id/layouts`, async ({ request }) => {
+        creados.push(await request.json())
+        return fail('no debería crearse', { status: 500 })
+      }),
+    )
+    montar()
+    await userEvent.click(await tarjeta(/Overview/))
+
+    expect(
+      screen.getByText('Vas a editar el borrador v4. Los cambios se guardan solos.'),
+    ).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Abrir el editor de Overview' }))
+
+    const pestanas = await screen.findByRole('tablist', { name: 'Pestañas del dashboard' })
+    // Ordenadas por `sort_order`, no por el orden del arreglo, que viene al revés.
+    expect(within(pestanas).getAllByRole('tab').map((t) => t.textContent)).toEqual(['Resumen', 'Inventario'])
+    expect(creados).toEqual([])
+  })
+
+  it('sólo publicado · crea un borrador A PARTIR de lo publicado, en SU dashboard', async () => {
+    // **Con `dashboard_id`** · sin él el servicio usa el por defecto, y el
+    // borrador de «Marca» habría caído en «Overview». Y con la versión
+    // SIGUIENTE —v5—, no repitiendo la de origen.
+    const cuerpos: unknown[] = []
+    const copias: string[] = []
+    const nuevo = { id: 'l-nuevo', tenant_id: 't-1', dashboard_id: 'd-2', status: 'draft', version_id: 'v5', published_at: null }
+    let lista = versiones['t-1']
+    server.use(
+      http.get(`${API}/admin/tenants/:id/layouts`, () => ok(lista)),
+      http.post(`${API}/admin/tenants/:id/layouts`, async ({ request }) => {
+        cuerpos.push(await request.json())
+        lista = [...versiones['t-1'], nuevo]
+        return ok(nuevo)
+      }),
+      http.put(`${API}/admin/layouts/l-nuevo`, async ({ request }) => {
+        copias.push(JSON.stringify(await request.json()))
+        return ok({ layout: nuevo, tabs: [] })
+      }),
+      http.get(`${API}/admin/layouts/l-nuevo`, () =>
+        ok({
+          layout: nuevo,
+          tabs: [
+            {
+              tab: { id: 'tab-n', layout_version_id: 'l-nuevo', name: 'Portada', operational_question: '¿Crece la marca?', sort_order: 1, role_ids: [] },
+              panels: [],
+            },
+          ],
+        }),
+      ),
+    )
+    montar()
+    await userEvent.click(await tarjeta(/Marca/))
+
+    expect(
+      screen.getByText(
+        'Se va a crear un borrador a partir de la versión publicada v2. Lo publicado no cambia hasta que publiques.',
+      ),
+    ).toBeInTheDocument()
+    const abrir = screen.getByRole('button', { name: 'Abrir el editor de Marca' })
+    // Hasta que llegan las pestañas de la publicada no hay qué copiar.
+    await waitFor(() => expect(abrir).toBeEnabled())
+    await userEvent.click(abrir)
+
+    await waitFor(() => expect(cuerpos).toEqual([{ version_id: 'v5', dashboard_id: 'd-2' }]))
+    // La copia lleva las pestañas de la publicada, SIN sus ids: son de otro layout.
+    await waitFor(() => expect(copias).toHaveLength(1))
+    expect(copias[0]).toContain('Portada')
+    expect(copias[0]).not.toContain('tab-m')
+
+    expect(
+      await screen.findByText(
+        'Se creó el borrador v5 a partir de la versión publicada v2. Lo publicado no cambia hasta que publiques.',
+      ),
+    ).toBeInTheDocument()
+    expect(await screen.findByRole('tab', { name: 'Portada' })).toBeInTheDocument()
+  })
+
+  it('sin componer · crea su primer borrador, vacío, en SU dashboard', async () => {
+    const cuerpos: unknown[] = []
+    const puts: unknown[] = []
+    const nuevo = { id: 'l-nuevo', tenant_id: 't-1', dashboard_id: 'd-3', status: 'draft', version_id: 'v5', published_at: null }
+    let lista = versiones['t-1']
+    server.use(
+      http.get(`${API}/admin/tenants/:id/layouts`, () => ok(lista)),
+      http.post(`${API}/admin/tenants/:id/layouts`, async ({ request }) => {
+        cuerpos.push(await request.json())
+        lista = [...versiones['t-1'], nuevo]
+        return ok(nuevo)
+      }),
+      http.put(`${API}/admin/layouts/:id`, async ({ request }) => {
+        puts.push(await request.json())
+        return ok({ layout: nuevo, tabs: [] })
+      }),
+      http.get(`${API}/admin/layouts/l-nuevo`, () => ok({ layout: nuevo, tabs: [] })),
+    )
+    montar()
+    await userEvent.click(await tarjeta(/Medios/))
+
+    expect(screen.getByText('Todavía no se compuso. Se va a crear su primer borrador, vacío.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Abrir el editor de Medios' }))
+
+    await waitFor(() => expect(cuerpos).toEqual([{ version_id: 'v5', dashboard_id: 'd-3' }]))
+    expect(
+      await screen.findByText('Se creó el borrador v5, vacío. Empezá agregando una pestaña.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Este dashboard todavía no tiene pestañas. Agregá la primera con «+ Pestaña».'),
+    ).toBeInTheDocument()
+    // Vacío de verdad: nada que copiar, así que no hay `PUT`.
+    expect(puts).toEqual([])
+  })
+})
+
+describe('«Nuevo dashboard» · D4', () => {
+  it('lo crea SIN volverlo el por defecto, y lo deja elegido', async () => {
+    // **`is_default` explícito en `false`**: omitido, el servicio lo pondría en
+    // `true` si fuera el primero, y en `true` desplaza al anterior — un
+    // dashboard nuevo cambiaría lo que ven los usuarios al entrar.
+    const cuerpos: unknown[] = []
+    const creado = { id: 'd-4', tenant_id: 't-1', name: 'Tiendas', slug: 'tiendas', is_default: false, history_months: 12 }
+    let lista = dashboards['t-1']
+    server.use(
+      http.get(`${API}/admin/tenants/:id/dashboards`, () => ok(lista)),
+      http.post(`${API}/admin/tenants/:id/dashboards`, async ({ request }) => {
+        cuerpos.push(await request.json())
+        lista = [...dashboards['t-1'], creado]
+        return ok(creado)
+      }),
+    )
+    montar()
+    await tarjeta(/Overview/)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Nuevo dashboard' }))
+    const crear = screen.getByRole('button', { name: 'Crear dashboard' })
+    // Sin nombre no hay nada que mandar.
+    expect(crear).toBeDisabled()
+    // **El campo abre con el foco** · visto en pantalla el 2026-10-07: sin él,
+    // lo que se tipeaba después de apretar no iba a ningún lado.
+    const campo = screen.getByRole('textbox', { name: 'Nombre del dashboard nuevo' })
+    expect(campo).toHaveFocus()
+    await userEvent.type(campo, '  Tiendas ')
+    await userEvent.click(crear)
+
+    await waitFor(() => expect(cuerpos).toEqual([{ name: 'Tiendas', is_default: false }]))
+    const tiendas = await tarjeta(/^Tiendas/)
+    await waitFor(() => expect(tiendas).toHaveAttribute('aria-pressed', 'true'))
+    expect(screen.getByRole('button', { name: 'Abrir el editor de Tiendas' })).toBeInTheDocument()
+  })
+
+  it('el PRIMERO del cliente sí nace por defecto', async () => {
+    const cuerpos: unknown[] = []
+    server.use(
+      http.get(`${API}/admin/tenants/:id/dashboards`, () => ok([])),
+      http.get(`${API}/admin/tenants/:id/layouts`, () => ok([])),
+      http.post(`${API}/admin/tenants/:id/dashboards`, async ({ request }) => {
+        cuerpos.push(await request.json())
+        return ok({ id: 'd-1', tenant_id: 't-1', name: 'Overview', slug: 'overview', is_default: true, history_months: 12 })
+      }),
+    )
+    montar()
+
+    expect(await screen.findByText('Este cliente todavía no tiene dashboards. Creá el primero.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Nuevo dashboard' }))
+    await userEvent.type(screen.getByRole('textbox', { name: 'Nombre del dashboard nuevo' }), 'Overview')
+    await userEvent.click(screen.getByRole('button', { name: 'Crear dashboard' }))
+
+    await waitFor(() => expect(cuerpos).toEqual([{ name: 'Overview', is_default: true }]))
+  })
+
+  it('«Cancelar» cierra el campo sin mandar nada', async () => {
+    const cuerpos: unknown[] = []
+    server.use(
+      http.post(`${API}/admin/tenants/:id/dashboards`, async ({ request }) => {
+        cuerpos.push(await request.json())
+        return fail('no', { status: 500 })
+      }),
+    )
+    montar()
+    await tarjeta(/Overview/)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Nuevo dashboard' }))
+    await userEvent.type(screen.getByRole('textbox', { name: 'Nombre del dashboard nuevo' }), 'Tiendas')
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+
+    expect(screen.queryByRole('textbox', { name: 'Nombre del dashboard nuevo' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Nuevo dashboard' })).toBeInTheDocument()
+    expect(cuerpos).toEqual([])
+  })
+
+  it('el error del servidor se dice con SU mensaje', async () => {
+    server.use(
+      http.post(`${API}/admin/tenants/:id/dashboards`, () => fail('Ya existe un dashboard con ese nombre', { status: 409 })),
+    )
+    montar()
+    await tarjeta(/Overview/)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Nuevo dashboard' }))
+    await userEvent.type(screen.getByRole('textbox', { name: 'Nombre del dashboard nuevo' }), 'Overview')
+    await userEvent.click(screen.getByRole('button', { name: 'Crear dashboard' }))
+
+    expect(await screen.findByText('Ya existe un dashboard con ese nombre')).toBeInTheDocument()
+  })
+})
+
+describe('sin la ruta de dashboards', () => {
+  it('los arma desde las versiones, en vez de mostrar un builder vacío', async () => {
+    // Un servicio viejo sin `GET …/dashboards`: cada versión dice de qué
+    // dashboard es, y el nombre sale de `/config/me` cuando es el propio —el
+    // mock declara `d-1` como «Overview»—.
+    server.use(http.get(`${API}/admin/tenants/:id/dashboards`, () => fail('no existe', { status: 404 })))
+    montar()
+
+    const overview = await tarjeta(/Overview/)
+    expect(overview.textContent).toContain('Borrador v4 en curso · publicada v3')
+    // `d-2` no está en `/config/me`: se numera en vez de inventarle nombre.
+    expect(screen.getByRole('button', { name: /Dashboard 2/ }).textContent).toContain('Publicado v2')
   })
 })
 
 describe('§7.2 · la herencia de plantilla, que no existe en el cable', () => {
   it('ya NO la anuncia en pantalla · era una nota del plan, no del producto', async () => {
     // **Cambió el 2026-10-06** · `docs/AUDITORIA-2026-10-06-builder-contexto-y-canvas.md`.
-    // Esta prueba exigía el bloque «Esta pantalla va a crecer», que le contaba a
-    // quien compone lo que el contrato todavía no declara —herencia, plantilla,
-    // override—. Sigue sin declararse y sigue escrito en el encabezado de
-    // `ContextView.tsx`; lo que se quitó es decírselo al usuario. Tampoco se
-    // inventa la distinción: ninguna pestaña se rotula heredada ni propia.
-    servir()
+    // Sigue sin declararse en el contrato; lo que se quitó es decírselo al
+    // usuario. Tampoco se inventa la distinción.
     const { container } = montar()
-    await screen.findByDisplayValue('Resumen')
+    await userEvent.click(await tarjeta(/Overview/))
+    await screen.findByRole('group', { name: 'Rol' })
 
     const texto = container.textContent ?? ''
     expect(texto).not.toContain('Esta pantalla va a crecer')
@@ -244,71 +504,18 @@ describe('§7.2 · la herencia de plantilla, que no existe en el cable', () => {
 })
 
 describe('cambiar de cliente', () => {
-  it('OLVIDA la versión elegida', async () => {
-    // **`/admin/layouts/{id}` no cuelga del tenant**, así que un `layoutId` del
-    // cliente anterior sigue resolviendo: sin limpiarlo, la pantalla mostraría
-    // las pestañas de un cliente bajo el nombre de otro. No lo ve el typecheck.
-    servir()
+  it('OLVIDA el dashboard elegido y muestra los del nuevo', async () => {
+    // **`/admin/layouts/{id}` no cuelga del tenant**, así que un id del cliente
+    // anterior seguiría resolviendo: sin limpiarlo, se editaría un dashboard de
+    // un cliente bajo el nombre de otro.
     montar()
+    await userEvent.click(await tarjeta(/Marca/))
+    await screen.findByRole('region', { name: 'Paso 2 · Rol' })
 
-    await userEvent.click(await screen.findByRole('button', { name: /v4/ }))
-    await screen.findByDisplayValue('Resumen')
-
-    // `getByRole` y no `getByLabelText`: la sección y el `select` se rotulan
-    // con el mismo «Cliente».
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Cliente' }), 't-2')
 
-    await waitFor(() => expect(screen.queryByDisplayValue('Resumen')).toBeNull())
-    expect(await screen.findByRole('button', { name: /k1/ })).toBeInTheDocument()
-  })
-})
-
-describe('sin versiones', () => {
-  it('ofrece crear el primer borrador, y lo crea como v1 y lo deja elegido', async () => {
-    // **Cambió dos veces el 2026-10-06.** Primero el copy viejo —«se crea un
-    // borrador para empezar a componer»— prometía una acción que la pantalla no
-    // ofrecía, y se sacó la promesa. Después la decisión humana fue la otra
-    // salida: ofrecer la acción, «y asigna una versión». Se afirma que DISPARA
-    // el POST con `version_id: 'v1'`, no que el botón exista.
-    let creadas: unknown[] = []
-    const cuerpos: unknown[] = []
-    server.use(
-      http.get(`${API}/admin/tenants`, () => ok(tenants)),
-      http.get(`${API}/admin/tenants/:id/layouts`, () => ok(creadas)),
-      http.post(`${API}/admin/tenants/:id/layouts`, async ({ request }) => {
-        cuerpos.push(await request.json())
-        const nuevo = {
-          id: 'l-nuevo',
-          tenant_id: 't-1',
-          dashboard_id: 'd-1',
-          status: 'draft',
-          version_id: 'v1',
-          published_at: null,
-        }
-        creadas = [nuevo]
-        return ok(nuevo)
-      }),
-      http.get(`${API}/admin/layouts/l-nuevo`, () =>
-        ok({ layout: creadas[0], tabs: [] }),
-      ),
-    )
-    montar()
-    expect(
-      await screen.findByText(
-        'Este cliente todavía no tiene versiones. Creá el primer borrador para empezar a componer.',
-      ),
-    ).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /^Componer / })).toBeNull()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Crear el primer borrador' }))
-
-    await waitFor(() => expect(cuerpos).toEqual([{ version_id: 'v1' }]))
-    // Que quede elegida lo garantizan DOS cosas —el `setVersion` del alta y la
-    // autoselección del borrador—, así que quitar una sola no rompe esta
-    // aserción. Medido: la mutación que borra el `setVersion` sobrevive. Lo que
-    // la prueba fija es el resultado, no cuál de las dos lo produce.
-    const elegida = await screen.findByRole('button', { name: /Borrador v1/ })
-    expect(elegida).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.queryByRole('button', { name: 'Crear el primer borrador' })).toBeNull()
+    expect(await tarjeta(/Salud/)).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByRole('button', { name: /Marca/ })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Paso 2 · Rol' })).toBeNull()
   })
 })

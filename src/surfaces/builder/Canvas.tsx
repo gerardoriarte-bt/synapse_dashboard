@@ -75,6 +75,9 @@ type Props = {
   onSoltarTipo: (tipo: string, colStart: number, indiceDestino: number) => void
   /** Qué tipo viene en el aire, para saber su ancho antes de soltarlo. */
   arrastrando: string | null
+  /** **La versión publicada no se edita en el lugar** · 2026-10-07. Sin
+   *  arrastre, sin teclas que muevan y sin controles de tamaño: se mira. */
+  soloLectura?: boolean
 }
 
 export function Canvas({
@@ -87,6 +90,7 @@ export function Canvas({
   onRedimensionar,
   onSoltarTipo,
   arrastrando,
+  soloLectura = false,
 }: Props) {
   /** La celda bajo el cursor mientras se arrastra. **Solo para la vista previa
    *  del span** —«Span al soltar» en el `.pen`—: no decide nada, porque las
@@ -139,6 +143,7 @@ export function Canvas({
 
   const soltar = (col: number, fila: number, e: React.DragEvent) => {
     e.preventDefault()
+    if (soloLectura) return
     const dato = e.dataTransfer.getData('text/plain')
     // Un índice numérico es un panel que ya existe; cualquier otra cosa es un
     // tipo que viene de la biblioteca.
@@ -152,7 +157,7 @@ export function Canvas({
 
   const teclas = (e: React.KeyboardEvent, indice: number) => {
     const p = panels[indice]
-    if (p === undefined) return
+    if (p === undefined || soloLectura) return
 
     if (e.key === 'Escape') {
       onSeleccionar(null)
@@ -197,10 +202,10 @@ export function Canvas({
 
           El gesto de mover tiene historia: reportado el 2026-09-17, «no veo la
           capacidad de mover un bloque». Estaba, y nada lo anunciaba. */}
-      <Ayuda>
+      {!soloLectura && <Ayuda>
         Arrastrá un tipo de la biblioteca a un espacio libre. Elegí un panel para configurarlo:
         arrastralo para moverlo, o usá las flechas; con Shift y las flechas cambiás su tamaño.
-      </Ayuda>
+      </Ayuda>}
 
       <div
         role="grid"
@@ -312,7 +317,7 @@ export function Canvas({
           return (
             <div
               key={`panel-${String(c.indice)}`}
-              draggable
+              draggable={!soloLectura}
               tabIndex={0}
               role="gridcell"
               aria-label={`${nombreDeTipo(p.tipo)} · ${nombre(p.metricId)}`}
@@ -328,7 +333,7 @@ export function Canvas({
                 gridRow: `${String(c.filaInicio)} / span ${String(c.rowSpan)}`,
               }}
               className={
-                'relative rounded-xl bg-panel p-6 flex flex-col gap-1 cursor-grab ' +
+                'relative rounded-xl bg-panel p-6 flex flex-col gap-1 ' + (soloLectura ? 'cursor-default ' : 'cursor-grab ') +
                 (elegido ? 'border-2 border-acc' : 'border border-w3')
               }
             >
@@ -339,7 +344,7 @@ export function Canvas({
                   compone. */}
               <Label as="div">{`${String(c.colSpan)} col × ${String(c.rowSpan)} filas`}</Label>
 
-              {elegido && b !== undefined && (
+              {elegido && b !== undefined && !soloLectura && (
                 // Los handles · redimensionan de a una celda. **Dos grupos de
                 // − y +** donde había cuatro palabras que desbordaban un panel
                 // de 3 columnas —«AGRANDA» cortado, medido el 2026-10-06—. El

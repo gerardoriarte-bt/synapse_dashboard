@@ -135,9 +135,30 @@ const DETALLE = {
   tabs: [],
 }
 
-function montar(publicaciones: unknown[] = [publicacion({})], layouts: unknown[] = LAYOUTS) {
+/** `GET /admin/tenants/{tenantId}/dashboards` · **NO es captura**: la ruta se
+ *  transcribió el 2026-10-07, después de este corte. Se arma con la forma
+ *  `LayoutDashboard` del cable y los dos dashboards que las versiones de arriba
+ *  ya nombran; «Overview» por defecto, igual que en el `/config/me` sembrado. */
+const DASHBOARDS = [
+  { id: OVERVIEW, tenant_id: TENANT, name: 'Overview', slug: 'overview', is_default: true, history_months: 12 },
+  { id: MARCA, tenant_id: TENANT, name: 'Marca', slug: 'marca', is_default: false, history_months: 12 },
+]
+
+function montar(
+  publicaciones: unknown[] = [publicacion({})],
+  layouts: unknown[] = LAYOUTS,
+  dashboards: unknown[] = DASHBOARDS,
+) {
   const pedidas: string[] = []
+  /** Los `POST …/layouts` · «Volver a editar» sobre una publicada crea el
+   *  borrador desde ella, y esto es lo que deja verificar que DISPARE. */
+  const creados: unknown[] = []
   server.use(
+    http.get(`${API}/admin/tenants/:id/dashboards`, () => ok(dashboards)),
+    http.post(`${API}/admin/tenants/:id/layouts`, async ({ request }) => {
+      creados.push(await request.json())
+      return ok({ id: 'nuevo-1', tenant_id: TENANT, dashboard_id: MARCA, status: 'draft', version_id: 'v2', published_at: null })
+    }),
     http.get(`${API}/admin/tenants`, () =>
       ok([{ id: TENANT, name: 'Under Armour México', locale: 'es-CO' }]),
     ),
@@ -145,7 +166,13 @@ function montar(publicaciones: unknown[] = [publicacion({})], layouts: unknown[]
     http.get(`${API}/admin/tenants/:id/catalog`, () => ok(CATALOGO)),
     http.get(`${API}/admin/tenants/:id/users`, () => ok(USUARIOS)),
     http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([])),
-    http.get(`${API}/admin/layouts/:id`, () => ok(DETALLE)),
+    // El borrador recién creado se lee como borrador, vacío: el detalle de la
+    // publicada no tiene pestañas que copiar (recorte declarado arriba).
+    http.get(`${API}/admin/layouts/:id`, ({ params }) =>
+      params['id'] === 'nuevo-1'
+        ? ok({ layout: { id: 'nuevo-1', tenant_id: TENANT, dashboard_id: MARCA, status: 'draft', version_id: 'v2' }, tabs: [] })
+        : ok(DETALLE),
+    ),
     // **Se registra la URL pedida.** Con la ruta de `layouts` la pantalla
     // pintaría UNA tarjeta y nadie lo notaría: las dos rutas existen y devuelven
     // la misma forma.
@@ -162,15 +189,16 @@ function montar(publicaciones: unknown[] = [publicacion({})], layouts: unknown[]
       </MemoryRouter>
     </QueryClientProvider>,
   )
-  return { pedidas }
+  return { pedidas, creados }
 }
 
-/** B1 → elegir la versión publicada → B6. Es el camino real: el historial se pide
- *  por dashboard y lo único que el builder elige es un layout. */
+/** «Dashboards» → elegir «Marca» → B6. Es el camino real desde el 2026-10-07:
+ *  se elige el DASHBOARD, el builder toma su versión —acá la publicada, porque
+ *  «Marca» no tiene borrador— y el historial se pide por el dashboard de ésa.
+ *  Se aprieta «Marca» aunque haya uno elegido solo: el por defecto es
+ *  «Overview». */
 async function abrirHistorial() {
-  // La versión de «Marca» se aprieta aunque haya una elegida sola: desde el
-  // 2026-10-06 el builder toma el primer borrador, que acá es de «Overview».
-  await userEvent.click(await screen.findByRole('button', { name: /v-1790712673/ }))
+  await userEvent.click(await screen.findByRole('button', { name: /Marca/ }))
   await userEvent.click(screen.getByRole('button', { name: 'Historial de versiones' }))
 }
 
@@ -191,19 +219,39 @@ describe('B6 · el dashboard sale de la VERSIÓN abierta', () => {
     // `enabled` es lo único que impide `/admin/dashboards//publications`.
     // **Desde la autoselección del 2026-10-06** —auditoría de ese día— un
     // cliente con versiones nunca queda sin una, así que el caso es el de un
-    // cliente sin ninguna: la lista vacía que la ruta devuelve.
-    const { pedidas } = montar([publicacion({})], [])
-    await screen.findByText('Este cliente todavía no tiene versiones. Creá el primer borrador para empezar a componer.')
+    // cliente sin ninguna. Desde el 2026-10-07 se entra por dashboards, y el
+    // cliente vacío es el que no tiene ni dashboards ni versiones.
+    const { pedidas } = montar([publicacion({})], [], [])
+    await screen.findByText('Este cliente todavía no tiene dashboards. Creá el primero.')
     await userEvent.click(screen.getByRole('button', { name: 'Historial de versiones' }))
 
     expect(pedidas).toEqual([])
     expect(
-      screen.getByText('Elegí una versión en «Contexto de edición» para ver su historial.'),
+      screen.getByText('Elegí un dashboard en «Dashboards» para ver su historial.'),
     ).toBeInTheDocument()
     // **Que el botón DISPARE, no que exista**: un estado sin salida es una queja.
-    await userEvent.click(screen.getByRole('button', { name: 'Ir a contexto de edición' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Ir a Dashboards' }))
     // B1 ya no tiene el selector de cliente —subió a la cabecera el 2026-10-06—:
     // se la reconoce por su pregunta.
+    expect(await screen.findByRole('heading', { name: '¿Sobre qué se va a componer?' })).toBeInTheDocument()
+  })
+})
+
+describe('B6 · un dashboard elegido sin versiones', () => {
+  it('lo nombra y dice que no tiene versiones · no pide «elegí un dashboard»', async () => {
+    // **Visto en pantalla el 2026-10-07**: un dashboard recién creado, elegido,
+    // abría el historial con «Elegí un dashboard», que es falso — ya estaba
+    // elegido. Lo que pasa es que todavía no tiene versiones.
+    const { pedidas } = montar([publicacion({})], [], DASHBOARDS)
+    await userEvent.click(await screen.findByRole('button', { name: /Marca/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'Historial de versiones' }))
+
+    expect(
+      screen.getByText('Marca todavía no tiene versiones: el historial empieza con la primera.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Elegí un dashboard en «Dashboards» para ver su historial.')).toBeNull()
+    expect(pedidas).toEqual([])
+    await userEvent.click(screen.getByRole('button', { name: 'Ir a Dashboards' }))
     expect(await screen.findByRole('heading', { name: '¿Sobre qué se va a componer?' })).toBeInTheDocument()
   })
 })
@@ -228,22 +276,21 @@ describe('B6 · lo que el contenedor le pasa a la pantalla', () => {
     )
   })
 
-  it('con un cliente AJENO el título dice sólo el cliente · no un id ni una etiqueta inventada', async () => {
+  it('con un cliente AJENO el título nombra el dashboard desde la ruta de dashboards', async () => {
     // **El caso ocurre de verdad y no es un borde**: `/config/me` es del usuario
-    // que mira, así que componer un cliente distinto del propio deja el nombre
+    // que mira, así que componer un cliente distinto del propio dejaba el nombre
     // del dashboard sin fuente. Medido el 2026-09-30, la base local tiene DOS
     // clientes con el mismo nombre y el que el builder elige por defecto no es el
     // del usuario sembrado.
     //
-    // Lo que falta para cerrarlo es transcribir
-    // `GET /admin/tenants/{tenantId}/dashboards`, que el servicio tiene desde
-    // `168a761` — trabajo nuestro, no un hueco suyo, y por eso no está en
-    // `FALTANTES`.
-    montar() // el `/config/me` por defecto es del tenant `t-1`
+    // **Se cerró el 2026-10-07** al transcribir
+    // `GET /admin/tenants/{tenantId}/dashboards`: el nombre sale de ahí para
+    // cualquier cliente. Hasta ese día esta prueba afirmaba que el título decía
+    // sólo el cliente.
+    montar() // el `/config/me` por defecto es del tenant `t-1`, no de TENANT
     await abrirHistorial()
     const titulo = await screen.findByRole('heading', { level: 1 })
-    expect(titulo).toHaveTextContent('Under Armour México')
-    expect(titulo.textContent).not.toContain('·')
+    expect(titulo).toHaveTextContent('Marca · Under Armour México')
     expect(titulo.textContent).not.toContain(MARCA)
   })
 
@@ -293,12 +340,25 @@ describe('B6 · el chrome de `contexto` · §PEN:B6 frame `Volver`', () => {
   })
 
   it('«VOLVER A EDITAR» es el único control, y DISPARA', async () => {
-    montar()
+    // **Desde el 2026-10-07 vuelve al EDITOR, no a «Dashboards»**: es lo que el
+    // literal promete. Y «Marca» sólo tiene la publicada, que no se edita en el
+    // lugar, así que volver a editar resuelve igual que el paso 3: crea un
+    // borrador a partir de ella, CON su dashboard y la versión siguiente.
+    const { creados } = montar()
     await abrirHistorial()
     const cabecera = within(screen.getByRole('banner'))
     await userEvent.click(cabecera.getByRole('button', { name: 'Volver a editar' }))
-    // Vuelve a B1, que se reconoce por su pregunta.
-    expect(await screen.findByRole('heading', { name: '¿Sobre qué se va a componer?' })).toBeInTheDocument()
+
+    await waitFor(() => expect(creados).toEqual([{ version_id: 'v2', dashboard_id: MARCA }]))
+    expect(
+      await screen.findByText(/Se creó el borrador v2 a partir de la versión publicada v-1790712673/),
+    ).toBeInTheDocument()
+    // Y quedó en el editor de ese borrador, que se puede componer.
+    expect(
+      await screen.findByText('Este dashboard todavía no tiene pestañas. Agregá la primera con «+ Pestaña».'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Agregar una pestaña' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: '¿Sobre qué se va a componer?' })).toBeNull()
   })
 
   it('el contexto sigue visible · es lo que el `.pen` dibuja en el navbar de B6', async () => {

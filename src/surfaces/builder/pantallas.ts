@@ -51,7 +51,10 @@ export const PANTALLAS = [
   {
     id: 'contexto',
     ruta: '/builder',
-    nombre: 'Contexto de edición',
+    /** **«Dashboards» desde el 2026-10-07** · era «Contexto de edición». Es el
+     *  primer nivel de Cliente → Dashboard → Editor
+     *  (`docs/AUDITORIA-2026-10-07-flujo-de-edicion.md`, D1). */
+    nombre: 'Dashboards',
     /** §4: 1600 = 1200 de lienzo 1:1 + 300 de biblioteca. */
     ancho: 1600,
     /** **Debería ser `identidad` y es `composicion`, temporalmente.**
@@ -77,7 +80,9 @@ export const PANTALLAS = [
   {
     id: 'canvas',
     ruta: '/builder/canvas',
-    nombre: 'Canvas',
+    /** **«Editor» desde el 2026-10-07** · D5: «Canvas» era una palabra nuestra,
+     *  no del producto. */
+    nombre: 'Editor',
     ancho: 1600,
     chrome: 'composicion',
     enNav: true,

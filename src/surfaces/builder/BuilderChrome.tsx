@@ -32,6 +32,7 @@
  *  **Y B5 no lleva chrome ninguno**: «SIN CHROME DE EDICIÓN · DATOS REALES · ASÍ
  *  SE PUBLICA». Su única banda es volver a editar, y la pinta ella.
  */
+import { useLayoutEffect, useRef } from 'react'
 import { IdentityBlock } from '../IdentityBlock'
 import type { Theme } from '../../tokens/theme'
 import { Label } from '../../render/primitives/Label'
@@ -74,10 +75,39 @@ const ANCHO: Readonly<Record<number, string>> = {
 
 export type ContextoDeEdicion = {
   tenant: string | null
+  /** El dashboard que se edita · 2026-10-07, Cliente → Dashboard → Editor. */
+  dashboard: string | null
+  /** «Borrador v4» / «Publicada v3» · la versión que tiene el editor abierta. */
+  version: string | null
   rol: string | null
   pestana: string | null
-  /** Cuántos cambios sin guardar. `0` = limpio. */
+  /** Cuántas pestañas tienen cambios sin guardar. `0` = limpio. */
   cambios: number
+}
+
+/** **El estado del guardado, siempre a la vista** · 2026-10-07.
+ *
+ *  Decisión humana (D2 de `docs/AUDITORIA-2026-10-07-flujo-de-edicion.md`):
+ *  guardado automático y explícito a la vez, «mostrando los estados del botón
+ *  cuando quede guardado». Hasta hoy «Guardar» aparecía sólo con cambios y
+ *  desaparecía al guardar, que se ve igual que un botón roto. */
+export type EstadoDeGuardado = {
+  estado: 'sin-borrador' | 'lectura' | 'limpio' | 'sucio' | 'guardando' | 'error'
+  /** La hora del último guardado de esta sesión, ya formateada · `null` si no
+   *  se guardó todavía. */
+  ultimo: string | null
+  error: string | null
+  onGuardar: () => void
+}
+
+/** El tilde de «Guardado», de línea · iconografía §1, hereda el color. Una caja
+ *  y no el glifo ✓: el subconjunto latin de Inter no lo trae. */
+function Tilde() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 8.5l3.2 3L13 4.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
 }
 
 /** **Guardar va acá aunque el `.pen` no dibuje el botón.**
@@ -114,9 +144,7 @@ type Props = {
   onVistaPrevia: (() => void) | null
   /** `null` cuando no hay nada que publicar todavía · la razón la da la pantalla. */
   onPublicar: (() => void) | null
-  /** `null` cuando no hay cambios, o cuando la versión no admite escritura. */
-  onGuardar: (() => void) | null
-  guardando: boolean
+  guardado: EstadoDeGuardado
   /** **Validar vive al lado de guardar y publicar** · 2026-10-06. Estaba en el
    *  cuerpo, a media página, y publicar obligaba a ir y volver entre la cabecera
    *  y el medio de la pantalla para una sola intención · §2.4 de la auditoría.
@@ -142,8 +170,7 @@ export function BuilderChrome({
   onCliente,
   onVistaPrevia,
   onPublicar,
-  onGuardar,
-  guardando,
+  guardado,
   onValidar = null,
   validando = false,
   porQueNoPublicar = null,
@@ -152,13 +179,32 @@ export function BuilderChrome({
   const pantalla = PANTALLAS.find((p) => p.id === activa) ?? PANTALLAS[0]
   const forma = pantalla.chrome
 
+  /** **La altura de la cabecera, publicada como variable CSS** · 2026-10-07.
+   *  El inspector del editor es `fixed` a la derecha y, a toda la altura,
+   *  tapaba la cabecera —y con ella el estado del guardado, justo mientras se
+   *  edita—. Ahora abre debajo. La altura cambia cuando la fila de acciones se
+   *  parte en dos, así que se mide; sin `ResizeObserver` (jsdom) queda en 0. */
+  const cabecera = useRef<HTMLElement>(null)
+  useLayoutEffect(() => {
+    const el = cabecera.current
+    if (el === null || typeof ResizeObserver === 'undefined') return
+    const publicar = () =>
+      document.documentElement.style.setProperty('--alto-cabecera-builder', `${String(el.offsetHeight)}px`)
+    publicar()
+    const ro = new ResizeObserver(publicar)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   return (
     <div className="min-h-screen bg-bg">
       {/* Sin colapso · §4: «no son grids y declaran ancho mínimo en vez de
           colapso». Abajo del mínimo hay scroll, que es visible. */}
       <div className={ANCHO[pantalla.ancho] ?? ANCHO[1600]}>
         {sinChrome(forma) ? null : (
-          <header className="flex flex-col gap-4 px-6 pt-5 border-b border-w4">
+          // **Fija arriba**: el editor es largo, y el estado del guardado tiene
+          // que verse mientras se baja por el lienzo.
+          <header ref={cabecera} className="sticky top-0 z-30 flex flex-col gap-4 px-6 pt-5 border-b border-w4 bg-bg">
             <div className="flex items-center justify-between gap-6">
               {/* **Era la palabra en `font-display`, y ésa es la invención que
                   el capítulo `Identidad` corrige**: el logotipo tiene su propia
@@ -199,34 +245,68 @@ export function BuilderChrome({
                     tampoco va: en el canvas es el selector del cuerpo. */}
                 {/* El cliente ya no se repite acá: está arriba, en el selector. */}
                 {activa !== 'contexto' && (
-                  <div className="flex items-center gap-2">
-                    <Label>Rol</Label>
-                    <span className="font-body text-cuerpo font-medium text-ink">{contexto.rol ?? 'Todos los roles'}</span>
-                  </div>
+                  <>
+                    {contexto.dashboard !== null && (
+                      <div className="flex items-center gap-2">
+                        <Label>Dashboard</Label>
+                        <span className="font-body text-cuerpo font-medium text-ink">{contexto.dashboard}</span>
+                        {contexto.version !== null && <Label>{contexto.version}</Label>}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Label>Rol</Label>
+                      <span className="font-body text-cuerpo font-medium text-ink">{contexto.rol ?? 'Todos los roles'}</span>
+                    </div>
+                  </>
                 )}
 
-                {soloContexto(forma) ? (
+                {/* **En «Dashboards» no hay acciones de edición**: todavía no se
+                    eligió qué editar. Guardar, validar y publicar son del
+                    editor · visto en pantalla el 2026-10-07. */}
+                {activa === 'contexto' ? null : soloContexto(forma) ? (
                   /* **La única acción de B6, y es la del dibujo.** Una pantalla
                      que se mira no ofrece guardar ni publicar: lo que ofrece es
                      la vuelta a la que sí compone. El literal es del `.pen`. */
                   <div className="ml-auto">
-                    <Accion onClick={() => onIr('contexto')}>Volver a editar</Accion>
+                    <Accion onClick={() => onIr('canvas')}>Volver a editar</Accion>
                   </div>
                 ) : (
                   <div className="ml-auto flex flex-wrap items-center gap-2">
-                    {/* **El contador sigue al usuario** · §7.2: «guardado
-                        explícito, con indicador de cambios sin guardar». */}
-                    {contexto.cambios > 0 && (
-                      <Ayuda as="span">
-                        {contexto.cambios === 1
-                          ? '1 pestaña con cambios sin guardar'
-                          : `${String(contexto.cambios)} pestañas con cambios sin guardar`}
-                      </Ayuda>
+                    {/* **El guardado, con sus cuatro estados** · el botón no
+                        desaparece nunca mientras haya un borrador: cambia de
+                        texto. §7.2: «guardado explícito, con indicador de
+                        cambios sin guardar». */}
+                    {guardado.estado === 'sucio' && (
+                      <>
+                        <Ayuda as="span">
+                          {`${contexto.cambios === 1 ? '1 pestaña' : `${String(contexto.cambios)} pestañas`} con cambios · se guarda solo en unos segundos`}
+                        </Ayuda>
+                        <Accion variante="primaria" onClick={guardado.onGuardar}>
+                          {NOTA_GUARDAR}
+                        </Accion>
+                      </>
                     )}
-                    {onGuardar !== null && (
-                      <Accion onClick={onGuardar} deshabilitada={guardando}>
-                        {guardando ? 'Guardando…' : NOTA_GUARDAR}
+                    {guardado.estado === 'guardando' && (
+                      <Accion onClick={guardado.onGuardar} deshabilitada>
+                        Guardando…
                       </Accion>
+                    )}
+                    {guardado.estado === 'limpio' && (
+                      <>
+                        {guardado.ultimo !== null && <Ayuda as="span">{`Guardado a las ${guardado.ultimo}`}</Ayuda>}
+                        <Accion onClick={guardado.onGuardar} deshabilitada>
+                          <Tilde />
+                          Guardado
+                        </Accion>
+                      </>
+                    )}
+                    {guardado.estado === 'error' && (
+                      <>
+                        <Ayuda as="span">{guardado.error ?? 'No se pudo guardar.'}</Ayuda>
+                        <Accion variante="primaria" onClick={guardado.onGuardar}>
+                          Reintentar
+                        </Accion>
+                      </>
                     )}
                     {onValidar !== null && (
                       <Accion onClick={onValidar} deshabilitada={validando}>
