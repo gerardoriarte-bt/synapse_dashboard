@@ -62,6 +62,7 @@ import type { components as wire } from './console-generated'
 import type { ChatEvent } from './types'
 import { currentToken } from '../app/auth/session'
 import { apiBase } from './base'
+import { deVegaLite } from './vegaLite'
 
 type WireSchemas = wire['schemas']
 type WireChatFrameData = WireSchemas['ChatFrameData']
@@ -319,14 +320,23 @@ function traducir(
 
     case 'data': {
       const d = datos as WireChatFrameData
-      const valor = adaptValue(d.data)
+      // **El gráfico del agente** · 2026-10-07. Llega como `raw` con el spec
+      // Vega-Lite adentro y se tiraba en silencio. Ver `vegaLite.ts`.
+      const interno = d.shape === 'raw' && typeof d.data === 'object' && d.data !== null
+        ? (d.data as Record<string, unknown>)
+        : null
+      const grafico = interno?.shape === 'chart' ? deVegaLite(interno.chart_spec) : null
+      const valor = adaptValue(grafico === null ? d.data : grafico.valor)
       // **Un valor que no se puede adaptar NO se pinta a medias.** `adaptValue`
       // devuelve la razón —«el valor no declara su forma»— y descartarlo es lo
       // mismo que hace `adapt.ts` con un payload de panel que no cierra.
       if (!valor.ok) return null
 
       const p = d.provenance
-      const familia = FAMILIAS[p.family]
+      // **`family: ""` es «el catálogo no la declaró»** —el chat de pestaña— y
+      // llega como `null`: el dato se declara sin pintarse. Una familia que el
+      // contrato no conoce sigue descartándose, porque eso es un cable roto.
+      const familia = p.family === '' ? null : FAMILIAS[p.family]
       // **Sin familia no se dibuja**, y no se cae a una por defecto: el color de
       // una cifra del chat ya se inventó una vez —estaba cableado a `demanda`—
       // y por eso `familia` entró al contrato el 2026-08-19.
@@ -343,6 +353,8 @@ function traducir(
         // produjo, no como el último refresco del panel.
         frescura: p.queried_at === '' ? p.freshness : p.queried_at,
         catalogVersion: p.catalog_version,
+        ...(grafico === null ? {} : { tipoDePanel: grafico.tipoDePanel }),
+        ...(grafico?.titulo == null ? {} : { titulo: grafico.titulo }),
       }
     }
 

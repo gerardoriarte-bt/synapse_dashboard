@@ -1848,15 +1848,21 @@ components:
             julio muestra las cifras de julio con su frescura de julio: no hay
             una versión «guardada» distinta de la que se vio.
 
-            El `chart_spec` en Vega-Lite que hoy emite el agente NO llega acá:
-            se normaliza en el backend a esta forma. Trae encoding visual y en
-            este sistema el color no lo elige el gráfico, lo dicta la familia de
-            la métrica.
+            **El `chart_spec` en Vega-Lite que emite el agente se normaliza en el
+            ADAPTADOR del chat** (`src/api/chat.ts` → `vegaLite.ts`) · corregido
+            el 2026-10-07. Acá decía que lo normalizaba el backend, y medido
+            contra `7b717aa` no lo hace: lo manda como `shape: raw` con el spec
+            adentro, y el front lo tiraba en silencio. De ese spec se toman los
+            datos y la MARCA —que decide el agente, decisión humana del
+            2026-10-07—; el color y la escala no, porque en este sistema el
+            color lo dicta la familia de la métrica, no el gráfico.
           required: [valor, familia]
           properties:
             valor: { $ref: '#/components/schemas/Valor' }
             familia:
-              $ref: '#/components/schemas/Familia'
+              oneOf:
+                - $ref: '#/components/schemas/Familia'
+                - type: 'null'
               description: |
                 Con qué familia se pinta. **Obligatoria, y entró al contrato el
                 2026-08-19 por un defecto real**: el front la tenía cableada a
@@ -1864,6 +1870,20 @@ components:
                 una cifra del chat era inventado. §2.2 hace del color una
                 propiedad de la métrica, no una decisión del componente — y eso
                 vale igual cuando la cifra la compuso el agente para responder.
+
+                **`null` desde el 2026-10-07: el catálogo no la declaró.** Pasa
+                en el chat de pestaña, donde no hay una métrica de origen. Antes
+                el adaptador descartaba el dato entero y la respuesta quedaba
+                sin una sola cifra; ahora llega y **se declara sin pintarse**.
+                Null no habilita un color por defecto: es lo contrario.
+            tipoDePanel:
+              $ref: '#/components/schemas/TipoPanel'
+              description: |
+                Con qué cuerpo se dibuja, **cuando lo decidió el agente** · desde
+                el 2026-10-07. Sale de la marca del `chart_spec` —`line` →
+                `series`, `bar` → `bars`—, así que no es una elección nuestra.
+                Ausente cuando el dato no trajo gráfico: ahí manda el panel de
+                origen, que es la regla de F3.6.
             presentacion: { $ref: '#/components/schemas/Presentacion' }
             metricId:
               type: [string, 'null']

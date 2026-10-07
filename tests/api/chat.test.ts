@@ -498,6 +498,65 @@ describe('§F3.6 · el evento `data` se traduce · desde `55e8419`', () => {
     expect(eventos.map((e) => e.tipo)).toEqual(['fin'])
   })
 
+  /** **El gráfico del agente** · 2026-10-07. Así lo manda `7b717aa`:
+   *  `TranslateCortexEvent` pone `{shape: 'chart', chart_spec}` y
+   *  `StructuredDataFromCortex`, sin filas, lo envuelve como `raw`. Hasta hoy el
+   *  front lo tiraba en silencio. */
+  const conGrafico = (parche: Record<string, unknown> = {}) =>
+    trama('data', {
+      shape: 'raw',
+      data: {
+        shape: 'chart',
+        chart_spec: JSON.stringify({
+          title: 'Ingresos por mes',
+          mark: 'line',
+          encoding: {
+            x: { field: 'MES', type: 'temporal' },
+            y: { field: 'INGRESOS', type: 'quantitative' },
+          },
+          data: { values: [{ MES: '2026-08-01', INGRESOS: 10 }, { MES: '2026-09-01', INGRESOS: 12 }] },
+        }),
+      },
+      provenance: {
+        source: 'cortex_agent',
+        metric_key: 'revenue',
+        period: '2026-09',
+        sql_available: true,
+        base: 'Pedidos completados',
+        base_source: 'catalog',
+        family: 'demand',
+        layer: 'GOLD',
+        source_system: 'Snowflake',
+        catalog_version: 2,
+        freshness: '',
+        queried_at: '2026-10-07T10:00:00Z',
+        ...parche,
+      },
+    })
+
+  it('el `chart_spec` del agente llega como `dato`, con la marca que eligió', async () => {
+    responde([INFO, conGrafico(), DONE])
+
+    const [evento] = await recolectar(askSynapse(PREGUNTA))
+    expect(evento).toMatchObject({
+      tipo: 'dato',
+      tipoDePanel: 'series',
+      titulo: 'Ingresos por mes',
+      familia: 'demanda',
+      valor: { forma: 'serieTemporal', puntos: [{ t: '2026-08-01', v: 10 }, { t: '2026-09-01', v: 12 }] },
+    })
+  })
+
+  it('en la PESTAÑA `family: ""` llega como `null` · se declara, no se descarta', async () => {
+    // `provenanceFromContext` en modo pestaña sólo llena `source` y `period`;
+    // el resto viaja vacío. Antes eso tiraba todos los datos del chat de
+    // pestaña, que es el modo por defecto.
+    responde([INFO, conGrafico({ family: '', base: '', layer: '' }), DONE])
+
+    const [evento] = await recolectar(askSynapse(PREGUNTA_DE_PESTANA))
+    expect(evento).toMatchObject({ tipo: 'dato', familia: null, tipoDePanel: 'series' })
+  })
+
   it('un valor que no se puede adaptar tampoco se pinta a medias', async () => {
     responde([
       INFO,

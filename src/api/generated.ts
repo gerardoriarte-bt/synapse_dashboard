@@ -1250,8 +1250,22 @@ export interface components {
              *     una cifra del chat era inventado. §2.2 hace del color una
              *     propiedad de la métrica, no una decisión del componente — y eso
              *     vale igual cuando la cifra la compuso el agente para responder.
+             *
+             *     **`null` desde el 2026-10-07: el catálogo no la declaró.** Pasa
+             *     en el chat de pestaña, donde no hay una métrica de origen. Antes
+             *     el adaptador descartaba el dato entero y la respuesta quedaba
+             *     sin una sola cifra; ahora llega y **se declara sin pintarse**.
+             *     Null no habilita un color por defecto: es lo contrario.
              */
-            familia: components["schemas"]["Familia"];
+            familia: components["schemas"]["Familia"] | null;
+            /**
+             * @description Con qué cuerpo se dibuja, **cuando lo decidió el agente** · desde
+             *     el 2026-10-07. Sale de la marca del `chart_spec` —`line` →
+             *     `series`, `bar` → `bars`—, así que no es una elección nuestra.
+             *     Ausente cuando el dato no trajo gráfico: ahí manda el panel de
+             *     origen, que es la regla de F3.6.
+             */
+            tipoDePanel?: components["schemas"]["TipoPanel"];
             presentacion?: components["schemas"]["Presentacion"];
             /**
              * @description Cuando la respuesta se apoya en una métrica del catálogo. Null

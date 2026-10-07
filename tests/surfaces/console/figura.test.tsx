@@ -117,3 +117,90 @@ describe('F3.6 · con qué cuerpo, que era lo que faltaba', () => {
     expect(await screen.findByRole('img', { name: /categorías/ })).toBeInTheDocument()
   })
 })
+
+describe('el gráfico del agente · 2026-10-07 · «su marca, nuestros cuerpos»', () => {
+  const barras = {
+    forma: 'categorica',
+    items: [
+      { etiqueta: 'Meta', v: 4.2 },
+      { etiqueta: 'Google', v: 3.1 },
+    ],
+  }
+
+  it('si el agente eligió la marca, manda la suya y no la del panel', async () => {
+    // El panel es un KPI, que no acepta una categórica. Sin `tipoDePanel` esto
+    // se declararía; con él, el agente pidió barras y se dibujan barras.
+    render(
+      <ChatFigure
+        dato={dato({ valor: barras, tipoDePanel: 'bars' } as never)}
+        panelTipo="kpi"
+        bloques={bloques}
+        format={format}
+        now={now}
+      />,
+    )
+    expect(await screen.findByRole('img', { name: '2 categorías' })).toBeInTheDocument()
+  })
+
+  it('también desde la PESTAÑA, donde no hay panel de origen', async () => {
+    render(
+      <ChatFigure
+        dato={dato({ valor: barras, tipoDePanel: 'bars' } as never)}
+        bloques={bloques}
+        format={format}
+        now={now}
+      />,
+    )
+    expect(await screen.findByRole('img', { name: '2 categorías' })).toBeInTheDocument()
+  })
+
+  it('SIN familia se declara y no se pinta · null no habilita un color', () => {
+    const { container } = render(
+      <ChatFigure
+        dato={dato({
+          valor: barras,
+          tipoDePanel: 'bars',
+          familia: null,
+          titulo: 'ROAS por canal',
+        } as never)}
+        bloques={bloques}
+        format={format}
+        now={now}
+      />,
+    )
+    expect(container.textContent).toContain('ROAS por canal')
+    expect(container.textContent).toContain('no declaró de qué familia es')
+    expect(container.querySelector('figure')).toBeNull()
+  })
+})
+
+describe('el alto del gráfico · lo encontró abrir el modo mock', () => {
+  /** **Un cuerpo de gráfico ocupa el alto de su contenedor**, y la figura del
+   *  chat no tenía: la primera serie del agente salió con título, BASE y
+   *  procedencia y sin una línea. Las pruebas de arriba pasaban, porque jsdom
+   *  no mide — por eso ésta mira el alto declarado y no el dibujo. */
+  it('un gráfico lleva el alto de su `rowSpan`, que sale de la grilla', async () => {
+    const { container } = render(
+      <ChatFigure
+        dato={dato({
+          valor: { forma: 'categorica', items: [{ etiqueta: 'Meta', v: 1 }] },
+          tipoDePanel: 'bars',
+        } as never)}
+        bloques={bloques}
+        format={format}
+        now={now}
+      />,
+    )
+    await screen.findByRole('img', { name: '1 categorías' })
+    const caja = container.querySelector('figure > div[style]') as HTMLElement | null
+    expect(caja?.style.height).toBe('272px')
+  })
+
+  it('un KPI no · mide su propia cifra y con 272 px quedaba un hueco', async () => {
+    const { container } = render(
+      <ChatFigure dato={dato()} panelTipo="kpi" bloques={bloques} format={format} now={now} />,
+    )
+    await screen.findByText(/4\.28/)
+    expect(container.querySelector('figure > div[style]')).toBeNull()
+  })
+})
