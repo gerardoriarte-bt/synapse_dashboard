@@ -574,6 +574,26 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-10-07 · el chat dibuja y los meses se cargan desde A5
+
+**Lo que costó descubrir está en `docs/BITACORA-2026-10-07.md`.** Esto es dónde
+retomar. **`main` está en `bce2e95`**, fast-forward de `Gerardo`, y el backend
+ya está avisado para desplegarlo en QA.
+
+**LO PRIMERO DESPUÉS DEL DESPLIEGUE: cargar enero–agosto de 2026 en QA**, desde
+Administración → Salud de feeds → «Cargar meses». El scheduler sólo calcula el
+mes en curso y el anterior (`DD_MATERIALIZE_PERIODS_BACK`, default 1), así que
+**todo cliente que entre con historia necesita este paso**. Está en el runbook.
+
+**Y una trampa que vale para adelante: el local mostraba los meses porque los
+cargamos a mano**, no porque el producto los cargue. Antes de concluir «anda»,
+mirar quién dejó andando lo que se mira — `dd_materialize_runs.trigger`.
+
+**Esperando al backend**, en `docs/MENSAJE-2026-10-07-backend-respuestas-del-chat.md`:
+el bloque de formato del prompt —que le pide al agente «una o dos frases»— y la
+familia en los datos del chat de pestaña. Hasta que llegue, en la pestaña el
+gráfico del agente se declara sin dibujarse; en el chat de panel ya se dibuja.
+
 ### ⇩ ACÁ SE PARÓ · 2026-10-05 · el día que QA dejó de ser una pregunta
 
 **TODO LO QUE FALTA ESTÁ DEL LADO DEL BACKEND, y el mensaje ya se mandó** ·
