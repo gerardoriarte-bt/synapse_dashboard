@@ -37,6 +37,12 @@ export type Bloque =
   | { tipo: 'seccion'; texto: string }
   | { tipo: 'parrafo'; trozos: Trozo[] }
   | { tipo: 'lista'; ordenada: boolean; items: Trozo[][] }
+  /** `| a | b |` · desde el 2026-10-07. Hasta ese día una tabla del agente se
+   *  unía en UN párrafo de pipes —`| Canal | ROAS | |---|---| | Meta | 4.2 |`—
+   *  y es lo que más escribe un analista: en Snowflake Intelligence la misma
+   *  respuesta se leía como tabla. `numericas` dice qué columnas se alinean a
+   *  la derecha, y sale de las celdas, no de una decisión nuestra. */
+  | { tipo: 'tabla'; encabezado: Trozo[][]; filas: Trozo[][][]; numericas: boolean[] }
 
 export type Respuesta = {
   /** El agente declaró que no puede responder con las fuentes que tiene.
@@ -55,6 +61,12 @@ const SIN_COMPETENCIA = '[SIN_COMPETENCIA]'
 const ENCABEZADO = /^#{1,6}(?:\s+(.*))?$/
 const VINETA = /^\s*[-*]\s+(.*)$/
 const NUMERADA = /^\s*\d+[.)]\s+(.*)$/
+const FILA_DE_TABLA = /^\s*\|/
+// `|---|:---:|` · y también `|--` a medio llegar, que durante el streaming no
+// tiene que verse como una fila.
+const SEPARADOR = /^\s*\|?[\s:|-]*-[\s:|-]*$/
+// Una celda que se lee como cifra: signo, moneda, miles, decimales, `%` o `x`.
+const CIFRA = /^[-+−]?\s*[$€]?\s*[\d.,]+\s*(%|x|[kKmM])?$/
 
 export function parsear(markdown: string): Respuesta {
   const lineas = markdown.split('\n')
@@ -67,6 +79,7 @@ export function parsear(markdown: string): Respuesta {
   const bloques: Bloque[] = []
   let parrafo: string[] = []
   let lista: { ordenada: boolean; items: string[] } | null = null
+  let tabla: string[] | null = null
 
   const cerrarParrafo = () => {
     if (parrafo.length === 0) return
@@ -82,6 +95,24 @@ export function parsear(markdown: string): Respuesta {
     })
     lista = null
   }
+  // **Sin separador también es tabla.** Durante el streaming el encabezado
+  // llega antes que `|---|`, y pintarlo como párrafo un instante haría saltar
+  // la respuesta. Las líneas separadoras se descartan donde estén.
+  const cerrarTabla = () => {
+    if (tabla === null) return
+    const [cabeza = [], ...cuerpo] = tabla.filter((l) => !SEPARADOR.test(l)).map(celdas)
+    const numericas = cabeza.map((_, j) => {
+      const columna = cuerpo.map((f) => f[j] ?? '').filter((c) => c !== '')
+      return columna.length > 0 && columna.every((c) => CIFRA.test(c.replace(/\*\*/g, '')))
+    })
+    bloques.push({
+      tipo: 'tabla',
+      encabezado: cabeza.map(inline),
+      filas: cuerpo.map((f) => cabeza.map((_, j) => inline(f[j] ?? ''))),
+      numericas,
+    })
+    tabla = null
+  }
 
   for (const cruda of lineas) {
     const linea = cruda.trimEnd()
@@ -89,8 +120,18 @@ export function parsear(markdown: string): Respuesta {
     if (linea.trim() === '') {
       cerrarParrafo()
       cerrarLista()
+      cerrarTabla()
       continue
     }
+
+    if (FILA_DE_TABLA.test(linea)) {
+      cerrarParrafo()
+      cerrarLista()
+      if (tabla === null) tabla = []
+      tabla.push(linea)
+      continue
+    }
+    cerrarTabla()
 
     const enc = ENCABEZADO.exec(linea)
     if (enc !== null) {
@@ -122,8 +163,15 @@ export function parsear(markdown: string): Respuesta {
 
   cerrarParrafo()
   cerrarLista()
+  cerrarTabla()
 
   return { sinCompetencia, bloques }
+}
+
+/** `| a | b |` → `['a', 'b']`. Los pipes de los bordes son opcionales. */
+function celdas(linea: string): string[] {
+  const t = linea.trim().replace(/^\|/, '').replace(/\|$/, '')
+  return t.split('|').map((c) => c.trim())
 }
 
 /** `**énfasis**` y `` `código` ``, sin anidarse.

@@ -71,6 +71,50 @@ export function Markdown({ texto }: { texto: string }) {
           )
         }
 
+        if (bloque.tipo === 'tabla') {
+          // **La misma anatomía que `TableBody`**: rótulo mono en el
+          // encabezado, línea `w2` debajo, `w1` entre filas y las cifras a la
+          // derecha en mono de celda. El scroll horizontal es de la tabla, no
+          // de la hoja: una tabla ancha no empuja el chat.
+          return (
+            <div key={i} className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr>
+                    {bloque.encabezado.map((c, j) => (
+                      <th
+                        key={j}
+                        scope="col"
+                        className={`text-left pb-2 pr-3 border-b border-w2 ${bloque.numericas[j] === true ? 'text-right' : ''}`}
+                      >
+                        <Label>{c.map((t) => t.texto).join('')}</Label>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {bloque.filas.map((fila, k) => (
+                    <tr key={k} className="border-b border-w1">
+                      {fila.map((c, j) => (
+                        <td
+                          key={j}
+                          className={
+                            bloque.numericas[j] === true
+                              ? 'py-1 pr-3 text-right font-mono text-celda text-ink'
+                              : 'py-1 pr-3 font-body text-cuerpo text-ink'
+                          }
+                        >
+                          <Trozos trozos={c} enCelda />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        }
+
         return (
           <p key={i} className={PARRAFO}>
             <Trozos trozos={bloque.trozos} />
@@ -81,7 +125,10 @@ export function Markdown({ texto }: { texto: string }) {
   )
 }
 
-function Trozos({ trozos }: { trozos: readonly Trozo[] }) {
+/** `enCelda`: el énfasis dentro de una tabla va en negrita y SIN naranja ·
+ *  `design.md` prohíbe `acc` en una celda —«nunca en una serie, barra, celda o
+ *  nodo»—, y la prosa es el único lugar donde una cifra resaltada lo lleva. */
+function Trozos({ trozos, enCelda = false }: { trozos: readonly Trozo[]; enCelda?: boolean }) {
   return (
     <>
       {trozos.map((t, i) => {
@@ -91,7 +138,7 @@ function Trozos({ trozos }: { trozos: readonly Trozo[] }) {
         // acá no lo es: no hay serie, barra ni celda.
         if (t.enfasis) {
           return (
-            <strong key={i} className="font-bold text-acc">
+            <strong key={i} className={enCelda ? 'font-bold' : 'font-bold text-acc'}>
               {t.texto}
             </strong>
           )
