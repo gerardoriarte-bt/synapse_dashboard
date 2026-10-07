@@ -297,3 +297,32 @@ export function createFormat(locale: string): Formatter {
     },
   }
 }
+
+/** El mes en curso **de un huso**, `YYYY-MM` · 2026-10-07, para A5 · «Cargar meses».
+ *
+ *  **Acá y no en la pantalla porque este es el único archivo que arma un
+ *  `Intl`** —regla `locale` de `design-lint`—. No depende del locale: el
+ *  `en-CA` sólo fija el orden de las partes, y lo que se lee son números.
+ *
+ *  **El huso es el del tenant, no el del navegador** · regla del 2026-09-04: el
+ *  corte del negocio es uno solo. Quien opera desde Bogotá el 1 de octubre a
+ *  las 0:30 está todavía en septiembre para un cliente de Ciudad de México.
+ *  Un huso que `Intl` no reconoce cae a UTC: a lo sumo se ofrece un mes de más
+ *  o de menos un día al año, y el servicio igual acepta el que se pida. */
+export function mesEnCurso(ahora: Date, zona: string | null): string {
+  const partes = (tz: string) =>
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+    }).formatToParts(ahora)
+  let p: Intl.DateTimeFormatPart[]
+  try {
+    p = partes(zona === null || zona === '' ? 'UTC' : zona)
+  } catch {
+    p = partes('UTC')
+  }
+  const anio = p.find((x) => x.type === 'year')?.value ?? ''
+  const mes = p.find((x) => x.type === 'month')?.value ?? ''
+  return `${anio}-${mes}`
+}

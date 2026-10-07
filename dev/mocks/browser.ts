@@ -33,6 +33,27 @@ import { DASH_A, DASH_B, LAYOUT_PUB, TENANT_EN_ALTA, bloques, catalogo, contexto
 
 const API = '*/api/v1'
 const ok = <T,>(data: T) => HttpResponse.json({ success: true, data })
+
+/** Las corridas de materialización, en memoria · 2026-10-07. Como el resto del
+ *  estado del modo mock: recargar vuelve a cero. La forma es la de
+ *  `MaterializeRun`, medida contra `7b717aa` ese día. */
+type CorridaMock = Record<string, unknown> & { status: string; finished_at: string | null }
+const corrida = (tenantId: string, period: string, trigger: string): CorridaMock => ({
+  id: `run-${period}-${String(Math.random()).slice(2, 8)}`,
+  tenant_id: tenantId, period, trigger, status: 'running',
+  agent_name: 'Synapse UA', role: 'admin',
+  available: 0, blocked: 0, errors: 0, skipped: 0, preserved: 0,
+  catalog_synced: true, error: '',
+  started_at: new Date().toISOString(), finished_at: null,
+})
+const terminar = (c: CorridaMock) => {
+  Object.assign(c, { status: 'done', available: 21, blocked: 12, preserved: 5, finished_at: new Date().toISOString() })
+}
+const CORRIDAS: CorridaMock[] = ['2026-09', '2026-10'].map((p) => {
+  const c = corrida('t-1', p, 'cron')
+  terminar(c)
+  return c
+})
 const mal = (mensaje: string, status: number) =>
   HttpResponse.json({ success: false, error: mensaje }, { status })
 
@@ -941,6 +962,28 @@ export const worker = setupWorker(
       metric_keys: ['visits'], is_active: true,
     },
   ])),
+
+  /** **El historial arranca como QA el 2026-10-07**: sólo septiembre y octubre,
+   *  que es lo único que el scheduler calcula —mes en curso y el anterior—. Lo
+   *  demás hay que pedirlo desde A5, que es lo que este mock deja recorrer. */
+  http.get(`${API}/admin/materialize/runs`, () => ok([...CORRIDAS].reverse())),
+
+  /** **202 y la fila llega después**, como en el servicio: medido contra
+   *  `7b717aa` el 2026-10-07, aparece a los ~5 s en `running` y termina a los
+   *  ~8 s. Acá es más corto para mirarlo sin esperar, pero en el mismo orden. */
+  http.post(`${API}/admin/tenants/:id/materialize`, async ({ request, params }) => {
+    const { periods } = (await request.json()) as { periods?: string[] }
+    const pedidos = periods ?? []
+    pedidos.forEach((periodo, i) => {
+      const fila = corrida(String(params.id), periodo, 'manual')
+      setTimeout(() => CORRIDAS.push(fila), 1500 + i * 1200)
+      setTimeout(() => terminar(fila), 3000 + i * 1200)
+    })
+    return HttpResponse.json(
+      { success: true, data: { started: true, trigger: 'manual', tenant_id: params.id, role: 'admin', periods: pedidos } },
+      { status: 202 },
+    )
+  }),
 
   /** **El cliente en alta tampoco tiene agente**, y que igual salga `BLOQUEADO`
    *  es lo que hay que poder mirar: la condición del bloqueo son los ROLES, no

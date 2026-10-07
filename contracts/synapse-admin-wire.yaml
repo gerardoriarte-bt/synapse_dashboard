@@ -1077,6 +1077,66 @@ paths:
   # **No acepta filtro por período**, leído de su handler: sólo `tenant_id` y
   # `limit`, con tope 100. Acotar por año es del front, y por eso está declarado
   # en la pantalla.
+  /admin/tenants/{tenantId}/materialize:
+    x-verificado-en: 7b717aa
+    post:
+      tags: [admin]
+      operationId: materializeTenant
+      summary: Calcula las métricas de un cliente para los meses pedidos
+      description: |
+        **Asíncrona: contesta 202 y corre después.** Leído en
+        `dd_materialize_handler.go` (`RunTenant`) y medido el 2026-10-07 contra
+        `:4010`: con `["2026-07"]` la fila apareció en `/admin/materialize/runs`
+        a los ~5 s en `running` y terminó a los ~8 s. Una fila por período.
+
+        **`periods` VACÍO NO ES UN ERROR**: el servicio cae a sus períodos por
+        defecto —mes en curso más `DD_MATERIALIZE_PERIODS_BACK` anteriores,
+        default 1—. El front nunca lo manda vacío, porque eso calcularía meses
+        que nadie eligió.
+
+        **Es lo que destraba el histórico de un cliente nuevo.** El scheduler
+        diario sólo calcula el mes en curso y el anterior, así que un cliente que
+        entra a mitad de año con datos previos no los ve hasta que alguien pide
+        esos meses. Decisión humana del 2026-10-07: se pide desde A5.
+
+        **No verifica si ya hay una corrida en vuelo**, a diferencia de
+        `/admin/materialize/run`, que devuelve 409. Leído, no medido.
+      parameters:
+        - $ref: '#/components/parameters/tenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                periods:
+                  type: array
+                  items: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$' }
+                  description: |
+                    `YYYY-MM`. Uno mal formado devuelve **400** con
+                    «período inválido: 2026-13 (formato YYYY-MM)» — medido.
+                role:
+                  type: string
+                  description: Vacío = el rol del primer agente activo del cliente.
+      responses:
+        '202':
+          description: La corrida arrancó · el resultado se lee en `/admin/materialize/runs`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/MaterializeStarted' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: |
+            «el tenant no tiene agentes activos» · sin agente no hay con qué
+            consultar Snowflake. Leído en el handler.
+
   /admin/materialize/runs:
     x-verificado-en: de881e1
     get:
@@ -1184,6 +1244,21 @@ components:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   schemas:
+    MaterializeStarted:
+      type: object
+      description: |
+        La respuesta 202 de `POST /admin/tenants/{tenantId}/materialize`, medida
+        el 2026-10-07 contra `:4010`. Dice qué arrancó, no cómo salió.
+      required: [started, trigger, tenant_id, role, periods]
+      properties:
+        started: { type: boolean }
+        trigger: { type: string, examples: ['manual'] }
+        tenant_id: { type: string, format: uuid }
+        role: { type: string }
+        periods:
+          type: array
+          items: { type: string }
+
     MaterializeRun:
       type: object
       description: |

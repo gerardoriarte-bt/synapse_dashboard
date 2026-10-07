@@ -8,11 +8,11 @@
  */
 import { readFileSync } from 'node:fs'
 import { MemoryRouter } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { Admin } from '@/surfaces/admin/Admin'
 import { PANTALLAS } from '@/surfaces/admin/pantallas'
 import { ok } from '../../mocks/handlers'
@@ -447,5 +447,66 @@ describe('§PEN:A1 · el navbar de admin pinta la identidad', () => {
     const cabecera = document.querySelector('header') as HTMLElement
     expect(within(cabecera).getByText('planner')).toBeVisible()
     expect(within(cabecera).getByText('Otra Persona')).toBeVisible()
+  })
+})
+
+describe('A5 · cargar meses atraviesa la cadena entera · 2026-10-07', () => {
+  /** **Lo que esta prueba sigue es el CALLBACK, por los cuatro saltos**:
+   *  `CargarPeriodos` → `Admin` → `useLoadPeriods` → `POST`. Cada salto usa el
+   *  spread condicional, y una prop mal nombrada compila y deja un botón que se
+   *  ve igual que uno que funciona. La prueba de la pantalla sola no lo ve. */
+  it('elegir junio y cargar manda `POST /admin/tenants/t-1/materialize` con junio', { timeout: 15000 }, async () => {
+    // **Sólo `Date` es falso**: los meses ofrecidos salen del reloj, y sin
+    // fijarlo esta prueba se rompería sola el 1 de enero. Los temporizadores
+    // siguen reales, que es lo que `userEvent` y el sondeo necesitan.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-07T17:00:00Z'))
+    // **Sin foco**, que es como se ve contra el servicio con otra pestaña al
+    // frente: TanStack no dispara el intervalo así salvo que se le pida. En
+    // jsdom la ventana siempre tiene foco y el defecto no se veía.
+    focusManager.setFocused(false)
+    let cuerpo: unknown = null
+    let pedido = false
+    server.use(
+      http.get(`${API}/admin/tenants`, () => ok(tenants)),
+      http.get(`${API}/admin/tenants/:id/feeds`, () => ok([])),
+      // **La fila aparece DESPUÉS del POST**, como en el servicio. Sin sondeo la
+      // pantalla se quedaría diciendo «Cargando» para siempre.
+      http.get(`${API}/admin/materialize/runs`, () =>
+        ok(
+          pedido
+            ? [{
+                id: 'r-1', tenant_id: 't-1', period: '2026-06', trigger: 'manual', status: 'done',
+                available: 21, blocked: 12, errors: 0, skipped: 0, preserved: 5, error: '',
+                started_at: new Date().toISOString(), finished_at: new Date().toISOString(),
+              }]
+            : [],
+        ),
+      ),
+      http.post(`${API}/admin/tenants/:id/materialize`, async ({ request, params }) => {
+        cuerpo = { tenant: params.id, ...((await request.json()) as object) }
+        // La fila «existe» recién un rato después de contestar.
+        setTimeout(() => {
+          pedido = true
+        }, 500)
+        return ok({ started: true, trigger: 'manual', tenant_id: params.id, role: 'admin', periods: ['2026-06'] })
+      }),
+    )
+    montar()
+    await screen.findByText('Under Armour México')
+    await userEvent.click(screen.getByRole('button', { name: 'Salud de feeds' }))
+
+    await userEvent.click(await screen.findByRole('button', { name: /jun.*sin cargar/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Cargar 1 mes' }))
+
+    await waitFor(() => expect(cuerpo).toEqual({ tenant: 't-1', periods: ['2026-06'] }))
+    expect(await screen.findByText(/Cargando 2026-06/)).toBeInTheDocument()
+
+    // **Y termina solo**: el historial se vuelve a pedir mientras falte algo,
+    // junio pasa a «cargado» y el aviso se va.
+    expect(await screen.findByRole('button', { name: /jun.*· cargado/i }, { timeout: 8000 })).toBeInTheDocument()
+    expect(screen.queryByText(/Cargando 2026-06/)).toBeNull()
+    focusManager.setFocused(undefined)
+    vi.useRealTimers()
   })
 })

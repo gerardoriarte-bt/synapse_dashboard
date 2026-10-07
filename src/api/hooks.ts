@@ -12,7 +12,7 @@ import { api } from './client'
 import { esDePanel } from './chat'
 import type { ContextoDeChat } from './chat'
 import { adminApi } from './admin'
-import type { RolParaGuardar, TabParaGuardar } from './admin'
+import type { Corrida, RolParaGuardar, TabParaGuardar } from './admin'
 import type { Theme } from '../tokens/theme'
 import type { Payload } from './types'
 
@@ -369,16 +369,41 @@ export function useFeeds(tenantId: string | null) {
 
 /** El historial de materializaciones del cliente · 2026-10-01.
  *
- *  **Sin `refetchInterval`, y es una decisión.** Una corrida tarda segundos y
- *  deja su fila; sondear cada N segundos costaría una petición por minuto para
- *  mirar algo que casi siempre está quieto. Quien acaba de disparar una recarga
- *  mira esta lista una vez — y el día que la pantalla pueda disparar corridas,
- *  es la mutación la que invalida esta clave, no un reloj. */
-export function useRuns(tenantId: string | null) {
+ *  **Quieta, salvo que haya algo que esperar** · 2026-10-07. Hasta hoy no
+ *  sondeaba: una corrida casi siempre está quieta y mirarla cada N segundos era
+ *  gastar una petición para nada. Desde que A5 puede pedir meses eso cambió de
+ *  forma, no de regla: **la ruta de carga contesta 202 y la fila aparece
+ *  segundos después** —medido, ~5 s—, así que invalidar una vez al terminar la
+ *  mutación mira la lista ANTES de que la fila exista.
+ *
+ *  Por eso si hay que esperar lo decide quien pidió —`hayQueEsperar`, con su tope de
+ *  diez minutos— y el reloj corre sólo mientras sea cierto. */
+export function useRuns(tenantId: string | null, esperar?: (corridas: readonly Corrida[]) => boolean) {
   return useQuery({
     queryKey: keys.corridas(tenantId ?? ''),
     queryFn: () => adminApi.corridas(tenantId as string),
     enabled: tenantId !== null && tenantId !== '',
+    refetchInterval: (q) => (esperar?.(q.state.data ?? []) === true ? 3000 : false),
+    // **También con la pestaña en segundo plano** · 2026-10-07. TanStack sólo
+    // dispara el intervalo con la ventana enfocada, y cargar ocho meses es
+    // justo lo que uno pide y se va a otra pestaña: el historial quedaba
+    // congelado diciendo «Cargando». Lo encontró probarlo contra el servicio
+    // con el navegador sin foco; la prueba en jsdom no podía verlo, ahí la
+    // ventana siempre lo tiene. El costo está acotado: sólo mientras se espera,
+    // y con tope.
+    refetchIntervalInBackground: true,
+  })
+}
+
+/** Pedir que se calculen meses de un cliente · 2026-10-07.
+ *
+ *  Invalida el historial al arrancar, para que la primera vuelta del sondeo no
+ *  espere tres segundos. Lo que sigue lo hace `useRuns` con `esperando`. */
+export function useLoadPeriods(tenantId: string | null) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (periodos: readonly string[]) => adminApi.cargarPeriodos(tenantId as string, periodos),
+    onSuccess: () => client.invalidateQueries({ queryKey: keys.corridas(tenantId ?? '') }),
   })
 }
 

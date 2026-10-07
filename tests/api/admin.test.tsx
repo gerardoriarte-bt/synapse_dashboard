@@ -524,3 +524,42 @@ describe('la restricción de rol viaja por CLAVE · 2026-09-29', () => {
     expect(cuerpo).not.toHaveProperty('tab_ids')
   })
 })
+
+describe('cargar meses · POST /admin/tenants/{id}/materialize · 2026-10-07', () => {
+  it('manda los meses elegidos en `periods` y devuelve los que el servicio arrancó', async () => {
+    let cuerpo: unknown = null
+    server.use(
+      http.post(`${API}/admin/tenants/t-1/materialize`, async ({ request }) => {
+        cuerpo = await request.json()
+        // La respuesta 202 medida contra `7b717aa` ese día.
+        return HttpResponse.json(
+          { success: true, data: { started: true, trigger: 'manual', tenant_id: 't-1', role: 'admin', periods: ['2026-07', '2026-08'] } },
+          { status: 202 },
+        )
+      }),
+    )
+    expect(await adminApi.cargarPeriodos('t-1', ['2026-07', '2026-08'])).toEqual(['2026-07', '2026-08'])
+    expect(cuerpo).toEqual({ periods: ['2026-07', '2026-08'] })
+  })
+
+  it('una lista VACÍA no sale · el servicio la leería como «los meses por defecto»', async () => {
+    let llamado = false
+    server.use(
+      http.post(`${API}/admin/tenants/t-1/materialize`, () => {
+        llamado = true
+        return ok({})
+      }),
+    )
+    await expect(adminApi.cargarPeriodos('t-1', [])).rejects.toThrow()
+    expect(llamado).toBe(false)
+  })
+
+  it('el 400 del servicio llega con SU frase', async () => {
+    server.use(
+      http.post(`${API}/admin/tenants/t-1/materialize`, () =>
+        HttpResponse.json({ success: false, error: 'período inválido: 2026-13 (formato YYYY-MM)' }, { status: 400 }),
+      ),
+    )
+    await expect(adminApi.cargarPeriodos('t-1', ['2026-13'])).rejects.toThrow('período inválido: 2026-13')
+  })
+})

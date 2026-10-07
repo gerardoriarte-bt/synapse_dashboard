@@ -20,7 +20,7 @@
  *  Una pantalla que se declara pendiente **no es lo mismo que una que no está**:
  *  la primera dice qué la desbloquea, que es lo que §8 pide de cualquier estado.
  */
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTemaGuardado } from '../useTemaGuardado'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useCerrarSesion } from '../useCerrarSesion'
@@ -28,6 +28,7 @@ import {
   useAgents,
   useFeeds,
   useRuns,
+  useLoadPeriods,
   useAllUsers,
   useAdminCatalog,
   useDeleteRole,
@@ -43,6 +44,9 @@ import { AdminChrome } from './AdminChrome'
 import { CatalogView } from './CatalogView'
 import { FeedHealth } from './FeedHealth'
 import { RunHistory } from './RunHistory'
+import { CargarPeriodos } from './CargarPeriodos'
+import { ESPERA_MAXIMA_MS, faltanPorTerminar, hayQueEsperar, mesEnCurso, mesesCargados, mesesEnCurso } from './cargaDePeriodos'
+import type { Pedido } from './cargaDePeriodos'
 import { UserList } from './UserList'
 import { createFormat, LOCALE_POR_DEFECTO } from '../../render/format'
 import { RoleEditor } from './RoleEditor'
@@ -138,7 +142,25 @@ export function Admin() {
   const agentes = useAgents(activo)
   // A5 · F4.24. La ruta llegó el 2026-09-25 con `1e080ee`.
   const fuentes = useFeeds(activo)
-  const corridas = useRuns(activo)
+  /** **Lo pedido desde A5, y cuándo** · 2026-10-07. La carga contesta 202 y
+   *  la fila aparece segundos después, así que el historial se sondea mientras
+   *  falte alguno —con tope— y no un instante después de pedir. */
+  const [pedido, setPedido] = useState<(Pedido & { tenantId: string; vencido: boolean }) | null>(null)
+  // **El pedido es de un cliente**: cambiar de cliente no lo arrastra.
+  const pedidoActivo = pedido !== null && pedido.tenantId === activo ? pedido : null
+  const corridas = useRuns(activo, (cs) => hayQueEsperar(pedidoActivo, cs, Date.now()))
+  const cargar = useLoadPeriods(activo)
+  // **El tope de espera es un temporizador, no una cuenta en el render**: leer
+  // el reloj al dibujar da una pantalla que cambia según cuándo se repinta.
+  useEffect(() => {
+    if (pedido === null || pedido.vencido) return undefined
+    const id = setTimeout(
+      () => setPedido((p) => (p === null ? p : { ...p, vencido: true })),
+      ESPERA_MAXIMA_MS,
+    )
+    return () => clearTimeout(id)
+  }, [pedido])
+  const pendientes = pedidoActivo === null ? [] : faltanPorTerminar(pedidoActivo, corridas.data ?? [])
   // A3 · F4.3. **De PLATAFORMA desde el 2026-09-26**: `GET /admin/users` llegó
   // con `6e521cc` y es lo que el dibujo declara. La por-cliente —`useUsers`—
   // sigue existiendo para A2, donde el cliente ya está elegido.
@@ -265,6 +287,25 @@ export function Admin() {
             tenant={lista.find((x) => x.id === activo)?.nombre ?? null}
             format={format}
             cargando={fuentes.data === undefined}
+          />
+          <CargarPeriodos
+            key={activo ?? ''}
+            mesActual={mesEnCurso(new Date(), lista.find((x) => x.id === activo)?.zonaHoraria ?? null)}
+            cargados={mesesCargados(corridas.data ?? [])}
+            enCurso={mesesEnCurso(corridas.data ?? [])}
+            {...(activo === null
+              ? {}
+              : {
+                  onCargar: (periodos: string[]) => {
+                    setPedido({ periodos, desde: Date.now(), tenantId: activo, vencido: false })
+                    cargar.mutate(periodos)
+                  },
+                })}
+            enviando={cargar.isPending}
+            error={cargar.error === null ? null : cargar.error.message}
+            pendientes={pedidoActivo?.vencido === true ? [] : pendientes}
+            sinTerminar={pedidoActivo?.vencido === true ? pendientes : []}
+            format={format}
           />
           <RunHistory
             corridas={corridas.data ?? []}

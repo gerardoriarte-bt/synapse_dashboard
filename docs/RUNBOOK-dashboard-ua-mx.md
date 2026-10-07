@@ -71,8 +71,18 @@ que el día 1 trae un solo día de datos: cifras chicas y `% DE LA META` al 5 %.
 panel lo declara —«PERÍODO EN CURSO · INCOMPLETO, NO COMPARA CONTRA UN MES
 CERRADO»— pero **no es el mes para mirar**: el último cerrado sí.
 
-**Si un período no se materializó, sus paneles salen `BLOCKED`.** Materializar
-uno:
+**Si un período no se materializó, sus paneles salen `BLOCKED`.** Y la carga
+automática diaria **sólo calcula el mes en curso y el anterior**
+(`DD_MATERIALIZE_PERIODS_BACK`, default 1, leído en `7b717aa`): todo mes más
+viejo hay que pedirlo. Es por eso que el 2026-10-07 QA no mostraba nada antes
+de septiembre.
+
+**Desde el 2026-10-07 se pide desde la pantalla**: Administración → Salud de
+feeds → «Cargar meses». Se eligen los meses —o «Elegir los N sin cargar»— y el
+historial de abajo los muestra a medida que terminan. Es lo que hay que hacer
+al dar de alta un cliente que llega con datos de antes.
+
+Por API, que es lo mismo que hace la pantalla:
 
 ```bash
 curl -X POST "$API/admin/tenants/$TENANT/materialize" \

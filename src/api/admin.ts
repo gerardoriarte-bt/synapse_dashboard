@@ -932,6 +932,24 @@ export const adminApi = {
       )
     ).map(adaptarCorrida),
 
+  /** Calcula las métricas del cliente para los meses pedidos · 2026-10-07.
+   *
+   *  **Asíncrona**: el servicio contesta 202 y la corrida aparece después en
+   *  `corridas`, una fila por mes. Devuelve los períodos que el servicio dice
+   *  que arrancó, que es lo único que la respuesta afirma.
+   *
+   *  **Una lista vacía no sale de acá.** El servicio la acepta y cae a sus
+   *  meses por defecto —el en curso y el anterior—, o sea que «cargar nada»
+   *  calcularía dos meses que nadie eligió. Se corta antes del viaje. */
+  cargarPeriodos: async (tenantId: string, periodos: readonly string[]): Promise<string[]> => {
+    if (periodos.length === 0) throw new Error('No hay meses elegidos para cargar.')
+    const r = await pedir<A['MaterializeStarted']>(`/admin/tenants/${encodeURIComponent(tenantId)}/materialize`, {
+      method: 'POST',
+      body: JSON.stringify({ periods: periodos }),
+    })
+    return r.periods
+  },
+
   /** Las fuentes del cliente y su salud · B2.13, servida desde `1e080ee`. */
   fuentes: async (tenantId: string): Promise<Fuente[]> =>
     (await pedir<WireFeed[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/feeds`)).map(
