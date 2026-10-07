@@ -195,7 +195,12 @@ export function Builder() {
   /** **El cliente de trabajo, compartido con administración** · 2026-10-06.
    *  Caía a `lista[0]` —en QA, Keralty— aunque se viniera de trabajar sobre
    *  UA. Ver `clienteDeTrabajo.ts`. */
-  const [tenantActivo, setTenant] = useClienteDeTrabajo(lista, yo.data?.tenant.id ?? null)
+  const [tenantActivo, setTenant] = useClienteDeTrabajo(
+    lista,
+    // `undefined` mientras `/config/me` carga: «todavía no sé» no es «no tiene».
+    // Si falla, `null`, y cae al primero en vez de quedarse sin cliente.
+    yo.isPending ? undefined : (yo.data?.tenant.id ?? null),
+  )
 
   // **Los tres hooks se llaman siempre y se apagan por `enabled`.** No pueden
   // colgar de `pantalla` sin violar las reglas de hooks, y además calientan el

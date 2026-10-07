@@ -48,4 +48,41 @@ describe('el cliente de trabajo', () => {
     rerender({ lista: [{ id: 'keralty' }, { id: 'ua' }] })
     expect(result.current[0]).toBe('ua')
   })
+
+  /** **La carrera del arranque** · 2026-10-07. Mientras `/config/me` no
+   *  contestó, el propio no se sabe, y el hook caía a `lista[0]`: cada pantalla
+   *  de administración pedía un instante los datos del primer cliente —se vio
+   *  en la red, `runs?tenant_id=1111…` y después el propio— y una selección
+   *  hecha en ese instante se perdía al cambiar. `undefined` es «todavía no
+   *  sé»; `null` es «no tiene». */
+  it('mientras el propio NO SE SABE, no elige ninguno · no cae al primero', () => {
+    const { result } = renderHook(() => useClienteDeTrabajo(LISTA, undefined), { wrapper: conProvider })
+    expect(result.current[0]).toBeNull()
+  })
+
+  it('y cuando llega, arranca en el propio sin haber pasado por otro', () => {
+    const vistos: (string | null)[] = []
+    const { rerender } = renderHook(
+      ({ propio }: { propio: string | null | undefined }) => {
+        const [activo] = useClienteDeTrabajo(LISTA, propio)
+        vistos.push(activo)
+        return activo
+      },
+      { wrapper: conProvider, initialProps: { propio: undefined as string | null | undefined } },
+    )
+    rerender({ propio: 'ua' })
+    expect(vistos).not.toContain('keralty')
+    expect(vistos.at(-1)).toBe('ua')
+  })
+
+  it('sin cliente propio —`null`, ya sabido— sí cae al primero', () => {
+    const { result } = renderHook(() => useClienteDeTrabajo(LISTA, null), { wrapper: conProvider })
+    expect(result.current[0]).toBe('keralty')
+  })
+
+  it('una elección ya hecha manda aunque el propio todavía no se sepa', () => {
+    const { result } = renderHook(() => useClienteDeTrabajo(LISTA, undefined), { wrapper: conProvider })
+    act(() => result.current[1]('terpel'))
+    expect(result.current[0]).toBe('terpel')
+  })
 })

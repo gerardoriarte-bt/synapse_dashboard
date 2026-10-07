@@ -120,7 +120,12 @@ export function Admin() {
   const lista = tenants.data ?? []
   /** **El cliente de trabajo, compartido con el builder** · 2026-10-06. Antes
    *  era un `useState` propio que caía a `lista[0]`. Ver `clienteDeTrabajo.ts`. */
-  const [activo, setTenant] = useClienteDeTrabajo(lista, contexto.data?.tenant.id ?? null)
+  const [activo, setTenant] = useClienteDeTrabajo(
+    lista,
+    // `undefined` mientras `/config/me` carga: «todavía no sé» no es «no tiene».
+    // Si falla, `null`, y cae al primero en vez de quedarse sin cliente.
+    contexto.isPending ? undefined : (contexto.data?.tenant.id ?? null),
+  )
 
   // **El hook del catálogo se llama siempre y se apaga por `enabled`**, que es lo
   // que las reglas de hooks exigen: no puede colgar de `pantalla`. Mientras A4 no

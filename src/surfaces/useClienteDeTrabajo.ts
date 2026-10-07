@@ -10,13 +10,20 @@
  *
  *  **Sin provider funciona igual**, con estado propio: las pruebas montan una
  *  superficie suelta, y una superficie no tiene por qué saber dónde la montan.
+ *
+ *  **`propio` tiene TRES valores, y el tercero es el arreglo** · 2026-10-07.
+ *  `undefined` es «`/config/me` todavía no contestó»; `null`, «contestó y no
+ *  tiene». Con dos valores el arranque caía a `lista[0]` mientras cargaba: cada
+ *  pantalla de administración pedía un instante los datos del primer cliente
+ *  —visto en la red: `runs?tenant_id=1111…` y después el propio— y lo elegido
+ *  en ese instante se perdía al cambiar. Mientras no se sabe, no hay activo.
  */
 import { useContext, useState } from 'react'
 import { ContextoDeCliente } from './clienteDeTrabajo'
 
 export function useClienteDeTrabajo(
   lista: readonly { id: string }[],
-  propio: string | null,
+  propio: string | null | undefined,
 ): [string | null, (id: string) => void] {
   const compartido = useContext(ContextoDeCliente)
   const [local, setLocal] = useState<string | null>(null)
@@ -24,6 +31,12 @@ export function useClienteDeTrabajo(
   const elegir = compartido === null ? setLocal : compartido.elegir
 
   const existe = (id: string | null) => id !== null && lista.some((t) => t.id === id)
-  const activo = existe(elegido) ? elegido : existe(propio) ? propio : (lista[0]?.id ?? null)
+  const activo = existe(elegido)
+    ? elegido
+    : propio === undefined
+      ? null
+      : existe(propio)
+        ? propio
+        : (lista[0]?.id ?? null)
   return [activo, elegir]
 }

@@ -15,7 +15,7 @@ import { http } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
 import { Admin } from '@/surfaces/admin/Admin'
 import { PANTALLAS } from '@/surfaces/admin/pantallas'
-import { ok } from '../../mocks/handlers'
+import { context, ok } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
 
 const API = '*/api/v1'
@@ -508,5 +508,35 @@ describe('A5 · cargar meses atraviesa la cadena entera · 2026-10-07', () => {
     expect(screen.queryByText(/Cargando 2026-06/)).toBeNull()
     focusManager.setFocused(undefined)
     vi.useRealTimers()
+  })
+})
+
+describe('el arranque no pasa por otro cliente · 2026-10-07', () => {
+  /** **Visto en la red contra el servicio**: al abrir administración se pedía
+   *  `runs?tenant_id=` del PRIMER cliente de la lista y recién después el
+   *  propio, porque mientras `/config/me` cargaba el propio era `null` y el
+   *  hook caía a `lista[0]`. Esta prueba mira lo que `Admin` PIDE: la del hook
+   *  sola no ve que un llamador vuelva a pasar `?? null`. */
+  it('con `/config/me` lento, no se pide nada del primer cliente si el propio es otro', async () => {
+    const pedidos: string[] = []
+    server.use(
+      http.get(`${API}/config/me`, async () => {
+        await new Promise((r) => setTimeout(r, 300))
+        return ok({ ...context, tenant: { ...context.tenant, id: 't-2', name: 'Keralty Colombia', label: 'Keralty Colombia' } })
+      }),
+      http.get(`${API}/admin/tenants`, () => ok(tenants)),
+      http.get(`${API}/admin/tenants/:id/*`, ({ params }) => {
+        pedidos.push(String(params.id))
+        return ok([])
+      }),
+      http.get(`${API}/admin/materialize/runs`, ({ request }) => {
+        pedidos.push(new URL(request.url).searchParams.get('tenant_id') ?? '')
+        return ok([])
+      }),
+    )
+    montar()
+    await screen.findByText('Under Armour México')
+    await waitFor(() => expect(pedidos).toContain('t-2'))
+    expect(pedidos).not.toContain('t-1')
   })
 })
