@@ -336,8 +336,7 @@ el evento `auditoria`, no dentro de la prosa**. Va con el pedido del chat.
 > `metric_key` de la procedencia. En pestaña esa clave la infiere el backend
 > desde `9dc481e` cruzando nombres de columna por contención, y un cruce
 > equivocado elegiría el cuerpo de otra métrica además de declarar su BASE. Lo
-> pedido para eso está en `MENSAJE-2026-10-08-backend-procedencia-por-nombre.md`
-> y `MENSAJE-2026-10-08-datos-equivalencia-semantica.md`.
+> pedido para eso está en `MENSAJE-2026-10-08-backend-procedencia-por-nombre.md`.
 >
 > **Lo que sigue sin dibujarse:** un dato sin familia. La regla de color no
 > cambió; con `9dc481e` desplegado debería llegar con más frecuencia.

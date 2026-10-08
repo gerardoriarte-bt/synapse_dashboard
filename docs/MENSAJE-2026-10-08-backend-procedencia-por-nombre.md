@@ -4,7 +4,8 @@
 > No se actualiza.
 
 **Medido contra `9dc481e` el 2026-10-08**: `dd_chat_tab_provenance.go`,
-`dd_chat_service.go`, `dd_chat_structured.go` y `cortex_sse.go` leídos, y el
+`dd_chat_service.go`, `dd_chat_structured.go`, `cortex_sse.go` y
+`internal/core/dashboard/snowflake/schema.go` leídos, y el
 binario de `9dc481e` levantado acá contra `SYNAPSE_UA` real. Hicimos una
 pregunta en el chat de pestaña y capturamos el stream completo. Del lado del
 front medimos primero lo nuestro: lo que cambiamos está al final.
@@ -66,11 +67,14 @@ plataforma».
 ### 2 · Coincidir por nombre declara la base de otra métrica
 
 Aunque el cruce fuera determinista, **las dos respuestas están mal**. Lo que el
-agente sumó son los ingresos que reporta cada plataforma desde `GLD_PAID_MEDIA`.
-`revenue` en el catálogo es `SUM(REV_TOTAL)` de `GLD_ECOMM_DAILY_PERFORMANCE`,
-la venta del sitio medida por Adobe. Así lo dice la consulta de verificación de
-`docs/snowflake/synapse-catalogo-metricas.md`. Comparten la palabra «ingresos»
-y son dos métricas distintas.
+agente sumó es `INGRESOS_USD` de la tabla de paid media, por plataforma. Su
+propio `MetricColumnUsage` (`schema.go:63`) dice que `revenue` sale de
+`REV_TOTAL` en la tabla de ecommerce, la venta del sitio medida por Adobe.
+Comparten la palabra «ingresos» y son dos métricas distintas.
+
+`platform_return` sí sale de paid media e `INGRESOS_USD`, así que la familia
+`media` del frame 2 es la correcta. **Pero su base describe un ROAS**, y el
+agente sumó ingresos. La familia es de la métrica; la base es de la consulta.
 
 Con el frame 1, el front pinta una tabla de paid media con la BASE «Venta
 total del sitio» y la fuente «Adobe Analytics». **Es peor que una base
@@ -100,12 +104,14 @@ La prueba no lo ve porque le da el spec como objeto:
    `source_system`. El front ya los declara así y no inventa un color. **Una
    procedencia vacía es correcta; una equivocada no.**
 
-2. **Cruzar sólo por igualdad, y contra el origen de la métrica, no contra su
-   nombre.** Nada de nombres contenidos ni de alias del SQL. El origen es la
-   tabla y la columna Gold de cada métrica. Para que no quede escrito en Go por
-   cliente, le pedimos a datos que lo declaren en el catálogo:
-   `MENSAJE-2026-10-08-datos-equivalencia-semantica.md`. Con ambigüedad o sin
-   coincidencia, el campo va vacío.
+2. **Cruzar sólo por igualdad, y contra el origen que ya declaran, no contra
+   el nombre.** `MetricColumnUsage` (`schema.go:63`) dice de qué objeto y qué
+   columnas sale cada métrica, y `Tables` resuelve el nombre real de cada
+   objeto para el tenant. Es la equivalencia que hace falta, y ya existe: una
+   respuesta del agente es de una métrica si consultó ese objeto y esa columna.
+   Nada de nombres contenidos ni de alias del SQL. Con ambigüedad o sin
+   coincidencia, el campo va vacío. El criterio fino, por ejemplo qué columna
+   cuenta como medida cuando una métrica usa varias, lo deciden ustedes.
 
 3. **Copiar la base del catálogo sólo cuando la consulta ES la métrica**: mismo
    origen y ningún filtro además del período. Si el agente filtra por medio,
@@ -126,8 +132,8 @@ La prueba no lo ve porque le da el spec como objeto:
    el front (`src/api/vegaLite.ts`).
 
 **Cómo saber que quedó:** con la pregunta de arriba, los frames de paid media
-salen con `metric_key`, `base` y `family` vacías, y repetirla diez veces da
-siempre lo mismo.
+salen con la `base` vacía, nunca con la de `revenue`, y repetirla diez veces da
+siempre la misma `metric_key`.
 
 ---
 
@@ -156,6 +162,10 @@ Sobre la guía, dos cosas para que no las busquen:
 - Por qué gana una columna y no la otra. Lo medido son dos corridas, y en las
   dos el mismo resultado salió con dos métricas distintas. Que la causa sea el
   orden del `map` sale de leer el código.
+- Si el agente siempre nombra la tabla física en su SQL. En la consulta de
+  paid media la nombró (`DB_BT_UA.BT_UA_MART_ANALYTICS.GLD_PAID_MEDIA`); en la
+  otra de esa misma corrida sólo vimos `__gld_producto_analytics`, que es un
+  nombre de la vista semántica. Para el pedido 2 haría falta resolverlo.
 - El chat de panel con una pregunta filtrada. El pedido 3 sobre `panel_context`
   sale de leer el código.
 - Si el resultado de `Analyst_UA` trae el nombre de la métrica de la vista
