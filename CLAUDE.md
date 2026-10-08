@@ -574,7 +574,27 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-10-07 · el chat dibuja y los meses se cargan desde A5
+### ⇩ ACÁ SE PARÓ · 2026-10-08 · el chat dibuja por la forma
+
+**Lo que costó descubrir está en `docs/BITACORA-2026-10-08.md`.** **`main` está
+en `00d40d4`**, fast-forward de `Gerardo`.
+
+**§7 está cerrada**: si el panel de origen no acepta la forma, la cifra del chat
+se dibuja con el único tipo que la acepta. **No se busca el panel por la
+`metric_key` de la procedencia**: en pestaña la adivina el backend por nombre, y
+con el dato real las mismas filas de paid media salieron como `revenue` y como
+`platform_return`.
+
+**ESPERANDO AL BACKEND**, en `docs/MENSAJE-2026-10-08-backend-procedencia-por-nombre.md`,
+enviado el 2026-10-08: cruce exacto contra su propio `MetricColumnUsage`
+(`schema.go`), base vacía cuando la consulta filtra, y `chart_spec` leído como
+texto. **Si despliegan `9dc481e` tal como está junto con este front**, la tabla de
+paid media del chat se ve con la base de la venta del sitio.
+
+**La familia es de la métrica; la base es de la consulta.** Es la distinción que
+decide qué se puede copiar del catálogo a una cifra del agente.
+
+### ⇩ el 2026-10-07 · el chat dibuja y los meses se cargan desde A5
 
 **Lo que costó descubrir está en `docs/BITACORA-2026-10-07.md`.** Esto es dónde
 retomar. **`main` está en `bce2e95`**, fast-forward de `Gerardo`, y el backend
