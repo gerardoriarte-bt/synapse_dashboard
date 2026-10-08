@@ -74,24 +74,37 @@ describe('F3.6 · un solo modelo de datos', () => {
     expect(container.textContent).toContain('GOLD')
     expect(container.textContent).toContain('Snowflake')
   })
+
+  it('una BASE vacía se declara en vez de quedar colgando · 2026-10-08', async () => {
+    // Es lo que pedimos al backend cuando la consulta del agente no es la
+    // métrica: base vacía antes que la del catálogo. Vacía tiene que leerse.
+    const { container } = render(
+      <ChatFigure dato={dato({ base: '' })} panelTipo="kpi" bloques={bloques} format={format} now={now} />,
+    )
+    await screen.findByText(/4\.28/)
+    expect(container.textContent).toContain('Base · la consulta no la declara')
+  })
 })
 
 describe('F3.6 · con qué cuerpo, que era lo que faltaba', () => {
-  it('si el tipo NO acepta la forma, se declara en vez de adivinar', () => {
-    // **Es la aserción que sostiene la regla.** El agente puede devolver un
-    // desglose donde el panel es un KPI; dibujar una categórica con `KpiBody`
-    // se vería bien y sería otra cifra.
+  it('si el panel NO acepta la forma, se dibuja por la forma · §7, 2026-10-08', async () => {
+    // **Era el caso común contra el agente real**: desde un KPI llegaba un
+    // desglose y se declaraba. Dibujarlo con `KpiBody` seguiría siendo otra
+    // cifra; lo que cambia es que `bars` es el único que acepta la categórica,
+    // así que se dibuja con barras.
     const { container } = render(
       <ChatFigure
-        dato={dato({ valor: { forma: 'categorica', items: [] } } as never)}
+        dato={dato({
+          valor: { forma: 'categorica', items: [{ etiqueta: 'Meta', v: 1 }] },
+        } as never)}
         panelTipo="kpi"
         bloques={bloques}
         format={format}
         now={now}
       />,
     )
-    expect(container.textContent).toMatch(/no puede dibujar/i)
-    expect(container.textContent).toContain('categorica')
+    expect(await screen.findByRole('img', { name: '1 categorías' })).toBeInTheDocument()
+    expect(container.textContent).not.toMatch(/no puede dibujar/i)
   })
 
   it('el mismo dato con OTRO panel usa otro cuerpo', async () => {
@@ -115,6 +128,54 @@ describe('F3.6 · con qué cuerpo, que era lo que faltaba', () => {
     // sobre él —y no sobre el texto de un eje— prueba lo mismo y no depende
     // de cómo el plot rotule.
     expect(await screen.findByRole('img', { name: /categorías/ })).toBeInTheDocument()
+  })
+})
+
+describe('§7 · por la forma, y sólo cuando la tabla no deja dudas · 2026-10-08', () => {
+  /** `escalar` lo aceptan dos tipos: es la tabla real de `/config/blocks`. */
+  const ambigua = blockTable([
+    {
+      tipo: 'kpi',
+      formasAceptadas: ['escalar'],
+      colSpanMin: 2, colSpanMax: 6, rowSpanMin: 2, rowSpanMax: 4,
+      paramsDisponibles: [],
+    },
+    {
+      tipo: 'gauge',
+      formasAceptadas: ['escalar'],
+      colSpanMin: 3, colSpanMax: 7, rowSpanMin: 4, rowSpanMax: 4,
+      paramsDisponibles: [],
+    },
+  ] as unknown as Block[])
+
+  it('desde la PESTAÑA, una forma con un solo tipo se dibuja', async () => {
+    // Es lo que §7 pedía: antes decía «no salió de un panel» y no dibujaba.
+    render(
+      <ChatFigure
+        dato={dato({
+          valor: { forma: 'categorica', items: [{ etiqueta: 'Meta', v: 1 }] },
+        } as never)}
+        bloques={bloques}
+        format={format}
+        now={now}
+      />,
+    )
+    expect(await screen.findByRole('img', { name: '1 categorías' })).toBeInTheDocument()
+  })
+
+  it('con dos candidatos y sin panel, se declara en vez de elegir', () => {
+    const { container } = render(
+      <ChatFigure dato={dato()} bloques={ambigua} format={format} now={now} />,
+    )
+    expect(container.textContent).toContain('más de un tipo de panel la acepta')
+    expect(container.querySelector('figure')).toBeNull()
+  })
+
+  it('con dos candidatos, el panel de origen desempata si es uno de ellos', async () => {
+    render(
+      <ChatFigure dato={dato()} panelTipo="kpi" bloques={ambigua} format={format} now={now} />,
+    )
+    expect(await screen.findByText(/4\.28/)).toBeInTheDocument()
   })
 })
 

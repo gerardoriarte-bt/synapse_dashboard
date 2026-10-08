@@ -324,7 +324,23 @@ el evento `auditoria`, no dentro de la prosa**. Va con el pedido del chat.
 
 ## 7 · Con qué cuerpo se dibuja una cifra del agente · lo que la realidad dijo
 
-**Quién decide** · producto · **Bloquea** · nada, pero deja F3.6 casi sin efecto
+**Quién decide** · producto · **CERRADA el 2026-10-08 (humano) · opción a**
+
+> **Resuelta: se dibuja por la forma.** El orden que quedó en
+> `src/surfaces/console/ChatFigure.tsx`: la marca del agente; si no, el panel de
+> origen **si acepta** la forma; si no, **el único tipo** que la acepta según
+> `/config/blocks` (`soleTypeFor`). Se declara sólo cuando quedan dos candidatos
+> o más —un `escalar` es `kpi` o `gauge`— y el panel de origen no desempata.
+>
+> **Lo que se descartó a propósito:** buscar el panel de la pestaña por la
+> `metric_key` de la procedencia. En pestaña esa clave la infiere el backend
+> desde `9dc481e` cruzando nombres de columna por contención, y un cruce
+> equivocado elegiría el cuerpo de otra métrica además de declarar su BASE. Lo
+> pedido para eso está en `MENSAJE-2026-10-08-backend-procedencia-por-nombre.md`
+> y `MENSAJE-2026-10-08-datos-equivalencia-semantica.md`.
+>
+> **Lo que sigue sin dibujarse:** un dato sin familia. La regla de color no
+> cambió; con `9dc481e` desplegado debería llegar con más frecuencia.
 
 **Abierta el 2026-09-24, la primera vez que el chat habló contra Cortex de
 verdad.** No es una divergencia con el `.pen`: es una decisión nuestra que la

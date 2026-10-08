@@ -19,17 +19,19 @@
  *  **Y sólo si el tipo acepta la forma que llegó**, que lo decide
  *  `acceptsShape` contra la tabla de `/config/blocks`. El agente puede devolver
  *  un desglose donde el panel es un KPI; dibujar una categórica con `KpiBody`
- *  se vería bien y sería otra cifra. Cuando no acepta, **se declara en vez de
- *  adivinar** — que es la misma regla que el panel sin cuerpo registrado.
+ *  se vería bien y sería otra cifra.
  *
- *  Queda como propuesta de spec: si algún día el evento declara su tipo, esto
- *  se simplifica y la regla de abajo desaparece.
+ *  **Y cuando el panel no acepta, se dibuja por la forma** · §7, cerrada el
+ *  2026-10-08. Contra el agente real el panel de origen casi nunca aceptaba lo
+ *  que llegaba, y la rama de «no puedo dibujarlo» era la común. Ahora una forma
+ *  que un solo tipo acepta se dibuja con ese tipo; **se declara sólo cuando la
+ *  tabla deja dos o más candidatos**, que es donde elegir sería adivinar.
  */
 import { Suspense } from 'react'
 import { Label } from '../../render/primitives/Label'
 import { LoadingState } from '../../render/states/LoadingState'
 import { bodyFor } from '../../render/bodies/registry'
-import { acceptsShape } from '../../catalog/blocks'
+import { acceptsShape, soleTypeFor } from '../../catalog/blocks'
 import { Provenance } from '../../render/Panel/Provenance'
 import { span } from '../../render/grid'
 import type { BlockTable } from '../../catalog/blocks'
@@ -59,9 +61,26 @@ type Props = {
 }
 
 export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now }: Props) {
-  // **Si el agente eligió la marca, manda la suya** · decisión humana del
-  // 2026-10-07: «su marca, nuestros cuerpos». Sin gráfico, manda el panel.
-  const panelTipo = dato.tipoDePanel ?? tipoDelPanel
+  const forma = dato.valor.forma
+  // ── CON QUÉ CUERPO · §7 cerrada el 2026-10-08 (humano): por la FORMA ──────
+  //
+  // En orden, y cada paso sólo si el anterior no decidió:
+  //
+  //  1. **La marca del agente** · 2026-10-07, «su marca, nuestros cuerpos».
+  //  2. **El panel de origen, si acepta la forma.** El contexto sigue valiendo
+  //     cuando sirve: un escalar preguntado desde un `gauge` sale como medidor.
+  //  3. **El único tipo que acepta la forma** · `soleTypeFor`. Es lo que §7
+  //     pedía: contra el agente real, una pregunta desde un `kpi` trajo
+  //     `tabular`, `tabular` y `raw`, y las tres se declaraban. Un `tabular`
+  //     sólo lo dibuja `table`, venga de donde venga.
+  //
+  // **Lo que NO se usa es la `metric_key` de la procedencia** para buscar un
+  // panel en la pestaña. En pestaña la infiere el backend cruzando nombres de
+  // columna, y un cruce equivocado elegiría el cuerpo de otra métrica encima de
+  // declarar su BASE. Ver `MENSAJE-2026-10-08-backend-procedencia-por-nombre.md`.
+  const delPanel =
+    tipoDelPanel !== undefined && acceptsShape(bloques, tipoDelPanel, forma) ? tipoDelPanel : null
+  const panelTipo = dato.tipoDePanel ?? delPanel ?? soleTypeFor(bloques, forma) ?? undefined
   const familia = dato.familia
 
   // **Sin familia no hay color, y no se inventa uno** · 2026-10-07. El chat de
@@ -76,32 +95,31 @@ export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now
     )
   }
 
-  // ── SIN PANEL DE ORIGEN NO SE ELIGE UN CUERPO · F3.15 ────────────────────
+  // ── SIN UN TIPO DECIDIDO NO SE ELIGE UNO ─────────────────────────────────
   //
-  // Una pregunta de pestaña no tiene panel, y **elegir uno acá sería inventar
-  // con qué se dibuja**: el mismo dato como `kpi` o como `bars` dice cosas
-  // distintas, y nadie decidió cuál. Qué dibujar es una pregunta de spec
-  // abierta —§7 de `PROPUESTA-2026-09-22-divergencias-con-el-pen.md`— así que
-  // la cifra se declara en vez de pintarse mal.
+  // Queda para las formas que aceptan dos tipos o más —un `escalar` como `kpi`
+  // o como `gauge`— cuando el panel de origen no es uno de ellos. Elegir el
+  // primero sería inventar con qué se dibuja: el mismo dato dice cosas
+  // distintas como cifra o como medidor.
   if (panelTipo === undefined) {
     return (
       <div className="flex flex-col gap-1">
         <Label as="div">Una cifra que todavía no se dibuja</Label>
-        <Label as="div">
-          Llegó en forma «{dato.valor.forma}» y esta pregunta no salió de un panel
-        </Label>
+        <Label as="div">Llegó en forma «{forma}» y más de un tipo de panel la acepta</Label>
       </div>
     )
   }
 
   const Body = bodyFor(panelTipo)
 
-  if (Body === undefined || !acceptsShape(bloques, panelTipo, dato.valor.forma)) {
+  // La marca del agente se vuelve a validar: el traductor de Vega-Lite la
+  // elige, y la tabla de `/config/blocks` es la que manda.
+  if (Body === undefined || !acceptsShape(bloques, panelTipo, forma)) {
     return (
       <div className="flex flex-col gap-1">
         <Label as="div">Una cifra que este panel no puede dibujar</Label>
         <Label as="div">
-          Llegó en forma «{dato.valor.forma}» y «{panelTipo}» no la acepta
+          Llegó en forma «{forma}» y «{panelTipo}» no la acepta
         </Label>
       </div>
     )
@@ -142,7 +160,14 @@ export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now
           La BASE va aparte porque `Provenance` no la lleva — en el shell la
           escribe la cabecera del panel, junto al título. Acá la cifra no tiene
           cabecera, así que la pone esta línea. */}
-      <Label as="div">Base · {dato.base}</Label>
+      {/* **Una base vacía se dice, no se deja colgando** · 2026-10-08. Es lo
+          que le pedimos al backend cuando la consulta del agente no es la
+          métrica del catálogo —filtra por medio, o sale de otra tabla—: que no
+          copie la base del catálogo. «Base · » con nada detrás se lee como un
+          defecto de pantalla y no como una declaración. */}
+      <Label as="div">
+        {dato.base === '' ? 'Base · la consulta no la declara' : `Base · ${dato.base}`}
+      </Label>
       <Provenance
         capa={dato.capa}
         fuente={dato.fuente}
