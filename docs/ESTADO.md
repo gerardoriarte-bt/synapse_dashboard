@@ -60,7 +60,7 @@
 
 ---
 
-## Bloqueadas · 10
+## Bloqueadas · 7
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -75,9 +75,6 @@ Lo que el front espera del backend está detallado en
 
 **Backend**
 
-- **B1.21** · Declarar los mínimos de datos por gráfico
-- **B1.31** · La plataforma genera el par de claves del usuario de servicio
-- **B1.34** · Declarar qué es el t de una serie, o mandar el tramo vencido
 - **B2.12** · Correr el materializador contra datos reales y verificar los seis estados
 - **B2.14** · /config/solicitudes · pedir acceso a una métrica que no se ve
 - **B2.15** · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar

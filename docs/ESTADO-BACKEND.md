@@ -16,13 +16,13 @@ falta para re-verificar. Para su avance real está
 |---|---|
 | Tareas `B*` en el plan | **98** |
 | Verificadas por nosotros · ✅ o ⚠️ | **72** |
-| De ésas, **contra el último commit** | **0** |
-| ⬜ Esperando algo de ellos | **3** |
-| ⬜ **Que NUNCA verificamos** | **22** |
+| De ésas, **contra el último commit** | **2** |
+| ⬜ Esperando algo de ellos | **1** |
+| ⬜ **Que NUNCA verificamos** | **24** |
 | El último commit que leímos | `9dc481e` |
 
 
-## ⚠️ 51 verificadas contra un commit anterior
+## ⚠️ 49 verificadas contra un commit anterior
 
 **No quiere decir que estén mal: quiere decir que no lo sabemos.**
 Una tarea `B*` afirma algo del servicio, y el servicio cambia.
@@ -62,9 +62,7 @@ Re-verificar una es leer su criterio y medirlo de nuevo.
 | **B2.5** · Estado DEGRADADO | ✅ | `733c13c` | 2026-09-14 |
 | **B2.6** · Estado BLOQUEADO | ⚠️ | `de881e1` | 2026-09-29 |
 | **B2.11** · Filtrado por rol también en el batch | ✅ | `de881e1` | 2026-09-29 |
-| **B2.12** · Correr el materializador contra datos reales y verificar los seis estados | ⚠️ | `de881e1` | 2026-09-29 |
 | **B2.13** · Salud de feeds por fuente | ✅ | `de881e1` | 2026-09-29 |
-| **B2.15** · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | ⚠️ | `de881e1` | 2026-09-29 |
 | **B2.16** · El materializador emite presentation | ✅ | `f70cec2` | 2026-09-28 |
 | **B3.1** · POST /config/chat con SSE | ⚠️ | `8633b10` | 2026-09-26 |
 | **B3.10** · Persistir hilos y mensajes en Postgres | ✅ | `de881e1` | 2026-09-29 |
@@ -84,7 +82,7 @@ Re-verificar una es leer su criterio y medirlo de nuevo.
 | **B5.5** · Auditoría de publicaciones de layout | ✅ | `de881e1` | 2026-09-29 |
 
 
-## ⬜ 22 que nunca verificamos · y NO quiere decir que falten
+## ⬜ 24 que nunca verificamos · y NO quiere decir que falten
 
 **Un `⬜` de backend dice «no lo miramos», no «no está hecho».** Nuestro
 plan sólo mueve una `B*` cuando el front la verifica contra el servicio
@@ -97,7 +95,7 @@ identificadores no coinciden, así que los números no se restan; pero
 la distancia dice de qué lado está el trabajo pendiente.
 
 **El número que sí es nuestro y sí es un compromiso** son las que
-esperan algo de ellos: **3**, y salen en `PARA-BACKEND.md`.
+esperan algo de ellos: **1**, y salen en `PARA-BACKEND.md`.
 
 
 ## Todas, por fase
@@ -174,10 +172,10 @@ esperan algo de ellos: **3**, y salen en `PARA-BACKEND.md`.
 | ⬜ | **B2.9** · Invalidar cache al completar materialización | — | — |
 | ✅ | **B2.10** · frescura = instante de materialización, nunca «ahora» | — | — |
 | ✅ | **B2.11** · Filtrado por rol también en el batch | `de881e1` ⚠ | 2026-09-29 |
-| ⚠️ | **B2.12** ➕ · Correr el materializador contra datos reales y verificar los seis estados | `de881e1` ⚠ | 2026-09-29 |
+| ⚠️ | **B2.12** ➕ · Correr el materializador contra datos reales y verificar los seis estados | `9dc481e` | 2026-10-09 |
 | ✅ | **B2.13** ➕ · Salud de feeds por fuente | `de881e1` ⚠ | 2026-09-29 |
-| ⬜ | **B2.14** ➕ · /config/solicitudes | `de881e1` ⚠ | 2026-09-29 |
-| ⚠️ | **B2.15** ➕ · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | `de881e1` ⚠ | 2026-09-29 |
+| ⬜ | **B2.14** ➕ · /config/solicitudes | `9dc481e` | 2026-10-09 |
+| ⚠️ | **B2.15** ➕ · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | `9dc481e` | 2026-10-09 |
 | ✅ | **B2.16** ➕ · El materializador emite presentation | `f70cec2` ⚠ | 2026-09-28 |
 
 

@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Antes de leer: 3 de 8 son del backend
+## Antes de leer: 0 de 3 son del backend
 
 **El resto está acá porque nos frena a NOSOTROS, no porque haya que
 construirlo del lado del backend.** Se listan igual —una tarea trabada
@@ -43,101 +43,14 @@ tiempo buscando qué implementar.
 
 | Dueño | Pedidos |
 |---|---|
-| **BACKEND** · código | 3 |
-| NOSOTROS | 2 |
+| **BACKEND** · código | 0 |
 | DESPLIEGUE | 2 |
 | PRODUCTO | 1 |
 
 
 ---
 
-## Lo que esperamos · 8 pedido(s)
-
-
-### B1.21 · Declarar los mínimos de datos por gráfico
-
-*Estado de la tarea: parcial.* · **Lo tiene: NOSOTROS**
-
-
-**Queda `GET /config/plots`; `chart` YA LLEGÓ** · el mismo día que se pidió, en `f70cec2`. Medido el 2026-09-28 contra el servicio: sale en `DDPanelDTO.chart` y en `DDLayoutPanel.chart`, lo escribe el builder recortado y en minúsculas —`"  Waterfall  "` → `waterfall`— y los doce paneles publicados quedaron con `''`, así que no migró ningún layout. Transcripto en los dos cables y adaptado, con prueba de que **un id desconocido se pasa igual**: descartarlo haría caer el panel al gráfico por defecto sin que nadie se entere. **Lo que falta es la ruta del repertorio**, y para escribirla piden tres archivos nuestros que no están en su repo — contestado en `docs/MENSAJE-2026-09-28-backend-lo-que-piden.md`.
-
-**Lo tiene: NOSOTROS** · mandarles `docs/ENTREGA-2026-09-29-repertorio-de-graficos.md`. **Lo pidieron dos veces**, y las dos se les contestó con una ruta de NUESTRO repositorio, que no ven.
-
-**Medido contra `de881e1` el 2026-09-29** · `GET /config/plots` → **404**.
-
-**NUESTRA MITAD ESTÁ HECHA** · 2026-09-26, y **el repertorio entero desde el 2026-09-28**: `docs/REPERTORIO-2026-09-28-los-49-graficos.md`. El orden que habíamos propuesto era «1. el front declara los mínimos y los propone en el contrato · 2. el backend los sirve». **El paso 1 está**: el contrato declara `GET /config/plots`, `Grafico` y `MinimoDeDatos`, y la tabla que hay que implementar está en `docs/DECISIONES-2026-09-26-minimos-por-grafico.md`.
-
-**La decisión de estructura, que es lo que más va a durar: el mínimo es de la FORMA, y un gráfico lo SUBE sólo si su geometría lo exige.** Es la simetría de `tope`, que baja el techo por gráfico. Un número elegido a mano para cada una de las 49 entradas serían 49 juicios, y la mayoría arbitrarios: `bars` y `lollipop` comen el mismo dato y fallan en el mismo punto.
-
-Sólo tres suben el de su forma —`treemap`, `pareto` y `waterfall`, a 3— y están marcados aparte porque son juicio y no geometría.
-
-**Y la razón se PINTA.** `MinimoDeDatos` la declara obligatoria: un panel que se apaga sin decir por qué manda a buscar un error donde hay una regla.
-
-**Los tres mínimos que ya estaban escritos** en el criterio de abajo —«una serie de un punto, una composición de una parte y un ranking de dos ítems»— se respetaron, y de ahí sale que `ranking` sea 3 y no 2.
-
-**Espera del backend.** **Servir `GET /config/plots`** con la tabla del documento, con la misma figura que `/config/blocks`: global, no por tenant. Medido el 2026-09-26: **404**. Bloquea F1.31 y F4.21.
-
-**Lo tiene: NOSOTROS** · mandarles `docs/ENTREGA-2026-09-29-repertorio-de-graficos.md`. **Lo pidieron dos veces**, y las dos se les contestó con una ruta de NUESTRO repositorio, que no ven.
-
-**NO depende de Snowflake.** No toca datos: es una tabla de reglas y un endpoint.
-
-**Sirve desde el primer día aunque haya un gráfico por tipo**, que es por qué está en Fase 1 y no en Fase 4: hoy nada impide que `bars` reciba un ítem y dibuje una barra sola.
-
-
-### B1.31 · La plataforma genera el par de claves del usuario de servicio
-
-*Estado de la tarea: parcial.* · **Lo tiene: NOSOTROS**
-
-
-**Que el servicio genere el par RSA y devuelva sólo la pública** — pedido el 2026-09-28.
-
-**Lo tiene: NOSOTROS** · probar la rotación en el próximo alta real. **La ruta está entregada** y su guarda se midió.
-
-**Medido contra `de881e1` el 2026-09-29** · sin un solo `rsa.GenerateKey` en `internal/`.
-
-**LLEGÓ EL 2026-09-29 · en `e1037d9`.** `POST /admin/tenants/{id}/service-key` existe, y **su guarda es lo mejor que trae**:
-
-```
-→ 409 CONFLICT_KEY_EXISTS
-  "el tenant ya tiene una clave de servicio; enviá rotate=true para reemplazarla"
-```
-
-**No pisa una clave que funciona.** En este tenant la clave es la real —la que hace andar el chat contra Cortex—, así que **no se probó la rotación a propósito**: rotarla habría roto el entorno para comprobar algo que la guarda ya demuestra.
-
-**Queda en ⚠️ porque la forma de la respuesta con éxito no se midió**: haría falta un tenant sin clave. Se cierra con el próximo alta real, que es cuando importa.
-
-Hoy `POST /admin/tenants` exige `private_key_pem`, así que por cada cliente **alguien genera un par a mano y transporta una clave privada** hasta donde se haga el alta. Verificado ese día: no hay `rsa.GenerateKey` en `internal/`.
-
-**Es más fácil y además más seguro**, que es la combinación que no obliga a elegir: la privada nunca sale del servicio y lo que circula es la pública.
-
-
-### B1.34 · Declarar qué es el t de una serie, o mandar el tramo vencido
-
-*Estado de la tarea: pendiente.*
-
-
-**Qué unidad tiene el `t` de `points[]`** — y con eso se desbloquea la trama del degradado.
-
-**Lo tiene: BACKEND** · declarar la unidad, o mandar el índice del tramo vencido.
-
-**Medido contra `de881e1` el 2026-09-29** · el servicio manda `"20362"`, `"20393"`, `"20423"` en `points[].t`. Son **días desde epoch** —2025-10-01, 2025-11-01, 2025-12-01, el primero de cada mes— pero **el cable no lo declara en ningún lado**.
-
-**Y DESDE EL 2026-09-29 SE VE EN PANTALLA**, que hasta ese día no pasaba: ningún
-gráfico dibujaba eje de tiempo —`PlotSeries` sólo tiene eje de valores—, así que
-el `t` viajaba sin que nadie lo leyera. `PlotCombo` **sí rotula su eje**, y al
-publicarlo sobre `media_efficiency_12m` con dato real de Snowflake el eje salió
-`20362 · 20454 · 20544 · 20635 · 20697`.
-
-**Los números crudos en pantalla es lo que cambia la urgencia del pedido**: deja
-de ser una ambigüedad del cable y pasa a ser copy equivocado en la consola. Y el
-front no lo puede arreglar — deducir que son días desde época es exactamente la
-invención que el adaptador tiene prohibida; que coincida hoy no lo declara.
-
-**Por qué importa ahora y no antes.** `stale_since` llegó en el mismo commit, y con él se puede marcar el tramo vencido que el `.pen` dibuja —las dos últimas barras en `$w2`—. Para eso hay que comparar cada punto con `stale_since`, y para comparar hay que interpretar el `t`.
-
-**El front no lo va a interpretar.** Un tramo mal marcado **afirma que un dato concreto está vencido cuando no lo está**, y eso es peor que no marcarlo: la trama existe para fechar, y una fecha inventada no fecha, miente.
-
-**Y nunca se notó porque el eje X no se pinta.** `PlotSeries` rinde sólo el eje de valores, así que el número crudo no se ve. Nuestro propio contrato decía que `t` era «la etiqueta del eje, ya lista para pintar» — corregido el mismo día.
+## Lo que esperamos · 3 pedido(s)
 
 
 ### B2.12 · Correr el materializador contra datos reales y verificar los seis estados
@@ -150,6 +63,8 @@ invención que el adaptador tiene prohibida; que coincida hoy no lo declara.
 **Lo tiene: DESPLIEGUE** · depende de B2.15 · el generador de prosa está en la rama desde `5924bf2`.
 
 **Medido contra `de881e1` el 2026-09-29** · `DD_MATERIALIZE_PROSE_ENABLED` existe con default `false` · `dd_materializer_service.go:57`.
+
+**Medido contra `9dc481e` el 2026-10-09** · el flag sigue con default `false` (`dd_materializer_service.go:55-58`). Lo que queda es lo mismo: encenderlo, que es B2.15.
 
 Esto decía «los paneles de prosa los genera el AGENTE, y hoy no hay camino», y era
 cierto cuando se escribió. **Lo construyeron:** `internal/core/services/dd_prose_generator.go`
@@ -188,7 +103,9 @@ un texto generado. Hoy ese panel dice `SILVER · ACTIONABLE FRAMEWORK`, que vien
 del seed; para un texto del agente sería mentira, y `GOLD · ERP` sería peor.
 Todo en `docs/MENSAJE-2026-09-24-materializador.md` §3. · Bloquea **B2.12**.
 
-**Espera del backend.** **Una fila que NUNCA se materializó no puede servirse
+**Lo pedido, y ya entregado y medido.** **Una fila que NUNCA se materializó no puede servirse
+
+**Remedido contra `9dc481e` el 2026-10-09 · ENTREGADO, con un matiz.** Llegó en `6e595e3`: `PanelDegradation` sirve `DEGRADED` una fila sin `last_success_at` **si hubo un intento fallido**. Una fila sólo-semilla **sin** intento sigue saliendo `AVAILABLE` —decisión suya, escrita: «una fila solo-seed sin intento (tenant sin Gold) NO degrada»—. No se midió en el servicio: el dashboard activo no tiene paneles de prosa.
 
 **Lo tiene: DESPLIEGUE** · depende de B2.15 · el generador de prosa está en la rama desde `5924bf2`.
 como `AVAILABLE`.** `sync-catalog` trae diez métricas de Snowflake y la semilla
@@ -209,98 +126,6 @@ su razón. El front ya pinta `DEGRADED` con su badge, su razón y su
 nuestro lado. · Bloquea **B2.12**.
 
 
-### F1.42 · El mes en curso está incompleto y el selector no lo dice
-
-*Estado de la tarea: parcial.*
-
-
-Que `availablePeriods()` normalice al día 1 antes de
-restar meses. **Medido contra `de881e1` el 2026-09-29**: `GET /config/me` devuelve
-doce entradas que **no son doce meses distintos** — `['2026-09', …, '2026-04',
-'2026-03', '2026-03', '2026-01', …]`, marzo dos veces y **febrero ausente**, en
-`periods` y en `periods_detail`.
-
-Es `internal/core/services/dd_config_service.go:690`, que resta con
-`now.AddDate(0, -i, 0)` sin normalizar el día: el 29 de septiembre menos siete
-meses cae en «29 de febrero», que no existe, y Go desborda al 1 de marzo.
-Reproducido con su misma aritmética: **pasa 29 días de los 365** —los 29, 30 y 31
-de un mes cuyo mes objetivo es más corto—, y los otros 336 la lista sale bien. Por
-eso nunca se había visto.
-
-**El arreglo ya está escrito en su propio repositorio**: `snowflake/period.go:66`
-hace `firstOfMonth(now).AddDate(0, -i, 0)`, que es exactamente lo que falta acá. Y
-`dd_seed_panel_data.go:123` repite el patrón sin normalizar, así que conviene
-mirarlo en la misma pasada.
-
-**Lo nuestro ya está hecho y no espera**: el adaptador colapsa los ids repetidos
-—`id` es una clave que atraviesa el batch, la caché y el hilo del chat— con la
-respuesta capturada como fixture. **Lo que el front no hace es rellenar el mes que
-falta**: no sabe si el servicio no lo tiene o no lo quiere dar, y ofrecer un
-período que el batch va a rechazar es peor que no ofrecerlo. Hasta que normalicen,
-29 días al año la consola ofrece once meses y no doce. · Bloquea nada, **degrada
-F1.42**.
-
-
-### F1.44 · El orden de una tabla se anuncia, no se aplica
-
-*Estado de la tarea: parcial.*
-
-
-Que `cut` salga de `layout_params` de `series`, o que
-digan quién lo lee. **Medido contra `de881e1` el 2026-09-29** y verificado en su
-repositorio: **las dos mitades del candado vencieron y apareció la respuesta
-real, que es que el param no hace nada.**
-
-| Lo que decía este bloqueo | Lo medido el 2026-09-29 |
-|---|---|
-| «no se sabe qué significa `cut` en `series`» | Contestado: es la granularidad declarada, y el índice del pronóstico se renombró a `horizon_cut`. Verificado en `dd_seed_blocks.go:44,48` y `manual_migrations.go:190`, no en su prosa |
-| «el dato no permite deducirlo: los dos paneles traen las mismas ocho estampas mensuales sin importar el `cut`» | **Falso ahora.** `cut=month` trae **12** estampas mensuales —`2025-10-01`, `2025-11-01`…— y `cut=day` trae **28** diarias —`2026-09-01`, `2026-09-02`…— |
-
-**Pero el grano no sale de `cut`: sale de la MÉTRICA.** `git grep '"cut"'` sobre
-`de881e1` lo encuentra en tres lugares —la semilla del panel, la declaración del
-param y la migración— y **en ningún lector**. Los dos paneles difieren porque son
-dos métricas distintas, `daily_trend` y `twelve_month_efficiency`, materializadas
-cada una a su grano natural. Ellos ya lo dijeron: «ningún código suyo la lee».
-
-**Y el `.pen` tampoco le da dónde dibujarse.** `Plot/CONSOLA · Tendencia diaria`
-son cuatro líneas de grilla en `$w2` y los trazos: **ni eje de tiempo ni rótulos
-ni marcas**, que es exactamente lo que `PlotSeries` implementa. Leído el
-2026-09-29.
-
-Así que la cuarta viñeta del criterio se resuelve por su segunda rama y no por la
-primera: **declararlo en `PARAM_SCHEMAS` sería declarar un param que nadie lee**,
-que es lo que el encabezado de `api/params.ts` prohíbe en dos párrafos y lo que ya
-se decidió para `orden` de `table` en esta misma tarea. El front lo sigue
-descartando como desconocido, con aviso en desarrollo, y eso es la respuesta
-correcta. · Bloquea **F1.44**.
-
-**Y `min_grain` quedó anotado aparte, que es de DATOS.** Las dieciocho métricas
-del catálogo declaran `min_grain: 'month'`, **incluida `daily_trend`**, que viene
-de Snowflake —`catalog_version=3`, fuente «Reporte **diario** de ecommerce del
-cliente»— y cuyo panel sirve 28 puntos diarios. `coarsestRequired` toma el más
-grueso de la pestaña, así que con las dieciocho en `month` el selector no puede
-ofrecer días ni semanas **para ninguna pestaña**.
-
-Hoy no se ve: los doce períodos que el servicio manda son todos mensuales, y
-`PeriodPicker` sólo pinta los granos que tienen períodos. **Se ve el día que haya
-períodos diarios o rangos libres, que es F5.13** — y es un segundo bloqueo de esa
-tarea que no estaba escrito. La columna es `SYNAPSE_METRIC_CATALOG.MIN_GRAIN`, así
-que es de la misma familia que las seis filas de `SEMANTIC_DIRECTION`.
-
-
-## Fase 2 — Los estados de materialización en pantalla
-
-Depende de B2.5–B2.7 para los estados REALES: hasta que el backend los emita,
-solo se pueden probar contra el seed (B1.20) o contra MSW.
-
-**Arrancada el 2026-09-03**, en cuanto B0.9 contestó la 1171. Lo primero que
-apareció al abrirla: **MSW emitía únicamente `DISPONIBLE`**, así que los otros
-cinco estados nunca habían atravesado el contenedor, el adaptador de params ni
-el registro de cuerpos. Estaban probados a nivel de componente —con payloads
-montados a mano— y ni una vez de punta a punta. Eso es
-`tests/surfaces/console/states.test.tsx`, 29 pruebas.
-
-
 ### B2.14 · /config/solicitudes · pedir acceso a una métrica que no se ve
 
 *Estado de la tarea: pendiente.* · **Lo tiene: PRODUCTO**
@@ -312,6 +137,8 @@ montados a mano— y ni una vez de punta a punta. Eso es
 
 **Medido contra `de881e1` el 2026-09-29** · `GET /config/solicitudes` → **404** · y el payload `FORBIDDEN` es `{status, request_from}` y nada más.
 
+**Medido contra `9dc481e` el 2026-10-09** · `/config/solicitudes` sigue sin estar en `router.go` —lo que hay es `/access-requests`, que es pedir una CUENTA, no una métrica—. `FORBIDDEN` trae `reason` y `unlocks_with` (`dd_config_service.go:384-387`), que es la mitad que ya había llegado. **Sigue siendo decisión de producto.**
+
 **Bloquea F2.3.** Y el hueco tiene una forma concreta: el payload `FORBIDDEN` es hoy `{status, request_from}` **y nada más** —medido pidiéndole al token de `planner` los tres paneles que su rol oculta—. Sin `reason` ni `unlocks_with`, que es la gramática de §8 que los otros cinco estados sí traen.
 
 **Así que son dos cosas y conviene no mezclarlas:** que el estado declare qué lo desbloquea, y que exista dónde pedirlo.
@@ -322,92 +149,15 @@ montados a mano— y ni una vez de punta a punta. Eso es
 *Estado de la tarea: parcial.* · **Lo tiene: DESPLIEGUE**
 
 
-**Corregir `locale`, `currency` y `timezone` del tenant de
-UA MX**, que hoy son colombianos —`es-CO`, `COP`, `America/Bogota`— por el
-**default de la columna** en `internal/core/domain/tenant.go`. **Medido contra
-`de881e1` el 2026-09-29** al probar la prosa: el agente redactó el resumen del
-mes en **pesos colombianos para un cliente mexicano**.
-
-**El caro es el huso**, no la moneda: el corte del día del negocio sale del
-tenant, y un tenant mexicano cerrando el día en Bogotá produce cifras plausibles
-y no auditables — que es justo lo que la regla de las dos zonas horarias existe
-para impedir. Y el `locale` mete el separador de miles colombiano en TODAS las
-cifras de la consola, no sólo en la prosa.
-
-Pedido en `docs/MENSAJE-2026-09-29-backend-tenant-colombiano.md`, con la
-propuesta de que los tres pasen a ser obligatorios al crear el tenant: **un
-default que nombra un país es una decisión sobre el próximo cliente que nadie va
-a tomar a conciencia.** · Bloquea nada, **ensucia todo**.
-
-**PROBADO ACÁ EL 2026-09-29, Y ANDA.** No hacía falta esperar al despliegue para
-saber si funciona: el flag es del binario y el agente de Cortex contesta desde el
-24. Levantado con `DD_MATERIALIZE_PROSE_ENABLED=true` contra `de881e1` y con
-`POST /admin/tenants/{id}/materialize` sobre `2026-09`:
-
-```
-run: available 18 · blocked 0 · errors 0 · preserved 0 · 45 s
-executive_summary → AVAILABLE · «En septiembre de 2026 los ingresos alcanzaron
-  COP 1.144.876, un avance de 24,6% frente al mes anterior (COP 918.978)…»
-decisions         → AVAILABLE · con pilares · «Frenar: erosión…», «Vigilar:
-  brecha en órdenes», con su nota cada uno
-```
-
-**Resuelve las tres cosas que estaban mal en esos dos paneles:**
-
-| Antes | Ahora |
-|---|---|
-| El texto de la semilla, en **inglés** | En **español**, porque el generador recibe el `Locale` del tenant |
-| **La misma cifra en todos los períodos** —«USD 4.28M»— | Las del período materializado, con su comparación contra el mes anterior y el mismo mes del año pasado |
-| `DEGRADED` con dato de tres semanas | `AVAILABLE` con la frescura de la corrida |
-
-**Y la prosa NO pasa por el registro de consultas de Snowflake**, que es lo que
-hacía que estas dos salieran `BLOCKED · No Snowflake query registered` en los
-demás períodos: `dd_materializer_service.go:139` evalúa la rama de prosa **antes**
-del bloqueo, así que con el generador puesto el `Blocked: true` de `exec_resumen`
-y `month_decisions` no aplica.
-
-**Queda en ⚠️ y no en ✅** porque lo que la tarea pide es que se encienda **en
-dev**, y eso sigue siendo del equipo de despliegue. Lo que cambia es que ya no es
-una apuesta: está medido.
-
-**UNA MEDICIÓN FLOJA, ANOTADA PORQUE ES BARATA DE REPETIR.** La primera lectura
-dijo que `executive_summary` no se había regenerado. Era falso: la ruta devuelve
-**202 y corre asíncrono**, y se consultó antes de que terminara. El `status` de la
-corrida —`/admin/materialize/runs`— es lo que dice cuándo mirar.
-
-**Espera del backend.** **Que se encienda en dev y nos avisen** — lo ofrecieron ellos en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
+**Que se encienda en dev y nos avisen** — lo ofrecieron ellos en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
 
 **Lo tiene: DESPLIEGUE** · prender el flag en dev después del próximo despliegue. **Fecha, no código.**
 
 **Medido contra `de881e1` el 2026-09-29** · `ProseGeneratorEnabledFromEnv` lee el flag con default `false`.
 
+**Medido contra `9dc481e` el 2026-10-09** · `ProseGeneratorEnabledFromEnv` sigue leyendo el flag con default `false` (`dd_materializer_service.go:55-58`). **Si ya está encendido en dev no se ve desde el código**, y no lo medimos: sigue en pie el «avísennos».
+
 Hasta entonces los dos paneles de prosa se sirven con el valor de la semilla, **en inglés**, y salen `DEGRADED`.
-
-
----
-
-## ⚠️ 8 pedido(s) sin reverificar
-
-**Estos se midieron contra un commit suyo que ya no es el último.**
-No quiere decir que sigan faltando: quiere decir que **no lo
-sabemos**, y un pedido que no sabemos si sigue vigente no debería
-hacerles perder tiempo.
-
-El 2026-09-28 revalidamos los doce que había y **cinco ya estaban
-resueltos** — llevaban días acá diciendo que faltaban. Por eso esta
-sección existe.
-
-
-| Pedido | Medido contra | Cuándo |
-|---|---|---|
-| **B1.21** · Declarar los mínimos de datos por gráfico | `de881e1` | 2026-09-29 |
-| **B1.31** · La plataforma genera el par de claves del usuario de servicio | `de881e1` | 2026-09-29 |
-| **B1.34** · Declarar qué es el t de una serie, o mandar el tramo vencido | `de881e1` | 2026-09-29 |
-| **B2.12** · Correr el materializador contra datos reales y verificar los seis estados | `de881e1` | 2026-09-29 |
-| **F1.42** · El mes en curso está incompleto y el selector no lo dice | `de881e1` | 2026-09-29 |
-| **F1.44** · El orden de una tabla se anuncia, no se aplica | `de881e1` | 2026-09-29 |
-| **B2.14** · /config/solicitudes · pedir acceso a una métrica que no se ve | `de881e1` | 2026-09-29 |
-| **B2.15** · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | `de881e1` | 2026-09-29 |
 
 
 ---
