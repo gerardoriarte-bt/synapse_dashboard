@@ -5,7 +5,7 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**179 de 226 tareas cerradas.** 15 parciales · 28 pendientes · 4 diferidas.
+**180 de 226 tareas cerradas.** 15 parciales · 27 pendientes · 4 diferidas.
 
 
 ## Front · 120 de 128
@@ -19,7 +19,7 @@
 | 4 · Admin y Builder | `██████████████████████` | 24/24 | 0 | 0 |
 | 5 · Pruebas y pulido | `██████████████████····` | 17/21 | 0 | 3 |
 
-## Backend · 59 de 98
+## Backend · 60 de 98
 
 > ⚠️ **Este número está bajo y no refleja al backend.** El plan de acá
 > es la fuente del FRONT; el estado de las tareas `B*` solo se mueve
@@ -46,7 +46,7 @@
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `█████████████·········` | 6/10 | 1 | 3 |
-| 1 · API de consola | `██████████████········` | 22/34 | 5 | 7 |
+| 1 · API de consola | `███████████████·······` | 23/34 | 5 | 6 |
 | 2 · Materialización | `███████████···········` | 8/16 | 3 | 5 |
 | 3 · Chat contextual | `██████················` | 3/11 | 2 | 6 |
 | 4 · Admin y Builder | `████████████████████··` | 18/20 | 1 | 1 |
@@ -60,7 +60,7 @@
 
 ---
 
-## Bloqueadas · 10
+## Bloqueadas · 7
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -75,9 +75,6 @@ Lo que el front espera del backend está detallado en
 
 **Backend**
 
-- **B1.21** · Declarar los mínimos de datos por gráfico
-- **B1.31** · La plataforma genera el par de claves del usuario de servicio
-- **B1.34** · Declarar qué es el t de una serie, o mandar el tramo vencido
 - **B2.12** · Correr el materializador contra datos reales y verificar los seis estados
 - **B2.14** · /config/solicitudes · pedir acceso a una métrica que no se ve
 - **B2.15** · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar
