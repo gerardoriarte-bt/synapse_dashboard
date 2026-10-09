@@ -99,9 +99,22 @@ MEDIDAS = {
     "/config/chat/threads",
     "/config/panels/{panelId}/chat-suggestions",
     "/config/plots",
+    # Las tres de LECTURA que el cable declaraba sin medir · 2026-10-09.
+    "/chat/agents",
+    "/config/chat/threads/{id}/messages",
+    "/config/panels/{panelId}/drilldown/dimensions",
 }
 SALTADAS = {
     "/config/chat": "SSE · cuesta una llamada a Cortex y escribe un hilo",
+    # **Las dos con efectos, dichas y no medidas** · 2026-10-09. Saltear es
+    # legítimo; saltear en silencio no.
+    "/config/panels/{panelId}/drilldown": (
+        "Snowflake en vivo · comparte cuota con el chat · medido a mano en C2"
+    ),
+    "/history/threads/{id}": (
+        "borra un hilo del usuario · medido a mano el 2026-10-09 con uno "
+        "descartable: 200 y `deleted_at` en la base"
+    ),
 }
 
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
@@ -559,6 +572,57 @@ def main() -> int:
         revisar("/config/chat/threads[0]", lista_hilos[0], "ChatThread")
     else:
         print("  ⊘ /config/chat/threads · sin hilos todavía · no hay forma que comparar")
+
+    # ── LAS TRES DE LECTURA QUE FALTABAN · 2026-10-09 ───────────────────────
+    #
+    # Salían «el cable la declara y NADA la mide». Dos se transcribieron ese día
+    # —los mensajes de un hilo y el borrado— y tres venían de antes.
+    #
+    # **Los mensajes miden además una trama `ChatFrameData` real**: el
+    # `structured_data` guardado es lo que el stream emitió. Es la única medida
+    # de esa forma que no cuesta una llamada a Cortex.
+    if isinstance(lista_hilos, list) and lista_hilos:
+        estado_msj, msj = pedir(f"/config/chat/threads/{lista_hilos[0]['id']}/messages", token)
+        pagina = msj.get("data") if isinstance(msj, dict) else None
+        if estado_msj != 200 or not isinstance(pagina, dict):
+            fallas.append(f"/config/chat/threads/{{id}}/messages · respondió {estado_msj}")
+            print(f"  ✗ /config/chat/threads/{{id}}/messages · HTTP {estado_msj}")
+        else:
+            revisar("/config/chat/threads/{id}/messages", pagina, "ChatMessagesPage")
+            mensajes = pagina.get("messages") or []
+            if mensajes:
+                revisar("  messages[0]", mensajes[0], "ChatMessage")
+            guardada = next((m["structured_data"] for m in mensajes if m.get("structured_data")), None)
+            if guardada is not None:
+                revisar("  structured_data", guardada, "ChatFrameData")
+                revisar(
+                    "  structured_data.provenance",
+                    guardada.get("provenance"),
+                    esquemas["ChatFrameData"]["properties"]["provenance"],
+                )
+    else:
+        print("  ⊘ /config/chat/threads/{id}/messages · sin hilos · no hay a cuál pedirle")
+
+    estado_ag, ag = pedir("/chat/agents", token)
+    agentes = ag.get("data") if isinstance(ag, dict) else None
+    if estado_ag == 403:
+        print("  ⊘ /chat/agents · el usuario no es admin · el servicio la niega, y está bien")
+    elif estado_ag != 200 or not isinstance(agentes, list):
+        fallas.append(f"/chat/agents · respondió {estado_ag}")
+        print(f"  ✗ /chat/agents · HTTP {estado_ag}")
+    elif agentes:
+        revisar("/chat/agents[0]", agentes[0], "ChatAgentOption")
+    else:
+        print("  ⊘ /chat/agents · sin agentes cargados")
+
+    if tabs and paneles:
+        pid = paneles[0]["id"]
+        estado_dim, dim = pedir(f"/config/panels/{pid}/drilldown/dimensions", token)
+        if estado_dim != 200:
+            fallas.append(f"drilldown/dimensions · respondió {estado_dim}")
+            print(f"  ✗ drilldown/dimensions · HTTP {estado_dim}")
+        else:
+            revisar("drilldown/dimensions", dim.get("data"), "DrillDownDimensions")
 
     if tabs and paneles:
         pid = paneles[0]["id"]

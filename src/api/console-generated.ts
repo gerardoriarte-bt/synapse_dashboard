@@ -1246,8 +1246,29 @@ export interface components {
              *     `DEGRADED`. §8 pide estado, razón y qué lo desbloquea.
              */
             unlocks_with?: string;
-            /** @description Solo en `ERROR`. Sale de `validatePanelOptions`. */
+            /**
+             * @description **El detalle TÉCNICO, en cualquier estado** · corregido el
+             *     2026-10-09 leyendo `9dc481e`. Acá decía «Solo en `ERROR`. Sale de
+             *     `validatePanelOptions`», y eso es una de dos fuentes: en `ERROR` lo
+             *     escribe `validatePanelOptions`, y en los demás viaja
+             *     `data.Message` de la fila materializada (`dd_config_service.go`,
+             *     `BatchPanels`). Su propio código lo separa del copy: «el motivo
+             *     técnico sigue en `data.Message`» — por eso no se pinta como razón.
+             */
             message?: string;
+            /**
+             * Format: date-time
+             * @description **Transcrito el 2026-10-09**: llegó en `de881e1` (B1.28) y esta ruta
+             *     figuraba verificada contra `7b717aa` sin él. Lo encontró `npm run
+             *     humo`, no la lectura.
+             *
+             *     Sólo en `DEGRADED` **por antigüedad**: el instante desde el que el
+             *     dato está vencido —última materialización exitosa +
+             *     `DD_FRESHNESS_TOLERANCE_DAYS`—. Ausente (`omitempty`) en las otras
+             *     degradaciones y en los demás estados. `governance.freshness` sigue
+             *     siendo la última materialización.
+             */
+            stale_since?: string;
             /**
              * @description Solo en `FORBIDDEN`, y es **la constante `"admin"`** escrita en el
              *     código, no el rol que decide sobre la métrica.
@@ -1416,10 +1437,21 @@ export interface components {
         /**
          * @description `event: data`. Lo que `StructuredDataFromCortex` produjo.
          *
-         *     **`shape` es la FORMA del valor, no el tipo de panel**, y `provenance`
-         *     **no trae la BASE ni la capa Medallion** — los dos huecos por los que
-         *     F3.6 sigue bloqueada. Se transcribe igual: describir el cable no es
-         *     usarlo.
+         *     **`shape` es la FORMA del valor, no el tipo de panel.** Un gráfico del
+         *     agente llega como `raw` con `{shape: 'chart', chart_spec}` adentro.
+         *
+         *     **Reverificado contra `9dc481e` el 2026-10-09.** Acá decía que
+         *     `provenance` «no trae la BASE ni la capa Medallion» y que F3.6 seguía
+         *     bloqueada: venció con `55e8419`, el 2026-09-22.
+         *
+         *     **En el chat de PESTAÑA la procedencia se DEDUCE** desde `9dc481e`:
+         *     `enrichTabProvenance` busca la métrica de la pestaña cruzando nombres de
+         *     columna del resultado, y si encuentra una le copia familia, base, capa,
+         *     fuente y versión del catálogo —y su forma, vía `tabMetricShape`—. Si no
+         *     encuentra, viaja vacía. **Que venga llena no garantiza que sea la de esta
+         *     cifra**: medido el 2026-10-08 y el 2026-10-09, una tabla de inversión de
+         *     medios llegó con la base de la venta del sitio. Pedido en
+         *     `MENSAJE-2026-10-08-backend-procedencia-por-nombre.md`.
          */
         ChatFrameData: {
             /**
