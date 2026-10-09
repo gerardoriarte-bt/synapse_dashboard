@@ -3,6 +3,8 @@
 > **Histórico.** Un mensaje con fecha: qué se pidió y con qué evidencia.
 > No se actualiza.
 
+**Enviado el 2026-10-09**, después de mergear el PR #4.
+
 **Medido contra `9dc481e` el 2026-10-09**: el binario de `9dc481e`
 (`feature/dynamic-dashboard-backend`, sin commits nuevos tras un `fetch` ese
 día) levantado acá en `:4010` contra `SYNAPSE_UA` real, una pregunta en el chat
