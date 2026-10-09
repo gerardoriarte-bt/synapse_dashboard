@@ -341,13 +341,20 @@ function traducir(
       // una cifra del chat ya se inventó una vez —estaba cableado a `demanda`—
       // y por eso `familia` entró al contrato el 2026-08-19.
       if (familia === undefined) return null
+      // **La capa tampoco se inventa** · 2026-10-09. Acá decía
+      // `CAPAS[p.layer] ?? 'GOLD'`, y una consulta del agente fuera del
+      // catálogo —`layer: ""`, medido contra `9dc481e`— salía firmada como
+      // GOLD. Vacía es «no la declara»; una capa que el contrato no conoce es
+      // un cable roto, igual que la familia.
+      const capa = p.layer === '' ? null : CAPAS[p.layer]
+      if (capa === undefined) return null
 
       return {
         tipo: 'dato',
         valor: valor.valor,
         familia,
         base: p.base,
-        capa: CAPAS[p.layer] ?? 'GOLD',
+        capa,
         fuente: p.source_system,
         // Ver la cabecera: la cifra es tan fresca como la consulta que la
         // produjo, no como el último refresco del panel.

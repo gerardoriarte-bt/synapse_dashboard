@@ -26,18 +26,31 @@
  *  que llegaba, y la rama de «no puedo dibujarlo» era la común. Ahora una forma
  *  que un solo tipo acepta se dibuja con ese tipo; **se declara sólo cuando la
  *  tabla deja dos o más candidatos**, que es donde elegir sería adivinar.
+ *
+ *  ── UNA TABLA SIN RÓTULOS NO SE DIBUJA, Y UNA SIN FAMILIA SÍ · 2026-10-09 ───
+ *
+ *  Medido contra `9dc481e`: una pregunta de pestaña por la inversión por
+ *  plataforma trajo tres tablas **sin la columna de plataforma** —el backend
+ *  descarta toda columna llamada `label` al inferir las columnas— y nueve
+ *  filas de cifras sueltas. Dibujarlas es «ningún número desnudo» roto, así
+ *  que una tabla del chat exige que cada fila diga de qué es. Vale con o sin
+ *  familia: una de las tres traía familia, y se habría dibujado igual.
+ *
+ *  Y la familia, en una tabla, no pinta datos: es una marca de 6 px. Una tabla
+ *  con rótulos y sin familia se dibuja **sin la marca**, en vez de declararse.
+ *  Los gráficos no: ahí la familia es el color del dato.
  */
 import { Suspense } from 'react'
 import { Label } from '../../render/primitives/Label'
 import { LoadingState } from '../../render/states/LoadingState'
-import { bodyFor } from '../../render/bodies/registry'
+import { TableWithoutFamily, bodyFor } from '../../render/bodies/registry'
 import { acceptsShape, soleTypeFor } from '../../catalog/blocks'
 import { Provenance } from '../../render/Panel/Provenance'
 import { span } from '../../render/grid'
 import type { BlockTable } from '../../catalog/blocks'
 import type { PanelType } from '../../catalog/types'
 import type { Formatter } from '../../render/format'
-import type { ChatEvent } from '../../api/types'
+import type { ChatEvent, Value } from '../../api/types'
 
 type Dato = Extract<ChatEvent, { tipo: 'dato' }>
 
@@ -47,6 +60,22 @@ const FILAS = 3
 /** Los cuerpos que miden su propio contenido. Los demás —los gráficos— ocupan
  *  el alto de su contenedor y sin uno no se ven. */
 const CON_ALTO_PROPIO: ReadonlySet<PanelType> = new Set(['kpi', 'prose'])
+
+/** ¿Cada fila dice de qué es? Hay una columna no numérica con texto en TODAS
+ *  las filas. Una columna de texto vacía no cuenta: medido el 2026-10-09,
+ *  `platform_revenue` llegó como texto con `""` en ocho de nueve filas, y eso
+ *  no es un rótulo — es una cifra que se perdió. */
+export function hasRowLabels(valor: Extract<Value, { forma: 'tabular' }>): boolean {
+  return valor.columnas.some(
+    (c) =>
+      !c.numerica &&
+      valor.filas.length > 0 &&
+      valor.filas.every((f) => {
+        const celda = f[c.clave]
+        return typeof celda === 'string' && celda.trim() !== ''
+      }),
+  )
+}
 
 type Props = {
   dato: Dato
@@ -83,9 +112,24 @@ export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now
   const panelTipo = dato.tipoDePanel ?? delPanel ?? soleTypeFor(bloques, forma) ?? undefined
   const familia = dato.familia
 
+  // **Ningún número desnudo, tampoco en el chat** · 2026-10-09. Va antes que
+  // la familia porque vale con ella o sin ella.
+  if (dato.valor.forma === 'tabular' && !hasRowLabels(dato.valor)) {
+    return (
+      <div className="flex flex-col gap-1">
+        {dato.titulo == null ? null : <Label as="div">{dato.titulo}</Label>}
+        <Label as="div">Una tabla que no se dibuja</Label>
+        <Label as="div">Sus filas llegaron sin una columna que diga de qué es cada cifra</Label>
+      </div>
+    )
+  }
+
   // **Sin familia no hay color, y no se inventa uno** · 2026-10-07. El chat de
-  // pestaña no tiene métrica de origen; el dato llega y se declara.
-  if (familia === null) {
+  // pestaña no tiene métrica de origen; el dato llega y se declara. **Salvo la
+  // tabla** · 2026-10-09: ahí la familia es una marca y no un color de dato, y
+  // se dibuja sin ella. Ver la cabecera.
+  const sinFamiliaDibujable = familia === null && panelTipo === 'table'
+  if (familia === null && !sinFamiliaDibujable) {
     return (
       <div className="flex flex-col gap-1">
         {dato.titulo == null ? null : <Label as="div">{dato.titulo}</Label>}
@@ -125,6 +169,19 @@ export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now
     )
   }
 
+  const comunes = {
+    value: dato.valor,
+    params: {},
+    // La cifra del chat no vive en la grilla, pero los cuerpos piden un
+    // `Placement` para decidir densidad. Se le da el de la columna de
+    // conversación: 6 de ancho es la mitad de la grilla, que es lo que mide la
+    // hoja contra la pantalla.
+    span: { colStart: 1, colSpan: 6, rowSpan: FILAS },
+    metric: dato.titulo ?? '',
+    format,
+    ...(dato.presentacion === undefined ? {} : { presentation: dato.presentacion }),
+  }
+
   return (
     <figure className="flex flex-col gap-2 rounded-md border border-w3 p-3 m-0">
       {dato.titulo == null ? null : <Label as="div">{dato.titulo}</Label>}
@@ -137,19 +194,14 @@ export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now
           se le da: con 272 px quedaba un hueco debajo de la cifra. */}
       <div style={CON_ALTO_PROPIO.has(panelTipo) ? undefined : { height: span(FILAS) }}>
         <Suspense fallback={<LoadingState />}>
-          <Body
-            value={dato.valor}
-            params={{}}
-            // La cifra del chat no vive en la grilla, pero los cuerpos piden
-            // un `Placement` para decidir densidad. Se le da el de la columna de
-            // conversación: 6 de ancho es la mitad de la grilla, que es lo que
-            // mide la hoja contra la pantalla.
-            span={{ colStart: 1, colSpan: 6, rowSpan: FILAS }}
-            family={familia}
-            metric={dato.titulo ?? ''}
-            format={format}
-            {...(dato.presentacion === undefined ? {} : { presentation: dato.presentacion })}
-          />
+          {/* Sin familia sólo llega acá una tabla —lo filtra
+              `sinFamiliaDibujable`— y va por `TableWithoutFamily`, que es la
+              misma instancia con el tipo que admite `null`. */}
+          {familia === null ? (
+            <TableWithoutFamily {...comunes} family={null} />
+          ) : (
+            <Body {...comunes} family={familia} />
+          )}
         </Suspense>
       </div>
 
@@ -168,13 +220,25 @@ export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now
       <Label as="div">
         {dato.base === '' ? 'Base · la consulta no la declara' : `Base · ${dato.base}`}
       </Label>
-      <Provenance
-        capa={dato.capa}
-        fuente={dato.fuente}
-        frescura={dato.frescura}
-        format={format}
-        now={now}
-      />
+      {/* **Sin capa, la procedencia se declara entera** · 2026-10-09. Es la
+          consulta del agente fuera del catálogo: no trae capa ni fuente, y
+          `Provenance` las pintaría como «GOLD · » —antes el adaptador ponía
+          GOLD por defecto— o como un separador colgando. Lo que sí es un
+          hecho es cuándo corrió la consulta, y eso se conserva. El SQL que la
+          produjo está en el desplegable de auditoría de la misma respuesta. */}
+      {dato.capa === null ? (
+        <Label as="div">
+          {`Procedencia · la consulta no la declara · ${format.freshness(dato.frescura, now)}`}
+        </Label>
+      ) : (
+        <Provenance
+          capa={dato.capa}
+          fuente={dato.fuente}
+          frescura={dato.frescura}
+          format={format}
+          now={now}
+        />
+      )}
     </figure>
   )
 }

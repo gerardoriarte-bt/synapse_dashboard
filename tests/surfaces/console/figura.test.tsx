@@ -14,7 +14,7 @@
  */
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { ChatFigure } from '@/surfaces/console/ChatFigure'
+import { ChatFigure, hasRowLabels } from '@/surfaces/console/ChatFigure'
 import { blockTable } from '@/catalog/blocks'
 import { createFormat } from '@/render/format'
 import type { Block } from '@/catalog/types'
@@ -263,5 +263,96 @@ describe('el alto del gráfico · lo encontró abrir el modo mock', () => {
     )
     await screen.findByText(/4\.28/)
     expect(container.querySelector('figure > div[style]')).toBeNull()
+  })
+})
+
+describe('la tabla del chat · ningún número desnudo, y la familia es una marca · 2026-10-09', () => {
+  const conTabla = blockTable([
+    {
+      tipo: 'table',
+      formasAceptadas: ['tabular'],
+      colSpanMin: 5, colSpanMax: 8, rowSpanMin: 4, rowSpanMax: 5,
+      paramsDisponibles: [],
+    },
+  ] as unknown as Block[])
+
+  /** **Capturada del servicio** · `9dc481e`, 2026-10-09, la primera de las
+   *  cuatro tramas: inversión por plataforma SIN la columna de plataforma —el
+   *  backend descarta `label`— y `platform_revenue` como texto vacío. Llegó con
+   *  `family: demand`, así que el filtro de familia no la paraba. */
+  const sinRotulos = {
+    forma: 'tabular',
+    columnas: [
+      { clave: 'investment', titulo: 'investment', numerica: true },
+      { clave: 'platform_revenue', titulo: 'platform_revenue', numerica: false },
+    ],
+    filas: [
+      { investment: 63777.6114, platform_revenue: '' },
+      { investment: 2399.1272, platform_revenue: '131562.73880000002' },
+    ],
+  }
+
+  /** La misma tabla con el rótulo que el agente sí pidió —`fuente AS label`—
+   *  y las cifras de la captura. Es lo que llegaría con el pedido al backend. */
+  const conRotulos = {
+    forma: 'tabular',
+    columnas: [
+      { clave: 'label', titulo: 'label', numerica: false },
+      { clave: 'investment', titulo: 'investment', numerica: true },
+    ],
+    filas: [
+      { label: 'Google', investment: 63777.61 },
+      { label: 'Facebook', investment: 33562.86 },
+    ],
+  }
+
+  const marca = (c: HTMLElement) => c.querySelector('span[aria-hidden].rounded-xs')
+
+  it('una tabla sin rótulos se declara AUNQUE traiga familia', () => {
+    const { container } = render(
+      <ChatFigure dato={dato({ valor: sinRotulos } as never)} bloques={conTabla} format={format} now={now} />,
+    )
+    expect(container.textContent).toContain('sin una columna que diga de qué es cada cifra')
+    expect(container.querySelector('figure')).toBeNull()
+  })
+
+  it('una columna de texto VACÍA no es un rótulo', () => {
+    expect(hasRowLabels(sinRotulos as never)).toBe(false)
+    expect(hasRowLabels(conRotulos as never)).toBe(true)
+  })
+
+  it('con rótulos y SIN familia se dibuja, sin la marca', async () => {
+    const { container } = render(
+      <ChatFigure
+        dato={dato({ valor: conRotulos, familia: null, capa: null, base: '', fuente: '' } as never)}
+        bloques={conTabla}
+        format={format}
+        now={now}
+      />,
+    )
+    expect(await screen.findByText('Google')).toBeInTheDocument()
+    expect(marca(container)).toBeNull()
+  })
+
+  it('con familia, la misma tabla lleva su marca · el control de la de arriba', async () => {
+    const { container } = render(
+      <ChatFigure dato={dato({ valor: conRotulos } as never)} bloques={conTabla} format={format} now={now} />,
+    )
+    expect(await screen.findByText('Google')).toBeInTheDocument()
+    expect(marca(container)).not.toBeNull()
+  })
+
+  it('sin capa la procedencia se declara · no sale «GOLD ·» ni un separador colgando', async () => {
+    const { container } = render(
+      <ChatFigure
+        dato={dato({ valor: conRotulos, familia: null, capa: null, base: '', fuente: '' } as never)}
+        bloques={conTabla}
+        format={format}
+        now={now}
+      />,
+    )
+    await screen.findByText('Google')
+    expect(container.textContent).toContain('Procedencia · la consulta no la declara')
+    expect(container.textContent).not.toContain('GOLD')
   })
 })
