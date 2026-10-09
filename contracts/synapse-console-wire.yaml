@@ -126,7 +126,7 @@ tags:
 
 paths:
   /config/me:
-    x-verificado-en: 7b717aa
+    x-verificado-en: 9dc481e
     get:
       tags: [config]
       operationId: getMe
@@ -149,7 +149,7 @@ paths:
         '500': { $ref: '#/components/responses/ServerError' }
 
   /config/catalog:
-    x-verificado-en: 7b717aa
+    x-verificado-en: 9dc481e
     get:
       tags: [config]
       operationId: getCatalog
@@ -173,7 +173,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/blocks:
-    x-verificado-en: 7b717aa
+    x-verificado-en: 9dc481e
     get:
       tags: [config]
       operationId: getBlocks
@@ -197,7 +197,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/plots:
-    x-verificado-en: 7b717aa
+    x-verificado-en: 9dc481e
     get:
       tags: [config]
       operationId: getPlots
@@ -248,7 +248,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/tabs/{tabId}:
-    x-verificado-en: 7b717aa
+    x-verificado-en: 9dc481e
     get:
       tags: [config]
       operationId: getTab
@@ -284,7 +284,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   /config/panels:batch:
-    x-verificado-en: 7b717aa
+    x-verificado-en: 9dc481e
     post:
       tags: [config]
       operationId: batchPanels
@@ -318,7 +318,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/me/preferences:
-    x-verificado-en: 7b717aa
+    x-verificado-en: 9dc481e
     put:
       tags: [config]
       operationId: updatePreferences
@@ -403,7 +403,7 @@ paths:
     #
     # **Las seis formas `ChatFrame*` siguen sin verse contra el servicio.** Eso
     # es cobertura que falta, y queda dicho acá y en la salida de `humo`.
-    x-verificado-en: 7b717aa
+    x-verificado-en: 9dc481e
     post:
       tags: [config]
       operationId: askChat
@@ -469,7 +469,7 @@ paths:
     # **Vive fuera de `/config`** pero va en este cable porque sólo la usa el
     # chat de la consola. No es el CRUD de `/admin/tenants/{id}/agents`, que
     # incluye inactivos y trae otro DTO.
-    x-verificado-en: 7b717aa
+    x-verificado-en: 9dc481e
     get:
       tags: [chat]
       operationId: listChatAgents
@@ -500,7 +500,7 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   /config/chat/threads:
-    x-verificado-en: 7b717aa
+    x-verificado-en: 9dc481e
     get:
       tags: [config]
       operationId: listChatThreads
@@ -655,7 +655,7 @@ paths:
           description: No existe, o no es de este usuario. `ErrUserThreadNotFound`.
 
   /config/panels/{panelId}/chat-suggestions:
-    x-verificado-en: 7b717aa
+    x-verificado-en: 9dc481e
     get:
       tags: [config]
       operationId: panelChatSuggestions
@@ -753,7 +753,7 @@ paths:
   # redactado, y `daily_trend` corrige su forma sembrada. Eso le toca a
   # `Payload.message` de `/config/panels:batch`, que sigue declarando `de881e1`.
   /config/panels/{panelId}/drilldown/dimensions:
-    x-verificado-en: 7b717aa
+    x-verificado-en: 9dc481e
     get:
       tags: [config]
       operationId: panelDrillDownDimensions
@@ -838,7 +838,7 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   /config/panels/{panelId}/drilldown:
-    x-verificado-en: 7b717aa
+    x-verificado-en: 9dc481e
     post:
       tags: [config]
       operationId: panelDrillDown
@@ -1823,7 +1823,27 @@ components:
             `DEGRADED`. §8 pide estado, razón y qué lo desbloquea.
         message:
           type: string
-          description: Solo en `ERROR`. Sale de `validatePanelOptions`.
+          description: |
+            **El detalle TÉCNICO, en cualquier estado** · corregido el
+            2026-10-09 leyendo `9dc481e`. Acá decía «Solo en `ERROR`. Sale de
+            `validatePanelOptions`», y eso es una de dos fuentes: en `ERROR` lo
+            escribe `validatePanelOptions`, y en los demás viaja
+            `data.Message` de la fila materializada (`dd_config_service.go`,
+            `BatchPanels`). Su propio código lo separa del copy: «el motivo
+            técnico sigue en `data.Message`» — por eso no se pinta como razón.
+        stale_since:
+          type: string
+          format: date-time
+          description: |
+            **Transcrito el 2026-10-09**: llegó en `de881e1` (B1.28) y esta ruta
+            figuraba verificada contra `7b717aa` sin él. Lo encontró `npm run
+            humo`, no la lectura.
+
+            Sólo en `DEGRADED` **por antigüedad**: el instante desde el que el
+            dato está vencido —última materialización exitosa +
+            `DD_FRESHNESS_TOLERANCE_DAYS`—. Ausente (`omitempty`) en las otras
+            degradaciones y en los demás estados. `governance.freshness` sigue
+            siendo la última materialización.
         request_from:
           type: string
           description: |
@@ -2043,10 +2063,21 @@ components:
       description: |
         `event: data`. Lo que `StructuredDataFromCortex` produjo.
 
-        **`shape` es la FORMA del valor, no el tipo de panel**, y `provenance`
-        **no trae la BASE ni la capa Medallion** — los dos huecos por los que
-        F3.6 sigue bloqueada. Se transcribe igual: describir el cable no es
-        usarlo.
+        **`shape` es la FORMA del valor, no el tipo de panel.** Un gráfico del
+        agente llega como `raw` con `{shape: 'chart', chart_spec}` adentro.
+
+        **Reverificado contra `9dc481e` el 2026-10-09.** Acá decía que
+        `provenance` «no trae la BASE ni la capa Medallion» y que F3.6 seguía
+        bloqueada: venció con `55e8419`, el 2026-09-22.
+
+        **En el chat de PESTAÑA la procedencia se DEDUCE** desde `9dc481e`:
+        `enrichTabProvenance` busca la métrica de la pestaña cruzando nombres de
+        columna del resultado, y si encuentra una le copia familia, base, capa,
+        fuente y versión del catálogo —y su forma, vía `tabMetricShape`—. Si no
+        encuentra, viaja vacía. **Que venga llena no garantiza que sea la de esta
+        cifra**: medido el 2026-10-08 y el 2026-10-09, una tabla de inversión de
+        medios llegó con la base de la venta del sitio. Pedido en
+        `MENSAJE-2026-10-08-backend-procedencia-por-nombre.md`.
       required: [shape, data, provenance]
       properties:
         shape:
