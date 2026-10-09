@@ -58,7 +58,7 @@ Códigos: 0 conforme · 1 violación · 2 BLOQUEADO (sin `docs/` o sin contratos
 """
 from __future__ import annotations
 
-import json
+import importlib.util
 import re
 import subprocess
 import sys
@@ -67,7 +67,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 DOCS = RAIZ / "docs"
 CONTRATOS = RAIZ / "contracts"
-PLAN_JSON = RAIZ / "tools" / "plan-tareas.json"
+PLAN = RAIZ / "plan-de-trabajo.md"
 
 # Los repositorios donde un hash citado puede vivir. El fork primero, que es
 # donde más se citan.
@@ -143,9 +143,17 @@ def ids_conocidos() -> set[str]:
     `tareas-front-back.md` es el ancestro común de los dos planes, y el propio
     plan lo cita —«Cubre F1.15 y F1.16»— porque varias de sus tareas se
     absorbieron en otras. Marcarlas sería perseguir una cita correcta."""
-    ids: set[str] = set()
-    if PLAN_JSON.exists():
-        ids |= {t["id"] for t in json.loads(PLAN_JSON.read_text(encoding="utf-8"))}
+    # **Del markdown, con el parser del plan, y no de `plan-tareas.json`** ·
+    # 2026-10-09. El JSON es un generado que `.gitignore` excluye: en un clone
+    # limpio no existía y salían 221 tareas «fuera del plan», y en un árbol con
+    # uno viejo —del 2026-10-07— tapaba cuatro citas que el plan ya no tiene.
+    # Un chequeo que depende de cuándo corriste `npm run plan` no verifica
+    # contra la fuente. Se carga `parsear` por ruta porque el archivo lleva
+    # guion y no se puede importar con `import`.
+    spec = importlib.util.spec_from_file_location("plan_a_csv", RAIZ / "tools" / "plan-a-csv.py")
+    plan = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(plan)
+    ids: set[str] = {t["id"] for t in plan.parsear(PLAN.read_text(encoding="utf-8"))}
     ancestro = RAIZ / "tareas-front-back.md"
     if ancestro.exists():
         ids |= set(re.findall(r"^- \[[ x]\] \*\*([BF]\d+\.\d+)\*\*",
