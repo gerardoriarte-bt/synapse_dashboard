@@ -158,20 +158,31 @@ def render(tareas, ref) -> str:
         o.append("| El último commit que leímos | **no se sabe** · el cable no coincide consigo mismo |")
     o.append("")
 
-    if ref:
-        viejas = [t for t in con_commit if t["commit"] != ref]
-        if viejas:
+    # **Sin un commit de referencia, todas quedan en duda, y se listan** ·
+    # 2026-10-09. Antes la lista entera desaparecía cuando el cable mezclaba
+    # commits —quedaba sólo «no se sabe» en el resumen—, y 51 tareas dejaban
+    # de figurar como dudosas sin que nadie las reverificara.
+    viejas = [t for t in con_commit if t["commit"] != ref] if ref else list(con_commit)
+    if viejas:
+        if ref:
             o.append(
                 f"\n## ⚠️ {len(viejas)} verificadas contra un commit anterior\n\n"
                 "**No quiere decir que estén mal: quiere decir que no lo sabemos.**\n"
                 "Una tarea `B*` afirma algo del servicio, y el servicio cambia.\n"
                 "Re-verificar una es leer su criterio y medirlo de nuevo.\n"
             )
-            o.append("\n| Tarea | | Verificada contra | Cuándo |\n|---|---|---|---|")
-            for t in sorted(viejas, key=lambda x: (x["id"][1], int(x["id"].split(".")[1]))):
-                o.append(f"| **{t['id']}** · {t['titulo']} | {t['estado']} "
-                         f"| `{t['commit']}` | {t['fecha'] or '—'} |")
-            o.append("")
+        else:
+            o.append(
+                f"\n## ⚠️ No sabemos cuáles de estas {len(viejas)} siguen al día\n\n"
+                "**El cable de consola está leído contra más de un commit suyo**, así\n"
+                "que no hay un «último» contra qué comparar. Hasta reverificarlo\n"
+                "entero, ninguna se puede dar por al día.\n"
+            )
+        o.append("\n| Tarea | | Verificada contra | Cuándo |\n|---|---|---|---|")
+        for t in sorted(viejas, key=lambda x: (x["id"][1], int(x["id"].split(".")[1]))):
+            o.append(f"| **{t['id']}** · {t['titulo']} | {t['estado']} "
+                     f"| `{t['commit']}` | {t['fecha'] or '—'} |")
+        o.append("")
 
     if sin_mirar:
         o.append(
@@ -198,7 +209,8 @@ def render(tareas, ref) -> str:
         o.append("| | Tarea | Verificada contra | Cuándo |\n|---|---|---|---|")
         for t in sorted(de_fase, key=lambda x: int(x["id"].split(".")[1])):
             marca = t["commit"] or "—"
-            if ref and t["commit"] and t["commit"] != ref:
+            # Sin referencia, toda verificada queda en duda · ver arriba.
+            if t["commit"] and t["commit"] != ref:
                 marca = f"`{t['commit']}` ⚠"
             elif t["commit"]:
                 marca = f"`{t['commit']}`"
@@ -229,13 +241,14 @@ def main() -> int:
     ref = referencia()
     DESTINO.write_text(render(tareas, ref), encoding="utf-8")
     con = [t for t in tareas if t["estado"] in ("✅", "⚠️") and t["commit"]]
-    viejas = [t for t in con if ref and t["commit"] != ref]
+    viejas = [t for t in con if t["commit"] != ref]
     estado = "✓" if not viejas else "⚠"
     print(f"estado-backend {estado} {len(tareas)} tareas `B*`"
           f" · {len(con)} verificadas"
           f" · {len(con) - len(viejas)} contra {ref or 'sin referencia'}")
     if viejas:
-        print(f"  {len(viejas)} contra un commit anterior · se listan en el archivo")
+        print(f"  {len(viejas)} " + ("contra un commit anterior" if ref else "en duda · el cable mezcla commits")
+              + " · se listan en el archivo")
     print(f"  → {DESTINO.relative_to(RAIZ)}")
     return 0
 
