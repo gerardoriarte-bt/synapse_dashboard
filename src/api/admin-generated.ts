@@ -588,6 +588,125 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/tenants/{tenantId}/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Cambiar el rol de un usuario, o suspenderlo y reactivarlo
+         * @description **Medida el 2026-10-09 contra el binario de `9dc481e`**, con la base
+         *     local: cambiar rol, suspender, reactivar, otro cliente y un rol ajeno.
+         *
+         *     **Los dos campos son opcionales y se aplican por separado.** Lo que no
+         *     viaja no cambia.
+         *
+         *     **El cliente NO se cambia acá**, y es la regla de §PEN:A3: el usuario
+         *     pertenece al tenant de la URL. Medido:
+         *
+         *       · el usuario con el tenant de OTRO cliente en la URL → **404**
+         *         «usuario no encontrado»;
+         *       · un `role_id` de otro cliente → **400** «el rol no existe o no
+         *         pertenece al tenant».
+         *
+         *     **`DELETE` sobre esta misma ruta no se transcribe a propósito**: su
+         *     handler pone `is_active=false` y conserva la fila —«soft delete»—, que es
+         *     exactamente suspender. Ofrecer «suspender» y «dar de baja» como dos
+         *     acciones prometería dos cosas distintas que son la misma.
+         */
+        put: operations["updateUser"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/access-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Las solicitudes de acceso, por estado
+         * @description **Medida el 2026-10-09 contra el binario de `9dc481e`**: se envió una
+         *     solicitud por `POST /access-requests` —la del login—, se listó y se
+         *     aprobó.
+         *
+         *     **Trae dos tipos**: `registration`, alguien que pide entrar, y
+         *     `password_reset`, alguien que olvidó su contraseña. Las dos se aprueban
+         *     por la misma ruta.
+         *
+         *     **Paginada en el servicio**: `page` y `page_size`, 20 por defecto.
+         */
+        get: operations["listAccessRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/access-requests/{requestId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Aprobar una solicitud · crea el usuario o restablece su contraseña
+         * @description **Medida el 2026-10-09 contra el binario de `9dc481e`.**
+         *
+         *     **Para `registration` pide `tenant_id` y `agent_id`, y el ROL del
+         *     usuario nuevo sale del agente**: `agent.TargetRole`, y `user` si viene
+         *     vacío. Medido: con el único agente de UA, cuyo `target_role` es
+         *     `admin`, **el usuario aprobado entró como `admin`**. Quien aprueba tiene
+         *     que ver ese rol antes de apretar.
+         *
+         *     **Genera una contraseña temporal y la manda por correo** cuando el
+         *     servicio tiene correo configurado; sin él registra una advertencia y no
+         *     la envía. `temp_password` viaja en la respuesta y **no se transcribe**:
+         *     el alta es por invitación y nadie ve ni fija la contraseña de otro
+         *     (§PEN:A3).
+         */
+        post: operations["approveAccessRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/access-requests/{requestId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rechazar una solicitud
+         * @description **Medida el 2026-10-09 desde la pantalla**, contra el binario de
+         *     `9dc481e`: rechazar una solicitud pendiente la saca de la cola. Devuelve
+         *     la solicitud con su estado nuevo, igual que aprobar.
+         */
+        post: operations["rejectAccessRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/tenants/{tenantId}/feeds": {
         parameters: {
             query?: never;
@@ -803,6 +922,50 @@ export interface components {
              * @description El alta
              */
             created_at: string;
+        };
+        /**
+         * @description Una solicitud de acceso · medida el 2026-10-09 contra `9dc481e`.
+         *
+         *     **`tenant_id`, `tenant_name`, `agent_id` y `agent_name` llegan recién
+         *     cuando se aprueba**: son a qué cliente y con qué agente entró. Pendiente
+         *     no los trae. `created_user_id` y `reviewed_*` también son de después.
+         */
+        AccessRequest: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            type: "registration" | "password_reset";
+            /** Format: uuid */
+            tenant_id?: string;
+            tenant_name?: string;
+            /** Format: uuid */
+            agent_id?: string;
+            agent_name?: string;
+            /** @description La empresa que la persona escribió · texto libre */
+            company_name: string;
+            full_name: string;
+            email: string;
+            phone: string;
+            job_title: string;
+            /** @description Para qué dice que va a usar la información */
+            info_use: string;
+            /** @enum {string} */
+            status: "pending" | "approved" | "rejected";
+            /** Format: uuid */
+            created_user_id?: string;
+            /** Format: uuid */
+            reviewed_by_user_id?: string;
+            /** Format: date-time */
+            reviewed_at?: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        AccessRequestPage: {
+            items: components["schemas"]["AccessRequest"][];
+            total: number;
+            page: number;
+            page_size: number;
+            total_pages: number;
         };
         /**
          * @description Una fuente de datos del tenant · `1e080ee`.
@@ -2585,6 +2748,136 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Envelope"] & {
                         data?: components["schemas"]["User"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    role_id?: string;
+                    is_active?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description El usuario como quedó */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["User"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listAccessRequests: {
+        parameters: {
+            query?: {
+                status?: "pending" | "approved" | "rejected" | "history";
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Una página de solicitudes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["AccessRequestPage"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    approveAccessRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    tenant_id?: string;
+                    /** Format: uuid */
+                    agent_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description La solicitud aprobada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: {
+                            request: components["schemas"]["AccessRequest"];
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    rejectAccessRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La solicitud rechazada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: {
+                            request: components["schemas"]["AccessRequest"];
+                        };
                     };
                 };
             };

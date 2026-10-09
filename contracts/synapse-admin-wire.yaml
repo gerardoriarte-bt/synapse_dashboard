@@ -1033,6 +1033,191 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /admin/tenants/{tenantId}/users/{userId}:
+    x-verificado-en: 9dc481e
+    put:
+      tags: [admin]
+      operationId: updateUser
+      summary: Cambiar el rol de un usuario, o suspenderlo y reactivarlo
+      description: |
+        **Medida el 2026-10-09 contra el binario de `9dc481e`**, con la base
+        local: cambiar rol, suspender, reactivar, otro cliente y un rol ajeno.
+
+        **Los dos campos son opcionales y se aplican por separado.** Lo que no
+        viaja no cambia.
+
+        **El cliente NO se cambia acá**, y es la regla de §PEN:A3: el usuario
+        pertenece al tenant de la URL. Medido:
+
+          · el usuario con el tenant de OTRO cliente en la URL → **404**
+            «usuario no encontrado»;
+          · un `role_id` de otro cliente → **400** «el rol no existe o no
+            pertenece al tenant».
+
+        **`DELETE` sobre esta misma ruta no se transcribe a propósito**: su
+        handler pone `is_active=false` y conserva la fila —«soft delete»—, que es
+        exactamente suspender. Ofrecer «suspender» y «dar de baja» como dos
+        acciones prometería dos cosas distintas que son la misma.
+      parameters:
+        - { $ref: '#/components/parameters/tenantId' }
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role_id: { type: string, format: uuid }
+                is_active: { type: boolean }
+      responses:
+        '200':
+          description: El usuario como quedó
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/User' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ── Las solicitudes de acceso · la cola que el login alimenta ────────────
+  /admin/access-requests:
+    x-verificado-en: 9dc481e
+    get:
+      tags: [admin]
+      operationId: listAccessRequests
+      summary: Las solicitudes de acceso, por estado
+      description: |
+        **Medida el 2026-10-09 contra el binario de `9dc481e`**: se envió una
+        solicitud por `POST /access-requests` —la del login—, se listó y se
+        aprobó.
+
+        **Trae dos tipos**: `registration`, alguien que pide entrar, y
+        `password_reset`, alguien que olvidó su contraseña. Las dos se aprueban
+        por la misma ruta.
+
+        **Paginada en el servicio**: `page` y `page_size`, 20 por defecto.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [pending, approved, rejected, history] }
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1 }
+        - name: page_size
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Una página de solicitudes
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/AccessRequestPage' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/access-requests/{requestId}/approve:
+    x-verificado-en: 9dc481e
+    post:
+      tags: [admin]
+      operationId: approveAccessRequest
+      summary: Aprobar una solicitud · crea el usuario o restablece su contraseña
+      description: |
+        **Medida el 2026-10-09 contra el binario de `9dc481e`.**
+
+        **Para `registration` pide `tenant_id` y `agent_id`, y el ROL del
+        usuario nuevo sale del agente**: `agent.TargetRole`, y `user` si viene
+        vacío. Medido: con el único agente de UA, cuyo `target_role` es
+        `admin`, **el usuario aprobado entró como `admin`**. Quien aprueba tiene
+        que ver ese rol antes de apretar.
+
+        **Genera una contraseña temporal y la manda por correo** cuando el
+        servicio tiene correo configurado; sin él registra una advertencia y no
+        la envía. `temp_password` viaja en la respuesta y **no se transcribe**:
+        el alta es por invitación y nadie ve ni fija la contraseña de otro
+        (§PEN:A3).
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tenant_id: { type: string, format: uuid }
+                agent_id: { type: string, format: uuid }
+      responses:
+        '200':
+          description: La solicitud aprobada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [request]
+                        properties:
+                          request: { $ref: '#/components/schemas/AccessRequest' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /admin/access-requests/{requestId}/reject:
+    x-verificado-en: 9dc481e
+    post:
+      tags: [admin]
+      operationId: rejectAccessRequest
+      summary: Rechazar una solicitud
+      description: |
+        **Medida el 2026-10-09 desde la pantalla**, contra el binario de
+        `9dc481e`: rechazar una solicitud pendiente la saca de la cola. Devuelve
+        la solicitud con su estado nuevo, igual que aprobar.
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: La solicitud rechazada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [request]
+                        properties:
+                          request: { $ref: '#/components/schemas/AccessRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   # ── B2.13 · salud de feeds por fuente ────────────────────────────────────
   /admin/tenants/{tenantId}/feeds:
     get:
@@ -1360,6 +1545,46 @@ components:
             Activo o suspendido. **No distingue la invitación pendiente**, que el
             dibujo declara como un tercer estado.
         created_at: { type: string, format: date-time, description: El alta }
+
+    AccessRequest:
+      type: object
+      description: |
+        Una solicitud de acceso · medida el 2026-10-09 contra `9dc481e`.
+
+        **`tenant_id`, `tenant_name`, `agent_id` y `agent_name` llegan recién
+        cuando se aprueba**: son a qué cliente y con qué agente entró. Pendiente
+        no los trae. `created_user_id` y `reviewed_*` también son de después.
+      required: [id, type, company_name, full_name, email, phone, job_title, info_use, status, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string, enum: [registration, password_reset] }
+        tenant_id: { type: string, format: uuid }
+        tenant_name: { type: string }
+        agent_id: { type: string, format: uuid }
+        agent_name: { type: string }
+        company_name: { type: string, description: La empresa que la persona escribió · texto libre, no un cliente }
+        full_name: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        job_title: { type: string }
+        info_use: { type: string, description: Para qué dice que va a usar la información }
+        status: { type: string, enum: [pending, approved, rejected] }
+        created_user_id: { type: string, format: uuid }
+        reviewed_by_user_id: { type: string, format: uuid }
+        reviewed_at: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+
+    AccessRequestPage:
+      type: object
+      required: [items, total, page, page_size, total_pages]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/AccessRequest' }
+        total: { type: integer }
+        page: { type: integer }
+        page_size: { type: integer }
+        total_pages: { type: integer }
 
     Feed:
       type: object

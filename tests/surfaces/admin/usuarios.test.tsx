@@ -35,8 +35,14 @@ const usuario = (p: Partial<Usuario> & { id: string }): Usuario => ({
   // **Con nombre de cliente**: desde el 2026-09-26 la pantalla es de plataforma y
   // `CLIENTE` es una columna · B4.17.
   clienteNombre: 'Under Armour México',
+  // **El id del cliente** · 2026-10-09: agrupa, filtra y va en la URL del cambio.
+  clienteId: 'c-1',
   ...p,
 })
+
+/** **Las filas de DATOS**, sin el encabezado ni el de cada grupo · desde el
+ *  2026-10-09 la lista se agrupa por cliente y la fila 1 dejó de ser un usuario. */
+const filasDeDatos = () => screen.getAllByRole('row').filter((r) => r.querySelector('td') !== null)
 
 describe('el estado son DOS, y el dibujo pinta tres', () => {
   it('activo y suspendido salen del cable', () => {
@@ -45,20 +51,20 @@ describe('el estado son DOS, y el dibujo pinta tres', () => {
         format={format}
         usuarios={[usuario({ id: 'u-1' }), usuario({ id: 'u-2', activo: false })]}
         total={2}
-        clientes={1}
+        clientesConUsuarios={1}
       />,
     )
-    const filas = screen.getAllByRole('row')
-    expect(within(filas[1] as HTMLElement).getByText('Activo')).toBeVisible()
-    expect(within(filas[2] as HTMLElement).getByText('Suspendido')).toBeVisible()
+    const filas = filasDeDatos()
+    expect(within(filas[0] as HTMLElement).getByText('Activo')).toBeVisible()
+    expect(within(filas[1] as HTMLElement).getByText('Suspendido')).toBeVisible()
   })
 
   it('«invitación pendiente» NO se infiere de que nunca entró', () => {
     // **Es la aserción que sostiene la decisión.** Alguien puede tener cuenta
     // activa y no haber entrado todavía, que es otra cosa que una invitación sin
     // aceptar. Inferirlo pintaría un estado que nadie declaró.
-    render(<UserList format={format} usuarios={[usuario({ id: 'u-1', ultimoAccesoEn: null })]} total={1} clientes={1} />)
-    const fila = screen.getAllByRole('row')[1] as HTMLElement
+    render(<UserList format={format} usuarios={[usuario({ id: 'u-1', ultimoAccesoEn: null })]} total={1} clientesConUsuarios={1} />)
+    const fila = filasDeDatos()[0] as HTMLElement
     expect(within(fila).getByText('Activo')).toBeVisible()
     expect(within(fila).queryByText(/invitaci/i)).toBeNull()
   })
@@ -66,14 +72,14 @@ describe('el estado son DOS, y el dibujo pinta tres', () => {
 
 describe('«nunca entró» se dice, no se inventa una fecha', () => {
   it('sale «Nunca» y no una fecha cualquiera', () => {
-    render(<UserList format={format} usuarios={[usuario({ id: 'u-1', ultimoAccesoEn: null })]} total={1} clientes={1} />)
-    const fila = screen.getAllByRole('row')[1] as HTMLElement
+    render(<UserList format={format} usuarios={[usuario({ id: 'u-1', ultimoAccesoEn: null })]} total={1} clientesConUsuarios={1} />)
+    const fila = filasDeDatos()[0] as HTMLElement
     expect(within(fila).getByText('Nunca')).toBeVisible()
   })
 
   it('y con acceso sale la fecha formateada, no el ISO', () => {
-    render(<UserList format={format} usuarios={[usuario({ id: 'u-1' })]} total={1} clientes={1} />)
-    const fila = screen.getAllByRole('row')[1] as HTMLElement
+    render(<UserList format={format} usuarios={[usuario({ id: 'u-1' })]} total={1} clientesConUsuarios={1} />)
+    const fila = filasDeDatos()[0] as HTMLElement
     expect(within(fila).queryByText(/2026-09-20T/)).toBeNull()
     expect(within(fila).getByText(/20 sep 2026/i)).toBeVisible()
   })
@@ -81,19 +87,20 @@ describe('«nunca entró» se dice, no se inventa una fecha', () => {
 
 describe('los dos vacíos, que no son el mismo', () => {
   it('sin usuarios es de ALTA · la plataforma está vacía', () => {
-    render(<UserList format={format} usuarios={[]} total={0} clientes={0} />)
+    render(<UserList format={format} usuarios={[]} total={0} clientesConUsuarios={0} />)
     // **El copy dejó de hablar de UN cliente** con el alcance de plataforma.
     expect(screen.getByText(/no hay usuarios en ningún cliente/i)).toBeVisible()
     // El encabezado se conserva · las columnas siguen diciendo qué habría.
-    // **Seis desde el 2026-09-26**: entró `CLIENTE`.
-    expect(screen.getAllByRole('columnheader')).toHaveLength(6)
+    // **Seis desde el 2026-09-26**: entró `CLIENTE`. **Siete desde el
+    // 2026-10-09**: entró `ACCIÓN`, la de cambiar rol y suspender.
+    expect(screen.getAllByRole('columnheader')).toHaveLength(7)
   })
 
   it('con usuarios y búsqueda sin resultados es de FILTRO · y se puede deshacer', async () => {
     // El `.pen` lo dibuja como pantalla aparte —`A3 · Usuarios · filtro sin
     // resultados`— porque la salida cambia con la causa: acá es deshacer, no
     // invitar a alguien.
-    render(<UserList format={format} usuarios={[usuario({ id: 'u-1' })]} total={1} clientes={1} />)
+    render(<UserList format={format} usuarios={[usuario({ id: 'u-1' })]} total={1} clientesConUsuarios={1} />)
 
     await userEvent.type(screen.getByRole('searchbox', { name: 'Buscar' }), 'zzz')
     expect(screen.getByText(/0 usuarios con este filtro · 1 en total/i)).toBeVisible()
@@ -111,7 +118,7 @@ describe('el alcance NO se copia del dibujo', () => {
     // dos a la vez. Dos chips contradiciéndose es peor que uno.
     //
     // El alcance lo declara `pantallas.ts`, con su razón de §7.3.
-    render(<UserList format={format} usuarios={[usuario({ id: 'u-1' })]} total={1} clientes={1} />)
+    render(<UserList format={format} usuarios={[usuario({ id: 'u-1' })]} total={1} clientesConUsuarios={1} />)
     expect(screen.queryByText('Alcance · cliente')).toBeNull()
     expect(screen.queryByText('Alcance · plataforma')).toBeNull()
   })
@@ -126,7 +133,7 @@ describe('el alcance NO se copia del dibujo', () => {
   // pantalla es peor que un hueco, porque el usuario no tiene con qué dudarla.
   it('NO afirma que `/admin/users` da 404 · la ruta existe desde `6e521cc`', () => {
     const { container } = render(
-      <UserList format={format} usuarios={[usuario({ id: 'u-1' })]} total={1} clientes={1} />,
+      <UserList format={format} usuarios={[usuario({ id: 'u-1' })]} total={1} clientesConUsuarios={1} />,
     )
     const texto = container.textContent ?? ''
     expect(texto).not.toContain('404')
@@ -139,7 +146,7 @@ describe('el alcance NO se copia del dibujo', () => {
     // armado acá se leería como un número de plataforma y sería una suma
     // nuestra». Así que se pasa una lista de UNO con un total de 17, que es lo
     // que pasa de verdad cuando la ruta pagina o cuando el filtro recorta.
-    render(<UserList format={format} usuarios={[usuario({ id: 'u-1' })]} total={17} clientes={2} />)
+    render(<UserList format={format} usuarios={[usuario({ id: 'u-1' })]} total={17} clientesConUsuarios={2} />)
     expect(screen.getByText(/17 usuarios/)).toBeVisible()
     expect(screen.getByText(/2 clientes con usuarios/)).toBeVisible()
   })
@@ -150,25 +157,24 @@ describe('el alcance NO se copia del dibujo', () => {
         format={format}
         usuarios={[usuario({ id: 'u-1', clienteNombre: 'Otro Cliente' })]}
         total={1}
-        clientes={1}
+        clientesConUsuarios={1}
       />,
     )
     expect(screen.getByRole('columnheader', { name: 'Cliente' })).toBeVisible()
-    const filas = screen.getAllByRole('row')
-    expect(within(filas[1] as HTMLElement).getByText('Otro Cliente')).toBeVisible()
+    expect(within(filasDeDatos()[0] as HTMLElement).getByText('Otro Cliente')).toBeVisible()
   })
 
   it('ya NO pinta los huecos que le faltan', () => {
     // **Desde el 2026-10-06 lo que falta no se pinta** · decisión humana sobre la
     // auditoría del builder: «si no suman para el uso, quitar». La lista vive en
     // el comentario del componente. Esta prueba fija que no vuelva a la pantalla.
-    render(<UserList format={format} usuarios={[usuario({ id: 'u-1' })]} total={1} clientes={1} />)
+    render(<UserList format={format} usuarios={[usuario({ id: 'u-1' })]} total={1} clientesConUsuarios={1} />)
     expect(screen.queryByText(/va a crecer/i)).toBeNull()
     expect(screen.queryByText(/invitaciones pendientes/i)).toBeNull()
   })
 
   it('no ofrece «invitar usuario» ni «reenviar invitación» · sin ruta no hay CTA', () => {
-    render(<UserList format={format} usuarios={[usuario({ id: 'u-1' })]} total={1} clientes={1} />)
+    render(<UserList format={format} usuarios={[usuario({ id: 'u-1' })]} total={1} clientesConUsuarios={1} />)
     expect(screen.queryByRole('button', { name: /invitar/i })).toBeNull()
     expect(screen.queryByRole('button', { name: /reenviar/i })).toBeNull()
   })

@@ -55,7 +55,7 @@ describe('el título de la pantalla vive en el chrome, y es uno solo', () => {
         tenantActivo={null}
         onTenant={vi.fn()}
       >
-        <UserList usuarios={[]} total={0} clientes={0} format={format} />
+        <UserList usuarios={[]} total={0} clientesConUsuarios={0} format={format} />
       </AdminChrome>,
     )
 

@@ -27,14 +27,14 @@ const API = '*/api/v1'
  *  son los dos `null` que no se pueden colapsar en cero. */
 const tenants = [
   {
-    id: 't-1', name: 'Under Armour México',
+    id: 't-1', name: 'Under Armour México', label: '',
     locale: 'es-CO', currency: 'COP', timezone: 'America/Bogota',
     user_count: 12, last_published_at: '2026-09-22T09:19:00Z',
     worst_feed_status: 'ok', worst_feed_freshness_hours: 4,
     status: null, vertical: null, created_at: '2026-09-22T09:18:45Z',
   },
   {
-    id: 't-2', name: 'Keralty Colombia',
+    id: 't-2', name: 'Keralty Colombia', label: '',
     locale: 'es-CO', currency: 'COP', timezone: 'America/Bogota',
     user_count: 0, last_published_at: null,
     worst_feed_status: 'unknown', worst_feed_freshness_hours: null,
@@ -61,9 +61,12 @@ describe('§7.3 · las cinco pantallas y su alcance', () => {
   it('declara las cinco, en el orden de la tabla', () => {
     // Del dato y no del render: si alguna se agrega o se renombra en el diseño,
     // esto lo dice antes que una prueba de pantalla.
+    //
+    // **Cuatro desde el 2026-10-09**: la ficha se unió a la lista de clientes
+    // (P1 de `AUDITORIA-2026-10-08-admin-clientes-y-usuarios.md`). El `.pen`
+    // tampoco la tenía en la navegación.
     expect(PANTALLAS.map((p) => p.nombre)).toEqual([
-      'Clientes y plataforma',
-      'Ficha de cliente',
+      'Clientes',
       'Usuarios',
       'Catálogo de métricas',
       'Salud de feeds',
@@ -77,7 +80,6 @@ describe('§7.3 · las cinco pantallas y su alcance', () => {
     const alcances = Object.fromEntries(PANTALLAS.map((p) => [p.id, p.alcance]))
     expect(alcances).toEqual({
       clientes: 'plataforma',
-      cliente: 'tenant',
       usuarios: 'plataforma',
       catalogo: 'tenant',
       feeds: 'tenant',
@@ -89,7 +91,7 @@ describe('§7.3 · las cinco pantallas y su alcance', () => {
     // mirando un cliente cuando la pantalla cruza todos.
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     montar()
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
 
     expect(screen.queryByLabelText('Cliente')).toBeNull()
     expect(screen.getByText(/Alcance · todas las cuentas/)).toBeInTheDocument()
@@ -98,9 +100,9 @@ describe('§7.3 · las cinco pantallas y su alcance', () => {
   it('una pantalla de tenant SÍ lo muestra, con los clientes', async () => {
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     montar()
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
 
-    await userEvent.click(screen.getByRole('button', { name: 'Ficha de cliente' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
 
     // **Desde el 2026-10-06 es el selector destacado y compartido con el
     // builder** · `SelectorDeCliente`. Ya no lleva el rótulo «Alcance · cliente»:
@@ -125,9 +127,13 @@ describe('§7.3 · la regla dura · el vocabulario de infraestructura no se mues
       ),
     )
     const { container } = montar()
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
 
-    const texto = container.textContent ?? ''
+    // **Menos los subprocesadores**, que es la única excepción de §7.3 —una
+    // obligación legal de nombrar a quién procesa el dato— y que desde el
+    // 2026-10-09 está a la vista: la ficha se abre al lado de la lista.
+    const subprocesadores = screen.getByRole('region', { name: 'Subprocesadores' })
+    const texto = (container.textContent ?? '').replace(subprocesadores.textContent ?? '', '')
     for (const prohibido of ['snowflake', 'warehouse', 'grant', 'private_key', 'SYNAPSE_ROLE']) {
       expect(texto.toLowerCase()).not.toContain(prohibido.toLowerCase())
     }
@@ -138,26 +144,23 @@ describe('F4.2 · la lista de clientes', () => {
   it('lista los clientes con su nombre', async () => {
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     montar()
-    expect(await screen.findByText('Under Armour México')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /^Under Armour México · / })).toBeInTheDocument()
     expect(screen.getByText('Keralty Colombia')).toBeInTheDocument()
   })
 
   it('pinta las TRES columnas que B4.1 trajo · usuarios, feed y publicación', async () => {
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     const { container } = montar()
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
 
-    const filas = screen.getAllByRole('row')
-    // UA MX: 12 usuarios, su peor fuente en 4 h y publicado el 22 de septiembre.
-    const ua = within(filas[1] as HTMLElement)
-    expect(ua.getByText('12')).toBeVisible()
-    expect(ua.getByText('4 h')).toBeVisible()
-    expect(ua.getByText('22 sep 2026')).toBeVisible()
-    // Y el encabezado declara las tres.
-    const texto = container.textContent ?? ''
-    for (const col of ['Usuarios', 'Feed más atrasado', 'Última publicación']) {
-      expect(texto).toContain(col)
-    }
+    // **Desde el 2026-10-09 son una línea de la fila y no tres columnas**: la
+    // lista va al lado de la ficha y no le entra una tabla. Los tres datos
+    // siguen, juntos, que es el estado operativo del cliente.
+    void container
+    const ua = screen.getByRole('button', { name: /^Under Armour México · / })
+    expect(ua.textContent).toContain('12 usuarios')
+    expect(ua.textContent).toContain('feed 4 h')
+    expect(ua.textContent).toContain('publicó 22 sep 2026')
   })
 
   it('«nunca» NO se colapsa con cero ni con un guion', async () => {
@@ -166,14 +169,13 @@ describe('F4.2 · la lista de clientes', () => {
     // cargaron se ve igual a uno sano si se colapsan.
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     montar()
-    await screen.findByText('Keralty Colombia')
+    await screen.findByRole('button', { name: /^Keralty Colombia · / })
 
-    const filas = screen.getAllByRole('row')
-    const keralty = within(filas[2] as HTMLElement)
-    expect(keralty.getByText('Nunca cargó')).toBeVisible()
-    expect(keralty.getByText('Nunca')).toBeVisible()
+    const keralty = screen.getByRole('button', { name: /^Keralty Colombia · / }).textContent ?? ''
+    expect(keralty).toContain('feed Nunca cargó')
+    expect(keralty).toContain('nunca publicó')
     // Cero usuarios SÍ se pinta como cero: es un conteo, no una ausencia.
-    expect(keralty.getByText('0')).toBeVisible()
+    expect(keralty).toContain('0 usuarios')
   })
 
   it('ya NO declara las dos columnas que faltan · tampoco sus razones vencidas', async () => {
@@ -190,7 +192,7 @@ describe('F4.2 · la lista de clientes', () => {
     // del botón muerto: se ve idéntico.
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     const { container } = montar()
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
 
     // **Desde el 2026-10-06 lo que falta no se pinta** · decisión humana sobre la
     // auditoría del builder: «si no suman para el uso, quitar». La lista vive en
@@ -206,7 +208,7 @@ describe('F4.2 · la lista de clientes', () => {
     expect(texto).not.toContain('falta que definamos qué valores toma cada una')
   })
 
-  it('sin clientes invita a actuar, y NO se sale de la tabla', async () => {
+  it('sin clientes invita a actuar, y la búsqueda sigue en pie', async () => {
     // «Las columnas siguen diciendo qué habría acá» · las tres notas de vacío
     // del `.pen`. Una pantalla que se vacía entera pierde lo único que explicaba
     // qué falta.
@@ -214,9 +216,11 @@ describe('F4.2 · la lista de clientes', () => {
     montar()
 
     expect(await screen.findByText(/Ningún cliente dado de alta todavía/)).toBeInTheDocument()
-    const tabla = screen.getByRole('table')
-    expect(within(tabla).getByText('Cliente')).toBeInTheDocument()
-    expect(within(tabla).getByText('Acción')).toBeInTheDocument()
+    // **Desde el 2026-10-09 la lista no es una tabla**, así que lo que queda en
+    // pie es la búsqueda y el rótulo con el conteo.
+    const lista = screen.getByRole('region', { name: 'Clientes' })
+    expect(within(lista).getByRole('searchbox', { name: 'Buscar cliente' })).toBeInTheDocument()
+    expect(within(lista).getByText('Clientes · 0')).toBeInTheDocument()
   })
 })
 
@@ -243,7 +247,7 @@ describe('las cinco pantallas de §7.3 · ninguna queda pendiente', () => {
       http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([])),
     )
     montar()
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
 
     for (const pantalla of ['Usuarios', 'Catálogo de métricas', 'Salud de feeds']) {
       await userEvent.click(screen.getByRole('button', { name: pantalla }))
@@ -262,9 +266,10 @@ describe('las cinco pantallas de §7.3 · ninguna queda pendiente', () => {
       http.get(`${API}/admin/tenants/:id/catalog`, () => ok([])),
     )
     montar()
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
 
-    await userEvent.click(screen.getByRole('button', { name: 'Ficha de cliente' }))
+    // **La ficha ya está abierta al lado** · 2026-10-09: no hay pestaña que
+    // apretar.
     // **El CTA del vacío de alta y no «Nuevo rol»** · §PEN:A2, 2026-09-30. Este
     // escenario sirve la ficha con CERO roles, y desde que el vacío tiene su
     // propio CTA la cabecera no repite el suyo: el dibujo pone uno solo. Lo que
@@ -323,19 +328,17 @@ describe('«Ver ficha» abre el cliente que se cliqueó · 2026-09-25', () => {
     )
     montar()
 
-    const fila = await screen.findByText('Keralty Colombia')
-    await userEvent.click(
-      within(fila.closest('tr') as HTMLElement).getByRole('button', { name: /ver ficha/i }),
-    )
+    // **Desde el 2026-10-09 la fila ES la elección**: la ficha se abre al lado.
+    const fila = await screen.findByRole('button', { name: /^Keralty Colombia · / })
+    await userEvent.click(fila)
 
-    // **La aserción es a quién se le piden los datos.** Que el título cambie a
-    // «Ficha de cliente» pasaba igual con el defecto puesto.
+    // **La aserción es a quién se le piden los datos.**
     await waitFor(() => expect(pedidos).toContain('t-2'))
 
-    // Y la otra mitad, que son dos cosas y no una: el botón **elige** un cliente
-    // **y navega**. Sin esto, dejar de navegar sobrevivía a la mutación —el
-    // catálogo se pide igual, porque su hook precalienta el cache a propósito.
-    expect(await screen.findByRole('heading', { name: /ficha de cliente/i })).toBeVisible()
+    // Y la otra mitad: la fila queda **elegida** y la ficha que se ve es la
+    // suya. Sin esto, elegir sin marcar —o marcar otra— sobrevivía.
+    expect(fila).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /^Under Armour México · / })).toHaveAttribute('aria-pressed', 'false')
   })
 })
 
@@ -358,7 +361,7 @@ describe('§ANCLA:ANCHO-1 · admin declara ancho mínimo, no colapso', () => {
   it('el chrome pinta `min-w-[1280px]`, escrito y no interpolado', async () => {
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     const { container } = montar()
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
 
     expect(container.querySelector('.min-w-\\[1280px\\]')).not.toBeNull()
   })
@@ -392,7 +395,7 @@ describe('§ANCLA:ANCHO-1 · admin declara ancho mínimo, no colapso', () => {
     // es exactamente lo que PS-5 registró.
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     const { container } = montar()
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
 
     for (const clase of ['grid-cols-6', 'grid-cols-1', 'max-w-full']) {
       expect(container.querySelector(`.${clase}`)).toBeNull()
@@ -416,7 +419,7 @@ describe('§PEN:A1 · el navbar de admin pinta la identidad', () => {
   it('dice el rol y el nombre de quien está mirando', async () => {
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     montar()
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
 
     const cabecera = document.querySelector('header') as HTMLElement
     // Los valores salen del contexto por defecto de los mocks, leídos de ahí.
@@ -442,7 +445,7 @@ describe('§PEN:A1 · el navbar de admin pinta la identidad', () => {
       ),
     )
     montar()
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
 
     const cabecera = document.querySelector('header') as HTMLElement
     expect(within(cabecera).getByText('planner')).toBeVisible()
@@ -493,7 +496,7 @@ describe('A5 · cargar meses atraviesa la cadena entera · 2026-10-07', () => {
       }),
     )
     montar()
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
     await userEvent.click(screen.getByRole('button', { name: 'Salud de feeds' }))
 
     await userEvent.click(await screen.findByRole('button', { name: /jun.*sin cargar/i }))
@@ -535,8 +538,124 @@ describe('el arranque no pasa por otro cliente · 2026-10-07', () => {
       }),
     )
     montar()
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
     await waitFor(() => expect(pedidos).toContain('t-2'))
     expect(pedidos).not.toContain('t-1')
+  })
+})
+
+/* ── La cadena entera de las acciones nuevas · 2026-10-09 ──────────────────
+ *
+ * **Cada acción cruza tres componentes con spreads condicionales** —`Admin →
+ * UserList → FilaDeUsuario`, `Admin → AccessRequests → FilaDeSolicitud`—, y ahí
+ * una prop mal nombrada compila. La regla de `CLAUDE.md`: verificar que el
+ * callback DISPARE hasta la red, no que el botón exista. */
+describe('las acciones de usuarios llegan al servicio', () => {
+  const usuarioDelCable = (p: Record<string, unknown>) => ({
+    id: 'u-2', tenant_id: 't-2', tenant_name: 'Keralty Colombia', email: 'bruno@k.test',
+    first_name: 'Bruno', last_name: 'K', phone: '', role_id: 'r-k', role: 'ceo',
+    last_login_at: null, is_active: true, created_at: '2026-09-25T10:00:00Z', ...p,
+  })
+
+  it('«Suspender» en Usuarios manda el PUT al cliente DEL usuario', async () => {
+    let url = ''
+    let cuerpo: unknown = null
+    server.use(
+      http.get(`${API}/admin/tenants`, () => ok(tenants)),
+      http.get(`${API}/admin/users`, () => ok({ total: 1, tenants: 1, users: [usuarioDelCable({})] })),
+      http.put(`${API}/admin/tenants/:tenantId/users/:userId`, async ({ request }) => {
+        url = new URL(request.url).pathname
+        cuerpo = await request.json()
+        return ok(usuarioDelCable({ is_active: false }))
+      }),
+    )
+    montar()
+    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await userEvent.click(screen.getByRole('button', { name: 'Usuarios' }))
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Suspender a Bruno K' }))
+    // **`t-2` y no el cliente activo**: el usuario es de Keralty, y el activo es
+    // UA. Mandarlo al activo daría 404 —medido—.
+    await waitFor(() => expect(url).toBe('/api/v1/admin/tenants/t-2/users/u-2'))
+    expect(cuerpo).toEqual({ is_active: false })
+  })
+
+  it('a un usuario de OTRO cliente se le ofrecen los roles de SU cliente', async () => {
+    // El activo es UA (t-1) y el usuario es de Keralty (t-2). Ofrecerle los de UA
+    // es pedir un rol ajeno, que el servicio rechaza con 400 —medido—.
+    const rol = (id: string, tenant: string, name: string) => ({
+      id, tenant_id: tenant, name, tab_ids: [], hidden_metric_ids: [], layout_overrides: {}, user_count: 0,
+    })
+    server.use(
+      http.get(`${API}/admin/tenants`, () => ok(tenants)),
+      http.get(`${API}/admin/users`, () => ok({ total: 1, tenants: 1, users: [usuarioDelCable({})] })),
+      http.get(`${API}/admin/tenants/:id/roles/composition`, ({ params }) =>
+        ok(params['id'] === 't-2' ? [rol('r-k', 't-2', 'ceo'), rol('r-k2', 't-2', 'analista')] : [rol('r-ua', 't-1', 'admin')]),
+      ),
+    )
+    montar()
+    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await userEvent.click(screen.getByRole('button', { name: 'Usuarios' }))
+
+    const selector = await screen.findByRole('combobox', { name: 'Rol de Bruno K' })
+    await waitFor(() =>
+      expect(within(selector).getAllByRole('option').map((o) => o.textContent)).toEqual(['ceo', 'analista']),
+    )
+  })
+
+  it('aprobar una solicitud manda cliente y agente al servicio', async () => {
+    let cuerpo: unknown = null
+    server.use(
+      http.get(`${API}/admin/tenants`, () => ok(tenants)),
+      http.get(`${API}/admin/users`, () => ok({ total: 0, tenants: 0, users: [] })),
+      http.get(`${API}/admin/access-requests`, () =>
+        ok({
+          items: [{
+            id: 'ar-1', type: 'registration', company_name: 'Prueba', full_name: 'Solicitante Prueba',
+            email: 's@prueba.test', phone: '000', job_title: 'Analista', info_use: 'medir',
+            status: 'pending', created_at: '2026-10-09T09:50:04Z',
+          }],
+          total: 1, page: 1, page_size: 100, total_pages: 1,
+        }),
+      ),
+      http.get(`${API}/admin/tenants/t-1/agents`, () =>
+        ok([{
+          id: 'ag-1', tenant_id: 't-1', name: 'Synapse UA', target_role: 'admin',
+          snowflake_db: 'DB', snowflake_schema: 'S', snowflake_cortex_agent_name: 'A', warehouse: 'W',
+          semantic_views: ['V'], system_prompt_base: '', is_active: true,
+          created_at: '2026-09-24T10:00:00Z', updated_at: '2026-09-25T10:00:00Z',
+        }]),
+      ),
+      http.post(`${API}/admin/access-requests/ar-1/approve`, async ({ request }) => {
+        cuerpo = await request.json()
+        return ok({ message: 'solicitud aprobada', request: {} })
+      }),
+    )
+    montar()
+    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await userEvent.click(screen.getByRole('button', { name: 'Usuarios' }))
+
+    await userEvent.selectOptions(await screen.findByRole('combobox', { name: /^Cliente para/ }), 't-1')
+    await userEvent.selectOptions(await screen.findByRole('combobox', { name: /^Agente para/ }), 'ag-1')
+    await userEvent.click(screen.getByRole('button', { name: /^Aprobar/ }))
+
+    await waitFor(() => expect(cuerpo).toEqual({ tenant_id: 't-1', agent_id: 'ag-1' }))
+  })
+
+  it('elegir un cliente trae SUS usuarios a la ficha', async () => {
+    const pedidos: string[] = []
+    server.use(
+      http.get(`${API}/admin/tenants`, () => ok(tenants)),
+      http.get(`${API}/admin/tenants/:id/users`, ({ params }) => {
+        pedidos.push(String(params['id']))
+        return ok(params['id'] === 't-2' ? [usuarioDelCable({ tenant_name: undefined })] : [])
+      }),
+    )
+    montar()
+    await userEvent.click(await screen.findByRole('button', { name: /^Keralty Colombia · / }))
+
+    expect(await screen.findByText('Bruno K')).toBeVisible()
+    expect(pedidos).toContain('t-2')
+    expect(screen.getByText(/Usuarios de este cliente · 1/)).toBeVisible()
   })
 })

@@ -563,3 +563,131 @@ describe('cargar meses · POST /admin/tenants/{id}/materialize · 2026-10-07', (
     await expect(adminApi.cargarPeriodos('t-1', ['2026-13'])).rejects.toThrow('período inválido: 2026-13')
   })
 })
+
+/* ── Usuarios y solicitudes de acceso · 2026-10-09 ─────────────────────────
+ *
+ * **Los fixtures son los que el servicio devolvió ese día** —binario de
+ * `9dc481e`, base local—, recortados. Ver el cable. */
+
+const usuarioDelCable = {
+  id: 'u-9', tenant_id: 't-1', email: 'solicitante@prueba.test',
+  first_name: 'Solicitante', last_name: 'Prueba', phone: '000',
+  role_id: 'r-2', role: 'planner', last_login_at: null,
+  is_active: true, created_at: '2026-10-09T09:50:04.726489-05:00',
+}
+
+describe('cambiar un usuario · PUT sobre el usuario DEL tenant', () => {
+  it('va a la URL del cliente del usuario, con SÓLO lo que cambia', async () => {
+    let url = ''
+    let cuerpo: unknown = null
+    server.use(
+      http.put(`${API}/admin/tenants/:tenantId/users/:userId`, async ({ request }) => {
+        url = new URL(request.url).pathname
+        cuerpo = await request.json()
+        return ok({ ...usuarioDelCable, is_active: false })
+      }),
+    )
+    const u = await adminApi.editarUsuario('t-1', 'u-9', { activo: false })
+    expect(url).toBe('/api/v1/admin/tenants/t-1/users/u-9')
+    // **Sin `role_id`**: lo que no viaja no cambia, y mandarlo vacío sería pedir
+    // un rol inexistente.
+    expect(cuerpo).toEqual({ is_active: false })
+    expect(u.activo).toBe(false)
+  })
+
+  it('el cambio de rol manda `role_id` y nada más', async () => {
+    let cuerpo: unknown = null
+    server.use(
+      http.put(`${API}/admin/tenants/:tenantId/users/:userId`, async ({ request }) => {
+        cuerpo = await request.json()
+        return ok(usuarioDelCable)
+      }),
+    )
+    await adminApi.editarUsuario('t-1', 'u-9', { rolId: 'r-2' })
+    expect(cuerpo).toEqual({ role_id: 'r-2' })
+  })
+
+  it('el usuario trae su CLIENTE, que es lo que va en esa URL', async () => {
+    server.use(http.get(`${API}/admin/tenants/t-1/users`, () => ok([usuarioDelCable])))
+    const [u] = await adminApi.usuarios('t-1')
+    expect(u?.clienteId).toBe('t-1')
+  })
+})
+
+describe('el cliente trae su forma corta · para distinguir dos del mismo nombre', () => {
+  it('`label` llega como `formaCorta`, vacía si nadie la cargó', async () => {
+    server.use(
+      http.get(`${API}/admin/tenants`, () =>
+        ok([
+          { id: 't-1', name: 'Under Armour México', label: 'UA MX', locale: 'es-MX', currency: 'USD', timezone: 'America/Mexico_City', user_count: 2, created_at: '2026-09-22T09:18:45Z' },
+          { id: 't-2', name: 'Under Armour México', label: '', locale: 'es-MX', currency: 'USD', timezone: 'America/Mexico_City', user_count: 0, created_at: '2026-09-22T09:18:45Z' },
+        ]),
+      ),
+    )
+    const [a, b] = await adminApi.tenants()
+    expect(a?.formaCorta).toBe('UA MX')
+    expect(b?.formaCorta).toBe('')
+  })
+})
+
+const solicitudDelCable = {
+  id: 'ar-1', type: 'registration', company_name: 'Prueba', full_name: 'Solicitante Prueba',
+  email: 'solicitante@prueba.test', phone: '000', job_title: 'Analista', info_use: 'medir la cola',
+  status: 'pending', created_at: '2026-10-09T09:50:04.653604-05:00',
+}
+
+describe('las solicitudes de acceso', () => {
+  it('lista SÓLO las pendientes, y las adapta', async () => {
+    let consulta = ''
+    server.use(
+      http.get(`${API}/admin/access-requests`, ({ request }) => {
+        consulta = new URL(request.url).search
+        return ok({
+          items: [solicitudDelCable, { ...solicitudDelCable, id: 'ar-2', type: 'password_reset' }],
+          total: 2, page: 1, page_size: 100, total_pages: 1,
+        })
+      }),
+    )
+    const { total, solicitudes } = await adminApi.solicitudes()
+    expect(consulta).toContain('status=pending')
+    expect(total).toBe(2)
+    expect(solicitudes[0]).toMatchObject({ tipo: 'alta', estado: 'pendiente', empresa: 'Prueba', clienteNombre: null })
+    expect(solicitudes[1]?.tipo).toBe('contrasena')
+  })
+
+  it('aprobar un alta manda cliente y agente · el rol sale del agente', async () => {
+    let cuerpo: unknown = null
+    server.use(
+      http.post(`${API}/admin/access-requests/ar-1/approve`, async ({ request }) => {
+        cuerpo = await request.json()
+        return ok({ message: 'solicitud aprobada', request: solicitudDelCable, temp_password: 'no-se-lee' })
+      }),
+    )
+    await adminApi.aprobarSolicitud('ar-1', { tenantId: 't-1', agenteId: 'ag-1' })
+    expect(cuerpo).toEqual({ tenant_id: 't-1', agent_id: 'ag-1' })
+  })
+
+  it('aprobar un cambio de contraseña no manda destino', async () => {
+    let cuerpo: unknown = 'sin leer'
+    server.use(
+      http.post(`${API}/admin/access-requests/ar-2/approve`, async ({ request }) => {
+        cuerpo = await request.json()
+        return ok({ message: 'solicitud aprobada', request: solicitudDelCable })
+      }),
+    )
+    await adminApi.aprobarSolicitud('ar-2')
+    expect(cuerpo).toEqual({})
+  })
+
+  it('rechazar va a su propia ruta', async () => {
+    let llamado = false
+    server.use(
+      http.post(`${API}/admin/access-requests/ar-1/reject`, () => {
+        llamado = true
+        return ok({ message: 'solicitud rechazada', request: solicitudDelCable })
+      }),
+    )
+    await adminApi.rechazarSolicitud('ar-1')
+    expect(llamado).toBe(true)
+  })
+})

@@ -26,7 +26,7 @@ const API = '*/api/v1'
 /** `created_at` va porque A2 lo pinta en `ALTA` y el cable lo declara
  *  obligatorio · F5.20. Acá había dos campos de los trece que la ruta
  *  devuelve, escritos cuando devolvía dos. */
-const tenants = [{ id: 't-1', name: 'Under Armour México', created_at: '2026-09-22T09:18:45Z' }]
+const tenants = [{ id: 't-1', name: 'Under Armour México', label: '', created_at: '2026-09-22T09:18:45Z' }]
 
 const roles = [
   {
@@ -125,8 +125,8 @@ function montar() {
 }
 
 async function abrirFicha() {
-  await screen.findByText('Under Armour México')
-  await userEvent.click(screen.getByRole('button', { name: 'Ficha de cliente' }))
+  await screen.findByRole('button', { name: /^Under Armour México · / })
+  await userEvent.click(screen.getByRole('button', { name: /^Under Armour México · / }))
   await screen.findByText('CEO')
 }
 
@@ -392,8 +392,8 @@ describe('el 404 mientras el fork no esté desplegado', () => {
       ),
     )
     montar()
-    await screen.findByText('Under Armour México')
-    await userEvent.click(screen.getByRole('button', { name: 'Ficha de cliente' }))
+    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await userEvent.click(screen.getByRole('button', { name: /^Under Armour México · / }))
 
     expect(
       await screen.findByText(/La composición por rol de este cliente todavía no se puede consultar/),
@@ -402,7 +402,7 @@ describe('el 404 mientras el fork no esté desplegado', () => {
 })
 
 describe('lo que A2 y A3 todavía no pueden mostrar', () => {
-  it('ya NO declara lo que le falta a la ficha · y sigue diciendo dónde están los usuarios', async () => {
+  it('ya NO declara lo que le falta a la ficha · y sus usuarios están EN la ficha', async () => {
     // **Eran cuatro hasta el 2026-09-30 y quedó una.** Las otras tres no
     // llegaron: se MUDARON, al construir `A2 · Ficha · tenant en alta`. Los
     // datos del cliente los pinta la tarjeta de identidad —con un guión donde el
@@ -426,8 +426,11 @@ describe('lo que A2 y A3 todavía no pueden mostrar', () => {
     // el comentario del componente. Esta prueba fija que no vuelva a la pantalla.
     expect(texto).not.toMatch(/va a crecer/i)
     expect(texto).not.toContain('La descripción de cada rol')
-    // La única línea que se quedó es la que SÍ sirve para usar la ficha.
-    expect(texto).toContain('hoy se ven en la pantalla de usuarios')
+    // **La línea que mandaba a otra pantalla se fue** · 2026-10-09, P2 de la
+    // auditoría de administración: los usuarios del cliente se listan en su
+    // ficha. Decía «hoy se ven en la pantalla de usuarios, no acá».
+    expect(texto).not.toContain('hoy se ven en la pantalla de usuarios')
+    expect(texto).toContain('Usuarios de este cliente')
     // Y las dos que se mudaron, cada una en su bloque nuevo: acá se afirma que
     // NO están duplicadas, que es la mitad que puede volver sin que nadie mire.
     expect(texto).not.toContain('Quiénes tratan los datos de este cliente')
@@ -462,7 +465,7 @@ describe('A4 · la columna USO · divergencia 6', () => {
   }
 
   async function abrirCatalogo() {
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
     await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
     await screen.findByRole('table')
   }

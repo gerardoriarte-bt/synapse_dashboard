@@ -193,6 +193,19 @@ export const kpiPanel: WirePanel = {
 
 export const handlers = [
   http.get(`${API}/config/me`, () => ok(context)),
+
+  /* ── El piso de administración · 2026-10-09 ──────────────────────────────
+   *
+   * Desde que la ficha vive al lado de la lista, abrir administración pide los
+   * usuarios y los agentes del cliente elegido y la cola de solicitudes; en
+   * Usuarios, los roles de cada cliente. Vacíos: una prueba que necesite datos
+   * los declara con `server.use(...)`, que es la regla de este archivo. */
+  http.get(`${API}/admin/access-requests`, () =>
+    ok({ items: [], total: 0, page: 1, page_size: 100, total_pages: 0 }),
+  ),
+  http.get(`${API}/admin/tenants/:tenantId/agents`, () => ok([])),
+  http.get(`${API}/admin/tenants/:tenantId/users`, () => ok([])),
+  http.get(`${API}/admin/tenants/:tenantId/roles/composition`, () => ok([])),
   // **Arreglo desnudo**, no `{ metrics }` ni `{ blocks }`: es lo que sale de
   // `SendSuccess(c, 200, metrics)` en Go.
   http.get(`${API}/config/catalog`, () => ok(metrics)),

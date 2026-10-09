@@ -105,6 +105,11 @@ async function pedir<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
 export type Tenant = {
   id: string
   nombre: string
+  /** **La forma corta** · `label`. Vacía cuando nadie la cargó, y entonces la
+   *  pantalla muestra el id: dos clientes con el mismo nombre —los dos «Under
+   *  Armour México» de la base local, 2026-10-08— tienen que poder distinguirse
+   *  en la fila. */
+  formaCorta: string
   locale: string
   moneda: string
   zonaHoraria: string
@@ -683,6 +688,7 @@ function adaptarUsuario(w: WireUser): Usuario {
     ultimoAccesoEn: w.last_login_at ?? null,
     activo: w.is_active,
     altaEn: w.created_at,
+    clienteId: w.tenant_id,
     // `?? null` por la misma razón que arriba: ausente es una procedencia —vino
     // de la ruta por cliente— y no un nombre vacío.
     clienteNombre: w.tenant_name ?? null,
@@ -853,6 +859,7 @@ export const adminApi = {
     (await pedir<WireTenantOption[]>('/admin/tenants')).map((t) => ({
       id: t.id,
       nombre: t.name,
+      formaCorta: t.label,
       locale: t.locale,
       moneda: t.currency,
       zonaHoraria: t.timezone,
@@ -918,6 +925,47 @@ export const adminApi = {
       clientes: w.tenants,
       usuarios: w.users.map(adaptarUsuario),
     }
+  },
+
+  /** Cambiar el rol de un usuario, o suspenderlo y reactivarlo · 2026-10-09.
+   *
+   *  **Suspender es `activo: false`**, y no un `DELETE`: el `DELETE` del
+   *  servicio hace exactamente lo mismo —baja lógica— y no se usa, para que la
+   *  pantalla no ofrezca dos acciones que son una. */
+  editarUsuario: async (tenantId: string, userId: string, cambio: CambioDeUsuario): Promise<Usuario> =>
+    adaptarUsuario(
+      await pedir<WireUser>(
+        `/admin/tenants/${encodeURIComponent(tenantId)}/users/${encodeURIComponent(userId)}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({
+            ...(cambio.rolId === undefined ? {} : { role_id: cambio.rolId }),
+            ...(cambio.activo === undefined ? {} : { is_active: cambio.activo }),
+          }),
+        },
+      ),
+    ),
+
+  /** Las solicitudes PENDIENTES · la cola de A3. Una página de 100: la cola
+   *  pendiente es corta por naturaleza, y si algún día no entra, el total que
+   *  manda el servicio lo va a decir. */
+  solicitudes: async (): Promise<{ total: number; solicitudes: SolicitudDeAcceso[] }> => {
+    const w = await pedir<WireAccessRequestPage>('/admin/access-requests?status=pending&page_size=100')
+    return { total: w.total, solicitudes: w.items.map(adaptarSolicitud) }
+  },
+
+  /** Aprobar · para un alta pide cliente y agente, y **el rol sale del agente**
+   *  —medido el 2026-10-09—. La contraseña temporal que el servicio devuelve no
+   *  se lee: va por correo a la persona y nadie más la ve. */
+  aprobarSolicitud: async (id: string, destino?: { tenantId: string; agenteId: string }): Promise<void> => {
+    await pedir<unknown>(`/admin/access-requests/${encodeURIComponent(id)}/approve`, {
+      method: 'POST',
+      body: JSON.stringify(destino === undefined ? {} : { tenant_id: destino.tenantId, agent_id: destino.agenteId }),
+    })
+  },
+
+  rechazarSolicitud: async (id: string): Promise<void> => {
+    await pedir<unknown>(`/admin/access-requests/${encodeURIComponent(id)}/reject`, { method: 'POST' })
   },
 
   /** El historial de materializaciones · transcripta el 2026-10-01.
@@ -1213,6 +1261,53 @@ export type WireFeed = A['Feed']
 export type WireMaterializeRun = A['MaterializeRun']
 export type WireUser = A['User']
 export type WireUsersPlatform = A['UsersPlatform']
+export type WireAccessRequest = A['AccessRequest']
+export type WireAccessRequestPage = A['AccessRequestPage']
+
+/** Una solicitud de acceso · la cola que alimenta el login · 2026-10-09.
+ *
+ *  **Dos tipos que se aprueban por la misma ruta**: alguien que pide entrar y
+ *  alguien que olvidó su contraseña. La pantalla los separa porque aprobar
+ *  significa cosas distintas: crear una cuenta, o mandarle una contraseña
+ *  temporal a una que ya existe. */
+export type SolicitudDeAcceso = {
+  id: string
+  tipo: 'alta' | 'contrasena'
+  nombre: string
+  email: string
+  /** **La empresa que la persona ESCRIBIÓ**, texto libre. No es un cliente: el
+   *  cliente lo elige quien aprueba. */
+  empresa: string
+  cargo: string
+  telefono: string
+  /** Para qué dice que va a usar la información. */
+  uso: string
+  estado: 'pendiente' | 'aprobada' | 'rechazada'
+  creadaEn: string
+  /** El cliente con el que se aprobó · `null` mientras está pendiente. */
+  clienteNombre: string | null
+}
+
+export function adaptarSolicitud(w: WireAccessRequest): SolicitudDeAcceso {
+  return {
+    id: w.id,
+    tipo: w.type === 'password_reset' ? 'contrasena' : 'alta',
+    nombre: w.full_name,
+    email: w.email,
+    empresa: w.company_name,
+    cargo: w.job_title,
+    telefono: w.phone,
+    uso: w.info_use,
+    estado: w.status === 'approved' ? 'aprobada' : w.status === 'rejected' ? 'rechazada' : 'pendiente',
+    creadaEn: w.created_at,
+    // `?? null` y no `?? ''`: pendiente NO tiene cliente, y eso es un hecho.
+    clienteNombre: w.tenant_name ?? null,
+  }
+}
+
+/** Lo que se le cambia a un usuario · cada campo por separado. Lo ausente no
+ *  cambia. **El cliente no está**: el usuario es del tenant de la URL. */
+export type CambioDeUsuario = { rolId?: string; activo?: boolean }
 
 /** El agente, en el vocabulario del producto. */
 /** Un usuario del cliente · A3 · F4.3.
@@ -1233,6 +1328,10 @@ export type Usuario = {
   ultimoAccesoEn: string | null
   activo: boolean
   altaEn: string
+  /** **El cliente al que pertenece** · llega en las dos rutas. Es lo que filtra
+   *  por cliente en A3 y lo que va en la URL para cambiarle el rol o
+   *  suspenderlo: el usuario es del tenant de la URL y de ningún otro. */
+  clienteId: string
   /** **El nombre del cliente, y sólo llega en el alcance de PLATAFORMA.**
    *
    *  `GET /admin/tenants/{id}/users` no lo trae —sería redundante, el cliente es

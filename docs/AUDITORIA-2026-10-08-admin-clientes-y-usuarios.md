@@ -78,7 +78,7 @@ para separarlos no se construyó.
 | Ruta | Qué hace | ¿En nuestro cable? |
 |---|---|---|
 | `PUT /admin/tenants/{tenantId}/users/{userId}` | Cambia el rol (`role_id`) o suspende y reactiva (`is_active`) | **No** |
-| `DELETE /admin/tenants/{tenantId}/users/{userId}` | Desactiva al usuario | **No** |
+| El `DELETE` sobre esa misma ruta | Desactiva al usuario. **Corregido el 2026-10-09**: es baja lógica, igual que `is_active: false`, así que no se transcribió | **No**, a propósito |
 | `GET /admin/access-requests` y `POST …/{id}/approve` · `…/reject` | La cola de solicitudes de acceso. **Aprobar crea el usuario con una contraseña temporal y se la manda por correo** | **No** |
 | `PUT /admin/tenants/{tenantId}` | Edita nombre, forma corta, locale, moneda y huso | Sí, para el huso |
 | `POST /admin/users` | Crea un usuario | **No** · ver §2 |
@@ -137,10 +137,10 @@ no hay ruta de plantillas en `router.go`. Era la D2 de la misma propuesta.
 
 | | Qué | Quién decide |
 |---|---|---|
-| **P1** | **¿Una sola pantalla para Clientes y Ficha?** El dibujo las une como lista y detalle con migas (§3.1.1). Si además se quieren **lado a lado** —lista a la izquierda, ficha a la derecha— es una divergencia con el `.pen` | Producto y diseño |
-| **P2** | **Los usuarios del cliente dentro de su ficha.** El dato existe; el `.pen` no lo dibuja | Diseño |
-| **P3** | **Reabrir D1: alta de cliente desde la pantalla.** Con las credenciales en el formulario —excepción a §7.3— o con el backend aceptando un cliente sin credenciales, que el equipo interno completa después | Producto, y backend si es la segunda |
-| **P4** | **Invitar usuario.** Construir ya la cola de solicitudes de acceso (backend listo), y pedirle al backend una invitación directa que reuse su mecanismo de contraseña temporal por correo | Producto · el pedido es al backend |
+| **P1** | **¿Una sola pantalla para Clientes y Ficha?** El dibujo las une como lista y detalle con migas (§3.1.1). Si además se quieren **lado a lado** —lista a la izquierda, ficha a la derecha— es una divergencia con el `.pen` | Producto y diseño | - RESPUESTA: SI
+| **P2** | **Los usuarios del cliente dentro de su ficha.** El dato existe; el `.pen` no lo dibuja | Diseño | RESPUESTA: SI
+| **P3** | **Reabrir D1: alta de cliente desde la pantalla.** Con las credenciales en el formulario —excepción a §7.3— o con el backend aceptando un cliente sin credenciales, que el equipo interno completa después | Producto, y backend si es la segunda | RESPUESTA: SI, DEBE PODER ENTENDER BACKEND CUANDO SE AGREGA UN CLIENTE A SNOWFLAKE, NO DAR DE ALTA EN SNOWFLAKE DESDE EL FRONT.
+| **P4** | **Invitar usuario.** Construir ya la cola de solicitudes de acceso (backend listo), y pedirle al backend una invitación directa que reuse su mecanismo de contraseña temporal por correo | Producto · el pedido es al backend | RESPUESTA: SI  
 
 **Recomendación:** hacer §3.1 entero, que sale del dibujo y no pide nada a
 nadie, más la cola de solicitudes de P4. Eso cubre «lineal», «organizados por
@@ -152,9 +152,35 @@ con lo anterior a la vista.
 ## Lo que NO se midió
 
 - Que `PUT` y `DELETE` sobre usuarios del tenant funcionen contra el servicio.
-  Se leyó el handler; no se llamaron.
+  Se leyó el handler; no se llamaron. RESPUESTA: PEDIDO PARA QUE LO VALIDE BACKEND
 - Si el correo de aprobación sale en QA. Depende de que el mailer esté
   configurado allí; en el código, sin mailer, se registra una advertencia y no
-  se envía.
+  se envía. RESPUESTA: ESTO SOLO ESTÁ EN PRODUCCIÓN PERO BACKEND HACE LAS VALIDACIONES
 - Por qué hay dos «Under Armour México» en la base local. Puede ser residuo de
-  pruebas; el defecto de que la fila no los distinga vale igual.
+  pruebas; el defecto de que la fila no los distinga vale igual. RESPUESTA: HAY 2 POR QUE SE DUPLICO UN AGENTE QUE ES UA MX HTML POR QUE ALIMENTA LA VERSIÓN ANTERIOR DE SYNAPSE, AHORA CONSUMIMOS UA MX LOBUENO, QUE ES EL QUE ESTAMOS AJUSTANDO PARA EL CONSUMO CORRECTO AQUI. 
+
+---
+
+## Resolución · 2026-10-09
+
+Las respuestas a P1–P4 y a lo no medido están escritas arriba, en el lugar de
+cada pregunta, por el humano. Lo que se hizo con ellas:
+
+| | Qué quedó | Dónde |
+|---|---|---|
+| **P1** | Clientes y ficha en una pantalla: la lista a la izquierda, la ficha del elegido a la derecha. Se quitó la pestaña *Ficha de cliente*. Dos clientes del mismo nombre se distinguen por la forma corta o el comienzo del id | `pantallas.ts`, `TenantList.tsx`, `Admin.tsx` |
+| **P2** | Los usuarios del cliente, con sus acciones, dentro de la ficha | `UserList.tsx` con `alcance="cliente"` |
+| §3.1 | Usuarios con filtros por cliente, rol y estado, agrupados por cliente, y en cada fila cambiar rol y suspender o reactivar. La fila propia no ofrece acciones | `UserList.tsx`, `FilaDeUsuario.tsx` |
+| **P4** | La cola de solicitudes de acceso, con aprobar y rechazar. Dice con qué rol entra la persona antes de aprobar | `AccessRequests.tsx`, `FilaDeSolicitud.tsx` |
+| **P3** y la invitación directa | **Esperan al backend**: el alta exige credenciales de Snowflake, y no hay invitación sin solicitud previa | `MENSAJE-2026-10-09-backend-administracion.md` |
+
+**Lo que la medición del 2026-10-09 cambió de esta auditoría:**
+
+- **El `DELETE` sobre un usuario no es una baja**: pone `is_active: false`, igual
+  que suspender. Se ofrece una sola acción.
+- **Aprobar una solicitud asigna el rol del agente.** Con el agente de UA, la
+  persona aprobada entró como `admin`. Pedido que el rol lo elija quien aprueba.
+- **`schema-check` ya contesta si un cliente está conectado a Snowflake**, que es
+  lo que P3 pedía que el backend «entienda». Falta que el resultado viaje con el
+  cliente; está pedido en el mismo mensaje.
+

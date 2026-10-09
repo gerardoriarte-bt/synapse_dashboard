@@ -65,7 +65,7 @@ type Props = {
 export function AgentConfig({ agentes, sinRoles }: Props) {
   if (sinRoles) {
     return (
-      <section className="flex flex-col gap-3">
+      <section className="flex flex-col gap-3" aria-label="Acceso a datos">
         <Label as="div">Acceso a datos</Label>
         <div className="rounded-xl border border-w3 bg-panel p-6 flex flex-col gap-3">
           <div className="flex items-center gap-2.5">
@@ -90,7 +90,9 @@ export function AgentConfig({ agentes, sinRoles }: Props) {
   }
 
   return (
-    <section className="flex flex-col gap-2">
+    // **Con nombre accesible** · 2026-10-09: la ficha ya tiene otra tabla —la de
+    // sus usuarios— y «la tabla del acceso» deja de ser la única.
+    <section className="flex flex-col gap-2" aria-label="Acceso a datos">
       {/* **Se llama `ACCESO A DATOS`** · §PEN:A2, que es como el dibujo nombra
           este bloque. «Agente de datos» era nuestro y describía la plomería:
           al super-admin no le importa que haya un agente, le importa si el rol

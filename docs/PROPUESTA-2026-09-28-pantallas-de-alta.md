@@ -148,6 +148,22 @@ materialize— **y su verificación por paso**.
 **Ese documento sí nombra bases, roles y grants.** Su lector es el equipo interno,
 que es de quien §7.3 dice que opera esa capa.
 
+## 5 ter · D1 SE REABRIÓ · 2026-10-09 (humano)
+
+**El alta del cliente pasa a hacerse desde la pantalla, y la conexión a
+Snowflake no.** Es la P3 de `AUDITORIA-2026-10-08-admin-clientes-y-usuarios.md`,
+con la respuesta del humano: «debe poder entender backend cuando se agrega un
+cliente a Snowflake, no dar de alta en Snowflake desde el front».
+
+Queda en pie lo que motivó la opción (c): **ninguna credencial pasa por un
+formulario**. Cambia quién crea el registro: lo crea el super-admin con los
+datos de producto, y el equipo interno conecta Snowflake después.
+
+**No se puede construir todavía**: `POST /admin/tenants` exige las credenciales,
+medido el 2026-10-09 contra `9dc481e`. Pedido en
+`MENSAJE-2026-10-09-backend-administracion.md`, junto con que el estado de la
+conexión —que `schema-check` ya sabe calcular— viaje con el cliente.
+
 ## 5 bis · DOS DE LAS TRES ESTÁN DECIDIDAS · 2026-09-30 (humano)
 
 **D1 → opción (c): dos altas, dos roles.** El equipo interno crea el tenant con

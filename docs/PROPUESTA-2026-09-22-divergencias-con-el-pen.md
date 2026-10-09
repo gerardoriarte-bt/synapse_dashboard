@@ -556,6 +556,28 @@ reglas 8 y 9 y la anatomía de §6, o volver a dos capas cuando datos entregue
 rótulos cortos. Las pruebas de §5.2 no se borraron: ahora afirman que la
 gobernanza sigue **declarada** en los siete estados, abriendo el ícono.
 
+## 13 · Administración: clientes y ficha lado a lado, usuarios en la ficha · 2026-10-09
+
+**Quién decide** · diseño · **Decidido por producto el 2026-10-09 · construido**
+
+Tres cosas que el `.pen` no dibuja así, y que producto decidió sobre
+`AUDITORIA-2026-10-08-admin-clientes-y-usuarios.md`:
+
+| El dibujo | Lo construido |
+|---|---|
+| A1 y A2 son dos frames: la lista, y la ficha que abre `ABRIR FICHA`, con migas | **Una pantalla**: la lista a la izquierda, la ficha del elegido a la derecha |
+| A2 no lista a los usuarios del cliente | **Los lista**, después de los roles, con cambiar rol y suspender |
+| A3 no tiene cola de solicitudes de acceso | **La tiene**, arriba de la tabla: aprobar y rechazar |
+
+**La razón de la primera** es la que dio el humano: entre «Clientes y
+plataforma» y «Ficha de cliente» el recorrido no se entendía. Lo construido
+antes tenía las dos como pestañas, con dos formas de elegir cliente. Juntarlas
+lado a lado deja un solo lugar donde se elige.
+
+**Lo que se le pide a diseño** es que el `.pen` lo dibuje, o que diga qué
+cambiar: la lista en 360 px con tres líneas por cliente, la tabla de usuarios
+dentro de la ficha y la tarjeta de cada solicitud.
+
 ## Dónde vive cada una de las demás
 
 Para que este documento no crezca hasta pisar a los otros:

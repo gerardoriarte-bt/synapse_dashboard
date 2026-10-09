@@ -380,15 +380,6 @@ export function RoleEditor({
 
       {error !== null && <Ayuda>{error}</Ayuda>}
 
-      {/* **Decía «ninguna ruta los lista · solo existe POST /admin/users»** y
-          eran dos defectos en una línea: una ruta y un identificador de tarea
-          pintados en la ficha de un cliente —lo que §7.3 llama vocabulario de
-          infraestructura, acá aplicado a la nuestra— y, desde que la ruta
-          global contesta, **una afirmación falsa**. `copy-producto` no la vio
-          porque es texto suelto entre etiquetas; se vio al abrir la pantalla. */}
-      <Ayuda>
-        Quiénes son los usuarios de este cliente: hoy se ven en la pantalla de usuarios, no acá.
-      </Ayuda>
     </div>
   )
 }

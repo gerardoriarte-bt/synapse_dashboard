@@ -171,8 +171,8 @@ function montar() {
 /** Abrir la ficha es lo que hace un super-admin: elegir la pantalla en el navbar.
  *  Se espera el rótulo del bloque nuevo, que es lo primero que la ficha pinta. */
 async function abrirFicha() {
-  await screen.findByText('Grupo Axo')
-  await userEvent.click(screen.getByRole('button', { name: 'Ficha de cliente' }))
+  await screen.findByRole('button', { name: /^Grupo Axo · / })
+  await userEvent.click(screen.getByRole('button', { name: /^Grupo Axo · / }))
   await screen.findByText('Identidad del tenant')
 }
 
@@ -308,7 +308,9 @@ describe('el acceso a datos · el estado REEMPLAZA el cuerpo', () => {
     // cuerpo, no se suma a él. Sin esto, una rama nueva pegada arriba de la
     // tabla pasa en verde y la pantalla dice las dos cosas a la vez.
     expect(screen.queryByText(/todavía no tiene un agente configurado/)).toBeNull()
-    expect(screen.queryByRole('table')).toBeNull()
+    // **Dentro del bloque del acceso** · desde el 2026-10-09 la ficha tiene
+    // otra tabla, la de sus usuarios, y la regla es sobre ésta.
+    expect(within(screen.getByRole('region', { name: 'Acceso a datos' })).queryByRole('table')).toBeNull()
   })
 
   it('con cero roles PERO con un agente cargado, sigue BLOQUEADO', async () => {
@@ -321,7 +323,7 @@ describe('el acceso a datos · el estado REEMPLAZA el cuerpo', () => {
     await abrirFicha()
 
     expect(await screen.findByText('Bloqueado')).toBeInTheDocument()
-    expect(screen.queryByRole('table')).toBeNull()
+    expect(within(screen.getByRole('region', { name: 'Acceso a datos' })).queryByRole('table')).toBeNull()
   })
 
   it('con un rol, vuelve la tabla del acceso', async () => {
@@ -329,7 +331,8 @@ describe('el acceso a datos · el estado REEMPLAZA el cuerpo', () => {
     montar()
     await abrirFicha()
 
-    expect(await screen.findByRole('table')).toBeInTheDocument()
+    const acceso = await screen.findByRole('region', { name: 'Acceso a datos' })
+    expect(within(acceso).getByRole('table')).toBeInTheDocument()
     expect(screen.queryByText('Bloqueado')).toBeNull()
   })
 })
@@ -534,8 +537,8 @@ describe('mientras una de las dos vueltas no llegó · no se afirma nada', () =>
     // llamada posterior gana · la trampa que este archivo ya documenta arriba.
     server.use(http.get(`${API}/admin/tenants/:id/roles/composition`, colgada))
     montar()
-    await screen.findByText('Grupo Axo')
-    await userEvent.click(screen.getByRole('button', { name: 'Ficha de cliente' }))
+    await screen.findByRole('button', { name: /^Grupo Axo · / })
+    await userEvent.click(screen.getByRole('button', { name: /^Grupo Axo · / }))
     await screen.findByText('Identidad del tenant')
 
     expect(celda('Estado').textContent).toContain('—')

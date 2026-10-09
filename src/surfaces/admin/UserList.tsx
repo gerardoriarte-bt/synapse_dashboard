@@ -29,124 +29,187 @@
  *
  *  **Quién dio de alta** —«POR M. BENÍTEZ»— y **«REENVIAR INVITACIÓN»**, que no
  *  tiene ruta: sin manejador no se pinta el CTA.
+ *
+ *  ── ORGANIZADA POR CLIENTE, Y CON ACCIONES · 2026-10-09 ───────────────────
+ *
+ *  La auditoría de ese día (`AUDITORIA-2026-10-08-admin-clientes-y-usuarios.md`)
+ *  encontró los usuarios «mezclados»: el cliente era una columna más y los
+ *  filtros que el dibujo pone —`CLIENTE`, `ROL`, `ESTADO`— no estaban. Ahora
+ *  están, y sin filtro de cliente las filas se agrupan por cliente.
+ *
+ *  **Cada fila cambia su rol o se suspende**, con `PUT` sobre el usuario del
+ *  tenant. Los roles que se ofrecen son los de SU cliente: el servicio rechaza
+ *  uno ajeno con 400, medido. **La fila propia no ofrece nada** —regla de A1:
+ *  «nadie se revoca a sí mismo»—, porque quitarse el rol de admin es perder la
+ *  pantalla en la que se está.
+ *
+ *  **El mismo componente es la lista de la ficha** (P2 de la misma auditoría),
+ *  con `alcance="cliente"`: sin la columna ni el filtro de cliente, que ahí ya
+ *  están decididos.
  */
 import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
 import { EmptyRow } from './EmptyRow'
 import { SkeletonRows } from './SkeletonRows'
+import { FilaDeUsuario } from './FilaDeUsuario'
 import type { Formatter } from '../../render/format'
-import type { Usuario } from '../../api/admin'
+import type { CambioDeUsuario, Usuario } from '../../api/admin'
 
-const NOTA = 'font-mono text-nota leading-rotulo tracking-rotulo uppercase text-dim m-0'
+const SELECT = 'bg-w2 text-ink text-celda rounded-sm px-2 py-1 border border-w4'
 
-/** Las seis del dibujo. **`CLIENTE` entró el 2026-09-26**: cuando la pantalla
- *  era de un cliente repetirlo en cada fila era ruido, y con alcance de
- *  plataforma es la columna que contesta la mitad de la pregunta —«¿quién entra a
- *  QUÉ CLIENTE?»—. §7.3 lo fundamenta: A3 cruza clientes porque la regla del
- *  tenant no editable sólo se ve cuando el tenant es una columna que se compara. */
-const COLUMNAS = ['Usuario', 'Cliente', 'Rol', 'Estado', 'Último acceso', 'Alta'] as const
+/** Las del dibujo, más la de acciones. **`CLIENTE` sólo en plataforma**: en la
+ *  ficha el cliente ya está elegido y repetirlo en cada fila es ruido. */
+const COLUMNAS_PLATAFORMA = ['Usuario', 'Cliente', 'Rol', 'Estado', 'Último acceso', 'Alta', 'Acción'] as const
+const COLUMNAS_CLIENTE = ['Usuario', 'Rol', 'Estado', 'Último acceso', 'Alta', 'Acción'] as const
 
-/** **Eran cuatro hasta el 2026-09-26.** El de alcance se cerró con B4.17. */
-/** LO QUE ESTA PANTALLA TODAVÍA NO MUESTRA · reescrito el 2026-09-30 (humano)
+type Estado = 'todos' | 'activos' | 'suspendidos'
+
+/** LO QUE ESTA PANTALLA TODAVÍA NO MUESTRA · fuera de la pantalla desde el
+ *  2026-10-06 (decisión humana: «si no suman para el uso, quitar»):
  *
- *  **Esto se PINTA, así que es copy de producto y no una nota nuestra.** Hasta
- *  hoy citaba §7.3, nombraba rutas del servicio y hablaba de «el cable» en la
- *  pantalla de un cliente — la auditoría de usabilidad lo puso primero en su
- *  lista: `docs/AUDITORIA-2026-09-30-usabilidad.md` §1.1.
- *
- *  **Declarar lo que falta se conserva**, que es la mejor costumbre de este
- *  repositorio y la misma gramática de §8: un panel apagado dice qué pasa. Lo
- *  que cambia es a quién se le habla. **La razón técnica de cada línea no se
- *  pierde: baja al comentario**, que es donde le sirve a quien la va a
- *  construir.
+ *  · Las invitaciones pendientes: el cable sólo trae activo o suspendido.
+ *  · Quién dio de alta a cada usuario: el dibujo pone «por M. Benítez» y no hay
+ *    campo.
+ *  · Invitar directamente o reenviar una invitación: no hay ruta. Pedido al
+ *    backend el 2026-10-09.
  */
-/** **Lo que esta pantalla todavía no tiene** · fuera de la pantalla desde el 2026-10-06.
- *
- *  Se pintaba como «Esta pantalla va a crecer · Falta: …». Decisión humana
- *  sobre la auditoría del builder de ese día: «si no suman para el uso,
- *  quitar». No suman: quien usa la pantalla no puede hacer nada con eso. Queda
- *  acá, que es donde le sirve a quien lo vaya a construir.
- *
- *    El cable sólo trae activo o suspendido.
- *  · 'Las invitaciones pendientes, además de los usuarios activos y suspendidos'
- *    El dibujo pone «por M. Benítez» y no hay campo.
- *  · 'Quién dio de alta a cada usuario'
- *    No hay ruta.
- *  · 'Volver a enviar una invitación que nadie aceptó'
- */
-
 
 type Props = {
   usuarios: readonly Usuario[]
-  /** Del locale del tenant · F1.13b. Antes acá había un `Intl` con `'es-MX'`. */
+  /** Del locale de quien mira · F1.13b. */
   format: Formatter
-  /** **Los cuenta el SERVICIO**, no esta pantalla · ver el encabezado. */
-  total: number
-  /** Clientes **con al menos un usuario**, que es lo que el dibujo dice. */
-  clientes: number
+  /** `plataforma` cruza clientes · A3. `cliente` es la lista dentro de la ficha. */
+  alcance?: 'plataforma' | 'cliente'
+  /** **Los cuenta el SERVICIO**, no esta pantalla. Sólo en plataforma. */
+  total?: number
+  /** Clientes con al menos un usuario · lo cuenta el servicio. */
+  clientesConUsuarios?: number
+  /** Cómo se llama y se distingue cada cliente, para el filtro y los grupos:
+   *  hay dos «Under Armour México» y el nombre solo no alcanza. */
+  nombreDeCliente?: (clienteId: string) => string
+  /** Los roles del cliente de un usuario · `undefined` mientras no llegaron. */
+  rolesDe?: (clienteId: string) => readonly { id: string; nombre: string }[] | undefined
+  /** Quién mira · su fila no ofrece acciones. */
+  yoId?: string | null
+  /** Cambiar rol o suspender · **sin manejador no se pintan las acciones**. */
+  onCambiar?: (u: Usuario, cambio: CambioDeUsuario) => void
+  /** El usuario cuyo cambio está en vuelo. */
+  enviando?: string | null
+  error?: string | null
   cargando?: boolean
 }
 
-export function UserList({ format, usuarios, total, clientes, cargando = false }: Props) {
+export function UserList({
+  format,
+  usuarios,
+  alcance = 'plataforma',
+  total = usuarios.length,
+  clientesConUsuarios = 0,
+  nombreDeCliente = (id) => id,
+  rolesDe = () => undefined,
+  yoId = null,
+  onCambiar,
+  enviando = null,
+  error = null,
+  cargando = false,
+}: Props) {
   const [busqueda, setBusqueda] = useState('')
+  const [cliente, setCliente] = useState('')
+  const [rol, setRol] = useState('')
+  const [estado, setEstado] = useState<Estado>('todos')
+
+  const dePlataforma = alcance === 'plataforma'
+  const columnas = dePlataforma ? COLUMNAS_PLATAFORMA : COLUMNAS_CLIENTE
+
+  const clientes = [...new Set(usuarios.map((u) => u.clienteId))]
+  const roles = [...new Set(usuarios.map((u) => u.rol))].sort()
 
   const q = busqueda.trim().toLowerCase()
   const visibles = usuarios.filter(
     (u) =>
-      q === '' ||
-      u.nombre.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q) ||
-      // **El cliente también se busca**: con alcance de plataforma, «mostrame los
-      // de UA MX» es la primera cosa que alguien va a escribir acá.
-      (u.clienteNombre ?? '').toLowerCase().includes(q),
+      (q === '' ||
+        u.nombre.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        (u.clienteNombre ?? '').toLowerCase().includes(q)) &&
+      (cliente === '' || u.clienteId === cliente) &&
+      (rol === '' || u.rol === rol) &&
+      (estado === 'todos' || u.activo === (estado === 'activos')),
   )
 
-  // **Dos vacíos distintos**, como en `CatalogView`: sin usuarios es de alta —el
-  // cliente es nuevo— y con usuarios pero filtro sin resultados es de FILTRO, y
-  // ahí la salida es deshacer. El `.pen` dibuja el segundo aparte.
+  const filtrando = q !== '' || cliente !== '' || rol !== '' || estado !== 'todos'
+  const limpiar = () => {
+    setBusqueda('')
+    setCliente('')
+    setRol('')
+    setEstado('todos')
+  }
+
+  // **Sin filtro de cliente, agrupadas por cliente** · es lo que «organizados
+  // por cliente» pide. Con filtro hay un solo grupo y el encabezado sobra.
+  const agrupar = dePlataforma && cliente === ''
+  const grupos = agrupar
+    ? clientes
+        .map((id) => ({ id, filas: visibles.filter((u) => u.clienteId === id) }))
+        .filter((g) => g.filas.length > 0)
+    : [{ id: '', filas: visibles }]
+
   const sinNada = usuarios.length === 0 && !cargando
   const filtroVacio = usuarios.length > 0 && visibles.length === 0
-
   const activos = usuarios.filter((u) => u.activo).length
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-2">
-        {/* ── EL TÍTULO NO VA ACÁ · 2026-09-28 ────────────────────────────
-            Había un `<h1>` con «Usuarios» **y `AdminChrome` pinta el mismo
-            texto**, porque sale de `pantallas.ts`. Dos `<h1>` por pantalla y el
-            título repetido; el dibujo tiene uno solo.
-
-            Lo destapó cruzar el tamaño contra el dibujo: la pregunta era de 15
-            contra 26 y la respuesta resultó ser que sobraba un título. La
-            pregunta operativa SÍ es de la vista —es lo que esta pantalla
-            contesta— y se queda. */}
-        <Ayuda>¿Quién entra a qué cliente, y con qué rol?</Ayuda>
-        {/* **El resumen literal del dibujo** —«17 usuarios · 2 clientes con
-            usuarios»— y los dos números salen del servicio.
-
-            Acá vivió un aviso diciendo «esta lista es de UN cliente · la ruta que
-            existe es por tenant y `/admin/users` da 404». Era cierto al
-            escribirlo y **quedó falso el 2026-09-26**, cuando la ruta llegó: una
-            afirmación vencida en pantalla es peor que un hueco, porque el
-            usuario no tiene con qué dudarla.
-
-            El alcance lo declara el chrome; lo que le toca a la pantalla es decir
-            qué está mostrando, y ahora es todo. */}
-        <div className="flex items-center gap-3">
+      {dePlataforma && (
+        <header className="flex flex-col gap-2">
+          {/* La pregunta operativa es de la vista; el título lo pinta el chrome. */}
+          <Ayuda>¿Quién entra a qué cliente, y con qué rol?</Ayuda>
+          {/* Con el filtro vacío dice CUÁNTOS hay en total: sin eso, los
+              usuarios parecen perdidos y no escondidos. */}
           <Label>
             {filtroVacio
               ? `0 usuarios con este filtro · ${String(total)} en total`
-              : `${String(total)} ${total === 1 ? 'usuario' : 'usuarios'} · ${String(clientes)} ${clientes === 1 ? 'cliente con usuarios' : 'clientes con usuarios'} · ${String(activos)} ${activos === 1 ? 'activo' : 'activos'}`}
+              : `${String(total)} ${total === 1 ? 'usuario' : 'usuarios'} · ${String(clientesConUsuarios)} ${clientesConUsuarios === 1 ? 'cliente con usuarios' : 'clientes con usuarios'} · ${String(activos)} ${activos === 1 ? 'activo' : 'activos'}`}
           </Label>
-        </div>
-      </header>
+        </header>
+      )}
 
       <section className="flex flex-col gap-3">
-        <div className="flex items-center gap-3">
-          <Label as="div">Usuarios de todos los clientes</Label>
+        <div className="flex items-center gap-3 flex-wrap">
+          <Label as="div">
+            {dePlataforma
+              ? 'Usuarios de todos los clientes'
+              : `Usuarios de este cliente · ${String(usuarios.length)} · ${String(activos)} ${activos === 1 ? 'activo' : 'activos'}`}
+          </Label>
           <div className="flex-1" />
+          {dePlataforma && (
+            <select aria-label="Cliente" className={SELECT} value={cliente} onChange={(e) => setCliente(e.target.value)}>
+              <option value="">Todos los clientes</option>
+              {clientes.map((id) => (
+                <option key={id} value={id}>
+                  {nombreDeCliente(id)}
+                </option>
+              ))}
+            </select>
+          )}
+          <select aria-label="Rol" className={SELECT} value={rol} onChange={(e) => setRol(e.target.value)}>
+            <option value="">Todos los roles</option>
+            {roles.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Estado"
+            className={SELECT}
+            value={estado}
+            onChange={(e) => setEstado(e.target.value as Estado)}
+          >
+            <option value="todos">Todos los estados</option>
+            <option value="activos">Activos</option>
+            <option value="suspendidos">Suspendidos</option>
+          </select>
           <input
             type="search"
             value={busqueda}
@@ -160,87 +223,82 @@ export function UserList({ format, usuarios, total, clientes, cargando = false }
         <table className="w-full border-collapse">
           <thead>
             <tr>
-              {COLUMNAS.map((c) => (
-                <th key={c} scope="col" className="text-left pb-2 border-b border-w2">
+              {columnas.map((c) => (
+                <th key={c} scope="col" className={`${c === 'Acción' ? 'text-right' : 'text-left'} pb-2 border-b border-w2`}>
                   <Label>{c}</Label>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {cargando && <SkeletonRows columnas={COLUMNAS.length} />}
+            {cargando && <SkeletonRows columnas={columnas.length} />}
 
             {sinNada && (
               <EmptyRow
                 clase="alta"
-                columnas={COLUMNAS.length}
-                razon="Todavía no hay usuarios en ningún cliente."
-                salida="El alta es por invitación: nadie fija la contraseña de otro."
+                columnas={columnas.length}
+                razon={dePlataforma ? 'Todavía no hay usuarios en ningún cliente.' : 'Este cliente todavía no tiene usuarios.'}
+                salida="Un usuario entra cuando se aprueba su solicitud de acceso."
               />
             )}
 
-            {filtroVacio && (
+            {filtroVacio && filtrando && (
               <EmptyRow
                 clase="filtro"
-                columnas={COLUMNAS.length}
-                razon="Ningún usuario coincide con la búsqueda."
-                salida="Deshacer la búsqueda."
-                onLimpiarFiltro={() => setBusqueda('')}
+                columnas={columnas.length}
+                razon="Ningún usuario coincide con el filtro."
+                salida="Deshacer el filtro."
+                onLimpiarFiltro={limpiar}
               />
             )}
 
-            {visibles.map((u) => (
-              <tr key={u.id} className="border-b border-w3 align-top">
-                <td className="py-3">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-ink text-celda">{u.nombre}</span>
-                    <span className={NOTA}>{u.email}</span>
-                  </div>
-                </td>
-                <td className="py-3">
-                  {/* **`—` cuando no llega, y no el id.** `clienteNombre` es
-                      `null` sólo si la fila vino de la ruta por cliente; acá no
-                      pasa, y si pasara un guion dice «no sé» en vez de mentir. */}
-                  <span className="text-ink text-celda">{u.clienteNombre ?? '—'}</span>
-                </td>
-                <td className="py-3">
-                  <span className="text-ink text-celda">{u.rol}</span>
-                </td>
-                <td className="py-3">
-                  {/* **Dos estados y no tres.** El dibujo pinta también
-                      «invitación pendiente», que el cable no distingue. */}
-                  <Label>{u.activo ? 'Activo' : 'Suspendido'}</Label>
-                </td>
-                <td className="py-3">
-                  <span className="text-ink text-celda">
-                    {u.ultimoAccesoEn === null ? 'Nunca' : format.calendar(u.ultimoAccesoEn)}
-                  </span>
-                </td>
-                <td className="py-3">
-                  <span className="text-ink text-celda">{format.calendar(u.altaEn)}</span>
-                </td>
-              </tr>
-            ))}
+            {grupos.flatMap((g) => [
+              ...(agrupar
+                ? [
+                    <tr key={`grupo-${g.id}`}>
+                      <th scope="colgroup" colSpan={columnas.length} className="text-left pt-5 pb-2 border-b border-w4">
+                        <Label>{`${nombreDeCliente(g.id)} · ${String(g.filas.length)}`}</Label>
+                      </th>
+                    </tr>,
+                  ]
+                : []),
+              ...g.filas.map((u) => (
+                <FilaDeUsuario
+                  key={u.id}
+                  u={u}
+                  dePlataforma={dePlataforma}
+                  format={format}
+                  roles={rolesDe(u.clienteId)}
+                  propia={u.id === yoId}
+                  enviando={enviando === u.id}
+                  {...(onCambiar === undefined ? {} : { onCambiar })}
+                />
+              )),
+            ])}
           </tbody>
         </table>
 
-        {/* Las tres reglas del pie, literales del dibujo. No son decoración:
-            explican por qué esta pantalla no ofrece editar el cliente ni fijar
-            una contraseña. */}
-        <div className="flex flex-col gap-1 border-t border-w2 pt-3">
-          <Ayuda>
-            El cliente no se edita después de crear: mover un usuario de cliente es eliminarlo y
-            volver a invitarlo.
-          </Ayuda>
-          <Ayuda>
-            El alta es por invitación: nadie fija la contraseña de otro, ni siquiera un
-            super-admin.
-          </Ayuda>
-          <Ayuda>
-            Suspender corta el acceso sin borrar el registro: la auditoría de quién vio qué se
-            conserva.
-          </Ayuda>
-        </div>      </section>
+        {error !== null && <Ayuda>{error}</Ayuda>}
+
+        {/* Las tres reglas del pie, literales del dibujo. Explican por qué esta
+            pantalla no ofrece mover a alguien de cliente ni fijar una contraseña. */}
+        {dePlataforma && (
+          <div className="flex flex-col gap-1 border-t border-w2 pt-3">
+            <Ayuda>
+              El cliente no se edita después de crear: mover un usuario de cliente es eliminarlo y
+              volver a invitarlo.
+            </Ayuda>
+            <Ayuda>
+              El alta es por invitación: nadie fija la contraseña de otro, ni siquiera un
+              super-admin.
+            </Ayuda>
+            <Ayuda>
+              Suspender corta el acceso sin borrar el registro: la auditoría de quién vio qué se
+              conserva.
+            </Ayuda>
+          </div>
+        )}
+      </section>
     </div>
   )
 }

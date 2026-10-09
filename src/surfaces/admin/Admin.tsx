@@ -4,6 +4,9 @@
  *  contenedor de presentacional, así que acá viven los hooks y en `AdminChrome`,
  *  `TenantList` y `CatalogView` no hay ninguno.
  *
+ *  **Cuatro pestañas desde el 2026-10-09**: Clientes —con su ficha al lado—,
+ *  Usuarios, Catálogo y Feeds. Ver `pantallas.ts`.
+ *
  *  **Las cinco pantallas de §7.3 están declaradas; tres todavía no se pueden
  *  construir**, y cada una dice por qué en vez de mostrarse vacía:
  *
@@ -30,6 +33,12 @@ import {
   useRuns,
   useLoadPeriods,
   useAllUsers,
+  useUsers,
+  useEditUser,
+  useAccessRequests,
+  useReviewAccessRequest,
+  useRolesOf,
+  useAgentsOf,
   useAdminCatalog,
   useDeleteRole,
   useLayoutDetail,
@@ -48,6 +57,7 @@ import { CargarPeriodos } from './CargarPeriodos'
 import { ESPERA_MAXIMA_MS, faltanPorTerminar, hayQueEsperar, mesEnCurso, mesesCargados, mesesEnCurso } from './cargaDePeriodos'
 import type { Pedido } from './cargaDePeriodos'
 import { UserList } from './UserList'
+import { AccessRequests } from './AccessRequests'
 import { createFormat, LOCALE_POR_DEFECTO } from '../../render/format'
 import { RoleEditor } from './RoleEditor'
 import { Subprocessors } from './Subprocessors'
@@ -55,6 +65,7 @@ import { TenantIdentity } from './TenantIdentity'
 import { estadoDeAlta, versionDeCatalogo } from './alta'
 import { usoPorMetrica } from './uso'
 import { TenantList } from './TenantList'
+import { distintivo } from './distintivo'
 import { useClienteDeTrabajo } from '../useClienteDeTrabajo'
 import { SurfaceMessage } from '../console/SurfaceMessage'
 import { AgentConfig } from './AgentConfig'
@@ -63,7 +74,7 @@ import { Ayuda } from '../../render/primitives/Ayuda'
 import { Accion } from '../../render/primitives/Accion'
 import { ApiError } from '../../api/types'
 import type { EstadoDeAlta } from './alta'
-import type { Tenant } from '../../api/admin'
+import type { CambioDeUsuario, Tenant, Usuario } from '../../api/admin'
 import type { Formatter } from '../../render/format'
 import { PANTALLAS } from './pantallas'
 import type { PantallaId } from './pantallas'
@@ -170,6 +181,41 @@ export function Admin() {
   // con `6e521cc` y es lo que el dibujo declara. La por-cliente —`useUsers`—
   // sigue existiendo para A2, donde el cliente ya está elegido.
   const usuarios = useAllUsers()
+  // **Los de la ficha** · P2 de la auditoría del 2026-10-08: quiénes son los
+  // usuarios del cliente se ve en su ficha, no en otra pantalla.
+  const usuariosDelCliente = useUsers(activo)
+  /* ── LAS ACCIONES SOBRE USUARIOS Y LA COLA DE SOLICITUDES · 2026-10-09 ───
+   *
+   * **Roles y agentes de todos los clientes**: cambiar el rol de alguien ofrece
+   * los de SU cliente, y aprobar una solicitud, los agentes del cliente que se
+   * elige. Comparten clave con `useRoles` y `useAgents`, así que no se piden
+   * dos veces. */
+  //
+  // **Sólo en Usuarios, y los agentes sólo si hay a quién aprobar.** Pedirlos
+  // al abrir administración eran dos vueltas por cliente que nadie miraba —y
+  // rompían la regla del arranque: no pedir nada de otro cliente mientras
+  // `/config/me` carga—. En la ficha alcanza con los roles del activo, que
+  // `useRoles` ya trae con la misma clave.
+  const solicitudes = useAccessRequests()
+  const enUsuarios = pantalla === 'usuarios'
+  const hayPendientes = (solicitudes.data?.solicitudes.length ?? 0) > 0
+  const rolesPorCliente = useRolesOf(enUsuarios ? lista.map((t) => t.id) : [])
+  const agentesPorCliente = useAgentsOf(enUsuarios && hayPendientes ? lista.map((t) => t.id) : [])
+  const editarUsuario = useEditUser()
+  const revisar = useReviewAccessRequest()
+  const nombreDeCliente = (id: string) => {
+    const t = lista.find((x) => x.id === id)
+    return t === undefined ? id : `${t.nombre} · ${distintivo(t)}`
+  }
+  const cambiarUsuario = (u: Usuario, cambio: CambioDeUsuario) =>
+    editarUsuario.mutate({ tenantId: u.clienteId, userId: u.id, cambio })
+  const accionesDeUsuario = {
+    rolesDe: (id: string) => rolesPorCliente[id] ?? (id === activo ? roles.data : undefined),
+    yoId: contexto.data?.user.id ?? null,
+    onCambiar: cambiarUsuario,
+    enviando: editarUsuario.isPending ? (editarUsuario.variables?.userId ?? null) : null,
+    error: editarUsuario.error === null ? null : (editarUsuario.error.message === '' ? 'No se pudo guardar el cambio' : editarUsuario.error.message),
+  }
   const versiones = useLayouts(activo)
   const publicado = versiones.data?.find((v) => v.estado === 'publicado') ?? null
   const detalle = useLayoutDetail(publicado?.id ?? null)
@@ -241,45 +287,29 @@ export function Admin() {
           <Ayuda>{pendiente.razon}</Ayuda>
           <Ayuda>Se desbloquea con {pendiente.desbloqueaCon}</Ayuda>
         </div>
-      ) : pantalla === 'cliente' ? (
-        <Cliente
-          agentes={agentes}
-          roles={roles}
-          // **El `Tenant` de la fila activa, no un viaje nuevo**: `lista` ya lo
-          // trae con sus trece campos desde que A1 pidió las cinco columnas.
-          tenant={lista.find((x) => x.id === activo) ?? null}
-          estado={estado}
-          version={version}
-          format={format}
-          // **La pregunta operativa y el conteo, no sólo el nombre** · A2 §9.
-          // El desglose por rol los necesita, y los dos ya vienen en el layout
-          // publicado: no cuesta un viaje más.
-          pestanas={
-            detalle.data?.tabs.map((t) => ({
-              id: t.tab.id,
-              clave: t.tab.clave,
-              nombre: t.tab.nombre,
-              pregunta: t.tab.pregunta,
-              paneles: t.panels.length,
-            })) ?? []
-          }
-          metricas={metricas}
-          onGuardar={(id, rol) => guardarRol.mutate({ ...(id === undefined ? {} : { id }), rol })}
-          onBorrar={(id) => borrarRol.mutate(id)}
-          guardando={guardarRol.isPending}
-          error={mensajeDeRol(guardarRol.error) ?? mensajeDeRol(borrarRol.error)}
-          // El viaje a A4 existe desde acá, así que el enlace del `.pen` se
-          // pinta. Sin este manejador `RoleCard` no lo dibuja.
-          onVerCatalogo={() => setPantalla('catalogo')}
-        />
       ) : pantalla === 'usuarios' ? (
-        <UserList
-          usuarios={usuarios.data?.usuarios ?? []}
-          total={usuarios.data?.total ?? 0}
-          clientes={usuarios.data?.clientes ?? 0}
-          format={format}
-          cargando={usuarios.data === undefined}
-        />
+        <div className="flex flex-col gap-10">
+          <AccessRequests
+            solicitudes={solicitudes.data?.solicitudes ?? []}
+            format={format}
+            clientes={lista.map((t) => ({ id: t.id, etiqueta: nombreDeCliente(t.id) }))}
+            agentesDe={(id) => agentesPorCliente[id]}
+            enviando={revisar.isPending ? (revisar.variables?.id ?? null) : null}
+            error={revisar.error === null ? null : (revisar.error.message === '' ? 'No se pudo resolver la solicitud' : revisar.error.message)}
+            onAprobar={(id, destino) => revisar.mutate({ id, aprobar: true, ...(destino === undefined ? {} : { destino }) })}
+            onRechazar={(id) => revisar.mutate({ id, aprobar: false })}
+            cargando={solicitudes.data === undefined}
+          />
+          <UserList
+            usuarios={usuarios.data?.usuarios ?? []}
+            total={usuarios.data?.total ?? 0}
+            clientesConUsuarios={usuarios.data?.clientes ?? 0}
+            nombreDeCliente={nombreDeCliente}
+            format={format}
+            cargando={usuarios.data === undefined}
+            {...accionesDeUsuario}
+          />
+        </div>
       ) : pantalla === 'feeds' ? (
         /* **El historial va DEBAJO de las fuentes y en la misma pantalla.** La
            pregunta que A5 contesta es «por qué una métrica está degradada, y qué
@@ -324,23 +354,61 @@ export function Admin() {
         // para la pregunta que responde: qué ven los usuarios hoy.
         <Catalogo query={catalogo} uso={usoPorMetrica(detalle.data, roles.data ?? [])} />
       ) : (
-        <TenantList
-          tenants={lista}
-          format={format}
-          // **El id se USA** · 2026-09-25. Esta línea era `() => setPantalla(…)`
-          // y tiraba el argumento, así que «Ver ficha» de cualquier cliente
-          // abría la ficha del PRIMERO —`activo` cae en `lista[0]`— y se veía
-          // perfectamente bien mientras hubiera un solo cliente en la base.
-          //
-          // Es la familia del botón muerto que `CLAUDE.md` describe, con una
-          // vuelta más: el callback SÍ dispara, así que verificar que dispara no
-          // alcanza; hay que verificar que **llega el id correcto**.
-          onAbrir={(id) => {
-            setTenant(id)
-            setPantalla('cliente')
-          }}
-          cargando={tenants.data === undefined}
-        />
+        /* ── CLIENTES · LA LISTA Y LA FICHA LADO A LADO · 2026-10-09 ──────────
+           Decisión humana (P1 de `AUDITORIA-2026-10-08-admin-clientes-y-usuarios.md`).
+           Eran dos pestañas y dos formas de elegir cliente que no se hablaban;
+           ahora se elige en un solo lugar y la ficha se abre al lado. Se
+           aparta del `.pen`, que las une como lista y detalle con migas. */
+        <div className="grid grid-cols-[360px_1fr] gap-8 items-start">
+          <TenantList
+            tenants={lista}
+            format={format}
+            seleccionado={activo}
+            onElegir={setTenant}
+            cargando={tenants.data === undefined}
+          />
+          {activo === null ? (
+            <Ayuda>Elegí un cliente de la lista para ver su ficha.</Ayuda>
+          ) : (
+            <Cliente
+              agentes={agentes}
+              roles={roles}
+              // **El `Tenant` de la fila activa, no un viaje nuevo**: `lista` ya lo
+              // trae con sus campos desde que A1 pidió sus columnas.
+              tenant={lista.find((x) => x.id === activo) ?? null}
+              estado={estado}
+              version={version}
+              format={format}
+              usuarios={
+                <UserList
+                  alcance="cliente"
+                  usuarios={usuariosDelCliente.data ?? []}
+                  format={format}
+                  cargando={usuariosDelCliente.data === undefined}
+                  {...accionesDeUsuario}
+                />
+              }
+              // **La pregunta operativa y el conteo, no sólo el nombre** · A2 §9.
+              pestanas={
+                detalle.data?.tabs.map((t) => ({
+                  id: t.tab.id,
+                  clave: t.tab.clave,
+                  nombre: t.tab.nombre,
+                  pregunta: t.tab.pregunta,
+                  paneles: t.panels.length,
+                })) ?? []
+              }
+              metricas={metricas}
+              onGuardar={(id, rol) => guardarRol.mutate({ ...(id === undefined ? {} : { id }), rol })}
+              onBorrar={(id) => borrarRol.mutate(id)}
+              guardando={guardarRol.isPending}
+              error={mensajeDeRol(guardarRol.error) ?? mensajeDeRol(borrarRol.error)}
+              // El viaje a A4 existe desde acá, así que el enlace del `.pen` se
+              // pinta. Sin este manejador `RoleCard` no lo dibuja.
+              onVerCatalogo={() => setPantalla('catalogo')}
+            />
+          )}
+        </div>
       )}
     </AdminChrome>
   )
@@ -412,6 +480,7 @@ function Cliente({
   estado,
   version,
   format,
+  usuarios,
   // **`...paraRoles` y no una prop más en la lista** · 2026-09-22. Estaba
   // escrito prop por prop, y al sumar `onVerCatalogo` —opcional— el compilador
   // no dijo nada: la prop llegaba a `Cliente`, se perdía acá, y el enlace del
@@ -429,6 +498,9 @@ function Cliente({
   estado: EstadoDeAlta | null
   version: number | null
   format: Formatter
+  /** **Los usuarios del cliente** · P2, 2026-10-09. Obligatoria por la misma
+   *  razón que las cuatro de arriba. */
+  usuarios: React.ReactNode
 } & Omit<Parameters<typeof RoleEditor>[0], 'roles'>) {
   if (roles.isError) {
     return (
@@ -448,6 +520,10 @@ function Cliente({
       <TenantIdentity tenant={tenant} estado={estado} version={version} format={format} />
 
       <RoleEditor {...paraRoles} roles={roles.data ?? []} cargando={roles.data === undefined} />
+
+      {/* **Después de los roles**: primero qué ve cada rol, después quién lo
+          tiene. Es el orden en que se decide. */}
+      {usuarios}
 
       {/* **El agente se pinta aunque su petición falle, y con la razón.** Hoy
           esa ruta da 500 contra el servicio —las columnas del CRUD no están en

@@ -32,14 +32,29 @@
  *  Snowflake, su rol técnico y su llave privada, y **ninguna de las tres aparece
  *  acá ni va a aparecer**: esa capa la opera el equipo interno.
  *
+ *  ── UNA LISTA PARA ELEGIR, NO UNA TABLA · 2026-10-09 ───────────────────────
+ *
+ *  **Decisión humana (P1 de `AUDITORIA-2026-10-08-admin-clientes-y-usuarios.md`):
+ *  la lista va a la izquierda y la ficha del elegido a la derecha**, en la misma
+ *  pantalla. Antes eran dos pestañas con dos formas de elegir cliente que no se
+ *  hablaban. Una tabla de cinco columnas no entra en 360 px, así que cada
+ *  cliente es una fila elegible con tres líneas: nombre, cómo se lo distingue,
+ *  y su estado operativo —usuarios, feed, publicación—.
+ *
+ *  **Se distingue por la forma corta, o por el id si no tiene.** En la base
+ *  local hay dos «Under Armour México» —uno es el de la versión anterior de
+ *  Synapse— y la fila no decía cuál era cuál. El dibujo pone el id bajo el
+ *  nombre por eso mismo.
+ *
  *  **§PEN:A1** · A1 · «Clientes y plataforma».
  */
+import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
-import { Accion } from '../../render/primitives/Accion'
-import { EmptyRow } from './EmptyRow'
-import { SkeletonRows } from './SkeletonRows'
+import { Ayuda } from '../../render/primitives/Ayuda'
+import { Opcion } from '../../render/primitives/Opcion'
 import type { Formatter } from '../../render/format'
 import type { Tenant } from '../../api/admin'
+import { distintivo } from './distintivo'
 
 /** **Las dos columnas de A1 que el diseño pide y no se pintan** · el aviso
  *  salió de la pantalla el 2026-10-06 (decisión humana: «si no suman para el
@@ -51,7 +66,6 @@ import type { Tenant } from '../../api/admin'
  *    la plantilla entre en alcance (`vertical`, también nil en v1).
  */
 
-
 /** `null` es «nunca cargó» y `0` es «recién». No se colapsan. */
 function frescura(horas: number | null, estado: string): string {
   if (horas === null) return estado === 'unknown' ? 'Nunca cargó' : '—'
@@ -61,94 +75,95 @@ function frescura(horas: number | null, estado: string): string {
 
 type Props = {
   tenants: readonly Tenant[]
-  /** Del locale del tenant · F1.13b. Antes acá había un `Intl` con `'es-MX'`. */
+  /** Del locale de quien mira · F1.13b. */
   format: Formatter
-  /** Abrir la ficha del cliente · A2. */
-  onAbrir: (id: string) => void
-  /** Mientras la lista vuela. **La tabla se pinta igual**: encabezado completo y
-   *  filas de esqueleto · `SkeletonRows`. */
+  /** El cliente cuya ficha está a la derecha. */
+  seleccionado: string | null
+  /** Elegir un cliente · su ficha se abre al lado. */
+  onElegir: (id: string) => void
+  /** Mientras la lista vuela. */
   cargando?: boolean
 }
 
-export function TenantList({ format, tenants, onAbrir, cargando = false }: Props) {
-  // **Nunca se sale de la tabla.** El vacío es una FILA, no un reemplazo: «las
-  // columnas siguen diciendo qué habría acá» · las tres notas del `.pen`. Una
-  // pantalla que se vacía entera pierde lo único que explicaba qué falta.
-  const vacio = tenants.length === 0 && !cargando
+export function TenantList({ format, tenants, seleccionado, onElegir, cargando = false }: Props) {
+  const [busqueda, setBusqueda] = useState('')
+  const q = busqueda.trim().toLowerCase()
+  const visibles = tenants.filter(
+    (t) =>
+      q === '' ||
+      t.nombre.toLowerCase().includes(q) ||
+      t.formaCorta.toLowerCase().includes(q) ||
+      t.id.toLowerCase().startsWith(q),
+  )
 
   return (
-    <div className="flex flex-col gap-4">
+    <section className="flex flex-col gap-3" aria-label="Clientes" aria-busy={cargando}>
       {/* El conteo dice CARGANDO y no una cifra: «3 clientes» mientras carga es
           afirmar algo que todavía no llegó. */}
       <Label as="div">
         {cargando ? 'Clientes · cargando' : `Clientes · ${String(tenants.length)}`}
       </Label>
 
-      <table className="w-full border-collapse" aria-busy={cargando}>
-        <thead>
-          <tr className="border-b border-w4">
-            <th className="text-left py-2">
-              <Label>Cliente</Label>
-            </th>
-            <th className="text-left py-2">
-              <Label>Usuarios</Label>
-            </th>
-            <th className="text-left py-2">
-              <Label>Feed más atrasado</Label>
-            </th>
-            <th className="text-left py-2">
-              <Label>Última publicación</Label>
-            </th>
-            <th className="text-right py-2">
-              <Label>Acción</Label>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {cargando && <SkeletonRows columnas={5} />}
-          {vacio && (
-            <EmptyRow
-              clase="sistema"
-              columnas={5}
-              razon="Ningún cliente dado de alta todavía"
-              /* **Decía `POST /admin/tenants`** · 2026-09-30. Esa ruta existe y exige
-                 siete credenciales de infraestructura que §7.3 prohíbe pedir en
-                 pantalla, así que el alta la hace el equipo interno y acá se
-                 ADOPTA — es D1, decidida ese día. Nombrar el endpoint además
-                 prometía una acción que esta pantalla no tiene. */
-              salida="Un cliente aparece acá cuando se lo da de alta; después se elige su plantilla."
-            />
-          )}
-          {tenants.map((t) => (
-            <tr key={t.id} className="border-b border-w3">
-              <td className="py-3 text-ink text-celda">{t.nombre}</td>
-              <td className="py-3 text-ink text-celda">{t.usuarios}</td>
-              <td className="py-3">
-                {/* Dos datos en una celda porque son uno: cuánto hace y de qué
-                    fuente. La hora sola no dice si está bien — eso depende de la
-                    cadencia, que el servicio ya consideró al reducir. */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-ink text-celda">
-                    {frescura(t.peorFuenteHoras, t.peorFuente)}
-                  </span>
-                  <Label as="div">{t.peorFuente}</Label>
-                </div>
-              </td>
-              <td className="py-3 text-ink text-celda">
-                {/* «Nunca» y no un guion: que un cliente jamás haya publicado es
-                    un hecho operativo, no un dato ausente. */}
-                {t.publicadoEn === null ? 'Nunca' : format.calendar(t.publicadoEn)}
-              </td>
-              <td className="py-3 text-right">
-                <Accion tamano="compacta" onClick={() => onAbrir(t.id)} etiqueta={`Ver ficha de ${t.nombre}`}>
-                  Ver ficha
-                </Accion>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <input
+        type="search"
+        value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+        aria-label="Buscar cliente"
+        placeholder="BUSCAR CLIENTE"
+        className="font-mono text-label leading-rotulo tracking-rotulo uppercase text-ink bg-transparent border border-w3 rounded-md px-2 py-1"
+      />
 
-    </div>
+      {/* **Esqueleto y nunca spinner** · la nota de `A1 · Clientes · cargando`:
+          la lista ya sabe qué forma va a llegar y la promete. Cuatro filas, como
+          el dibujo, sin animación, y barras de anchos distintos para que se lean
+          como texto que viene y no como un patrón. */}
+      {cargando && (
+        <ul className="flex flex-col gap-2 list-none m-0 p-0">
+          {[0, 1, 2, 3].map((f) => (
+            <li key={f} aria-hidden="true" className="flex flex-col gap-2 rounded-md border border-w3 px-3 py-2">
+              <div className="bg-w2 rounded-xs h-3 w-3/4" />
+              <div className="bg-w2 rounded-xs h-3 w-1/3" />
+              <div className="bg-w2 rounded-xs h-3 w-2/3" />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* **Los vacíos dicen qué pasó y qué hacer** · §8. Sin clientes es de
+          alta; con clientes y sin coincidencias es de filtro. */}
+      {!cargando && tenants.length === 0 && (
+        <div className="flex flex-col gap-1">
+          <Ayuda>Ningún cliente dado de alta todavía.</Ayuda>
+          <Ayuda>Un cliente aparece acá cuando se lo da de alta; después se elige su plantilla.</Ayuda>
+        </div>
+      )}
+      {tenants.length > 0 && visibles.length === 0 && (
+        <Ayuda>Ningún cliente coincide con la búsqueda.</Ayuda>
+      )}
+
+      <ul className="flex flex-col gap-2 list-none m-0 p-0">
+        {visibles.map((t) => (
+          <li key={t.id}>
+            <Opcion
+              forma="fila"
+              elegida={t.id === seleccionado}
+              onClick={() => onElegir(t.id)}
+              etiqueta={`${t.nombre} · ${distintivo(t)}`}
+            >
+              <span className="flex flex-col gap-1 min-w-0">
+                <span className="text-ink text-celda">{t.nombre}</span>
+                <Label as="span">{distintivo(t)}</Label>
+                {/* Usuarios, feed y publicación en una línea: son el estado
+                    operativo, que es lo que decide a cuál entrar. «Nunca» y no
+                    un guion: que un cliente jamás haya publicado es un hecho. */}
+                <Label as="span">
+                  {`${String(t.usuarios)} ${t.usuarios === 1 ? 'usuario' : 'usuarios'} · feed ${frescura(t.peorFuenteHoras, t.peorFuente)} · ${t.publicadoEn === null ? 'nunca publicó' : `publicó ${format.calendar(t.publicadoEn)}`}`}
+                </Label>
+              </span>
+            </Opcion>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }

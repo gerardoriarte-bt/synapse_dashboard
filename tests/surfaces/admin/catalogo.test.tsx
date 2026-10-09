@@ -21,8 +21,8 @@ import { server } from '../../mocks/server'
 const API = '*/api/v1'
 
 const tenants = [
-  { id: 't-1', name: 'Under Armour México' },
-  { id: 't-2', name: 'Keralty Colombia' },
+  { id: 't-1', name: 'Under Armour México', label: '', created_at: '2026-09-22T09:18:45Z' },
+  { id: 't-2', name: 'Keralty Colombia', label: '', created_at: '2026-09-25T10:00:00Z' },
 ]
 
 /** Escritas desde `CatalogMetric` de `contracts/synapse-admin-wire.yaml`, no de
@@ -78,7 +78,7 @@ function montar() {
 
 /** A4 es de alcance `tenant`, así que se llega por la navegación del chrome. */
 async function abrirCatalogo() {
-  await screen.findByText('Under Armour México')
+  await screen.findByRole('button', { name: /^Under Armour México · / })
   await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
 }
 
@@ -331,6 +331,7 @@ describe('los estados de A4 · §8', () => {
 
     await screen.findByText(/No se pudo cargar el catálogo/i)
     expect(screen.getByLabelText('Cliente')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Clientes y plataforma' })).toBeInTheDocument()
+    // «Clientes» desde el 2026-10-09: la ficha se unió a la lista.
+    expect(screen.getByRole('button', { name: 'Clientes' })).toBeInTheDocument()
   })
 })

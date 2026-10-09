@@ -11,9 +11,17 @@
  *  porque su regla dura —el tenant de un usuario no se edita— solo es visible
  *  cuando el tenant es una columna que se compara, no un contexto implícito».
  */
+/** **Cuatro, y la ficha no es una de ellas** · decisión humana del 2026-10-09
+ *  (P1 de `docs/AUDITORIA-2026-10-08-admin-clientes-y-usuarios.md`). Clientes
+ *  y su ficha eran dos pestañas con dos formas de elegir cliente que no se
+ *  hablaban; ahora son una pantalla, la lista a la izquierda y la ficha a la
+ *  derecha. El `.pen` tampoco tenía la ficha en la navegación —la abre
+ *  `ABRIR FICHA`—; lo que se aparta del dibujo es ponerlas lado a lado.
+ *
+ *  **`/admin/cliente` sigue entrando**: una ruta que no está acá cae en la
+ *  primera, que es justo donde vive ahora la ficha. */
 export const PANTALLAS = [
-  { id: 'clientes', ruta: '/admin', nombre: 'Clientes y plataforma', alcance: 'plataforma' },
-  { id: 'cliente', ruta: '/admin/cliente', nombre: 'Ficha de cliente', alcance: 'tenant' },
+  { id: 'clientes', ruta: '/admin', nombre: 'Clientes', alcance: 'plataforma' },
   { id: 'usuarios', ruta: '/admin/usuarios', nombre: 'Usuarios', alcance: 'plataforma' },
   { id: 'catalogo', ruta: '/admin/catalogo', nombre: 'Catálogo de métricas', alcance: 'tenant' },
   { id: 'feeds', ruta: '/admin/feeds', nombre: 'Salud de feeds', alcance: 'tenant' },

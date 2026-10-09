@@ -27,7 +27,7 @@ import { server } from '../mocks/server'
 const API = '*/api/v1'
 
 /** Del cable · `GET /admin/tenants` y `LayoutDashboard`. */
-const TENANTS = [{ id: 't-1', name: 'Under Armour México' }]
+const TENANTS = [{ id: 't-1', name: 'Under Armour México', label: '', created_at: '2026-09-22T09:18:45Z' }]
 const DASHBOARD = { id: 'd-1', tenant_id: 't-1', name: 'Overview', slug: 'overview', is_default: true, history_months: 12 }
 
 function montar(inicio: string) {

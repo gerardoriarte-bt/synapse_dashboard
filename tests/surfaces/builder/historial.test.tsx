@@ -126,6 +126,7 @@ const USUARIOS: Usuario[] = [
     activo: true,
     altaEn: '2026-09-01T00:00:00Z',
     clienteNombre: 'Under Armour México',
+    clienteId: 'e65f81ae-50ba-4ceb-bb11-d4c0bb76d111',
   },
 ]
 

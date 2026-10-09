@@ -43,7 +43,7 @@ const SUBPROCESADORES = [
 
 export function Subprocessors() {
   return (
-    <section className="flex flex-col gap-3">
+    <section className="flex flex-col gap-3" aria-label="Subprocesadores">
       <Label as="div">Subprocesadores</Label>
 
       <div className="rounded-xl border border-w3 bg-panel p-6 flex flex-col gap-3.5">

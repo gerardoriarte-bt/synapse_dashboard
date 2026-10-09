@@ -28,7 +28,7 @@ const API = '*/api/v1'
 /** `created_at` va porque A2 lo pinta en `ALTA` y el cable lo declara
  *  obligatorio · F5.20. Acá había dos campos de los trece que la ruta
  *  devuelve, escritos cuando devolvía dos. */
-const tenants = [{ id: 't-1', name: 'Under Armour México', created_at: '2026-09-22T09:18:45Z' }]
+const tenants = [{ id: 't-1', name: 'Under Armour México', label: '', created_at: '2026-09-22T09:18:45Z' }]
 
 /** Nunca contesta · deja la pantalla en carga. */
 const colgada = async () => {
@@ -56,9 +56,10 @@ describe('A1 · la lista de clientes mientras carga', () => {
     server.use(http.get(`${API}/admin/tenants`, colgada))
     montar()
 
-    const tabla = await screen.findByRole('table')
-    expect(within(tabla).getByText('Cliente')).toBeInTheDocument()
-    expect(within(tabla).getByText('Acción')).toBeInTheDocument()
+    // **Desde el 2026-10-09 la lista es una columna elegible y no una tabla**
+    // —va al lado de la ficha—. Lo que no depende de los datos es la búsqueda.
+    const lista = await screen.findByRole('region', { name: 'Clientes' })
+    expect(within(lista).getByRole('searchbox', { name: 'Buscar cliente' })).toBeInTheDocument()
   })
 
   it('el conteo dice CARGANDO, no una cifra', async () => {
@@ -74,10 +75,12 @@ describe('A1 · la lista de clientes mientras carga', () => {
     server.use(http.get(`${API}/admin/tenants`, colgada))
     const { container } = montar()
 
-    const tabla = await screen.findByRole('table')
-    expect(tabla).toHaveAttribute('aria-busy', 'true')
+    // **Desde el 2026-10-09 la lista es una columna elegible** —va al lado de la
+    // ficha—, así que el esqueleto son filas de lista y no de tabla.
+    const lista = await screen.findByRole('region', { name: 'Clientes' })
+    expect(lista).toHaveAttribute('aria-busy', 'true')
     // Cuatro, como el `.pen`.
-    expect(tabla.querySelectorAll('tbody tr')).toHaveLength(4)
+    expect(lista.querySelectorAll('li[aria-hidden="true"]')).toHaveLength(4)
     // Ni animación ni ruleta: la forma alcanza.
     expect(container.querySelector('[class*="animate"]')).toBeNull()
     expect(container.textContent).not.toMatch(/cargando…|espera/i)
@@ -90,10 +93,10 @@ describe('A1 · la lista de clientes mientras carga', () => {
     // lo encontró una mutación que las igualaba y sobrevivía.
     server.use(http.get(`${API}/admin/tenants`, colgada))
     const { container } = montar()
-    await screen.findByRole('table')
+    await screen.findByRole('region', { name: 'Clientes' })
 
     const anchos = new Set(
-      Array.from(container.querySelectorAll('tbody td > div')).map(
+      Array.from(container.querySelectorAll('li[aria-hidden="true"] > div')).map(
         (d) => Array.from(d.classList).find((c) => c.startsWith('w-')) ?? '',
       ),
     )
@@ -106,16 +109,16 @@ describe('A1 · la lista de clientes mientras carga', () => {
     server.use(http.get(`${API}/admin/tenants`, colgada))
     montar()
 
-    await screen.findByRole('table')
-    expect(screen.queryByText(/No hay clientes todavía/)).toBeNull()
+    await screen.findByRole('region', { name: 'Clientes' })
+    expect(screen.queryByText(/Ningún cliente dado de alta/)).toBeNull()
   })
 
   it('al llegar los datos, el esqueleto se va', async () => {
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     montar()
 
-    expect(await screen.findByText('Under Armour México')).toBeInTheDocument()
-    expect(screen.getByRole('table')).toHaveAttribute('aria-busy', 'false')
+    expect(await screen.findByRole('button', { name: /^Under Armour México · / })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Clientes' })).toHaveAttribute('aria-busy', 'false')
     expect(screen.getByText('Clientes · 1')).toBeInTheDocument()
   })
 })
@@ -130,7 +133,7 @@ describe('A4 · el catálogo mientras carga', () => {
       http.get(`${API}/admin/tenants/:id/catalog`, colgada),
     )
     const { container } = montar()
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
     await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
 
     expect(await screen.findByLabelText('Capa')).toBeInTheDocument()
@@ -153,7 +156,7 @@ describe('A4 · el catálogo mientras carga', () => {
       http.get(`${API}/admin/tenants/:id/catalog`, colgada),
     )
     const { container } = montar()
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
     await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
 
     await screen.findByRole('table')
@@ -166,7 +169,7 @@ describe('A4 · el catálogo mientras carga', () => {
       http.get(`${API}/admin/tenants/:id/catalog`, colgada),
     )
     montar()
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
     await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
 
     await screen.findByRole('table')
@@ -185,8 +188,8 @@ describe('A2 · los roles mientras cargan', () => {
       http.get(`${API}/admin/tenants/:id/roles/composition`, colgada),
     )
     montar()
-    await screen.findByText('Under Armour México')
-    await userEvent.click(screen.getByRole('button', { name: 'Ficha de cliente' }))
+    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await userEvent.click(screen.getByRole('button', { name: /^Under Armour México · / }))
 
     // El rótulo de la sección no depende de los datos y está desde el
     // principio; el resumen sí, y mientras carga dice CARGANDO.

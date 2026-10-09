@@ -12,7 +12,7 @@ import { api } from './client'
 import { esDePanel } from './chat'
 import type { ContextoDeChat } from './chat'
 import { adminApi } from './admin'
-import type { Corrida, RolParaGuardar, TabParaGuardar } from './admin'
+import type { CambioDeUsuario, Corrida, RolParaGuardar, TabParaGuardar } from './admin'
 import type { Theme } from '../tokens/theme'
 import type { Payload } from './types'
 
@@ -72,6 +72,7 @@ export const keys = {
   // con la de arriba serviría el listado de un cliente donde va el de todos, que
   // es la clase de mentira que costó el defecto del cache del preview por rol.
   usuariosDePlataforma: () => ['admin', 'usuarios', 'plataforma'] as const,
+  solicitudes: ['admin', 'solicitudes'] as const,
   preview: (layoutId: string, rolId: string) => ['admin', 'preview', layoutId, rolId] as const,
   layout: (layoutId: string) => ['admin', 'layout', layoutId] as const,
   /** **Por DASHBOARD y no por layout** · §PEN:B6. El historial es del dashboard:
@@ -424,6 +425,25 @@ export function useRoles(tenantId: string | null) {
   })
 }
 
+/** **Los roles y los agentes de VARIOS clientes** · 2026-10-09. A3 cruza
+ *  clientes: cambiar el rol de un usuario ofrece los de SU cliente, y aprobar
+ *  una solicitud ofrece los agentes del cliente que se elige. Son pocas
+ *  vueltas —una por cliente— y comparten la clave con `useRoles` y `useAgents`,
+ *  así que la ficha y esta pantalla se sirven del mismo cache. */
+export function useRolesOf(tenantIds: readonly string[]) {
+  return useQueries({
+    queries: tenantIds.map((id) => ({ queryKey: keys.roles(id), queryFn: () => adminApi.roles(id) })),
+    combine: (rs) => Object.fromEntries(tenantIds.map((id, i) => [id, rs[i]?.data])),
+  })
+}
+
+export function useAgentsOf(tenantIds: readonly string[]) {
+  return useQueries({
+    queries: tenantIds.map((id) => ({ queryKey: keys.agentes(id), queryFn: () => adminApi.agentes(id) })),
+    combine: (rs) => Object.fromEntries(tenantIds.map((id, i) => [id, rs[i]?.data])),
+  })
+}
+
 /** Las tres mutaciones invalidan la MISMA clave, y con eso alcanza: el listado
  *  trae `usuarios` por rol, que es lo que decide si se puede borrar. Un `setQueryData`
  *  con la respuesta de un `PUT` dejaría ese contador sin recalcular. */
@@ -435,6 +455,43 @@ export function useSaveRole(tenantId: string | null) {
         ? adminApi.crearRol(tenantId as string, v.rol)
         : adminApi.editarRol(v.id, v.rol),
     onSuccess: () => void qc.invalidateQueries({ queryKey: keys.roles(tenantId ?? '') }),
+  })
+}
+
+/** **Lo que cambia un usuario se ve en cuatro lugares**, y los cuatro se
+ *  invalidan: las dos listas de usuarios —comparten el prefijo—, el conteo de
+ *  la fila del cliente y el de cada rol en la ficha. Invalidar sólo la lista
+ *  dejaría «2 usuarios» en A1 después de suspender a uno. */
+export function useEditUser() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { tenantId: string; userId: string; cambio: CambioDeUsuario }) =>
+      adminApi.editarUsuario(v.tenantId, v.userId, v.cambio),
+    onSuccess: (_u, v) => {
+      void qc.invalidateQueries({ queryKey: ['admin', 'usuarios'] })
+      void qc.invalidateQueries({ queryKey: keys.tenants })
+      void qc.invalidateQueries({ queryKey: keys.roles(v.tenantId) })
+    },
+  })
+}
+
+/** La cola de solicitudes pendientes · 2026-10-09. */
+export function useAccessRequests() {
+  return useQuery({ queryKey: keys.solicitudes, queryFn: adminApi.solicitudes })
+}
+
+/** Aprobar o rechazar. **Aprobar un alta crea un usuario**, así que además de la
+ *  cola se invalidan los usuarios y los conteos, igual que al editar uno. */
+export function useReviewAccessRequest() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { id: string; aprobar: boolean; destino?: { tenantId: string; agenteId: string } }) =>
+      v.aprobar ? adminApi.aprobarSolicitud(v.id, v.destino) : adminApi.rechazarSolicitud(v.id),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.solicitudes })
+      void qc.invalidateQueries({ queryKey: ['admin', 'usuarios'] })
+      void qc.invalidateQueries({ queryKey: keys.tenants })
+    },
   })
 }
 
