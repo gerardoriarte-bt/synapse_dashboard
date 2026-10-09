@@ -318,52 +318,8 @@ function traducir(
       return { tipo: 'fin', hiloId: hilo.id }
     }
 
-    case 'data': {
-      const d = datos as WireChatFrameData
-      // **El gráfico del agente** · 2026-10-07. Llega como `raw` con el spec
-      // Vega-Lite adentro y se tiraba en silencio. Ver `vegaLite.ts`.
-      const interno = d.shape === 'raw' && typeof d.data === 'object' && d.data !== null
-        ? (d.data as Record<string, unknown>)
-        : null
-      const grafico = interno?.shape === 'chart' ? deVegaLite(interno.chart_spec) : null
-      const valor = adaptValue(grafico === null ? d.data : grafico.valor)
-      // **Un valor que no se puede adaptar NO se pinta a medias.** `adaptValue`
-      // devuelve la razón —«el valor no declara su forma»— y descartarlo es lo
-      // mismo que hace `adapt.ts` con un payload de panel que no cierra.
-      if (!valor.ok) return null
-
-      const p = d.provenance
-      // **`family: ""` es «el catálogo no la declaró»** —el chat de pestaña— y
-      // llega como `null`: el dato se declara sin pintarse. Una familia que el
-      // contrato no conoce sigue descartándose, porque eso es un cable roto.
-      const familia = p.family === '' ? null : FAMILIAS[p.family]
-      // **Sin familia no se dibuja**, y no se cae a una por defecto: el color de
-      // una cifra del chat ya se inventó una vez —estaba cableado a `demanda`—
-      // y por eso `familia` entró al contrato el 2026-08-19.
-      if (familia === undefined) return null
-      // **La capa tampoco se inventa** · 2026-10-09. Acá decía
-      // `CAPAS[p.layer] ?? 'GOLD'`, y una consulta del agente fuera del
-      // catálogo —`layer: ""`, medido contra `9dc481e`— salía firmada como
-      // GOLD. Vacía es «no la declara»; una capa que el contrato no conoce es
-      // un cable roto, igual que la familia.
-      const capa = p.layer === '' ? null : CAPAS[p.layer]
-      if (capa === undefined) return null
-
-      return {
-        tipo: 'dato',
-        valor: valor.valor,
-        familia,
-        base: p.base,
-        capa,
-        fuente: p.source_system,
-        // Ver la cabecera: la cifra es tan fresca como la consulta que la
-        // produjo, no como el último refresco del panel.
-        frescura: p.queried_at === '' ? p.freshness : p.queried_at,
-        catalogVersion: p.catalog_version,
-        ...(grafico === null ? {} : { tipoDePanel: grafico.tipoDePanel }),
-        ...(grafico?.titulo == null ? {} : { titulo: grafico.titulo }),
-      }
-    }
+    case 'data':
+      return datoDesdeTrama(datos as WireChatFrameData)
 
     // `thinking`: es estado interno del agente, no parte de la respuesta. Un
     // evento que el servicio agregue mañana cae acá también, y callarlo es
@@ -371,4 +327,96 @@ function traducir(
     default:
       return null
   }
+}
+
+/** **Una trama `data` —o un `structured_data` guardado— al contrato** ·
+ *  2026-10-09. Se sacó de `traducir` el día que el historial la necesitó: el
+ *  servicio persiste lo que emitió, con la misma forma, así que reabrir un hilo
+ *  y recibirlo en vivo tienen que adaptarse con el MISMO código. Dos copias es
+ *  cómo una aprende a no inventar la capa y la otra no.
+ *
+ *  `null` es «no se pinta»: un valor que no se adapta, o una familia o capa que
+ *  el contrato no conoce. */
+export function datoDesdeTrama(d: WireChatFrameData): Extract<ChatEvent, { tipo: 'dato' }> | null {
+  // **El gráfico del agente** · 2026-10-07. Llega como `raw` con el spec
+  // Vega-Lite adentro y se tiraba en silencio. Ver `vegaLite.ts`.
+  const interno = d.shape === 'raw' && typeof d.data === 'object' && d.data !== null
+    ? (d.data as Record<string, unknown>)
+    : null
+  const grafico = interno?.shape === 'chart' ? deVegaLite(interno.chart_spec) : null
+  const valor = adaptValue(grafico === null ? d.data : grafico.valor)
+  // **Un valor que no se puede adaptar NO se pinta a medias.** `adaptValue`
+  // devuelve la razón —«el valor no declara su forma»— y descartarlo es lo
+  // mismo que hace `adapt.ts` con un payload de panel que no cierra.
+  if (!valor.ok) return null
+
+  const p = d.provenance
+  // **`family: ""` es «el catálogo no la declaró»** —el chat de pestaña— y
+  // llega como `null`: el dato se declara sin pintarse. Una familia que el
+  // contrato no conoce sigue descartándose, porque eso es un cable roto.
+  const familia = p.family === '' ? null : FAMILIAS[p.family]
+  // **Sin familia no se dibuja**, y no se cae a una por defecto: el color de
+  // una cifra del chat ya se inventó una vez —estaba cableado a `demanda`—
+  // y por eso `familia` entró al contrato el 2026-08-19.
+  if (familia === undefined) return null
+  // **La capa tampoco se inventa** · 2026-10-09. Acá decía
+  // `CAPAS[p.layer] ?? 'GOLD'`, y una consulta del agente fuera del
+  // catálogo —`layer: ""`, medido contra `9dc481e`— salía firmada como
+  // GOLD. Vacía es «no la declara»; una capa que el contrato no conoce es
+  // un cable roto, igual que la familia.
+  const capa = p.layer === '' ? null : CAPAS[p.layer]
+  if (capa === undefined) return null
+
+  return {
+    tipo: 'dato',
+    valor: valor.valor,
+    familia,
+    base: p.base,
+    capa,
+    fuente: p.source_system,
+    // Ver la cabecera: la cifra es tan fresca como la consulta que la
+    // produjo, no como el último refresco del panel.
+    frescura: p.queried_at === '' ? p.freshness : p.queried_at,
+    catalogVersion: p.catalog_version,
+    ...(grafico === null ? {} : { tipoDePanel: grafico.tipoDePanel }),
+    ...(grafico?.titulo == null ? {} : { titulo: grafico.titulo }),
+  }
+}
+
+/** Un turno reabierto del historial: la pregunta, el texto y las cifras que
+ *  quedaron guardadas. `null` en `texto` es «la pregunta no tiene respuesta
+ *  guardada» —el turno se cortó—, distinto de una respuesta vacía. */
+export type TurnoGuardado = {
+  pregunta: string
+  texto: string | null
+  datos: Extract<ChatEvent, { tipo: 'dato' }>[]
+}
+
+/** Los mensajes de un hilo, emparejados en turnos · 2026-10-09.
+ *
+ *  **El servicio guarda mensajes sueltos y la hoja dibuja turnos**: una
+ *  pregunta y lo que contestó el agente. Se emparejan en orden, y una
+ *  respuesta sin pregunta antes —la página empezó a mitad de un turno— se
+ *  descarta: dibujarla colgando de la pregunta anterior la atribuiría mal.
+ *  Para eso está `hayAnteriores`, que la hoja declara.
+ *
+ *  **Lo que no se guarda no se inventa.** Por respuesta hay a lo sumo una
+ *  cifra —la última del turno, ver el cable— y nada del SQL. */
+export function turnosDelHistorial(page: WireSchemas['ChatMessagesPage']): {
+  turnos: TurnoGuardado[]
+  hayAnteriores: boolean
+} {
+  const turnos: TurnoGuardado[] = []
+  for (const m of page.messages) {
+    if (m.role === 'user') {
+      turnos.push({ pregunta: m.content, texto: null, datos: [] })
+      continue
+    }
+    const actual = turnos.at(-1)
+    if (actual === undefined) continue
+    actual.texto = (actual.texto ?? '') + m.content
+    const dato = m.structured_data === undefined ? null : datoDesdeTrama(m.structured_data)
+    if (dato !== null) actual.datos.push(dato)
+  }
+  return { turnos, hayAnteriores: page.has_more }
 }

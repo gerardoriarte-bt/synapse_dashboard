@@ -268,6 +268,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/config/chat/threads/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Los mensajes persistidos de un hilo, para reabrirlo
+         * @description **Transcrita el 2026-10-09 desde `9dc481e`**, leyendo
+         *     `internal/core/ports/dd_chat_service.go` —`DDChatMessageDTO`,
+         *     `DDChatMessagesPage`— y `dd_chat_handler.go` —`ListMessages`—, y
+         *     capturada contra ese binario levantado acá con un hilo de pestaña.
+         *
+         *     **El `:id` es el UUID de `user_threads`**, no el `thread_id` entero:
+         *     `uuid.Parse(c.Param("id"))`, y un entero da 400.
+         *
+         *     **Lo que el historial guarda es menos que lo que el stream mostró.**
+         *     Por mensaje del asistente hay UN `structured_data`, el último que emitió
+         *     el turno —`st.lastStructured`, `dd_chat_service.go:639`—; las cifras
+         *     anteriores del mismo turno y el SQL no se persisten. Medido: una
+         *     respuesta con tres tablas y un gráfico se reabre con el gráfico solo.
+         */
+        get: operations["listChatMessages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/config/panels/{panelId}/chat-suggestions": {
         parameters: {
             query?: never;
@@ -1425,6 +1457,33 @@ export interface components {
          *     llegó en `thread_info`, al principio.
          */
         ChatFrameDone: Record<string, never>;
+        /** @description `ports.DDChatMessagesPage`. */
+        ChatMessagesPage: {
+            messages: components["schemas"]["ChatMessage"][];
+            has_more: boolean;
+            /** Format: date-time */
+            next_before?: string;
+        };
+        /**
+         * @description `ports.DDChatMessageDTO`. Una pregunta o una respuesta persistida.
+         *
+         *     **`structured_data` es la MISMA forma que `ChatFrameData`** —se guarda
+         *     lo que se emitió—, así que se adapta con el mismo código que la trama
+         *     `data` del stream. Ausente en las preguntas y en las respuestas sin
+         *     cifra (`omitempty`).
+         */
+        ChatMessage: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            role: "user" | "assistant";
+            content: string;
+            structured_data?: components["schemas"]["ChatFrameData"];
+            /** Format: int64 */
+            cortex_message_id?: number;
+            /** Format: date-time */
+            created_at: string;
+        };
         /**
          * @description `ports.DDChatThreadDTO`. Un hilo del chat contextual, ya cruzado con el
          *     tab y la métrica de donde salió.
@@ -2039,6 +2098,36 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    listChatMessages: {
+        parameters: {
+            query?: {
+                /** @description Sin él, `chatListDefaultLimit = 50`. */
+                limit?: number;
+                /** @description Cursor para la página anterior · RFC3339Nano · es `next_before`. */
+                before?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Una página en orden cronológico, el más antiguo primero. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ChatMessagesPage"];
+                    };
+                };
+            };
         };
     };
     panelChatSuggestions: {

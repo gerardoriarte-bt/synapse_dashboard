@@ -92,8 +92,9 @@ openapi: 3.1.0
 # la razón correcta —«una ruta transcrita que nadie llama envejece sin que nadie
 # lo note»—, y la razón venció el día que C2 las necesitó.
 #
-# `/config/chat/threads/{id}/messages` sigue SIN transcribir, por lo mismo:
-# ninguna pantalla la llama todavía.
+# `/config/chat/threads/{id}/messages` **se transcribió el 2026-10-09**, el día
+# que el riel la necesitó para reabrir un hilo: acá decía «sigue SIN
+# transcribir, por lo mismo: ninguna pantalla la llama todavía».
 #
 # **El conteo, contado el 2026-09-30:** el router sirve trece rutas bajo
 # `/config/*`, y **una de las trece es nuestra** —`/config/plots`, `b6f0e09` del
@@ -561,6 +562,52 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   # ── B3.2 · las preguntas sugeridas · TRANSCRITO DE 82da946 ───────────────
+  /config/chat/threads/{id}/messages:
+    x-verificado-en: 9dc481e
+    get:
+      tags: [config]
+      operationId: listChatMessages
+      summary: Los mensajes persistidos de un hilo, para reabrirlo
+      x-origen: 9dc481e
+      description: |
+        **Transcrita el 2026-10-09 desde `9dc481e`**, leyendo
+        `internal/core/ports/dd_chat_service.go` —`DDChatMessageDTO`,
+        `DDChatMessagesPage`— y `dd_chat_handler.go` —`ListMessages`—, y
+        capturada contra ese binario levantado acá con un hilo de pestaña.
+
+        **El `:id` es el UUID de `user_threads`**, no el `thread_id` entero:
+        `uuid.Parse(c.Param("id"))`, y un entero da 400.
+
+        **Lo que el historial guarda es menos que lo que el stream mostró.**
+        Por mensaje del asistente hay UN `structured_data`, el último que emitió
+        el turno —`st.lastStructured`, `dd_chat_service.go:639`—; las cifras
+        anteriores del mismo turno y el SQL no se persisten. Medido: una
+        respuesta con tres tablas y un gráfico se reabre con el gráfico solo.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: limit
+          in: query
+          description: Sin él, `chatListDefaultLimit = 50`.
+          schema: { type: integer }
+        - name: before
+          in: query
+          description: Cursor para la página anterior · RFC3339Nano · es `next_before`.
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Una página en orden cronológico, el más antiguo primero.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                properties:
+                  success: { type: boolean }
+                  data: { $ref: '#/components/schemas/ChatMessagesPage' }
+
   /config/panels/{panelId}/chat-suggestions:
     x-verificado-en: 7b717aa
     get:
@@ -2028,6 +2075,35 @@ components:
       description: |
         `event: done`. **El objeto vacío `{}`**: no trae el id del hilo. El id
         llegó en `thread_info`, al principio.
+
+    ChatMessagesPage:
+      type: object
+      description: '`ports.DDChatMessagesPage`.'
+      required: [messages, has_more]
+      properties:
+        messages:
+          type: array
+          items: { $ref: '#/components/schemas/ChatMessage' }
+        has_more: { type: boolean }
+        next_before: { type: string, format: date-time }
+
+    ChatMessage:
+      type: object
+      description: |
+        `ports.DDChatMessageDTO`. Una pregunta o una respuesta persistida.
+
+        **`structured_data` es la MISMA forma que `ChatFrameData`** —se guarda
+        lo que se emitió—, así que se adapta con el mismo código que la trama
+        `data` del stream. Ausente en las preguntas y en las respuestas sin
+        cifra (`omitempty`).
+      required: [id, role, content, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        role: { type: string, enum: [user, assistant] }
+        content: { type: string }
+        structured_data: { $ref: '#/components/schemas/ChatFrameData' }
+        cortex_message_id: { type: integer, format: int64 }
+        created_at: { type: string, format: date-time }
 
     ChatThread:
       type: object

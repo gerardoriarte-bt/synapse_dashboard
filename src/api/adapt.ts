@@ -1336,6 +1336,7 @@ function adaptPresentation(raw: unknown): Presentation | undefined {
 /* ── F3.7 · los hilos del chat ─────────────────────────────────────────────── */
 
 export type WireChatThread = W['ChatThread']
+export type WireChatMessagesPage = W['ChatMessagesPage']
 export type WireChatSuggestion = W['ChatSuggestion']
 export type WireChatAgentOption = W['ChatAgentOption']
 
