@@ -198,6 +198,16 @@ export const api = {
       ),
     ),
 
+  /** Quita una consulta del historial · 2026-10-09.
+   *
+   *  **Es un borrado suave del servicio**: la conversación queda en la base y
+   *  deja de listarse. Por eso la confirmación dice «quitar del historial» y no
+   *  promete que el dato desaparezca. Ruta de `/history`, no de `/config`:
+   *  es la que el backend tiene, sobre los mismos hilos. */
+  deleteThread: async (uuid: string): Promise<void> => {
+    await request<unknown>(`/history/threads/${encodeURIComponent(uuid)}`, { method: 'DELETE' })
+  },
+
   /** Los agentes que un admin puede elegir para el chat · 2026-10-06.
    *
    *  **Sólo se pide con rol admin**: a cualquier otro el servicio le devuelve

@@ -236,6 +236,19 @@ export function useThreads(contexto?: ContextoDeChat, periodo?: string) {
   })
 }
 
+/** Quitar una consulta del riel · 2026-10-09.
+ *
+ *  **Invalida TODOS los rieles**, no sólo el de esta hoja: la clave lleva
+ *  contexto y período, y el mismo hilo puede estar en la caché de otra hoja
+ *  abierta antes. Dejarlo ahí lo haría reaparecer al volver. */
+export function useDeleteThread() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (uuid: string) => api.deleteThread(uuid),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['chat', 'hilos'] }),
+  })
+}
+
 /** Los agentes del selector del chat · sólo para admin.
  *
  *  **`enabled` es la mitad de «ocultar no es permitir»**: sin él un planner

@@ -181,7 +181,7 @@ describe('reabrir una consulta del riel · 2026-10-09', () => {
     montar()
     const hoja = await abrirLaHoja()
 
-    await userEvent.click(await within(hoja).findByRole('button', { name: /presupuesto de medios/ }))
+    await userEvent.click(await within(hoja).findByRole('button', { name: /^¿Cómo se distribuyó/ }))
 
     expect(await within(hoja).findByText(/fuertemente concentrada en dos plataformas/)).toBeVisible()
     expect(within(hoja).getByText(/Reabierta del historial/)).toBeVisible()
@@ -191,7 +191,7 @@ describe('reabrir una consulta del riel · 2026-10-09', () => {
     laConsola()
     montar()
     const hoja = await abrirLaHoja()
-    await userEvent.click(await within(hoja).findByRole('button', { name: /presupuesto de medios/ }))
+    await userEvent.click(await within(hoja).findByRole('button', { name: /^¿Cómo se distribuyó/ }))
 
     // Es la misma regla de la cifra en vivo: sin familia, el gráfico se
     // declara con su título. Si el historial se adaptara con otro código, acá
@@ -206,7 +206,7 @@ describe('reabrir una consulta del riel · 2026-10-09', () => {
     laConsola()
     montar()
     const hoja = await abrirLaHoja()
-    await userEvent.click(await within(hoja).findByRole('button', { name: /presupuesto de medios/ }))
+    await userEvent.click(await within(hoja).findByRole('button', { name: /^¿Cómo se distribuyó/ }))
 
     expect(await within(hoja).findByText(/El turno se cortó antes de terminar/)).toBeVisible()
     expect(within(hoja).queryByText(/^Consultando/)).toBeNull()
@@ -216,7 +216,7 @@ describe('reabrir una consulta del riel · 2026-10-09', () => {
     const { preguntas } = laConsola()
     montar()
     const hoja = await abrirLaHoja()
-    await userEvent.click(await within(hoja).findByRole('button', { name: /presupuesto de medios/ }))
+    await userEvent.click(await within(hoja).findByRole('button', { name: /^¿Cómo se distribuyó/ }))
     await within(hoja).findByText(/fuertemente concentrada/)
 
     await userEvent.type(within(hoja).getByRole('textbox'), '¿Y en octubre?')
@@ -230,7 +230,7 @@ describe('reabrir una consulta del riel · 2026-10-09', () => {
     laConsola()
     montar()
     const hoja = await abrirLaHoja()
-    await userEvent.click(await within(hoja).findByRole('button', { name: /paid media/ }))
+    await userEvent.click(await within(hoja).findByRole('button', { name: /^¿Cuánto ingreso/ }))
 
     expect(await within(hoja).findByText(/los anteriores no se cargaron/)).toBeVisible()
   })
@@ -240,13 +240,93 @@ describe('reabrir una consulta del riel · 2026-10-09', () => {
     montar()
     const hoja = await abrirLaHoja()
 
-    await userEvent.click(await within(hoja).findByRole('button', { name: /presupuesto de medios/ }))
-    await userEvent.click(within(hoja).getByRole('button', { name: /paid media/ }))
+    await userEvent.click(await within(hoja).findByRole('button', { name: /^¿Cómo se distribuyó/ }))
+    await userEvent.click(within(hoja).getByRole('button', { name: /^¿Cuánto ingreso/ }))
 
     expect(await within(hoja).findByText(/generó ingresos en los ocho meses/)).toBeVisible()
     // Se espera más que la demora del primero: si su respuesta pisara, ya
     // habría llegado.
     await delay(250)
     expect(within(hoja).queryByText(/fuertemente concentrada/)).toBeNull()
+  })
+})
+
+describe('eliminar una consulta del riel · 2026-10-09 · opción A', () => {
+  /** El riel después de borrar: el servicio deja de listar el hilo. Es lo que
+   *  hace el borrado suave —`deleted_at`— y lo que la prueba necesita para
+   *  ver que la fila se va porque el servicio lo dijo, no porque el front la
+   *  escondió. */
+  function conBorrado(estado: number = 200) {
+    const borrados: string[] = []
+    const { preguntas } = laConsola()
+    server.use(
+      http.get(`${API}/config/chat/threads`, () =>
+        ok([hilo, otro].filter((h) => !borrados.includes(h.id))),
+      ),
+      http.delete(`${API}/history/threads/:id`, ({ params }) => {
+        if (estado !== 200) {
+          return HttpResponse.json({ success: false, error: 'no se pudo eliminar' }, { status: estado })
+        }
+        borrados.push(params.id as string)
+        return ok({ message: 'thread eliminado del historial' })
+      }),
+    )
+    return { borrados, preguntas }
+  }
+
+  it('confirmar BORRA ese hilo y la fila se va', async () => {
+    const { borrados } = conBorrado()
+    montar()
+    const hoja = await abrirLaHoja()
+
+    await userEvent.click(await within(hoja).findByRole('button', { name: `Eliminar ${otro.thread_name}` }))
+    await userEvent.click(within(hoja).getByRole('button', { name: `Eliminar ${otro.thread_name}` }))
+
+    await waitFor(() => expect(borrados).toEqual([otro.id]))
+    await waitFor(() =>
+      expect(within(hoja).queryByRole('button', { name: /^¿Cuánto ingreso/ })).toBeNull(),
+    )
+    expect(within(hoja).getByRole('button', { name: /^¿Cómo se distribuyó/ })).toBeVisible()
+  })
+
+  it('cancelar NO borra · la pregunta en línea se cierra', async () => {
+    const { borrados } = conBorrado()
+    montar()
+    const hoja = await abrirLaHoja()
+
+    await userEvent.click(await within(hoja).findByRole('button', { name: `Eliminar ${otro.thread_name}` }))
+    await userEvent.click(within(hoja).getByRole('button', { name: 'Cancelar' }))
+
+    expect(within(hoja).queryByText('¿Eliminar del historial?')).toBeNull()
+    expect(borrados).toEqual([])
+  })
+
+  it('eliminar la consulta ABIERTA la suelta · lo siguiente no cuelga de un hilo borrado', async () => {
+    const { preguntas } = conBorrado()
+    montar()
+    const hoja = await abrirLaHoja()
+    await userEvent.click(await within(hoja).findByRole('button', { name: /^¿Cómo se distribuyó/ }))
+    await within(hoja).findByText(/fuertemente concentrada/)
+
+    await userEvent.click(within(hoja).getByRole('button', { name: `Eliminar ${hilo.thread_name}` }))
+    await userEvent.click(within(hoja).getByRole('button', { name: `Eliminar ${hilo.thread_name}` }))
+
+    await waitFor(() => expect(within(hoja).queryByText(/fuertemente concentrada/)).toBeNull())
+    await userEvent.type(within(hoja).getByRole('textbox'), '¿Y ahora?')
+    await userEvent.click(within(hoja).getByRole('button', { name: 'Preguntar' }))
+    await waitFor(() => expect(preguntas).toHaveLength(1))
+    expect(preguntas[0]).not.toHaveProperty('thread_id')
+  })
+
+  it('si el servicio falla, lo dice EN la fila y la consulta sigue', async () => {
+    conBorrado(500)
+    montar()
+    const hoja = await abrirLaHoja()
+
+    await userEvent.click(await within(hoja).findByRole('button', { name: `Eliminar ${otro.thread_name}` }))
+    await userEvent.click(within(hoja).getByRole('button', { name: `Eliminar ${otro.thread_name}` }))
+
+    expect(await within(hoja).findByText('No se pudo eliminar')).toBeVisible()
+    expect(within(hoja).getByRole('button', { name: /^¿Cuánto ingreso/ })).toBeVisible()
   })
 })
