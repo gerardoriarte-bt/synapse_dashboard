@@ -76,11 +76,24 @@ def commit_de_referencia() -> "str | None":
       referencia: se devuelve `None` y se dice que no se sabe, que es la
       convención de esta casa —⊘ BLOQUEADO antes que un verde que miente—.
     """
+    vistos = shas_del_cable()
+    return next(iter(vistos)) if len(vistos) == 1 else None
+
+
+def shas_del_cable() -> "dict[str, int]":
+    """Contra qué commits se leyeron las rutas del cable de consola, y cuántas.
+
+    **Existe para poder DECIR la mezcla** · 2026-10-09. Con dos shas
+    `commit_de_referencia` devuelve `None` —bien— pero el documento no lo
+    decía: la sección de pedidos sin reverificar desaparecía y la salida
+    imprimía ✓. Pasó al transcribir dos rutas contra `9dc481e` con las otras
+    trece en `7b717aa`: ocho pedidos dejaron de figurar como dudosos sin que
+    nadie los reverificara."""
     if not CABLE_REF.exists():
-        return None
-    vistos = set(re.findall(r"x-verificado-en:\s*([0-9a-f]{7,40})",
-                            CABLE_REF.read_text(encoding="utf-8")))
-    return vistos.pop() if len(vistos) == 1 else None
+        return {}
+    shas = re.findall(r"x-verificado-en:\s*([0-9a-f]{7,40})",
+                      CABLE_REF.read_text(encoding="utf-8"))
+    return {sha: shas.count(sha) for sha in sorted(set(shas))}
 ESTADOS = {"✅": "hecho", "⚠️": "parcial", "⬜": "pendiente", "🕓": "diferida"}
 
 
@@ -193,7 +206,7 @@ def recolectar(texto: str):
     return tareas
 
 
-def render(tareas, hechas, todas=(), viejos=()) -> str:
+def render(tareas, hechas, todas=(), viejos=(), mezcla=None, medidos=(), rama=None) -> str:
     o = []
     o.append("# Lo que el front necesita del backend\n")
     o.append(
@@ -213,7 +226,7 @@ def render(tareas, hechas, todas=(), viejos=()) -> str:
         o.append("\n---\n\n## Lo que ya está de nuestro lado\n")
         o.append(
             f"No hace falta que esperen nada de estas para probar: están en la rama\n"
-            f"`{rama_publicada()}` del repositorio del front, con prueba y con la puerta en\n"
+            f"`{rama or rama_publicada()}` del repositorio del front, con prueba y con la puerta en\n"
             "verde.\n"
         )
         for t in hechas:
@@ -278,6 +291,25 @@ def render(tareas, hechas, todas=(), viejos=()) -> str:
         )
         o.append("\n| Pedido | Medido contra | Cuándo |\n|---|---|---|")
         for t in viejos:
+            sha, fecha = t["medido"]
+            o.append(f"| **{t['id']}** · {t['titulo']} | `{sha}` | {fecha} |")
+        o.append("")
+
+    # **Cuando el cable mezcla commits, no hay «último» contra qué comparar**,
+    # y eso se dice: callarlo hacía que los pedidos dudosos se leyeran como
+    # vigentes. Se listan todos los medidos, que es lo honesto cuando no se
+    # puede separar los viejos de los que no.
+    if mezcla and medidos:
+        detalle = ", ".join(f"`{sha}` en {n} ruta(s)" for sha, n in mezcla.items())
+        o.append(
+            f"\n---\n\n## ⚠️ No sabemos cuáles de estos {len(medidos)} siguen vigentes\n\n"
+            f"**Nuestro cable de consola está leído contra más de un commit suyo**:\n"
+            f"{detalle}. Sin un commit único no hay contra qué decidir cuáles\n"
+            "pedidos envejecieron, así que **ninguno se puede dar por vigente**\n"
+            "hasta reverificar el cable entero.\n"
+        )
+        o.append("\n| Pedido | Medido contra | Cuándo |\n|---|---|---|")
+        for t in medidos:
             sha, fecha = t["medido"]
             o.append(f"| **{t['id']}** · {t['titulo']} | `{sha}` | {fecha} |")
         o.append("")
@@ -347,7 +379,35 @@ def main() -> int:
     viejos = [t for t in tareas
               if t["medido"] and ref and t["medido"][0] != ref]
 
-    DESTINO.write_text(render(tareas, hechas, todas, viejos), encoding="utf-8")
+    mezcla = shas_del_cable() if ref is None and len(shas_del_cable()) > 1 else None
+    medidos = [t for t in tareas if t["medido"]]
+    actual = DESTINO.read_text(encoding="utf-8") if DESTINO.exists() else ""
+    # **En `--check` la rama sale del documento, no del checkout.** El texto
+    # nombra la rama donde se PUBLICÓ —ver `rama_publicada`—, y eso es de quien
+    # lo generó, no del contenido. Tomarla del checkout ponía la puerta en rojo
+    # en cualquier otra rama: un PR, un runner, el propio `main`. Lo encontró
+    # correr la puerta en un worktree limpio.
+    rama = None
+    if "--check" in sys.argv:
+        hallada = re.search(r"`([^`]+)` del repositorio del front", actual)
+        rama = hallada.group(1) if hallada else None
+    documento = render(tareas, hechas, todas, viejos, mezcla, medidos, rama)
+
+    # ── `--check` · compara y NO escribe · 2026-10-09 ────────────────────────
+    #
+    # Corría así en la puerta y **reescribía el archivo en cada `verify`**:
+    # un generado versionado que cambia sin que nadie lo pida termina
+    # commiteado sin que nadie lo mire. Es el mismo criterio que
+    # `plan-a-csv.py --check`: la puerta verifica, escribir es un acto
+    # explícito —`npm run plan`—. Y como `token-drift`, un generado que no
+    # coincide con su fuente es rojo.
+    if "--check" in sys.argv:
+        if actual != documento:
+            print(f"para-backend ✗ {DESTINO.relative_to(RAIZ)} no está al día con el plan y el cable")
+            print("  Regeneralo con `npm run plan` y commitealo.")
+            return 1
+    else:
+        DESTINO.write_text(documento, encoding="utf-8")
 
     if contradictorias:
         print(f"para-backend ✗ {len(contradictorias)} tarea(s) cerradas que siguen pidiendo algo")
@@ -382,7 +442,7 @@ def main() -> int:
         print("    **Medido contra `<sha>` el <YYYY-MM-DD>** · <cómo se comprobó>.")
         return 1
 
-    estado = "✓" if not viejos else "⚠"
+    estado = "✓" if not viejos and not mezcla else "⚠"
     de_back = sum(1 for t in tareas if (t["dueno"] or "BACKEND") == "BACKEND")
     print(
         f"para-backend {estado} {len(tareas)} tarea(s) trabadas"
@@ -395,7 +455,11 @@ def main() -> int:
         for t in viejos:
             print(f"    {t['id']:8} medido contra {t['medido'][0]} el {t['medido'][1]}")
         print("  No es rojo: se vence cuando ellos trabajan, no por un error nuestro.")
-    print(f"  → {DESTINO.relative_to(RAIZ)}")
+    if mezcla:
+        detalle = " · ".join(f"{sha} en {n}" for sha, n in mezcla.items())
+        print(f"  no se sabe cuáles de {len(medidos)} siguen vigentes · el cable mezcla {detalle}")
+    if "--check" not in sys.argv:
+        print(f"  → {DESTINO.relative_to(RAIZ)}")
     return 0
 
 

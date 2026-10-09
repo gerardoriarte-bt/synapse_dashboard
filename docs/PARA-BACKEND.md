@@ -386,16 +386,12 @@ Hasta entonces los dos paneles de prosa se sirven con el valor de la semilla, **
 
 ---
 
-## ⚠️ 8 pedido(s) sin reverificar
+## ⚠️ No sabemos cuáles de estos 8 siguen vigentes
 
-**Estos se midieron contra un commit suyo que ya no es el último.**
-No quiere decir que sigan faltando: quiere decir que **no lo
-sabemos**, y un pedido que no sabemos si sigue vigente no debería
-hacerles perder tiempo.
-
-El 2026-09-28 revalidamos los doce que había y **cinco ya estaban
-resueltos** — llevaban días acá diciendo que faltaban. Por eso esta
-sección existe.
+**Nuestro cable de consola está leído contra más de un commit suyo**:
+`7b717aa` en 13 ruta(s), `9dc481e` en 2 ruta(s). Sin un commit único no hay contra qué decidir cuáles
+pedidos envejecieron, así que **ninguno se puede dar por vigente**
+hasta reverificar el cable entero.
 
 
 | Pedido | Medido contra | Cuándo |
