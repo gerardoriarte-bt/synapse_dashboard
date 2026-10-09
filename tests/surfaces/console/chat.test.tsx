@@ -328,6 +328,28 @@ describe('F3.7 · el riel de hilos', () => {
     expect(elegir).toHaveBeenCalledWith('h-2')
   })
 
+  it('un hilo de DECISIÓN no ofrece eliminar · es la traza, y el contrato da 409', () => {
+    render(<ThreadRail format={format} groups={grupos} onSelect={() => {}} onDelete={() => {}} />)
+    expect(screen.getByRole('button', { name: 'Eliminar Por qué subió el ROAS si la inversión está plana' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Eliminar Quiebre de stock/ })).toBeNull()
+  })
+
+  it('sin `onDelete` no hay «Eliminar» · un CTA sin manejador no se pinta', () => {
+    render(<ThreadRail format={format} groups={grupos} onSelect={() => {}} />)
+    expect(screen.queryByRole('button', { name: /^Eliminar/ })).toBeNull()
+  })
+
+  it('eliminar pregunta ANTES de disparar · y dispara con el id', async () => {
+    const borrar = vi.fn()
+    render(<ThreadRail format={format} groups={grupos} onSelect={() => {}} onDelete={borrar} />)
+    const nombre = 'Eliminar Por qué subió el ROAS si la inversión está plana'
+    await userEvent.click(screen.getByRole('button', { name: nombre }))
+    expect(borrar).not.toHaveBeenCalled()
+    expect(screen.getByText('¿Eliminar del historial?')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: nombre }))
+    expect(borrar).toHaveBeenCalledWith('h-1')
+  })
+
   it('el hilo de una decisión lleva su badge · es la traza de por qué se decidió', () => {
     render(<ThreadRail format={format} groups={grupos} onSelect={() => {}} />)
     expect(screen.getByRole('button', { name: /Quiebre de stock/ })).toHaveTextContent('Decisión')

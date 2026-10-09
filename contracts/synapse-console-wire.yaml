@@ -608,6 +608,52 @@ paths:
                   success: { type: boolean }
                   data: { $ref: '#/components/schemas/ChatMessagesPage' }
 
+  /history/threads/{id}:
+    x-verificado-en: 9dc481e
+    delete:
+      tags: [config]
+      operationId: deleteChatThread
+      summary: Quita una consulta del historial del usuario
+      x-origen: 9dc481e
+      description: |
+        **Transcrita el 2026-10-09 desde `9dc481e`**, leyendo
+        `history_handler.go` —`DeleteThread`, `parseHistoryThreadParams`— y
+        `user_thread_repository.go` —`DeleteByID`—.
+
+        **Opera sobre los mismos hilos que `/config/chat/threads`**: los dos
+        pasan por `UserThreadService`. El `:id` es el UUID, y sólo borra hilos
+        del usuario del token (`WHERE user_id = ? AND id = ?`).
+
+        **Es un borrado SUAVE**: `UserThread` lleva `gorm.DeletedAt`, así que
+        `Delete` es un `UPDATE deleted_at`. La conversación sigue en la base;
+        deja de listarse.
+
+        **No aplica la regla de las decisiones** que nuestro contrato declara
+        —un hilo que es traza de una decisión de C4 no se borra, 409—. Hoy no
+        importa: C4 no existe y `esDecision` cae a `false`. El front no ofrece
+        borrar un hilo de decisión de todos modos.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: '`gin.H{"message": "thread eliminado del historial"}`.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      message: { type: string }
+        '404':
+          description: No existe, o no es de este usuario. `ErrUserThreadNotFound`.
+
   /config/panels/{panelId}/chat-suggestions:
     x-verificado-en: 7b717aa
     get:

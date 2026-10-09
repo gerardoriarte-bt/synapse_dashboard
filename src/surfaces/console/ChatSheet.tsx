@@ -39,7 +39,7 @@ import { useState } from 'react'
 import { useChat } from '../../api/useChat'
 import { esDePanel } from '../../api/chat'
 import type { ContextoDeChat } from '../../api/chat'
-import { useSuggestions, useThreads } from '../../api/hooks'
+import { useDeleteThread, useSuggestions, useThreads } from '../../api/hooks'
 import { Label } from '../../render/primitives/Label'
 import { ChatOverlay } from './ChatOverlay'
 import { ChatThread } from './ChatThread'
@@ -113,6 +113,7 @@ export function ChatSheet({
    *  servicio: pedir todos y descartar acá traería por la red las
    *  conversaciones de los otros once paneles para tirarlas. */
   const hilos = useThreads(contexto, periodo)
+  const eliminar = useDeleteThread()
 
   /** Qué preguntar sobre este panel · §PEN:C3. Deterministas del lado del
    *  servicio, así que no se refrescan mientras la hoja está abierta. */
@@ -209,6 +210,23 @@ export function ChatSheet({
                   if (elegido?.hiloId != null) resume({ uuid: elegido.id, hiloId: elegido.hiloId })
                 }}
                 {...(activo === undefined ? {} : { activeId: activo.id })}
+                // **Eliminar la consulta abierta suelta el hilo** · 2026-10-09.
+                // Si no, lo próximo que se pregunte seguiría colgando de un
+                // hilo que el riel ya no muestra. Se suelta al confirmar el
+                // servicio, no antes: si falla, la conversación sigue ahí.
+                onDelete={(uuid) =>
+                  eliminar.mutate(uuid, {
+                    onSuccess: () => {
+                      if (activo?.id === uuid) reset()
+                    },
+                  })
+                }
+                {...(eliminar.isPending && eliminar.variables !== undefined
+                  ? { deletingId: eliminar.variables }
+                  : {})}
+                {...(eliminar.isError && eliminar.variables !== undefined
+                  ? { deleteFailedId: eliminar.variables }
+                  : {})}
               />
             )}
           </>
