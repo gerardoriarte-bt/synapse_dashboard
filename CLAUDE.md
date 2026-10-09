@@ -574,7 +574,32 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-10-09 · administración: clientes, ficha y usuarios
+### ⇩ ACÁ SE PARÓ · 2026-10-09 · las tablas del chat, y la puerta en clone limpio
+
+**`main` está en `f86f2b4`**, del PR #4 (`chat/tablas-sin-rotulos`). Empezó
+porque QA no dibujaba los gráficos del chat, y **QA sirve una imagen anterior a
+`920ec8d`**: el texto «no salió de un panel» ya no existe en el código.
+
+**Al medirlo contra `9dc481e` apareció lo de fondo**: las tablas del chat de
+pestaña llegan **sin la columna de la dimensión** —`inferTabularColumns`
+descarta `label`, y el agente escribe `fuente AS label`—. Del lado nuestro: una
+tabla sin rótulos se declara, una con rótulos y sin familia se dibuja sin la
+marca, y la capa vacía ya no se firma `GOLD` (`DatoDeRespuesta.capa` es
+anulable).
+
+**ESPERANDO AL BACKEND**, en `docs/MENSAJE-2026-10-09-backend-tablas-del-chat.md`,
+**enviado el 2026-10-09**: columnas desde `rowType`, por qué una tabla llega dos
+veces, y desplegar el front desde `main` en QA. Confirma el pedido del 10-08 sin
+repetirlo. **Lo que sigue es esperar, no volver a pedirlo.**
+
+**La puerta no corría en un clone limpio**: `afirmaciones` leía
+`tools/plan-tareas.json`, que `.gitignore` excluye, y marcaba 221 tareas «fuera
+del plan». Ahora lee el markdown con el parser del plan (`b6cffcb`).
+
+**Sin mirar**: al reabrir desde el riel un hilo creado por `curl`, la
+conversación salió vacía. No se sabe si pasa con hilos del front.
+
+### ⇩ el 2026-10-09 · administración: clientes, ficha y usuarios
 
 **`main` está en `9728d3a`**, del PR #3 (`admin/clientes-y-usuarios`).
 Clientes y su ficha van lado a lado, los usuarios se organizan por cliente con
