@@ -36,6 +36,7 @@ import { Value } from '../primitives/Value'
 import { hue } from '../plots/core/seriesColor'
 import { UnknownPlotState } from '../states/UnknownPlotState'
 import type { NumberOptions } from '../format'
+import type { Family } from '../../api/types'
 import type { BodyProps } from '../types'
 
 /** Los gráficos que este cuerpo sabe dibujar HOY.
@@ -55,13 +56,22 @@ export type TableParams = {
 const ABBREVIATE_FROM = 1000
 const MAX_DECIMALS = 2
 
-export function TableBody({
-  value,
-  params,
-  family,
-  grafico,
-  format,
-}: BodyProps<'tabular', TableParams>) {
+/** **La familia es anulable SOLO en este cuerpo** · 2026-10-09.
+ *
+ *  En una tabla la familia no pinta ningún dato: es el punto de 6 px junto a
+ *  la primera celda, una marca de pertenencia. Las cifras van en `text-ink`.
+ *  Así que una tabla de una consulta que el catálogo no conoce —el chat de
+ *  pestaña, donde `family` llega vacía— se puede dibujar entera **omitiendo la
+ *  marca**, sin elegir un color. Los cuerpos de gráfico no: ahí la familia ES
+ *  el color del dato, y sin ella no hay dibujo honesto.
+ *
+ *  Es más ancho que `BodyProps`, así que el registro lo sigue aceptando; el que
+ *  monta con `null` es `ChatFigure`, por `TableWithoutFamily`. */
+export type TableBodyProps = Omit<BodyProps<'tabular', TableParams>, 'family'> & {
+  family: Family | null
+}
+
+export function TableBody({ value, params, family, grafico, format }: TableBodyProps) {
   // La comprobación va ANTES de dibujar, no dentro de una rama · mismo idioma
   // que `SeriesBody` y `ForecastBody`: resuelta abajo, la rama que se olvide se
   // ve bien.
@@ -157,11 +167,13 @@ export function TableBody({
                   <td key={c.clave} className={`py-1 font-body text-cuerpo text-ink ${alineacion}`}>
                     {j === 0 ? (
                       <span className="flex items-center gap-2 min-w-0">
-                        <span
-                          className="w-1.5 h-1.5 rounded-xs shrink-0"
-                          style={{ background: hue({ family }) }}
-                          aria-hidden
-                        />
+                        {family === null ? null : (
+                          <span
+                            className="w-1.5 h-1.5 rounded-xs shrink-0"
+                            style={{ background: hue({ family }) }}
+                            aria-hidden
+                          />
+                        )}
                         <span className="truncate">{cell ?? '—'}</span>
                       </span>
                     ) : (

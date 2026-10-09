@@ -1241,7 +1241,14 @@ export interface components {
             tipo: "texto";
             delta: string;
         };
-        DatoDeRespuesta: components["schemas"]["Gobierno"] & {
+        DatoDeRespuesta: {
+            base: string;
+            capa: components["schemas"]["Capa"] | null;
+            fuente: string;
+            /** Format: date-time */
+            frescura: string;
+            catalogVersion: number;
+        } & {
             valor: components["schemas"]["Valor"];
             /**
              * @description Con qué familia se pinta. **Obligatoria, y entró al contrato el

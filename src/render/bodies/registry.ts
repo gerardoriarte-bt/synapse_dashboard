@@ -32,6 +32,7 @@ import { lazy, memo } from 'react'
 import type { ComponentType } from 'react'
 import type { PanelType, Value } from '../../api/types'
 import type { BodyProps } from '../types'
+import type { TableBodyProps } from './TableBody'
 
 /** Las props de un cuerpo visto desde afuera, sin saber cuál es. */
 export type ErasedBodyProps = Omit<BodyProps<Value['forma']>, 'value' | 'params'> & {
@@ -135,6 +136,22 @@ export const BODIES: Record<PanelType, PanelBody> = (() => {
 })()
 
 export const BUILT_TYPES = Object.keys(BODIES) as PanelType[]
+
+/** **La tabla, montable sin familia** · 2026-10-09 · la usa `ChatFigure`.
+ *
+ *  Es LA MISMA instancia de `BODIES.table` —mismo chunk, mismo `memo`—, vista
+ *  con un tipo que admite `family: null`. El cast tiene su invariante a la
+ *  vista en la línea de abajo: `TableBodyProps` acepta `null`, y si alguien
+ *  vuelve a hacer la familia obligatoria en `TableBody`, `_AceptaNull` deja de
+ *  ser `true` y esto no compila. Es un `import type`, así que no arrastra el
+ *  cuerpo al bundle principal. */
+type _AceptaNull = null extends TableBodyProps['family'] ? true : never
+const _aceptaNull: _AceptaNull = true
+void _aceptaNull
+
+export const TableWithoutFamily = BODIES.table as unknown as ComponentType<
+  Omit<ErasedBodyProps, 'family'> & { family: null }
+>
 
 /** **VACÍA DESDE EL 2026-09-30, y se queda como lista.**
  *
