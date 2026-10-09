@@ -557,6 +557,58 @@ describe('§F3.6 · el evento `data` se traduce · desde `55e8419`', () => {
     expect(evento).toMatchObject({ tipo: 'dato', familia: null, tipoDePanel: 'series' })
   })
 
+  /** **Capturado del servicio, no escrito de memoria** · `9dc481e` levantado en
+   *  `:4010` el 2026-10-09, pregunta de pestaña por la inversión de medios por
+   *  plataforma. Es la segunda de sus cuatro tramas `data`, recortada a dos
+   *  filas: la consulta sale de `VW_COSTOS_CAMPANAS`, fuera del catálogo, y la
+   *  procedencia viaja vacía entera. */
+  const fueraDelCatalogo = (parche: Record<string, unknown> = {}) =>
+    trama('data', {
+      data: {
+        columns: [
+          { key: 'investment', numeric: true, title: 'investment' },
+          { key: 'share_pct', numeric: true, title: 'share_pct' },
+        ],
+        rows: [
+          { investment: 63777.61, share_pct: 57.36 },
+          { investment: 33562.86, share_pct: 30.19 },
+        ],
+        shape: 'tabular',
+      },
+      provenance: {
+        source: 'cortex_agent',
+        metric_key: '',
+        period: '2026-08',
+        sql_available: true,
+        base: '',
+        base_source: '',
+        family: '',
+        layer: '',
+        source_system: '',
+        catalog_version: 0,
+        freshness: '',
+        queried_at: '2026-10-09T15:04:03Z',
+        ...parche,
+      },
+      shape: 'tabular',
+    })
+
+  it('una consulta fuera del catálogo llega SIN capa · no se firma GOLD · 2026-10-09', async () => {
+    // Acá había `CAPAS[p.layer] ?? 'GOLD'`: la procedencia de una consulta que
+    // no la declara salía inventada, y con la misma tipografía que una real.
+    responde([INFO, fueraDelCatalogo(), DONE])
+
+    const [evento] = await recolectar(askSynapse(PREGUNTA_DE_PESTANA))
+    expect(evento).toMatchObject({ tipo: 'dato', capa: null, familia: null, base: '' })
+  })
+
+  it('una CAPA que el contrato no declara se descarta · igual que la familia', async () => {
+    responde([INFO, fueraDelCatalogo({ layer: 'PLATINUM' }), DONE])
+
+    const eventos = await recolectar(askSynapse(PREGUNTA_DE_PESTANA))
+    expect(eventos.map((e) => e.tipo)).toEqual(['fin'])
+  })
+
   it('un valor que no se puede adaptar tampoco se pinta a medias', async () => {
     responde([
       INFO,

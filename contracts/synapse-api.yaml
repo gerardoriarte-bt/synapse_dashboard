@@ -1833,15 +1833,34 @@ components:
 
     DatoDeRespuesta:
       allOf:
-        - $ref: '#/components/schemas/Gobierno'
+        - type: object
+          description: |
+            **La procedencia de una cifra del chat**, campo por campo como
+            `Gobierno` salvo la capa · 2026-10-09.
+
+            Hasta acá se intersectaba `Gobierno` entero, y eso obligaba a una
+            capa Medallion que la consulta del agente no siempre declara: medido
+            contra `9dc481e` el 2026-10-09, una pregunta de pestaña sobre
+            `VW_COSTOS_CAMPANAS` llega con `layer: ""`. Con la capa obligatoria
+            el adaptador escribía `GOLD` por defecto, o sea **una procedencia
+            inventada**. Null es «la consulta no la declara», y se dice así.
+          required: [base, capa, fuente, frescura, catalogVersion]
+          properties:
+            base: { type: string }
+            capa:
+              oneOf:
+                - $ref: '#/components/schemas/Capa'
+                - type: 'null'
+            fuente: { type: string }
+            frescura: { type: string, format: date-time }
+            catalogVersion: { type: integer }
         - type: object
           description: |
             Una cifra o un gráfico dentro de una respuesta del agente.
 
-            **`Gobierno` está intersectado a propósito**: la procedencia viaja
-            junto a la cifra, nunca aparte. Es la misma garantía que tiene el
-            payload de un panel, y acá importa más porque el stream tienta a
-            mandar el número primero y el contexto después.
+            **La procedencia viaja junto a la cifra, nunca aparte.** Es la misma
+            garantía que tiene el payload de un panel, y acá importa más porque
+            el stream tienta a mandar el número primero y el contexto después.
 
             **Una sola forma para el stream y para el historial.** Lo que se
             guarda es exactamente lo que se emitió, y por eso reabrir un hilo de
