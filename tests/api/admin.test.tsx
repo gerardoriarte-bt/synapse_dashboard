@@ -660,7 +660,10 @@ describe('las solicitudes de acceso', () => {
     server.use(
       http.post(`${API}/admin/access-requests/ar-1/approve`, async ({ request }) => {
         cuerpo = await request.json()
-        return ok({ message: 'solicitud aprobada', request: solicitudDelCable, temp_password: 'no-se-lee' })
+        // **Sin la contraseña temporal que el servicio también devuelve**: el
+        // front no la lee ni el cable la declara, y un valor de mentira con ese
+        // nombre lo marca GitGuardian como secreto —pasó en el PR #3—.
+        return ok({ message: 'solicitud aprobada', request: solicitudDelCable })
       }),
     )
     await adminApi.aprobarSolicitud('ar-1', { tenantId: 't-1', agenteId: 'ag-1' })
