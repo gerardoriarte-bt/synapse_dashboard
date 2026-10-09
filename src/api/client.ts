@@ -26,6 +26,7 @@ import type {
   WireChatAgentOption,
   WirePlot,
   WireChatSuggestion,
+  WireChatMessagesPage,
   WireChatThread,
   WireContext,
   WireDrillDimensions,
@@ -46,7 +47,7 @@ import type {
 import { currentToken } from '../app/auth/session'
 import { apiBase } from './base'
 
-import { esDePanel } from './chat'
+import { esDePanel, turnosDelHistorial } from './chat'
 import type { ContextoDeChat } from './chat'
 
 const BASE = apiBase()
@@ -184,6 +185,18 @@ export const api = {
       `/config/chat/threads${cola === '' ? '' : `?${cola}`}`,
     ).then((hilos) => hilos.map(adaptThread))
   },
+
+  /** Los mensajes de un hilo, para reabrirlo desde el riel · 2026-10-09.
+   *
+   *  **Va con el UUID del hilo**, no con el entero que continúa la
+   *  conversación: son los dos ids de `ChatThread` y no son intercambiables.
+   *  Una sola página —las últimas 50— y la hoja dice si hay anteriores. */
+  threadMessages: async (uuid: string) =>
+    turnosDelHistorial(
+      await request<WireChatMessagesPage>(
+        `/config/chat/threads/${encodeURIComponent(uuid)}/messages`,
+      ),
+    ),
 
   /** Los agentes que un admin puede elegir para el chat · 2026-10-06.
    *

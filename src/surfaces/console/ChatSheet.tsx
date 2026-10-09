@@ -99,7 +99,7 @@ export function ChatSheet({
   agenteId,
   onAgente,
 }: Props) {
-  const { turns, threadId, ask, resume, reset } = useChat(contexto, agenteId)
+  const { turns, threadId, historial, ask, resume, reset } = useChat(contexto, agenteId)
   const dePanel = esDePanel(contexto)
   const [texto, setTexto] = useState('')
   /** El riel colapsado es una pantalla propia del `.pen`. Vive acá y no en el
@@ -206,7 +206,7 @@ export function ChatSheet({
                 onNueva={reset}
                 onSelect={(uuid) => {
                   const elegido = (hilos.data ?? []).find((h) => h.id === uuid)
-                  if (elegido?.hiloId != null) resume(elegido.hiloId)
+                  if (elegido?.hiloId != null) resume({ uuid: elegido.id, hiloId: elegido.hiloId })
                 }}
                 {...(activo === undefined ? {} : { activeId: activo.id })}
               />
@@ -271,6 +271,28 @@ export function ChatSheet({
         </div>
 
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
+          {/* **Un hilo reabierto dice qué trae y qué no** · 2026-10-09. El
+              historial guarda el texto y la última cifra de cada respuesta,
+              no el SQL ni las cifras anteriores del mismo turno: sin decirlo,
+              una respuesta reabierta se lee como completa cuando no lo es. */}
+          {historial === null ? null : (
+            <div className="flex flex-col gap-1">
+              {historial.estado === 'cargando' ? (
+                <Label as="div">Abriendo la consulta</Label>
+              ) : historial.estado === 'error' ? (
+                <Label as="div">No se pudo abrir la consulta · podés seguir preguntando en el mismo hilo</Label>
+              ) : (
+                <>
+                  <Label as="div">
+                    Reabierta del historial · se guardan el texto y la última cifra de cada respuesta, no la consulta SQL
+                  </Label>
+                  {historial.hayAnteriores ? (
+                    <Label as="div">Se muestran los últimos mensajes · los anteriores no se cargaron</Label>
+                  ) : null}
+                </>
+              )}
+            </div>
+          )}
           <ChatThread
             turns={turns}
             panelTipo={panelTipo}

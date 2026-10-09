@@ -20,7 +20,7 @@
  *  producción detrás de un proxy. Por eso se parten en lugares incómodos.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ChatStreamError, askSynapse } from '@/api/chat'
+import { ChatStreamError, askSynapse, turnosDelHistorial } from '@/api/chat'
 import { saveToken, signOut } from '@/app/auth/session'
 import type { ChatEvent } from '@/api/types'
 
@@ -673,5 +673,41 @@ describe('la petición lleva credencial · el defecto del 2026-09-24', () => {
     const h = init.headers as Record<string, string>
     expect(h.accept).toBe('text/event-stream')
     expect(h['content-type']).toBe('application/json')
+  })
+})
+
+describe('el historial de un hilo, en turnos · 2026-10-09', () => {
+  /** Las formas de `GET /config/chat/threads/{id}/messages`, capturadas de
+   *  `9dc481e` el 2026-10-09. Sólo lo que el emparejamiento mira. */
+  const msg = (role: 'user' | 'assistant', content: string) => ({
+    id: `${role}-${content}`,
+    role,
+    content,
+    created_at: '2026-10-09T10:00:00Z',
+  })
+
+  it('una pregunta y su respuesta son UN turno', () => {
+    const { turnos } = turnosDelHistorial({
+      messages: [msg('user', '¿Cuánto?'), msg('assistant', 'Tanto.')],
+      has_more: false,
+    })
+    expect(turnos).toEqual([{ pregunta: '¿Cuánto?', texto: 'Tanto.', datos: [] }])
+  })
+
+  it('una respuesta SIN pregunta antes se descarta · la página empezó a mitad de un turno', () => {
+    // Con 50 por página, la primera puede ser la respuesta de una pregunta que
+    // quedó en la página anterior. Colgarla de una pregunta vacía, o de la
+    // siguiente, la atribuiría mal.
+    const { turnos, hayAnteriores } = turnosDelHistorial({
+      messages: [msg('assistant', 'Huérfana.'), msg('user', '¿Y hoy?'), msg('assistant', 'Hoy no.')],
+      has_more: true,
+    })
+    expect(turnos).toEqual([{ pregunta: '¿Y hoy?', texto: 'Hoy no.', datos: [] }])
+    expect(hayAnteriores).toBe(true)
+  })
+
+  it('una pregunta sin respuesta queda con texto `null` · no con una respuesta vacía', () => {
+    const { turnos } = turnosDelHistorial({ messages: [msg('user', '¿Y?')], has_more: false })
+    expect(turnos).toEqual([{ pregunta: '¿Y?', texto: null, datos: [] }])
   })
 })

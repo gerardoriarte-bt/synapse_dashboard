@@ -86,13 +86,20 @@ export function ThreadRail({ groups, activeId, onSelect, format, onNueva }: Prop
                   onClick={() => onSelect(thread.id)}
                   aria-current={thread.id === activeId ? 'true' : undefined}
                   className={
-                    'flex w-full items-center gap-2 rounded-md px-2 py-1 text-left cursor-pointer border-0 ' +
+                    'group flex w-full items-center gap-2 rounded-md px-2 py-1 text-left cursor-pointer border-0 ' +
                     'font-body text-cuerpo leading-cuerpo ' +
                     (thread.id === activeId ? 'bg-w2 text-ink' : 'bg-transparent text-dim hover:text-ink')
                   }
                 >
                   <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate">{thread.titulo}</span>
+                    {/* **Completo al pasar el mouse o al enfocar** · 2026-10-09.
+                        El corte es sólo CSS —el texto entero ya está en el
+                        DOM—, así que basta con dejar de cortar: la fila crece
+                        en su lugar. Un `title` nativo tarda un segundo en
+                        aparecer y con el teclado no aparece nunca. */}
+                    <span className="truncate group-hover:whitespace-normal group-focus-visible:whitespace-normal">
+                      {thread.titulo}
+                    </span>
                     {/* La procedencia del hilo, en el rótulo de la casa. Solo
                         las partes que llegaron: un hilo viejo no tiene
                         ninguna, y un separador sin nada a la derecha es peor

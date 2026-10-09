@@ -12,7 +12,8 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChatStreamError, askSynapse, esDePanel } from './chat'
-import type { ChatRequest, ContextoDeChat } from './chat'
+import type { ChatRequest, ContextoDeChat, TurnoGuardado } from './chat'
+import { api } from './client'
 export type { ContextoDeChat }
 import type { ChatEvent } from './types'
 
@@ -38,6 +39,25 @@ export type ChatTurn = {
 }
 
 const VACIA: Answer = { texto: '', datos: [], auditoria: null, sugerencias: [] }
+
+/** El estado de un hilo reabierto. `null` es «no se reabrió nada»: una
+ *  consulta nueva o una conversación que se está teniendo ahora. */
+export type Historial = {
+  estado: 'cargando' | 'listo' | 'error'
+  /** La página trajo las últimas 50 y hay mensajes antes. */
+  hayAnteriores: boolean
+}
+
+/** Un turno guardado a la forma de los turnos en vivo. Sin `auditoria` ni
+ *  `sugerencias`: el servicio no los guarda, y la hoja lo declara. */
+function aTurno(t: TurnoGuardado): ChatTurn {
+  return {
+    pregunta: t.pregunta,
+    respuesta: { texto: t.texto ?? '', datos: t.datos, auditoria: null, sugerencias: [] },
+    streaming: false,
+    error: t.texto === null ? { mensaje: 'El turno se cortó antes de terminar.', parcial: false } : null,
+  }
+}
 
 /** Aplica un evento a la respuesta en curso.
  *
@@ -80,21 +100,39 @@ export function useChat(contexto: ContextoDeChat, agenteId?: string) {
 
   const abort = useRef<AbortController | null>(null)
 
-  /** Retomar un hilo del riel · F3.7.
+  /** Retomar un hilo del riel · F3.7, y **reabrirlo** desde el 2026-10-09.
    *
-   *  **Apunta el próximo envío al hilo elegido, y limpia los turnos de este.**
-   *  Dejarlos arriba mostraría la conversación de un hilo bajo el id de otro:
-   *  lo que se ve y lo que se continúa serían cosas distintas, que es la forma
-   *  exacta de «arranca uno nuevo en silencio» pero al revés.
+   *  **Apunta el próximo envío al hilo elegido y trae su conversación.** Hasta
+   *  el 2026-10-09 sólo apuntaba: el criterio de F3.7 pedía que retomar
+   *  reenviara el contexto y no traer los mensajes, así que la hoja quedaba
+   *  vacía. Visto desde el uso era un clic que no abría nada, y el `.pen`
+   *  dibuja C3 con la conversación del hilo activo a la vista.
    *
-   *  **Lo que NO hace es traer los mensajes de ese hilo.** Eso es
-   *  `GET /config/chat/threads/{id}/messages`, otra ruta, y el criterio de F3.7
-   *  no la pide: pide que retomar reenvíe el contexto. El riel muestra de qué
-   *  se hablaba; la hoja arranca vacía y sigue la misma conversación. */
-  const resume = useCallback((hiloId: string) => {
+   *  **Los dos ids, cada uno a lo suyo**: el UUID trae los mensajes y el entero
+   *  continúa la conversación. Ver `ChatThread` en el cable.
+   *
+   *  **Una respuesta que llega tarde no pisa otro hilo.** Si mientras carga se
+   *  elige otro o se abre una consulta nueva, `pedido` ya cambió y se descarta. */
+  const pedido = useRef(0)
+  const [historial, setHistorial] = useState<Historial | null>(null)
+
+  const resume = useCallback((hilo: { uuid: string; hiloId: string }) => {
     abort.current?.abort()
-    setThreadId(hiloId)
+    setThreadId(hilo.hiloId)
     setTurns([])
+    const este = ++pedido.current
+    setHistorial({ estado: 'cargando', hayAnteriores: false })
+    api.threadMessages(hilo.uuid).then(
+      ({ turnos, hayAnteriores }) => {
+        if (pedido.current !== este) return
+        setTurns(turnos.map(aTurno))
+        setHistorial({ estado: 'listo', hayAnteriores })
+      },
+      () => {
+        if (pedido.current !== este) return
+        setHistorial({ estado: 'error', hayAnteriores: false })
+      },
+    )
   }, [])
 
   /** «Nueva consulta» · §PEN:C3 lo pone en la cabecera del riel.
@@ -105,6 +143,8 @@ export function useChat(contexto: ContextoDeChat, agenteId?: string) {
    *  dos consultas. */
   const reset = useCallback(() => {
     abort.current?.abort()
+    pedido.current++
+    setHistorial(null)
     setThreadId(null)
     setTurns([])
   }, [])
@@ -194,5 +234,5 @@ export function useChat(contexto: ContextoDeChat, agenteId?: string) {
     [clave, threadId, turns.length, agenteId],
   )
 
-  return { turns, threadId, ask, resume, reset }
+  return { turns, threadId, historial, ask, resume, reset }
 }
