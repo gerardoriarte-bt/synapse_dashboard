@@ -300,6 +300,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/history/threads/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Quita una consulta del historial del usuario
+         * @description **Transcrita el 2026-10-09 desde `9dc481e`**, leyendo
+         *     `history_handler.go` —`DeleteThread`, `parseHistoryThreadParams`— y
+         *     `user_thread_repository.go` —`DeleteByID`—.
+         *
+         *     **Opera sobre los mismos hilos que `/config/chat/threads`**: los dos
+         *     pasan por `UserThreadService`. El `:id` es el UUID, y sólo borra hilos
+         *     del usuario del token (`WHERE user_id = ? AND id = ?`).
+         *
+         *     **Es un borrado SUAVE**: `UserThread` lleva `gorm.DeletedAt`, así que
+         *     `Delete` es un `UPDATE deleted_at`. La conversación sigue en la base;
+         *     deja de listarse.
+         *
+         *     **No aplica la regla de las decisiones** que nuestro contrato declara
+         *     —un hilo que es traza de una decisión de C4 no se borra, 409—. Hoy no
+         *     importa: C4 no existe y `esDecision` cae a `false`. El front no ofrece
+         *     borrar un hilo de decisión de todos modos.
+         */
+        delete: operations["deleteChatThread"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/config/panels/{panelId}/chat-suggestions": {
         parameters: {
             query?: never;
@@ -2127,6 +2162,40 @@ export interface operations {
                         data: components["schemas"]["ChatMessagesPage"];
                     };
                 };
+            };
+        };
+    };
+    deleteChatThread: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `gin.H{"message": "thread eliminado del historial"}`. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            message?: string;
+                        };
+                    };
+                };
+            };
+            /** @description No existe, o no es de este usuario. `ErrUserThreadNotFound`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
