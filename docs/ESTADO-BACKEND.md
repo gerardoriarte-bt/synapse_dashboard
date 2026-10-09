@@ -19,14 +19,14 @@ falta para re-verificar. Para su avance real está
 | De ésas, **contra el último commit** | **0** |
 | ⬜ Esperando algo de ellos | **3** |
 | ⬜ **Que NUNCA verificamos** | **22** |
-| El último commit que leímos | `7b717aa` |
+| El último commit que leímos | **no se sabe** · el cable no coincide consigo mismo |
 
 
-## ⚠️ 51 verificadas contra un commit anterior
+## ⚠️ No sabemos cuáles de estas 51 siguen al día
 
-**No quiere decir que estén mal: quiere decir que no lo sabemos.**
-Una tarea `B*` afirma algo del servicio, y el servicio cambia.
-Re-verificar una es leer su criterio y medirlo de nuevo.
+**El cable de consola está leído contra más de un commit suyo**, así
+que no hay un «último» contra qué comparar. Hasta reverificarlo
+entero, ninguna se puede dar por al día.
 
 
 | Tarea | | Verificada contra | Cuándo |

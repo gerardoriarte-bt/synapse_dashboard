@@ -42,7 +42,7 @@ CHEQUEOS = [
     # comprueba no es una regla.
     ("plan", [sys.executable, "tools/plan-a-csv.py", "--check"], True),
     ("plan-ancestro", [sys.executable, "tools/plan-ancestro.py"], True),
-    ("para-backend", [sys.executable, "tools/para-backend.py"], True),
+    ("para-backend", [sys.executable, "tools/para-backend.py", "--check"], True),
     ("pen-pantallas", [sys.executable, "tools/pen-pantallas.py"], True),
     # El hermano de arriba para los 43 gráficos, que `pen-pantallas` no mira:
     # reconoce `A*`, `B*` y `C*` y la biblioteca de plots quedaba afuera.
