@@ -574,6 +574,24 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-10-09 (tarde) · esperando los dos mensajes del chat
+
+**`main` está en `e87fefb`.** Después de las tablas del chat entraron: el riel
+que reabre una consulta y la elimina con confirmación (#6, #7), la puerta que ya
+no reescribe `PARA-BACKEND.md` (#8), el cable de consola reverificado entero
+contra `9dc481e` (#9) y los pedidos al backend remedidos —de diez quedan tres,
+ninguno de código suyo— con B1.34 cerrada (#10).
+
+**ESPERANDO AL BACKEND, y lo que sigue es esperar, no volver a pedirlo**:
+`MENSAJE-2026-10-08-backend-procedencia-por-nombre.md` —el cruce por nombre que
+firma una tabla de medios con la base de la venta del sitio— y
+`MENSAJE-2026-10-09-backend-tablas-del-chat.md` —la columna `label` que se
+descarta—. Hasta que lleguen, las tablas del chat de pestaña se declaran en vez
+de dibujarse.
+
+**Los meses viejos ya se cargaron en QA** (el humano, desde A5), así que el `t`
+de las series llega en ISO también ahí.
+
 ### ⇩ ACÁ SE PARÓ · 2026-10-09 · las tablas del chat, y la puerta en clone limpio
 
 **`main` está en `f86f2b4`**, del PR #4 (`chat/tablas-sin-rotulos`). Empezó
