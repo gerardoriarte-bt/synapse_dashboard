@@ -206,7 +206,7 @@ def recolectar(texto: str):
     return tareas
 
 
-def render(tareas, hechas, todas=(), viejos=(), mezcla=None, medidos=()) -> str:
+def render(tareas, hechas, todas=(), viejos=(), mezcla=None, medidos=(), rama=None) -> str:
     o = []
     o.append("# Lo que el front necesita del backend\n")
     o.append(
@@ -226,7 +226,7 @@ def render(tareas, hechas, todas=(), viejos=(), mezcla=None, medidos=()) -> str:
         o.append("\n---\n\n## Lo que ya está de nuestro lado\n")
         o.append(
             f"No hace falta que esperen nada de estas para probar: están en la rama\n"
-            f"`{rama_publicada()}` del repositorio del front, con prueba y con la puerta en\n"
+            f"`{rama or rama_publicada()}` del repositorio del front, con prueba y con la puerta en\n"
             "verde.\n"
         )
         for t in hechas:
@@ -381,7 +381,17 @@ def main() -> int:
 
     mezcla = shas_del_cable() if ref is None and len(shas_del_cable()) > 1 else None
     medidos = [t for t in tareas if t["medido"]]
-    documento = render(tareas, hechas, todas, viejos, mezcla, medidos)
+    actual = DESTINO.read_text(encoding="utf-8") if DESTINO.exists() else ""
+    # **En `--check` la rama sale del documento, no del checkout.** El texto
+    # nombra la rama donde se PUBLICÓ —ver `rama_publicada`—, y eso es de quien
+    # lo generó, no del contenido. Tomarla del checkout ponía la puerta en rojo
+    # en cualquier otra rama: un PR, un runner, el propio `main`. Lo encontró
+    # correr la puerta en un worktree limpio.
+    rama = None
+    if "--check" in sys.argv:
+        hallada = re.search(r"`([^`]+)` del repositorio del front", actual)
+        rama = hallada.group(1) if hallada else None
+    documento = render(tareas, hechas, todas, viejos, mezcla, medidos, rama)
 
     # ── `--check` · compara y NO escribe · 2026-10-09 ────────────────────────
     #
@@ -392,7 +402,6 @@ def main() -> int:
     # explícito —`npm run plan`—. Y como `token-drift`, un generado que no
     # coincide con su fuente es rojo.
     if "--check" in sys.argv:
-        actual = DESTINO.read_text(encoding="utf-8") if DESTINO.exists() else ""
         if actual != documento:
             print(f"para-backend ✗ {DESTINO.relative_to(RAIZ)} no está al día con el plan y el cable")
             print("  Regeneralo con `npm run plan` y commitealo.")
