@@ -1680,23 +1680,26 @@ export interface components {
         Valor: components["schemas"]["ValorEscalar"] | components["schemas"]["ValorEscalarConIntervalo"] | components["schemas"]["ValorSerieTemporal"] | components["schemas"]["ValorSerieConBanda"] | components["schemas"]["ValorSeriesMultiples"] | components["schemas"]["ValorCategorica"] | components["schemas"]["ValorRanking"] | components["schemas"]["ValorComposicion"] | components["schemas"]["ValorDistribucion"] | components["schemas"]["ValorCategoricaComparada"] | components["schemas"]["ValorPerfilMultiatributo"] | components["schemas"]["ValorMatriz"] | components["schemas"]["ValorGrafo"] | components["schemas"]["ValorFlujo"] | components["schemas"]["ValorTabular"] | components["schemas"]["ValorProsa"];
         Punto: {
             /**
-             * @description **MEDIDO EL 2026-09-29: NO es una etiqueta lista para pintar.** Acá
-             *     decía que sí, y es falso — el servicio manda **días desde epoch** en
-             *     una cadena: `"20362"`, `"20393"`, `"20423"`, que son 2025-10-01,
-             *     2025-11-01 y 2025-12-01, el primero de cada mes.
+             * @description **Una fecha ISO, `YYYY-MM-DD`** · desde `c8b9247`, remedido contra
+             *     `9dc481e` el 2026-10-09 · B1.34.
              *
-             *     **Nunca se notó porque el eje X NO SE PINTA**: `PlotSeries` rinde sólo
-             *     el eje de valores. Un número crudo que nadie muestra no rompe nada, y
-             *     por eso la descripción vivió mal desde que se escribió.
+             *     La SQL API de Snowflake devuelve los `DATE` como días desde epoch
+             *     —`"20362"` es 2025-10-01— y el materializador los convierte con
+             *     `isoDate`. **Pero sólo al materializar**: una fila calculada antes de
+             *     `c8b9247` conserva el número hasta que se rematerialice su período,
+             *     y así lo dicen ellos. Un `t` numérico es eso —un período sin
+             *     recalcular—, no otra unidad: se arregla desde A5, «Cargar meses».
              *
-             *     **Y es lo que bloquea la trama del degradado.** Marcar el tramo
-             *     vencido pide comparar cada punto con `stale_since`, y para eso hay que
-             *     interpretar esto como días epoch — una interpretación que **el cable
-             *     del servicio no declara**. Un tramo mal marcado afirma que un dato
-             *     concreto está vencido cuando no lo está, y eso es peor que no
-             *     marcarlo. Pedido al backend · B1.34.
-             * @example jul
-             * @example 2026-07-15
+             *     **Acá decía, desde el 2026-09-29, que NO era una etiqueta lista para
+             *     pintar** y que eso bloqueaba la trama del degradado, que necesita
+             *     comparar cada punto con `stale_since`. **Con la unidad declarada,
+             *     ese candado venció**: la comparación ya no es una interpretación
+             *     nuestra.
+             *
+             *     **Sigue sin ser una ETIQUETA**: es una fecha, y cómo se rotula —mes,
+             *     día— lo decide el cuerpo con el formateador del tenant.
+             * @example 2025-10-01
+             * @example 2026-09-30
              */
             t: string;
             v: number;

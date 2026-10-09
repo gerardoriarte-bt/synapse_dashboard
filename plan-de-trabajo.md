@@ -949,11 +949,13 @@ acá. Transcripta en el cable con `x-verificado-en: b6f0e09`.
 **Lo que sigue es nuestro y no de ellos**: `catalog/plots.ts` con los
 validadores. Ahora sí tiene de dónde leer la tabla.
 
-**Espera del backend.** **Queda `GET /config/plots`; `chart` YA LLEGÓ** · el mismo día que se pidió, en `f70cec2`. Medido el 2026-09-28 contra el servicio: sale en `DDPanelDTO.chart` y en `DDLayoutPanel.chart`, lo escribe el builder recortado y en minúsculas —`"  Waterfall  "` → `waterfall`— y los doce paneles publicados quedaron con `''`, así que no migró ningún layout. Transcripto en los dos cables y adaptado, con prueba de que **un id desconocido se pasa igual**: descartarlo haría caer el panel al gráfico por defecto sin que nadie se entere. **Lo que falta es la ruta del repertorio**, y para escribirla piden tres archivos nuestros que no están en su repo — contestado en `docs/MENSAJE-2026-09-28-backend-lo-que-piden.md`.
+**Lo pedido, y ya entregado y medido.** **Queda `GET /config/plots`; `chart` YA LLEGÓ** · el mismo día que se pidió, en `f70cec2`. Medido el 2026-09-28 contra el servicio: sale en `DDPanelDTO.chart` y en `DDLayoutPanel.chart`, lo escribe el builder recortado y en minúsculas —`"  Waterfall  "` → `waterfall`— y los doce paneles publicados quedaron con `''`, así que no migró ningún layout. Transcripto en los dos cables y adaptado, con prueba de que **un id desconocido se pasa igual**: descartarlo haría caer el panel al gráfico por defecto sin que nadie se entere. **Lo que falta es la ruta del repertorio**, y para escribirla piden tres archivos nuestros que no están en su repo — contestado en `docs/MENSAJE-2026-09-28-backend-lo-que-piden.md`.
 
 **Lo tiene: NOSOTROS** · mandarles `docs/ENTREGA-2026-09-29-repertorio-de-graficos.md`. **Lo pidieron dos veces**, y las dos se les contestó con una ruta de NUESTRO repositorio, que no ven.
 
 **Medido contra `de881e1` el 2026-09-29** · `GET /config/plots` → **404**.
+
+**Remedido contra `9dc481e` el 2026-10-09 · ENTREGADO en `c8b9247`.** `GET /config/plots` responde, y `npm run humo` lo mide **idéntico al archivo que entregamos**: 49 entradas.
 
 **NUESTRA MITAD ESTÁ HECHA** · 2026-09-26, y **el repertorio entero desde el 2026-09-28**: `docs/REPERTORIO-2026-09-28-los-49-graficos.md`. El orden que habíamos propuesto era «1. el front declara los mínimos y los propone en el contrato · 2. el backend los sirve». **El paso 1 está**: el contrato declara `GET /config/plots`, `Grafico` y `MinimoDeDatos`, y la tabla que hay que implementar está en `docs/DECISIONES-2026-09-26-minimos-por-grafico.md`.
 
@@ -965,7 +967,7 @@ Sólo tres suben el de su forma —`treemap`, `pareto` y `waterfall`, a 3— y e
 
 **Los tres mínimos que ya estaban escritos** en el criterio de abajo —«una serie de un punto, una composición de una parte y un ranking de dos ítems»— se respetaron, y de ahí sale que `ranking` sea 3 y no 2.
 
-**Espera del backend.** **Servir `GET /config/plots`** con la tabla del documento, con la misma figura que `/config/blocks`: global, no por tenant. Medido el 2026-09-26: **404**. Bloquea F1.31 y F4.21.
+**Lo pedido, y ya entregado y medido.** **Servir `GET /config/plots`** con la tabla del documento, con la misma figura que `/config/blocks`: global, no por tenant. Medido el 2026-09-26: **404**. Bloquea F1.31 y F4.21.
 
 **Lo tiene: NOSOTROS** · mandarles `docs/ENTREGA-2026-09-29-repertorio-de-graficos.md`. **Lo pidieron dos veces**, y las dos se les contestó con una ruta de NUESTRO repositorio, que no ven.
 
@@ -1361,11 +1363,13 @@ Medido ese día contra `f70cec2`: `POST /admin/tenants/{tenantId}/materialize` c
 - **No reemplaza al comando**, que sigue sirviendo para correrlo a mano.
 
 #### ➕ B1.31 ⚠️ La plataforma genera el par de claves del usuario de servicio
-**Espera del backend.** **Que el servicio genere el par RSA y devuelva sólo la pública** — pedido el 2026-09-28.
+**Lo pedido, y ya entregado y medido.** **Que el servicio genere el par RSA y devuelva sólo la pública** — pedido el 2026-09-28.
 
 **Lo tiene: NOSOTROS** · probar la rotación en el próximo alta real. **La ruta está entregada** y su guarda se midió.
 
 **Medido contra `de881e1` el 2026-09-29** · sin un solo `rsa.GenerateKey` en `internal/`.
+
+**Remedido contra `9dc481e` el 2026-10-09 · ENTREGADO.** `rsa.GenerateKey` en `tenant_key_service.go:50`, desde `e1037d9`, que está en la historia de `9dc481e`. Lo que queda es nuestro y está dicho arriba: probar la rotación en el próximo alta real.
 
 **LLEGÓ EL 2026-09-29 · en `e1037d9`.** `POST /admin/tenants/{id}/service-key` existe, y **su guarda es lo mejor que trae**:
 
@@ -1428,12 +1432,16 @@ y sus ayudantes son `CurrentPeriod` y `PreviousPeriod`, los dos **por mes**.
 - Queda escrito qué patrones acepta hoy · **`YYYY-MM`, verificado en `period.go`**.
 - F5.13 deja de citar «el patrón de `PeriodoId`» como candado y pasa a citar lo que realmente espera: **soporte de otro grano**, que nadie pidió.
 
-#### ➕ B1.34 ⬜ Declarar qué es el `t` de una serie, o mandar el tramo vencido
-**Espera del backend.** **Qué unidad tiene el `t` de `points[]`** — y con eso se desbloquea la trama del degradado.
+#### ➕ B1.34 ✅ Declarar qué es el `t` de una serie, o mandar el tramo vencido
+
+**Verificado el 2026-10-09 contra `9dc481e`** · por la primera rama del criterio: el `t` es una fecha ISO desde `c8b9247`, y `Punto.t` de `contracts/synapse-api.yaml` lo declara. Medido en el servicio corriendo después de rematerializar `2025-11`…`2026-08`: **1.440 de 1.440 puntos en `YYYY-MM-DD`** en los doce períodos. Antes de rematerializar, `2026-08` y anteriores seguían en días desde epoch. **En QA hace falta lo mismo**: «Cargar meses» de A5 sobre los meses que se calcularon antes de `c8b9247`.
+**Lo pedido, y ya entregado y medido.** **Qué unidad tiene el `t` de `points[]`** — y con eso se desbloquea la trama del degradado.
 
 **Lo tiene: BACKEND** · declarar la unidad, o mandar el índice del tramo vencido.
 
 **Medido contra `de881e1` el 2026-09-29** · el servicio manda `"20362"`, `"20393"`, `"20423"` en `points[].t`. Son **días desde epoch** —2025-10-01, 2025-11-01, 2025-12-01, el primero de cada mes— pero **el cable no lo declara en ningún lado**.
+
+**Remedido contra `9dc481e` el 2026-10-09 · ENTREGADO en `c8b9247`.** `isoDate` convierte el `DATE` de la SQL API —días desde epoch— a `YYYY-MM-DD`. **Pero sólo en lo que se materializa después**, y lo dicen ellos: «las filas ya guardadas conservan el número hasta que se rematerialice su período». Medido en el servicio local: `2026-09` llega `2025-10-01`, `2025-11-01`…; `2026-08` sigue `20332`, `20362`…. **Lo que queda es nuestro**: rematerializar los meses viejos desde A5 y transcribir en el cable que `t` es una fecha ISO.
 
 **Y DESDE EL 2026-09-29 SE VE EN PANTALLA**, que hasta ese día no pasaba: ningún
 gráfico dibujaba eje de tiempo —`PlotSeries` sólo tiene eje de valores—, así que
@@ -1663,6 +1671,8 @@ dibuja y lo que hace que una cifra se lea contra algo en vez de sola. · Bloquea
 
 **Medido contra `de881e1` el 2026-09-29** · `DD_MATERIALIZE_PROSE_ENABLED` existe con default `false` · `dd_materializer_service.go:57`.
 
+**Medido contra `9dc481e` el 2026-10-09** · el flag sigue con default `false` (`dd_materializer_service.go:55-58`). Lo que queda es lo mismo: encenderlo, que es B2.15.
+
 Esto decía «los paneles de prosa los genera el AGENTE, y hoy no hay camino», y era
 cierto cuando se escribió. **Lo construyeron:** `internal/core/services/dd_prose_generator.go`
 implementa `DDProseGenerator`, `bootstrap/app.go:155` lo cablea al materializador
@@ -1700,7 +1710,9 @@ un texto generado. Hoy ese panel dice `SILVER · ACTIONABLE FRAMEWORK`, que vien
 del seed; para un texto del agente sería mentira, y `GOLD · ERP` sería peor.
 Todo en `docs/MENSAJE-2026-09-24-materializador.md` §3. · Bloquea **B2.12**.
 
-**Espera del backend.** **Una fila que NUNCA se materializó no puede servirse
+**Lo pedido, y ya entregado y medido.** **Una fila que NUNCA se materializó no puede servirse
+
+**Remedido contra `9dc481e` el 2026-10-09 · ENTREGADO, con un matiz.** Llegó en `6e595e3`: `PanelDegradation` sirve `DEGRADED` una fila sin `last_success_at` **si hubo un intento fallido**. Una fila sólo-semilla **sin** intento sigue saliendo `AVAILABLE` —decisión suya, escrita: «una fila solo-seed sin intento (tenant sin Gold) NO degrada»—. No se midió en el servicio: el dashboard activo no tiene paneles de prosa.
 
 **Lo tiene: DESPLIEGUE** · depende de B2.15 · el generador de prosa está en la rama desde `5924bf2`.
 como `AVAILABLE`.** `sync-catalog` trae diez métricas de Snowflake y la semilla
@@ -4361,8 +4373,10 @@ nadie abriera el archivo.
 
 **Este pedido no estaba registrado**: la tarea tenía `🔒` y ninguna `**Espera del backend.**`, así que su hueco nunca llegó a `PARA-BACKEND.md`. Es el segundo caso del día — el otro fue B4.9.
 
-**Espera del backend.** Que `availablePeriods()` normalice al día 1 antes de
+**Lo pedido, y ya entregado y medido.** Que `availablePeriods()` normalice al día 1 antes de
 restar meses. **Medido contra `de881e1` el 2026-09-29**: `GET /config/me` devuelve
+
+**Remedido contra `9dc481e` el 2026-10-09 · ENTREGADO.** `availablePeriods` ahora se apoya en `sfspec.PeriodsBack`, «que retrocede desde el día 1», y su comentario cita este mismo defecto —«2026-03 dos veces, sin 2026-02»— (`dd_config_service.go:734-741`). Medido hoy, `/config/me` da doce meses distintos; el 9 no lo habría reproducido de todos modos —pasaba del 29 al 31—, así que **la prueba es la lectura**.
 doce entradas que **no son doce meses distintos** — `['2026-09', …, '2026-04',
 '2026-03', '2026-03', '2026-01', …]`, marzo dos veces y **febrero ausente**, en
 `periods` y en `periods_detail`.
@@ -4552,9 +4566,11 @@ descarta con aviso en vez de leerse mal. · Bloquea **F1.44**.
 pantalla: doce de doce paneles dibujando, cero en BLOQUEADO. La de `series`
 espera respuesta.
 
-**Espera del backend.** Que `cut` salga de `layout_params` de `series`, o que
+**Lo pedido, y ya contestado.** Que `cut` salga de `layout_params` de `series`, o que
 digan quién lo lee. **Medido contra `de881e1` el 2026-09-29** y verificado en su
 repositorio: **las dos mitades del candado vencieron y apareció la respuesta
+
+**Remedido contra `9dc481e` el 2026-10-09** · `cut` sigue en tres lugares —la semilla, la declaración del param y la migración— y en ningún lector. La respuesta de arriba sigue valiendo: el front lo descarta, y no hace falta nada del backend.
 real, que es que el param no hace nada.**
 
 | Lo que decía este bloqueo | Lo medido el 2026-09-29 |
@@ -4717,6 +4733,8 @@ verificada y no declarada. La prueba además **afirma que el fixture no trae
 
 **Medido contra `de881e1` el 2026-09-29** · `GET /config/solicitudes` → **404** · y el payload `FORBIDDEN` es `{status, request_from}` y nada más.
 
+**Medido contra `9dc481e` el 2026-10-09** · `/config/solicitudes` sigue sin estar en `router.go` —lo que hay es `/access-requests`, que es pedir una CUENTA, no una métrica—. `FORBIDDEN` trae `reason` y `unlocks_with` (`dd_config_service.go:384-387`), que es la mitad que ya había llegado. **Sigue siendo decisión de producto.**
+
 **Bloquea F2.3.** Y el hueco tiene una forma concreta: el payload `FORBIDDEN` es hoy `{status, request_from}` **y nada más** —medido pidiéndole al token de `planner` los tres paneles que su rol oculta—. Sin `reason` ni `unlocks_with`, que es la gramática de §8 que los otros cinco estados sí traen.
 
 **Así que son dos cosas y conviene no mezclarlas:** que el estado declare qué lo desbloquea, y que exista dónde pedirlo.
@@ -4744,7 +4762,9 @@ FORBIDDEN
 **Lo que sigue esperando es sólo la ruta**, y es decisión de producto de su lado.
 
 #### ➕ B2.15 ⚠️ Encender `DD_MATERIALIZE_PROSE_ENABLED` y avisar
-**Espera del backend.** **Corregir `locale`, `currency` y `timezone` del tenant de
+**Lo pedido, y ya entregado y medido.** **Corregir `locale`, `currency` y `timezone` del tenant de
+
+**Remedido contra `9dc481e` el 2026-10-09 · ENTREGADO.** Desde el 2026-10-01 el alta exige `locale`, `currency` y `timezone` —`binding:"required"` en `tenant_handler.go:33-37`—, así que ningún cliente nace colombiano por el default de la columna, que quedó pero ya no decide. Y hay ruta para editarlos. El tenant de UA, medido en `/config/me` del servicio local: `es-MX` · `USD` · `America/Mexico_City`.
 UA MX**, que hoy son colombianos —`es-CO`, `COP`, `America/Bogota`— por el
 **default de la columna** en `internal/core/domain/tenant.go`. **Medido contra
 `de881e1` el 2026-09-29** al probar la prosa: el agente redactó el resumen del
@@ -4802,6 +4822,8 @@ corrida —`/admin/materialize/runs`— es lo que dice cuándo mirar.
 **Lo tiene: DESPLIEGUE** · prender el flag en dev después del próximo despliegue. **Fecha, no código.**
 
 **Medido contra `de881e1` el 2026-09-29** · `ProseGeneratorEnabledFromEnv` lee el flag con default `false`.
+
+**Medido contra `9dc481e` el 2026-10-09** · `ProseGeneratorEnabledFromEnv` sigue leyendo el flag con default `false` (`dd_materializer_service.go:55-58`). **Si ya está encendido en dev no se ve desde el código**, y no lo medimos: sigue en pie el «avísennos».
 
 Hasta entonces los dos paneles de prosa se sirven con el valor de la semilla, **en inglés**, y salen `DEGRADED`.
 
