@@ -1432,7 +1432,9 @@ y sus ayudantes son `CurrentPeriod` y `PreviousPeriod`, los dos **por mes**.
 - Queda escrito qué patrones acepta hoy · **`YYYY-MM`, verificado en `period.go`**.
 - F5.13 deja de citar «el patrón de `PeriodoId`» como candado y pasa a citar lo que realmente espera: **soporte de otro grano**, que nadie pidió.
 
-#### ➕ B1.34 ⬜ Declarar qué es el `t` de una serie, o mandar el tramo vencido
+#### ➕ B1.34 ✅ Declarar qué es el `t` de una serie, o mandar el tramo vencido
+
+**Verificado el 2026-10-09 contra `9dc481e`** · por la primera rama del criterio: el `t` es una fecha ISO desde `c8b9247`, y `Punto.t` de `contracts/synapse-api.yaml` lo declara. Medido en el servicio corriendo después de rematerializar `2025-11`…`2026-08`: **1.440 de 1.440 puntos en `YYYY-MM-DD`** en los doce períodos. Antes de rematerializar, `2026-08` y anteriores seguían en días desde epoch. **En QA hace falta lo mismo**: «Cargar meses» de A5 sobre los meses que se calcularon antes de `c8b9247`.
 **Lo pedido, y ya entregado y medido.** **Qué unidad tiene el `t` de `points[]`** — y con eso se desbloquea la trama del degradado.
 
 **Lo tiene: BACKEND** · declarar la unidad, o mandar el índice del tramo vencido.

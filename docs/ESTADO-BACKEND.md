@@ -15,10 +15,10 @@ falta para re-verificar. Para su avance real está
 | | |
 |---|---|
 | Tareas `B*` en el plan | **98** |
-| Verificadas por nosotros · ✅ o ⚠️ | **72** |
-| De ésas, **contra el último commit** | **2** |
+| Verificadas por nosotros · ✅ o ⚠️ | **73** |
+| De ésas, **contra el último commit** | **3** |
 | ⬜ Esperando algo de ellos | **1** |
-| ⬜ **Que NUNCA verificamos** | **24** |
+| ⬜ **Que NUNCA verificamos** | **23** |
 | El último commit que leímos | `9dc481e` |
 
 
@@ -82,7 +82,7 @@ Re-verificar una es leer su criterio y medirlo de nuevo.
 | **B5.5** · Auditoría de publicaciones de layout | ✅ | `de881e1` | 2026-09-29 |
 
 
-## ⬜ 24 que nunca verificamos · y NO quiere decir que falten
+## ⬜ 23 que nunca verificamos · y NO quiere decir que falten
 
 **Un `⬜` de backend dice «no lo miramos», no «no está hecho».** Nuestro
 plan sólo mueve una `B*` cuando el front la verifica contra el servicio
@@ -117,7 +117,7 @@ esperan algo de ellos: **1**, y salen en `PARA-BACKEND.md`.
 | ✅ | **B0.10** ➕ · Endpoint de login | `de881e1` ⚠ | 2026-09-29 |
 
 
-### Fase 1 · Catálogo y materialización — 22 de 34
+### Fase 1 · Catálogo y materialización — 23 de 34
 
 | | Tarea | Verificada contra | Cuándo |
 |---|---|---|---|
@@ -154,7 +154,7 @@ esperan algo de ellos: **1**, y salen en `PARA-BACKEND.md`.
 | ⚠️ | **B1.31** ➕ · La plataforma genera el par de claves del usuario de servicio | `de881e1` ⚠ | 2026-09-29 |
 | ✅ | **B1.32** ➕ · cut es day o month, y lo aplica el front | `de881e1` ⚠ | 2026-09-29 |
 | ✅ | **B1.33** ➕ · El patrón de PeriodoId | — | — |
-| ⬜ | **B1.34** ➕ · Declarar qué es el t de una serie, o mandar el tramo vencido | `de881e1` ⚠ | 2026-09-29 |
+| ✅ | **B1.34** ➕ · Declarar qué es el t de una serie, o mandar el tramo vencido | `9dc481e` | 2026-10-09 |
 
 
 ### Fase 2 · Estados y cache — 8 de 16
