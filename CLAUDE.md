@@ -574,7 +574,31 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-10-08 · el chat dibuja por la forma
+### ⇩ ACÁ SE PARÓ · 2026-10-09 · administración: clientes, ficha y usuarios
+
+**`main` está en `9728d3a`**, del PR #3 (`admin/clientes-y-usuarios`).
+Clientes y su ficha van lado a lado, los usuarios se organizan por cliente con
+cambiar rol y suspender, y está la cola de solicitudes de acceso. Las decisiones
+del humano están escritas dentro de
+`docs/AUDITORIA-2026-10-08-admin-clientes-y-usuarios.md`.
+
+**ESPERANDO AL BACKEND**, en `docs/MENSAJE-2026-10-09-backend-administracion.md`,
+**enviado el 2026-10-09**, y avisado el merge: el alta de cliente sin
+credenciales de Snowflake, que el estado de la conexión viaje con el cliente,
+la invitación directa, el rol elegido al aprobar, y confirmar en QA el cambio de
+rol y la suspensión. **Lo que sigue es esperar, no volver a pedirlo.**
+
+**Lo siguiente nuestro, sin tomar:** la verificación del acceso en la ficha con
+`schema-check`, que el `.pen` dibuja como «Última verificación · Verificar
+ahora».
+
+**GitGuardian marcó un falso positivo** en el PR #3: un texto inventado en un
+fixture. Se sacó en `9728d3a`, y marcar el incidente le queda al humano.
+
+**Otra terminal trabajaba el chat en paralelo** sobre el mismo árbol. Lo de
+cada una va en su rama y su PR · ver la memoria `sesiones-paralelas-rama-y-pr`.
+
+### ⇩ el 2026-10-08 · el chat dibuja por la forma
 
 **Lo que costó descubrir está en `docs/BITACORA-2026-10-08.md`.** **`main` está
 en `00d40d4`**, fast-forward de `Gerardo`.
