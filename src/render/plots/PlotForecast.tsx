@@ -12,7 +12,7 @@ import { MARGIN, axisReserve } from './core/axisGeometry'
 import { Grid } from './core/Grid'
 import { Band } from './core/Band'
 import { Line } from './core/Series'
-import type { Family } from '../../catalog/types'
+import type { FamiliaDeDibujo } from '../types'
 
 export type BandedPoint = { t: string; v: number; lo: number; hi: number }
 
@@ -23,7 +23,7 @@ export function PlotForecast({
   cut,
 }: {
   points: readonly BandedPoint[]
-  family: Family
+  family: FamiliaDeDibujo
   format: (v: number) => string
   /** Índice donde termina lo observado y empieza lo proyectado. */
   cut?: number

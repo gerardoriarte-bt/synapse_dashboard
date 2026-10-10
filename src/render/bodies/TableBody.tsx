@@ -36,8 +36,7 @@ import { Value } from '../primitives/Value'
 import { hue } from '../plots/core/seriesColor'
 import { UnknownPlotState } from '../states/UnknownPlotState'
 import type { NumberOptions } from '../format'
-import type { Family } from '../../api/types'
-import type { BodyProps } from '../types'
+import type { BodyProps, FamiliaDeDibujo } from '../types'
 
 /** Los gráficos que este cuerpo sabe dibujar HOY.
  *
@@ -68,7 +67,7 @@ const MAX_DECIMALS = 2
  *  Es más ancho que `BodyProps`, así que el registro lo sigue aceptando; el que
  *  monta con `null` es `ChatFigure`, por `TableWithoutFamily`. */
 export type TableBodyProps = Omit<BodyProps<'tabular', TableParams>, 'family'> & {
-  family: Family | null
+  family: FamiliaDeDibujo | null
 }
 
 export function TableBody({ value, params, family, grafico, format }: TableBodyProps) {

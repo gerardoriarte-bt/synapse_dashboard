@@ -8,7 +8,7 @@ import { ValueAxis } from './core/Axis'
 import { MARGIN, axisReserve } from './core/axisGeometry'
 import { Grid } from './core/Grid'
 import { Dots } from './core/Series'
-import type { Family } from '../../catalog/types'
+import type { FamiliaDeDibujo } from '../types'
 
 export type Cut = { etiqueta: string; v: number }
 
@@ -18,7 +18,7 @@ export function PlotDistribution({
   format,
 }: {
   cuts: readonly Cut[]
-  family: Family
+  family: FamiliaDeDibujo
   format: (v: number) => string
 }) {
   const { ref, w, h } = useSize()

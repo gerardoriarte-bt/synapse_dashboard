@@ -77,7 +77,7 @@ import { charsThatFit } from './core/axisGeometry'
 import { ceiling, linearScale } from './core/scale'
 import { Area, Line } from './core/Series'
 import { useSize } from './core/useSize'
-import type { Family } from '../../catalog/types'
+import type { FamiliaDeDibujo } from '../types'
 
 export type FacetSeries = { etiqueta: string; puntos: readonly { t: string; v: number }[] }
 
@@ -173,7 +173,7 @@ export function PlotSmallMult({
   unit,
 }: {
   series: readonly FacetSeries[]
-  family: Family
+  family: FamiliaDeDibujo
   /** Inyectado · el locale es del tenant y un plot no sabe de qué tenant se
    *  trata. */
   format: (v: number) => string

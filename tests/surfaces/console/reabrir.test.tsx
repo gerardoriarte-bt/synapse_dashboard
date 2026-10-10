@@ -129,6 +129,24 @@ function trama(evento: string, datos: unknown): string {
 function laConsola(opciones: { demoraDelPrimero?: number } = {}) {
   const preguntas: Record<string, unknown>[] = []
   server.use(
+    // **La tabla de bloques con `bars`**, en la forma del cable · 2026-10-09.
+    // Desde que una cifra sin familia se DIBUJA en neutro, tiene que pasar por
+    // `acceptsShape` como cualquier otra; con la tabla vacía de los mocks por
+    // defecto se declaraba «no puede dibujar».
+    http.get(`${API}/config/blocks`, () =>
+      ok([
+        {
+          type: 'bars',
+          ui_name: 'Barras',
+          accepted_shapes: ['categorical'],
+          col_span_min: 4,
+          col_span_max: 8,
+          row_span_min: 4,
+          row_span_max: 5,
+          layout_params: ['order', 'cap'],
+        },
+      ]),
+    ),
     http.get(`${API}/config/chat/threads`, () => ok([hilo, otro])),
     http.get(`${API}/config/chat/threads/:id/messages`, async ({ params }) => {
       if (params.id === hilo.id) {
@@ -193,13 +211,14 @@ describe('reabrir una consulta del riel · 2026-10-09', () => {
     const hoja = await abrirLaHoja()
     await userEvent.click(await within(hoja).findByRole('button', { name: /^¿Cómo se distribuyó/ }))
 
-    // Es la misma regla de la cifra en vivo: sin familia, el gráfico se
-    // declara con su título. Si el historial se adaptara con otro código, acá
+    // Es la misma regla de la cifra en vivo: sin familia, el gráfico se dibuja
+    // en neutro y lo dice. Si el historial se adaptara con otro código, acá
     // aparecería otra cosa —o nada—.
     expect(
       await within(hoja).findByText(/Distribución de inversión de medios por plataforma/),
     ).toBeVisible()
-    expect(within(hoja).getByText(/no declaró de qué familia es/)).toBeVisible()
+    expect(within(hoja).getByText(/Consulta fuera del catálogo/)).toBeVisible()
+    expect(await within(hoja).findByRole('img', { name: '2 categorías' })).toBeInTheDocument()
   })
 
   it('una pregunta sin respuesta guardada lo dice · no queda como si estuviera esperando', async () => {

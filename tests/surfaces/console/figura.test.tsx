@@ -215,7 +215,10 @@ describe('el gráfico del agente · 2026-10-07 · «su marca, nuestros cuerpos»
     expect(await screen.findByRole('img', { name: '2 categorías' })).toBeInTheDocument()
   })
 
-  it('SIN familia se declara y no se pinta · null no habilita un color', () => {
+  it('SIN familia se dibuja en NEUTRO y lo dice · decisión humana del 2026-10-09', async () => {
+    // Hasta el 2026-10-09 esto se declaraba sin dibujarse, y en QA el chat se
+    // quedó sin un gráfico que no fuera tabla. Ahora se dibuja con la rampa
+    // `consulta` —neutra, de `decisiones.css`— y un rótulo que lo declara.
     const { container } = render(
       <ChatFigure
         dato={dato({
@@ -229,9 +232,22 @@ describe('el gráfico del agente · 2026-10-07 · «su marca, nuestros cuerpos»
         now={now}
       />,
     )
-    expect(container.textContent).toContain('ROAS por canal')
-    expect(container.textContent).toContain('no declaró de qué familia es')
-    expect(container.querySelector('figure')).toBeNull()
+    expect(await screen.findByRole('img', { name: '2 categorías' })).toBeInTheDocument()
+    expect(container.textContent).toContain('Consulta fuera del catálogo')
+    // **El color sale de `consulta` y de ninguna familia del catálogo**: que se
+    // pinte con `demanda` sería elegir una familia, que es lo que la regla
+    // prohíbe.
+    expect(container.innerHTML).toContain('--color-fam-consulta-')
+    expect(container.innerHTML).not.toMatch(/--color-fam-(demanda|medios|inventario|cliente|externo)-/)
+  })
+
+  it('CON familia no hay rótulo de neutro · el rótulo es sólo para lo que no es métrica', async () => {
+    const { container } = render(
+      <ChatFigure dato={dato({ valor: barras, tipoDePanel: 'bars' } as never)} bloques={bloques} format={format} now={now} />,
+    )
+    await screen.findByRole('img', { name: '2 categorías' })
+    expect(container.textContent).not.toContain('Consulta fuera del catálogo')
+    expect(container.innerHTML).toContain('--color-fam-demanda-')
   })
 })
 

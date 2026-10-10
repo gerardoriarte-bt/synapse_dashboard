@@ -36,8 +36,8 @@ import { Grid } from './core/Grid'
 import { Area, Line } from './core/Series'
 import { Legend } from './core/Legend'
 import { hue } from './core/seriesColor'
-import type { Family } from '../../catalog/types'
 import { Label } from '../primitives/Label'
+import type { FamiliaDeDibujo } from '../types'
 
 export type DrawableSeries = { etiqueta: string; puntos: { t: string; v: number }[] }
 
@@ -53,7 +53,7 @@ export function PlotSeries({
   leer,
 }: {
   series: readonly DrawableSeries[]
-  family: Family
+  family: FamiliaDeDibujo
   /** El rótulo del eje de valores · abreviado. */
   format: (v: number) => string
   /** El área solo tiene sentido con UNA serie: con varias, las capas se tapan y

@@ -25,6 +25,36 @@
 
 @theme static {
   --color-peligro: #f4676a;
+
+  /* ── `consulta` · los datos que no son una métrica · 2026-10-09 ─────────────
+   *
+   * El agente grafica consultas libres —«inversión por plataforma»— que no
+   * son una métrica del catálogo y por eso no tienen familia. La regla dice
+   * que sin familia no hay color, y se declaraban sin dibujarse. **Decisión
+   * humana del 2026-10-09**: ver la data pesa más que el tono, así que se
+   * dibujan en NEUTRO mientras diseño decide — §14 de
+   * `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md`.
+   *
+   * **Sin un hex**: sale de `ink` mezclado contra `panel`, así que invierte con
+   * el tema sin un segundo bloque. Los `w*` no sirven —son veladuras
+   * translúcidas— y `dim` quedaba pegado a uno de los escalones: dos series del
+   * mismo gris.
+   *
+   * **Contraste medido contra `panel`, mezclando en oklab** como lo hace el
+   * navegador · el 1 es el trazo principal, como en las familias del `.pen`:
+   *
+   *   escalón       1      3      0      2      4
+   *   oscuro     14.89   9.76   6.78   4.97   3.80
+   *   claro      17.38  10.90   6.87   4.76   3.57
+   *
+   * Todos sobre 3:1, el mínimo para un trazo de gráfico, y separados entre sí.
+   * `contraste` no mide colores de datos; estos números son de un cálculo
+   * aparte, del 2026-10-09. */
+  --color-fam-consulta-0: color-mix(in oklab, var(--color-ink) 68%, var(--color-panel));
+  --color-fam-consulta-1: var(--color-ink);
+  --color-fam-consulta-2: color-mix(in oklab, var(--color-ink) 57%, var(--color-panel));
+  --color-fam-consulta-3: color-mix(in oklab, var(--color-ink) 82%, var(--color-panel));
+  --color-fam-consulta-4: color-mix(in oklab, var(--color-ink) 48%, var(--color-panel));
 }
 
 /* Mismo selector y misma razón que el bloque claro de `tokens.css`: sin
