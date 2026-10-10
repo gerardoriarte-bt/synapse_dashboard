@@ -76,6 +76,9 @@ type Props = {
   bloques: BlockTable
   /** Para el agrupado del riel · «HOY», «ESTA SEMANA», «JULIO». */
   format: Formatter
+  /** El mes abierto del tenant, `YYYY-MM` · `open_period` · para que una cifra
+   *  del agente diga que su último mes está incompleto. */
+  mesEnCurso?: string | undefined
   onClose: () => void
   /** **El selector de agente, sólo para admin** · 2026-10-06. Sin
    *  `onAgente` no se pinta: un planner no puede elegir —el servicio le
@@ -94,6 +97,7 @@ export function ChatSheet({
   panelTipo,
   bloques,
   format,
+  mesEnCurso,
   onClose,
   agentes,
   agenteId,
@@ -317,6 +321,7 @@ export function ChatSheet({
             bloques={bloques}
             format={format}
             now={ahora}
+            {...(mesEnCurso === undefined ? {} : { mesEnCurso })}
           />
         </div>
 

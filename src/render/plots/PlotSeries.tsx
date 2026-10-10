@@ -118,7 +118,16 @@ export function PlotSeries({
   return (
     <div className="w-full h-full min-h-0 flex flex-col gap-3">
       {/* Con una sola serie la leyenda repetiría el título del panel. */}
-      {single ? null : <Legend entries={leyenda} family={family} />}
+      {single ? null : (
+        <Legend
+          entries={leyenda}
+          family={family}
+          // El momento que la leyenda está leyendo: el punto activo o el último.
+          {...(fechar === undefined || rotulos[indiceLeyenda] === undefined
+            ? {}
+            : { cuando: rotulos[indiceLeyenda] })}
+        />
+      )}
 
       <div
         ref={ref}

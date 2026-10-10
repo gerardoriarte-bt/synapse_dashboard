@@ -1,0 +1,175 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "config": {
+    "bar": {
+      "minBandSize": 5
+    }
+  },
+  "data": {
+    "values": [
+      {
+        "MES": "2026-09-01",
+        "PLATAFORMA": "Google PMax",
+        "VENTAS_USD": 142092.29
+      },
+      {
+        "MES": "2026-09-01",
+        "PLATAFORMA": "Google",
+        "VENTAS_USD": 111528.15
+      },
+      {
+        "MES": "2026-09-01",
+        "PLATAFORMA": "Facebook",
+        "VENTAS_USD": 92738.26
+      },
+      {
+        "MES": "2026-09-01",
+        "PLATAFORMA": "Criteo",
+        "VENTAS_USD": 34014.8
+      },
+      {
+        "MES": "2026-08-01",
+        "PLATAFORMA": "Google",
+        "VENTAS_USD": 206445.54
+      },
+      {
+        "MES": "2026-08-01",
+        "PLATAFORMA": "Facebook",
+        "VENTAS_USD": 201573.73
+      },
+      {
+        "MES": "2026-08-01",
+        "PLATAFORMA": "Google PMax",
+        "VENTAS_USD": 189855.6
+      },
+      {
+        "MES": "2026-08-01",
+        "PLATAFORMA": "Criteo",
+        "VENTAS_USD": 32171.89
+      },
+      {
+        "MES": "2026-08-01",
+        "PLATAFORMA": "Pulip",
+        "VENTAS_USD": 349.3
+      },
+      {
+        "MES": "2026-08-01",
+        "PLATAFORMA": "Microsoft",
+        "VENTAS_USD": 108.21
+      },
+      {
+        "MES": "2026-07-01",
+        "PLATAFORMA": "Google",
+        "VENTAS_USD": 204394.3
+      },
+      {
+        "MES": "2026-07-01",
+        "PLATAFORMA": "Facebook",
+        "VENTAS_USD": 187838.4
+      },
+      {
+        "MES": "2026-07-01",
+        "PLATAFORMA": "Google PMax",
+        "VENTAS_USD": 136735
+      },
+      {
+        "MES": "2026-07-01",
+        "PLATAFORMA": "Criteo",
+        "VENTAS_USD": 38517.39
+      },
+      {
+        "MES": "2026-07-01",
+        "PLATAFORMA": "Microsoft",
+        "VENTAS_USD": 2402.11
+      }
+    ]
+  },
+  "encoding": {
+    "color": {
+      "field": "PLATAFORMA",
+      "title": "Plataforma",
+      "type": "nominal"
+    },
+    "tooltip": [
+      {
+        "field": "PLATAFORMA",
+        "title": "Plataforma",
+        "type": "nominal"
+      },
+      {
+        "field": "MES",
+        "format": "%b %Y",
+        "timeUnit": "utcyearmonth",
+        "title": "Mes",
+        "type": "temporal"
+      },
+      {
+        "field": "VENTAS_USD",
+        "format": ",.6~f",
+        "title": "Ventas_usd",
+        "type": "quantitative"
+      }
+    ],
+    "x": {
+      "axis": {
+        "format": "%b %Y",
+        "title": "Mes"
+      },
+      "field": "MES",
+      "sort": null,
+      "timeUnit": "utcyearmonth",
+      "type": "temporal"
+    },
+    "xOffset": {
+      "field": "PLATAFORMA",
+      "type": "nominal"
+    },
+    "y": {
+      "axis": {
+        "format": ".3~s",
+        "labelExpr": "replace(datum.label, 'G', 'B')",
+        "title": "Ventas (USD)"
+      },
+      "field": "VENTAS_USD",
+      "sort": null,
+      "type": "quantitative"
+    }
+  },
+  "mark": "bar",
+  "title": "Ventas por plataforma - últimos 3 meses (USD)",
+  "usermeta": {
+    "snowflake": {
+      "color_mapping": {
+        "Criteo": {
+          "hex": "#4c78a8",
+          "name": "blue"
+        },
+        "Facebook": {
+          "hex": "#f58518",
+          "name": "orange"
+        },
+        "Google": {
+          "hex": "#e45756",
+          "name": "red"
+        },
+        "Google PMax": {
+          "hex": "#72b7b2",
+          "name": "teal"
+        },
+        "Microsoft": {
+          "hex": "#54a24b",
+          "name": "green"
+        },
+        "Pulip": {
+          "hex": "#eeca3b",
+          "name": "yellow"
+        }
+      },
+      "columnRoles": {
+        "MES": "dimension",
+        "PLATAFORMA": "dimension",
+        "VENTAS_USD": "measure"
+      }
+    }
+  }
+}

@@ -51,6 +51,7 @@ import type { BlockTable } from '../../catalog/blocks'
 import type { PanelType } from '../../catalog/types'
 import type { Formatter } from '../../render/format'
 import type { FamiliaDeDibujo } from '../../render/types'
+import { lineaDeEjes, mesEnCursoEn, rotularFechas, rotularFechasEnTexto } from './figuraDelAgente'
 import type { ChatEvent, Value } from '../../api/types'
 
 type Dato = Extract<ChatEvent, { tipo: 'dato' }>
@@ -88,9 +89,12 @@ type Props = {
   bloques: BlockTable
   format: Formatter
   now: Date
+  /** El mes abierto del tenant, `YYYY-MM` · de `open_period`. Ausente: no se
+   *  sabe, y no se marca ninguno. */
+  mesEnCurso?: string | undefined
 }
 
-export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now }: Props) {
+export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now, mesEnCurso }: Props) {
   const forma = dato.valor.forma
   // ── CON QUÉ CUERPO · §7 cerrada el 2026-10-08 (humano): por la FORMA ──────
   //
@@ -173,8 +177,17 @@ export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now
     )
   }
 
+  // **Lo que hace legible la cifra, para cualquier forma** · 2026-10-10. Ver
+  // `figuraDelAgente.ts` y `docs/AUDITORIA-2026-10-10-graficos-del-chat.md`.
+  const ejes = lineaDeEjes(dato.ejes)
+  const mesAbierto = mesEnCursoEn(dato.valor, mesEnCurso)
+
   const comunes = {
-    value: dato.valor,
+    // Las fechas de una dimensión se rotulan como las lee el cliente: una barra
+    // del agente decía `2026-09-01`. Sólo cuando el agente declaró que la
+    // dimensión ES una fecha.
+    value: dato.ejes?.dimensionEsFecha === true ? rotularFechas(dato.valor, format) : dato.valor,
+    ...(dato.grafico === undefined ? {} : { grafico: dato.grafico }),
     params: {},
     // La cifra del chat no vive en la grilla, pero los cuerpos piden un
     // `Placement` para decidir densidad. Se le da el de la columna de
@@ -194,6 +207,20 @@ export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now
       {familiaDeDibujo === 'consulta' ? (
         <Label as="div">Consulta fuera del catálogo · se dibuja en neutro</Label>
       ) : null}
+      {/* **Qué mide y cómo se reparte**, con las palabras del agente: «Ingresos
+          (USD) · por mes · por plataforma». Un eje que dice «1.5M» sin esto no
+          dice de qué. */}
+      {ejes === null ? null : <Label as="div">{ejes}</Label>}
+      {/* **Por qué se ve como tabla**, cuando el gráfico no se pudo dibujar tal
+          como lo pidió el agente. Antes desaparecía. */}
+      {dato.aviso === undefined ? null : (
+        <Label as="div">{`Se muestran los datos como tabla · ${rotularFechasEnTexto(dato.aviso, format)}`}</Label>
+      )}
+      {/* **El mes abierto se dice**: su cifra está incompleta y, al final de una
+          serie, se lee como una caída. */}
+      {mesAbierto === null ? null : (
+        <Label as="div">{`${format.axisDate(mesAbierto, 'mes')} es el mes en curso · su cifra está incompleta`}</Label>
+      )}
 
       {/* **El alto es el del `rowSpan` que se le da al cuerpo** · 2026-10-07.
           Los cuerpos de gráfico ocupan el alto de su contenedor, y la figura

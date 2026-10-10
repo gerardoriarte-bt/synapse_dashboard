@@ -1,0 +1,99 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "config": {
+    "bar": {
+      "minBandSize": 5
+    }
+  },
+  "data": {
+    "values": [
+      {
+        "MES": "2026-05-01",
+        "REVENUE": 1041082
+      },
+      {
+        "MES": "2026-06-01",
+        "REVENUE": 730631
+      },
+      {
+        "MES": "2026-07-01",
+        "REVENUE": 814357
+      },
+      {
+        "MES": "2026-08-01",
+        "REVENUE": 918978
+      },
+      {
+        "MES": "2026-09-01",
+        "REVENUE": 1319462
+      },
+      {
+        "MES": "2026-10-01",
+        "REVENUE": 131370
+      }
+    ]
+  },
+  "encoding": {
+    "tooltip": [
+      {
+        "field": "MES",
+        "format": "%b %Y",
+        "timeUnit": "utcyearmonth",
+        "title": "Mes",
+        "type": "temporal"
+      },
+      {
+        "field": "REVENUE",
+        "format": ",.6~f",
+        "title": "Revenue",
+        "type": "quantitative"
+      }
+    ],
+    "x": {
+      "axis": {
+        "title": "Mes"
+      },
+      "field": "MES",
+      "sort": null,
+      "timeUnit": "utcyearmonth",
+      "type": "temporal"
+    },
+    "y": {
+      "axis": {
+        "format": ".3~s",
+        "labelExpr": "replace(datum.label, 'G', 'B')",
+        "title": "Ingresos (USD)"
+      },
+      "field": "REVENUE",
+      "sort": null,
+      "type": "quantitative"
+    }
+  },
+  "mark": {
+    "color": "#E11A2B",
+    "point": {
+      "color": "#E11A2B"
+    },
+    "strokeWidth": 3,
+    "type": "line"
+  },
+  "title": "Ingresos mensuales UA MX (May–Oct 2026, USD)",
+  "usermeta": {
+    "snowflake": {
+      "color_mapping": {
+        "line": {
+          "hex": "#E11A2B",
+          "name": "red"
+        },
+        "point": {
+          "hex": "#E11A2B",
+          "name": "red"
+        }
+      },
+      "columnRoles": {
+        "MES": "dimension",
+        "REVENUE": "measure"
+      }
+    }
+  }
+}
