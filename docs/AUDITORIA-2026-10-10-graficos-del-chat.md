@@ -67,3 +67,19 @@ título**; descarta todo lo demás.
    `categoricaComparada`; traducir `bar` + `color` a esa forma respeta la marca.
 6. **Separar series en neutro** (5): es de diseño, se suma a la §14.
 7. **La narración en inglés** (7): pedido a datos, con la captura.
+
+## Lo que se hizo el mismo día · PR #12, encima del #11
+
+Con una consigna del humano: **que valga para cualquier gráfico que llegue**, no
+sólo para los siete. Por eso el traductor pasó a ser una tabla de traducciones
+por PAPEL —medida, dimensión, serie— y no una lista de casos.
+
+| # | Estado |
+|---|---|
+| 1 | **Resuelto.** Nada desaparece: lo que no se dibuja como gráfico se muestra como tabla, con la razón |
+| 2 | **Resuelto como aviso.** «oct 26 es el mes en curso · su cifra está incompleta». Marcar el tramo en el trazo queda pendiente |
+| 3 | **Resuelto.** «Ingresos (USD) · por mes · por plataforma», con las palabras del agente |
+| 4 | **Resuelto.** La leyenda dice de cuándo: «ago 26 · Google 613,386.49». También en la consola |
+| 5 | **Sigue abierto** · de diseño, §14 |
+| 6 | **Resuelto a medias.** Una cifra que falta ya no se toma como fila rota: el gráfico va como tabla y nombra lo que falta. **El hueco dibujado** pide que `Punto.v` admita `null` en todo el repertorio de series |
+| 7 | **Sigue abierto** · de datos |
