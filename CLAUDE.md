@@ -574,7 +574,101 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-10-08 · el chat dibuja por la forma
+### ⇩ ACÁ SE PARÓ · 2026-10-10 · los gráficos del agente se entienden
+
+**`main` está en `2c79384`** (#11 y #12). Lo que costó y lo que quedó está en
+`docs/AUDITORIA-2026-10-10-graficos-del-chat.md`, que tiene al final qué
+resolvió el #12.
+
+**El traductor de `chart_spec` es una tabla por PAPEL** —medida, dimensión,
+serie—, no por caso: crecer a un gráfico nuevo es agregar una entrada a
+`TRADUCCIONES` en `src/api/vegaLite.ts`. **Lo que no se dibuja se muestra como
+tabla con su razón**; nada desaparece. Un gráfico sin familia se dibuja en
+neutro (`consulta`, en `decisiones.css`).
+
+**Abierto**: el tramo del mes en curso en el trazo (hoy sólo el aviso), los
+huecos dibujados —piden `Punto.v` nulo en todo el repertorio de series—, separar
+series en neutro (§14, diseño) y la narración del agente en inglés (datos).
+
+**Otra terminal trabaja UX en paralelo**: lo de cada una va en su rama y su PR ·
+memoria `sesiones-paralelas-rama-y-pr`.
+
+### ⇩ ACÁ SE PARÓ · 2026-10-09 (tarde) · esperando los dos mensajes del chat
+
+**`main` está en `e87fefb`.** Después de las tablas del chat entraron: el riel
+que reabre una consulta y la elimina con confirmación (#6, #7), la puerta que ya
+no reescribe `PARA-BACKEND.md` (#8), el cable de consola reverificado entero
+contra `9dc481e` (#9) y los pedidos al backend remedidos —de diez quedan tres,
+ninguno de código suyo— con B1.34 cerrada (#10).
+
+**ESPERANDO AL BACKEND, y lo que sigue es esperar, no volver a pedirlo**:
+`MENSAJE-2026-10-08-backend-procedencia-por-nombre.md` —el cruce por nombre que
+firma una tabla de medios con la base de la venta del sitio— y
+`MENSAJE-2026-10-09-backend-tablas-del-chat.md` —la columna `label` que se
+descarta—. Hasta que lleguen, las tablas del chat de pestaña se declaran en vez
+de dibujarse.
+
+**Los meses viejos ya se cargaron en QA** (el humano, desde A5), así que el `t`
+de las series llega en ISO también ahí.
+
+**Desplegado en QA, el chat dibuja tablas y ningún otro gráfico.** Dos causas:
+el backend no lee el `chart_spec` porque llega como texto —ya pedido, punto 4
+del mensaje del 10-08— y **una consulta libre no tiene familia y no la va a
+tener**. Lo segundo **se destrabó el mismo día, por decisión humana**: un gráfico
+sin familia se dibuja en NEUTRO —la rampa `consulta` de `decisiones.css`— con un
+rótulo que lo dice. Diseño puede afinarlo: §14 de
+`docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md`.
+
+### ⇩ ACÁ SE PARÓ · 2026-10-09 · las tablas del chat, y la puerta en clone limpio
+
+**`main` está en `f86f2b4`**, del PR #4 (`chat/tablas-sin-rotulos`). Empezó
+porque QA no dibujaba los gráficos del chat, y **QA sirve una imagen anterior a
+`920ec8d`**: el texto «no salió de un panel» ya no existe en el código.
+
+**Al medirlo contra `9dc481e` apareció lo de fondo**: las tablas del chat de
+pestaña llegan **sin la columna de la dimensión** —`inferTabularColumns`
+descarta `label`, y el agente escribe `fuente AS label`—. Del lado nuestro: una
+tabla sin rótulos se declara, una con rótulos y sin familia se dibuja sin la
+marca, y la capa vacía ya no se firma `GOLD` (`DatoDeRespuesta.capa` es
+anulable).
+
+**ESPERANDO AL BACKEND**, en `docs/MENSAJE-2026-10-09-backend-tablas-del-chat.md`,
+**enviado el 2026-10-09**: columnas desde `rowType`, por qué una tabla llega dos
+veces, y desplegar el front desde `main` en QA. Confirma el pedido del 10-08 sin
+repetirlo. **Lo que sigue es esperar, no volver a pedirlo.**
+
+**La puerta no corría en un clone limpio**: `afirmaciones` leía
+`tools/plan-tareas.json`, que `.gitignore` excluye, y marcaba 221 tareas «fuera
+del plan». Ahora lee el markdown con el parser del plan (`b6cffcb`).
+
+**Sin mirar**: al reabrir desde el riel un hilo creado por `curl`, la
+conversación salió vacía. No se sabe si pasa con hilos del front.
+
+### ⇩ el 2026-10-09 · administración: clientes, ficha y usuarios
+
+**`main` está en `9728d3a`**, del PR #3 (`admin/clientes-y-usuarios`).
+Clientes y su ficha van lado a lado, los usuarios se organizan por cliente con
+cambiar rol y suspender, y está la cola de solicitudes de acceso. Las decisiones
+del humano están escritas dentro de
+`docs/AUDITORIA-2026-10-08-admin-clientes-y-usuarios.md`.
+
+**ESPERANDO AL BACKEND**, en `docs/MENSAJE-2026-10-09-backend-administracion.md`,
+**enviado el 2026-10-09**, y avisado el merge: el alta de cliente sin
+credenciales de Snowflake, que el estado de la conexión viaje con el cliente,
+la invitación directa, el rol elegido al aprobar, y confirmar en QA el cambio de
+rol y la suspensión. **Lo que sigue es esperar, no volver a pedirlo.**
+
+**Lo siguiente nuestro, sin tomar:** la verificación del acceso en la ficha con
+`schema-check`, que el `.pen` dibuja como «Última verificación · Verificar
+ahora».
+
+**GitGuardian marcó un falso positivo** en el PR #3: un texto inventado en un
+fixture. Se sacó en `9728d3a`, y marcar el incidente le queda al humano.
+
+**Otra terminal trabajaba el chat en paralelo** sobre el mismo árbol. Lo de
+cada una va en su rama y su PR · ver la memoria `sesiones-paralelas-rama-y-pr`.
+
+### ⇩ el 2026-10-08 · el chat dibuja por la forma
 
 **Lo que costó descubrir está en `docs/BITACORA-2026-10-08.md`.** **`main` está
 en `00d40d4`**, fast-forward de `Gerardo`.
