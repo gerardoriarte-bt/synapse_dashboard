@@ -60,10 +60,13 @@ const DOCE_MESES: Multi = {
 const grafico = () => screen.getByRole('group', { name: /usá las flechas/ })
 
 describe('la leyenda · el `.pen` la dibuja y no estaba', () => {
-  it('nombra cada serie con el valor del ÚLTIMO punto', () => {
+  it('nombra cada serie con el valor del ÚLTIMO punto · y dice de cuándo es', () => {
+    // **«5 oct» va primero desde el 2026-10-10**: la cifra de la leyenda es la
+    // de un instante, y sin decir cuál era un número sin rótulo.
     render(<SeriesBody {...base} value={TENDENCIA} params={{}} />)
     const leyenda = screen.getByRole('list')
     expect(within(leyenda).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      format.axisDate('2026-10-05', 'dia'),
       'Ventas12,470',
       'Sesiones38,578',
       'Inversión1,276',
@@ -118,7 +121,10 @@ describe('la lectura · el monto entero de cada serie en un instante', () => {
     fireEvent.keyDown(grafico(), { key: 'ArrowRight' })
     fireEvent.keyDown(grafico(), { key: 'ArrowLeft' })
     const leyenda = screen.getByRole('list')
-    expect(within(leyenda).getAllByRole('listitem')[0]).toHaveTextContent('Ventas16,906')
+    const items = within(leyenda).getAllByRole('listitem')
+    // El momento SIGUE al punto leído: el 4, no el último.
+    expect(items[0]).toHaveTextContent(format.axisDate('2026-10-04', 'dia'))
+    expect(items[1]).toHaveTextContent('Ventas16,906')
   })
 
   it('con el puntero: el borde izquierdo lee el primer punto, y salir la cierra', () => {

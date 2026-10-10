@@ -1275,6 +1275,32 @@ export interface components {
             tipoDePanel?: components["schemas"]["TipoPanel"];
             presentacion?: components["schemas"]["Presentacion"];
             /**
+             * @description **Qué gráfico del repertorio dibuja la marca del agente** ·
+             *     2026-10-10. `bars` o `columns` según la orientación que eligió,
+             *     `multiline` o `stackarea` según la marca. Ausente: el del cuerpo.
+             */
+            grafico?: components["schemas"]["GraficoId"];
+            /**
+             * @description **Lo que el agente escribió para leer el gráfico** · 2026-10-10.
+             *     Los títulos de sus ejes —«Ingresos (USD)», «Plataforma»—, que se
+             *     descartaban: un eje decía «1.5M» y no de qué. Ausente cuando la
+             *     cifra no salió de un `chart_spec`.
+             */
+            ejes?: {
+                medida: string | null;
+                dimension: string | null;
+                serie: string | null;
+                dimensionEsFecha: boolean;
+            };
+            /**
+             * @description **Por qué un gráfico del agente se muestra como TABLA** ·
+             *     2026-10-10. Hasta ese día, lo que no se sabía dibujar se
+             *     descartaba en silencio; ahora sus datos se muestran y esto dice
+             *     por qué no como gráfico —«faltan cifras…», «las barras agrupadas…
+             *     todavía no tienen un gráfico»—.
+             */
+            aviso?: string;
+            /**
              * @description Cuando la respuesta se apoya en una métrica del catálogo. Null
              *     si el agente la compuso para responder — y en ese caso el front
              *     la muestra sin CTA de drill-down, porque no hay a dónde ir.

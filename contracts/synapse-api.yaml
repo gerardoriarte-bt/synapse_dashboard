@@ -1904,6 +1904,33 @@ components:
                 Ausente cuando el dato no trajo gráfico: ahí manda el panel de
                 origen, que es la regla de F3.6.
             presentacion: { $ref: '#/components/schemas/Presentacion' }
+            grafico:
+              $ref: '#/components/schemas/GraficoId'
+              description: |
+                **Qué gráfico del repertorio dibuja la marca del agente** ·
+                2026-10-10. `bars` o `columns` según la orientación que eligió,
+                `multiline` o `stackarea` según la marca. Ausente: el del cuerpo.
+            ejes:
+              type: object
+              description: |
+                **Lo que el agente escribió para leer el gráfico** · 2026-10-10.
+                Los títulos de sus ejes —«Ingresos (USD)», «Plataforma»—, que se
+                descartaban: un eje decía «1.5M» y no de qué. Ausente cuando la
+                cifra no salió de un `chart_spec`.
+              required: [medida, dimension, serie, dimensionEsFecha]
+              properties:
+                medida: { type: [string, 'null'] }
+                dimension: { type: [string, 'null'] }
+                serie: { type: [string, 'null'] }
+                dimensionEsFecha: { type: boolean }
+            aviso:
+              type: string
+              description: |
+                **Por qué un gráfico del agente se muestra como TABLA** ·
+                2026-10-10. Hasta ese día, lo que no se sabía dibujar se
+                descartaba en silencio; ahora sus datos se muestran y esto dice
+                por qué no como gráfico —«faltan cifras…», «las barras agrupadas…
+                todavía no tienen un gráfico»—.
             metricId:
               type: [string, 'null']
               description: |

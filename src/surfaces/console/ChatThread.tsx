@@ -79,9 +79,11 @@ type Props = {
   bloques: BlockTable
   format: Formatter
   now: Date
+  /** El mes abierto del tenant · ver `ChatFigure`. */
+  mesEnCurso?: string | undefined
 }
 
-export function ChatThread({ turns, panelTipo, bloques, format, now }: Props) {
+export function ChatThread({ turns, panelTipo, bloques, format, now, mesEnCurso }: Props) {
   if (turns.length === 0) {
     return (
       <p className="font-body text-cuerpo leading-cuerpo text-dim m-0">
@@ -128,6 +130,7 @@ export function ChatThread({ turns, panelTipo, bloques, format, now }: Props) {
                 bloques={bloques}
                 format={format}
                 now={now}
+                {...(mesEnCurso === undefined ? {} : { mesEnCurso })}
               />
             ))}
 
