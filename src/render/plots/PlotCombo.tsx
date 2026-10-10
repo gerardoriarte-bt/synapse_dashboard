@@ -88,7 +88,7 @@ import { Grid } from './core/Grid'
 import { Bars, Dots, Line } from './core/Series'
 import type { BandScale } from './core/scale'
 import type { DrawableSeries } from './PlotSeries'
-import type { Family } from '../../catalog/types'
+import type { FamiliaDeDibujo } from '../types'
 
 /** La fracción del paso que queda como aire · medida en el `.pen`: paso 42.67 y
  *  columna 25.6, o sea 0.6 de banda. El defecto de `bandScale` es 0.2 y no deja
@@ -136,7 +136,7 @@ export function PlotCombo({
   columns: DrawableSeries
   /** La razón, sobre su propia escala y sin eje. */
   line: DrawableSeries
-  family: Family
+  family: FamiliaDeDibujo
   format: (v: number) => string
 }) {
   const { ref, w, h } = useSize()

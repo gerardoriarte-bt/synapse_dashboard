@@ -378,8 +378,10 @@ export function datoDesdeTrama(d: WireChatFrameData): Extract<ChatEvent, { tipo:
     // produjo, no como el último refresco del panel.
     frescura: p.queried_at === '' ? p.freshness : p.queried_at,
     catalogVersion: p.catalog_version,
-    ...(grafico === null ? {} : { tipoDePanel: grafico.tipoDePanel }),
+    ...(grafico === null ? {} : { tipoDePanel: grafico.tipoDePanel, ejes: grafico.ejes }),
     ...(grafico?.titulo == null ? {} : { titulo: grafico.titulo }),
+    ...(grafico?.grafico === undefined ? {} : { grafico: grafico.grafico }),
+    ...(grafico?.razon === undefined ? {} : { aviso: grafico.razon }),
   }
 }
 

@@ -547,6 +547,55 @@ describe('§F3.6 · el evento `data` se traduce · desde `55e8419`', () => {
     })
   })
 
+  it('los TÍTULOS de los ejes llegan hasta el dato · 2026-10-10', async () => {
+    // Sin esto, el traductor los lee y la figura nunca los ve: cada uno pasa su
+    // prueba y el salto entre los dos queda sin cubrir.
+    responde([
+      INFO,
+      conGrafico(),
+      DONE,
+    ])
+    const [evento] = await recolectar(askSynapse(PREGUNTA))
+    expect(evento).toMatchObject({
+      tipo: 'dato',
+      ejes: { medida: 'INGRESOS', dimension: 'MES', serie: null, dimensionEsFecha: true },
+    })
+  })
+
+  it('un gráfico que no se dibuja llega como TABLA con su aviso · antes se descartaba', async () => {
+    responde([
+      INFO,
+      trama('data', {
+        shape: 'raw',
+        data: {
+          shape: 'chart',
+          chart_spec: JSON.stringify({
+            mark: 'bar',
+            encoding: {
+              x: { field: 'MES', type: 'temporal', title: 'Mes' },
+              y: { field: 'V', type: 'quantitative', title: 'Ventas (USD)' },
+              color: { field: 'P', type: 'nominal', title: 'Plataforma' },
+            },
+            data: { values: [{ MES: '2026-09-01', V: 1, P: 'Google' }] },
+          }),
+        },
+        provenance: {
+          source: 'cortex_agent', metric_key: '', period: '2026-09', sql_available: true, base: '',
+          base_source: '', family: '', layer: '', source_system: '', catalog_version: 0, freshness: '',
+          queried_at: '2026-10-10T10:00:00Z',
+        },
+      }),
+      DONE,
+    ])
+    const [evento] = await recolectar(askSynapse(PREGUNTA_DE_PESTANA))
+    expect(evento).toMatchObject({
+      tipo: 'dato',
+      tipoDePanel: 'table',
+      valor: { forma: 'tabular' },
+      aviso: expect.stringContaining('Plataforma'),
+    })
+  })
+
   it('en la PESTAÑA `family: ""` llega como `null` · se declara, no se descarta', async () => {
     // `provenanceFromContext` en modo pestaña sólo llena `source` y `period`;
     // el resto viaja vacío. Antes eso tiraba todos los datos del chat de

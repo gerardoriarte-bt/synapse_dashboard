@@ -129,6 +129,10 @@ export function ConsoleContainer() {
   const tabs = context.data?.tabs ?? []
   const activeTab = tabs.find((t) => t.id === tabId) ?? tabs[0]
   const periods = context.data?.periodos ?? []
+  // **El mes abierto, para que el chat diga que su última cifra está
+  // incompleta** · 2026-10-10. Es `open_period` renombrado por el adaptador: si
+  // no llegó, ningún período lo es y no se marca nada.
+  const mesEnCurso = periods.find((p) => p.enCurso === true)?.id
 
   /** ── EL MES ABIERTO ARRANCA VACÍO, Y ASÍ LA CONSOLA NACÍA MUERTA ───────────
    *
@@ -537,6 +541,7 @@ export function ConsoleContainer() {
         panelTipo={askingPanel.tipo}
         bloques={blockTable(blocks.data?.blocks ?? [])}
         format={format}
+        {...(mesEnCurso === undefined ? {} : { mesEnCurso })}
         onClose={() => setAskingPanelId(null)}
         {...selectorDeAgente}
       />
@@ -561,6 +566,7 @@ export function ConsoleContainer() {
         titulo={activeTab.nombre}
         bloques={blockTable(blocks.data?.blocks ?? [])}
         format={format}
+        {...(mesEnCurso === undefined ? {} : { mesEnCurso })}
         onClose={() => setAskingTab(false)}
         {...selectorDeAgente}
       />

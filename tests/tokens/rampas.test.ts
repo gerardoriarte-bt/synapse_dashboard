@@ -23,9 +23,15 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { FAMILY_STEPS, familyVar } from '@/tokens/tokens'
 
-/** Lo que el CSS declara de verdad, contado del archivo generado. */
+/** Lo que el CSS declara de verdad, contado de las DOS hojas que se cargan.
+ *
+ *  **`decisiones.css` cuenta desde el 2026-10-09**: ahí vive `consulta`, la
+ *  rampa neutra que una decisión humana agregó y el `.pen` todavía no emite.
+ *  `gen-tokens` la suma a `FAMILY_STEPS`, así que contar sólo `tokens.css` le
+ *  pedía a la prueba que fallara por una familia que sí existe. */
 function pasosDeclarados(): Map<string, Set<number>> {
-  const css = readFileSync('src/tokens/tokens.css', 'utf-8')
+  const css =
+    readFileSync('src/tokens/tokens.css', 'utf-8') + readFileSync('src/tokens/decisiones.css', 'utf-8')
   const out = new Map<string, Set<number>>()
   for (const m of css.matchAll(/--color-fam-([a-z]+)-(\d+)\s*:/g)) {
     const familia = m[1] as string

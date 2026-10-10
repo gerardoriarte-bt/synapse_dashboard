@@ -11,7 +11,7 @@ import { hue } from './core/seriesColor'
 import { AxisText } from './core/Axis'
 import { charsThatFit } from './core/axisGeometry'
 import { stack } from './core/stack'
-import type { Family } from '../../catalog/types'
+import type { FamiliaDeDibujo } from '../types'
 
 export type Part = { etiqueta: string; v: number; porcentaje: number }
 
@@ -25,7 +25,7 @@ export function PlotComposition({
   format,
 }: {
   parts: readonly Part[]
-  family: Family
+  family: FamiliaDeDibujo
   format: (v: number) => string
 }) {
   const { ref, w, h } = useSize()

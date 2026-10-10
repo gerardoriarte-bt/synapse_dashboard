@@ -1,0 +1,191 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "config": {
+    "bar": {
+      "minBandSize": 5
+    }
+  },
+  "data": {
+    "values": [
+      {
+        "INGRESOS_USD": 447239.3,
+        "MES": "2026-01-01",
+        "PLATAFORMA": "Google"
+      },
+      {
+        "INGRESOS_USD": 121440.28,
+        "MES": "2026-01-01",
+        "PLATAFORMA": "Meta"
+      },
+      {
+        "INGRESOS_USD": 0,
+        "MES": "2026-01-01",
+        "PLATAFORMA": "TikTok"
+      },
+      {
+        "INGRESOS_USD": 219136.72,
+        "MES": "2026-02-01",
+        "PLATAFORMA": "Google"
+      },
+      {
+        "INGRESOS_USD": 118358.21,
+        "MES": "2026-02-01",
+        "PLATAFORMA": "Meta"
+      },
+      {
+        "INGRESOS_USD": 0,
+        "MES": "2026-02-01",
+        "PLATAFORMA": "TikTok"
+      },
+      {
+        "INGRESOS_USD": 371699.01,
+        "MES": "2026-03-01",
+        "PLATAFORMA": "Google"
+      },
+      {
+        "INGRESOS_USD": 255227.55,
+        "MES": "2026-03-01",
+        "PLATAFORMA": "Meta"
+      },
+      {
+        "INGRESOS_USD": 168463.65,
+        "MES": "2026-04-01",
+        "PLATAFORMA": "Google"
+      },
+      {
+        "INGRESOS_USD": 128649.08,
+        "MES": "2026-04-01",
+        "PLATAFORMA": "Meta"
+      },
+      {
+        "INGRESOS_USD": null,
+        "MES": "2026-04-01",
+        "PLATAFORMA": "TikTok"
+      },
+      {
+        "INGRESOS_USD": 413971.66,
+        "MES": "2026-05-01",
+        "PLATAFORMA": "Google"
+      },
+      {
+        "INGRESOS_USD": 207446.14,
+        "MES": "2026-05-01",
+        "PLATAFORMA": "Meta"
+      },
+      {
+        "INGRESOS_USD": 298744.57,
+        "MES": "2026-06-01",
+        "PLATAFORMA": "Google"
+      },
+      {
+        "INGRESOS_USD": 130957.86,
+        "MES": "2026-06-01",
+        "PLATAFORMA": "Meta"
+      },
+      {
+        "INGRESOS_USD": null,
+        "MES": "2026-06-01",
+        "PLATAFORMA": "TikTok"
+      },
+      {
+        "INGRESOS_USD": 341129.3,
+        "MES": "2026-07-01",
+        "PLATAFORMA": "Google"
+      },
+      {
+        "INGRESOS_USD": 187838.4,
+        "MES": "2026-07-01",
+        "PLATAFORMA": "Meta"
+      },
+      {
+        "INGRESOS_USD": 396301.14,
+        "MES": "2026-08-01",
+        "PLATAFORMA": "Google"
+      },
+      {
+        "INGRESOS_USD": 201573.73,
+        "MES": "2026-08-01",
+        "PLATAFORMA": "Meta"
+      },
+      {
+        "INGRESOS_USD": 0,
+        "MES": "2026-08-01",
+        "PLATAFORMA": "TikTok"
+      }
+    ]
+  },
+  "encoding": {
+    "color": {
+      "field": "PLATAFORMA",
+      "title": "Plataforma",
+      "type": "nominal"
+    },
+    "tooltip": [
+      {
+        "field": "PLATAFORMA",
+        "title": "Plataforma",
+        "type": "nominal"
+      },
+      {
+        "field": "MES",
+        "format": "%b %Y",
+        "timeUnit": "utcyearmonth",
+        "title": "Mes",
+        "type": "temporal"
+      },
+      {
+        "field": "INGRESOS_USD",
+        "format": ",.6~f",
+        "title": "Ingresos_usd",
+        "type": "quantitative"
+      }
+    ],
+    "x": {
+      "axis": {
+        "format": "%b",
+        "title": "Mes"
+      },
+      "field": "MES",
+      "sort": null,
+      "timeUnit": "utcyearmonth",
+      "type": "temporal"
+    },
+    "y": {
+      "axis": {
+        "format": ".3~s",
+        "labelExpr": "replace(datum.label, 'G', 'B')",
+        "title": "Ingresos (USD)"
+      },
+      "field": "INGRESOS_USD",
+      "sort": null,
+      "type": "quantitative"
+    }
+  },
+  "mark": {
+    "point": true,
+    "type": "line"
+  },
+  "title": "Ingreso de Paid Media por mes y plataforma (Ene–Ago 2026)",
+  "usermeta": {
+    "snowflake": {
+      "color_mapping": {
+        "Google": {
+          "hex": "#4c78a8",
+          "name": "blue"
+        },
+        "Meta": {
+          "hex": "#f58518",
+          "name": "orange"
+        },
+        "TikTok": {
+          "hex": "#e45756",
+          "name": "red"
+        }
+      },
+      "columnRoles": {
+        "INGRESOS_USD": "measure",
+        "MES": "dimension"
+      }
+    }
+  }
+}

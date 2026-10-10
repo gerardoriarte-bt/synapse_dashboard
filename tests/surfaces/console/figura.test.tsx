@@ -215,7 +215,10 @@ describe('el gráfico del agente · 2026-10-07 · «su marca, nuestros cuerpos»
     expect(await screen.findByRole('img', { name: '2 categorías' })).toBeInTheDocument()
   })
 
-  it('SIN familia se declara y no se pinta · null no habilita un color', () => {
+  it('SIN familia se dibuja en NEUTRO y lo dice · decisión humana del 2026-10-09', async () => {
+    // Hasta el 2026-10-09 esto se declaraba sin dibujarse, y en QA el chat se
+    // quedó sin un gráfico que no fuera tabla. Ahora se dibuja con la rampa
+    // `consulta` —neutra, de `decisiones.css`— y un rótulo que lo declara.
     const { container } = render(
       <ChatFigure
         dato={dato({
@@ -229,9 +232,22 @@ describe('el gráfico del agente · 2026-10-07 · «su marca, nuestros cuerpos»
         now={now}
       />,
     )
-    expect(container.textContent).toContain('ROAS por canal')
-    expect(container.textContent).toContain('no declaró de qué familia es')
-    expect(container.querySelector('figure')).toBeNull()
+    expect(await screen.findByRole('img', { name: '2 categorías' })).toBeInTheDocument()
+    expect(container.textContent).toContain('Consulta fuera del catálogo')
+    // **El color sale de `consulta` y de ninguna familia del catálogo**: que se
+    // pinte con `demanda` sería elegir una familia, que es lo que la regla
+    // prohíbe.
+    expect(container.innerHTML).toContain('--color-fam-consulta-')
+    expect(container.innerHTML).not.toMatch(/--color-fam-(demanda|medios|inventario|cliente|externo)-/)
+  })
+
+  it('CON familia no hay rótulo de neutro · el rótulo es sólo para lo que no es métrica', async () => {
+    const { container } = render(
+      <ChatFigure dato={dato({ valor: barras, tipoDePanel: 'bars' } as never)} bloques={bloques} format={format} now={now} />,
+    )
+    await screen.findByRole('img', { name: '2 categorías' })
+    expect(container.textContent).not.toContain('Consulta fuera del catálogo')
+    expect(container.innerHTML).toContain('--color-fam-demanda-')
   })
 })
 
@@ -354,5 +370,93 @@ describe('la tabla del chat · ningún número desnudo, y la familia es una marc
     await screen.findByText('Google')
     expect(container.textContent).toContain('Procedencia · la consulta no la declara')
     expect(container.textContent).not.toContain('GOLD')
+  })
+})
+
+describe('lo que hace legible una cifra del agente · auditoría del 2026-10-10', () => {
+  const conTodo = blockTable([
+    { tipo: 'bars', formasAceptadas: ['categorica'], colSpanMin: 3, colSpanMax: 12, rowSpanMin: 3, rowSpanMax: 6, paramsDisponibles: [] },
+    { tipo: 'series', formasAceptadas: ['serieTemporal', 'seriesMultiples'], colSpanMin: 5, colSpanMax: 7, rowSpanMin: 4, rowSpanMax: 5, paramsDisponibles: [] },
+    { tipo: 'table', formasAceptadas: ['tabular'], colSpanMin: 5, colSpanMax: 8, rowSpanMin: 4, rowSpanMax: 5, paramsDisponibles: [] },
+  ] as unknown as Block[])
+
+  const ingresos = {
+    forma: 'serieTemporal',
+    puntos: [
+      { t: '2026-08-01', v: 920000 },
+      { t: '2026-09-01', v: 1310000 },
+      { t: '2026-10-01', v: 130000 },
+    ],
+  }
+  const ejes = { medida: 'Ingresos (USD)', dimension: 'Mes', serie: null, dimensionEsFecha: true }
+
+  it('dice qué mide y cómo se reparte, con las palabras del agente', async () => {
+    const { container } = render(
+      <ChatFigure dato={dato({ valor: ingresos, tipoDePanel: 'series', ejes } as never)} bloques={conTodo} format={format} now={now} />,
+    )
+    await screen.findByRole('group', { name: /usá las flechas/ })
+    expect(container.textContent).toContain('Ingresos (USD) · por mes')
+  })
+
+  it('el MES EN CURSO se dice · su cifra es incompleta y parece una caída', async () => {
+    const { container } = render(
+      <ChatFigure
+        dato={dato({ valor: ingresos, tipoDePanel: 'series', ejes } as never)}
+        bloques={conTodo}
+        format={format}
+        now={now}
+        mesEnCurso="2026-10"
+      />,
+    )
+    await screen.findByRole('group', { name: /usá las flechas/ })
+    expect(container.textContent).toContain(`${format.axisDate('2026-10-01', 'mes')} es el mes en curso`)
+  })
+
+  it('sin el mes en curso dentro del gráfico, no se dice nada', async () => {
+    const { container } = render(
+      <ChatFigure
+        dato={dato({ valor: ingresos, tipoDePanel: 'series', ejes } as never)}
+        bloques={conTodo}
+        format={format}
+        now={now}
+        mesEnCurso="2026-11"
+      />,
+    )
+    await screen.findByRole('group', { name: /usá las flechas/ })
+    expect(container.textContent).not.toContain('mes en curso')
+  })
+
+  it('una barra por mes rotula la FECHA como la lee el cliente, no `2026-09-01`', async () => {
+    const meses = { forma: 'categorica', items: [{ etiqueta: '2026-08-01', v: 1 }, { etiqueta: '2026-09-01', v: 2 }] }
+    const { container } = render(
+      <ChatFigure dato={dato({ valor: meses, tipoDePanel: 'bars', ejes } as never)} bloques={conTodo} format={format} now={now} />,
+    )
+    await screen.findByRole('img', { name: '2 categorías' })
+    expect(container.textContent).toContain(format.axisDate('2026-09-01', 'mes'))
+    expect(container.textContent).not.toContain('2026-09-01')
+  })
+
+  it('cuando va como tabla, dice POR QUÉ · antes desaparecía', async () => {
+    const tabla = {
+      forma: 'tabular',
+      columnas: [
+        { clave: 'P', titulo: 'Plataforma', numerica: false },
+        { clave: 'V', titulo: 'Ventas (USD)', numerica: true },
+      ],
+      filas: [{ P: 'Google', V: 1 }],
+    }
+    const { container } = render(
+      <ChatFigure
+        dato={dato({ valor: tabla, tipoDePanel: 'table', familia: null, aviso: 'las barras agrupadas todavía no tienen un gráfico · TikTok en 2026-04-01' } as never)}
+        bloques={conTodo}
+        format={format}
+        now={now}
+      />,
+    )
+    await screen.findByText('Google')
+    expect(container.textContent).toContain('Se muestran los datos como tabla · las barras agrupadas')
+    // Las fechas del aviso, como las del resto de la figura.
+    expect(container.textContent).toContain(`TikTok en ${format.axisDate('2026-04-01', 'mes')}`)
+    expect(container.textContent).not.toContain('2026-04-01')
   })
 })

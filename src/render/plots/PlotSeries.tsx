@@ -36,8 +36,8 @@ import { Grid } from './core/Grid'
 import { Area, Line } from './core/Series'
 import { Legend } from './core/Legend'
 import { hue } from './core/seriesColor'
-import type { Family } from '../../catalog/types'
 import { Label } from '../primitives/Label'
+import type { FamiliaDeDibujo } from '../types'
 
 export type DrawableSeries = { etiqueta: string; puntos: { t: string; v: number }[] }
 
@@ -53,7 +53,7 @@ export function PlotSeries({
   leer,
 }: {
   series: readonly DrawableSeries[]
-  family: Family
+  family: FamiliaDeDibujo
   /** El rótulo del eje de valores · abreviado. */
   format: (v: number) => string
   /** El área solo tiene sentido con UNA serie: con varias, las capas se tapan y
@@ -118,7 +118,16 @@ export function PlotSeries({
   return (
     <div className="w-full h-full min-h-0 flex flex-col gap-3">
       {/* Con una sola serie la leyenda repetiría el título del panel. */}
-      {single ? null : <Legend entries={leyenda} family={family} />}
+      {single ? null : (
+        <Legend
+          entries={leyenda}
+          family={family}
+          // El momento que la leyenda está leyendo: el punto activo o el último.
+          {...(fechar === undefined || rotulos[indiceLeyenda] === undefined
+            ? {}
+            : { cuando: rotulos[indiceLeyenda] })}
+        />
+      )}
 
       <div
         ref={ref}

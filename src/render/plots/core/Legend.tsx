@@ -14,8 +14,8 @@
  *  texto de SVG no salta de línea y se sale por la derecha.
  */
 import { hue } from './seriesColor'
-import type { Family } from '../../../catalog/types'
 import { Label } from '../../primitives/Label'
+import type { FamiliaDeDibujo } from '../../types'
 
 export type LegendEntry = {
   nombre: string
@@ -24,9 +24,25 @@ export type LegendEntry = {
   step: 0 | 1 | 2 | 3
 }
 
-export function Legend({ entries, family }: { entries: readonly LegendEntry[]; family: Family }) {
+export function Legend({
+  entries,
+  family,
+  cuando,
+}: {
+  entries: readonly LegendEntry[]
+  family: FamiliaDeDibujo
+  /** **De cuándo son las cifras** · 2026-10-10. «GOOGLE 613,386.49» era el
+   *  valor de agosto y no lo decía: un número sin rótulo. Ausente cuando no hay
+   *  cifras o no hay un momento que nombrar. */
+  cuando?: string | undefined
+}) {
   return (
     <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 m-0 p-0 list-none">
+      {cuando === undefined || entries.every((e) => e.valor === undefined) ? null : (
+        <li className="flex items-center min-w-0">
+          <Label>{cuando}</Label>
+        </li>
+      )}
       {entries.map((e) => (
         <li key={e.nombre} className="flex items-center gap-2 min-w-0">
           <span
