@@ -592,6 +592,13 @@ de dibujarse.
 **Los meses viejos ya se cargaron en QA** (el humano, desde A5), así que el `t`
 de las series llega en ISO también ahí.
 
+**Desplegado en QA, el chat dibuja tablas y ningún otro gráfico.** Dos causas:
+el backend no lee el `chart_spec` porque llega como texto —ya pedido, punto 4
+del mensaje del 10-08— y **una consulta libre no tiene familia y no la va a
+tener**. Lo segundo es de DISEÑO y se le preguntó primero, por decisión humana:
+§14 de `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md`. No se toca código
+hasta que conteste.
+
 ### ⇩ ACÁ SE PARÓ · 2026-10-09 · las tablas del chat, y la puerta en clone limpio
 
 **`main` está en `f86f2b4`**, del PR #4 (`chat/tablas-sin-rotulos`). Empezó

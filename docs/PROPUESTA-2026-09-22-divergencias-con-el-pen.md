@@ -578,6 +578,50 @@ lado a lado deja un solo lugar donde se elige.
 cambiar: la lista en 360 px con tres líneas por cliente, la tabla de usuarios
 dentro de la ficha y la tarjeta de cada solicitud.
 
+## 14 · Con qué color se dibuja un gráfico del agente que no es una métrica · 2026-10-09
+
+**Quién decide** · diseño · **Bloquea** · los gráficos del chat sobre consultas
+que no son una métrica del catálogo · **Decidido por el humano el 2026-10-09:
+preguntar a diseño antes de tocar código**
+
+**Lo que pasa.** Con el backend desplegado en QA, el chat de pestaña dibuja las
+tablas y **ningún otro gráfico**: barras y líneas salen «Un gráfico que todavía
+no se dibuja · El catálogo no declaró de qué familia es, y sin eso no tiene
+color». Es la regla dura: la familia cromática se lee del catálogo, nunca se
+elige en el componente.
+
+**Tiene dos causas, y sólo una es de diseño.**
+
+| | Qué | De quién |
+|---|---|---|
+| 1 | El backend no lee el `chart_spec` porque llega como texto: `vegaLiteFieldHints` sólo acepta un objeto (`dd_chat_tab_provenance.go:144`, en `9dc481e`). Un gráfico que SÍ es una métrica del catálogo llega sin familia igual | Backend · ya pedido en `MENSAJE-2026-10-08-backend-procedencia-por-nombre.md`, punto 4 |
+| 2 | **Una consulta libre no es una métrica**, así que no tiene familia y no la va a tener: «inversión por plataforma», una comparación ad hoc. Arreglado el punto 1 —y con el cruce exacto que también pedimos— estos siguen sin color | **Diseño** · esto |
+
+**Lo que las reglas ya dicen**, y acotan las opciones: el naranja `acc` no es
+color de datos; ámbar y amarillo están prohibidos; el rojo `peligro` es de
+acción; y la familia no se elige en el componente.
+
+**Las opciones:**
+
+- **A · La escala neutra.** `ink` y los grises `w*`, con un rótulo que diga que
+  es una consulta fuera del catálogo. No elige una familia: el gris declara que
+  no la hay. **Era la recomendación del agente.** Lo que falta resolver: una
+  serie múltiple en grises pierde separación, y los pares que se pinten
+  tendrían que pasar `contraste` en los dos temas.
+- **B · Una familia propia para «consulta».** Un token nuevo que el `.pen`
+  emita, como cualquier otra familia. Más legible con varias series; es color
+  nuevo y es de diseño.
+- **C · Seguir declarándolos.** El agente puede graficar sólo lo que es una
+  métrica. Es lo que hay construido.
+
+**Lo construido hoy es C**, sin cambios: `ChatFigure` declara el gráfico y no
+lo pinta. La tabla sí se dibuja sin familia desde el 2026-10-09, porque ahí la
+familia es una marca de 6 px y no el color del dato · ver `TableBody`.
+
+**Lo que se le pide a diseño:** elegir entre A, B y C. Y, si es A o B, cómo se
+rotula —el agente lo escribió como «consulta fuera del catálogo»— y cómo se
+separan las series cuando son varias.
+
 ## Dónde vive cada una de las demás
 
 Para que este documento no crezca hasta pisar a los otros:
