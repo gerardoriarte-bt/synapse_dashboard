@@ -19,13 +19,23 @@ import type { Formatter } from './format'
  *  concretos, nunca `Record<string, unknown>`: un param mal escrito tiene que
  *  fallar, no ignorarse en silencio.
  */
+/** Con qué se pinta: la familia del catálogo, o `consulta` · 2026-10-09.
+ *
+ *  `consulta` NO es una familia del catálogo y no se elige acá: la pone la
+ *  superficie cuando el dato no es una métrica —una consulta libre del
+ *  agente— y por eso no trae familia. Es la rampa neutra de
+ *  `tokens/decisiones.css`, decisión humana mientras diseño decide (§14 de
+ *  `PROPUESTA-2026-09-22-divergencias-con-el-pen.md`). Un cuerpo la trata como
+ *  a cualquier otra: la pasa a `hue` y no sabe cuál le tocó. */
+export type FamiliaDeDibujo = Family | 'consulta'
+
 export type BodyProps<F extends Value['forma'], P = Record<string, never>> = {
   value: Extract<Value, { forma: F }>
   params: P
   span: Placement
   /** Del catálogo. El cuerpo pinta con el hue que le llega y NO SABE CUÁL ES
    *  · regla dura 1: la familia se lee del catálogo, nunca se elige acá. */
-  family: Family
+  family: FamiliaDeDibujo
   /** **Qué VARIANTE dibujar** · del layout, no del dato · 2026-09-28.
    *
    *  `tipo` eligió este cuerpo; esto elige el dibujo de adentro. Hacen falta los
@@ -75,7 +85,7 @@ export type BodyProps<F extends Value['forma'], P = Record<string, never>> = {
  */
 export type PlotProps<F extends Value['forma']> = {
   value: Extract<Value, { forma: F }>
-  family: Family
+  family: FamiliaDeDibujo
   /** **Obligatorio, y ahí está el punto.** En v2 esta prop era opcional y cada
    *  plot caía a `formatearCifra`, que traía consigo el `es-MX` de módulo: la
    *  prop existía y estaba muerta. Exigirla es lo que hace que «ningún plot

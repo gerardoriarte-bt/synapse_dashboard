@@ -14,8 +14,8 @@
  *  texto de SVG no salta de línea y se sale por la derecha.
  */
 import { hue } from './seriesColor'
-import type { Family } from '../../../catalog/types'
 import { Label } from '../../primitives/Label'
+import type { FamiliaDeDibujo } from '../../types'
 
 export type LegendEntry = {
   nombre: string
@@ -24,7 +24,7 @@ export type LegendEntry = {
   step: 0 | 1 | 2 | 3
 }
 
-export function Legend({ entries, family }: { entries: readonly LegendEntry[]; family: Family }) {
+export function Legend({ entries, family }: { entries: readonly LegendEntry[]; family: FamiliaDeDibujo }) {
   return (
     <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 m-0 p-0 list-none">
       {entries.map((e) => (

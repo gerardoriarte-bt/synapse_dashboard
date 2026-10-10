@@ -50,6 +50,7 @@ import { span } from '../../render/grid'
 import type { BlockTable } from '../../catalog/blocks'
 import type { PanelType } from '../../catalog/types'
 import type { Formatter } from '../../render/format'
+import type { FamiliaDeDibujo } from '../../render/types'
 import type { ChatEvent, Value } from '../../api/types'
 
 type Dato = Extract<ChatEvent, { tipo: 'dato' }>
@@ -124,20 +125,23 @@ export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now
     )
   }
 
-  // **Sin familia no hay color, y no se inventa uno** · 2026-10-07. El chat de
-  // pestaña no tiene métrica de origen; el dato llega y se declara. **Salvo la
-  // tabla** · 2026-10-09: ahí la familia es una marca y no un color de dato, y
-  // se dibuja sin ella. Ver la cabecera.
-  const sinFamiliaDibujable = familia === null && panelTipo === 'table'
-  if (familia === null && !sinFamiliaDibujable) {
-    return (
-      <div className="flex flex-col gap-1">
-        {dato.titulo == null ? null : <Label as="div">{dato.titulo}</Label>}
-        <Label as="div">Un gráfico que todavía no se dibuja</Label>
-        <Label as="div">El catálogo no declaró de qué familia es, y sin eso no tiene color</Label>
-      </div>
-    )
-  }
+  // **Sin familia no se INVENTA un color, pero se dibuja en neutro** ·
+  // 2026-10-09, decisión humana. Hasta ese día se declaraba: «Un gráfico que
+  // todavía no se dibuja · El catálogo no declaró de qué familia es». Desplegado
+  // en QA, eso dejaba el chat sin un solo gráfico que no fuera tabla, y el
+  // humano lo dijo así: el color «no es tan relevante vs la dimensión del
+  // proyecto». Una consulta libre no es una métrica y no va a tener familia.
+  //
+  // **`consulta` no es una familia que se elige**: es la rampa neutra de
+  // `tokens/decisiones.css` —`ink`, `dim` y mezclas contra `panel`—, sin hex y
+  // sin el naranja. El dato sigue diciendo `familia: null`; es el dibujo el que
+  // usa el neutro, y el rótulo lo declara. Diseño puede cambiarlo · §14 de
+  // `PROPUESTA-2026-09-22-divergencias-con-el-pen.md`.
+  //
+  // La tabla va aparte: ahí la familia es una marca de 6 px, y sin familia se
+  // omite. Ver la cabecera.
+  const tablaSinFamilia = familia === null && panelTipo === 'table'
+  const familiaDeDibujo: FamiliaDeDibujo | null = familia ?? (tablaSinFamilia ? null : 'consulta')
 
   // ── SIN UN TIPO DECIDIDO NO SE ELIGE UNO ─────────────────────────────────
   //
@@ -185,6 +189,11 @@ export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now
   return (
     <figure className="flex flex-col gap-2 rounded-md border border-w3 p-3 m-0">
       {dato.titulo == null ? null : <Label as="div">{dato.titulo}</Label>}
+      {/* El neutro se DICE: sin esto, un gráfico gris se lee como una métrica
+          más, y es una consulta que el catálogo no respalda. */}
+      {familiaDeDibujo === 'consulta' ? (
+        <Label as="div">Consulta fuera del catálogo · se dibuja en neutro</Label>
+      ) : null}
 
       {/* **El alto es el del `rowSpan` que se le da al cuerpo** · 2026-10-07.
           Los cuerpos de gráfico ocupan el alto de su contenedor, y la figura
@@ -194,13 +203,13 @@ export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now
           se le da: con 272 px quedaba un hueco debajo de la cifra. */}
       <div style={CON_ALTO_PROPIO.has(panelTipo) ? undefined : { height: span(FILAS) }}>
         <Suspense fallback={<LoadingState />}>
-          {/* Sin familia sólo llega acá una tabla —lo filtra
-              `sinFamiliaDibujable`— y va por `TableWithoutFamily`, que es la
-              misma instancia con el tipo que admite `null`. */}
-          {familia === null ? (
+          {/* Con `null` sólo llega acá una tabla —lo decide
+              `familiaDeDibujo`— y va por `TableWithoutFamily`, que es la misma
+              instancia con el tipo que admite `null`. */}
+          {familiaDeDibujo === null ? (
             <TableWithoutFamily {...comunes} family={null} />
           ) : (
-            <Body {...comunes} family={familia} />
+            <Body {...comunes} family={familiaDeDibujo} />
           )}
         </Suspense>
       </div>

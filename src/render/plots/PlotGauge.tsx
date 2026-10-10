@@ -5,7 +5,7 @@
  */
 import { useSize } from './core/useSize'
 import { Arc, ArcRail } from './core/Arc'
-import type { Family } from '../../catalog/types'
+import type { FamiliaDeDibujo } from '../types'
 
 /** Tres cuartos de vuelta, empezando abajo a la izquierda. Deja el hueco de
  *  abajo para la cifra, que es lo que hace el `.pen`. */
@@ -21,7 +21,7 @@ export function PlotGauge({
 }: {
   value: number
   max: number
-  family: Family
+  family: FamiliaDeDibujo
   format: (v: number) => string
   unit?: string
 }) {
