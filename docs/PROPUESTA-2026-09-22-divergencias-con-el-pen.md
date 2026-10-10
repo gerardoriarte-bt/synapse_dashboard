@@ -580,9 +580,11 @@ dentro de la ficha y la tarjeta de cada solicitud.
 
 ## 14 · Con qué color se dibuja un gráfico del agente que no es una métrica · 2026-10-09
 
-**Quién decide** · diseño · **Bloquea** · los gráficos del chat sobre consultas
-que no son una métrica del catálogo · **Decidido por el humano el 2026-10-09:
-preguntar a diseño antes de tocar código**
+**Quién decide** · diseño · **Ya no bloquea** · **construido con la opción A el
+2026-10-09, por decisión humana**: primero se decidió preguntar a diseño antes de
+tocar código, y el mismo día el humano lo revirtió —«estamos bloqueando una
+capacidad necesaria de ver la data graficada correctamente por un tema de
+color»—. Lo que se le pide a diseño ahora es **afinar**, no destrabar.
 
 **Lo que pasa.** Con el backend desplegado en QA, el chat de pestaña dibuja las
 tablas y **ningún otro gráfico**: barras y líneas salen «Un gráfico que todavía
@@ -614,8 +616,12 @@ acción; y la familia no se elige en el componente.
 - **C · Seguir declarándolos.** El agente puede graficar sólo lo que es una
   métrica. Es lo que hay construido.
 
-**Lo construido hoy es C**, sin cambios: `ChatFigure` declara el gráfico y no
-lo pinta. La tabla sí se dibuja sin familia desde el 2026-10-09, porque ahí la
+**Lo construido es A** desde el 2026-10-09: la rampa `--color-fam-consulta-*` en
+`src/tokens/decisiones.css` —`ink` mezclado contra `panel` en oklab, sin un hex,
+cinco escalones entre 14.9:1 y 3.6:1 en los dos temas— y el rótulo «Consulta
+fuera del catálogo · se dibuja en neutro». El dato sigue diciendo
+`familia: null`; es el dibujo el que usa el neutro. Si diseño elige B o C, se
+cambia en `decisiones.css` y en `ChatFigure`, y nada más. La tabla sí se dibuja sin familia desde el 2026-10-09, porque ahí la
 familia es una marca de 6 px y no el color del dato · ver `TableBody`.
 
 **Lo que se le pide a diseño:** elegir entre A, B y C. Y, si es A o B, cómo se

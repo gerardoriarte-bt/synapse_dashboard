@@ -595,9 +595,10 @@ de las series llega en ISO también ahí.
 **Desplegado en QA, el chat dibuja tablas y ningún otro gráfico.** Dos causas:
 el backend no lee el `chart_spec` porque llega como texto —ya pedido, punto 4
 del mensaje del 10-08— y **una consulta libre no tiene familia y no la va a
-tener**. Lo segundo es de DISEÑO y se le preguntó primero, por decisión humana:
-§14 de `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md`. No se toca código
-hasta que conteste.
+tener**. Lo segundo **se destrabó el mismo día, por decisión humana**: un gráfico
+sin familia se dibuja en NEUTRO —la rampa `consulta` de `decisiones.css`— con un
+rótulo que lo dice. Diseño puede afinarlo: §14 de
+`docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md`.
 
 ### ⇩ ACÁ SE PARÓ · 2026-10-09 · las tablas del chat, y la puerta en clone limpio
 
