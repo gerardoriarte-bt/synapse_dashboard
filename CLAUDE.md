@@ -574,6 +574,25 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-10-10 · los gráficos del agente se entienden
+
+**`main` está en `2c79384`** (#11 y #12). Lo que costó y lo que quedó está en
+`docs/AUDITORIA-2026-10-10-graficos-del-chat.md`, que tiene al final qué
+resolvió el #12.
+
+**El traductor de `chart_spec` es una tabla por PAPEL** —medida, dimensión,
+serie—, no por caso: crecer a un gráfico nuevo es agregar una entrada a
+`TRADUCCIONES` en `src/api/vegaLite.ts`. **Lo que no se dibuja se muestra como
+tabla con su razón**; nada desaparece. Un gráfico sin familia se dibuja en
+neutro (`consulta`, en `decisiones.css`).
+
+**Abierto**: el tramo del mes en curso en el trazo (hoy sólo el aviso), los
+huecos dibujados —piden `Punto.v` nulo en todo el repertorio de series—, separar
+series en neutro (§14, diseño) y la narración del agente en inglés (datos).
+
+**Otra terminal trabaja UX en paralelo**: lo de cada una va en su rama y su PR ·
+memoria `sesiones-paralelas-rama-y-pr`.
+
 ### ⇩ ACÁ SE PARÓ · 2026-10-09 (tarde) · esperando los dos mensajes del chat
 
 **`main` está en `e87fefb`.** Después de las tablas del chat entraron: el riel
