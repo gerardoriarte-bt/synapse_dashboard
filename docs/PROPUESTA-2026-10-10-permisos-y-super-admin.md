@@ -92,3 +92,37 @@ bloqueada.
 ## 6 · El pedido
 
 `docs/MENSAJE-2026-10-10-backend-permisos-y-super-admin.md`.
+
+## 7 · Lo que contestó el backend · 2026-10-13
+
+Su respuesta, sin editar: `docs/RESPUESTA-2026-10-13-backend-permisos.md`.
+Dice «hecho en `8272085`» para el pedido 1 y «no hecho» para los otros cinco.
+
+**Remedido por nosotros el 2026-10-13**, con el binario de `8272085` y la base
+local, y no tomado de su respuesta:
+
+| | Contra `9dc481e` | Contra `8272085` |
+|---|---|---|
+| Admin de un cliente lee roles, usuarios, catálogo, layouts, agentes y feeds de otro | 200 | **403** «no puedes administrar otro cliente» |
+| …y crea un rol en otro | 201 | **403** |
+| `GET /admin/tenants` | todos | **sólo el del token** |
+| `GET /admin/users` | todos | **sólo el del token** · con el `tenant_id` de otro, 403 |
+| Alta de cliente | 400 por credenciales | **403** «solo para operadores de plataforma» |
+| Con el usuario en `PLATFORM_OPERATOR_USER_IDS` | — | **vuelve a ver los dos clientes** |
+| `GET /admin/layouts/{layoutId}` de otro cliente | 200 | **200 · sigue abierto**, como su respuesta admite |
+
+**Lo que esto significa para producto:**
+
+- **El agujero de `/admin/*` quedó cerrado en las rutas que llevan el cliente.**
+  Siguen abiertas las que van por id de recurso (layouts, roles, dashboards):
+  el siguiente corte de ellos.
+- **El puente es una lista de usuarios en la configuración del servicio**,
+  `PLATFORM_OPERATOR_USER_IDS`. **Si al desplegar en QA la lista va vacía,
+  nadie de Lo Bueno ve más que su propio cliente en administración y builder.**
+  Hay que pasarles los usuarios de Lo Bueno que tienen que operar varios
+  clientes.
+- **El selector de cliente en la consola sigue bloqueado**, y ellos lo dicen
+  explícito: «hasta entonces el front no debe armar un selector de cliente».
+  Llega con el super-admin y un token nuevo por cliente.
+- **En el front no hubo que cambiar nada**: administración y builder ya
+  ofrecían sólo los clientes que devuelve `GET /admin/tenants`.

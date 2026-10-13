@@ -145,6 +145,13 @@ paths:
             columna ya reportado en
             `docs/MENSAJE-2026-09-29-backend-tenant-colombiano.md`.
 
+        **DESDE `8272085` DEVUELVE SÓLO EL CLIENTE DEL TOKEN** · remedido el
+        2026-10-13 con la base local: un cliente de dos. Un usuario en
+        `PLATFORM_OPERATOR_USER_IDS` —configuración del servicio— sigue viendo
+        todos. Y toda ruta `/admin/tenants/{tenantId}/…` de otro cliente da
+        **403** «no puedes administrar otro cliente». Ver
+        `docs/RESPUESTA-2026-10-13-backend-permisos.md`.
+
         **`catalog_version` NO viaja acá**, y no es un hueco de esta ruta: viene
         por fila en `GET /admin/tenants/{tenantId}/catalog`, y lo que vale para
         el cliente es una reducción. Está explicado en esa ruta.
