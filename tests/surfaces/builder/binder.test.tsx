@@ -1072,6 +1072,22 @@ describe('la nota de lectura', () => {
     expect(notaDelPut(cuerpos[cuerpos.length - 1])).toBe(`${NOTA} Octubre va en curso.`)
   })
 
+  it('se ve en el LIENZO mientras se escribe', async () => {
+    // **La cadena del lienzo**: `Builder → Canvas → dibujarPanel →
+    // PanelConDato`. Sin roles no hay dato, así que es la tarjeta sin dato la
+    // que tiene que mostrarla.
+    const cuerpos: unknown[] = []
+    servirConNota(cuerpos)
+    montar()
+    await abrirPanel()
+
+    const campo = (await abrir('Ajustes')).getByRole('textbox', { name: 'Nota de lectura' })
+    await userEvent.clear(campo)
+    await userEvent.type(campo, 'Mirá el ROAS en su escala')
+    const celda = panelesDelLienzo()[0] as HTMLElement
+    expect(within(celda).getByText('Mirá el ROAS en su escala')).toBeVisible()
+  })
+
   it('guardar OTRA cosa no la borra', async () => {
     const cuerpos: unknown[] = []
     servirConNota(cuerpos)

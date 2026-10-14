@@ -48,6 +48,12 @@ export function PanelConDato({ panel, metrica, payload, sinDato, bloques, repert
     return (
       <div className="flex h-full flex-col justify-center gap-1 rounded-xl border border-dashed border-w4 p-6">
         <span className="font-body text-cuerpo font-medium text-ink">{metrica.nombre}</span>
+        {/* **La nota también sin dato** · 2026-10-14: quien compone la escribe
+            y la quiere ver en el lienzo aunque el dato todavía no llegue. Con
+            dato la pinta `PanelInGrid`, el mismo shell de la consola. */}
+        {panel.nota === undefined ? null : (
+          <p className="font-body text-celda leading-cuerpo text-dim m-0 line-clamp-2">{panel.nota}</p>
+        )}
         <Ayuda>{sinDato}</Ayuda>
       </div>
     )
