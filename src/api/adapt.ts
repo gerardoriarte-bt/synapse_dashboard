@@ -920,11 +920,13 @@ function tIso(t: string): string {
 
 /** Puntos `{t, v}` · los dos son iguales de los dos lados, salvo el formato de
  *  `t` cuando viene de una fila vieja · ver `tIso`. */
-function puntos(filas: Record<string, unknown>[]): { t: string; v: number }[] {
+function puntos(filas: Record<string, unknown>[]): { t: string; v: number; parcial?: boolean }[] {
   return filas.flatMap((p) => {
     const t = cadena(p, 't')
     const v = numero(p, 'v')
-    return t === null || v === null ? [] : [{ t: tIso(t), v }]
+    // **`partial` sólo si es `true`** · desde `3651d70`: el mes en curso. Un
+    // punto cerrado no lo trae, y un `false` explícito diría lo mismo que nada.
+    return t === null || v === null ? [] : [{ t: tIso(t), v, ...(p['partial'] === true ? { parcial: true } : {}) }]
   })
 }
 
@@ -1021,7 +1023,12 @@ export function adaptValue(raw: unknown): ValorOk | ValorMal {
       const series = ss.flatMap((s) => {
         const etiqueta = cadena(s, 'label')
         const ps = lista(s, 'points')
-        return etiqueta === null || ps === null ? [] : [{ etiqueta, puntos: puntos(ps) }]
+        // **La unidad de cada serie** · desde `3651d70`. Ausente cuando la serie
+        // no tiene —sesiones—, y se omite en vez de llegar vacía.
+        const unidad = cadena(s, 'unit')
+        return etiqueta === null || ps === null
+          ? []
+          : [{ etiqueta, puntos: puntos(ps), ...(unidad === null || unidad === '' ? {} : { unidad }) }]
       })
       return { ok: true, valor: { forma: 'seriesMultiples', series } }
     }

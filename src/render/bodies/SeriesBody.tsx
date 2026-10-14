@@ -188,14 +188,21 @@ export function SeriesBody({
   // magnitudes distintas dejan a la chica pegada al piso y su forma no se puede
   // comparar con nada — que es justo para lo que `base100` existe. Así que acá
   // se pasa `normalized` y no `series`, al revés que `bump`.
+  //
+  // **Normalizadas, las series son índices y no tienen unidad** · 2026-10-14.
+  // Pasarles «USD» o «x» haría decir «USD 104» a un índice. Sin normalizar,
+  // cada serie lleva la suya y el gráfico comparte escala sólo entre las de la
+  // misma unidad —ver `PlotSmallMult`—.
   if (grafico === 'smallmult') {
+    const base100 = params.normalizacion === 'base100'
     return (
       <div className="h-full min-h-0">
         <PlotSmallMult
-          series={normalized}
+          series={base100 ? normalized.map((s) => ({ etiqueta: s.etiqueta, puntos: s.puntos })) : normalized}
           family={family}
           format={(v) => format.number(v, { abbreviate: true })}
-          {...(unit === undefined ? {} : { unit })}
+          withUnit={format.withUnit}
+          {...(unit === undefined || base100 ? {} : { unit })}
         />
       </div>
     )

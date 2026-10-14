@@ -1729,6 +1729,14 @@ export interface components {
              */
             t: string;
             v: number;
+            /**
+             * @description **El punto es de un período que todavía no terminó** · desde
+             *     `3651d70`, medido el 2026-10-14: el mes en curso de
+             *     `media_efficiency_12m`. Ausente en un punto cerrado. No es una
+             *     estimación: es la cifra real hasta hoy, y el cuerpo la marca para
+             *     que no se lea como un desplome.
+             */
+            parcial?: boolean;
         };
         ValorEscalar: {
             /**
@@ -1793,6 +1801,15 @@ export interface components {
             forma: "seriesMultiples";
             series: {
                 etiqueta: string;
+                /**
+                 * @description **La unidad de ESTA serie** · desde `3651d70`, medido el
+                 *     2026-10-14: `USD` en inversión y ventas, `x` en el ROAS, y
+                 *     ausente en sesiones. Un multiserie puede mezclar unidades, y
+                 *     entonces dos series no se pueden dibujar en la misma escala.
+                 * @example USD
+                 * @example x
+                 */
+                unidad?: string;
                 puntos: components["schemas"]["Punto"][];
             }[];
         };

@@ -349,3 +349,91 @@ describe('`smallmult` se declara, no se cae al área', () => {
     expect(screen.queryByRole('img', { name: /divisiones/ })).toBeNull()
   })
 })
+
+/* ── La escala se comparte POR UNIDAD · 2026-10-14 ─────────────────────────
+ *
+ * Desde `3651d70` el backend manda el ROAS como ratio —11.7— al lado de ventas en
+ * dólares. Con una sola escala salía una línea plana en cero: lo encontró mirar
+ * la pantalla contra el servicio. */
+describe('la escala se comparte POR UNIDAD', () => {
+  const conUnidad = (etiqueta: string, vs: readonly number[], unidad?: string) => ({
+    ...serie(etiqueta, vs),
+    ...(unidad === undefined ? {} : { unidad }),
+  })
+
+  it('una serie de otra unidad llena su propia escala, en vez de quedar plana', () => {
+    const { container } = plot([
+      conUnidad('Ventas', [280000, 280000], 'USD'),
+      conUnidad('ROAS', [11.7, 11.7], 'x'),
+    ])
+    const [ventas, roas] = alturas(container)
+    // Con una sola escala el ROAS mediría 11.7/300000 de la altura: cero a la
+    // vista. Con la suya llena su techo —redondeado por `ceiling`, así que no
+    // mide exactamente lo mismo que las ventas—.
+    expect(roas ?? 0).toBeGreaterThan((ventas ?? 0) / 2)
+  })
+
+  it('entre series de la MISMA unidad sigue siendo compartida', () => {
+    // Es lo que el gráfico afirma, y no se pierde: inversión y ventas en USD
+    // siguen siendo comparables.
+    const { container } = plot([
+      conUnidad('Ventas', [100, 100], 'USD'),
+      conUnidad('Inversión', [25, 25], 'USD'),
+      conUnidad('ROAS', [11.7, 11.7], 'x'),
+    ])
+    const [ventas, inversion] = alturas(container)
+    expect(Math.abs((inversion ?? 0) - (ventas ?? 0) / 4)).toBeLessThan(1)
+  })
+
+  it('la cifra lleva la unidad de SU serie, como el resto del producto', () => {
+    const { container } = render(
+      <PlotSmallMult
+        series={[conUnidad('Ventas', [280313], 'USD'), conUnidad('ROAS', [11.7], 'x')]}
+        family="medios"
+        format={number}
+        withUnit={format.withUnit}
+      />,
+    )
+    const textos = cifras(container).map((c) => c.textContent)
+    expect(textos).toEqual([format.withUnit(number(280313), 'USD'), format.withUnit(number(11.7), 'x')])
+  })
+
+  it('el mes en curso lo dice en la cifra, y sólo el que es parcial', () => {
+    const { container } = render(
+      <PlotSmallMult
+        series={[
+          { etiqueta: 'Ventas', unidad: 'USD', puntos: [{ t: '2026-09-01', v: 1 }, { t: '2026-10-01', v: 2, parcial: true }] },
+          { etiqueta: 'Sesiones', puntos: [{ t: '2026-09-01', v: 1 }, { t: '2026-10-01', v: 2 }] },
+        ]}
+        family="medios"
+        format={number}
+        withUnit={format.withUnit}
+      />,
+    )
+    const [ventas, sesiones] = cifras(container).map((c) => c.textContent ?? '')
+    expect(ventas).toMatch(/· en curso$/)
+    expect(sesiones).not.toMatch(/en curso/)
+  })
+
+  it('normalizadas a base 100 son índices: ninguna unidad, y una sola escala', () => {
+    const valor = {
+      forma: 'seriesMultiples',
+      series: [conUnidad('Ventas', [100, 200], 'USD'), conUnidad('ROAS', [10, 20], 'x')],
+    } as unknown as Value
+    const { container } = render(
+      <SeriesBody
+        value={valor as never}
+        params={{ normalizacion: 'base100' }}
+        family="medios"
+        grafico="smallmult"
+        format={format}
+        unit="USD"
+        span={{ colStart: 1, colSpan: 6, rowSpan: 4 }}
+        metric="Eficiencia"
+      />,
+    )
+    for (const c of cifras(container)) {
+      expect(c.textContent).not.toMatch(/USD|x$/)
+    }
+  })
+})
