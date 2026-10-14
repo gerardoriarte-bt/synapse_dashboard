@@ -307,3 +307,36 @@ describe('el título no desaparece cuando la gobernanza es larga · 2026-09-24',
     expect(container.textContent).toContain(baseLarga)
   })
 })
+
+/* ── La nota de lectura · a la vista desde el 2026-10-14 (decisión humana) ── */
+describe('la nota de lectura', () => {
+  const NOTA = 'Leelo contra el mes anterior: octubre va en curso y todavía no cierra.'
+
+  it.each(ESTADOS)('en %s sigue bajo el título · es del shell, no del cuerpo', (_, payload) => {
+    render(
+      <Panel metric={metric} payload={payload} placement={placement} format={format} now={now} nota={NOTA}>
+        <p>EL CUERPO</p>
+      </Panel>,
+    )
+    expect(screen.getByText(NOTA)).toBeVisible()
+  })
+
+  it('va recortada a dos líneas bajo el título, y ENTERA en el ⓘ', async () => {
+    render(
+      <Panel metric={metric} payload={conCifra} placement={placement} format={format} now={now} nota={NOTA}>
+        <p>EL CUERPO</p>
+      </Panel>,
+    )
+    expect(screen.getByText(NOTA)).toHaveClass('line-clamp-2')
+    const ficha = await abrirGobierno()
+    expect(within(ficha).getByText('Cómo leer este panel')).toBeVisible()
+    expect(within(ficha).getByText(NOTA)).toBeVisible()
+  })
+
+  it('sin nota no queda un renglón vacío ni una sección muda en el ⓘ', async () => {
+    montar(conCifra)
+    expect(screen.queryByText('Cómo leer este panel')).toBeNull()
+    const ficha = await abrirGobierno()
+    expect(within(ficha).queryByText('Cómo leer este panel')).toBeNull()
+  })
+})

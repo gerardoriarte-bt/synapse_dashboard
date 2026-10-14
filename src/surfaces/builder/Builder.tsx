@@ -733,6 +733,7 @@ export function Builder() {
         }}
         onSpan={(campo, valor) => cambiar(editarPanel(tabs, seleccion.tab, seleccion.panel, { [campo]: valor }))}
         onOpcion={(nombre, valor) => cambiar(editarOpcion(tabs, seleccion.tab, seleccion.panel, nombre, valor))}
+        onNota={(texto) => cambiar(editarPanel(tabs, seleccion.tab, seleccion.panel, { nota: texto }))}
         onQuitar={() => {
           cambiar(quitarPanel(tabs, seleccion.tab, seleccion.panel))
           setSeleccion(null)

@@ -46,6 +46,9 @@ export function sembrar(detalle: LayoutDetalle): TabParaGuardar[] {
         // guardar borraba el gráfico de todos los paneles.
         ...(p.grafico === undefined ? {} : { grafico: p.grafico }),
         ...(p.opciones === undefined ? {} : { opciones: p.opciones }),
+        // **Y la nota también** · 2026-10-14, misma trampa: sin esta línea,
+        // guardar borraba la nota de lectura de todos los paneles.
+        ...(p.nota === undefined ? {} : { nota: p.nota }),
       })),
     }))
 }

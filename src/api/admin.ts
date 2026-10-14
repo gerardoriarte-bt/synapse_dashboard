@@ -578,6 +578,11 @@ function adaptarPanel(p: A['LayoutPanel']): PanelConfig {
     // poner lo elegido.
     ...(p.chart === undefined || p.chart === '' ? {} : { grafico: p.chart as NonNullable<PanelConfig['grafico']> }),
     ...(p.options === undefined ? {} : { opciones: p.options }),
+    // **La nota de lectura se lee, por la misma razón que el gráfico** ·
+    // 2026-10-14. No leerla hacía que guardar desde el builder la BORRARA:
+    // `dd_layout_builder_service.go:587` guarda `Note: panelIn.Note`, y sin el
+    // campo en el cuerpo queda vacía. Vacía se omite, igual que en la consola.
+    ...(p.note === undefined || p.note === '' ? {} : { nota: p.note }),
   }
 }
 
@@ -637,7 +642,7 @@ export type TabParaGuardar = {
   pregunta: string
   orden: number
   roles: string[]
-  panels: { id?: string; metricId: string; tipo: string; colStart: number; colSpan: number; rowSpan: number; grafico?: NonNullable<PanelConfig['grafico']>; opciones?: Record<string, unknown> }[]
+  panels: { id?: string; metricId: string; tipo: string; colStart: number; colSpan: number; rowSpan: number; grafico?: NonNullable<PanelConfig['grafico']>; opciones?: Record<string, unknown>; nota?: string }[]
 }
 
 /** Una pestaña y sus paneles **sin los ids del layout de origen** · ver
@@ -670,6 +675,9 @@ function aCuerpo(tabs: readonly TabParaGuardar[]): A['LayoutUpdateRequest'] {
         // el de por defecto del tipo.
         chart: p.grafico ?? '',
         ...(p.opciones === undefined ? {} : { options: p.opciones }),
+        // **Explícita, aunque vacía** · igual que `chart`: el `PUT` reemplaza el
+        // panel entero, y el cuerpo tiene que decir qué nota se quiso.
+        note: p.nota ?? '',
       })),
     })),
   }

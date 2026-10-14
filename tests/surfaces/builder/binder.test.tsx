@@ -1026,3 +1026,66 @@ describe('con un catálogo grande · plegadas, y cada una dice qué va a pasar',
     ).toBeInTheDocument()
   })
 })
+
+/* ── La nota de lectura · 2026-10-14 ──────────────────────────────────────
+ *
+ * **Guardar la BORRABA**: el `PUT` reemplaza el panel entero y el servicio
+ * guarda la nota que llega —`dd_layout_builder_service.go:587`—, y ni el
+ * detalle la leía ni el borrador la arrastraba ni el cuerpo la mandaba. Es la
+ * misma trampa que el gráfico tuvo el 2026-09-29. */
+describe('la nota de lectura', () => {
+  const NOTA = 'Leelo contra el mes anterior.'
+
+  function servirConNota(cuerpos: unknown[]) {
+    servir()
+    server.use(
+      http.get(`${API}/admin/layouts/:id`, () => {
+        const d = detalleCon() as { tabs: { panels: Record<string, unknown>[] }[] }
+        return ok({ ...d, tabs: d.tabs.map((t) => ({ ...t, panels: t.panels.map((p) => ({ ...p, note: NOTA })) })) })
+      }),
+      http.put(`${API}/admin/layouts/:id`, async ({ request }) => {
+        cuerpos.push(await request.json())
+        const d = detalleCon() as { tabs: { panels: Record<string, unknown>[] }[] }
+        return ok(d)
+      }),
+    )
+  }
+
+  const notaDelPut = (cuerpo: unknown) =>
+    (cuerpo as { tabs: { panels: { note?: string }[] }[] }).tabs[0]?.panels[0]?.note
+
+  it('se edita en «Ajustes» y viaja en el PUT', async () => {
+    const cuerpos: unknown[] = []
+    servirConNota(cuerpos)
+    montar()
+    await abrirPanel()
+
+    const ajustes = await abrir('Ajustes')
+    const campo = ajustes.getByRole('textbox', { name: 'Nota de lectura' })
+    // **La que ya tenía se muestra**: el detalle la lee.
+    expect(campo).toHaveValue(NOTA)
+
+    await userEvent.type(campo, ' Octubre va en curso.')
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    await waitFor(() => expect(cuerpos.length).toBeGreaterThan(0))
+    expect(notaDelPut(cuerpos[cuerpos.length - 1])).toBe(`${NOTA} Octubre va en curso.`)
+  })
+
+  it('guardar OTRA cosa no la borra', async () => {
+    const cuerpos: unknown[] = []
+    servirConNota(cuerpos)
+    montar()
+    await abrirPanel()
+
+    // Se cambia el tamaño y nada más: la nota tiene que viajar igual.
+    const ajustes = await abrir('Ajustes')
+    const filas = ajustes.getByRole('spinbutton', { name: /^Filas/ })
+    await userEvent.clear(filas)
+    await userEvent.type(filas, '3')
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    await waitFor(() => expect(cuerpos.length).toBeGreaterThan(0))
+    expect(notaDelPut(cuerpos[cuerpos.length - 1])).toBe(NOTA)
+  })
+})
