@@ -34,6 +34,9 @@ type Props = {
    *  F1.9 pide emitir hacia arriba. */
   onChat?: () => void
   onCollapse?: () => void
+  /** **La nota de lectura** · B1.13, a la vista desde el 2026-10-14 (decisión
+   *  humana). La escribe el admin en el builder y vive en el layout. */
+  nota?: string
   children: ReactNode
 }
 
@@ -47,6 +50,7 @@ export function PanelShell({
   onDrill,
   onChat,
   onCollapse,
+  nota,
   children,
 }: Props) {
   const state = visualState(payload)
@@ -105,8 +109,20 @@ export function PanelShell({
           frescura={governance.frescura}
           format={format}
           now={now}
+          {...(nota === undefined ? {} : { nota })}
         />
       </header>
+
+      {/* ── LA NOTA DE LECTURA · decisión humana del 2026-10-14 ─────────────
+          **A la vista, bajo el título**, y no detrás del ⓘ como la BASE: es lo
+          que hay que saber para no malinterpretar el panel, y se pidió que se
+          lea sin buscarla. Recortada a dos líneas para no comerse el cuerpo de
+          un panel de alto fijo; entera en el ⓘ. Es del shell, así que sigue
+          visible mientras el panel carga, falla o está bloqueado. El `.pen` no
+          la dibuja: va en la PROPUESTA del 2026-09-22, §14. */}
+      {nota === undefined ? null : (
+        <p className="font-body text-celda leading-cuerpo text-dim m-0 line-clamp-2">{nota}</p>
+      )}
 
       {/* La limitación del degradado · §8 pide que el badge «declare la
           limitación y su alcance», y el alcance es el texto de `razon`. Va

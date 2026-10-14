@@ -41,9 +41,13 @@ type Props = {
   frescura: string | null
   format: Formatter
   now: Date
+  /** **La nota de lectura completa** · 2026-10-14. Bajo el título va recortada
+   *  a dos líneas; acá entera, primero, porque es lo que hay que saber antes
+   *  de leer la cifra. */
+  nota?: string
 }
 
-export function MetaInfo({ base, ventana, capa, fuente, frescura, format, now }: Props) {
+export function MetaInfo({ base, ventana, capa, fuente, frescura, format, now, nota }: Props) {
   const [encima, setEncima] = useState(false)
   const [fijado, setFijado] = useState(false)
   const caja = useRef<HTMLDivElement>(null)
@@ -98,6 +102,12 @@ export function MetaInfo({ base, ventana, capa, fuente, frescura, format, now }:
           className="absolute right-0 top-full mt-2 z-20 w-72 flex flex-col gap-3 bg-elev border border-w3 rounded-md p-4 text-left"
         >
           <dl className="flex flex-col gap-3 m-0">
+            {nota === undefined ? null : (
+              <div className="flex flex-col gap-1">
+                <Label as="dt">Cómo leer este panel</Label>
+                <dd className="font-body text-cuerpo leading-cuerpo text-ink m-0">{nota}</dd>
+              </div>
+            )}
             <div className="flex flex-col gap-1">
               <Label as="dt">Base</Label>
               <dd className="font-body text-cuerpo leading-cuerpo text-ink m-0">{base}</dd>

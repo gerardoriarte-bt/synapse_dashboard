@@ -35,6 +35,8 @@ type Props = {
   onRetry?: () => void
   onUnblock?: () => void
   onRequestAccess?: () => void
+  /** La nota de lectura del panel · va al shell. */
+  nota?: string
   /** El cuerpo ya resuelto. Solo se pinta en DISPONIBLE y DEGRADADO — los dos
    *  estados que tienen cifra. */
   children: ReactNode
@@ -53,6 +55,7 @@ export function Panel({
   onRetry,
   onUnblock,
   onRequestAccess,
+  nota,
   children,
 }: Props) {
   return (
@@ -66,6 +69,7 @@ export function Panel({
       {...(onDrill === undefined ? {} : { onDrill })}
       {...(onChat === undefined ? {} : { onChat })}
       {...(onCollapse === undefined ? {} : { onCollapse })}
+      {...(nota === undefined ? {} : { nota })}
     >
       {body()}
     </PanelShell>

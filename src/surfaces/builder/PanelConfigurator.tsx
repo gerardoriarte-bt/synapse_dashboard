@@ -120,6 +120,9 @@ type Props = {
   onSpan: (campo: 'colSpan' | 'rowSpan', valor: number) => void
   /** `undefined` borra la opción · ver `editarOpcion`. */
   onOpcion: (nombre: string, valor: unknown) => void
+  /** **La nota de lectura** · 2026-10-14. Obligatoria: con el spread
+   *  condicional una prop opcional mal cableada compila y el campo no guarda. */
+  onNota: (texto: string) => void
   /** El repertorio, de `/config/plots`. Vacío deja «Cómo se ve» con los tipos
    *  y sin gráficos para elegir. */
   plots: readonly Plot[]
@@ -154,6 +157,7 @@ export function PanelConfigurator({
   onComoSeVe,
   onSpan,
   onOpcion,
+  onNota,
   plots,
   repertorio,
   payload,
@@ -313,6 +317,25 @@ export function PanelConfigurator({
 
           {abierta === 'ajustes' && (
             <>
+              {/* ── LA NOTA DE LECTURA · 2026-10-14 ─────────────────────────
+                  Lo que conviene saber para leer este panel. En la consola va
+                  bajo el título en dos líneas y entera en el ⓘ. **Antes no había
+                  dónde escribirla**, y guardar desde acá la borraba. */}
+              <section className="flex flex-col gap-2">
+                <Label id="panel-nota" as="div">Nota de lectura</Label>
+                <textarea
+                  aria-labelledby="panel-nota"
+                  value={panel.nota ?? ''}
+                  onChange={(e) => onNota(e.target.value)}
+                  rows={3}
+                  className="w-full resize-y bg-w1 text-ink text-cuerpo leading-cuerpo rounded-md px-3 py-2 border border-w5"
+                />
+                <Ayuda>
+                  Se lee bajo el título del panel, en dos líneas, y entera en el ícono de información.
+                  Explica qué mira el panel o cómo leer la cifra.
+                </Ayuda>
+              </section>
+
               {bloque !== undefined && (
                 <section className="flex flex-col gap-2">
                   <Label as="div">Tamaño</Label>

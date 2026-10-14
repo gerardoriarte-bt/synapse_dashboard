@@ -628,6 +628,27 @@ familia es una marca de 6 px y no el color del dato · ver `TableBody`.
 rotula —el agente lo escribió como «consulta fuera del catálogo»— y cómo se
 separan las series cuando son varias.
 
+## 14 · La nota de lectura del panel, a la vista · 2026-10-14
+
+**Quién decide** · diseño · **Decidido por producto el 2026-10-14 · construido**
+
+El panel tiene una **nota de lectura** desde el 2026-09-28 (B1.13): la escribe
+el admin en el builder, vive en el layout, y un rol la puede reemplazar. **El
+`.pen` no la dibuja** en ningún panel, y el front no la mostraba ni dejaba
+editarla. Peor: guardar desde el builder la borraba.
+
+**Producto eligió mostrarla a la vista, bajo el título**, y no detrás del ⓘ
+como la BASE (§12). Lo dijo así: le preocupaba no poder poner información
+descriptiva o explicativa en un panel. Va recortada a dos líneas para no
+comerse el cuerpo de un panel de alto fijo, y entera en el ⓘ, primero, como
+«Cómo leer este panel».
+
+**Lo que se le pide a diseño:** que el `.pen` la dibuje en la anatomía del
+panel —§6— y en el inspector del builder (B2), o que diga qué cambiar. Y que
+`design.md` aclare la relación con `notaLectura` de la métrica (§10, campos
+editoriales), que es otra: aquella es del catálogo y vale en todo panel que use
+la métrica; ésta es del panel.
+
 ## Dónde vive cada una de las demás
 
 Para que este documento no crezca hasta pisar a los otros:

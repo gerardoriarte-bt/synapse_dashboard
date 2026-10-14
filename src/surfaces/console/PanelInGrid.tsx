@@ -68,6 +68,7 @@ export function PanelInGrid({
       {...(onDrill === undefined ? {} : { onDrill })}
       {...(onChat === undefined ? {} : { onChat })}
       {...(onRetry === undefined ? {} : { onRetry })}
+      {...(panel.nota === undefined ? {} : { nota: panel.nota })}
     >
       {body()}
     </Panel>

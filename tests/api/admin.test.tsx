@@ -187,7 +187,9 @@ describe('guardar · el PUT reemplaza el layout entero', () => {
           // alguien lo mire. Va vacío porque este panel no tiene gráfico
           // elegido, y explícito porque el cuerpo dice qué se quiso.
           panels: [
-            { metric_id: 'm-1', type: 'kpi', col_start: 1, col_span: 3, row_span: 4, chart: '' },
+            // **Y `note` el 2026-10-14, por la misma razón**: el servicio guarda
+            // la nota que llega, así que sin el campo guardar la borraba.
+            { metric_id: 'm-1', type: 'kpi', col_start: 1, col_span: 3, row_span: 4, chart: '', note: '' },
           ],
         },
       ],
