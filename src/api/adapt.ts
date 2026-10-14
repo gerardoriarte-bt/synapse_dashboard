@@ -53,12 +53,14 @@ import type {
   Metric,
   NetworkPayload,
   PanelConfig,
+  Plot,
   Presentation,
   Shape,
   Tab,
   TabWithPanels,
-  Value,
   ThreadSummary,
+  ChatAgent,
+  Value,
 } from './types'
 
 type W = wire['schemas']
@@ -66,6 +68,7 @@ type W = wire['schemas']
 export type WireContext = W['ContextResponse']
 export type WireMetric = W['CatalogMetric']
 export type WireBlock = W['BlockRule']
+export type WirePlot = W['PlotRule']
 export type WireTabWithPanels = W['TabWithPanels']
 export type WirePanel = W['PanelDTO']
 
@@ -77,13 +80,6 @@ export type WirePanel = W['PanelDTO']
  * líneas escritas.
  */
 
-/** Las nueve formas que `materialize.TransformValue` sabe producir.
- *
- *  Las otras siete del contrato —`distribucion`, `serieConBanda`,
- *  `categoricaComparada`, `perfilMultiatributo`, `matriz`, `flujo`, `grafo`— no
- *  están acá porque el backend no las materializa: su `switch` tiene nueve casos
- *  y un `default` que devuelve `ErrUnknownShape`. Ponerlas sería declarar una
- *  traducción para algo que nunca llega. */
 /** **El nombre de cable de cada forma, y va al revés a propósito.**
  *
  *  Un `Record<string, Shape>` —que es como estuvo hasta el 2026-09-15— no puede
@@ -253,7 +249,15 @@ export function adaptContext(w: WireContext): AppContext {
     // ofrecer, y es la misma regla que el selector de dashboard de F5.1: un
     // control que no ofrece una elección es ruido.
     ...(w.scope.tenants.length > 1
-      ? { tenantsDisponibles: w.scope.tenants.map((x) => ({ id: x.id, etiqueta: x.name })) }
+      ? {
+          // **`label` y no `name`** · corregido el 2026-09-28. El selector de
+          // cliente vive en el navbar, que es exactamente para lo que la forma
+          // corta existe, y acá se leía el nombre largo mientras la cabecera de
+          // al lado ya leía el corto. **Se vio abriendo la aplicación**: la
+          // consola decía «UA México» arriba y «UNDER ARMOUR MÉXICO» en el
+          // selector, dos nombres para el mismo cliente en la misma barra.
+          tenantsDisponibles: w.scope.tenants.map((x) => ({ id: x.id, etiqueta: x.label })),
+        }
       : {}),
 
     user: {
@@ -262,21 +266,23 @@ export function adaptContext(w: WireContext): AppContext {
       // llegaron, así que componerlo es reformatear y no inventar.
       nombre: `${w.user.first_name} ${w.user.last_name}`.trim(),
       email: w.user.email,
-      // `capacidades` y `preferencias.tema` NO se rellenan.
+      // `capacidades` NO se rellena.
       //
-      // **Y la razón del tema CAMBIÓ el 2026-09-26.** Acá decía «`/config/me` no
-      // lo devuelve, se guarda y no se puede leer», y eso venció: B1.1 llegó en
-      // `8633b10` y `w.user.theme` está en el cable, medido.
+      // ── **`preferencias.tema` SÍ, desde el 2026-10-02** ──────────────────
       //
-      // No se rellena todavía porque **nadie lo consumiría**. `tokens/theme.ts`
-      // declara quién debería —«el valor inicial llega en `/config/me` y lo
-      // aplica la superficie»— y ninguna superficie lo hace: `applyTheme` sólo
-      // se llama desde `ThemeToggle`. Un campo poblado sin consumidor es el
-      // defecto de `BodyProps.presentation`, que existió meses documentado y sin
-      // que nadie lo pasara.
+      // Acá decía que no se rellenaba «porque nadie lo consumiría», y era
+      // cierto cuando se escribió: `applyTheme` sólo se llamaba desde
+      // `ThemeOptions`, al apretar. **Ya hay tres consumidores** —las tres
+      // superficies, por `useTemaGuardado`— así que el campo deja de ser un
+      // hueco y pasa a ser el que decide con qué tema abre la aplicación.
       //
-      // Lo que falta es una línea en la superficie y su prueba, y es trabajo de
-      // front sobre un campo que ya llega.
+      // **Y hasta hoy el tema guardado NO SE APLICABA EN NINGUNA PARTE.**
+      // `ConsoleContainer` tenía el efecto desde F1.12 y leía este campo, que
+      // siempre valía `undefined`: el efecto corría y no hacía nada. Elegir
+      // claro, recargar, y volver a oscuro. El propio comentario de arriba lo
+      // predijo —«lo que falta es una línea en la superficie y su prueba»— y
+      // la línea estaba; lo que faltaba era el dato.
+      ...(w.user.theme === undefined ? {} : { preferencias: { tema: w.user.theme } }),
     },
 
     tenant: {
@@ -285,8 +291,12 @@ export function adaptContext(w: WireContext): AppContext {
       // `etiqueta` es la forma corta para el navbar y el cable no la tiene.
       // Cae al nombre completo: es un FALLBACK visible —se ve largo— y no una
       // etiqueta inventada recortando el nombre, que se vería bien y sería
-      // nuestra invención.
-      etiqueta: w.tenant.name,
+      // **LLEGÓ el 2026-09-28** · B1.1. Acá caía a `name`, que es lo que hacía
+      // que el navbar dijera `Under Armour México` donde el `.pen` pinta
+      // `UA MX`. **No se hace el fallback acá**: el servicio ya lo hace —«si el
+      // tenant no la define, `label` es `name`»— y repetirlo sería un segundo
+      // lugar donde esa regla vive.
+      etiqueta: w.tenant.label,
       // `vertical` no llega y no se rellena.
       vertical: '',
       // ── LOS TRES DE F1.13b · desde `8633b10` · 2026-09-26 ────────────────
@@ -363,7 +373,35 @@ export function adaptContext(w: WireContext): AppContext {
     // `periods` sigue siendo la fuente del ORDEN y de qué períodos hay; el
     // detalle se busca por clave y **no se asume que venga para todos**: si
     // falta, se cae a lo de antes en vez de descartar el período.
-    periodos: w.periods.map((id) => {
+    //
+    // ── **SIN REPETIDOS, Y NO ES UNA PRECAUCIÓN** · medido el 2026-09-29 ────
+    //
+    // El cable manda **doce entradas que no son doce meses distintos**. Medido
+    // contra `de881e1` ese día: `['2026-09', … , '2026-04', '2026-03',
+    // '2026-03', '2026-01', …]` — marzo dos veces y **febrero no está**, en
+    // `periods` y en `periods_detail`.
+    //
+    // Es `availablePeriods()` de su `dd_config_service.go`, que resta meses con
+    // `now.AddDate(0, -i, 0)` **sin normalizar al día 1**: el 29 de septiembre
+    // menos siete meses cae en «29 de febrero», que no existe, y Go desborda al
+    // 1 de marzo. Reproducido con su misma aritmética: pasa **29 días de los
+    // 365**, los 29/30/31 de un mes cuyo mes objetivo es más corto. Los otros
+    // 336 la lista sale bien, y por eso nunca se había visto. El arreglo es de
+    // ellos y ya existe escrito en su propio `snowflake/period.go:66`, que sí
+    // normaliza — está pedido.
+    //
+    // **Acá se deduplica porque `id` es una CLAVE, no un dato.** Atraviesa el
+    // batch, la caché, el payload y el hilo del chat, y la superficie busca el
+    // activo con `periodos.find(p => p.id === activeId)`: dos entradas con el
+    // mismo id son la misma, por construcción. No es calcular ni inventar —las
+    // dos entradas son idénticas campo por campo, rango incluido—, y dejarlas
+    // pasar pinta dos veces «2026-03» con la misma `key` de React.
+    //
+    // **Lo que NO se hace es rellenar el mes que falta.** Febrero no está y el
+    // front no lo puede agregar: no sabe si el servicio no lo tiene o no lo
+    // quiere dar, y ofrecer un período que el batch va a rechazar es peor que
+    // no ofrecerlo. Se pierde un mes hasta que ellos normalicen.
+    periodos: [...new Set(w.periods)].map((id) => {
       const det = (w.periods_detail ?? []).find((d) => d.key === id)
       return {
         id,
@@ -415,10 +453,17 @@ function granoDelId(id: string): 'dia' | 'semana' | 'mes' {
 function adaptTabMeta(t: W['TabMeta']): Tab {
   return {
     id: t.id,
-    // `key` es requerida por el contrato y el cable no la tiene. Cae al id:
-    // es estable y único, que es para lo que sirve. Un slug del nombre se
-    // rompería al renombrar la pestaña.
-    key: t.id,
+    // ── **LA `key` LLEGÓ** · 2026-09-28, medida: la sembrada trae `overview` ──
+    //
+    // Acá caía al `id` con su razón —«es estable y único»— y esa razón era
+    // falsa a medias: el id es estable dentro de una VERSIÓN y se recrea en la
+    // siguiente. Lo levantó el backend: `roles.tab_ids` guarda ids de fila, así
+    // que la primera publicación real dejaba sin pestañas a todo rol con
+    // restricción.
+    //
+    // **Sin fallback al id**: si el campo faltara, caer al id devolvería el
+    // defecto que esto arregla, y en silencio.
+    key: t.key,
     nombre: t.name,
     pregunta: t.operational_question,
     orden: t.sort_order,
@@ -566,12 +611,59 @@ const DIBUJABLES: readonly Shape[] = [
   // declara su esquema y `DistributionBody` y `ForecastBody` existen.
   'distribucion',
   'serieConBanda',
+  // **Las tres del 2026-09-30**, y las tres condiciones se cumplen a la vez por
+  // primera vez para las formas v1.1: el backend las materializa —con las
+  // entradas de `MetricRegistry` que escribimos y corrimos contra Snowflake—, el
+  // contrato declara su esquema desde el 2026-09-26, y `ComparisonBody`,
+  // `MatrixBody` y `GraphBody` existen.
+  //
+  // **Las otras dos siguen afuera y no es simetría pendiente:**
+  // `perfilMultiatributo` tiene un solo gráfico en el repertorio —`radar`— y no
+  // está construido; `grafo` no tiene ni gráfico ni dato del cual salir. Una
+  // forma acá sin cuerpo que la dibuje es un panel en blanco sin razón.
+  'categoricaComparada',
+  'matriz',
+  'flujo',
 ]
 
 /** Un bloque cuyo `type` no es uno de los quince **no entra a la tabla**, y sale
  *  con su razón. Si entrara, `acceptsShape` y `spanInRange` opinarían sobre un
  *  tipo que ningún cuerpo puede dibujar — y el builder lo ofrecería. */
 export type AdaptedBlocks = { blocks: Block[]; rejected: RejectedMetric[] }
+
+/** El repertorio · `GET /config/plots`, la ruta que escribimos el 2026-09-29.
+ *
+ *  **Renombra y traduce formas; no calcula y no redacta.** `razon` y la del
+ *  `tope` son copy de producto que viene del repertorio y se pinta tal cual.
+ *
+ *  **Una forma que este contrato no conoce descarta el gráfico entero**, y no
+ *  sólo esa forma: un `treemap` al que le faltara `composicion` se vería
+ *  correcto aceptando una forma menos, que es la clase de error que no falla.
+ *  Descartarlo lo hace visible — el id cae en `UnknownPlotState`, que lo nombra. */
+export function adaptPlots(rows: readonly WirePlot[]): Plot[] {
+  const out: Plot[] = []
+  for (const p of rows) {
+    const formas = p.shapes.map((f) => FORMAS[f])
+    if (formas.some((f) => f === undefined)) continue
+    out.push({
+      id: p.id as Plot['id'],
+      nombre: p.name,
+      formas: formas as Shape[],
+      soportaBanda: p.supports_band,
+      // **`minimums` nunca llega `null`** —el servicio lo normaliza, medido el
+      // 2026-09-29—, pero el `?? []` queda: el día que alguien sirva la tabla
+      // desde otro lado, una lista ausente no puede leerse como «sin mínimo».
+      minimos: (p.minimums ?? []).flatMap((m) => {
+        const forma = FORMAS[m.shape]
+        return forma === undefined ? [] : [{ forma, cuando: m.when, razon: m.reason }]
+      }),
+      ...(p.cap === undefined || p.cap === null
+        ? {}
+        : { tope: { cuando: p.cap.when, razon: p.cap.reason } }),
+    })
+  }
+  return out
+}
 
 export function adaptBlocks(rows: readonly WireBlock[]): Block[] {
   return adaptBlocksConRechazo(rows).blocks
@@ -638,6 +730,20 @@ function adaptPanel(p: WirePanel): PanelConfig {
     // `paramsDisponibles`; lo que cambia es que ahora los dos lados de esa
     // comparación hablan el mismo idioma.
     ...(p.options === undefined ? {} : { opciones: traducirParams(p.options) }),
+    // ── **`chart` → `grafico`** · llegó el 2026-09-28, medido en los doce ────
+    //
+    // **El cable lo manda como `string` libre y acá se cierra**, que es lo mismo
+    // que se hace con `shape`, `family` y `layer`. Ellos lo dicen explícito: «no
+    // validamos contra el repertorio, eso es del front, que tiene los 49».
+    //
+    // **Vacío se omite**: es el gráfico por defecto del cuerpo, y pasarlo como
+    // `''` obligaría a cada cuerpo a distinguirlo de «no declarado».
+    //
+    // **Y un id desconocido se PASA igual, no se descarta.** Es la decisión que
+    // importa: descartarlo acá haría que el panel cayera al de por defecto en
+    // silencio —una cascada dibujada como dona—, y lo que el producto decidió es
+    // que el panel lo declare. El cuerpo tiene `UnknownPlotState` para eso.
+    ...(p.chart === '' ? {} : { grafico: p.chart as NonNullable<PanelConfig['grafico']> }),
     // **La nota de lectura** · B1.13, llegó el 2026-09-28 · medida.
     //
     // **Vacía se OMITE**, igual que el icono de la pestaña: una nota de cadena
@@ -676,11 +782,32 @@ export function adaptPayload(w: WirePayload): NetworkPayload {
     case 'FORBIDDEN':
       return {
         estado: 'SIN_PERMISO',
-        // Hoy el servicio manda la constante `"administrator"` escrita en el
-        // código, no el rol que decide sobre la métrica. Se pasa tal cual: es
-        // lo único que hay, y sustituirlo por algo mejor redactado sería el
-        // front inventando a quién pedirle · §4 ask 5.
+        // Hoy el servicio manda la constante `"admin"` escrita en el código,
+        // no el rol que decide sobre la métrica. Se pasa tal cual: es lo único
+        // que hay, y sustituirlo por algo mejor redactado sería el front
+        // inventando a quién pedirle · §4 ask 5.
+        //
+        // **Acá decía `"administrator"`, y no se había inventado: se venció.**
+        // Ellos lo cambiaron a `"admin"` y nos lo avisaron por escrito el
+        // 2026-09-25 · §B1.6 de `docs/RESPUESTA-2026-09-25-para-backend.md`. El
+        // aviso se guardó en prosa y no bajó ni acá ni al cable.
+        //
+        // Medido el 2026-09-28 con el token de `planner`: los tres paneles que
+        // su rol oculta contestan `request_from: "admin"`. Es un literal y no un
+        // rol resuelto — un tenant cuyo rol de administración se llame distinto
+        // recibe `admin` igual.
         solicitarA: w.request_from ?? '',
+        // **Las dos frases las escribe el SERVICIO, no nosotros** · llegaron en
+        // `de881e1`. Hasta el 2026-09-29 `ForbiddenState` pintaba una frase
+        // nuestra escrita a mano —«Esta métrica no está disponible para tu
+        // rol»—, que es exactamente lo que la regla del adaptador prohíbe: el
+        // dueño del texto que describe datos es quien los emite.
+        //
+        // **Se pidieron, llegaron, y estuvimos un día sin usarlas.** El campo
+        // llega y el front sigue pintando lo suyo es un modo de falla que no
+        // avisa: la pantalla se ve bien.
+        razon: w.reason ?? '',
+        desbloqueaCon: w.unlocks_with ?? '',
       }
 
     case 'BLOCKED':
@@ -746,8 +873,8 @@ export function adaptPayload(w: WirePayload): NetworkPayload {
 
 /* ── El valor · nueve formas ──────────────────────────────────────────────── */
 
-type ValorOk = { ok: true; valor: Value }
-type ValorMal = { ok: false; razon: string }
+export type ValorOk = { ok: true; valor: Value }
+export type ValorMal = { ok: false; razon: string }
 
 const objeto = (v: unknown): Record<string, unknown> | null =>
   typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : null
@@ -768,13 +895,55 @@ const lista = (o: Record<string, unknown>, k: string): Record<string, unknown>[]
   return out
 }
 
-/** Puntos `{t, v}` · los dos son iguales de los dos lados. */
+/** Días desde epoch en una cadena · `"20727"`, y nada más que dígitos. */
+const DIAS_EPOCH = /^\d{1,6}$/
+const MS_POR_DIA = 86_400_000
+
+/** `t` a ISO cuando llega como días desde epoch · 2026-10-06.
+ *
+ *  **La interpretación la declara el backend, no nosotros.** El contrato midió
+ *  el 2026-09-29 que `t` llegaba como `"20362"` y se negó a interpretarlo porque
+ *  el cable no lo decía. `c8b9247` lo dice en su mensaje —«la SQL API devuelve
+ *  DATE como días desde epoch; `formatDateLabel` convierte a ISO»— y desde ahí
+ *  manda `"2026-09-01"`.
+ *
+ *  **Pero las filas ya materializadas conservan el número** hasta que su período
+ *  se rematerialice: medido en QA el 2026-10-06, `daily_trend` y
+ *  `media_efficiency_12m` seguían en `"20727"`. Con un eje X que ahora sí se
+ *  pinta, eso es «20727» en pantalla. Esto hace del lado de acá la misma
+ *  conversión que el servicio hace del suyo: reformatea, no calcula, y una `t`
+ *  que ya es ISO o que es una etiqueta —`'jul'`— pasa tal cual. */
+function tIso(t: string): string {
+  if (!DIAS_EPOCH.test(t)) return t
+  return new Date(Number(t) * MS_POR_DIA).toISOString().slice(0, 10)
+}
+
+/** Puntos `{t, v}` · los dos son iguales de los dos lados, salvo el formato de
+ *  `t` cuando viene de una fila vieja · ver `tIso`. */
 function puntos(filas: Record<string, unknown>[]): { t: string; v: number }[] {
   return filas.flatMap((p) => {
     const t = cadena(p, 't')
     const v = numero(p, 'v')
-    return t === null || v === null ? [] : [{ t, v }]
+    return t === null || v === null ? [] : [{ t: tIso(t), v }]
   })
+}
+
+/** Una lista de CADENAS · `rows` y `columns` de la matriz.
+ *
+ *  Separada de `lista`, que devuelve objetos: las etiquetas de la matriz son
+ *  cadenas sueltas y pasarlas por `objeto()` las descartaría todas. Devuelve
+ *  `null` cuando el campo no es un arreglo, y **una entrada que no es cadena
+ *  invalida la lista entera** — descartarla correría las etiquetas contra las
+ *  celdas, y una matriz corrida se ve perfecta con los rótulos cambiados de
+ *  lugar. */
+const cadenas = (o: Record<string, unknown>, k: string): string[] | null => {
+  if (!Array.isArray(o[k])) return null
+  const out: string[] = []
+  for (const x of o[k] as unknown[]) {
+    if (typeof x !== 'string') return null
+    out.push(x)
+  }
+  return out
 }
 
 export function adaptValue(raw: unknown): ValorOk | ValorMal {
@@ -1001,13 +1170,120 @@ export function adaptValue(raw: unknown): ValorOk | ValorMal {
       return { ok: true, valor: { forma: 'distribucion', cortes } }
     }
 
+    case 'compared_categorical': {
+      // **F4.17 · adaptada el 2026-09-30**, contra la salida real de
+      // `platform_gap` en Snowflake: 37 ítems, 22 con `reference`.
+      const items = lista(v, 'items')
+      if (items === null) return { ok: false, razon: 'Una comparación sin ítems.' }
+      const out: Extract<Value, { forma: 'categoricaComparada' }>['items'] = []
+      for (const i of items) {
+        const etiqueta = cadena(i, 'label')
+        const n = numero(i, 'v')
+        if (etiqueta === null || n === null) continue
+        const referencia = numero(i, 'reference')
+        const delta = numero(i, 'delta')
+        // **`referencia` ausente NO se rellena, y `delta` NO se deriva.** El
+        // esquema del contrato dice las dos cosas con todas las letras: sin
+        // referencia «es una categórica común con otro nombre, y el panel tiene
+        // que decirlo en vez de inventar un objetivo», y el delta «lo calcula el
+        // BACKEND … quien conoce la definición del delta —absoluto, relativo,
+        // contra qué base— es quien produjo el dato».
+        //
+        // Y no es teórico: en la salida real quince de los 37 ítems llegan sin
+        // `reference` —plataformas con retorno atribuido y sin costo, avisado a
+        // datos— y `v - reference` habría dibujado quince pesas desde el origen.
+        out.push({
+          etiqueta,
+          v: n,
+          ...(referencia === null ? {} : { referencia }),
+          ...(delta === null ? {} : { delta }),
+        })
+      }
+      return out.length === 0
+        ? { ok: false, razon: 'Una comparación sin ítems válidos.' }
+        : { ok: true, valor: { forma: 'categoricaComparada', items: out } }
+    }
+
+    case 'matrix': {
+      // **F4.18 · adaptada el 2026-09-30**, contra `platform_month_matrix`:
+      // 38 × 12 con celdas `null` donde la plataforma no tuvo inversión ese mes.
+      const filas = cadenas(v, 'rows')
+      const columnas = cadenas(v, 'columns')
+      if (filas === null || columnas === null) {
+        return { ok: false, razon: 'Una matriz sin sus etiquetas de fila o de columna.' }
+      }
+      if (!Array.isArray(v['cells'])) return { ok: false, razon: 'Una matriz sin celdas.' }
+      const celdas: (number | null)[][] = []
+      for (const fila of v['cells'] as unknown[]) {
+        if (!Array.isArray(fila)) return { ok: false, razon: 'Una fila de la matriz no es una lista.' }
+        const out: (number | null)[] = []
+        for (const c of fila as unknown[]) {
+          // **`null` pasa y cualquier otra cosa invalida la matriz entera.**
+          // `null` es «el backend declara que no hay dato» y se dibuja con su
+          // contorno; una celda de otro tipo es un payload mal formado, y
+          // convertirla en `null` le atribuiría al negocio un hueco que es del
+          // productor del dato. Es la misma distinción que ya costó en A5 y A1,
+          // y acá la sostiene el adaptador porque `MatrixBody` sólo puede ver
+          // largos, no tipos.
+          if (c === null) out.push(null)
+          else if (typeof c === 'number' && Number.isFinite(c)) out.push(c)
+          else return { ok: false, razon: 'Una celda de la matriz no es una cifra ni está vacía.' }
+        }
+        celdas.push(out)
+      }
+      // **La densidad NO se comprueba acá, y es a propósito.** La declara
+      // `MatrixBody` con el estado que dice cuántas faltan, porque un panel que
+      // desaparece del layout con «forma inválida» no dice nada y uno que
+      // muestra «38 etiquetas y 37 filas» sí. Lo que sí es del adaptador es el
+      // TIPO de cada celda, que el cuerpo no puede ver.
+      return { ok: true, valor: { forma: 'matriz', filas, columnas, celdas } }
+    }
+
+    case 'flow': {
+      // **F4.19 · adaptada el 2026-09-30**, contra `spend_flow`: 23 etapas y
+      // 22 enlaces, todos hacia un único nodo `total`.
+      const stages = lista(v, 'stages')
+      const links = lista(v, 'links')
+      if (stages === null || links === null) {
+        return { ok: false, razon: 'Un flujo sin etapas o sin enlaces.' }
+      }
+      const etapas = stages.flatMap((e) => {
+        const id = cadena(e, 'id')
+        const etiqueta = cadena(e, 'label')
+        const n = numero(e, 'v')
+        // **La etiqueta no cae al `id`.** El esquema de `ValorGrafo` declara que
+        // ese respaldo **lo hace el backend** —«cae al `id` cuando la fila no
+        // trae una, y lo hace el backend»— y `ValorFlujo` la pide obligatoria.
+        // Hacerlo acá taparía que dejó de hacerlo.
+        return id === null || etiqueta === null || n === null ? [] : [{ id, etiqueta, v: n }]
+      })
+      const enlaces = links.flatMap((l) => {
+        const desde = cadena(l, 'from')
+        const hacia = cadena(l, 'to')
+        const n = numero(l, 'v')
+        return desde === null || hacia === null || n === null ? [] : [{ desde, hacia, v: n }]
+      })
+      // **Un enlace a una etapa que no existe NO se filtra acá.** Es el
+      // repartidor del dibujo el que decide qué hacer con él —`flowLayout` de
+      // `PlotSankey` lo descarta, con su prueba— y filtrarlo en el adaptador
+      // dejaría un flujo que suma distinto sin que nada lo diga.
+      return etapas.length === 0 || enlaces.length === 0
+        ? { ok: false, razon: 'Un flujo sin etapas o enlaces válidos.' }
+        : { ok: true, valor: { forma: 'flujo', etapas, enlaces } }
+    }
+
     default:
-      // Lo que queda acá son las formas que el contrato **no declara**:
-      // `compared_categorical`, `multi_attribute_profile`, `matrix`, `graph` y
-      // `flow`. El backend las emite desde `168a761`; lo que falta es de este
-      // lado —esquema en `Valor` y cuerpo—, y son F4.17–F4.19, que siguen
-      // bloqueadas con esa razón escrita y verificada el 2026-09-25.
+      // Lo que queda son las dos formas que **ningún cuerpo dibuja**:
+      // `multi_attribute_profile`, cuyo único gráfico es `radar` y no está
+      // construido, y `graph`, que además no tiene de dónde salir —ninguna
+      // columna de las dos tablas Gold trae aristas origen→destino, medido el
+      // 2026-09-29—.
       //
+      // **Acá decía que el contrato no las declaraba, y era falso desde el
+      // 2026-09-26**: el yaml declara las dieciséis `Valor*`. El comentario se
+      // escribió cuando era cierto para las cinco y envejeció con tres de ellas
+      // adentro — el mismo modo de falla que tuvo `case 'distribution'`, que
+      // caía acá con un comentario que decía que el backend no la emitía.
       return { ok: false, razon: `Forma desconocida: «${shape}».` }
   }
 }
@@ -1060,7 +1336,24 @@ function adaptPresentation(raw: unknown): Presentation | undefined {
 /* ── F3.7 · los hilos del chat ─────────────────────────────────────────────── */
 
 export type WireChatThread = W['ChatThread']
+export type WireChatMessagesPage = W['ChatMessagesPage']
 export type WireChatSuggestion = W['ChatSuggestion']
+export type WireChatAgentOption = W['ChatAgentOption']
+
+/** Una opción de `GET /chat/agents` a `ChatAgent` · 2026-10-06.
+ *
+ *  **El `trim` del nombre es reformateo, no copy**: en QA llegan
+ *  «Terpel Lubricantes » y «Terpel Combustibles » con el espacio de la carga, y
+ *  en un selector eso desalinea la etiqueta. El texto es el del servicio. */
+export function adaptChatAgent(w: WireChatAgentOption): ChatAgent {
+  return {
+    id: w.id,
+    nombre: w.name.trim(),
+    rolObjetivo: w.target_role,
+    tenantId: w.tenant_id,
+    tenantNombre: w.tenant_name.trim(),
+  }
+}
 
 /** Un hilo del cable a `HiloResumen`.
  *
@@ -1114,4 +1407,88 @@ export function adaptThread(w: WireChatThread): ThreadSummary {
  *  copy de producto. */
 export function adaptSuggestion(w: W['ChatSuggestion']): string {
   return w.question
+}
+
+/* ── B5.4 · el drill-down · F3.9 · §PEN:C2 ─────────────────────────────────── */
+
+export type WireDrillDimensions = W['DrillDownDimensions']
+export type WireDrillResult = W['DrillDownResponse']
+
+/** Por qué dimensiones se puede desagregar un panel. */
+export type DrillDimensions = {
+  panelId: string
+  /** La clave de la métrica **del catálogo**, no la canónica del registry: el
+   *  servicio consulta con la canónica —`sales` → `revenue`— y devuelve ésta. */
+  clave: string
+  /** Lo que decide si el CTA de detalle se pinta. */
+  soportado: boolean
+  dimensiones: string[]
+}
+
+/** Una desagregación ya pedida. */
+export type DrillResult = {
+  panelId: string
+  clave: string
+  /** Como lo trae el catálogo. **Hoy sale en inglés** en los paneles del
+   *  dashboard por defecto, porque apuntan a las métricas de la semilla; las de
+   *  Snowflake están en español. No se traduce acá: el dueño del copy que
+   *  describe datos es el catálogo. */
+  nombre: string
+  dimension: string
+  periodo: string
+  /** **Las filas que la consulta devolvió, y NO la cantidad de ítems.** Medido
+   *  el 2026-09-30: `platform` sobre `sales` contestó 39 con 37 ítems, porque
+   *  el transformador del servicio saltea en silencio toda fila sin `label` o
+   *  sin `v`. Se pasa con su nombre propio y no se usa para nada más — quien lo
+   *  pinte tiene que rotularlo por lo que es. */
+  filas: number
+  /** Cuándo se corrió ESTA consulta · `time.Now().UTC()` del servicio.
+   *
+   *  **No es la frescura del panel y confundirlos es el bug**: `governance.
+   *  frescura` dice cuándo se materializó la métrica. Medido el 2026-09-30 son
+   *  siete horas de diferencia sobre el mes en curso, y con ellas el total del
+   *  panel y la suma del detalle no coinciden. */
+  consultadoEn: string
+  /** `ValorOk | ValorMal`: un valor que no adapta trae su razón y la hoja la
+   *  pinta, en vez de dibujar una caja vacía. */
+  valor: ValorOk | ValorMal
+}
+
+/** Sólo renombra. `dimensions` llega siempre como arreglo —el servicio inicializa
+ *  el DTO con `[]string{}` y sólo después mira el registry—, así que `[]`
+ *  significa «no soporta» y no «no vino». */
+export function adaptDrillDimensions(w: WireDrillDimensions): DrillDimensions {
+  return {
+    panelId: w.panel_id,
+    clave: w.metric_key,
+    soportado: w.supported,
+    dimensiones: w.dimensions,
+  }
+}
+
+/** Sólo renombra, y el valor lo adapta el que ya existe.
+ *
+ *  **El `shape` de raíz se ignora a propósito.** Está cableado a `"categorical"`
+ *  del lado del servicio —`Shape: "categorical"`, medido igual en las tres
+ *  dimensiones— y `value.shape` lo repite. Leer los dos sería una segunda fuente
+ *  para el mismo dato, y se separarían el día que una de las dos cambie.
+ *
+ *  **Lo que el dibujo pide y el cable no trae queda AUSENTE**, cada cosa con una
+ *  prueba que lo atestigua en vez de una aserción borrada: las filas crudas de la
+ *  tabla origen, las cuatro capas del linaje con sus conteos, el descarte de
+ *  bronce a plata, el porcentaje por fila, el total de la desagregación y la
+ *  frase que afirma que cierra contra el total. Las dos primeras no tienen ruta;
+ *  las dos últimas serían un cálculo y una frase compuesta, que no es trabajo de
+ *  acá. */
+export function adaptDrillResult(w: WireDrillResult): DrillResult {
+  return {
+    panelId: w.panel_id,
+    clave: w.metric_key,
+    nombre: w.metric_name,
+    dimension: w.dimension,
+    periodo: w.period,
+    filas: w.row_count,
+    consultadoEn: w.queried_at,
+    valor: adaptValue(w.value),
+  }
 }

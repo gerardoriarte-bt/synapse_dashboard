@@ -47,7 +47,11 @@ export function usoPorMetrica(
   for (const { tab, panels } of detalle.tabs) {
     // **Un rol con `pestanas` vacío ve TODAS** · es la misma regla que A2
     // declara, y aplicarla mal acá diría que una métrica no la ve nadie.
-    const quienes = roles.filter((r) => r.pestanas.length === 0 || r.pestanas.includes(tab.id))
+    // **Por CLAVE, no por id** · 2026-09-29, el mismo cambio que `RoleCard`.
+    // `r.pestanas` guarda `tab_keys` desde que la consola migró; comparar contra
+    // `tab.id` acá daba **cero roles** en todo el desglose sin romper nada
+    // visible: la columna decía «0 rol(es)» y se leía como un dato.
+    const quienes = roles.filter((r) => r.pestanas.length === 0 || r.pestanas.includes(tab.clave))
 
     for (const p of panels) {
       if (p.metricId === '') continue

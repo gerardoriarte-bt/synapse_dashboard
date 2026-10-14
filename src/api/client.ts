@@ -7,8 +7,12 @@
 import { ApiError, SIN_CODIGO } from './types'
 import {
   adaptBlocks,
+  adaptChatAgent,
+  adaptPlots,
   adaptCatalog,
   adaptContext,
+  adaptDrillDimensions,
+  adaptDrillResult,
   adaptPayload,
   adaptSuggestion,
   adaptTab,
@@ -16,10 +20,17 @@ import {
 } from './adapt'
 import type {
   AdaptedCatalog,
+  DrillDimensions,
+  DrillResult,
   WireBlock,
+  WireChatAgentOption,
+  WirePlot,
   WireChatSuggestion,
+  WireChatMessagesPage,
   WireChatThread,
   WireContext,
+  WireDrillDimensions,
+  WireDrillResult,
   WireMetric,
   WirePayload,
   WireTabWithPanels,
@@ -27,16 +38,19 @@ import type {
 import type {
   AppContext,
   Block,
+  ChatAgent,
   Envelope,
   Payload,
+  Plot,
   TabWithPanels,
 } from './types'
 import { currentToken } from '../app/auth/session'
+import { apiBase } from './base'
 
-import { esDePanel } from './chat'
+import { esDePanel, turnosDelHistorial } from './chat'
 import type { ContextoDeChat } from './chat'
 
-const BASE = import.meta.env.VITE_API_URL ?? '/api/v1'
+const BASE = apiBase()
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = currentToken()
@@ -110,6 +124,11 @@ export const api = {
    *  valide una composición sin llevar la tabla escrita adentro.
    *
    *  También llega como arreglo desnudo. */
+  /** El repertorio · global, no por tenant. `data` es un arreglo desnudo, igual
+   *  que `blocks`: así se escribió la ruta, a propósito, para que las dos se
+   *  consuman con el mismo idioma. */
+  plots: async (): Promise<Plot[]> => adaptPlots(await request<WirePlot[]>('/config/plots')),
+
   blocks: async (): Promise<{ blocks: Block[] }> => ({
     blocks: adaptBlocks(await request<WireBlock[]>('/config/blocks')),
   }),
@@ -167,6 +186,35 @@ export const api = {
     ).then((hilos) => hilos.map(adaptThread))
   },
 
+  /** Los mensajes de un hilo, para reabrirlo desde el riel · 2026-10-09.
+   *
+   *  **Va con el UUID del hilo**, no con el entero que continúa la
+   *  conversación: son los dos ids de `ChatThread` y no son intercambiables.
+   *  Una sola página —las últimas 50— y la hoja dice si hay anteriores. */
+  threadMessages: async (uuid: string) =>
+    turnosDelHistorial(
+      await request<WireChatMessagesPage>(
+        `/config/chat/threads/${encodeURIComponent(uuid)}/messages`,
+      ),
+    ),
+
+  /** Quita una consulta del historial · 2026-10-09.
+   *
+   *  **Es un borrado suave del servicio**: la conversación queda en la base y
+   *  deja de listarse. Por eso la confirmación dice «quitar del historial» y no
+   *  promete que el dato desaparezca. Ruta de `/history`, no de `/config`:
+   *  es la que el backend tiene, sobre los mismos hilos. */
+  deleteThread: async (uuid: string): Promise<void> => {
+    await request<unknown>(`/history/threads/${encodeURIComponent(uuid)}`, { method: 'DELETE' })
+  },
+
+  /** Los agentes que un admin puede elegir para el chat · 2026-10-06.
+   *
+   *  **Sólo se pide con rol admin**: a cualquier otro el servicio le devuelve
+   *  403, y el selector no se pinta. Ver `esAdmin` y el cable. */
+  chatAgents: async (): Promise<ChatAgent[]> =>
+    (await request<WireChatAgentOption[]>('/chat/agents')).map(adaptChatAgent),
+
   /** Qué preguntar sobre un panel · B3.2 · §PEN:C3.
    *
    *  **El `period` va SIEMPRE**, aunque el parámetro sea opcional: sin él el
@@ -178,6 +226,53 @@ export const api = {
         `/config/panels/${encodeURIComponent(panelId)}/chat-suggestions?period=${encodeURIComponent(periodo)}`,
       )
     ).map(adaptSuggestion),
+
+  /** ── EL DRILL-DOWN · B5.4 · F3.9 · §PEN:C2 ───────────────────────────────
+   *
+   *  Por qué dimensiones se puede desagregar este panel.
+   *
+   *  **Es una lectura barata y por eso se le puede preguntar por cada panel de
+   *  la pestaña**: el servicio resuelve el rol, autoriza el panel y consulta un
+   *  mapa en memoria. No toca Snowflake, no firma un JWT y no usa el agente.
+   *
+   *  Con eso la consola sabe si dibuja el CTA de detalle — un CTA sin manejador
+   *  no se pinta, y acá el manejador existe sólo cuando `soportado` es `true`.
+   *
+   *  **No toma período**: qué dimensiones existen es de la métrica, no del mes
+   *  que se está mirando. */
+  drillDimensions: async (panelId: string): Promise<DrillDimensions> =>
+    adaptDrillDimensions(
+      await request<WireDrillDimensions>(
+        `/config/panels/${encodeURIComponent(panelId)}/drilldown/dimensions`,
+      ),
+    ),
+
+  /** Desagregar la métrica del panel por una dimensión.
+   *
+   *  **Pasa por el mismo `request()` que todo lo demás, y eso no es una
+   *  formalidad.** `askSynapse` usa `fetch` crudo porque necesita leer el cuerpo
+   *  como stream, y al escribirlo aparte se le copiaron las dos cabeceras del
+   *  SSE y no la `Authorization`: el chat nunca autenticó y el servicio
+   *  contestaba 401 en 170 µs. Acá no hay stream que leer, así que no hay razón
+   *  para salirse del único lugar que pone el token.
+   *
+   *  **`limit` no se manda.** El servicio recorta en el SQL con un default de 50
+   *  y **nada en la respuesta dice que recortó** —medido con `limit: 3` sobre
+   *  `day`: contesta tres ítems, idéntico a un mes de tres días—. Pedir un
+   *  recorte sin poder decir que se recortó es prometer una lista completa que
+   *  no lo es. */
+  drill: async (panelId: string, dimension: string, periodo: string): Promise<DrillResult> =>
+    adaptDrillResult(
+      await request<WireDrillResult>(
+        `/config/panels/${encodeURIComponent(panelId)}/drilldown`,
+        {
+          method: 'POST',
+          // **`dimension` y `period`**, los dos `binding:"required"` en Gin: un
+          // nombre equivocado no devuelve una respuesta vacía, devuelve 400.
+          body: JSON.stringify({ dimension, period: periodo }),
+        },
+      ),
+    ),
 
   /** El tema es preferencia de USUARIO, no de tenant · §2.4.
    *

@@ -161,9 +161,19 @@ Corré `npm run verify` después de cada cambio. Dos chequeos dependen del dibuj
 | `token-drift` | Compara `src/tokens/` contra el `.pen` **byte a byte**. Cualquier token nuevo, cambiado o con otro comentario lo pone en rojo | `npm run gen:tokens` y volver a correr |
 | `pen-pantallas` | Falla con **cualquier pantalla nueva** que no esté declarada en el registro del plan | Declararla en `plan-de-trabajo.md`, con su archivo o la razón por la que todavía no |
 
-**Y un hueco que conviene que sepas: los 43 gráficos NO los mira ningún
-chequeo.** `pen-pantallas` reconoce `A*`, `B*` y `C*`. Si agregás, cambiás o
-sacás un gráfico, **la puerta no se entera** — avisalo a mano.
+**El hueco de los 43 gráficos se cerró** · 2026-09-28. Decía acá que ningún
+chequeo los miraba y que había que avisarlo a mano — y tuviste que hacerlo, con
+el rótulo de `Plot/PRONÓSTICO`. Ahora hay **`npm run pen-graficos`**, en la
+puerta.
+
+Lleva una huella por gráfico en `tools/pen-graficos.json` y **falla con
+cualquiera que aparezca, desaparezca o CAMBIE** — que era tu caso. Mover el
+gráfico entero dentro de la página no cuenta como cambio; mover algo adentro, sí.
+
+**Cuando te salga en rojo, es una invitación a mirar y no un error**: revisás el
+gráfico y corrés `python3 tools/pen-graficos.py --sellar`. Sellar es el acto
+explícito que dice «lo vi y es lo que quiero», igual que una desviación
+registrada en `contraste`. Y como el `.pen` es tuyo, **el sello lo corrés vos**.
 
 ## 4b · MIRAR EL DIBUJO ANTES DE COMMITEAR · y cómo se mira
 
@@ -254,3 +264,21 @@ Snowflake— se llevó `design/Synapse_v2.pen` con 2.234 renglones,
 escribiéndose en paralelo. No se perdió nada, pero **el cambio del dibujo quedó
 bajo un mensaje que no lo nombra**, que es justamente lo que §6 existe para
 evitar.
+
+### Y con un archivo COMPARTIDO, nombrarlo no alcanza · 2026-09-28
+
+**Volvió a pasar cumpliendo la regla.** `b39bb4e` agregó `plan-de-trabajo.md`
+por nombre —explícito, como pide arriba— y se llevó igual una edición ajena,
+porque el archivo lo escriben las dos sesiones.
+
+**Antes de `git add` sobre un archivo compartido, se mira si tiene cambios que
+uno no hizo**:
+
+```sh
+git diff --stat plan-de-trabajo.md docs/B0.9-preguntas-abiertas.md
+```
+
+Si hay algo que no es tuyo, **no lo agregues**: avisá y que lo commitee quien lo
+escribió. Los compartidos hoy son `plan-de-trabajo.md`,
+`docs/B0.9-preguntas-abiertas.md`, `design/Synapse_v2.pen` y los generados que
+salen de ellos.

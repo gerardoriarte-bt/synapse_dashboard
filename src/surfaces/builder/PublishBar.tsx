@@ -30,76 +30,44 @@
  *  detalle para nombrar la pestaña en vez del UUID.
  */
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
 import type { ProblemaDeComposicion } from '../../api/admin'
 
 type Props = {
   sucio: boolean
   publicada: boolean
-  validando: boolean
-  /** `null` mientras nadie validó, o después de tocar algo. */
   veredicto: { valido: boolean; problemas: readonly ProblemaDeComposicion[] } | null
-  /** Para nombrar la pestaña de un problema en vez de pintar su UUID. */
   nombreDeTab: (tabId: string | null) => string
   error: string | null
-  onValidar: () => void
 }
 
-export function PublishBar({
-  sucio,
-  publicada,
-  validando,
-  veredicto,
-  nombreDeTab,
-  error,
-  onValidar,
-}: Props) {
+/** **El botón de validar se mudó al chrome** el 2026-10-06, al lado de guardar
+ *  y publicar: los tres pasos de una sola intención en un solo lugar · §2.4 de
+ *  la auditoría. Acá queda lo que el chrome no tiene lugar para decir: qué
+ *  contestó el servidor. Y no se pinta si no contestó nada. */
+export function PublishBar({ sucio, publicada, veredicto, nombreDeTab, error }: Props) {
+  const hayVeredicto = veredicto !== null && !sucio
+  if (!hayVeredicto && error === null) return null
+
   return (
-    <div className="flex flex-col gap-2 rounded-sm bg-w2 p-3">
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onValidar}
-          disabled={sucio || validando || publicada}
-          className="font-mono text-label tracking-rotulo uppercase rounded-md px-4 py-2 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-elev disabled:opacity-40"
-        >
-          {validando ? 'Validando…' : 'Validar en el servidor'}
-        </button>
-
-        {sucio && (
-          <Label as="div">
-            Guardá primero · el servidor valida lo guardado, no lo que se ve acá
-          </Label>
-        )}
-      </div>
-
-      {!sucio && veredicto === null && !publicada && (
-        // **El estado por defecto no es «listo».** Sin veredicto no hay permiso,
-        // y decirlo es lo que impide leer el silencio como aprobación.
-        <Label as="div">Sin validar · el servidor todavía no vio esta composición</Label>
-      )}
-
-      {veredicto !== null && !sucio && (
-        <Label as="div">
+    <div className="flex flex-col gap-2 rounded-xl border border-w4 bg-panel p-4">
+      <Label as="div">Validación del servidor</Label>
+      {hayVeredicto && (
+        <Ayuda>
           {veredicto.valido
-            ? 'El servidor la dio por válida · se puede publicar'
-            : `El servidor encontró ${String(veredicto.problemas.length)} problema(s) · no se publica`}
-        </Label>
+            ? publicada
+              ? 'Esta versión ya está publicada.'
+              : 'El servidor la dio por válida. Ya se puede publicar; publicar no despliega nada, cambia qué versión ve la consola.'
+            : `El servidor encontró ${String(veredicto.problemas.length)} ${veredicto.problemas.length === 1 ? 'problema' : 'problemas'}. Hasta corregirlos no se publica.`}
+        </Ayuda>
       )}
-
-      {veredicto !== null &&
-        !sucio &&
+      {hayVeredicto &&
         veredicto.problemas.map((p, i) => (
-          <Label key={`${p.tabId ?? ''}-${p.panelId ?? ''}-${p.campo}-${String(i)}`} as="div">
+          <Ayuda key={`${p.tabId ?? ''}-${p.panelId ?? ''}-${p.campo}-${String(i)}`}>
             {`${nombreDeTab(p.tabId)}${p.panelId === null ? '' : ' · un panel'} · ${p.mensaje}`}
-          </Label>
+          </Ayuda>
         ))}
-
-      {publicada && <Label as="div">Esta versión ya está publicada</Label>}
-
-      {/* Publicar no despliega nada · §7.2: es un cambio de dato, no un build. */}
-      <Label as="div">Publicar no despliega · cambia qué layout sirve la consola</Label>
-
-      {error !== null && <Label as="div">{error}</Label>}
+      {error !== null && <Ayuda>{error}</Ayuda>}
     </div>
   )
 }

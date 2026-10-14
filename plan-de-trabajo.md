@@ -107,20 +107,20 @@ que su resultado esté escrito.
 | `Consola · C1 · Forecast` | **No construida** · dibujada el 2026-09-28 · es una pestaña más del layout, así que la pinta la misma `Console`. **Espera dos filas de catálogo** —`series_with_band` y `scalar_with_interval`—, pedidas en `docs/snowflake/PEDIDO-2026-09-28-metricas-mmm-y-forecast.md`. Su panel F5 está dibujado `BLOQUEADO` a propósito: hoy no hay pronóstico publicado |
 | `C1 · 768 · seis columnas` | `src/render/useColumns.ts` · el colapso se resuelve en JS · F1.30 |
 | `C1 · 360 · una columna` | ídem · el mínimo son 360 y no 768 · PS-12 |
-| `Consola · C2 · Drill-down de panel` | **No construida** · F3.9, diferida por D3 |
+| `Consola · C2 · Drill-down de panel` | `src/surfaces/console/DrillSheet.tsx` · F3.9, 2026-09-30 · **el candado D3 venció y se puede mostrar cuál**: las dos rutas son de `168a761`, suyas —verificado con `git log -L` sobre las dos líneas del router y con `git log --` sobre los cinco archivos del camino, ninguno con un commit nuestro— y contestan 200. **DIVERGE en cinco cosas, las cinco atadas por una aserción** en `tests/surfaces/console/drilldown.test.tsx`: (1) la frase `LA DESAGREGACIÓN CIERRA CONTRA EL TOTAL` **no se pinta y su falsedad está medida** —la cifra publicada es 1 232 721 y la desagregación suma 1 282 259 por día y por semana y 968 169 por plataforma, que lee otra tabla—; (2) tampoco el porcentaje por fila, por el mismo denominador y porque sería un cálculo; (3) `TABLA ORIGEN` y (4) `LINAJE HASTA LA FUENTE CRUDA` quedan **declaradas ausentes**: ninguna ruta devuelve filas crudas ni las cuatro capas, y de las cuatro el gobierno da una, que ya es el badge de procedencia; (5) la desagregación se dibuja con el cuerpo del registro y no con la lista de cuotas del dibujo, porque ese visual **no está en el repertorio** y un id que la tabla no declara no se puede validar contra ella. Dos ausencias más son pedido al backend y no hueco nuestro —el rótulo legible de cada dimensión, que su `DrillDimension.Label` no serializa, y el campo `dimensiones` del catálogo, vacío en las 21— · `docs/PROPUESTA-2026-09-30-divergencias-C2.md` |
 | `Consola · C3 · Chat expandido` | `src/surfaces/console/ChatSheet.tsx` · la forma se cerró en F5.17; lo que queda diverge por decisión, ver `docs/AUDITORIA-2026-09-21-pen-vs-chat-y-ficha.md` §2 |
 | `Consola · C3 · Chat · historial colapsado` | `src/surfaces/console/ChatSheet.tsx` |
 | `Consola · C4 · Detalle de hallazgo` | **No construida** · F3.10, diferida por D3 |
 | `Consola · C4 · Hallazgo fuera de banda` | **No construida** · ídem |
 | `Consola · C5 · Sin permiso` | `src/render/states/ForbiddenState.tsx` |
 | `C5 · Sin permiso · sin alternativas que ofrecer` | La misma: sin manejador no se pinta el CTA · la regla del CTA muerto |
-| `C6 · Selector de dashboard` | **No construida** · dibujada el 2026-09-28 para contestar `docs/PROPUESTA-2026-09-26-selector-de-dashboard.md`. F5.1 puso un `<select>` en el navbar y el dibujo lo reemplaza por un panel que abre el chevron del bloque de cliente: **lo construido diverge del dibujo y la tarea de ajuste no está tomada** |
+| `C6 · Selector de dashboard` | `src/surfaces/console/DashboardPanel.tsx` · §PEN:C6 · **la fila la daba por pendiente y era falso desde el 2026-09-28**, el mismo día que se dibujó: el panel se construyó, reemplazó al `<select>` que F5.1 había puesto en el navbar y lo monta `Topbar.tsx:133`. Corregido el 2026-09-30 |
 | `A1 · Clientes y plataforma` | `src/surfaces/admin/TenantList.tsx` |
 | `A1 · Clientes · sin ningún cliente` | `src/surfaces/admin/EmptyRow.tsx` |
 | `A1 · Clientes · cargando` | `src/surfaces/admin/SkeletonRows.tsx` |
 | `A2 · Ficha de cliente` | `src/surfaces/admin/RoleEditor.tsx` y `src/surfaces/admin/AgentConfig.tsx` · **diverge** · misma auditoría, §8 y §9 |
-| `A2 · Ficha · tenant en alta` | **No construida** · no hay alta de tenant en el front |
-| `A3 · Usuarios` | `src/surfaces/admin/UserList.tsx` · F4.3, construida el 2026-09-25 · **diverge en el alcance**: el dibujo pide plataforma y la ruta es por cliente, declarado en la pantalla |
+| `A2 · Ficha · tenant en alta` | `src/surfaces/admin/TenantIdentity.tsx`, `src/surfaces/admin/Subprocessors.tsx`, `src/surfaces/admin/StatusChip.tsx` y `src/surfaces/admin/alta.ts`, más la rama `BLOQUEADO` de `src/surfaces/admin/AgentConfig.tsx` y el vacío de alta de `src/surfaces/admin/RoleEditor.tsx` · F5.20, 2026-09-30 · **la pantalla ADOPTA un cliente, no lo da de alta**: `POST /admin/tenants` exige cuatro credenciales que §7.3 prohíbe pedir, así que el alta la hace el equipo interno y esta ficha la muestra. **DIVERGE en seis cosas, todas anotadas y cinco de ellas atadas por una aserción**: (1) la cabecera —el dibujo pone el nombre del cliente en display 24 con una migaja encima y la aplicación pone el nombre de la PANTALLA, que tiene decisión escrita y prueba propia, así que el chip `EN ALTA` va a la fila del rótulo de identidad; (2) la migaja y el display 24 quedan sin construir; (3) `ID` pinta el identificador que el servicio da —un uuid— donde el dibujo escribe una forma corta que ningún campo trae; (4) la frase del aporte de la plantilla **no se compone**, y hay una aserción que atestigua su ausencia; (5) el vacío de roles **no lleva el icono** `users` de 22 que el frame dibuja arriba de la frase, porque esta superficie no pinta un solo icono ni tiene la biblioteca —previa y de la superficie entera—; (6) el padding del cuerpo es el de toda la superficie —24, no 32—, también previa. **Los literales del vacío SÍ son los del dibujo desde la auditoría del 2026-09-30**: la pantalla decía «Este cliente todavía no tiene roles · está en alta» + «Sin ningún rol nadie puede entrar…» en dos labels mono donde el frame escribe `SIN ROLES DEFINIDOS` en el resumen y UNA frase de `$font-body` 12.5, y los dos literales eran previos a F5.20. Se corrigieron y quedaron atados en `tests/surfaces/admin/enAlta.test.tsx` |
+| `A3 · Usuarios` | `src/surfaces/admin/UserList.tsx` · F4.3, construida el 2026-09-25 · **diverge en el alcance y el candado VENCIÓ**: la pantalla lista por cliente porque cuando se construyó no había ruta global. **`GET /admin/users` contesta 200** —medido el 2026-09-30— con `total`, `tenants` y `tenant_name` por usuario, que es exactamente el alcance de plataforma que el dibujo pide. De `6e521cc`, suyo. **Es tomable** |
 | `A3 · Usuarios · filtro sin resultados` | La misma: el vacío de filtro lo pinta `EmptyRow` con `clase="filtro"` y su deshacer |
 | `A4 · Catálogo de métricas` | `src/surfaces/admin/CatalogView.tsx` |
 | `A4 · Métricas · filtro sin resultados` | `src/surfaces/admin/EmptyRow.tsx` |
@@ -129,12 +129,12 @@ que su resultado esté escrito.
 | `A6 · Cola de accionables` | **No construida** · F3.10, diferida por D3 |
 | `B1 · Selector de contexto` | `src/surfaces/builder/ContextView.tsx` |
 | `B2 · Canvas de composición` | `src/surfaces/builder/Canvas.tsx` |
-| `B3 · Selector de gráfico` | **No construida** · F4.21 · espera `/config/plots` |
-| `B3 · Selector · gráfico deshabilitado por tope` | **No construida** · ídem · el tope sale de B1.21 |
+| `B3 · Selector de gráfico` | **`src/surfaces/builder/PanelConfigurator.tsx`** · §PEN:B3 · la columna «Cómo se ve» desde el 2026-10-07, cada opción dibujada con el dato real de la métrica · `docs/AUDITORIA-2026-10-07-editor-sin-previsualizacion.md`. Era `PlotPicker.tsx` (F4.21, 2026-09-29), borrado ese día |
+| `B3 · Selector · gráfico deshabilitado por tope` | **`src/surfaces/builder/PanelConfigurator.tsx`** · §PEN:B3 · **construida el 2026-10-07**: el tope ya no se declara, se **evalúa** con el dato real del preview (`include=payloads`, que backend entregó en `d9147c3` el 2026-10-01 respondiendo a `docs/MENSAJE-2026-09-30-backend-payload-en-el-preview.md` y que no se había consumido). La opción deshabilitada pierde la vista previa y la razón va donde iría el dibujo, como pide la nota del frame |
 | `B4 · Binder de métrica` | `src/surfaces/builder/PanelConfigurator.tsx` |
 | `B5 · Vista previa · rol Planner sin componer` | `src/surfaces/builder/RolePreview.tsx` |
-| `B6 · Historial de versiones` | **No construida** · ninguna ruta lista versiones con su autor y fecha · **desde el 2026-09-28 tiene entrada dibujada**: el `Más` del navbar del builder |
-| `B7 · Guardar como plantilla` | **No construida** · dibujada el 2026-09-28 · promueve la composición a plantilla de vertical, que es el movimiento que a §3.4 le faltaba. **No hay backend**: `vertical` no existe en su código, medido en `docs/DECISIONES-2026-09-26-estado-y-vertical.md` |
+| `B6 · Historial de versiones` | **`src/surfaces/builder/VersionHistory.tsx`** y **`src/surfaces/builder/VersionCard.tsx`** · §PEN:B6 · construida el 2026-09-30. La lista sale de **`GET /admin/dashboards/{dashboardId}/publications`** y no de la de `layouts`, que devuelve **una sola fila** —medido: 5 contra 1—, porque revertir COPIA a un layout nuevo y nunca reactiva el archivado. `POST /admin/layouts/{layoutId}/revert` cubre el «REVERTIR A ESTA». **Diverge en cuatro cosas que el cable no da y NO se componen**: el `Resumen` de 13px, la línea `RAZÓN`, la fila de BORRADOR —falta una ruta de diff— y el cambio de dirección semántica, que es de la MÉTRICA y no del layout · `docs/PROPUESTA-2026-09-30-b6-prosa-del-historial.md`. **Cableada en `Builder.tsx` el 2026-09-30** y abierta contra el servicio: cinco filas en «Marca», el vacío medido en «Overview», y el navbar con `VOLVER A EDITAR` del frame `Volver` —`gwJUk`— en vez de las acciones de composición. El glifo del diff y su cruce con los contadores los arma `src/surfaces/builder/cambios.ts` |
+| `B7 · Guardar como plantilla` | **No construida** · dibujada el 2026-09-28 · promueve la composición a plantilla de vertical, que es el movimiento que a §3.4 le faltaba. **No hay backend, y la razón se afinó el 2026-09-30**: el campo `vertical` SÍ existe ahora —`ports/tenant.go:46`, de `6e521cc`— pero su propio comentario dice «reservados hasta que el cliente defina sus valores (siempre nil en v1)», y **no hay ruta de plantillas**: `/admin/templates` y `/admin/verticals` dan **404**. El candado sigue, con la letra corregida |
 
 ---
 
@@ -152,19 +152,23 @@ decir qué rol cumple**, porque ahí empieza la superposición.
 |---|---|
 | `docs/ESTADO.md` | **GENERADO** · el estado del proyecto. **Lo que se consulta y se reenvía** |
 | `docs/PARA-BACKEND.md` | **GENERADO** · lo que el front espera del backend |
-| `docs/snowflake/*` | Entregable a **ingeniería de datos**, no al backend. Instrucción y SQL |
+| `docs/ESTADO-BACKEND.md` | **GENERADO** · **contra qué commit suyo está verificada cada `B*`**, y cuáles quedaron contra uno anterior. No dice cuánto hizo el backend: dice qué sabemos nosotros y desde cuándo |
+| `docs/snowflake/*` | La carpeta de **ingeniería de datos**, en los dos sentidos: lo que les entregamos —instrucción y SQL— y lo que nos devuelven, como `Metricas.xlsx` o un informe. **Lo que mandan ellos no se edita**, igual que una `RESPUESTA-*`. Los PDF quedan fuera de git por `.gitignore` |
+| `docs/repertorio-de-graficos.json` | **GENERADO** · las 49 entradas de `SYNAPSE_PLOTS`, desde sus cuatro fuentes. Para leerlo y para diffearlo |
+| `docs/backend/*` | **GENERADO** · código Go que emitimos para el fork y que **no se edita a mano**. Hoy el seed de los 49 gráficos |
 | `docs/PLAN-INTEGRACION-*.md` | El **análisis** que fundamenta los pedidos, campo por campo |
 | `docs/ESTADO-*-*.md` | Un **corte** verificado contra el servicio, con fecha. No se actualiza: se reemplaza |
 | `docs/BITACORA-*.md` | **Histórico.** Lo que costó descubrir. No se tocan |
 | `docs/AUDITORIA-*.md` | **Histórico.** Un cruce puntual, con fecha |
 | `docs/ENTREGA-*.md` | **Histórico.** Qué se entregó y cuándo |
-| `docs/MENSAJE-*-*.md` | **Histórico.** Un mensaje mandado, con fecha. Qué se pidió y con qué evidencia |
+| `docs/MENSAJE-*-*.md` | **Histórico.** Un mensaje mandado, con fecha. Qué se pidió y con qué evidencia. **Y lo que entrega va al REPOSITORIO, con su ruta escrita acá — no se adjunta** · decidido el 2026-10-02 (humano): trabajamos en ambientes separados y el canal del mensaje no lleva archivos. Lo hace cumplir `afirmaciones`: un mensaje que dice «adjunto» sin citar una ruta que exista sale en rojo |
 | `docs/RESPUESTA-*-*.md` | **Histórico.** Lo que OTRO equipo contestó, con fecha. No lo escribimos nosotros y **no se edita**: si algo de ahí resulta inexacto, se dice en la respuesta nuestra, no corrigiendo la suya |
 | `docs/B0.9-preguntas-abiertas.md` | Las preguntas del contrato, con su resolución |
 | `docs/PROPUESTA-*-*.md` | Una **propuesta de spec** abierta, con fecha. Lo que `design.md` no declara y el código no puede inventar |
 | `docs/DECISIONES-*-*.md` | Decisiones ya **tomadas** sobre una spec, con lo que se midió para tomarlas y lo que se descartó. Es el par de `PROPUESTA-*`: aquella pregunta, ésta contesta — y no se edita después, porque la decisión tiene fecha |
 | `docs/F1.28-escala-tipografica.md` | La bitácora de una tarea que cambió el sistema |
 | `docs/FOLDER_STRUCTURE.md` | La estructura de `src/`, para quien llega |
+| `docs/RUNBOOK-*.md` | **Un procedimiento que se CORRE, y se mantiene.** Es el único rol sin fecha en el nombre, a propósito: los demás son cortes que vencen y éste se corrige en su lugar. Su lector es el equipo interno, así que **sí nombra bases, roles y grants** — lo que §7.3 prohíbe en pantalla vale para las pantallas, no para quien opera esa capa |
 | `docs/REPERTORIO-*-*.md` | Una **transcripción** de una fuente normativa a forma implementable, con de dónde sale cada columna. La implementa OTRO equipo; el contrato declara su esquema y acá viven las filas |
 | `docs/INSTRUCCIONES-*-*.md` | Lo que **otra sesión** necesita saber para trabajar en paralelo sin pisarnos. Incluye las excepciones a `CLAUDE.md` que un humano autorizó, con fecha |
 | `docs/historico/*` | Documentos **vencidos**, con el aviso adentro. No se consultan para planificar |
@@ -465,7 +469,9 @@ con el epic al que pertenece.
 
 ## Fase 0 — Fundamentos e infraestructura
 
-### B0.1 ⬜ Esquema Postgres
+### B0.1 ✅ Esquema Postgres
+
+**Verificado el 2026-09-29 contra `de881e1`** · Las doce tablas existen en la base local, leídas de `information_schema` · `agents dd_catalog_metrics dd_dashboards dd_feeds dd_layout_publications dd_layout_versions dd_materialize_runs dd_panel_data dd_panels dd_tabs roles tenants`.
 **Descripción.** Modelar el almacenamiento: `tenants`, `roles`, `users`,
 `layout_versions`, `tabs`, `panels`, `panel_options`, `panel_data`,
 `catalog_metrics`, `agent_configs`. `panel_data` es el snapshot materializado y
@@ -478,7 +484,9 @@ no una vista sobre Snowflake.
   gobierno completo: `base`, `capa`, `fuente`, `frescura`, `catalog_version`.
 - Existe un diagrama o un `schema.sql` versionado en el repo del backend.
 
-### B0.2 ⬜ Versionado de layout
+### B0.2 ✅ Versionado de layout
+
+**Verificado el 2026-09-29 contra `de881e1`** · `dd_layout_versions` trae `version_id`, `status`, `published_at`, `published_by` y `published_by_email`.
 **Descripción.** Un layout tiene versiones con estado `draft` | `published`.
 Publicar congela una versión, le asigna `versionId` y sella `publishedAt`.
 **Criterio de aceptación.**
@@ -487,7 +495,9 @@ Publicar congela una versión, le asigna `versionId` y sella `publishedAt`.
 - Se puede consultar el histórico de versiones con quién publicó y cuándo.
 - Publicar invalida la cache de layout de ese tenant (ver B2.8).
 
-### B0.3 ⬜ Autenticación JWT
+### B0.3 ✅ Autenticación JWT
+
+**Verificado el 2026-09-29 contra `de881e1`** · El guard responde: `GET /config/me` **sin** token da **401** y **con** token da **200**.
 **Descripción.** Emitir y validar tokens con claims `tenant_id`, `role_id`,
 `user_id` y `aud` (`usuario` | `platform`). El front **no decodifica el token**:
 recibe todo resuelto en `/config/me`.
@@ -497,10 +507,25 @@ recibe todo resuelto en `/config/me`.
 - Ningún endpoint devuelve `tenant_id` como identificador que el front deba
   reenviar: la pertenencia se resuelve del token.
 
-### B0.4 ⚠️ Middleware de auth y envelope
+### B0.4 ✅ Middleware de auth y envelope
 **Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. **Todo error trae `code`**, medido en cuatro familias: `AUTH_UNAUTHORIZED`, `NOT_FOUND_RESOURCE`, `AUTH_FORBIDDEN` y `VALIDATION_REQUEST`. **Queda en ⚠️ y no en ✅ por el `error`**: dos handlers devuelven el mensaje crudo —«tab not found» y el volcado del validador de Go— y `ErrorState` lo pinta tal cual. Pedido, no nuestro.
 
-**Espera del backend.** **Que el `error` esté redactado y en español**, que es lo único que queda de este pedido: el `code` llegó y se midió en cuatro familias. Dos handlers devuelven el crudo —«tab not found» y el volcado del validador de Go— y eso **se pinta en el panel tal cual**, porque el cliente lo pasa sin tocarlo. No es una política suya: los errores del revert salen redactados y en español.
+**CERRADA EL 2026-09-29 · las dos rutas traducidas, medido contra `de881e1`:**
+
+```
+POST /admin/agents {}  →  "solicitud inválida: el campo 'tenant_id' es obligatorio;
+                           el campo 'name' es obligatorio; …"
+POST /config/chat  {}  →  "solicitud inválida: el campo 'question' es obligatorio"
+```
+
+**Ni un nombre de struct de Go ni un tag.** Era lo último que le faltaba a esta
+tarea desde el 2026-09-14.
+
+**Lo que decía antes, y por qué se conserva:** **Que el `error` esté redactado y en español · quedaban dos rutas.** Remedido el 2026-09-28 contra `f70cec2`: de los dos handlers crudos, el de «tab not found» se arregló —sale `pestaña no encontrada`— y los 400 de binding pasan por un traductor por campo, medido en `PUT /config/me/preferences`: `el campo 'theme' debe ser uno de: dark, light`. **`POST /config/chat` sigue volcando el validador de Go**, y su respuesta afirma lo contrario —«Nunca aparece un nombre de struct de Go ni un tag»—. Medido: `Key: 'ddChatRequest.question' Error:Field validation for 'question' failed on the 'required' tag`. **No es el anidamiento**: falla igual con un campo de primer nivel. Es por handler — `dd_chat_handler.go:52` manda `err.Error()` donde los demás mandan `BindingErrorMessage(err)`, y de 32 sitios que enlazan JSON sólo 9 pasan por el traductor. `ErrorState` lo pinta tal cual, y cae justo en la ruta de F3.15.
+
+**Medido contra `de881e1` el 2026-09-29** · las dos rutas contestan con el volcado del validador de Go, y `PUT /config/me/preferences` con texto redactado.
+
+**Y SON DOS RUTAS, NO UNA** · encontrado el 2026-09-28 revisando el alta de un tenant. `POST /admin/agents` hace lo mismo: `Key: 'createAgentRequest.tenant_id' Error:Field validation for 'tenant_id' failed on the 'required' tag`. Ésa importa por otra razón — **es una ruta del ALTA de un cliente**, así que el error lo lee quien está dando de alta. `POST /admin/tenants` sí está traducida, que es la prueba de que el traductor anda y de que falta aplicarlo en esas dos.
 **Descripción.** Toda respuesta viaja como `{ success: true, data }` o
 `{ success: false, error: { codigo, mensaje, campo?, desbloqueaCon? } }`.
 **Criterio de aceptación.**
@@ -589,7 +614,9 @@ la Fase 1 y F1.28 dejó dos de diseño, que no están marcadas `# PREGUNTA:` en
 ningún lado porque su fuente es `design.md`. Las diez, con quién decide cada una
 y qué frena, en `docs/B0.9-preguntas-abiertas.md`. Solo tres bloquean trabajo.
 
-### ➕ B0.10 ⬜ Endpoint de login
+### ➕ B0.10 ✅ Endpoint de login
+
+**Verificado el 2026-09-29 contra `de881e1`** · `POST /auth/login` con las credenciales sembradas devuelve **200** y un token que el resto de las rutas acepta.
 **Descripción.** `tareas-front-back.md` pide en F0.5 «login → guardar JWT →
 redirigir», y **ninguna tarea de backend lo expone**. B0.3 define el JWT pero no
 la ruta que lo emite.
@@ -604,18 +631,33 @@ la ruta que lo emite.
 
 ## Fase 1 — API de consola
 
-### B1.1 ⚠️ `GET /config/me` · llegaron dos de seis
+### B1.1 ✅ `GET /config/me` · los seis, o retirados con razón
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `GET /config/me` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. Llegan `period_grain: "month"`, `periods_detail` con `[start, end)` por período, y `scope` —`kind: single_tenant` con el token de planner, y `tenants` nunca `null`—.
 
 **Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `GET /config/me` responde con `user`, `tenant`, `role`, `tabs`, `periods` y `catalog_version`. **Parcial** porque faltan `theme` —el campo existe en `users` y el `PUT` lo escribe— y el resto del contexto que declara el contrato.
 **Medido el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **`theme` LLEGÓ** — `user.theme: "light"` en `/config/me`—, y con él `tenant.locale`, `tenant.currency` y `tenant.timezone`, que no estaban pedidos acá y son los que desbloquean F1.13b.
 
-**Sigue en ⚠️ por dos bullets del criterio que no se cumplen**, y conviene que estén separados del `theme` para que nadie la cierre de más:
+**CERRADA EL 2026-09-28 · los dos que faltaban llegaron ese día en `f70cec2`.**
 
-- **`Periodo` no declara su `grano`.** `periods` son doce cadenas sueltas —`"2026-09"`— y el criterio pide `dia | semana | mes`: «sin él el front sabe que una métrica es mensual pero no si `2026-W32` es una semana».
-- **`alcance` no existe**, y con él `tenantsDisponibles`. Por eso el adaptador fija `alcance: 'usuario'` con su razón escrita.
+Medido campo por campo contra el servicio corriendo:
 
-**Espera del backend.** `tenant.etiqueta` y la `key` de la pestaña.
+```
+tenant : currency id label locale name timezone      ← label ✓
+tab    : chat_suggestions icon id key name …         ← key ✓ 'overview'
+scope  : multi_tenant · 2 tenants                    ← alcance ✓
+grano  : period_grain 'month' · periods_detail[].grain ✓
+```
+
+**Los dos bullets que esta tarea listaba como incumplidos ya no lo están**, y la
+tabla de abajo lo decía desde el 26 mientras la prosa seguía diciendo lo
+contrario. Es el modo de falla de siempre: una tarea que se actualiza por partes
+termina contradiciéndose a sí misma, y **quien la lee rápido lee la prosa**.
+
+**Y los dos que quedan sin llegar están retirados a propósito, no pendientes:**
+`role.puedeAprobar` y `user.capabilities` no los consume nadie, hoy ni previsto.
+Pedir un campo que nadie llena es lo mismo que les señalamos de `vertical`.
 
 **Se retiraron DOS del pedido el 2026-09-28, y no por llegar: porque no los consume nadie.** Antes de reenviar se revisó cada uno contra su consumidor:
 
@@ -631,9 +673,10 @@ la ruta que lo emite.
 | `alcance` con `tenantsDisponibles` | ✅ llegó como `scope` · `{kind, tenants[]}` |
 | El `grano` de cada período | ✅ `period_grain` y `periods_detail[].grain` |
 | `icon` y `chat_suggestions` en la pestaña | ✅ · y las sugerencias como lista, nunca `null` |
-| `tenant.etiqueta` | ✗ · `tenant` trae `id`, `name`, `locale`, `currency`, `timezone` |
-| `role.puedeAprobar` | ✗ · `role` trae `id` y `name` |
-| `user.capabilities` | ✗ · `user` trae `id`, `email`, nombre y `theme` |
+| `tenant.etiqueta` | ✅ llegó como `label` en `f70cec2` · medido el 2026-09-28 |
+| La `key` de la pestaña | ✅ llegó en `f70cec2` · `'overview'` |
+| `role.puedeAprobar` | **retirado** · nadie lo consume · 2026-09-28 |
+| `user.capabilities` | **retirado** · nadie lo consume · 2026-09-28 |
 | La `key` de la pestaña | ✗ |
 
 **Y `tenant.vertical` se RETIRA del pedido**, que es nuestro y no suyo: §3.5 declara `vertical` **y** `plantillaOrigen`, y el mecanismo no existe de ningún lado · `docs/DECISIONES-2026-09-28-estado-y-vertical.md`. Pedir la columna sin la plantilla les haría escribir un campo que nadie llena.
@@ -648,6 +691,8 @@ la ruta que lo emite.
 - Con `alcance: plataforma` incluye `tenantsDisponibles`; con `usuario`, no.
 
 ### B1.2 ✅ `GET /config/catalog`
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `GET /config/catalog` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `GET /config/catalog` devuelve 12 métricas con sus quince campos. El filtrado por rol es B1.19 y se audita aparte.
 **Descripción.** Las métricas del tenant filtradas por el rol del token.
 **Criterio de aceptación.**
@@ -658,6 +703,8 @@ la ruta que lo emite.
 - `direccionSemantica` viene solo en las compuestas, y es la frase que se pinta.
 
 ### B1.3 ✅ `GET /config/blocks`
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `GET /config/blocks` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `GET /config/blocks` devuelve **los quince tipos** —de `kpi` a `graph`— con `accepted_shapes`, los cuatro rangos de span y `layout_params`.
 **Descripción.** La tabla tipo ↔ formas aceptadas ↔ rangos de `colSpan` y
 `rowSpan`, para los 15 tipos.
@@ -668,6 +715,8 @@ la ruta que lo emite.
   reescribir la tabla del lado del cliente.
 
 ### B1.4 ✅ `PUT /config/me/preferencias`
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `PUT /config/me/preferences` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `PUT /config/me/preferences` responde **200** con `{ theme }`. Lo que falta —leerlo de vuelta en `/config/me`— es B1.1.
 **Descripción.** Persistir el tema del usuario.
 **Criterio de aceptación.**
@@ -677,6 +726,8 @@ la ruta que lo emite.
 - El valor inicial vuelve en `/config/me` → `user.preferencias.tema`.
 
 ### B1.5 ✅ `GET /config/tabs/{tabId}`
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `GET /config/tabs/{tabId}` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `GET /config/tabs/{tabId}` devuelve la pestaña y sus **12 paneles**, con `col_start`, `col_span`, `row_span` y `options`.
 **Descripción.** `{ tab, panels[] }` — el layout, sin datos. Acepta
 `?layoutId=` para multi-dashboard.
@@ -688,6 +739,8 @@ la ruta que lo emite.
   `opciones?`.
 
 ### B1.6 ⚠️ `POST /config/panels:batch`
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `POST /config/panels:batch` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **Verificado el 2026-09-14 contra el servicio corriendo** · commit `733c13c`. `POST /config/panels:batch` devuelve los 12 payloads y la consola los pinta. **Parcial** por `unlocks_with` vacío en `BLOCKED` y `request_from` como constante.
 **Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`, con el usuario `planner` recién creado. **`request_from` llega y vale `"admin"`** — era `"administrator"` cuando se escribió este pedido. **Sigue siendo una constante**, `forbiddenRequestFrom` en `dd_config_service.go`, pero su comentario dice que es deliberado: «el rol que decide sobre la visibilidad de la métrica». O sea que **puede estar contestado por decisión y no por olvido**, y conviene preguntarlo así en vez de volver a pedirlo.
 
@@ -705,17 +758,28 @@ la ruta que lo emite.
 - No devuelve payload de una métrica oculta para el rol (B1.9).
 
 ### B1.7 ⬜ Resolver el layout publicado
-### B1.8 ⬜ Filtrar pestañas por visibilidad de rol
-### B1.9 ⬜ Filtrar paneles por `hiddenMetricIds` — **ocultar ≠ permitir**
-### B1.10 ⬜ Aplicar `layoutOverrides` por rol
+### B1.8 ✅ Filtrar pestañas por visibilidad de rol
+### B1.9 ✅ Filtrar paneles por `hiddenMetricIds` — **ocultar ≠ permitir**
+### B1.10 ✅ Aplicar `layoutOverrides` por rol
 **Descripción (las cuatro).** La resolución que ocurre antes de responder:
 tomar el layout publicado, filtrar pestañas y paneles por rol, aplicar overrides.
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque, una por una:
+
+- **B1.8** · Se le puso a `planner` `tab_keys: ["marca"]` y `GET /config/me` le devolvió **0 pestañas** del dashboard overview; con `["overview"]`, una. Filtra por rol, **verificado en las dos direcciones**.
+- **B1.9** · El mismo tab devuelve **12 paneles a `admin` y 9 a `planner`**. **Ocultar no es permitir**: el backend no envía el payload de las tres que su rol oculta.
+
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque:
+
+- **B1.10** · Previsualizando el **mismo layout** con dos lentes: `admin` devuelve 12 paneles con `col_span` `[3,5,6,7,12]` y `planner` 9 con `[4,6,8]`. **Los overrides se aplican por rol**, y la diferencia de spans no se explica sólo por las métricas ocultas.
+
 **Criterio de aceptación.**
 - El front recibe **solo lo resuelto** y no aplica ningún filtro.
 - Una métrica oculta no llega ni en `tabs`, ni en `catalog`, ni en `batch`.
 - Un rol con override ve su composición propia sin huecos en la grilla.
 
-### B1.11 ⬜ Unión discriminada de `Payload`
+### B1.11 ✅ Unión discriminada de `Payload`
+
+**Verificado el 2026-09-29 contra `de881e1`** · Un solo lote devolvió cinco formas discriminadas por `value.shape` · `scalar` 6, `multi_series` 2, `prose` 2, `categorical` 1, `tabular` 1.
 **Descripción.** Cinco estados por `estado`: `DISPONIBLE`, `DEGRADADO`,
 `BLOQUEADO`, `SIN_PERMISO`, `ERROR`.
 **Criterio de aceptación.**
@@ -838,8 +902,60 @@ pruebas de integración contra HTTP.
 - El seed cubre al menos un panel por cada estado: `DISPONIBLE`, `DEGRADADO`,
   `BLOQUEADO`, `ERROR`. Sin eso, F2.1–F2.4 no se pueden probar contra el backend.
 
-### ➕ B1.21 ⬜ Declarar los mínimos de datos por gráfico
-**Espera del backend.** **`GET /config/plots`** con la tabla de 49, y **un campo `chart` en el panel del layout** — sin él ninguno de los 49 se puede elegir: `type` nombra familias de forma y §5 mapea siete gráficos sobre `composition` sola. Opcional, y ausente significa el de siempre, así que no migra ningún layout publicado. Pedidos el 2026-09-28.
+### ➕ B1.21 ⚠️ Declarar los mínimos de datos por gráfico
+**LA ESCRIBIMOS NOSOTROS · 2026-09-29.** Estuvo pedida **tres veces** y no
+llegaba. Al mirar qué faltaba de verdad, la tabla era nuestra entera —las cuatro
+columnas, con cuatro dueños, todos de este lado— así que lo único que faltaba era
+la ruta.
+
+`GET /config/plots` vive en `b6f0e09`, rama `feature/config-plots` del fork,
+**sobre `de881e1` limpio** y no sobre el rebase. Medida ese día contra el
+servicio corriendo: **200 con 49 entradas en 5 ms**.
+
+| | |
+|---|---|
+| Churn en archivos de ELLOS | **+18 −1**, cinco archivos, todo aditivo · el único borrado es la llamada a `SetupRouter` reescrita |
+| Firmas existentes cambiadas | **ninguna** |
+| Pruebas suyas tocadas | **ninguna** · `go test ./...` pasa **sin una sola falla** |
+| `go build`, `go vet`, `gofmt -l` | limpios · el formateador **no se corrió sobre archivos de ellos** |
+
+**Las 49 filas están GENERADAS, y ésa es la mitad que más vale.**
+`tools/gen-plots.py` las emite desde cuatro fuentes con dueños distintos —el
+repertorio legible por máquina de v2, el `.pen` para los nombres, la decisión del
+2026-09-26 para los mínimos, y `NOMBRE_DE_FORMA` del adaptador para el mapa al
+idioma del cable—. Pedirles transcribir 49 filas de una tabla markdown era **el
+modo de falla que ya costó quince filas mal** en la tabla de bloques del modo
+mock, con más superficie y con la mitad del daño invisible: un `tope` equivocado
+deshabilita un gráfico que debería estar y nadie lo atribuye a esto.
+
+**Tres decisiones que quedaron escritas en el código:**
+
+1. **`data` es el arreglo PELADO**, como `GetBlocks`. Envolverlo en `{"plots":
+   [...]}` era más prolijo y obligaba a un segundo adaptador para dos rutas que
+   son la misma cosa.
+2. **`minimums` nunca llega `null`, y vacío es legítimo.** Seis de los 49 salen
+   `[]` y son exactamente los de `scalar` y `prose`: una cifra es una cifra. Un
+   `null` obliga a cada consumidor a distinguir «sin mínimo» de «no se sabe», y
+   el día que alguien no lo haga, un gráfico sin mínimo se lee como uno sin
+   verificar.
+3. **Servicio propio y no un método en `ddConfigService`**, que es lo que evitó
+   el churn: agregarle el repositorio cambia la firma de `NewDDConfigService` y
+   **ocho archivos de sus tests la construyen**.
+
+**Queda en ⚠️ y no en ✅** porque la regla es que una `B*` pasa a ✅ verificada
+**contra el servicio desplegado**, y esto corre contra el binario que levantamos
+acá. Transcripta en el cable con `x-verificado-en: b6f0e09`.
+
+**Lo que sigue es nuestro y no de ellos**: `catalog/plots.ts` con los
+validadores. Ahora sí tiene de dónde leer la tabla.
+
+**Lo pedido, y ya entregado y medido.** **Queda `GET /config/plots`; `chart` YA LLEGÓ** · el mismo día que se pidió, en `f70cec2`. Medido el 2026-09-28 contra el servicio: sale en `DDPanelDTO.chart` y en `DDLayoutPanel.chart`, lo escribe el builder recortado y en minúsculas —`"  Waterfall  "` → `waterfall`— y los doce paneles publicados quedaron con `''`, así que no migró ningún layout. Transcripto en los dos cables y adaptado, con prueba de que **un id desconocido se pasa igual**: descartarlo haría caer el panel al gráfico por defecto sin que nadie se entere. **Lo que falta es la ruta del repertorio**, y para escribirla piden tres archivos nuestros que no están en su repo — contestado en `docs/MENSAJE-2026-09-28-backend-lo-que-piden.md`.
+
+**Lo tiene: NOSOTROS** · mandarles `docs/ENTREGA-2026-09-29-repertorio-de-graficos.md`. **Lo pidieron dos veces**, y las dos se les contestó con una ruta de NUESTRO repositorio, que no ven.
+
+**Medido contra `de881e1` el 2026-09-29** · `GET /config/plots` → **404**.
+
+**Remedido contra `9dc481e` el 2026-10-09 · ENTREGADO en `c8b9247`.** `GET /config/plots` responde, y `npm run humo` lo mide **idéntico al archivo que entregamos**: 49 entradas.
 
 **NUESTRA MITAD ESTÁ HECHA** · 2026-09-26, y **el repertorio entero desde el 2026-09-28**: `docs/REPERTORIO-2026-09-28-los-49-graficos.md`. El orden que habíamos propuesto era «1. el front declara los mínimos y los propone en el contrato · 2. el backend los sirve». **El paso 1 está**: el contrato declara `GET /config/plots`, `Grafico` y `MinimoDeDatos`, y la tabla que hay que implementar está en `docs/DECISIONES-2026-09-26-minimos-por-grafico.md`.
 
@@ -851,7 +967,9 @@ Sólo tres suben el de su forma —`treemap`, `pareto` y `waterfall`, a 3— y e
 
 **Los tres mínimos que ya estaban escritos** en el criterio de abajo —«una serie de un punto, una composición de una parte y un ranking de dos ítems»— se respetaron, y de ahí sale que `ranking` sea 3 y no 2.
 
-**Espera del backend.** **Servir `GET /config/plots`** con la tabla del documento, con la misma figura que `/config/blocks`: global, no por tenant. Medido el 2026-09-26: **404**. Bloquea F1.31 y F4.21.
+**Lo pedido, y ya entregado y medido.** **Servir `GET /config/plots`** con la tabla del documento, con la misma figura que `/config/blocks`: global, no por tenant. Medido el 2026-09-26: **404**. Bloquea F1.31 y F4.21.
+
+**Lo tiene: NOSOTROS** · mandarles `docs/ENTREGA-2026-09-29-repertorio-de-graficos.md`. **Lo pidieron dos veces**, y las dos se les contestó con una ruta de NUESTRO repositorio, que no ven.
 
 **NO depende de Snowflake.** No toca datos: es una tabla de reglas y un endpoint.
 
@@ -1113,8 +1231,22 @@ desaparece.
 - La decisión nombra quién es dueño de la vista por tenant: hoy `sync-catalog`
   asume que existe y falla sin decir que falta.
 
-#### ➕ B1.28 ⬜ `PayloadDegradado` dice DESDE QUÉ PUNTO el dato está vencido
-**Espera del backend.** **Un campo en `PayloadDegradado` que diga desde dónde el dato dejó de ser fresco** — pedido el 2026-09-28, al cerrar la propuesta del degradado.
+#### ➕ B1.28 ✅ `PayloadDegradado` dice DESDE QUÉ PUNTO el dato está vencido
+**CERRADA EL 2026-09-29 · `stale_since` llegó en `de881e1`.** Medido envejeciendo una fila en la base descartable:
+
+```
+stale_since : 2026-09-12T14:38:08Z
+reason      : Los datos tienen más de 3 días: la última actualización fue el 2026-09-09
+unlocks_with: Se actualiza en la próxima materialización
+```
+
+**Es `materialized_at` + la tolerancia**, y la razón nombra la fecha. `dd_config_service.go:781`.
+
+**Y sólo aparece en la degradación POR ANTIGÜEDAD**, que es lo correcto: la del «nunca se materializó» no tiene desde-cuándo. La primera medición cayó en ese caso y pareció que faltaba — el campo es `omitempty`.
+
+**Lo que se pidió:** un campo en `PayloadDegradado` que diga desde dónde el dato dejó de ser fresco, el 2026-09-28.
+
+**Medido contra `de881e1` el 2026-09-29** · el payload de un panel degradado trae `governance message reason status unlocks_with value` · ninguna clave de tramo.
 
 Hoy el cable manda `reason` y `unlocks_with` como texto redactado, que sirve para la nota pero no para el cuerpo: **no dice qué tramo de la serie está vencido.**
 
@@ -1130,11 +1262,216 @@ Hoy el cable manda `reason` y `unlocks_with` como texto redactado, que sirve par
   cuál es el tramo es inventar el dato.
 - Una forma sin eje temporal no lo necesita y el campo queda ausente, no en cero.
 
+#### ➕ B1.29 ✅ `schema-check` · decir qué le falta al cliente ANTES de intentar
+**CERRADA CONTRA SNOWFLAKE REAL · 2026-09-29, tarde.** Datos habilitó la IP y el
+bloqueo venció. Verificado en el orden que el propio backend indicó —primero el
+ping, después la ruta—, contra `de881e1` y con la base local:
+
+```
+GET /agents/ping                              → 200 · status "ok" · latency_ms 894
+GET /admin/tenants/e65f81ae-…/schema-check    → 200 · ok: true      (2,5 s)
+    GLD_ECOMM_DAILY_PERFORMANCE  table  exists: true   missing: []
+    GLD_PAID_MEDIA               table  exists: true   missing: []
+    SYNAPSE_METRIC_CATALOG       view   exists: true   missing: []
+    affected_metrics: []   keys_without_query: []   catalog_source: "view"
+```
+
+**Lo que hace que esto valga es `ok: true` CON los tres objetos enumerados**, y
+no el 200 a secas: la ruta existe para decir **qué falta**, así que una que
+contestara 200 sin mirar nada se vería igual. Los tres objetos nombrados, con su
+`kind` y su `missing` vacío, son la prueba de que consultó el esquema.
+
+**La IP de salida era `201.244.209.190`**, la misma del 2026-09-24 y no la
+`190.27.36.15` que dio 502 esa mañana. Conviene no perderlo: **la IP de salida de
+acá cambia**, así que un 502 de Snowflake se mira contra `curl checkip.amazonaws.com`
+antes de escribirle a nadie.
+
+**Lo pedido, y ya entregado y medido.** Una ruta que compare el `db.schema` del tenant contra el contrato de esquema — pedido el 2026-09-28 en `docs/MENSAJE-2026-09-28-backend-tres-del-alta.md`.
+
+**Lo tuvo DATOS y ya está hecho** · la IP quedó habilitada el 2026-09-29. La ruta está entregada y ellos la midieron desde su red con `200`.
+
+**Medido contra `de881e1` el 2026-09-29** · `schema-check` → **404** · y se comprobó que `GET /agents/ping` y `GET /admin/tenants/{id}/catalog/health`, que sí existen, contestan otra cosa.
+
+**LA RUTA LLEGÓ EL 2026-09-29 · en `e1037d9`. Queda en ⚠️ y no en ✅ por una razón que NO es suya: Snowflake nos bloquea la IP.**
+
+```
+GET /admin/tenants/{id}/schema-check   → 502
+  "snowflake sql: status 401: 390422 · Incoming request with IP/Token
+   190.27.36.15 is not allowed to access Snowflake"
+```
+
+**La ruta responde; lo que no llega es Snowflake.** Es el mismo bloqueo que datos levantó el 2026-09-24 para que el chat funcionara — la IP de salida cambió desde entonces.
+
+**Así que la FORMA de la respuesta sigue sin medirse**, y eso es lo que falta para cerrarla: sin ver su cuerpo no sabemos si trae `afecta` y `claves_sin_query`, que eran los dos campos que la volvían valiosa.
+
+**Se pide a datos**, no al backend · `docs/MENSAJE-2026-09-29-datos-habilitar-ip.md`, mandado el 2026-09-29.
+
+**Y el pedido lleva una pregunta de fondo, porque la IP ya cambió una vez:** el 2026-09-24 Snowflake veía `201.244.209.190` —la habilitaron y el chat funcionó— y hoy ve `190.27.36.15`. **Cinco días, dos direcciones.** Habilitar ésta desbloquea hoy y es razonable esperar que vuelva a cortar.
+
+**Un detalle que hace perder una tarde si no se sabe:** la salida a Snowflake **no es la misma que la salida general**. En el mismo instante, Snowflake ve `190.27.36.15` y un «cuál es mi IP» genérico ve `186.31.4.152`. **La única que sirve es la que Snowflake reporta en el error** — habilitar la otra no funciona y parece que la política no se aplicó.
+
+**El problema que cierra es un SILENCIO**, y es el que más encarece un alta: hoy una columna que falta hace que el panel salga `BLOCKED` **sin razón** — no dice qué columna, ni que el problema sea de esquema. Se descubre al final, después de crear todo.
+
+**Media pieza YA EXISTE y no la conocíamos** · `GET /agents/ping` firma el JWT con las credenciales del tenant y corre `SELECT 1` contra Snowflake —medido el 2026-09-28 contra `f70cec2`: `status: ok`, 898 ms—. Eso cubre la mitad **credencial**. Y `GET /admin/tenants/{tenantId}/catalog/health`, que tampoco conocíamos, contesta **frescura de feeds por métrica**, que es otra pregunta.
+
+Lo que falta es la mitad de **esquema**, y son dos `DESCRIBE` y una comparación de listas.
+
+**Criterio de aceptación.**
+- Dice si existen los dos objetos Gold en `<agent.db>.<agent.schema>` y **qué columnas de las quince faltan** en cada uno.
+- Dice si existe la vista de catálogo y cuáles de sus doce columnas faltan.
+- **Trae `afecta`: qué métricas quedan sin poder materializarse por cada columna ausente.** Es el campo que convierte el chequeo en una decisión — «falta `BUDGET_TARGET`» no le dice nada a nadie, «no vas a poder tener `goal_attainment`» sí. El mapa de qué query usa qué columna es suyo, no nuestro.
+- **Trae `claves_sin_query`: las `METRIC_KEY` del catálogo del cliente que no caen en `MetricRegistry` ni por alias.** Cierra el segundo silencio y es un `diff` contra las doce claves de `keys.go`.
+- No crea ni modifica nada: es de sólo lectura y se puede correr antes de dar de alta.
+
+#### ➕ B1.30 ✅ `sync-catalog` como ruta HTTP
+**CERRADA CONTRA SNOWFLAKE REAL · 2026-09-29, tarde**, contra `de881e1`:
+
+```
+catalog_version antes                         → 3
+POST /admin/tenants/e65f81ae-…/sync-catalog   → 200   (0,95 s)
+    created 0 · updated 0 · unchanged 10 · view_name SYNAPSE_METRIC_CATALOG
+catalog_version después                       → 3
+```
+
+**Lo verificado NO es que contestara 200: es que sea IDEMPOTENTE.** La corrida del
+2026-09-24 dio `created=6 updated=4 catalog_version=2`; ésta, sobre el mismo
+catálogo sin cambios, deja las diez en `unchanged` y **no mueve la versión**. Una
+ruta que subiera `catalog_version` en cada llamada invalidaría la caché del front
+cada vez que un admin toca el botón, y el síntoma sería un parpadeo que nadie
+atribuiría a esto.
+
+Con esto el alta de un cliente deja de necesitar acceso a la máquina del backend,
+que era todo el punto.
+
+**Lo pedido, y ya entregado y medido.** La simétrica de `materialize` — pedido el 2026-09-28.
+
+**Lo tuvo DATOS y ya está hecho** · la IP quedó habilitada el 2026-09-29. La ruta está entregada.
+
+**Medido contra `de881e1` el 2026-09-29** · `sync-catalog` → **404** · su hermana `materialize` → **202**.
+
+**LA RUTA LLEGÓ EL 2026-09-29 · en `e1037d9`.** `POST /admin/tenants/{id}/sync-catalog` ya no da 404: contesta **502** por el mismo bloqueo de IP de Snowflake que B1.29, o sea que **llegó hasta intentar la consulta**.
+
+**Queda en ⚠️ hasta poder correrla de verdad.** Con eso, el alta de un cliente deja de necesitar acceso a la máquina del backend — que era todo el punto.
+
+Medido ese día contra `f70cec2`: `POST /admin/tenants/{tenantId}/materialize` contesta **202** y `POST /admin/tenants/{tenantId}/sync-catalog` da **404**. Sólo existe `make sync-catalog TENANT_ID=<uuid>`.
+
+**Es lo único en toda el alta que obliga a entrar a la máquina del backend.** Crear el tenant, crear el agente y materializar ya tienen ruta.
+
+**Criterio de aceptación.**
+- `POST /admin/tenants/{tenantId}/sync-catalog` contesta como su hermana: 202 y el trabajo por detrás.
+- El resultado se puede consultar después: cuántas métricas entraron y en qué `catalog_version` quedó.
+- **No reemplaza al comando**, que sigue sirviendo para correrlo a mano.
+
+#### ➕ B1.31 ⚠️ La plataforma genera el par de claves del usuario de servicio
+**Lo pedido, y ya entregado y medido.** **Que el servicio genere el par RSA y devuelva sólo la pública** — pedido el 2026-09-28.
+
+**Lo tiene: NOSOTROS** · probar la rotación en el próximo alta real. **La ruta está entregada** y su guarda se midió.
+
+**Medido contra `de881e1` el 2026-09-29** · sin un solo `rsa.GenerateKey` en `internal/`.
+
+**Remedido contra `9dc481e` el 2026-10-09 · ENTREGADO.** `rsa.GenerateKey` en `tenant_key_service.go:50`, desde `e1037d9`, que está en la historia de `9dc481e`. Lo que queda es nuestro y está dicho arriba: probar la rotación en el próximo alta real.
+
+**LLEGÓ EL 2026-09-29 · en `e1037d9`.** `POST /admin/tenants/{id}/service-key` existe, y **su guarda es lo mejor que trae**:
+
+```
+→ 409 CONFLICT_KEY_EXISTS
+  "el tenant ya tiene una clave de servicio; enviá rotate=true para reemplazarla"
+```
+
+**No pisa una clave que funciona.** En este tenant la clave es la real —la que hace andar el chat contra Cortex—, así que **no se probó la rotación a propósito**: rotarla habría roto el entorno para comprobar algo que la guarda ya demuestra.
+
+**Queda en ⚠️ porque la forma de la respuesta con éxito no se midió**: haría falta un tenant sin clave. Se cierra con el próximo alta real, que es cuando importa.
+
+Hoy `POST /admin/tenants` exige `private_key_pem`, así que por cada cliente **alguien genera un par a mano y transporta una clave privada** hasta donde se haga el alta. Verificado ese día: no hay `rsa.GenerateKey` en `internal/`.
+
+**Es más fácil y además más seguro**, que es la combinación que no obliga a elegir: la privada nunca sale del servicio y lo que circula es la pública.
+
+**Criterio de aceptación.**
+- El servicio genera el par, guarda la privada cifrada como ya hace con la que recibe, y devuelve **sólo la pública** en formato PEM.
+- **El ciclo se cierra con lo que ya existe**: generar → el cliente registra la pública en su usuario de servicio → `GET /agents/ping` confirma que funciona.
+- `private_key_pem` deja de ser obligatoria en el alta, o queda un orden declarado. **Cuál de las dos es decisión del backend**; el front no depende de la forma.
+
+#### ➕ B1.32 ✅ `cut` es `day` o `month`, y lo aplica el front
+**Lo que fue este pedido, y cuánto se achicó antes de mandarse.** Iba a ser «qué significa `cut`»; leyendo su código quedó en «confirmen que lo aplica el front», y la confirmación llegó el mismo día.
+
+**Medido contra `de881e1` el 2026-09-29** · `cut` aparece en su semilla con `day` y `month`, y **ningún consumidor** en `internal/core/`.
+
+**Lo que se averiguó solo:** su semilla ya muestra el vocabulario —`{"cut": "day"}` y `{"cut": "month"}` en `dd_seed.go:113`— y `dd_seed_blocks.go:44` lo declara como `layout_param` del bloque `series` junto a `normalization`. **Y nadie lo lee**: `grep` sobre `internal/core/` no encuentra un solo consumidor de `cut` ni de `normalization` fuera de la semilla.
+
+**Así que la pregunta ya no es qué significa, sino si son sólo esos dos valores.**
+
+**Bloquea F1.44**, que es un defecto visible: el orden de una tabla **se anuncia y no se aplica**. Hoy el panel dice cómo está ordenado y no lo está, que es peor que no decirlo.
+
+**CONTESTADA EL 2026-09-28 · `docs/RESPUESTA-2026-09-28-todo-lo-que-falta.md`.** Y es la clase de respuesta que cierra una tarea sin una línea de código de nadie:
+
+> «Sí: los únicos valores son `day` y `month`, y **lo aplica el front**. Ningún código del backend lee `cut` ni `normalization` (ni `order` de tablas): son `layout_params` declarativos que viajan en `options` del panel y los honra quien dibuja.»
+
+**Coincide con lo que habíamos medido** —ningún consumidor en `internal/core/`—, así que es una segunda fuente de verdad y no una transcripción de la misma. Y agregan uno que no habíamos preguntado: **el `order` de las tablas también es nuestro**, que es exactamente lo que F1.44 necesitaba saber.
+
+**Criterio de aceptación.**
+- Queda dicho si `day` y `month` son todos los valores · **sí, contestado**.
+- Queda confirmado que el backend no lo aplica · **confirmado, y ellos lo dicen**.
+- Lo mismo para `normalization` · **confirmado**, y de paso el `order` de tablas.
+
+#### ➕ B1.33 ✅ El patrón de `PeriodoId` · es `YYYY-MM` y nada más
+**NO ERA UN PEDIDO · se contesta leyendo su código, y así se contestó el 2026-09-28** antes de mandarlo.
+
+Esta tarea se escribió para pedirles «qué forma puede tener un `PeriodoId` además de `YYYY-MM`». **Su propio criterio decía que si sólo existiera el mes, escribirlo cerraba la tarea** — y es el caso.
+
+`internal/core/dashboard/snowflake/period.go` lo declara sin ambigüedad:
+
+```go
+return Bounds{}, fmt.Errorf("invalid period %q: expected YYYY-MM", period)
+```
+
+y sus ayudantes son `CurrentPeriod` y `PreviousPeriod`, los dos **por mes**.
+
+**Así que «sólo meses» deja de ser un supuesto nuestro y pasa a ser un hecho leído.** Lo que F5.13 espera no es un patrón que exista y no conozcamos: es que el backend **soporte** otro grano, y eso es una tarea de ellos que todavía nadie pidió porque nadie la necesita.
+
+**Criterio de aceptación.**
+- Queda escrito qué patrones acepta hoy · **`YYYY-MM`, verificado en `period.go`**.
+- F5.13 deja de citar «el patrón de `PeriodoId`» como candado y pasa a citar lo que realmente espera: **soporte de otro grano**, que nadie pidió.
+
+#### ➕ B1.34 ✅ Declarar qué es el `t` de una serie, o mandar el tramo vencido
+
+**Verificado el 2026-10-09 contra `9dc481e`** · por la primera rama del criterio: el `t` es una fecha ISO desde `c8b9247`, y `Punto.t` de `contracts/synapse-api.yaml` lo declara. Medido en el servicio corriendo después de rematerializar `2025-11`…`2026-08`: **1.440 de 1.440 puntos en `YYYY-MM-DD`** en los doce períodos. Antes de rematerializar, `2026-08` y anteriores seguían en días desde epoch. **En QA también está hecho** · el humano cargó los meses anteriores desde A5 el 2026-10-09. No lo medimos nosotros: no tenemos sesión en QA.
+**Lo pedido, y ya entregado y medido.** **Qué unidad tiene el `t` de `points[]`** — y con eso se desbloquea la trama del degradado.
+
+**Lo tiene: BACKEND** · declarar la unidad, o mandar el índice del tramo vencido.
+
+**Medido contra `de881e1` el 2026-09-29** · el servicio manda `"20362"`, `"20393"`, `"20423"` en `points[].t`. Son **días desde epoch** —2025-10-01, 2025-11-01, 2025-12-01, el primero de cada mes— pero **el cable no lo declara en ningún lado**.
+
+**Remedido contra `9dc481e` el 2026-10-09 · ENTREGADO en `c8b9247`.** `isoDate` convierte el `DATE` de la SQL API —días desde epoch— a `YYYY-MM-DD`. **Pero sólo en lo que se materializa después**, y lo dicen ellos: «las filas ya guardadas conservan el número hasta que se rematerialice su período». Medido en el servicio local: `2026-09` llega `2025-10-01`, `2025-11-01`…; `2026-08` sigue `20332`, `20362`…. **Lo que queda es nuestro**: rematerializar los meses viejos desde A5 y transcribir en el cable que `t` es una fecha ISO.
+
+**Y DESDE EL 2026-09-29 SE VE EN PANTALLA**, que hasta ese día no pasaba: ningún
+gráfico dibujaba eje de tiempo —`PlotSeries` sólo tiene eje de valores—, así que
+el `t` viajaba sin que nadie lo leyera. `PlotCombo` **sí rotula su eje**, y al
+publicarlo sobre `media_efficiency_12m` con dato real de Snowflake el eje salió
+`20362 · 20454 · 20544 · 20635 · 20697`.
+
+**Los números crudos en pantalla es lo que cambia la urgencia del pedido**: deja
+de ser una ambigüedad del cable y pasa a ser copy equivocado en la consola. Y el
+front no lo puede arreglar — deducir que son días desde época es exactamente la
+invención que el adaptador tiene prohibida; que coincida hoy no lo declara.
+
+**Por qué importa ahora y no antes.** `stale_since` llegó en el mismo commit, y con él se puede marcar el tramo vencido que el `.pen` dibuja —las dos últimas barras en `$w2`—. Para eso hay que comparar cada punto con `stale_since`, y para comparar hay que interpretar el `t`.
+
+**El front no lo va a interpretar.** Un tramo mal marcado **afirma que un dato concreto está vencido cuando no lo está**, y eso es peor que no marcarlo: la trama existe para fechar, y una fecha inventada no fecha, miente.
+
+**Y nunca se notó porque el eje X no se pinta.** `PlotSeries` rinde sólo el eje de valores, así que el número crudo no se ve. Nuestro propio contrato decía que `t` era «la etiqueta del eje, ya lista para pintar» — corregido el mismo día.
+
+**Criterio de aceptación.**
+- El cable declara la unidad de `points[].t` · días epoch, ISO, o lo que sea.
+- **O, más simple y mejor**: el payload degradado trae **desde qué índice** de la serie el dato está vencido, y el front no compara nada.
+- Si la respuesta es la segunda, `stale_since` sigue sirviendo para la nota —«la última actualización fue el …»— y el índice para el dibujo. **Son dos consumidores distintos del mismo hecho.**
+
 ---
 
 ## Fase 2 — Materialización y cache
 
-### B2.1 ⬜ Tabla `panel_data`
+### B2.1 ✅ Tabla `panel_data`
+
+**Verificado el 2026-09-29 contra `de881e1`** · `dd_panel_data` trae el snapshot con su gobierno · `value presentation governance status period materialized_at last_success_at last_error reason unlocks_with message`.
 **Descripción.** El snapshot materializado con gobierno completo por
 `(tenant_id, metric_id, periodo)`. Es la fuente del batch y sobrevive reinicios.
 **Criterio de aceptación.**
@@ -1153,8 +1490,12 @@ escribir en `panel_data`.
 - El job es idempotente: correrlo dos veces sobre el mismo período no duplica.
 - Un fallo en una métrica no aborta el resto del job.
 
-### B2.3 ⬜ El batch lee de `panel_data`, no de Snowflake
+### B2.3 ✅ El batch lee de `panel_data`, no de Snowflake
 ### B2.4 ⬜ Redis opcional encima de Postgres
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque, una por una:
+
+- **B2.3** · **Verificado por una vía indirecta y más fuerte que pedir la ruta:** hoy Snowflake bloquea nuestra IP —`schema-check` da 502— **y el batch sigue devolviendo los doce paneles con datos**. Si consultara Snowflake en vivo fallaría igual. Lee de Postgres.
+
 **Criterio de aceptación.**
 - `batch → Redis hit? → return` · `miss → Postgres → populate → return`.
 - **Redis no es fuente de verdad.** Vaciarlo no pierde datos: los repuebla desde
@@ -1172,18 +1513,29 @@ degradado con `razon` y `desbloqueaCon`.
   es un estado sin dato.
 - La cadencia y la tolerancia son configurables por métrica, no una constante.
 
-### B2.6 ⬜ Estado `BLOQUEADO`
+### B2.6 ⚠️ Estado `BLOQUEADO`
+
+**Verificado el 2026-09-29 contra `de881e1`** · Pidiendo un período nunca materializado —`2027-03`— los tres paneles vuelven **`BLOCKED`** con `reason` «No hay datos calculados para este período». **Queda en ⚠️ por un hueco medido**: `unlocks_with` viene vacío y §8 pide los tres. `dd_config_service.go:380` pone `Status` y `Reason` y nada más, aunque `unlocksWaitNextRun` ya existe doce líneas abajo.
 **Criterio de aceptación.**
 - Job fallido o precondición incumplida → **sin valor**, con `razon` y
   `desbloqueaCon`.
 - **No se inventa un número aproximado.** §8 de `design.md`: si un feed está
   vencido, el panel muestra estado, razón y qué lo desbloquea.
 
-### B2.7 ⬜ Estado `SIN_PERMISO` en el batch · 🔒 depende de B0.9 (línea 1171)
+### B2.7 ✅ Estado `SIN_PERMISO` en el batch · 🔒 depende de B0.9 (línea 1171)
 ### B2.8 ⬜ Invalidar cache al publicar layout
 ### B2.9 ⬜ Invalidar cache al completar materialización
-### B2.10 ⬜ `frescura` = instante de materialización, nunca «ahora»
-### B2.11 ⬜ Filtrado por rol también en el batch
+### B2.10 ✅ `frescura` = instante de materialización, nunca «ahora»
+### B2.11 ✅ Filtrado por rol también en el batch
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque, una por una:
+
+- **B2.10** · `governance.freshness` viene como instante ISO —`2026-09-28T20:28:09Z`— y se movió al envejecer la fila a mano. Es la materialización, no la consulta.
+- **B2.11** · Con el token de `planner`, pidiendo al lote los tres paneles que su rol oculta, los tres vuelven `FORBIDDEN`. **El filtro está en el batch y no sólo en la pestaña.**
+
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque:
+
+- **B2.7** · Con el token de `planner`, los tres paneles que su rol oculta vuelven `FORBIDDEN` **en el batch**, y desde `de881e1` con su gramática completa: `reason` «Tu rol no tiene acceso a esta métrica» y `unlocks_with` «Pedile al administrador del tenant que la habilite para tu rol».
+
 **Criterio de aceptación (los cinco).**
 - Publicar un layout deja de servir el anterior en la siguiente request.
 - Un panel recién materializado se ve con su frescura nueva sin esperar el TTL.
@@ -1225,6 +1577,35 @@ verificados —`DISPONIBLE`, `DEGRADADO`, `BLOQUEADO` y `CARGANDO`— y los dos 
 faltan **no son alcanzables hoy, con su razón**: `SIN_PERMISO` necesita un
 usuario no-admin y `GET /admin/users` da 404 —es **B4.17**—, y `ERROR` pide
 componer un `gauge` sin `maximum`, y ninguno de los doce paneles lo es.
+
+**Remedido el 2026-09-28 contra `f70cec2` · quedan CINCO de seis, y el sexto
+cambió de razón.**
+
+`SIN_PERMISO` **dejó de ser inalcanzable**: el usuario `planner` existe en la
+base local y oculta tres métricas, así que `/config/tabs` le devuelve nueve
+paneles en vez de doce. Pidiéndole al lote los tres que le faltan contesta
+`FORBIDDEN` en los tres. El payload es `{status, request_from}` y nada más — sin
+`reason` ni `unlocks_with`, que es la gramática de §8 que los otros estados sí
+traen. **Anotado como pedido, no como defecto nuestro**: el adaptador pasa
+`request_from` tal cual porque redactarlo acá sería el front inventando a quién
+pedirle.
+
+**Y CON QUÉ SE PROVOCA `ERROR` quedó contestado el 2026-09-28**, que era la pregunta abierta. Dan dos caminos, y el segundo es el que sirve:
+
+1. **Materialización fallida sin `AVAILABLE` previo** · apuntando `DD_SNOWFLAKE_ECOMM_TABLE` a una tabla inexistente y materializando un período nunca materializado. **Si ya había `AVAILABLE`, la regla lo preserva y sale `DEGRADED`** — que es por qué no aparecía.
+2. **`options` inválidas en un panel YA PUBLICADO** · `gauge` sin `maximum`, `forecast` sin `horizon`, JSON roto. El builder lo rechaza al validar, «así que sólo pasa con layouts publicados antes de esa validación o editados por fuera».
+
+**El segundo explica lo que medimos.** No era que el estado no existiera: era que el camino que el criterio usaba —componer un `gauge` sin `maximum`— dejó de estar disponible cuando agregaron la validación. **El estado es alcanzable; el disparador cambió de lugar.**
+
+**`ERROR` pasó de «no hay ninguno» a «el servicio lo impide».** Se compuso un
+`gauge` sin `maximum` en un borrador —que la consola no ve— y el builder lo
+rechaza antes de guardar: `400 VALIDATION_LAYOUT · el bloque gauge necesita
+options.maximum`. Es lo correcto de su parte, y deja el criterio **inalcanzable
+por construcción con el disparador que declara**: ese estado necesita otro, y
+cuál es una pregunta abierta.
+
+**Un borrador de prueba quedó en la base local** —el del tenant, con una sola
+pestaña— y es descartable con la base.
 
 **Y de las once formas del contrato llegan cinco**, por dos razones distintas
 que conviene no mezclar. `escalarConIntervalo`, `serieTemporal`, `ranking` y
@@ -1284,8 +1665,25 @@ Sin esto un KPI pierde el medidor y los comparativos, que es lo que el `.pen`
 dibuja y lo que hace que una cifra se lea contra algo en vez de sola. · Bloquea
 **B2.12**.
 
-**Espera del backend.** **Los paneles de prosa los genera el AGENTE, y hoy no hay
-camino.** Decidido el 2026-09-24 por producto: `executive_summary` y `decisions`
+**Espera del backend.** **EL CAMINO YA EXISTE · corregido el 2026-09-28 leyendo su repositorio.**
+
+**Lo tiene: DESPLIEGUE** · depende de B2.15 · el generador de prosa está en la rama desde `5924bf2`.
+
+**Medido contra `de881e1` el 2026-09-29** · `DD_MATERIALIZE_PROSE_ENABLED` existe con default `false` · `dd_materializer_service.go:57`.
+
+**Medido contra `9dc481e` el 2026-10-09** · el flag sigue con default `false` (`dd_materializer_service.go:55-58`). Lo que queda es lo mismo: encenderlo, que es B2.15.
+
+Esto decía «los paneles de prosa los genera el AGENTE, y hoy no hay camino», y era
+cierto cuando se escribió. **Lo construyeron:** `internal/core/services/dd_prose_generator.go`
+implementa `DDProseGenerator`, `bootstrap/app.go:155` lo cablea al materializador
+—«Fase 6: prosa por agente»— y queda detrás de `DD_MATERIALIZE_PROSE_ENABLED`,
+cuyo default es `false` · `dd_materializer_service.go:57`.
+
+**Así que lo que queda de este pedido es encender el flag**, que es `B2.15`, más
+la pregunta abierta de con qué se provoca `ERROR`. Lo de abajo se conserva porque
+es el razonamiento de producto que lo originó y sigue valiendo.
+
+Decidido el 2026-09-24 por producto: `executive_summary` y `decisions`
 no son métricas sino **interpretación** —el resumen y las propuestas sobre los
 datos del período—, así que no se curan en Snowflake, y **es el materializador
 quien llama al agente**. Las otras dos opciones se pesaron y se descartaron: una
@@ -1312,7 +1710,11 @@ un texto generado. Hoy ese panel dice `SILVER · ACTIONABLE FRAMEWORK`, que vien
 del seed; para un texto del agente sería mentira, y `GOLD · ERP` sería peor.
 Todo en `docs/MENSAJE-2026-09-24-materializador.md` §3. · Bloquea **B2.12**.
 
-**Espera del backend.** **Una fila que NUNCA se materializó no puede servirse
+**Lo pedido, y ya entregado y medido.** **Una fila que NUNCA se materializó no puede servirse
+
+**Remedido contra `9dc481e` el 2026-10-09 · ENTREGADO, con un matiz.** Llegó en `6e595e3`: `PanelDegradation` sirve `DEGRADED` una fila sin `last_success_at` **si hubo un intento fallido**. Una fila sólo-semilla **sin** intento sigue saliendo `AVAILABLE` —decisión suya, escrita: «una fila solo-seed sin intento (tenant sin Gold) NO degrada»—. No se midió en el servicio: el dashboard activo no tiene paneles de prosa.
+
+**Lo tiene: DESPLIEGUE** · depende de B2.15 · el generador de prosa está en la rama desde `5924bf2`.
 como `AVAILABLE`.** `sync-catalog` trae diez métricas de Snowflake y la semilla
 tiene doce, así que **dos quedan sin fuente** —`executive_summary` y
 `decisions`—. El materializador lo sabe: informa `preserved=2`. Pero esas dos
@@ -1332,6 +1734,8 @@ nuestro lado. · Bloquea **B2.12**.
 
 
 #### ➕ B2.13 ✅ Salud de feeds por fuente · de acá sale el ESTADO de cada métrica
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `GET /admin/tenants/{tenantId}/feeds` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **Cierra su propia condición**: quedaba en ⚠️ «hasta que A5 la consuma y se vea en pantalla», y A5 se abrió contra el servicio real — cuatro fuentes con su cadencia, tolerancia, frescura y métricas afectadas, las cuatro en `SIN CARGA`, que es el dato verdadero. Se agregó también `GET /admin/tenants/{tenantId}/catalog/health`, que mapea métrica → fuentes y que todavía no consumimos.
 **SERVIDA el 2026-09-25 · `1e080ee` · `GET /admin/tenants/{tenantId}/feeds` → 200.**
 Verificada contra el servicio corriendo, cuatro fuentes, y **trae todo lo que el
@@ -1401,14 +1805,23 @@ por Server-Sent Events.
 - El esquema `EventoDeChat` del yaml ya declara la unión; se respeta.
 - Una conexión cortada por el cliente no deja la query colgada.
 
-### B3.2 ⬜ `GET /config/chat/hilos` — historial
-### B3.10 ⬜ Persistir hilos y mensajes en Postgres
+### B3.2 ✅ `GET /config/chat/hilos` — historial
+### B3.10 ✅ Persistir hilos y mensajes en Postgres
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque, una por una:
+
+- **B3.2** · `GET /config/chat/threads` responde **200** con los hilos. La ruta vieja del contrato —`/config/chat/hilos`— da **404**: se renombró.
+- **B3.10** · Los hilos persisten en `user_threads` y `user_thread_messages`. Sobreviven al reinicio: los siete del 26 siguen ahí.
+
 **Criterio de aceptación.**
 - El historial es del usuario y del tenant; nunca cruza tenants.
 - Un hilo guarda el contexto de panel con el que se abrió.
 
-### B3.3 ⬜ Modelo `AgenteTenant`
+### B3.3 ✅ Modelo `AgenteTenant`
 ### B3.4 ⬜ Resolver el agente del tenant desde el JWT
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque, una por una:
+
+- **B3.3** · La tabla `agents` trae `tenant_id`, `target_role_id`, `is_active`, `snowflake_db`, `snowflake_schema`, `snowflake_cortex_agent_name`, `warehouse`, `semantic_views` y `system_prompt_base`.
+
 **Descripción.** `snowflakeAccount`, `warehouse`, `semanticViews[]`,
 `systemPromptBase`. El front solo conoce que existe un tenant; el backend
 resuelve el agente.
@@ -1537,16 +1950,28 @@ vistazo qué cliente tiene el feed más atrasado es la mitad de para qué existe
 `user_count` y `last_published_at` se ven **sólo con el fork corriendo**: los escribimos nosotros
 en `2fafe82`. Ver `docs/ESTADO-backend-2026-09-22.md`.
 
-### B4.2 ⚠️ `GET /admin/tenants/{id}/layouts`
+### B4.2 ✅ `GET /admin/tenants/{id}/layouts`
 **Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. **La reversión existe** · `POST /admin/layouts/{layoutId}/revert`. Se midieron sus dos compuertas sin mutar nada —`409 CONFLICT_NO_PREVIOUS` y `409 CONFLICT_REVERT_SELF`, las dos con mensaje en español—. **Sigue en ⚠️ porque la reversión en sí no se probó**: copia y publica, así que cambiaría el layout que la consola sirve. Se mide cuando haya una segunda versión.
 
 **Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **DOS DE LOS TRES LLEGARON.** `GET /admin/layouts/{layoutId}/publications` responde 200 y `DDLayoutPublication` trae `action`, `actor_user_id`, `actor_role`, `previous_layout_id`, `diff` y `created_at` — **quién, cuándo y qué cambió**, los tres que §7.2 nombra.
 
-**Espera del backend.** **«Qué cambió»**, que es el tercio que queda.
+**CERRADA EL 2026-09-28 · los cuatro de §7.2 medidos contra `f70cec2`.** Faltaban «qué cambió» y el `200` de la reversión, y los dos se cerraron el mismo día **sin tocar el dashboard que la consola sirve**: se hizo todo sobre el segundo dashboard del tenant —«Marca»—, que no tenía layout.
 
-**La reversión llegó** · `POST /admin/layouts/{layoutId}/revert`, medidas sus dos compuertas el 2026-09-28. **El `200` no se midió y se dice**: copia y publica, así que cambiaría el layout que la consola sirve.
+**Por qué antes salía `[]` y no era un defecto suyo:** la semilla escribe `dd_layout_versions` directo, sin pasar por `publish`, así que no deja fila de auditoría. Lo dijeron y era cierto — **la forma de comprobarlo era publicar, no volver a preguntar.**
 
-**Y «quién» está pendiente de VERIFICAR, no de pedir**: dicen que vive en `GET /admin/layouts/{id}/publications` con su actor, y esa ruta responde `200` con `[]` porque la semilla publicó sin pasar por ahí. `LayoutVersion` sí se midió y trae sólo `created_at`, `dashboard_id`, `id`, `published_at`, `status`, `tenant_id`, `updated_at` y `version_id` — o sea **cuándo**.
+Tres publicaciones generadas y leídas:
+
+| `action` | `previous_layout_id` | `diff.summary` |
+|---|---|---|
+| `publish` | — | `tabs_added 1 · panels_added 1` |
+| `publish` | el anterior | `tabs_added 1 · panels_added 1 · panels_changed 3` |
+| `rollback` | el anterior | `tabs_removed 1 · panels_removed 1 · panels_changed 3` |
+
+Las tres con `actor_user_id` y `actor_role: admin`, o sea **quién**. Y `POST /admin/layouts/{layoutId}/revert` contestó **200**, devolviendo un layout con `version_id: rollback-v-1…`.
+
+**Dos detalles de forma para quien construya B6, Y LOS DOS ESTABAN MAL ESCRITOS** · corregido el 2026-09-30 leyendo `internal/core/dashboard/diff.go`. Decía que `tabs_added` trae la **`key`** de la pestaña: trae el **NOMBRE normalizado** —`tabKey(name)` es `ToLower(TrimSpace(name))` e `indexTabs` lo aplica sobre `t.Name`—, así que cruzarlo contra `TabDeLayout.clave` no encuentra nada. Y decía que las colecciones vacías vuelven «`null`, no `[]`»: vuelven **de las dos formas**, porque `de881e13` cambió la serialización y el diff se PERSISTE en `jsonb` — las filas viejas quedan en `null` para siempre. Las dos frases se escribieron de una lectura y no de la fuente; las dos las atrapó abrir su código.
+
+**La ruta NO está transcripta al cable**, a propósito: nadie la llama todavía. Se transcribe cuando se construya B6, que es la regla — una ruta transcrita que nadie llama envejece sin que nadie lo note. `LayoutVersion` sí se midió y trae sólo `created_at`, `dashboard_id`, `id`, `published_at`, `status`, `tenant_id`, `updated_at` y `version_id` — o sea **cuándo**.
 
 **Lo que falta es el diff**, y es lo que B6 dibuja y no se puede construir sin él. Lo que decía el pedido original: no hay ruta de revertir ni de rollback en el router. `previous_layout_id` da con qué hacerlo y publicar el anterior con la ruta que ya existe sería el camino, pero eso es una decisión y no un hecho medido. El pedido original decía: **Autor, diferencia y reversión en `LayoutVersion`** — pedido el 2026-09-15, cuando F4.6 declaró B6.
 
@@ -1562,7 +1987,7 @@ en `2fafe82`. Ver `docs/ESTADO-backend-2026-09-22.md`.
 `{ID, TenantID, Status, VersionID, PublishedAt, CreatedAt, UpdatedAt}`. `PublishedBy`,
 `PublishedByEmail` y la ruta `/admin/layouts/{layoutId}/diff` son **nuestras**, de `2fafe82`.
 
-### B4.3 ⬜ `POST /admin/tenants/{id}/layouts` — crear borrador
+### B4.3 ✅ `POST /admin/tenants/{id}/layouts` — crear borrador
 ### B4.4 ✅ `PUT /admin/layouts/{id}` — editar pestañas y paneles
 **Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. `tab.icon` y `tab.chat_suggestions` llegan en `GET /config/tabs/{id}`, y las sugerencias **como lista, nunca `null`**. Vacías en la semilla, presentes en el cable.
 
@@ -1572,20 +1997,49 @@ Los dos están en el modelo de §2 de `design.md` y en `Pestana` del contrato, y
 
 **Y una pregunta que es de ustedes, no un pedido.** `OperationalQuestion` no es requerido y el servicio acepta la cadena vacía. El producto dice lo contrario —«una pestaña que no contesta una pregunta no se compone», §7.2 y la descripción de `Pestana`—, así que hoy **la regla la sostiene el front solo**: el editor marca la pestaña, la cuenta y no la deja componer. Si además la rechazara el `validate` o el `publish`, la regla dejaría de depender de qué cliente haga el PUT. Es B4.15 quien decidiría.
 
-### B4.5 ⬜ `POST /admin/layouts/{id}/publish`
-### B4.7 ⬜ `GET /admin/tenants/{id}/catalog`
+### B4.5 ✅ `POST /admin/layouts/{id}/publish`
+### B4.7 ✅ `GET /admin/tenants/{id}/catalog`
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó **campo por campo** las rutas de cuatro de las seis: `GET /admin/tenants` (B4.1), `GET /admin/tenants/{tenantId}/layouts` (B4.2), `PUT /admin/layouts/{layoutId}` (B4.4) y `GET /admin/layouts/{layoutId}/validate` (B4.6). Los requeridos están y no sobra ninguno sin declarar.
+
+**Va acá y no en cada encabezado, y la razón es del parser:** estas seis comparten este bloque, y meter una línea **en cualquiera de sus encabezados** —probado con B4.1, B4.2 y B4.4— parte el grupo y deja a cuatro sin criterio. `plan --check` lo atajó las dos veces que se intentó.
+
+**Consecuencia que conviene saber al leer `docs/ESTADO-BACKEND.md`:** esas tareas figuran ahí **contra su commit anterior**, no contra `de881e1`. Y está bien que así sea: lo que se remidió el 29 fue la **forma de sus rutas**, no sus criterios. Quien vaya a reverificarlas encuentra las dos cosas.
+
+**Es la FORMA de las rutas, no el criterio de las seis.** Dice que las respuestas no cambiaron, no que las tareas se hayan vuelto a auditar.
+
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque, una por una:
+
+- **B4.3** · `POST /admin/tenants/{tenantId}/layouts` con `dashboard_id` crea un borrador y devuelve su id con `status: draft`.
+- **B4.7** · `GET /admin/tenants/{tenantId}/catalog` responde **200**, y `humo` lo leyó campo por campo: 12 requeridos y nada fuera de los 12 declarados.
+
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque:
+
+- **B4.5** · Se publicó **dos veces** sobre el dashboard «Marca» —para no tocar el que la consola sirve— y las dos dieron **200**, dejando su fila de auditoría con actor y diff.
+
 **Criterio de aceptación (los seis).**
 - Solo accesibles con `aud: platform`; con token de usuario devuelven `403`.
 - Publicar genera `versionId`, sella `publishedAt`, registra quién publicó e
   invalida la cache del tenant.
 - Editar nunca muta la versión publicada.
 
-### B4.6 ⬜ `POST /admin/layouts/{id}/validate`
-### B4.11 ⬜ Validar que `metricId` existe en el catálogo del tenant
-### B4.12 ⬜ Validar que `tipo` es compatible con la `forma` de la métrica
-### B4.13 ⬜ Validar rangos de `colSpan` / `rowSpan` por tipo
-### B4.14 ⬜ Validar opciones de layout (`maximo` obligatorio en gauge)
-### B4.15 ⬜ Rechazar la publicación si hay paneles inválidos
+### B4.6 ✅ `POST /admin/layouts/{id}/validate`
+### B4.11 ✅ Validar que `metricId` existe en el catálogo del tenant
+### B4.12 ✅ Validar que `tipo` es compatible con la `forma` de la métrica
+### B4.13 ✅ Validar rangos de `colSpan` / `rowSpan` por tipo
+### B4.14 ✅ Validar opciones de layout (`maximo` obligatorio en gauge)
+### B4.15 ✅ Rechazar la publicación si hay paneles inválidos
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque, una por una:
+
+- **B4.6** · `POST /admin/layouts/{layoutId}/validate` devuelve `{valid: false, errors: [...]}` en español · «el layout necesita al menos una pestaña».
+- **B4.11** · Un `metric_id` inexistente se rechaza · «la métrica no existe en el catálogo del tenant».
+- **B4.12** · Un bloque incompatible con la forma se rechaza · «la forma 'scalar' no es compatible con el bloque 'table'».
+- **B4.13** · Un `col_span` fuera de rango se rechaza · «col_span fuera de rango para el bloque 'kpi'».
+- **B4.14** · Un `gauge` sin `maximum` se rechaza · «el bloque gauge necesita options.maximum». **Y eso explica por qué `ERROR` dejó de ser alcanzable por ahí** · ver B2.12.
+
+**Verificado el 2026-09-29 contra `de881e1`** · las de este bloque:
+
+- **B4.15** · Publicar un layout con paneles inválidos se rechaza · `VALIDATION_LAYOUT` · «el layout tiene errores de validación; consulte validate para el detalle». **Y remite a `validate`** en vez de repetir el detalle, que es lo correcto: una sola fuente para el listado de errores.
+
 **Descripción.** La validación de composición, del lado del servidor. El front
 la replica para dar feedback inmediato, pero **el servidor es el que decide**.
 **Criterio de aceptación.**
@@ -1596,6 +2050,8 @@ la replica para dar feedback inmediato, pero **el servidor es el que decide**.
 - La regla dura de `serieConBanda` se verifica: solo gráficos con banda.
 
 ### B4.8 ✅ CRUD de roles por tenant · lo tomaron el 2026-09-25
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `GET /admin/tenants/{tenantId}/roles/composition` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **SERVIDA · `GET /admin/tenants/{tenantId}/roles/composition` → 200**, verificado
 contra `1e080ee` con el servicio corriendo. **Tomaron la ruta que propusimos**
 —nos habíamos corrido a `/composition` para no pisar la suya— así que la colisión
@@ -1692,6 +2148,8 @@ de la regla: «les saca la decisión de las manos».
   verde— y se vuelve a rebasar antes de proponer el código de vuelta. Un fork
   escrito sobre una base vieja no se puede integrar sin rehacerlo.
 ### B4.9 ✅ Preview por rol · con los paneles
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `GET /admin/layouts/{layoutId}/preview` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **Verificado el 2026-09-28 contra el servicio corriendo** · commit `5924bf2b`, construido y levantado acá porque el binario que teníamos era del 26 · `docs/ESTADO-backend-2026-09-28.md`. **El preview trae `tabs[].panels[]`.** Medido con los dos lentes sobre el mismo layout: `admin` → 12 paneles con `col_span` 12; `planner` → **9 paneles con `col_span` 4**, o sea el override aplicado. **Esto destraba F4.12.**
 
 **Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **`GET /admin/layouts/{layoutId}/preview` responde 200** y con eso el fork queda absorbido entero. **Y resolvieron la colisión de diseño como propusimos**: la compuerta de borradores mira `sel.CallerRole` —quién pregunta— y no el rol simulado.
@@ -1839,6 +2297,8 @@ rutas de admin hace falta además **un usuario `admin`**, que sigue siendo el
 mismo pedido que dejó `synapse-admin-wire.yaml` sin confirmar.
 
 ### B4.17 ✅ Una ruta que liste usuarios · A3 no se puede empezar sin ella
+
+**Verificado el 2026-09-29 contra `de881e1`** · `npm run humo` leyó `GET /admin/tenants/{tenantId}/users` **campo por campo**: los requeridos están y no sobra ninguno sin declarar. **Es la FORMA de la ruta, no el criterio entero** — dice que la respuesta no cambió, no que la tarea se haya vuelto a auditar.
 **Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **`GET /admin/users` existe desde `6e521cc`** y devuelve `{total, tenants, users}` con `tenant_name` por usuario. Es el alcance de plataforma que A3 dibuja, y **los dos conteos los cuenta el servicio** — que es exactamente lo que pedía la razón por la que no se compensaba desde el front: «un total armado acá se leería como un número de plataforma y sería una suma nuestra». A3 se abrió contra el servicio con la columna `CLIENTE`.
 **SERVIDA el 2026-09-25 · `1e080ee`**, el mismo día que se pidió.
 `GET /admin/tenants/{tenantId}/users` → 200, y trae lo que §7.3 le pide a A3:
@@ -1867,6 +2327,62 @@ pendiente. Pedidas juntas en
 - El rol viene identificado, no sólo con su nombre: A3 enlaza a la ficha.
 - **El último acceso es un instante, nunca «hace X»** — la presentación es del
   front y depende del huso del navegador · la regla de las dos zonas horarias.
+
+
+#### ➕ B4.18 ✅ `roles.tab_keys` · la consola YA escribe por clave
+**Y LA CONSOLA YA MIGRÓ** · el mismo 2026-09-29, que era lo que ellos pedían: «la consola de roles puede pasar a escribir `tab_keys` y dejar de mandar `tab_ids`».
+
+`adaptarRol` **lee** `tab_keys` con respaldo a `tab_ids` —el orden es el suyo, y al revés dejaría **sin restricción** a un rol sin migrar, que es un error que ABRE acceso— y `cuerpoDeRol` **escribe sólo `tab_keys`**: mandar los dos sería ruido que alguien va a leer como la fuente.
+
+**Y aparecieron DOS lugares más que comparaban por id**, que nadie había mirado: `RoleCard` —la ficha quedaba en blanco después de publicar— y `uso.ts` —el desglose decía «0 rol(es)» y se leía como un dato—. Los dos fallaban **sin romper nada visible**.
+
+**La mutación encontró el caso que faltaba en las pruebas.** Invertir el orden de lectura pasaba: los fixtures tenían o una o la otra, nunca las dos. **Después de su migración los roles tienen LAS DOS** —`tab_keys` se rellenó desde `tab_ids`— y los ids quedan apuntando a la versión vieja. Se agregó ese caso y ahora muere.
+
+**CERRADA EL 2026-09-29 · llegó en `de881e1`, y se verificó la SUSTANCIA, no el campo.**
+
+Que la columna exista no prueba nada; lo que prueba es que un rol sobreviva. Medido en la base descartable: se le puso a `planner` un `tab_ids` apuntando a un uuid **inexistente**, dejándole `tab_keys: ["overview"]`, y `GET /config/me` le devuelve **su pestaña igual**. Con `tab_ids` roto y sin `tab_keys`, la perdería.
+
+**Y la migración hace lo que dijeron**: rellena una sola vez desde los `tab_ids` actuales — `admin`, `planner` y `user` quedaron en `["overview"]` sin que nadie tocara la consola, y el rol descartable sin pestañas quedó en `[]`.
+
+**Una advertencia que costó cinco minutos**: la primera medición dio `tab_keys: []` en los cuatro roles y pareció que la migración no corría. **Era nuestro**: el servicio se había levantado sin `DB_AUTO_MIGRATE=true`, así que la columna no existía y el campo salía vacío por defecto. En una base descartable esa variable va siempre.
+
+**Lo que se pidió:** lo propusieron ellos y les dijimos que sí · `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md`.
+
+**Medido contra `de881e1` el 2026-09-29** · sin una sola aparición de `tab_keys` en `internal/`.
+
+**El defecto que cierra:** `roles.tab_ids` apunta a `dd_tabs.id`, y **ese id se recrea en cada versión de layout**. Así que un rol restringido a dos pestañas **las pierde al publicar**. `key` ya viaja —medido el 2026-09-28: `overview`— y es estable por diseño.
+
+**Criterio de aceptación.**
+- `roles.tab_keys` es la fuente de verdad y `roleCanSeeTab` resuelve por `key` contra el layout que se está sirviendo.
+- `tab_ids` sigue leyéndose como respaldo mientras esté vacío `tab_keys`, así que nada cambia hasta que migremos.
+- `PUT /admin/roles/{id}` acepta `tab_keys` y `GET .../roles/composition` devuelve **las dos** — es lo que nos deja migrar sin una ventana en que la consola de roles muestre menos de lo que el rol ve.
+- **`tab_keys` valida contra las keys del layout publicado** y devuelve 422 nombrando la que no existe. Una key que no resuelve es una pestaña que el rol pierde en silencio, que es el defecto que se está cerrando.
+
+#### ➕ B4.19 ✅ La compuerta de `resolveLayout` y la vista previa por rol
+**EL PEDIDO NO HACÍA FALTA · verificado el 2026-09-28 contra `f70cec2`, antes de mandarlo.**
+
+Esta tarea se escribió desde una nota nuestra del 2026-09-25 que decía que la compuerta de `resolveLayout` usaba `!isAdminRoleName(role.Name)` y que **el preview, al pasar el rol SIMULADO, rechazaba cualquier borrador**.
+
+**Su código dice otra cosa.** `dd_config_service.go:498` lee
+`if layout.Status != domain.LayoutStatusPublished && !isAdminRoleName(sel.CallerRole)` — **`sel.CallerRole`, el rol de quien PREGUNTA**, que es exactamente la distinción que la nota decía que faltaba.
+
+Y se midió el caso exacto en vez de discutir el código: **previsualizar un BORRADOR con lente `planner`** contesta `200` con `status: draft` y el rol simulado en la respuesta.
+
+**Lo que enseña, y es lo caro:** la nota se escribió leyendo un diff de rebase y quedó en `CLAUDE.md` tres días. Al armar el informe de «todo lo que falta» se convirtió en tarea **sin volver a abrir su código**, que es la misma falla del 2026-09-25 — citar una transcripción nuestra como si fuera una medición.
+
+**Criterio de aceptación.**
+- Previsualizar un borrador con un lente no-admin devuelve el layout · **medido: 200**.
+- La compuerta distingue el solicitante del rol simulado · **verificado en `dd_config_service.go:498`**.
+
+#### ➕ B4.20 ⬜ (libre)
+**Descripción.** Identificador reservado para no reusar el de una tarea retirada.
+**Criterio de aceptación.**
+- No se asigna a otra cosa · `plan:ancestro` verifica que ningún identificador se reasigne.
+
+**Criterio de aceptación.**
+- La compuerta distingue el rol del **solicitante** —que es quien debe ser admin para ver un borrador— del rol **simulado**, que es el lente.
+- Previsualizar un borrador con el lente de un rol no-admin devuelve el layout, porque quien pregunta sí es admin.
+- **Si la decisión es que un borrador no se previsualiza nunca**, eso también cierra la tarea — y entonces B4.9 y F4.12 quedan acotadas a layouts publicados, con su razón escrita.
 
 ### B4.10 ⚠️ Asignación de layout publicado a roles
 **Medido el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **Las tres etiquetas `json:` llegaron** en `8633b10` y el `json:"-"` en `a643cfe`. Con eso el cable de admin deja de mezclar dos convenciones — y **romperlo fue lo que nos enteró**: el front leía quince campos en PascalCase que pasaron a `undefined`, y `ESTADOS[w.Status] ?? 'borrador'` afirmaba que todo layout era borrador.
@@ -1915,7 +2431,9 @@ decidir la forma de su API. Propuesto el 2026-09-22 en
 nosotros** —cero churn en su código, que es la regla— y la unión de campos queda
 como alternativa si la prefieren.
 
-### ➕ B4.16 ⬜ Declarar el gráfico en el layout
+### ➕ B4.16 ✅ Declarar el gráfico en el layout
+
+**Verificado el 2026-09-29 contra `de881e1`** · `chart` viaja en `DDPanelDTO` y en `DDLayoutPanel`, se escribe desde el builder recortado y en minúsculas —`"  Waterfall  "` → `waterfall`— y ausente queda cadena vacía. Transcripto en los dos cables y con prueba de cadena de punta a punta.
 **Descripción.** D2 lo resolvió a favor. `PanelConfigurado` gana `plot?: PlotId`.
 Depende de B1.21: **primero los mínimos, después el campo** — elegir gráfico sin
 saber qué necesita cada uno es multiplicar el problema, no resolverlo.
@@ -1947,7 +2465,9 @@ Lo que decía el pedido, como registro: **La lista de layouts que el usuario pue
 - `/config/me` devuelve `layouts` solo cuando el usuario tiene más de uno
   asignado; con uno, el campo no viaja.
 
-### B5.2 ⬜ Asignar layout por rol, o dejar elegir si el usuario tiene varios
+### B5.2 ✅ Asignar layout por rol, o dejar elegir si el usuario tiene varios
+
+**Verificado el 2026-09-29 contra `de881e1`** · `GET /config/tabs/{tabId}?layoutId=…` responde **200**: el parámetro se acepta y resuelve.
 **Criterio de aceptación.**
 - El superadmin asigna qué layout ve cada rol.
 - `GET /config/tabs/{tabId}?layoutId=` resuelve contra el layout pedido, y
@@ -1972,7 +2492,9 @@ así que lo que falta es el servicio, no el diseño.
   aparte.
 - Con timeout y tope de filas declarados, igual que el chat.
 
-### B5.5 ⬜ Auditoría de publicaciones de layout
+### B5.5 ✅ Auditoría de publicaciones de layout
+
+**Verificado el 2026-09-29 contra `de881e1`** · Tres publicaciones generadas y leídas · dos `publish` y un `rollback`, cada una con `actor_user_id`, `actor_role` y su `diff.summary`. **Y las colecciones vacías del diff salen `[]` desde `de881e1`**; las publicaciones viejas conservan `null`.
 **Criterio de aceptación.** Queda registrado quién publicó, cuándo y qué cambió
 respecto de la versión anterior. Consultable desde admin.
 
@@ -2930,17 +3452,205 @@ regla dice: mientras el campo no exista, dos paneles con el mismo `colStart`
 dependen de un orden que el contrato no promete estable. **Propuesta de spec para
 B0.9.**
 
-#### ➕ F1.31 ⬜ Registro de gráficos y verificación de mínimos · 🔒 `/config/plots` da 404
+#### ➕ F1.31 ✅ Registro de gráficos y verificación de mínimos
+**CERRADA EL 2026-09-29 contra el servicio corriendo y contra MSW.** Los seis
+bullets del criterio se cumplen, y uno **en otro lugar del que el criterio
+decía** — está abajo, no se resolvió en silencio.
+
+**El camino quedó así**, y el idioma lo eligió el archivo que lo recibe:
+`usePlots` → `plotProblemOf` en el contenedor → `Console` → `PanelInGrid` →
+`EmptyState` con la razón del repertorio. **Mismo idioma que `payloadOf` y
+`paramsOf`**: la decisión llega resuelta y la superficie sólo la pinta, que es lo
+que `api/params.ts` declara en su cabecera —«un cuerpo no valida su entrada,
+porque si validara tendría que decidir qué hacer cuando falla, y esa decisión es
+de la superficie»—.
+
+**El bullet 4 dice «se rechaza en el ADAPTADOR» y quedó en la SUPERFICIE.** La
+razón: la tabla del repertorio llega de `/config/plots`, que es **otra consulta**,
+y juntarla con el layout dentro de `adaptTab` acoplaría dos cachés con vidas
+distintas —el layout cambia al publicar, el repertorio cuando cambia el diseño—.
+La garantía se cumple igual: un gráfico incompatible con la forma no llega al
+cuerpo. **Lo que esto implica para F4.21**: el builder no pasa por
+`ConsoleContainer`, así que tiene que llamar a `invalidPlotReason` por su cuenta.
+
+**El bullet 5 —«`serieConBanda` sólo admite gráficos con banda»— lo sostiene la
+estructura y no un chequeo aparte**: las únicas entradas cuyas `formas` incluyen
+`serieConBanda` son las tres que declaran `soportaBanda: true`, así que la
+comprobación de forma ya lo cierra. `supportsBand` queda exportada para el
+selector de F4.21, que sí necesita preguntarlo antes de ofrecer.
+
+**Tres decisiones del camino, y las tres son «no apagar de más»:**
+
+1. **Sin repertorio no se bloquea nada.** `/config/plots` puede fallar sola; un
+   panel apagado por una tabla que no cargó es peor que uno dibujado sin
+   verificar — el segundo es lo que hacía ayer, el primero el usuario no lo
+   distingue de un fallo de datos.
+2. **`indeterminado` no llega a la pantalla.** Se avisa en desarrollo, igual que
+   un param desconocido, y el panel se dibuja: castigar al usuario por una
+   deriva entre el repertorio y el front no es suyo.
+3. **El mínimo se evalúa antes que el tope**, porque «falta dato» se arregla y
+   «sobra» manda a recortar lo que no es el problema.
+
+**CUATRO MUTACIONES, Y UNA SOBREVIVIÓ.** Murieron las tres del camino —el
+contenedor que no propaga, `PanelInGrid` que ignora el problema, y **la prop mal
+nombrada en el spread de `Console`, que compila**, que es el modo de falla que
+este repositorio ya tuvo cuatro veces—. **Sobrevivió la de la guarda del
+repertorio vacío**: la prueba afirmaba «hay un `img`» y sin la guarda el panel
+también se apaga por `incompatible`, así que no distinguía. Con la aserción
+sobre el texto exacto —«no está en el repertorio»— muere.
+
+**Y el hook rompió la consola entera antes de la primera prueba.** `usePlots()`
+quedó puesto junto a su lógica, o sea **después de los retornos tempranos** del
+contenedor: React lo marcó como cambio en el orden de los hooks y nada montaba.
+No lo vio el compilador — lo vio la primera prueba que lo ejercitó.
+
+**Con dato real la regla no se dispara**, y está bien: los seis paneles
+categóricos del muestrario traen 5 ítems contra umbrales de 2 y 3. Lo que se
+verificó en pantalla es que nada se apagó de más.
+
+**EL CANDADO VENCIÓ PORQUE LA RUTA LA ESCRIBIMOS NOSOTROS** · 2026-09-29 ·
+B1.21, `b6f0e09`. Con la tabla llegando, la mitad de esta tarea se pudo tomar.
+
+**`catalog/plots.ts` está hecho**, con la figura de `blocks.ts` y sin la tabla
+adentro: `plotTable`, `acceptsShape`, `supportsBand`, `evaluar` e
+`invalidPlotReason`. Verificado contra la **respuesta real capturada** de la
+ruta —`tests/api/real/plotsReales.test.ts`, las 49 atravesando el adaptador— y
+con 15 pruebas propias.
+
+**Evaluar `cuando` era la parte delicada, y los sustantivos no se inventaron**:
+son campos del contrato —`items` de `ValorCategorica`, `partes` de
+`ValorComposicion`, `filas` y `columnas` de `ValorMatriz`—. El único que no es de
+primer nivel es `atributos`, que vive en `perfiles[].atributos` y se cuenta del
+primero **porque el contrato declara que todos comparten los ejes**.
+
+**Tres decisiones que las mutaciones obligaron a afinar:**
+
+1. **El mínimo se busca POR FORMA y no se toma el primero de la lista.** Nueve de
+   los 49 sirven dos formas con umbrales distintos —`treemap` pide 2 en
+   `categorica` y 3 en `composicion`—, así que tomar el primero acierta en
+   cuarenta y falla en nueve, y el que falla se ve bien.
+2. **Un sustantivo desconocido devuelve `null`, no `false`.** `false` diría «la
+   condición no se cumple, el gráfico pasa» y apagaría una regla en silencio el
+   día que el repertorio sume un sustantivo que este build no cuenta. Lo mismo
+   con una cuenta que **no aplica** a la forma: contar cero diría «llegaron
+   cero» donde lo cierto es que esa cuenta no existe.
+3. **`indeterminado` NO apaga el panel.** Castigar al usuario por una deriva
+   entre el repertorio y el front sería peor que dibujar; se reporta, igual que
+   `adaptPanelParams` con un param desconocido.
+
+**Y una mutación SOBREVIVIÓ, que es lo que más enseñó.** La prueba de «el mínimo
+se evalúa antes que el tope» usaba la dona, donde `partes < 2` y `partes > 5`
+**se excluyen**: invertir el orden daba el mismo resultado. La condición
+discriminante existe sólo en `radar`, que cuenta **ejes** para el mínimo y
+**perfiles** para el tope. Con el caso bueno la mutación muere.
+
+**Lo que FALTA, y por eso queda en ⚠️:** nada de esto se aplica todavía en el
+cuerpo del panel. `invalidPlotReason` existe y nadie lo llama — un `bars` con un
+ítem sigue dibujando una barra sola. El siguiente paso es el `EmptyState` con su
+razón en `Panel`, y ahí sí se cierran los cinco bullets del criterio.
+
 **Descripción.** D2 lo resolvió a favor. Dos piezas: `catalog/plots.ts` con los
 validadores sobre el repertorio que llega de `/config/plots` —la misma figura que
 `catalog/blocks.ts`, sin la tabla escrita adentro—, y
 `render/plots/registry.ts` con `lazy` + `memo` y `plotFor(id)`, igual que el
 registro de cuerpos.
 
+**«IGUAL QUE EL REGISTRO DE CUERPOS» YA NO SE SOSTIENE · medido el 2026-09-29.**
+Es una premisa de esta descripción y hay que corregirla antes de construir contra
+ella, no después.
+
+El registro de cuerpos funciona **porque los once cuerpos comparten
+`BodyProps`**: `registry.ts` ancha `value` a `Value` y `params` a `unknown`, y
+todo lo demás conserva su tipo — su propia cabecera explica que ésa es la razón
+de no usar `ComponentType<any>`.
+
+**Los plots no comparten forma de props, y ya son mitad y mitad.** Censados los
+22 de `src/render/plots/` ese día:
+
+| | Cuántos | Ejemplos |
+|---|---|---|
+| Toman `PlotProps<F>`, con o sin extras | **11** | `PlotBars`, `PlotTreemap`, `PlotDonut` (+`totalLabel`), `PlotColumns` (+`destacado`) |
+| **No lo toman** | **11** | `PlotCombo` pide `columns` y `line` **por separado**; `PlotRings` una lista de anillos; `PlotGauge` un `number` y no un `Value`; `PlotSmallMult` una lista de facetas |
+
+Un `plotFor(id)` que devuelva un componente **no puede alimentar a los once
+segundos**: la adaptación es del cuerpo y depende del gráfico —`treemap` recibe la
+lista sin recortar, `combo` la parte en dos, `smallmult` la recibe normalizada—.
+Eso es exactamente lo que el cableado del 2026-09-29 escribió trece veces, y no
+es repetición que un registro pueda absorber: **es trece decisiones distintas**,
+cada una con su razón en el código.
+
+**Lo que sí queda de la pieza**, y hay que decidirlo aparte: la carga diferida.
+Hoy cada plot se importa estático dentro de su cuerpo y viaja en el chunk de ese
+cuerpo —`carga-diferida` mide 12 cuerpos en 12 chunks—. Con 49 gráficos eso mete
+en un chunk los que un tenant no usa. Es una decisión de empaquetado, no un
+registro de despacho, y son dos cosas que esta descripción juntó en una.
+
+**Y `catalog/plots.ts` SÍ se puede escribir hoy tal como está descripto** —son
+funciones puras sobre la tabla, sin la tabla adentro, igual que `blocks.ts`, y el
+contrato ya declara `Grafico` y `MinimoDeDatos` con `contract-drift` mirándolos—.
+**No se escribió, y la razón es que su entrada ES la tabla**: con `/config/plots`
+en 404 no tendría un solo llamador, y `Grafico` es una propuesta NUESTRA que el
+backend todavía no implementó. Validadores escritos contra un esquema sin
+implementar son validadores escritos contra una propuesta; el orden que destraba
+es mandar el repertorio primero.
+
 Lo primero que hay que construir **no es el selector, es la verificación de
 mínimos**: cuántos puntos, categorías o partes necesita un gráfico para no
 engañar. Sirve desde hoy, aun con un gráfico por tipo — hoy nada impide que
 `bars` reciba un ítem y dibuje una barra sola.
+**LOS NUEVE SE MIRARON CORRIENDO · 2026-09-29, y eso encontró tres cosas que la
+puerta no ve.** La auditoría del lote los dejó verificados «contra pruebas y
+contra el dibujo transcripto, no contra una pantalla», y lo dijo con esas
+palabras. Se cerró agregando al modo mock una pestaña de muestrario con los nueve
+—`TAB_C`, misma razón por la que `stackarea` entró el 28— y abriéndola.
+
+| Qué apareció | Qué era |
+|---|---|
+| El BULLET decía «SIN MÁXIMO DECLARADO» | **El handler de `/config/tabs` del mock nunca copió `options`.** Su propio comentario lo había predicho para `chart` —«un campo nuevo del cable se agrega acá también, y el síntoma de olvidarlo es que se vea bien»— y volvió a pasar. Mientras faltó, **ningún panel del modo mock recibió un solo param de layout**: ni `meter`, ni `comparative`, ni `cut`, ni `order`. Lo destapó el bullet porque es el único que dice por qué no dibuja; los demás params se pierden en silencio |
+| Dos de los nueve no se veían | La rotación de estados del batch manda uno de cada cuatro a `BLOCKED`. Con nueve paneles eso tapa dos gráficos y **no hay orden que los salve a todos**. El muestrario quedó exento, con la razón escrita: los estados se miran en las dos pestañas de negocio, que siguen con la rotación intacta |
+| `spark` no se parece a su dibujo | `MICRO TENDENCIA` son **cuatro filas de indicador** —rótulo, sparkline de 248×34, punto de familia, cifra y delta— y `PlotSpark` dibuja sólo la línea a alto de panel. Es propuesta de spec, no un arreglo: ver §9 de `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` |
+
+**Los otros ocho se ven como el dibujo**: `bullet` con su marca de objetivo,
+`columns`, `lollipop`, `donut` con su total al centro, `radial`, `pareto` con su
+acumulado en 42 / 75 / 100 %, `bump` y `slope`.
+
+**Y LOS CUATRO QUE FALTABAN SE CERRARON EL MISMO DÍA · 2026-09-29, tarde.** Los
+trece ids del repertorio con dato real quedan cableados.
+
+**Ninguno de los cuatro tenía un defecto de componente, y eso estaba escrito en
+sus propios informes de QA** —`treemap` y `combo` con esas palabras, «no encontré
+ningún defecto en el componente»—. Lo que faltaba era el despacho, y los cuatro
+habían cerrado sus huecos de prueba antes de firmar: `anillos.test.tsx` pasó de
+13 a 19 con un helper que lee los radios del comando `A`, porque la prueba vieja
+**afirmaba por escrito cubrir el tamaño del anillo y era falso** —`arcPath` emite
+sólo los extremos del arco, que en una vuelta completa caen los dos en el mismo
+punto—.
+
+**El candado de `rings` estaba dado vuelta.** La auditoría lo anotó como propuesta
+de spec —«pide `{ rings: Ring[] }` y `ValorEscalar` es `{ forma, v }`»— y la
+cabecera del propio plot ya lo había resuelto al construirlo: *«hoy el cuerpo le
+pasa un elemento y se ve un anillo solo — que es lo honesto, no un defecto»*. Una
+lista de uno se construye desde un escalar sin inventar nada. Lo que sigue sin
+poderse es dibujar los tres del `.pen`, y eso es del cable.
+
+| Id | Cuerpo | Decisión del cableado |
+|---|---|---|
+| `treemap` | `BarsBody` · `categorica` | Recibe la lista **sin recortar por `tope`**, como la dona y el pareto: deriva su cuota de `v / Σv`, así que sobre una lista recortada cada porcentaje se calcularía contra un total que no es el total **y la suma seguiría dando 100 %** |
+| `combo` | `SeriesBody` · `seriesMultiples` | **El cuerpo reparte los roles** —`PlotCombo` recibe `columns` y `line` por separado, no un arreglo— y la única fuente honesta del orden es el orden del payload. Con menos de dos series **no cae a la línea**: `EmptyState` con la razón, porque acá el id sí se sabe dibujar y lo que falta es el dato |
+| `smallmult` | `SeriesBody` · `seriesMultiples` | Va **normalizado**, al revés que `bump`: su cabecera declara medido que «la escala es compartida **y** el dominio», y con escala compartida una serie chica queda pegada al piso — que es para lo que `base100` existe |
+| `rings` | `GaugeBody` · `escalar` | Un anillo, con `presentation.label` cayendo al nombre de la métrica, igual que el total de la dona |
+
+**Cuatro mutaciones fieles sobre base verde —24 pruebas—, cuatro muertas**, cada
+una comprobada aplicada y con el árbol restaurado: los tres despachos borrados
+—que hacen caer a barras, a líneas y al arco— y el `combo` con los roles
+invertidos.
+
+**Y mirarlos encontró una del fixture.** El anillo salía «140.400 %» porque el
+muestrario le daba `maximum: 100` a una métrica que vale 140.400. **No era del
+plot** —el arco se topa en una vuelta y la cifra dice la verdad, que es lo
+correcto para un sobrecumplimiento— sino un objetivo fuera de la magnitud de lo
+que mide. Con 200.000 el anillo dice 70 % y se lee.
+
 **Criterio de aceptación.**
 - Ausente `plot` en el layout se dibuja **exactamente** lo que se dibuja hoy: el
   cambio no mueve ninguna pantalla existente.
@@ -2953,6 +3663,54 @@ engañar. Sirve desde hoy, aun con un gráfico por tipo — hoy nada impide que
   no se dibuja mal ni se cambia por otro en silencio.
 - La regla dura se sostiene: `serieConBanda` solo admite gráficos con banda.
 - La tabla no está en el front: llega por API, igual que los bloques.
+
+**TRECE PLOTS CONSTRUIDOS Y NUEVE CABLEADOS · 2026-09-29, y F1.31 SIGUE ⬜.**
+
+El lote agregó trece componentes a `src/render/plots/` —`PlotBullet`,
+`PlotRings`, `PlotSpark`, `PlotColumns`, `PlotLollipop`, `PlotDonut`,
+`PlotTreemap`, `PlotRadial`, `PlotPareto`, `PlotCombo`, `PlotSmallMult`,
+`PlotBump` y `PlotSlope`— cada uno medido nodo por nodo contra su frame de
+«Synapse · Plots», con su batería de pruebas y su QA por mutación. **Nueve se
+cablearon** en el cuerpo que les toca:
+
+| Cuerpo | Ids que dibuja desde hoy |
+|---|---|
+| `GaugeBody` · `escalar` | `bullet` |
+| `SeriesBody` · `serieTemporal` | `spark` |
+| `SeriesBody` · `seriesMultiples` | `bump`, `slope` |
+| `BarsBody` · `categorica` | `columns`, `lollipop`, `donut`, `radial`, `pareto` |
+| `BarsBody` · `ranking` | `lollipop` |
+
+**Y no cierra ni un criterio de F1.31**, que es lo que conviene no confundir: lo
+que se construyó son DIBUJOS, y esta tarea es el REGISTRO y la verificación de
+mínimos. No existe `catalog/plots.ts`, no existe `render/plots/registry.ts`, no
+hay `plotFor(id)` con `lazy` —los plots viajan estáticamente dentro del chunk de
+su cuerpo, que es lo que `carga-diferida` verifica—, y **ningún mínimo se
+verifica**: un `bars` con un ítem sigue dibujando una barra sola y una dona con
+ocho partes sigue pasando su `tope` de cinco. La tabla tampoco llega por API,
+porque `/config/plots` sigue en 404. El único criterio que se cumple es el
+primero, y se cumple por otra razón: **ausente `grafico` se dibuja exactamente lo
+que se dibujaba antes**, con prueba propia.
+
+**CUATRO NO SE CABLEARON, y los cuatro están escritos con su razón.**
+
+`rings`, `treemap`, `combo` y `smallmult` **no aprobaron su QA** y por eso el
+cableado no los tomó: hoy los cuatro caen en `UnknownPlotState`, que dice el id
+en pantalla. Tres de los cuatro son huecos de PRUEBA y no defectos del
+componente; el cuarto, `rings`, tiene además un candado de forma que ninguna
+lista de ids arregla —`PlotRings` pide una lista de anillos y `ValorEscalar` es
+`{ forma, v }`—. El detalle por gráfico está en el informe de la auditoría del
+2026-09-29.
+
+**Y queda un param sin alcanzar, que es pedido y no hueco.** `PlotColumns`
+acepta `destacado` —la etiqueta de la columna a resaltar, que es lo único que el
+dibujo distingue entre las doce— y el cuerpo **no lo pasa**: `validateParams`
+cruza todo param contra `paramsDisponibles` de `/config/blocks`, que lo declara
+el backend, así que un nombre escrito sólo de este lado se descarta como
+desconocido. La rama del plot está construida y probada; se enciende cuando el
+servicio liste `destacado` entre los params de `bars`. **No se anotó como
+`Espera del backend` todavía porque falta medirlo contra su commit**, que es lo
+que `para-backend` exige.
 
 ### La integración con el backend real · 2026-09-11
 
@@ -3615,14 +4373,48 @@ nadie abriera el archivo.
 
 **Este pedido no estaba registrado**: la tarea tenía `🔒` y ninguna `**Espera del backend.**`, así que su hueco nunca llegó a `PARA-BACKEND.md`. Es el segundo caso del día — el otro fue B4.9.
 
+**Lo pedido, y ya entregado y medido.** Que `availablePeriods()` normalice al día 1 antes de
+restar meses. **Medido contra `de881e1` el 2026-09-29**: `GET /config/me` devuelve
+
+**Remedido contra `9dc481e` el 2026-10-09 · ENTREGADO.** `availablePeriods` ahora se apoya en `sfspec.PeriodsBack`, «que retrocede desde el día 1», y su comentario cita este mismo defecto —«2026-03 dos veces, sin 2026-02»— (`dd_config_service.go:734-741`). Medido hoy, `/config/me` da doce meses distintos; el 9 no lo habría reproducido de todos modos —pasaba del 29 al 31—, así que **la prueba es la lectura**.
+doce entradas que **no son doce meses distintos** — `['2026-09', …, '2026-04',
+'2026-03', '2026-03', '2026-01', …]`, marzo dos veces y **febrero ausente**, en
+`periods` y en `periods_detail`.
+
+Es `internal/core/services/dd_config_service.go:690`, que resta con
+`now.AddDate(0, -i, 0)` sin normalizar el día: el 29 de septiembre menos siete
+meses cae en «29 de febrero», que no existe, y Go desborda al 1 de marzo.
+Reproducido con su misma aritmética: **pasa 29 días de los 365** —los 29, 30 y 31
+de un mes cuyo mes objetivo es más corto—, y los otros 336 la lista sale bien. Por
+eso nunca se había visto.
+
+**El arreglo ya está escrito en su propio repositorio**: `snowflake/period.go:66`
+hace `firstOfMonth(now).AddDate(0, -i, 0)`, que es exactamente lo que falta acá. Y
+`dd_seed_panel_data.go:123` repite el patrón sin normalizar, así que conviene
+mirarlo en la misma pasada.
+
+**Lo nuestro ya está hecho y no espera**: el adaptador colapsa los ids repetidos
+—`id` es una clave que atraviesa el batch, la caché y el hilo del chat— con la
+respuesta capturada como fixture. **Lo que el front no hace es rellenar el mes que
+falta**: no sabe si el servicio no lo tiene o no lo quiere dar, y ofrecer un
+período que el batch va a rechazar es peor que no ofrecerlo. Hasta que normalicen,
+29 días al año la consola ofrece once meses y no doce. · Bloquea nada, **degrada
+F1.42**.
+
 **Descripción.** El equipo de datos avisó el 2026-09-15 que
 `GLD_ECOMM_DAILY_PERFORMANCE` tiene filas hasta **dic-2028 con valores en 0**
 —metas de planeación— y que **el mes en curso está incompleto**.
 
 **La mitad de ese aviso no aplica, y conviene devolvérselo.** Lo verificamos
-contra el código: `availablePeriods()` genera los **últimos doce meses contando
-el actual** y nunca uno futuro, así que la consola no puede ofrecer dic-2028. Esa
+contra el código: `availablePeriods()` genera **doce entradas hacia atrás desde
+hoy** y nunca una futura, así que la consola no puede ofrecer dic-2028. Esa
 preocupación es real para quien consulte Snowflake a mano, no para el front.
+
+**Pero «los últimos doce meses» era de más, y lo dijimos hasta el 2026-09-29.**
+Son doce entradas, no doce meses distintos: 29 días al año una se repite y se come
+la anterior. Está medido en la espera de arriba. Es la clase de afirmación que se
+vence sin que nadie lo note — leída del código y cierta salvo en el detalle que no
+se miró.
 
 **La otra mitad sí, y es nuestra.** El mes en curso se ofrece igual que los
 cerrados, y `PeriodPicker` no lo distingue: alguien compara septiembre contra
@@ -3713,7 +4505,7 @@ pruebas de runtime, todas cazadas — **la primera versión del cruce eximía
 acotó la exención al contenido. El conteo «siete paneles kpi» se escribió de
 memoria y **lo corrigió una aserción antes del commit**: son seis.
 
-#### ➕ F1.44 ⚠️ El orden de una tabla se anuncia, no se aplica · 🔒 falta qué es `cut` en `series`
+#### ➕ F1.44 ⚠️ El orden de una tabla se anuncia, no se aplica · 🔒 `cut` de `series` no lo lee nadie
 **Descripción.** Después de F1.43 quedaba **un solo panel de los doce en
 BLOQUEADO**: «Investment and return by platform», porque el cable manda
 `{"order": "investment"}` —el nombre de una columna— y `TableBody` ordenaba con
@@ -3774,6 +4566,49 @@ descarta con aviso en vez de leerse mal. · Bloquea **F1.44**.
 pantalla: doce de doce paneles dibujando, cero en BLOQUEADO. La de `series`
 espera respuesta.
 
+**Lo pedido, y ya contestado.** Que `cut` salga de `layout_params` de `series`, o que
+digan quién lo lee. **Medido contra `de881e1` el 2026-09-29** y verificado en su
+repositorio: **las dos mitades del candado vencieron y apareció la respuesta
+
+**Remedido contra `9dc481e` el 2026-10-09** · `cut` sigue en tres lugares —la semilla, la declaración del param y la migración— y en ningún lector. La respuesta de arriba sigue valiendo: el front lo descarta, y no hace falta nada del backend.
+real, que es que el param no hace nada.**
+
+| Lo que decía este bloqueo | Lo medido el 2026-09-29 |
+|---|---|
+| «no se sabe qué significa `cut` en `series`» | Contestado: es la granularidad declarada, y el índice del pronóstico se renombró a `horizon_cut`. Verificado en `dd_seed_blocks.go:44,48` y `manual_migrations.go:190`, no en su prosa |
+| «el dato no permite deducirlo: los dos paneles traen las mismas ocho estampas mensuales sin importar el `cut`» | **Falso ahora.** `cut=month` trae **12** estampas mensuales —`2025-10-01`, `2025-11-01`…— y `cut=day` trae **28** diarias —`2026-09-01`, `2026-09-02`…— |
+
+**Pero el grano no sale de `cut`: sale de la MÉTRICA.** `git grep '"cut"'` sobre
+`de881e1` lo encuentra en tres lugares —la semilla del panel, la declaración del
+param y la migración— y **en ningún lector**. Los dos paneles difieren porque son
+dos métricas distintas, `daily_trend` y `twelve_month_efficiency`, materializadas
+cada una a su grano natural. Ellos ya lo dijeron: «ningún código suyo la lee».
+
+**Y el `.pen` tampoco le da dónde dibujarse.** `Plot/CONSOLA · Tendencia diaria`
+son cuatro líneas de grilla en `$w2` y los trazos: **ni eje de tiempo ni rótulos
+ni marcas**, que es exactamente lo que `PlotSeries` implementa. Leído el
+2026-09-29.
+
+Así que la cuarta viñeta del criterio se resuelve por su segunda rama y no por la
+primera: **declararlo en `PARAM_SCHEMAS` sería declarar un param que nadie lee**,
+que es lo que el encabezado de `api/params.ts` prohíbe en dos párrafos y lo que ya
+se decidió para `orden` de `table` en esta misma tarea. El front lo sigue
+descartando como desconocido, con aviso en desarrollo, y eso es la respuesta
+correcta. · Bloquea **F1.44**.
+
+**Y `min_grain` quedó anotado aparte, que es de DATOS.** Las dieciocho métricas
+del catálogo declaran `min_grain: 'month'`, **incluida `daily_trend`**, que viene
+de Snowflake —`catalog_version=3`, fuente «Reporte **diario** de ecommerce del
+cliente»— y cuyo panel sirve 28 puntos diarios. `coarsestRequired` toma el más
+grueso de la pestaña, así que con las dieciocho en `month` el selector no puede
+ofrecer días ni semanas **para ninguna pestaña**.
+
+Hoy no se ve: los doce períodos que el servicio manda son todos mensuales, y
+`PeriodPicker` sólo pinta los granos que tienen períodos. **Se ve el día que haya
+períodos diarios o rangos libres, que es F5.13** — y es un segundo bloqueo de esa
+tarea que no estaba escrito. La columna es `SYNAPSE_METRIC_CATALOG.MIN_GRAIN`, así
+que es de la misma familia que las seis filas de `SEMANTIC_DIRECTION`.
+
 
 ## Fase 2 — Los estados de materialización en pantalla
 
@@ -3811,7 +4646,21 @@ La prueba de «sin aproximación» no busca un texto: busca que no haya **ningun
 forma de cifra** en el panel —ni `USD `, ni `4.28M`, ni miles con separador—,
 porque un número aproximado que se cuele no va a llamarse como el fixture.
 
-### F2.3 ⚠️ `SIN_PERMISO` · B0.9 (línea 1171) contestada · 🔒 `/config/solicitudes` da 404
+### F2.3 ✅ `SIN_PERMISO` · con el copy del servicio y sin CTA
+**CERRADA EL 2026-09-29 · y se cerró resolviendo NOSOTROS, no esperando.**
+
+El candado decía que `/config/solicitudes` daba 404. **Sigue dando 404 y ya no importa**: el backend contestó ese día que **la ruta no está planeada**, y que mientras tanto el estado se pinta sin CTA. Es lo que este repositorio ya proponía — «un botón que se aprieta y devuelve 403 es peor que un botón ausente».
+
+**Y al mirarlo apareció que la mitad que sí había llegado estaba sin usar.** Pedimos `reason` y `unlocks_with` para `FORBIDDEN`, llegaron en `de881e1`, y `ForbiddenState` seguía pintando una frase **nuestra** escrita a mano: «Esta métrica no está disponible para tu rol». Eso es el adaptador inventando copy de producto, que la regla prohíbe — el dueño del texto que describe datos es quien los emite.
+
+**El modo de falla no avisa**: el campo llega, el front lo ignora, y la pantalla se ve bien. Un día entero así.
+
+Cableado de punta a punta —contrato, adaptador, `Panel`, estado— con la frase nuestra degradada a **respaldo** para un servicio que no las mande.
+
+**Y la mutación encontró el hueco de las pruebas.** Revertir el adaptador mataba una prueba; **revertir el ESTADO a su frase fija pasaba las 53**: se verificaba que el campo viajara y ninguna que se pintara. Es el mismo modo de falla que la cadena de `chart`. Se agregó la que faltaba, y ahora mueren las tres mutaciones.
+
+**Lo único que no se hace es el CTA**, y queda dicho por qué: no hay a dónde llevar.
+
 **Criterio de aceptación.** Muestra `solicitarA` y ofrece pedir acceso. Si D3
 resuelve conservar el viaje de solicitud, se cablea contra
 `/config/solicitudes`: la solicitud ya hecha sale del servidor y **no de estado
@@ -3876,6 +4725,130 @@ intersecta solo en los dos estados con cifra—, así que si la BASE sigue en
 pantalla con un payload que no la trae, es porque salió del catálogo. Eso es D6
 verificada y no declarada. La prueba además **afirma que el fixture no trae
 `base` ni `capa`**, para que agregárselos no la deje verde sin verificar nada.
+
+#### ➕ B2.14 ⬜ `/config/solicitudes` · pedir acceso a una métrica que no se ve
+**Espera del backend.** **La ruta no existe** · medido el 2026-09-28: `GET /config/solicitudes` da **404**.
+
+**Lo tiene: PRODUCTO** · decidir si existe una ruta de solicitud. **La mitad que nos bloqueaba llegó**: el estado ya declara razón y desbloqueo, así que F2.3 se puede construir sin CTA.
+
+**Medido contra `de881e1` el 2026-09-29** · `GET /config/solicitudes` → **404** · y el payload `FORBIDDEN` es `{status, request_from}` y nada más.
+
+**Medido contra `9dc481e` el 2026-10-09** · `/config/solicitudes` sigue sin estar en `router.go` —lo que hay es `/access-requests`, que es pedir una CUENTA, no una métrica—. `FORBIDDEN` trae `reason` y `unlocks_with` (`dd_config_service.go:384-387`), que es la mitad que ya había llegado. **Sigue siendo decisión de producto.**
+
+**Bloquea F2.3.** Y el hueco tiene una forma concreta: el payload `FORBIDDEN` es hoy `{status, request_from}` **y nada más** —medido pidiéndole al token de `planner` los tres paneles que su rol oculta—. Sin `reason` ni `unlocks_with`, que es la gramática de §8 que los otros cinco estados sí traen.
+
+**Así que son dos cosas y conviene no mezclarlas:** que el estado declare qué lo desbloquea, y que exista dónde pedirlo.
+
+**Criterio de aceptación.**
+- `FORBIDDEN` trae `reason` y `unlocks_with`, redactados, como los otros estados.
+- La redacción **no promete una acción que no existe**: mientras no haya ruta de solicitud, `unlocks_with` dice a quién pedirle, no «solicitá acceso».
+- Si se decide que no va a haber ruta de solicitud, **eso cierra F2.3** con el estado declarado y sin CTA — un botón que devuelve 404 es peor que su ausencia.
+
+**CONTESTADO EN PARTE EL 2026-09-28.** Sobre la ruta: *«Es decisión de producto y la llevamos. Mientras tanto el estado ya viene declarado, así que pueden pintarlo **sin CTA**; si producto dice que sí, la ruta sería `POST /config/access-requests` reusando el flujo de `access_requests` que ya existe».*
+
+**Coincide con lo que habíamos propuesto**, así que el camino de F2.3 queda claro: pintar el estado sin CTA.
+
+**Y LA MITAD QUE LO DESBLOQUEA LLEGÓ** · medido el 2026-09-29 contra `de881e1`:
+
+```
+FORBIDDEN
+  reason       : Tu rol no tiene acceso a esta métrica
+  unlocks_with : Pedile al administrador del tenant que la habilite para tu rol
+  request_from : admin
+```
+
+**Con eso F2.3 se puede construir**: el estado ya declara qué pasa y qué lo desbloquea, y la redacción **no promete una acción que no existe** — dice a quién pedirle, no «solicitá acceso». Es exactamente lo que el criterio pedía.
+
+**Lo que sigue esperando es sólo la ruta**, y es decisión de producto de su lado.
+
+#### ➕ B2.15 ⚠️ Encender `DD_MATERIALIZE_PROSE_ENABLED` y avisar
+**Lo pedido, y ya entregado y medido.** **Corregir `locale`, `currency` y `timezone` del tenant de
+
+**Remedido contra `9dc481e` el 2026-10-09 · ENTREGADO.** Desde el 2026-10-01 el alta exige `locale`, `currency` y `timezone` —`binding:"required"` en `tenant_handler.go:33-37`—, así que ningún cliente nace colombiano por el default de la columna, que quedó pero ya no decide. Y hay ruta para editarlos. El tenant de UA, medido en `/config/me` del servicio local: `es-MX` · `USD` · `America/Mexico_City`.
+UA MX**, que hoy son colombianos —`es-CO`, `COP`, `America/Bogota`— por el
+**default de la columna** en `internal/core/domain/tenant.go`. **Medido contra
+`de881e1` el 2026-09-29** al probar la prosa: el agente redactó el resumen del
+mes en **pesos colombianos para un cliente mexicano**.
+
+**El caro es el huso**, no la moneda: el corte del día del negocio sale del
+tenant, y un tenant mexicano cerrando el día en Bogotá produce cifras plausibles
+y no auditables — que es justo lo que la regla de las dos zonas horarias existe
+para impedir. Y el `locale` mete el separador de miles colombiano en TODAS las
+cifras de la consola, no sólo en la prosa.
+
+Pedido en `docs/MENSAJE-2026-09-29-backend-tenant-colombiano.md`, con la
+propuesta de que los tres pasen a ser obligatorios al crear el tenant: **un
+default que nombra un país es una decisión sobre el próximo cliente que nadie va
+a tomar a conciencia.** · Bloquea nada, **ensucia todo**.
+
+**PROBADO ACÁ EL 2026-09-29, Y ANDA.** No hacía falta esperar al despliegue para
+saber si funciona: el flag es del binario y el agente de Cortex contesta desde el
+24. Levantado con `DD_MATERIALIZE_PROSE_ENABLED=true` contra `de881e1` y con
+`POST /admin/tenants/{id}/materialize` sobre `2026-09`:
+
+```
+run: available 18 · blocked 0 · errors 0 · preserved 0 · 45 s
+executive_summary → AVAILABLE · «En septiembre de 2026 los ingresos alcanzaron
+  COP 1.144.876, un avance de 24,6% frente al mes anterior (COP 918.978)…»
+decisions         → AVAILABLE · con pilares · «Frenar: erosión…», «Vigilar:
+  brecha en órdenes», con su nota cada uno
+```
+
+**Resuelve las tres cosas que estaban mal en esos dos paneles:**
+
+| Antes | Ahora |
+|---|---|
+| El texto de la semilla, en **inglés** | En **español**, porque el generador recibe el `Locale` del tenant |
+| **La misma cifra en todos los períodos** —«USD 4.28M»— | Las del período materializado, con su comparación contra el mes anterior y el mismo mes del año pasado |
+| `DEGRADED` con dato de tres semanas | `AVAILABLE` con la frescura de la corrida |
+
+**Y la prosa NO pasa por el registro de consultas de Snowflake**, que es lo que
+hacía que estas dos salieran `BLOCKED · No Snowflake query registered` en los
+demás períodos: `dd_materializer_service.go:139` evalúa la rama de prosa **antes**
+del bloqueo, así que con el generador puesto el `Blocked: true` de `exec_resumen`
+y `month_decisions` no aplica.
+
+**Queda en ⚠️ y no en ✅** porque lo que la tarea pide es que se encienda **en
+dev**, y eso sigue siendo del equipo de despliegue. Lo que cambia es que ya no es
+una apuesta: está medido.
+
+**UNA MEDICIÓN FLOJA, ANOTADA PORQUE ES BARATA DE REPETIR.** La primera lectura
+dijo que `executive_summary` no se había regenerado. Era falso: la ruta devuelve
+**202 y corre asíncrono**, y se consultó antes de que terminara. El `status` de la
+corrida —`/admin/materialize/runs`— es lo que dice cuándo mirar.
+
+**Espera del backend.** **Que se encienda en dev y nos avisen** — lo ofrecieron ellos en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
+
+**Lo tiene: DESPLIEGUE** · prender el flag en dev después del próximo despliegue. **Fecha, no código.**
+
+**Medido contra `de881e1` el 2026-09-29** · `ProseGeneratorEnabledFromEnv` lee el flag con default `false`.
+
+**Medido contra `9dc481e` el 2026-10-09** · `ProseGeneratorEnabledFromEnv` sigue leyendo el flag con default `false` (`dd_materializer_service.go:55-58`). **Si ya está encendido en dev no se ve desde el código**, y no lo medimos: sigue en pie el «avísennos».
+
+Hasta entonces los dos paneles de prosa se sirven con el valor de la semilla, **en inglés**, y salen `DEGRADED`.
+
+**Criterio de aceptación.**
+- Los dos paneles traen `governance.source = agent:<nombre>` y un `headline`, no el valor de la semilla.
+- Queda registrado contra qué corrida y con qué agente se verificó.
+- **Es lo último que le falta a B2.12** para dejar de tener dos paneles sirviendo maqueta.
+
+#### ➕ B2.16 ✅ El materializador emite `presentation`
+**EL PEDIDO NO HACÍA FALTA · verificado el 2026-09-28 contra `f70cec2`, antes de mandarlo.**
+
+Se escribió desde `docs/MENSAJE-2026-09-24-materializador.md`, que el 24 decía que el materializador no emitía `presentation` y que al correr pisaba la de la semilla, dejando **los seis paneles `kpi` como una cifra sola**.
+
+**Era cierto ese día y dejó de serlo.** Su código lo tiene: `materialize/presentation.go` define `PresentationFromRows`, `transform.go:31` la calcula y `dd_materializer_service.go:412` la escribe **sólo cuando no viene vacía** —`if len(mat.Presentation) > 0`—, que es justamente la otra mitad del pedido.
+
+Y el dato lo confirma · medido en `POST /config/panels:batch`: **los seis paneles `scalar` traen `presentation`**, con medidor y comparativos:
+
+```json
+{"label":"TOTAL","meter":{"percentage":81,"label":"% DE LA META","note":"2.6M DE 3.19M"},
+ "comparative":[{"label":"VS MES ANTERIOR","delta":134.3},{"label":"VS AÑO ANTERIOR","delta":-33.9}]}
+```
+
+**Criterio de aceptación.**
+- Un panel `kpi` materializado trae `presentation` con medidor y comparativos · **medido: 6 de 6**.
+- El materializador no la pisa con vacío · **verificado en `dd_materializer_service.go:412`**.
 
 ---
 
@@ -4206,12 +5179,59 @@ backend, que era cierto del contrato y dejó de serlo del cable**: el frame
 `error` de `82da946` manda `{code, message}`. Hoy lo deriva `api/chat.ts` y está
 pedido como campo. Ver F3.5.
 
-### ➕ F3.9 🕓 Drill-down C2
-**Estado: diferida** (D3). No se descarta ni se planifica todavía; entra cuando el backend llegue a ese tramo. El contrato ya la cubre, así que lo que falta es el servicio, no el diseño.
+### ➕ F3.9 ✅ Drill-down C2
+**Estado: hecha** · 2026-10-01 · `src/surfaces/console/DrillSheet.tsx` · §PEN:C2.
+
+**El candado D3 venció, y se puede mostrar cuál.** Decía «entra cuando el backend
+llegue a ese tramo», y llegó: `GET /config/panels/{panelId}/drilldown/dimensions`
+y `POST /config/panels/{panelId}/drilldown` son de `168a761` —verificado con
+`git log -L` sobre las dos líneas de su router y con `git log --` sobre los cinco
+archivos del camino, **ninguno con un commit nuestro**— y las dos contestan 200.
+
+**CERRADA CONTRA DATO DE SNOWFLAKE, y se dice qué se miró**, porque «contra el
+servicio real» se dice solo. El 2026-10-01, con el período en `2026-09`:
+
+| Qué se abrió | Qué se vio |
+|---|---|
+| El pie de los quince paneles | **Siete «Ver detalle» y ocho sin él** · exactamente los siete que el servicio declara `supported: true`, medido ruta por ruta |
+| La hoja sobre `Sales` | La cifra, su BASE y procedencia, las tres dimensiones como pestañas, y `TABLA ORIGEN` y `LINAJE` declarados ausentes con su razón |
+| `DAY` | Las 30 barras del mes, con su fecha |
+| `PLATFORM` | Las 37 plataformas · el cambio de dimensión rehace la consulta |
+
+**La corrida que la construyó se había cortado en la auditoría** —su QA quedó
+colgado esperando una `npx vitest run` que bajo contención se pasó de su timeout—
+así que esta mitad se hizo a mano. La tarea estuvo en ⚠️ hasta tenerla.
+
+**Dos cosas observadas al mirar, anotadas y NO corregidas**, porque son de
+producto y no defectos de esta pantalla: la dimensión `day` llega ordenada por
+VALOR y no cronológicamente —así la manda el servicio, y en una dimensión de
+tiempo eso esconde la tendencia—, y la cola de plataformas en cero es el mismo
+cero-por-ausencia que la auditoría de usabilidad ya levantó.
+
 **Descripción.** v2 tiene 128 líneas construidas: desagregación por las
 `dimensiones` que declara la métrica. `nuevo-desarrollo.md` lo baja a F5.4.
+
 **Criterio de aceptación.** Las dimensiones salen del catálogo, no de una lista
 escrita en el front.
+
+**Cómo se cumple, y la mitad que no es nuestra.** El front **no escribe ninguna
+lista**: los ejes salen de la lectura de dimensiones, respaldada por el registry
+del servicio. La otra mitad es pedido: `Metrica.dimensiones` existe en el
+contrato y en el cable y llega **vacía en las 21 métricas**, medido el
+2026-09-30, así que hoy no puede ser la fuente. La aserción que lo ata pone
+`['region']` en el catálogo y `['day','week']` en la lectura y exige que se
+pinten las dos de la lectura y ninguna del catálogo.
+
+**Contra qué se cerró.** Contra el binario de `:4010` levantado desde el fork, con
+`dev@synapse.local`, tenant «Under Armour México», dashboard `overview`, período
+`2026-09`; y **abierta en `dev:mock`**, que es donde aparecieron dos defectos que
+ninguna prueba vio: los chips y los botones del pie se pintaban sin borde ni
+fondo —`border-0` y `bg-transparent` en la cadena base ganaban sobre lo que cada
+rama ponía, porque el orden en la cadena no decide nada— y la desagregación por
+día apilaba treinta barras en 320px con las etiquetas pisando el dibujo.
+
+**Lo que NO se construyó, con su razón y su aserción**, está en la fila del
+registro de pantallas y en `docs/PROPUESTA-2026-09-30-divergencias-C2.md`.
 
 ### ➕ F3.10 🕓 Accionables y hallazgos C4
 **Estado: diferida** (D3). No se descarta ni se planifica todavía; entra cuando el backend llegue a ese tramo. El contrato ya la cubre, así que lo que falta es el servicio, no el diseño.
@@ -4321,6 +5341,12 @@ desaparece al responder.
 **Lo que NO se construyó, y por qué:** el `DECISIONES` que el frame de 360 pone a la derecha. `/config/decisiones` no existe —el cable lo declara en «lo que no está»— así que sería un CTA que devuelve 404.
 
 **Lo que NO se pudo VER:** las dos composiciones responsive. La ventana del navegador no se achicó —está maximizada— así que se verificó la de escritorio en pantalla y las otras dos sólo contra el frame. Queda dicho en vez de darse por mirado.
+
+**MIRADAS EL 2026-09-28** · `docs/AUDITORIA-2026-09-28-pen-vs-responsive.md`. La barra a 768 coincide con el frame en los nueve números —alto 52, padding 20, sin fondo, borde 1, botón 28 / `$r-md` / `$elev` / sin borde / mono 9—, medidos con `getComputedStyle` y no a ojo. **Y apareció una divergencia de una línea**: la línea de contexto se pintaba en mono 10 en los tres anchos y el frame de 768 la dibuja en **9**. Corregida — `Note` abajo de 1280, `Label` arriba. Se veía bien: un punto de mono a ese tamaño no se nota mirando.
+
+**A 360 exactamente no se pudo medir**: Chrome no achica la ventana por debajo de ~500 en macOS. 500 cae en el mismo escalón `<768`, así que la composición es la misma; lo que queda sin comprobar es el ancho literal.
+
+**Y salió algo que NO es de esta tarea**: el `.pen` dibuja **tres navbars** y pintamos uno. A 360 el frame suelta el tenant, el rol, el período y el CTA, y convierte el menú de pestañas en un desplegable. **Planteado y sin tomar** — es una tarea con su propio criterio, y los renglones del registro de pantallas son de la sesión de diseño.
 
 **La hoja se ensanchó en vez de duplicarse**: `PanelChat` pasó a `ChatSheet` y toma una **unión** —panel o pestaña, nunca las dos—, porque el servicio devuelve 400 con ambos y con dos campos opcionales ese estado se podría escribir. Lo que el contexto de pestaña no tiene queda declarado: sin sugeridas —esa ruta cuelga de un panel— y sin cuerpo para la cifra, que es §7 de la propuesta del 22 y sigue abierta.
 
@@ -4824,6 +5850,12 @@ Lo que las frena **no es lo mismo**, y esa distinción es la que importa:
 | B5 · Vista previa por rol | Roles por tenant · B4.9, que escribimos nosotros | Cable |
 | B6 · Historial | Ni **quién** publicó ni **qué cambió** · pedido en B4.2 | Cable |
 
+**ESA TABLA ES DEL 2026-09-15 Y CINCO DE SUS SEIS FILAS YA VENCIERON** · anotado
+el 2026-09-30 para que no se lea como el estado de hoy: B3 se construyó con F4.21,
+B4 con F4.10, B5 con F4.12 y **B6 con F5.19** —su candado era falso: el cable trae
+autor y diff desde `168a761`—. La única viva es B2, que sigue esperando una
+decisión de diseño.
+
 **B2 es la que hay que mirar dos veces.** §7.2 describe el RESULTADO del arrastre
 —slot vacío con su label, badge `HEREDADO`, colisión marcada, nada se suelta
 encima— y no la INTERACCIÓN: qué agarra el cursor, cómo se redimensiona por
@@ -5226,7 +6258,63 @@ el 422 como error genérico, y publicar sin mandar el `versionId`.
 - F4.15: publicar surte efecto sin deploy, y se ve en la consola en la siguiente
   carga.
 
-### ➕ F4.21 ⬜ Selector de gráfico en el builder · 🔒 `/config/plots` da 404
+### ➕ F4.21 ✅ Selector de gráfico en el builder
+**CERRADA EL 2026-09-29**, con la ruta que escribimos el mismo día. `PlotPicker`
+· §PEN:B3, leído antes de escribir la primera línea.
+
+**Y AL CONSTRUIRLO APARECIÓ ALGO PEOR QUE LO QUE FALTABA: el builder BORRABA el
+gráfico de todos los paneles al guardar.** `adaptarPanel` no leía `chart` y el
+cuerpo del `PUT` no lo mandaba — y el `PUT` **reemplaza el layout entero**, con
+esas palabras en el cable: «se envía el layout entero y lo que no venga se
+borra». Abrir en el builder el layout que se publicó esa mañana con doce
+gráficos y apretar Guardar los perdía los doce, en silencio.
+
+**La cabecera de `borrador.ts` decía justo lo contrario** —«que el borrador tenga
+la forma del cuerpo y no una intermedia es la decisión que sostiene todo lo
+demás: **no hay una segunda traducción donde perder un campo**»—. Es cierto, y el
+campo se perdió igual: **la forma nunca lo tuvo**. Una sola traducción protege de
+perder lo que se transcribió; no protege de lo que no se transcribió nunca.
+
+**Y una prueba vieja se puso roja al arreglarlo**, que es para lo que sirve fijar
+el cuerpo del `PUT` entero con `toEqual`: un campo nuevo no entra sin que alguien
+lo mire.
+
+**Los cuatro bullets del criterio, y dónde quedó cada uno:**
+
+| Bullet | Cómo |
+|---|---|
+| La lista se filtra por `formas`; los incompatibles **no se muestran** | El grupo de cada forma lista sólo los que la sirven. Un gráfico de dos formas aparece en los dos grupos, **y no es repetición**: su mínimo cambia con la forma |
+| Cada opción **declara** su mínimo y su tope | Textual, con la razón del repertorio. **El mínimo es el de ESA forma**: `treemap` pide 2 en `categorica` y 3 en `composicion`, y mostrar el primero diría que alcanza con dos |
+| Con `serieConBanda`, sólo gráficos con banda | Lo sostiene la estructura: las únicas entradas cuyas `formas` incluyen `serieConBanda` son las tres que declaran `soportaBanda: true` |
+| No elegir nada es válido | Se dice en pantalla —«sin elegir · usa el de por defecto del tipo»— y hay un botón para quitarlo |
+
+**Quitar necesitó su propia función**, y la razón es un modo de falla conocido
+del otro lado: `editarPanel` mezcla con spread, así que `{ grafico: undefined }`
+**deja la clave intacta** y «quitar» se vería funcionando sin hacer nada.
+
+**TRES COSAS DEL DIBUJO QUE NO SE CONSTRUYERON, cada una con su razón escrita en
+el componente:**
+
+1. **El preview.** La nota del `.pen` es explícita —«el preview es el espécimen de
+   la librería, no una miniatura aparte: un Plot no escala»— y tiene razón, por
+   eso no se dibujó una miniatura. Lo que falta es el **espécimen**: un valor de
+   muestra por forma que no declara ni el contrato ni `/config/plots`. Inventarlo
+   sería meter cifras fabricadas en el producto.
+2. **La opción deshabilitada por tope.** Necesita el DATO para saber si se
+   excede, y el builder va sin payloads por decisión escrita de F4.12.
+3. **La descripción de una línea** —`UNA CATEGORÍA, UNA MEDIDA` en el frame—. El
+   repertorio no la lleva y escribirla acá sería inventar copy de producto.
+
+**Y una que sí cambia respecto del dibujo:** la nota dice «se abre al soltar un
+tipo», y acá se abre desde el configurador, con la métrica ya puesta. Mover el
+selector al drop reordena el flujo entero —gráfico antes que métrica— y eso es
+F4.10, no esta tarea.
+
+**Seis mutaciones fieles, seis muertas**: las dos del campo que se borraba —leer
+y escribir—, la del borrador que lo perdía al serializar, la de «quitar» con
+spread, la del mínimo tomado del primero de la lista, y la de la lista sin
+filtrar por forma.
+
 **Descripción.** El configurador de panel ofrece los gráficos **compatibles con
 la forma de la métrica elegida**, no los 49. Consume `/config/plots` vía
 `catalog/plots.ts`.
@@ -5237,6 +6325,14 @@ la forma de la métrica elegida**, no los 49. Consume `/config/plots` vía
   publicar que el gráfico va a quedar vacío en un tenant chico.
 - Con `serieConBanda`, solo aparecen gráficos con `soportaBanda`.
 - No elegir nada es válido: el panel usa el gráfico por defecto de su tipo.
+
+**EL CABLEADO DEL 2026-09-29 NO DESTRABA ESTO Y AGRANDÓ SU HUECO.** Ahora hay
+quince ids con dibujo de los 49, y el builder **sigue ofreciendo los 49 sin
+saber cuáles existen**: no se tocó `src/surfaces/builder/`. Un admin puede
+guardar un panel con un id que esta versión declara en vez de dibujar, y lo que
+verá en la consola es `UnknownPlotState` con el id adentro — que es honesto pero
+llega después de publicar. El feedback inmediato del front todavía no distingue
+«no compatible» de «no construido», y esa distinción es de `/config/plots`.
 
 ### F4.12 parcial el 2026-09-15 · la composición, no las cifras
 
@@ -5766,10 +6862,201 @@ cuerpo propio a cada una, o escribirlo en una sección de evidencia como ésta, 
 el parser no reparte—. Se eligió el segundo, que es el que ya usan las once
 tareas cerradas de esta fase.
 
-### F4.17 ⬜ `ComparisonBody` + `ComparePlot` · 🔒 ninguna métrica declara `categoricaComparada`
-### F4.18 ⬜ `MatrixBody` + `HeatmapPlot` · 🔒 ninguna métrica declara `matriz`
-### F4.19 ⬜ `GraphBody` + `GraphPlot` · 🔒 ninguna métrica declara `grafo` ni `flujo`
-### F4.20 ⬜ Registrar los tres con carga diferida · 🔒 espera a F4.17–F4.19
+### F4.17 ✅ `ComparisonBody` + `PlotDumbbell`
+### F4.18 ✅ `MatrixBody` + `PlotHeatmap`
+### F4.19 ✅ `GraphBody` + `PlotSankey`
+### F4.20 ✅ Registrar los tres con carga diferida · el registro pasó a `Record` completo
+
+**CERRADAS EL 2026-09-30 CONTRA DATO DE SNOWFLAKE, Y ESO ES LO QUE SE CIERRA.**
+No «contra el servicio real», que se dice solo: los tres paneles se compusieron
+sobre las tres métricas que corrimos contra Snowflake, se sirvieron por
+`GET /config/tabs` del binario local y **se miraron en la consola** — el pie dice
+15 paneles. `carga-diferida ✓ 15 cuerpos en 15 chunks`.
+
+**Las dos condiciones del criterio se cumplieron el mismo día y por caminos
+distintos:** el contrato declara las cinco formas desde el 2026-09-26, y la
+métrica que las usa la escribimos nosotros —`platform_gap`,
+`platform_month_matrix` y `spend_flow`, en `MetricRegistry`—. El candado decía
+«se construyen cuando el backend envíe esas formas», y resultó que enviarlas era
+trabajo nuestro.
+
+**Qué se hizo, además de los tres archivos:**
+
+| | |
+|---|---|
+| `adaptValue` | Tres `case` nuevos · `compared_categorical`, `matrix` y `flow` |
+| `DIBUJABLES` | Las tres agregadas · de once a catorce formas |
+| `registry.ts` | `LOADERS` y `BODIES` pasaron de `Partial<Record>` a `Record` completo · `MISSING_TYPES` quedó **vacía** |
+
+**LAS DOS QUE QUEDAN AFUERA, cada una por su razón, y no es simetría pendiente:**
+`perfilMultiatributo` tiene un solo gráfico en el repertorio —`radar`— y no está
+construido; `grafo` no tiene ni gráfico **ni dato del cual salir**, porque ninguna
+columna de las dos tablas Gold trae aristas origen→destino. Las dos se declaran
+en pantalla con `UnknownPlotState`, que nombra el id — no caen al dibujo de al
+lado.
+
+**Y LOS TRES CUERPOS ACEPTAN LAS DOS FORMAS DE SU BLOQUE, que es un cambio de
+criterio.** `GraphBody` llegó como `BodyProps<'flujo'>` con el argumento de que
+restringir el tipo es más fuerte que una rama. **Es falso apenas el cuerpo entra
+al registro:** `ErasedBodyProps` ancha `value` a la unión entera —lo dice su
+propio comentario— así que un `grafo` compuesto sobre un bloque `graph` llega
+igual y `PlotSankey` leería `etapas` de un valor que trae `nodos`. El tipo
+estrecho no impedía nada; escondía la rama.
+
+#### Lo que encontró MIRARLO, que es lo que ninguna prueba dijo
+
+**NINGUNO DE LOS TRES TIENE TOPE, y con la cardinalidad real los tres fallan
+distinto.** Medido en la consola el 2026-09-30, con los paneles servidos por el
+binario local:
+
+| Gráfico | Filas reales | Qué se ve |
+|---|---|---|
+| `dumbbell` | 22 de 37 ítems | Se **recorta** al alto del panel y nada dice que faltan |
+| `heatmap` | 38 × 12 | Los rótulos de fila **se pisan** entre sí: ilegibles |
+| `sankey` | 23 etapas | Las veinte cintas chicas se apilan en una banda sin rótulos |
+
+**El repertorio declara mínimos para las tres formas y tope para ninguna.** El
+mecanismo existe —`tope` lo evalúa `catalog/plots.ts` y lo hace cumplir
+`plotProblemOf`, y `radar` ya lo usa— así que lo que falta es el NÚMERO, y ése es
+producto: se avisó a datos en
+`docs/MENSAJE-2026-09-30-datos-lo-que-encontro-correrlo.md` y queda como
+propuesta, no se decide acá.
+
+**A cardinalidad sana los tres se leen bien**, y eso se comprobó aparte en
+`dev:mock` con cinco y seis filas: el problema es el corte del dato, no el plot.
+
+#### Dos defectos que salieron de construir esto, los dos arreglados
+
+- **`PlotHeatmap` recortaba los rótulos de COLUMNA con el presupuesto de las
+  FILAS.** Un solo `cap`, sacado de la canaleta de rótulos de fila, aplicado a
+  los dos ejes. Miente en las dos direcciones y las dos se midieron: con filas de
+  30 caracteres el tope sube a 29 y los rótulos de columna pasan enteros con
+  149px sobre celdas de 52; con filas cortas un rótulo de columna se recorta a
+  siete caracteres aunque su celda mida 261. **Lo encontró una mutación que
+  SOBREVIVIÓ** —ningún fixture tenía las dos longitudes desacopladas, así que el
+  error no podía salir— y su prueba se escribió con el arreglo puesto.
+- **`GET /config/plots` no tenía handler en MSW.** La consola en `dev:mock`
+  corría con el **repertorio vacío**, así que ningún mínimo ni tope se ejercitaba
+  ahí; MSW lo avisaba por consola y la aplicación seguía andando. Ahora
+  `tools/gen-plots.py` emite también `dev/mocks/repertorio.json`, de modo que las
+  49 filas del mock son las mismas que las del servicio y no una tercera tabla
+  escrita aparte.
+
+#### Y el patrón del caso negativo rancio apareció otras tres veces
+
+Las tres en el mismo commit, y las tres las atrapó la puerta en rojo:
+
+1. `adapt.test.ts` afirmaba que **cinco** formas no se adaptaban; tres pasaron a
+   adaptarse. Se movió a las dos que quedan y se agregaron siete positivas.
+2. «una forma que el front todavía NO DIBUJA» usaba `matrix` —ya había mudado de
+   `distribution` el 2026-09-25—. Ahora usa `graph`, que es la que menos probable
+   es que se mueva: no tiene gráfico **ni** dato.
+3. `registry.test.tsx` recorría `MISSING_TYPES` para afirmar que un tipo sin
+   cuerpo no cae en un fallback. Con la lista vacía el `for` no ejecuta ninguna
+   afirmación: habría quedado verde sin verificar nada. Se reemplazó por un tipo
+   **inventado**, que es lo que la hace permanente — `bodyFor` recibe su
+   argumento de `block_type`, una cadena libre en el cable.
+
+**Criterio de aceptación.**
+- Se construyen cuando el contrato declare esas formas **y** exista una métrica
+  que las use. Las dos mitades se cumplieron el 2026-09-30.
+- Al estar los quince, el registro pasa de `Partial<Record<PanelType, …>>` a
+  `Record` completo, y **agregar un tipo al enumerado sin su cuerpo deja de
+  compilar**. Hecho, y verificado por mutación: quitar `graph` de `LOADERS` deja
+  de compilar y rompe la paridad contra el enumerado del yaml.
+**PEDIDO A DATOS EL 2026-09-29** · `docs/MENSAJE-2026-09-29-datos-formas-sin-metrica.md`.
+
+**Espera de datos.** **La fila del catálogo y el esquema de Gold** · el SQL lo
+escribimos nosotros. **Medido contra `de881e1` el 2026-09-29.**
+
+**CORREGIDO ANTES DE MANDAR EL PEDIDO, y la corrección es la mitad de esto.** El
+mensaje decía «nada del backend» y era falso: al leer `queries.go` apareció que
+**la consulta de cada métrica NO vive en Snowflake** sino en `MetricRegistry`, un
+mapa en el Go del backend, con `Shape` y `BuildSQL func(t Tables, b Bounds) string`.
+Una métrica nueva necesita su entrada ahí — **y esa entrada la sabemos escribir**:
+es lo mismo que hicimos con `/config/plots`.
+
+**Tres de las cuatro formas salen del dato que YA existe**, leído de las
+consultas que el backend tiene escritas:
+
+| Forma | De dónde sale |
+|---|---|
+| `compared_categorical` | `goals_vs_actual` devolviendo `v` y `ref` por separado en vez del cociente `real/objetivo` |
+| `matrix` | `FUENTE × mes` de `GLD_PAID_MEDIA`, o día-de-semana × semana de la diaria |
+| `flow` | El embudo `VISITS → SESSIONS → ORDERS` de la diaria · tres etapas |
+
+**`graph` no sale** —ninguna columna de las dos Gold tiene aristas origen→destino—
+y **`multi_attribute_profile` tampoco** mientras los atributos no compartan
+unidad, que es una regla de nuestro contrato: un radar con pesos en un eje y
+porcentaje en otro dibuja un área que depende del orden de los ejes.
+
+**CONTESTADO EL 2026-09-30**, y de su nota salieron un dato nuevo y un hallazgo:
+
+- **El default de `MIN_GRAIN` es del SYNC, no de la view.** Verificado en
+  `dd_catalog_sync_service.go`: `if minGrain == "" { minGrain = "month" }`. Así
+  que «las dieciocho declaran `month`» tiene dos causas y desde Postgres no se
+  distinguen — la consulta que desambigua es de datos, porque nosotros no
+  corremos SQL en Snowflake.
+- **Su afirmación de que una forma nueva se materializa «sin cambios de código»
+  es falsa**, y está en su propio `dd_materializer_service.go`: sin entrada en
+  `MetricRegistry` la métrica sale `BLOCKED · No Snowflake query registered`. Es
+  el mismo error que nosotros cometimos al revés el 29 —«nada del backend»— y
+  las dos veces la causa fue no leer `queries.go`.
+- **Y LA FORMA SE DECLARA DOS VECES.** `Materialize(spec.Shape, ...)` usa la del
+  REGISTRO; el front lee la del CATÁLOGO en `/config/catalog`. Si difieren, el
+  único efecto es un `slog.Warn` en el servidor: **un panel compuesto para una
+  forma recibiendo otra**, que es el modo de falla que este producto persigue.
+  Propuesto que falle en vez de avisar ·
+  `docs/MENSAJE-2026-09-30-backend-registry-y-forma.md`.
+
+**LAS TRES ENTRADAS ESTÁN ESCRITAS Y PROBADAS CONTRA SNOWFLAKE · 2026-09-30** ·
+`8876b4d` en `feature/config-plots` del fork. `platform_gap`
+(`compared_categorical`), `platform_month_matrix` (`matrix`) y `spend_flow`
+(`flow`), **las tres sobre columnas que `platform_return` ya leía**. Corrida real:
+`available 19 · blocked 2 · errors 0`, y los dos bloqueados son los de prosa.
+
+**Churn +100 −2 en archivos de ellos**, y los 2 son una expectativa que quedó
+rancia: `AffectedMetrics` decía «sólo `platform_return`» y ahora son cuatro las
+métricas de paid media — que las cuatro se afecten si falta la tabla es el
+comportamiento correcto.
+
+**Y correrlo encontró tres cosas del dato**, que es lo que ningún esquema habría
+dicho: dieciséis plataformas con retorno y **sin costo**, `Daily Motion` y
+`Dailymotion` como dos filas distintas, y **38 plataformas** donde habíamos
+estimado seis —el panel muestra seis porque tiene un tope, no porque haya seis—.
+Avisado en `docs/MENSAJE-2026-09-30-datos-lo-que-encontro-correrlo.md`.
+
+**Esa última es la mejor evidencia de por qué el inventario va primero**: una
+suposición sobre la cardinalidad ya nos hizo escribir mal un pedido.
+
+**Lo de datos son dos cosas y ninguna es la consulta:**
+
+1. **La fila en `SYNAPSE_METRIC_CATALOG` con su copy** — `NAME`, `BASE`,
+   `SOURCE`, `MEASUREMENT_WINDOW`, `SEMANTIC_DIRECTION` y el `SHAPE`. Los cinco
+   primeros **se pintan textuales en pantalla**, así que es copy de producto y su
+   dueño es el catálogo.
+2. **El esquema de las dos tablas Gold.** Hoy lo conocemos de forma **indirecta**:
+   las columnas las dedujimos de las consultas del backend, no de mirarlo.
+   `schema-check` no sirve — verifica que los objetos existan, no lista columnas.
+
+| Pieza | Estado |
+|---|---|
+| `TransformValue` del backend | **las 16**, quince `case` sin lista blanca |
+| `contracts/synapse-api.yaml` | **las 16** `Valor*` |
+| `GET /config/blocks` | **las 16** en `accepted_shapes` |
+| El catálogo de métricas | **5 de 16** |
+
+**Tres capas saben recibir once formas que ninguna métrica emite**, y el mensaje
+lleva además **qué columnas tiene que devolver la consulta de cada forma**, leído
+de su transformador y no de nuestra documentación — acepta alias en español e
+inglés, que es lo que más cuesta adivinar.
+
+**Y no hay nada del backend en esto**, aunque el pedido empezó redactado para
+ellos: su transformador no tiene compuerta por forma. Es la corrección que la
+medición obligó, y por eso el mensaje la lleva adelante.
+
+**Lo tiene: DATOS**
+
 **Verificado el 2026-09-26 contra `8633b10`.** **EL BLOQUEO CAMBIÓ DE DUEÑO.** El criterio decía «se construyen cuando el backend envíe esas formas (B5.3), no antes», y esa mitad ya no lo frena: `transform_v11.go` transforma **las cinco** —`compared_categorical`, `multi_attribute_profile`, `matrix`, `graph`, `flow`— y el `switch` principal las enruta con constantes.
 
 **Son las mismas siete que `grep "case \""` no veía el 2026-09-25**, y por las que se les mandó un mensaje equivocado. Leerlas bien es lo que corrigió esto.
@@ -5778,7 +7065,11 @@ Su respuesta del 25 lo dice del otro lado: «sobre las cinco formas v1.1: de acu
 
 **Así que lo que queda son dos cosas, y ninguna es del backend:**
 
-1. **Declarar las cinco en `contracts/synapse-api.yaml`.** El enum `Forma` las nombra y **ninguna tiene objeto de `Valor`**, así que hoy no hay contra qué implementar un cuerpo.
+1. ~~**Declarar las cinco en `contracts/synapse-api.yaml`.**~~ **HECHO** · medido
+   el 2026-09-29: el contrato declara **las dieciséis** `Valor*`, incluidas
+   `ValorMatriz`, `ValorGrafo`, `ValorFlujo`, `ValorCategoricaComparada` y
+   `ValorPerfilMultiatributo`, cada una con sus campos requeridos. Esta mitad del
+   bloqueo venció y el plan seguía diciendo que no.
 2. **Una métrica que las use.** Las 18 del tenant declaran `scalar`, `categorical`, `prose`, `tabular`, `multi_series` y `time_series`. Un cuerpo para una forma que nadie emite es código sin consumidor.
 
 **Nuestra mitad se hizo el 2026-09-26**: el contrato declara las cinco, con sus decisiones en cada esquema y en `docs/DECISIONES-2026-09-26-formas-v11.md`. Al declararlas **`isEmpty` dejó de compilar**, que es para lo que su `switch` está escrito exhaustivo, y las cinco decisiones de «vacío» quedaron tomadas con su razón.
@@ -6176,6 +7467,38 @@ cliente, el nombre que deja de abrir y Escape que no cierra. Mueren las nueve.
 ## Fase 5 — Multi-dashboard, pruebas y pulido
 
 ### F5.1 ✅ Selector de dashboard cuando hay más de uno
+**EL SELECTOR CAMBIABA DE DASHBOARD Y LA CONSOLA QUEDABA VACÍA · encontrado y
+arreglado el 2026-09-29.** Publicando una pestaña en «Marca» y cambiando a él:
+`/config/me` devolvía la pestaña, la superficie pintaba su pregunta operativa, y
+`GET /config/tabs/{ese mismo id}` contestaba **404 «pestaña no encontrada»**.
+Encabezado y **cero paneles**.
+
+**No era del backend.** Su handler —`dd_config_handler.go`, leído en `de881e1`—
+acepta `?layoutId=` y `?dashboardId=`, y sin ninguno de los dos resuelve contra el
+layout del dashboard **por defecto**: una pestaña de otro dashboard no existe para
+esa consulta. `ConsoleContainer` llamaba `useTab(activeTab?.id)` **sin el
+parámetro desde siempre**, aunque `useTab` y el cliente ya lo aceptaban.
+
+**Andaba de casualidad, y eso es lo que conviene registrar.** Mientras hubo un
+solo dashboard, el activo y el de por defecto eran el mismo y la caída del
+backend acertaba. Es el modo de falla que este repositorio persigue: correcto por
+coincidencia, y el día que deja de serlo **no falla el código que está mal**.
+
+**Y MSW no podía verlo**, por la misma razón que no vio la `Authorization` del
+chat: sus handlers coinciden con la ruta **sin mirar el query string**, así que
+responden igual con parámetro y sin él. Por eso
+`tests/surfaces/console/layoutEnLaConsulta.test.tsx` no afirma lo que se dibuja
+—eso ya pasaba— sino **lo que se pidió**: captura la URL y lee su `layoutId`.
+Mutación verificada: quitar el parámetro la mata.
+
+
+**AJUSTADA AL DIBUJO EL 2026-09-28** · §PEN:C6. F5.1 puso un `<select>` en el navbar con la pregunta de dónde iba **abierta como propuesta de spec**, y C6 la contestó: no va ahí, porque «de ocho elementos a 768 el navbar no entra». Lo abre el chevron del bloque de cliente, **que ya estaba dibujado, y por eso el navbar no crece**.
+
+Con eso quedan contestadas las cuatro preguntas de `docs/PROPUESTA-2026-09-26-selector-de-dashboard.md`, incluida la del nombre: **dashboard es lo que se elige, layout es su composición publicada**, y ninguna pantalla dice layout.
+
+**Sin velo, y eso lo decidió mirarlo**: la primera versión del dibujo copió el patrón de la hoja de C3 y al abrir el render se vio que «un velo oscurece la aplicación entera y eso dice MODAL, que es lo que una hoja es y un desplegable no». El panel se separa con su sombra.
+
+**Y la sublínea del dibujo no se puede pintar entera**: pide «4 PESTAÑAS · 12 PANELES» y `Contexto.dashboards` trae `{id, nombre, esDefault}`. De los dashboards que no son el activo no se sabe ni cuántas pestañas tienen ni si están compuestos, así que se pinta lo que se sabe y el hueco se declara.
 **Verificado el 2026-09-26 contra el servicio corriendo** · commit `8633b10`. **El ciclo entero, en pantalla**: el selector lista «Overview» y «Marca», cambiar a «Marca» muestra «todavía no se compuso», y «Volver a Overview» devuelve a la consola compuesta.
 
 **Para poder verificarlo se creó el segundo dashboard** con `POST /admin/tenants/{tenantId}/dashboards`, en vez de esperar — igual que el usuario restringido de B1.19. Con uno solo no hay selector, que es su propio criterio, así que no había nada que mirar. Queda documentado en `dev/postgres/README.md`.
@@ -6257,6 +7580,13 @@ variables y solo una estaba sostenida. Se agregó la cuarta prueba y muere.
 **Criterio de aceptación.**
 - Cada uno acepta `PlotProps<F>` y compone primitivas de `core/`. Si necesita algo
   que no está en `core/`, **falta una primitiva, no sobra un componente a medida**.
+
+**LOS TRECE PLOTS DEL 2026-09-29 NO SON DE ESTA TAREA**, y decirlo evita cerrarla
+por error: son gráficos de los cuerpos que YA existen —`escalar`, `serieTemporal`,
+`seriesMultiples`, `categorica`— y su registro está bajo F1.31. Lo que esta tarea
+espera son los plots de `matriz`, `grafo` y `flujo`, que no tienen cuerpo todavía:
+F4.17–F4.19 siguen ⬜ porque `Valor` no declara esas formas **y** B5.3 pide que el
+dato exista.
 
 ### F5.4 🕓 Overlay de drill-down
 **Estado: diferida** (D3). No se descarta ni se planifica todavía; entra cuando el backend llegue a ese tramo. El contrato ya la cubre, así que lo que falta es el servicio, no el diseño.
@@ -6343,6 +7673,295 @@ Dos cosas del entorno que parecían fallos y no lo eran: jsdom abre en 1024px, o
 sea seis columnas, así que la grilla colapsaba —F1.30 funcionando— y el alto no
 es un `height` sino `gridRow: span N` sobre `gridAutoRows`. Y la celda se busca
 por su panel y no por índice, porque `readingOrder` ordena el DOM.
+
+### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
+
+**Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio
+declara un **tope** para cuatro gráficos de 49 —la dona lo tiene: «más de cinco
+partes, ilegible en dona»— y el builder deshabilita la opción cuando el dato lo
+excede. Para el resto no hay nada, y el gráfico se dibuja prolijo e ilegible.
+
+**Medido el 2026-10-01**, poniendo los paneles en el dashboard de UA:
+
+| Gráfico | Dato real | Qué pasa |
+|---|---|---|
+| `heatmap` sobre `platform_month_matrix` | 38 filas × 12 columnas | A `colSpan 12 · rowSpan 7` —el máximo que el bloque admite, 656 px— quedan ~17 px por fila contra rótulos de 9 px. Se encabalgan |
+| `tornado` sobre `platform_gap` | 37 ítems | Ilegible, y además los dos valores de cada fila se superponen en su franja |
+
+**Las dos salidas no se excluyen, y la segunda es una propuesta de spec.**
+
+1. **Un tope declarado** por gráfico, como el de la dona. Son dos líneas en
+   `tools/gen-plots.py` y hace que el builder deje de ofrecer la combinación en
+   vez de que alguien la descubra mirando.
+2. **Scroll interno en el plot.** `design.md` principio 11 lo sanciona —«listas
+   largas con scroll interno propio»— y el `.pen` lo dibuja: `Cuerpo
+   Lista/Viewport/Scroll`, un frame de 3 px de ancho y radio 2. **Pero lo declara
+   para LISTAS**, y para un plot no hay regla. Es la propuesta.
+
+**Por qué no se resuelve de una.** Una lista se lee fila por fila y lo que queda
+abajo no hace falta para entender lo de arriba; **una matriz se lee entera** —el
+sentido de un mapa de calor es ver el patrón de un vistazo— así que scrollearla
+la convierte en una tabla con colores, que además se ordena y dice las cifras.
+Puede que la respuesta sea distinta por forma.
+
+**Decidido el 2026-10-01 (humano): se prueban LAS DOS con dato real y se mira**,
+antes de elegir. No se construye ninguna a ciegas.
+
+**Candado.** Espera a `media_platform_investment_matrix`, que datos entregó el
+2026-10-01 y el backend está registrando. Su eje de columnas se decidió el mismo
+día —plataforma × mes, doce meses— así que el dato que va a llegar tiene
+exactamente la forma que hace falta para probar. Sin él la prueba se haría sobre
+`platform_month_matrix`, que **no se puede recalcular**: su consulta vive en un
+commit de nuestro fork que upstream no tomó.
+
+**Criterio de aceptación.** Con el dato real de
+`media_platform_investment_matrix` servido, el mismo panel se arma de las dos
+maneras y **las dos se miran**: (a) con las filas acotadas por un tope declarado
+en el repertorio, y (b) con el plot dibujado a su alto natural dentro de un
+contenedor que scrollea. Se elige una por forma, se escribe cuál y por qué, y si
+la elegida es el scroll **se abre propuesta de spec** porque `design.md` sólo lo
+declara para listas. Queda una aserción que ate la decisión: si es tope, el
+repertorio lo declara y `gen-plots.py` lo emite; si es scroll, una prueba exige
+que el contenedor desborde en vez de comprimir.
+
+### ➕ F5.20 ✅ A2 · Ficha · tenant en alta · §PEN:A2
+**Descripción.** La variante que faltaba de A2. Su nota lo dice: «axo_mx vive en
+SYNAPSE_TENANTS con roles: [] y A1 ya lo lista, pero A2 no sabía dibujarlo: la
+banda de roles quedaba en blanco sin explicar nada». Trae los tres bloques que
+§7.3 le pide a la ficha y no estaban —los datos del cliente, el estado del acceso
+y los subprocesadores— y el estado de alta, que **no es un campo: se deriva**.
+
+**Y no es una pantalla de alta.** `POST /admin/tenants` devuelve 400 pidiendo las
+cuatro credenciales de Snowflake que §7.3 prohíbe mostrar, así que el alta la hace
+el equipo interno por runbook y esta ficha **adopta** al cliente que ya existe.
+
+**Criterio de aceptación.**
+- `estadoDeAlta` y `versionDeCatalogo` viven en `src/surfaces/admin/alta.ts` y
+  **no en el adaptador**: son reducciones sobre filas, y el adaptador renombra y
+  reformatea. Mismo precedente que `saludDeFuente.ts`.
+- La versión del catálogo es el **MÁXIMO** de las filas, que es la definición del
+  servicio y no una elección nuestra —`GET /config/me` devuelve 4 para el cliente
+  cuyas 21 métricas traen 1, 3 y 4—. Con cero métricas es **`null`, no `0`**.
+- `EN ALTA` se deriva de no tener roles **ni** catálogo. **`status` NO se lee** —
+  llega vacío por decisión escrita del servicio— y hay una prueba que falla el día
+  que alguien lo lea: es una reapertura de la decisión, no un bug escondido.
+- El bloque de acceso queda `BLOQUEADO` cuando el cliente tiene **cero ROLES, no
+  cero agentes**, y ese estado **reemplaza** la tabla en vez de sumarse a ella.
+- El CTA `DEFINIR PRIMER ROL` **dispara** —abre el formulario de rol nuevo— y es
+  el único: en el vacío de alta la cabecera no repite el suyo.
+- Las tres columnas sin dato salen en un guión atenuado y **no en blanco ni en
+  cadena vacía**, y la que no tiene ni campo ni ruta —`PLANTILLA`— conserva su
+  rótulo con una línea al pie que declara la falta.
+- La frase del aporte de la plantilla **no se compone con las cifras que hay a
+  mano**: las pestañas del layout y las métricas del catálogo no son «lo que
+  aporta la plantilla». Se omite entera y una aserción atestigua la ausencia.
+- El adaptador gana **una línea** —`creadoEn`— y nada más.
+- `npm run pen-pantallas`, `npm run copy-producto` y `npm run design-lint` en
+  verde, y el ancla `§PEN:A2` en cada archivo que el registro nombra.
+
+**Construida el 2026-09-30.** `alta.ts`, `StatusChip.tsx`, `TenantIdentity.tsx` y
+`Subprocessors.tsx`; la rama `BLOQUEADO` de `AgentConfig.tsx`, el CTA del vacío de
+`RoleEditor.tsx` y el cableado de `Cliente` en `Admin.tsx`. Las pruebas son
+`tests/surfaces/admin/alta.test.ts` —siete, con tres mutaciones muertas sobre
+línea de base verde— y `tests/surfaces/admin/enAlta.test.tsx` —**veinticinco**,
+montadas desde `Admin` y no desde los componentes, que es lo único que cubre el
+paso de props—. **El número se movió dos veces el mismo día**: dieciséis al
+construirla, veinte cuando QA ató cinco mutaciones que sobrevivían, veinticinco
+cuando la auditoría ató los literales del dibujo y la quinta cosa que apareció al
+volver a abrirla. La suite entera queda en **1561 en 113 archivos**.
+
+**LO QUE QA DEJÓ ABIERTO Y LA AUDITORÍA CERRÓ · 2026-09-30.**
+
+| Qué estaba abierto | Qué se hizo |
+|---|---|
+| Dos literales del vacío **divergían del `.pen`** y la divergencia no estaba declarada · QA lo dejó como decisión humana porque afirmar el dibujo ponía la suite en rojo | **La cadena de autoridad no lo deja abierto** —«gana el `.pen` para lo visual y el literal de la UI»—, así que se corrigió la pantalla: `SIN ROLES DEFINIDOS` en el resumen y la frase del frame en `$font-body`, no dos labels mono. Tres aserciones nuevas y **dos mutaciones muertas** |
+| El caso negativo de `carga.test.tsx` se volvía a desapuntar con ese cambio | Retargeteado al literal nuevo y **comprobado con la mutación que QA usó** —que sólo el bloque del vacío ignore `cargando`—: muere |
+| `celda()` resolvía por `getByText` global y `Estado` es también encabezado de la tabla de agentes | Acotado a la tarjeta de identidad. **Comprobado, no deducido**: con el ayudante viejo y un escenario con agentes, `Found multiple elements with the text: Estado`; con el nuevo, pasa |
+| La procedencia del fixture decía «copiados de la respuesta medida» y `currency: 'MXN'` no salió de ahí —los dos clientes sembrados vienen en `COP` por un default de columna— | Corregida la línea: la FORMA está medida, el `MXN` es del dibujo y está a propósito sobre un `locale` colombiano |
+| El conteo de pruebas citado en prosa había quedado viejo | Corregido acá, y con la suite entera al lado para que se vea de dónde sale |
+
+**Lo que NO se cerró, porque no es del front:** las tres filas de subprocesadores
+siguen siendo una afirmación legal construida desde un mockup cuya propia nota
+dice que la lista es inventada. Las regiones y el «sin retención» los confirma
+quien sea dueño del acuerdo de tratamiento, no una prueba.
+
+**CERRADA CONTRA EL MODO MOCK, Y HAY QUE DECIRLO ASÍ.** El estado que esta
+pantalla dibuja **no es alcanzable contra el servicio**, y la mitad que sí lo es
+está medida aparte. **Remedido por la auditoría el 2026-09-30, contra el binario
+que corre en `:4010`, que es `de881e1` —leído de su clone, no citado de memoria—**
+y no contra `6e521cc`, que es donde nacieron las rutas y es su ancestro:
+
+| Lo medido | Qué contestó | Qué decide |
+|---|---|---|
+| `GET /admin/tenants` | **Trece campos**, los mismos que el fixture · `status` y `vertical` en `null` y `label` en `""` **en los dos clientes** | Que las tres columnas sin dato salgan en un guión, y que `status` no se lea |
+| Los dos clientes | `currency: COP`, `locale: es-CO`, `timezone: America/Bogota` · **ninguno en `MXN`** | Que el `MXN` del fixture sea del dibujo y no una medición · corregida la línea de procedencia |
+| `.../catalog` y `.../roles/composition` | `1111…` → 12 métricas todas en `catalog_version: 1` y **3 roles** · `e65f…` → 21 métricas en 1, 3 y 4 y **4 roles** | Que ningún cliente del servicio esté en alta: las dos condiciones fallan en los dos |
+| `GET /config/me` de `e65f…` | `catalog_version: 4` | Que **MAX sea la definición del servicio** y no una elección nuestra |
+| `GET /admin/templates` y `/admin/verticals` | **404** los dos | Que `PLANTILLA` conserve el rótulo con la falta declarada al pie |
+
+O sea: no se puede llegar al estado dibujado desde el servicio, y tampoco crear un
+cliente desde la pantalla. Así que se agregó un tercer cliente al modo mock —«Grupo
+Axo», sin roles, sin catálogo y sin layout— y **la pantalla se abrió y se miró**,
+en sus dos mitades: en alta y en servicio.
+
+**Y mirarla encontró cuatro cosas que ninguna prueba iba a decir:**
+
+| Qué se vio | Qué era |
+|---|---|
+| Dos botones idénticos a diez píxeles uno de otro | La cabecera repetía `NUEVO ROL` al lado del `DEFINIR PRIMER ROL` del vacío. El dibujo pone **uno solo**, adentro |
+| «0 rol(es) · 3 pestaña(s) · 24 paneles» | El modo mock servía los layouts de otro cliente al que no publicó nunca |
+| Una ruta y un identificador de tarea pintados en la ficha | `Y LA LISTA DE USUARIOS DE A3 · … · SOLO EXISTE POST /admin/users`, **y encima falso** desde que la ruta global contesta. `copy-producto` no lo ve: sólo mira cadenas entre comillas, y esto es texto suelto entre etiquetas |
+| «El permiso se aplica en el backend» | Vocabulario nuestro en la ficha de un cliente. Lo que importa decir es CUÁNDO se aplica, no dónde |
+| **Y una quinta, en la auditoría** · abrirla de nuevo después de corregir los literales: debajo del vacío aparecía «OCULTAR UNA MÉTRICA NO ES UN PERMISO · EL SERVIDOR LA VUELVE A VERIFICAR EN EL CATÁLOGO Y EN EL BATCH» | Una advertencia sobre un mecanismo **que no está presente**: el cliente no tiene un rol ni una métrica que ocultar, y el frame de alta no dibuja nada en ese hueco. Es la misma familia que declarar una carencia ya cubierta. Atada por las dos mitades —sin roles no está, con un rol vuelve— y **dos mutaciones muertas** |
+
+**El fixture del modo mock servía 3 de los 13 campos** que `GET /admin/tenants`
+devuelve, y arreglarlo destrabó también A1: sus cinco columnas se veían vacías.
+
+**Lo que queda levantado y no es código:** las tres filas de subprocesadores son
+una **afirmación legal** construida desde un mockup cuya propia nota dice que la
+lista es inventada. Las regiones y el «sin retención» no son decisiones de diseño:
+hay que confirmarlas con quien sea dueño del acuerdo de tratamiento antes de que
+esto lo vea un cliente. No bloquea el píxel; bloquea la afirmación.
+
+---
+
+### ➕ F5.19 ✅ B6 · Historial de versiones · §PEN:B6
+**Descripción.** La sexta y última pantalla del builder —el `.pen` lo dice:
+«CIERRA EL BUILDER: B1→B2→B3→B4→B5→B6»— y la que hace reversible un error de
+composición en producción. §7.2 en una línea: «quién, cuándo, qué cambió. Permite
+revertir».
+
+**La razón escrita en el registro de pantallas era FALSA** y decía «ninguna ruta
+lista versiones con su autor y fecha». Existían las dos: el historial desde
+`168a761` y el revert desde `5924bf2b`, las dos de ellos, las dos contestando 200.
+
+**Y la ruta que el registro nombraba no alcanza.**
+`GET /admin/layouts/{layoutId}/publications` devuelve **una sola fila** —medido: 1
+contra 5 para el mismo dashboard—. La razón es estructural y está en su código:
+revertir **copia** a un layout nuevo y nunca reactiva el archivado, así que cada
+layout se publica exactamente una vez. La lista sale de
+`GET /admin/dashboards/{dashboardId}/publications`.
+
+**Criterio de aceptación.**
+- La lista sale de `GET /admin/dashboards/{dashboardId}/publications`, más
+  recientes primero, y **no se reordena en el front**.
+- `adaptarPublicacion` **renombra y reformatea**: el único normalizado es `?? []`
+  sobre las ocho listas del diff, porque está medido que la misma clave vuelve
+  `[]` en las filas nuevas y `null` en las viejas — el diff se persiste en `jsonb`
+  y `de881e1` cambió la serialización después de escribirlas.
+- Un `diff` en `null` **no se colapsa a un diff en cero**: «no hay registro de qué
+  cambió» y «no cambió nada» se pintan distinto.
+- El badge `EN PRODUCCIÓN` aparece **exactamente una vez**, y se DERIVA cruzando
+  `layoutId` contra el layout cuyo estado es `publicado`.
+- `REVERTIR A ESTA` **dispara** con el layout publicado en el path y el destino en
+  el cuerpo, y **no se pinta** ni en la fila publicada ni cuando no hay layout
+  publicado. Es la misma regla que el servicio hace cumplir con
+  `CONFLICT_REVERT_SELF`.
+- El nombre del autor se resuelve en la superficie contra `GET /admin/users`; si no
+  resuelve, la línea arranca por el rol y **el uuid no aparece en el DOM**.
+- El nombre de la métrica sale del catálogo; si no resuelve, «MÉTRICA FUERA DEL
+  CATÁLOGO» y nunca el uuid.
+- Las cuatro cosas que el dibujo pide y el cable no da quedan **declaradas y sin
+  componer**, con una prueba que atestigua su ausencia.
+- `npm run pen-pantallas`, `npm run admin-drift` y `npm run design-lint` en verde.
+
+**Construida el 2026-09-30.** `src/surfaces/builder/VersionHistory.tsx`,
+`VersionCard.tsx` y `cambios.ts`; el cable, el adaptador y los dos hooks.
+
+**CERRADA EL 2026-09-30, Y CONTRA QUÉ:** cableada en `Builder.tsx` y **abierta en
+la aplicación corriendo** contra el binario de `:4010` levantado desde el fork
+—login `dev@synapse.local`, tenant `e65f81ae…`—. No es una foto de la semilla: las
+cinco filas de «Marca» son las que el servicio devolvió ese día, con sus autores,
+sus fechas y sus diffs, y los seis contadores de la primera cruzan con las diez
+líneas que pinta. **Los tres casos se miraron**, no sólo el feliz:
+
+| Qué se abrió | Qué se vio |
+|---|---|
+| «Marca» · 5 publicaciones | El badge `EN PRODUCCIÓN` una sola vez, `REVERTIR A ESTA` en las otras cuatro, `REVERSIÓN` en la fila del rollback |
+| «Overview» · 0 publicaciones | El vacío de sistema, no «cargando» ni un error — es el caso medido: tiene layout publicado y cero filas |
+| El OTRO cliente del mismo nombre | El título dice sólo el cliente: `/config/me` es del usuario que mira y no resuelve el nombre de un dashboard ajeno |
+
+**El 200 del revert sigue SIN MEDIR contra el servicio, y es a propósito:**
+correrlo publica una versión nueva y cambia el layout que la consola está
+sirviendo. La cadena está cubierta de punta a punta en
+`tests/surfaces/builder/historialCableado.test.tsx`, que afirma el **método, la
+URL con el layout publicado y el cuerpo con el destino** — y una mutación que
+invierte los dos ids la mata.
+
+**Y el cableado destapó dos defectos más, los dos del chrome y los dos invisibles
+hasta que hubo una pantalla que montar:**
+
+- **`BuilderChrome` no distinguía `contexto` de `composicion`.** La tabla de
+  `pantallas.ts` dice «Contexto · volver a editar» desde el 2026-09-15 y el
+  componente las mandaba a las dos al mismo bloque, así que B6 ofrecía `VISTA
+  PREVIA`, `PUBLICAR` y el contador de cambios sin guardar sobre una pantalla de
+  sólo lectura. El `.pen` lo dibuja explícito: frame `Volver`, `gwJUk`, icono
+  `pencil` y `VOLVER A EDITAR`, **y nada más a la derecha**. No se vio antes
+  porque la única pantalla con esa forma mostraba un aviso de «Pendiente», y un
+  aviso no tiene nada que publicar.
+- **La entrada de `PENDIENTES` decía «Está en construcción»** con los tres
+  archivos escritos y probados. Un aviso que describe el estado del TRABAJO y no
+  el del producto es un defecto, y lo leía el admin del cliente — la misma clase
+  que las dos entradas vencidas que se corrigieron esa mañana. `PENDIENTES` quedó
+  **vacío**, con la forma declarada, igual que `Admin.tsx` desde el 2026-09-25.
+
+**Y un tercero que no es del chrome:** `useRevertLayout` tomaba el layout
+publicado como parámetro del hook, lo que obligaba al contenedor a derivar por
+**segunda vez** cuál es —una vez para pintar el badge y otra para armar la URL—.
+Los dos ids pasaron a viajar en la mutación, que es como `VersionHistory` ya los
+entregaba: así no queda un campo del callback ignorado, que se lee como si se
+usara.
+
+**El título puede no tener nombre de dashboard, y se dice.** El único cable
+transcripto con nombres de dashboard es `/config/me`, que es del usuario que
+MIRA. Para un cliente ajeno haría falta `GET /admin/tenants/{tenantId}/dashboards`
+—que el servicio tiene desde `168a761` y **nuestro cable no declara**: es trabajo
+nuestro, no un hueco suyo, y por eso no entró en la lista de faltantes de la
+pantalla—. Sin nombre el título dice sólo el cliente: decir menos, no decir algo
+falso.
+
+**Doce pruebas nuevas de cableado y siete mutaciones sobre línea de base verde,
+las siete muertas**: el `dashboardId` que no sale de la versión, el chrome que
+vuelve a ofrecer composición, el nombre de dashboard que nunca se resuelve, los
+dos ids de la reversión invertidos, la lista de usuarios que no llega, el
+historial pedido a la ruta de `layouts`, y B6 vuelta a declarar pendiente.
+
+**DOS ARREGLOS QUE ESTA PANTALLA DESTAPÓ, Y LOS DOS ERAN MENTIRAS EN PRODUCCIÓN.**
+
+`EstadoDeLayout` declaraba dos estados y el dominio tiene **tres**. `archived` no
+es raro: es **el más común** —4 de los 7 layouts medidos—. Con el enum en dos,
+`ESTADOS['archived']` era `undefined` y el `?? 'borrador'` entregaba **`borrador`
+para las cuatro versiones archivadas**, así que `ContextView` ofrecía editar
+cuatro versiones que no se pueden editar. El fallback estaba escrito como «la
+lectura SEGURA» y con la clave ausente era una afirmación falsa con cara de
+prudencia — el mismo modo de falla que el PascalCase, con otra causa.
+
+**Y la prueba que debía atraparlo lo CODIFICABA.** `tests/api/admin.test.tsx`
+decía «un estado desconocido cae en `borrador`» y usaba `archived` como ejemplo de
+desconocido. No verificaba un fallback: verificaba la mentira, y pasaba porque
+estaba escrita mirando el mapa de `ESTADOS` en vez del enum del cable. Es el
+antecedente del 2026-08-20 otra vez.
+
+El segundo: `adaptarVersion` **tiraba `dashboard_id`**, que el cable manda desde el
+multi-dashboard. Sin él no hay manera de saber qué historial pedir.
+
+**DOS FRASES DEL PROPIO PLAN ESTABAN MAL, Y LAS DOS SE ESCRIBIERON DE UNA LECTURA.**
+Decía que `tabs_added` trae la **`key`** de la pestaña: trae el **nombre
+normalizado** —`tabKey(name)` es `ToLower(TrimSpace(name))`—, así que cruzarlo
+contra `TabDeLayout.clave` no encuentra nada. Y decía que las colecciones vacías
+vuelven «`null`, no `[]`»: vuelven **de las dos formas**. Las dos las atrapó abrir
+`internal/core/dashboard/diff.go`, no releer el plan.
+
+**Verificada por mutación, nueve casos sobre línea de base verde** —1496 pruebas—.
+Ocho mueren de entrada: el `?? []` del adaptador, `ESTADOS.archived`,
+`dashboardId`, una lista del diff olvidada, un glifo reasignado, el `layoutId` y
+el `toLayoutId` invertidos, la prop del callback mal escrita —que **compila**, por
+el spread condicional— y el ancla borrada del archivo.
+
+**La novena SOBREVIVIÓ y era la prueba que faltaba.** Borrar el `!enProduccion` de
+`VersionCard` no hacía fallar nada, porque la pantalla nunca le pasa `onRevertir`
+en la fila publicada: la guarda quedaba sin cubrir. **No se borró la guarda, se
+cubrió** — la tarjeta es reusable y el patrón de `enabled` del `.pen` es normativo.
 
 ### ➕ F5.18 ✅ `ROLES Y COMPOSICIÓN` en A2 · el desglose por rol
 **Descripción.** El séptimo y último punto mediano de la auditoría

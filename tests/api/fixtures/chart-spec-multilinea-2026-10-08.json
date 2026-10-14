@@ -1,0 +1,205 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "config": {
+    "bar": {
+      "minBandSize": 5
+    }
+  },
+  "data": {
+    "values": [
+      {
+        "MES": "2026-01-01",
+        "PLATAFORMA": "Google",
+        "REVENUE": 447444.15
+      },
+      {
+        "MES": "2026-01-01",
+        "PLATAFORMA": "Meta",
+        "REVENUE": 131758.62
+      },
+      {
+        "MES": "2026-01-01",
+        "PLATAFORMA": "TikTok",
+        "REVENUE": 0
+      },
+      {
+        "MES": "2026-02-01",
+        "PLATAFORMA": "Google",
+        "REVENUE": 263634.85
+      },
+      {
+        "MES": "2026-02-01",
+        "PLATAFORMA": "Meta",
+        "REVENUE": 126795.38
+      },
+      {
+        "MES": "2026-02-01",
+        "PLATAFORMA": "TikTok",
+        "REVENUE": 0
+      },
+      {
+        "MES": "2026-03-01",
+        "PLATAFORMA": "Google",
+        "REVENUE": 397392.59
+      },
+      {
+        "MES": "2026-03-01",
+        "PLATAFORMA": "Meta",
+        "REVENUE": 263266.97
+      },
+      {
+        "MES": "2026-03-01",
+        "PLATAFORMA": "TikTok",
+        "REVENUE": 0
+      },
+      {
+        "MES": "2026-04-01",
+        "PLATAFORMA": "Google",
+        "REVENUE": 177945.65
+      },
+      {
+        "MES": "2026-04-01",
+        "PLATAFORMA": "Meta",
+        "REVENUE": 135795.39
+      },
+      {
+        "MES": "2026-04-01",
+        "PLATAFORMA": "TikTok",
+        "REVENUE": 0
+      },
+      {
+        "MES": "2026-05-01",
+        "PLATAFORMA": "Google",
+        "REVENUE": 712088.36
+      },
+      {
+        "MES": "2026-05-01",
+        "PLATAFORMA": "Meta",
+        "REVENUE": 214317.58
+      },
+      {
+        "MES": "2026-05-01",
+        "PLATAFORMA": "TikTok",
+        "REVENUE": 374.96
+      },
+      {
+        "MES": "2026-06-01",
+        "PLATAFORMA": "Google",
+        "REVENUE": 507897.17
+      },
+      {
+        "MES": "2026-06-01",
+        "PLATAFORMA": "Meta",
+        "REVENUE": 142131.38
+      },
+      {
+        "MES": "2026-06-01",
+        "PLATAFORMA": "TikTok",
+        "REVENUE": 653.08
+      },
+      {
+        "MES": "2026-07-01",
+        "PLATAFORMA": "Google",
+        "REVENUE": 545513.34
+      },
+      {
+        "MES": "2026-07-01",
+        "PLATAFORMA": "Meta",
+        "REVENUE": 195353.09
+      },
+      {
+        "MES": "2026-07-01",
+        "PLATAFORMA": "TikTok",
+        "REVENUE": 0
+      },
+      {
+        "MES": "2026-08-01",
+        "PLATAFORMA": "Google",
+        "REVENUE": 613386.49
+      },
+      {
+        "MES": "2026-08-01",
+        "PLATAFORMA": "Meta",
+        "REVENUE": 205300.44
+      },
+      {
+        "MES": "2026-08-01",
+        "PLATAFORMA": "TikTok",
+        "REVENUE": 0
+      }
+    ]
+  },
+  "encoding": {
+    "color": {
+      "field": "PLATAFORMA",
+      "title": "Plataforma",
+      "type": "nominal"
+    },
+    "tooltip": [
+      {
+        "field": "PLATAFORMA",
+        "title": "Plataforma",
+        "type": "nominal"
+      },
+      {
+        "field": "MES",
+        "format": "%b %Y",
+        "timeUnit": "utcyearmonth",
+        "title": "Mes",
+        "type": "temporal"
+      },
+      {
+        "field": "REVENUE",
+        "format": ",.6~f",
+        "title": "Revenue",
+        "type": "quantitative"
+      }
+    ],
+    "x": {
+      "axis": {
+        "title": "Mes"
+      },
+      "field": "MES",
+      "sort": null,
+      "timeUnit": "utcyearmonth",
+      "type": "temporal"
+    },
+    "y": {
+      "axis": {
+        "format": ".3~s",
+        "labelExpr": "replace(datum.label, 'G', 'B')",
+        "title": "Ingreso (USD)"
+      },
+      "field": "REVENUE",
+      "sort": null,
+      "type": "quantitative"
+    }
+  },
+  "mark": {
+    "point": true,
+    "type": "line"
+  },
+  "title": "Ingreso de Paid Media por plataforma (Ene-Ago 2026, USD)",
+  "usermeta": {
+    "snowflake": {
+      "color_mapping": {
+        "Google": {
+          "hex": "#4c78a8",
+          "name": "blue"
+        },
+        "Meta": {
+          "hex": "#f58518",
+          "name": "orange"
+        },
+        "TikTok": {
+          "hex": "#e45756",
+          "name": "red"
+        }
+      },
+      "columnRoles": {
+        "MES": "dimension",
+        "REVENUE": "measure"
+      }
+    }
+  }
+}

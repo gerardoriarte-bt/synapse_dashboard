@@ -34,8 +34,18 @@
 import { Label } from '../primitives/Label'
 import { Value } from '../primitives/Value'
 import { hue } from '../plots/core/seriesColor'
+import { UnknownPlotState } from '../states/UnknownPlotState'
 import type { NumberOptions } from '../format'
-import type { BodyProps } from '../types'
+import type { BodyProps, FamiliaDeDibujo } from '../types'
+
+/** Los gráficos que este cuerpo sabe dibujar HOY.
+ *
+ *  **`table` es de los seis que no son plots** y es el único que §5 le da a
+ *  `tabular`, así que la lista es corta por el repertorio y no por lo
+ *  construido. Se declara igual: hace que pedirlo y no pedir nada dibujen lo
+ *  mismo, y que cualquier otro id —uno de `ranking`, que es la otra forma a la
+ *  que `table` sirve— caiga en el estado y no en esta tabla. */
+const DIBUJA = ['table'] as const
 
 export type TableParams = {
   /** Qué columnas mostrar, en orden. Sin esto se muestran todas. */
@@ -45,7 +55,30 @@ export type TableParams = {
 const ABBREVIATE_FROM = 1000
 const MAX_DECIMALS = 2
 
-export function TableBody({ value, params, family, format }: BodyProps<'tabular', TableParams>) {
+/** **La familia es anulable SOLO en este cuerpo** · 2026-10-09.
+ *
+ *  En una tabla la familia no pinta ningún dato: es el punto de 6 px junto a
+ *  la primera celda, una marca de pertenencia. Las cifras van en `text-ink`.
+ *  Así que una tabla de una consulta que el catálogo no conoce —el chat de
+ *  pestaña, donde `family` llega vacía— se puede dibujar entera **omitiendo la
+ *  marca**, sin elegir un color. Los cuerpos de gráfico no: ahí la familia ES
+ *  el color del dato, y sin ella no hay dibujo honesto.
+ *
+ *  Es más ancho que `BodyProps`, así que el registro lo sigue aceptando; el que
+ *  monta con `null` es `ChatFigure`, por `TableWithoutFamily`. */
+export type TableBodyProps = Omit<BodyProps<'tabular', TableParams>, 'family'> & {
+  family: FamiliaDeDibujo | null
+}
+
+export function TableBody({ value, params, family, grafico, format }: TableBodyProps) {
+  // La comprobación va ANTES de dibujar, no dentro de una rama · mismo idioma
+  // que `SeriesBody` y `ForecastBody`: resuelta abajo, la rama que se olvide se
+  // ve bien.
+  const conocidos: readonly string[] = DIBUJA
+  if (grafico !== undefined && !conocidos.includes(grafico)) {
+    return <UnknownPlotState grafico={grafico} />
+  }
+
   const { columnas: requested } = params
 
   const columns =
@@ -112,15 +145,34 @@ export function TableBody({ value, params, family, format }: BodyProps<'tabular'
                     </td>
                   )
                 }
+                // ── **UNA COLUMNA NUMÉRICA SIGUE ALINEADA A LA DERECHA AUNQUE
+                //      LA CELDA FALTE** · 2026-10-01 ──────────────────────────
+                //
+                // La rama de arriba exige `typeof cell === 'number'`, así que una
+                // celda numérica AUSENTE cae acá y perdía el `text-right`: el
+                // `—` se pintaba a la izquierda de una columna cuyo encabezado
+                // está a la derecha, y quedaba pegado a la cifra de la columna
+                // anterior. Medido en `platform_return` del mes en curso, donde
+                // `sales` y `roas` no vienen: se leía `1,225.14—`.
+                //
+                // Se decide por `c.numerica` —lo que la COLUMNA declara— y no
+                // por el tipo del valor, que es justamente lo que falta.
+                // El `${…}` va ENTRE ESPACIOS y aporta la utilidad entera ·
+                // `tests/tokens/escala.test.ts` lo exige, y tiene razón: pegado a
+                // `text-ink` el escáner de Tailwind lee `text-ink${…}` y la clase
+                // no se emite. Compila, el DOM sale bien y se pinta sin alinear.
+                const alineacion = c.numerica ? 'text-right' : ''
                 return (
-                  <td key={c.clave} className="py-1 font-body text-cuerpo text-ink">
+                  <td key={c.clave} className={`py-1 font-body text-cuerpo text-ink ${alineacion}`}>
                     {j === 0 ? (
                       <span className="flex items-center gap-2 min-w-0">
-                        <span
-                          className="w-1.5 h-1.5 rounded-xs shrink-0"
-                          style={{ background: hue({ family }) }}
-                          aria-hidden
-                        />
+                        {family === null ? null : (
+                          <span
+                            className="w-1.5 h-1.5 rounded-xs shrink-0"
+                            style={{ background: hue({ family }) }}
+                            aria-hidden
+                          />
+                        )}
                         <span className="truncate">{cell ?? '—'}</span>
                       </span>
                     ) : (

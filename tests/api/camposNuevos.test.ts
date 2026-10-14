@@ -6,8 +6,8 @@
  *  son las que se pueden equivocar sin que nada falle.
  */
 import { describe, expect, it } from 'vitest'
-import { adaptContext, adaptTab } from '@/api/adapt'
-import type { WireContext, WireTabWithPanels } from '@/api/adapt'
+import { adaptContext, adaptPayload, adaptTab } from '@/api/adapt'
+import type { WireContext, WirePayload, WireTabWithPanels } from '@/api/adapt'
 
 const base = {
   user: { id: 'u', first_name: 'D', last_name: 'L', email: 'd@l' },
@@ -62,17 +62,92 @@ describe('el rango del período · B1.1', () => {
   })
 })
 
+describe('doce entradas que no son doce meses · 2026-09-29', () => {
+  /** El fixture **está capturado, no escrito de memoria**: es la respuesta de
+   *  `GET /config/me` contra `de881e1` el 2026-09-29, tal cual. Marzo dos veces
+   *  y febrero ausente, en `periods` y en `periods_detail`.
+   *
+   *  La causa es `availablePeriods()` de su `dd_config_service.go`, que resta
+   *  meses con `now.AddDate(0, -i, 0)` sin normalizar al día 1: «29 de febrero»
+   *  no existe y Go desborda al 1 de marzo. Pasa 29 días de los 365, y por eso
+   *  la lista salía bien el resto del año. */
+  const capturado = [
+    '2026-09', '2026-08', '2026-07', '2026-06', '2026-05', '2026-04',
+    '2026-03', '2026-03', '2026-01', '2025-12', '2025-11', '2025-10',
+  ]
+
+  it('un id repetido se colapsa · es una CLAVE, no un dato', () => {
+    const ctx = adaptContext({
+      ...base,
+      periods: capturado,
+      periods_detail: capturado.map((k) => ({
+        key: k,
+        grain: 'month',
+        start: `${k}-01`,
+        end: `${k}-01`,
+      })),
+    } as unknown as WireContext)
+
+    // Once, no doce: la entrada repetida desaparece.
+    expect(ctx.periodos).toHaveLength(11)
+    expect(ctx.periodos.filter((p) => p.id === '2026-03')).toHaveLength(1)
+    // **Y no hay dos con el mismo id**, que es la garantía que sostiene
+    // `periodos.find(p => p.id === activeId)` y la `key` de cada `<option>`.
+    expect(new Set(ctx.periodos.map((p) => p.id)).size).toBe(ctx.periodos.length)
+  })
+
+  it('el ORDEN del cable se conserva, y gana la PRIMERA aparición', () => {
+    // Deduplicar reordenando sería cambiar cuál período queda primero, y la
+    // superficie cae al primero cuando el activo no está en la lista.
+    const ctx = adaptContext({
+      ...base,
+      periods: capturado,
+    } as unknown as WireContext)
+
+    expect(ctx.periodos.map((p) => p.id)).toEqual([
+      '2026-09', '2026-08', '2026-07', '2026-06', '2026-05', '2026-04',
+      '2026-03', '2026-01', '2025-12', '2025-11', '2025-10',
+    ])
+  })
+
+  it('el mes que falta NO se rellena', () => {
+    // Febrero no está y el front no lo agrega: no sabe si el servicio no lo
+    // tiene o no lo quiere dar, y un período que el batch va a rechazar es peor
+    // que uno ausente. Se pierde hasta que ellos normalicen.
+    const ctx = adaptContext({
+      ...base,
+      periods: capturado,
+    } as unknown as WireContext)
+
+    expect(ctx.periodos.map((p) => p.id)).not.toContain('2026-02')
+  })
+})
+
 describe('el alcance · B1.1', () => {
-  it('`multi_tenant` es `plataforma`, y trae la lista', () => {
+  it('`multi_tenant` es `plataforma`, y la lista trae la FORMA CORTA', () => {
+    // **Las dos son distintas a propósito, y por eso esta prueba sirve.** Hasta
+    // el 2026-09-28 el fixture mandaba sólo `name` y el adaptador leía `name`:
+    // la prueba pasaba y el navbar mostraba el nombre largo en el selector con
+    // la forma corta al lado, dos nombres para el mismo cliente en la misma
+    // barra. **Con `label === name` ninguna aserción distingue cuál se leyó.**
+    //
+    // Se vio abriendo la aplicación, no acá. Lo que esta prueba hace ahora es
+    // que no vuelva a pasar sin avisar.
     const ctx = adaptContext({
       ...base,
       periods: [],
-      scope: { kind: 'multi_tenant', tenants: [{ id: 'a', name: 'UA' }, { id: 'b', name: 'Terpel' }] },
+      scope: {
+        kind: 'multi_tenant',
+        tenants: [
+          { id: 'a', name: 'Under Armour México', label: 'UA México' },
+          { id: 'b', name: 'Terpel Colombia', label: 'Terpel' },
+        ],
+      },
     } as unknown as WireContext)
 
     expect(ctx.alcance).toBe('plataforma')
     expect(ctx.tenantsDisponibles).toEqual([
-      { id: 'a', etiqueta: 'UA' },
+      { id: 'a', etiqueta: 'UA México' },
       { id: 'b', etiqueta: 'Terpel' },
     ])
   })
@@ -141,5 +216,111 @@ describe('la nota del panel · B1.13', () => {
 
   it('la nota presente pasa tal cual · es copy del admin y no se toca', () => {
     expect(adaptTab(conNota('Excluye devoluciones')).panels[0]?.nota).toBe('Excluye devoluciones')
+  })
+})
+
+describe('el gráfico del panel · llegó el 2026-09-28', () => {
+  const conChart = (chart: string): WireTabWithPanels =>
+    ({
+      tab: {
+        id: 'tab-1',
+        name: 'T',
+        key: 't',
+        operational_question: '¿?',
+        sort_order: 1,
+        icon: '',
+        chat_suggestions: [],
+      },
+      panels: [
+        {
+          id: 'p-1',
+          metric_id: 'm-1',
+          type: 'composition',
+          col_start: 1,
+          col_span: 3,
+          row_span: 4,
+          note: '',
+          chart,
+        },
+      ],
+    }) as unknown as WireTabWithPanels
+
+  it('vacío se omite · es el gráfico por defecto del cuerpo', () => {
+    // Los doce paneles publicados llegan así, medido. Pasarlo como `''`
+    // obligaría a cada cuerpo a distinguirlo de «no declarado».
+    expect(adaptTab(conChart('')).panels[0]).not.toHaveProperty('grafico')
+  })
+
+  it('presente pasa', () => {
+    expect(adaptTab(conChart('waterfall')).panels[0]?.grafico).toBe('waterfall')
+  })
+
+  it('UNO DESCONOCIDO SE PASA IGUAL · no se descarta en silencio', () => {
+    // **Es la decisión que importa de este campo.** Ellos no lo validan contra
+    // el repertorio —«eso es del front, que tiene los 49»—, así que un id que
+    // no existe puede llegar.
+    //
+    // Descartarlo acá haría que el panel cayera al gráfico por defecto **sin que
+    // nadie se entere**: una cascada dibujada como dona se ve perfecta y miente.
+    // El producto decidió que el panel lo declare, y para eso el cuerpo tiene
+    // `UnknownPlotState` — pero sólo lo puede declarar si el valor le llega.
+    expect(adaptTab(conChart('inventado')).panels[0]?.grafico).toBe('inventado')
+  })
+})
+
+describe('la key de la pestaña · ya no cae al id', () => {
+  it('pasa la que el servicio manda', () => {
+    // Caía al `id` con la razón «es estable y único», y era falsa a medias: el
+    // id es estable dentro de una VERSIÓN y se recrea en la siguiente. Por eso
+    // un rol restringido perdía sus pestañas al publicar.
+    const t = adaptTab({
+      tab: {
+        id: 'uuid-de-fila',
+        key: 'overview',
+        name: 'T',
+        operational_question: '¿?',
+        sort_order: 1,
+        icon: '',
+        chat_suggestions: [],
+      },
+      panels: [],
+    } as unknown as WireTabWithPanels)
+
+    expect(t.tab.key).toBe('overview')
+    expect(t.tab.key).not.toBe('uuid-de-fila')
+  })
+})
+
+describe('`SIN_PERMISO` pinta el copy DEL SERVICIO · 2026-09-29', () => {
+  it('pasa `reason` y `unlocks_with` en vez de una frase nuestra', () => {
+    // **Se pidieron, llegaron en `de881e1`, y estuvimos un día sin usarlas.**
+    // `ForbiddenState` pintaba «Esta métrica no está disponible para tu rol»,
+    // escrita por nosotros — y la regla dice que el dueño del texto que describe
+    // datos es quien los emite, no el adaptador.
+    //
+    // **El modo de falla era invisible**: el campo llega, el front lo ignora, y
+    // la pantalla se ve bien. Sólo se nota comparando con lo que el servicio
+    // manda, que es lo que esta prueba hace.
+    const p = adaptPayload({
+      status: 'FORBIDDEN',
+      request_from: 'admin',
+      reason: 'Tu rol no tiene acceso a esta métrica',
+      unlocks_with: 'Pedile al administrador del tenant que la habilite para tu rol',
+    } as WirePayload)
+
+    expect(p).toEqual({
+      estado: 'SIN_PERMISO',
+      solicitarA: 'admin',
+      razon: 'Tu rol no tiene acceso a esta métrica',
+      desbloqueaCon: 'Pedile al administrador del tenant que la habilite para tu rol',
+    })
+  })
+
+  it('un servicio que NO las manda no deja el panel mudo', () => {
+    // Un backend más viejo o un fixture sin los campos: caen a cadena vacía y
+    // `ForbiddenState` usa su frase de respaldo. **Un panel sin frase no dice
+    // nada**, que es peor que decirlo con nuestras palabras.
+    const p = adaptPayload({ status: 'FORBIDDEN', request_from: 'admin' } as WirePayload)
+    expect(p).toEqual({ estado: 'SIN_PERMISO', solicitarA: 'admin', razon: '', desbloqueaCon: '' })
   })
 })

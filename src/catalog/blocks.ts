@@ -25,6 +25,28 @@ export function acceptsShape(table: BlockTable, type: PanelType, shape: Shape): 
   return table.get(type)?.formasAceptadas.includes(shape) ?? false
 }
 
+/** El ÚNICO tipo que acepta esta forma, o `null` si son cero o varios.
+ *
+ *  **Sirve para dibujar por la forma sin elegir a dedo** · §7 de
+ *  `PROPUESTA-2026-09-22-divergencias-con-el-pen.md`, cerrada el 2026-10-08.
+ *  Un `tabular` sólo lo acepta `table`, así que dibujarlo como tabla no es una
+ *  decisión: es lo que dice la tabla de `/config/blocks`. Un `escalar` lo
+ *  aceptan `kpi` y `gauge`, y ahí elegir uno sí lo sería — por eso con dos o
+ *  más devuelve `null` y no el primero.
+ *
+ *  **`blocked` no cuenta, y se excluye por TIPO**: el panel bloqueado no
+ *  dibuja un dato. El cable lo declara con el comodín `'*'`, pero
+ *  `adapt.ts` lo expande a todas las formas dibujables antes de llegar acá, así
+ *  que mirar el comodín no lo excluía. Lo encontró abrir el chat contra el
+ *  servicio: un `tabular` salía con «más de un tipo la acepta» y las pruebas
+ *  pasaban, porque su tabla traía el comodín del cable y no la ya adaptada. */
+export function soleTypeFor(table: BlockTable, shape: Shape): PanelType | null {
+  const tipos = [...table.values()].filter(
+    (b) => b.tipo !== 'blocked' && b.formasAceptadas.includes(shape),
+  )
+  return tipos.length === 1 ? (tipos[0] as Block).tipo : null
+}
+
 /** ¿Los spans caen en el rango declarado del tipo? La otra mitad. */
 export function spanInRange(
   table: BlockTable,

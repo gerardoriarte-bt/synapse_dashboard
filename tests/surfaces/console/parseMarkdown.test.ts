@@ -15,12 +15,16 @@
  */
 import { describe, expect, it } from 'vitest'
 import { parsear } from '@/surfaces/console/parseMarkdown'
-import type { Bloque } from '@/surfaces/console/parseMarkdown'
+import type { Bloque, Trozo } from '@/surfaces/console/parseMarkdown'
 
 /** El texto plano de un bloque, para no repetir la estructura en cada aserción. */
 function plano(b: Bloque): string {
   if (b.tipo === 'seccion') return b.texto
   if (b.tipo === 'parrafo') return b.trozos.map((t) => t.texto).join('')
+  if (b.tipo === 'tabla') {
+    const fila = (f: Trozo[][]) => f.map((c) => c.map((t) => t.texto).join('')).join(' | ')
+    return [fila(b.encabezado), ...b.filas.map(fila)].join(' / ')
+  }
   return b.items.map((i) => i.map((t) => t.texto).join('')).join(' · ')
 }
 
@@ -120,5 +124,62 @@ describe('texto A MEDIO LLEGAR · el stream entrega fragmentos', () => {
 
   it('el texto vacío no produce bloques', () => {
     expect(parsear('').bloques).toEqual([])
+  })
+})
+
+describe('las tablas del agente · 2026-10-07', () => {
+  /** **Es lo que más escribe un analista**, y hasta hoy se unía en un párrafo de
+   *  pipes. La entrada es la que devuelve `SYNAPSE_UA` en Snowflake
+   *  Intelligence: encabezado, separador y filas con cifras como texto. */
+  const TABLA = [
+    'Resumen.',
+    '',
+    '| Canal | ROAS | Ingresos |',
+    '|---|---:|---:|',
+    '| Meta | 4.2 | $1,200.50 |',
+    '| Google | **3.1** | $980 |',
+  ].join('\n')
+
+  it('una tabla markdown es una TABLA, no un párrafo de pipes', () => {
+    const { bloques } = parsear(TABLA)
+    expect(bloques.map((b) => b.tipo)).toEqual(['parrafo', 'tabla'])
+    expect(plano(bloques[1] as Bloque)).toBe(
+      'Canal | ROAS | Ingresos / Meta | 4.2 | $1,200.50 / Google | 3.1 | $980',
+    )
+  })
+
+  it('las columnas de cifras se marcan numéricas · y la de texto no', () => {
+    const tabla = parsear(TABLA).bloques[1] as Extract<Bloque, { tipo: 'tabla' }>
+    expect(tabla.numericas).toEqual([false, true, true])
+  })
+
+  it('a MEDIO LLEGAR, el encabezado solo ya es tabla · no un párrafo que salta', () => {
+    for (const prefijo of [
+      '| Canal | ROAS |',
+      '| Canal | ROAS |\n|--',
+      '| Canal | ROAS |\n|---|---|\n| Me',
+    ]) {
+      const { bloques } = parsear(prefijo)
+      expect(bloques.map((b) => b.tipo)).toEqual(['tabla'])
+      expect(plano(bloques[0] as Bloque)).not.toContain('-')
+    }
+  })
+
+  it('una columna MIXTA no es numérica · una cifra suelta no alinea a todas', () => {
+    const tabla = parsear('| Tienda | V |\n|---|---|\n| 101 | 1 |\n| Centro | 2 |').bloques[0] as Extract<Bloque, { tipo: 'tabla' }>
+    expect(tabla.numericas).toEqual([false, true])
+  })
+
+  it('sin filas todavía, ninguna columna es numérica · no hay de qué deducirlo', () => {
+    const tabla = parsear('| Canal | ROAS |').bloques[0] as Extract<Bloque, { tipo: 'tabla' }>
+    expect(tabla.numericas).toEqual([false, false])
+  })
+
+  it('una fila corta se completa con celdas vacías · no corre las columnas', () => {
+    const tabla = parsear('| a | b |\n|---|---|\n| 1 |').bloques[0] as Extract<
+      Bloque,
+      { tipo: 'tabla' }
+    >
+    expect(tabla.filas[0]?.length).toBe(2)
   })
 })

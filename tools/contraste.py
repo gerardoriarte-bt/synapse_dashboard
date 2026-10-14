@@ -40,6 +40,9 @@ import sys
 
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
 CSS = RAIZ / "src" / "tokens" / "tokens.css"
+# Los tokens de una decisión humana que el `.pen` todavía no declara · 2026-10-06.
+# Se miden igual: un rojo de acción que no se lee es tan inservible como el resto.
+DECISIONES = RAIZ / "src" / "tokens" / "decisiones.css"
 
 # Texto normal. Los `Label` del producto son mono 10px, que es texto chico: el
 # umbral de 3:1 para «texto grande» no aplica a nada de lo que medimos acá.
@@ -120,6 +123,10 @@ PARES: list[tuple[str, str | list[str], str]] = [
     ("ink", ["w2", "dock"], "Pestaña activa · texto sobre wash sobre el navbar"),
     ("ink", ["w2", "elev"], "Hilo activo del riel · texto sobre wash"),
     ("ink", ["w2", "panel"], "Botón de superficie sobre wash sobre panel"),
+    # Lo destructivo · `decisiones.css` · D4 de la auditoría del 2026-10-06.
+    ("peligro", "panel", "Quitar una pestaña o un panel"),
+    ("peligro", "bg", "Quitar, sobre el lienzo del builder"),
+    ("peligro", ["w2", "panel"], "Quitar, dentro de una tarjeta del builder"),
 ]
 
 
@@ -179,11 +186,17 @@ def main() -> int:
         return 2
 
     css = CSS.read_text(encoding="utf-8")
+    extra = DECISIONES.read_text(encoding="utf-8") if DECISIONES.exists() else ""
     temas = {
         # El oscuro ES `@theme static`: sin atributo de tema, la consola se ve
         # como el `.pen`. El claro solo redefine, así que hereda lo que no toca.
-        "oscuro": bloque(css, "@theme static"),
-        "claro": {**bloque(css, "@theme static"), **bloque(css, ":root[data-theme='light']")},
+        "oscuro": {**bloque(css, "@theme static"), **bloque(extra, "@theme static")},
+        "claro": {
+            **bloque(css, "@theme static"),
+            **bloque(extra, "@theme static"),
+            **bloque(css, ":root[data-theme='light']"),
+            **bloque(extra, ":root[data-theme='light']"),
+        },
     }
     if not temas["oscuro"]:
         print("contraste ⊘ BLOQUEADO · no se pudo leer `@theme static` de tokens.css")

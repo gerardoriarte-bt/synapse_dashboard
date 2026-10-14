@@ -1,0 +1,93 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "config": {
+    "bar": {
+      "minBandSize": 5
+    }
+  },
+  "data": {
+    "values": [
+      {
+        "INVESTMENT": 63777.61,
+        "LABEL": "Google"
+      },
+      {
+        "INVESTMENT": 33562.86,
+        "LABEL": "Facebook"
+      },
+      {
+        "INVESTMENT": 3652.06,
+        "LABEL": "Konekti"
+      },
+      {
+        "INVESTMENT": 2828.08,
+        "LABEL": "Logan"
+      },
+      {
+        "INVESTMENT": 2399.13,
+        "LABEL": "Criteo"
+      },
+      {
+        "INVESTMENT": 1841.06,
+        "LABEL": "MGID"
+      },
+      {
+        "INVESTMENT": 1503.94,
+        "LABEL": "MIQ"
+      },
+      {
+        "INVESTMENT": 971.03,
+        "LABEL": "DV360"
+      },
+      {
+        "INVESTMENT": 647.96,
+        "LABEL": "TapTap"
+      }
+    ]
+  },
+  "encoding": {
+    "tooltip": [
+      {
+        "field": "INVESTMENT",
+        "format": ",.6~f",
+        "title": "Investment",
+        "type": "quantitative"
+      },
+      {
+        "field": "LABEL",
+        "title": "Label",
+        "type": "nominal"
+      }
+    ],
+    "x": {
+      "axis": {
+        "format": ".3~s",
+        "labelExpr": "replace(datum.label, 'G', 'B')",
+        "title": "Inversión (USD)"
+      },
+      "field": "INVESTMENT",
+      "sort": null,
+      "type": "quantitative"
+    },
+    "y": {
+      "axis": {
+        "title": "Plataforma"
+      },
+      "field": "LABEL",
+      "sort": "-x",
+      "type": "nominal"
+    }
+  },
+  "mark": "bar",
+  "title": "Distribución de inversión de medios por plataforma — Agosto 2026 (USD)",
+  "usermeta": {
+    "snowflake": {
+      "color_mapping": {
+        "bar": {
+          "hex": "#4c78a8",
+          "name": "blue"
+        }
+      }
+    }
+  }
+}

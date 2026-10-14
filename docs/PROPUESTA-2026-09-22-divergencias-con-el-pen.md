@@ -81,6 +81,13 @@ El mismo caso, encontrado al construir `ROLES Y COMPOSICIÓN` el 2026-09-22:
 |---|---|---|
 | nombre del rol · `font-display` **17** | va de `--text-titulo: 15px` a `--text-titulo-lg: 20px` | `text-titulo` |
 | nombre de la pestaña · `font-body` **12.5** | va de `--text-celda: 12px` a `--text-cuerpo: 13px` | `text-celda` |
+| título del selector de gráfico · `font-display` **19** · §PEN:B3 | el mismo hueco, del otro lado: `--text-titulo: 15px` a `--text-titulo-lg: 20px` | `text-titulo-lg` · agregado el 2026-09-29 |
+
+**Y con el tercero el patrón deja de poder leerse como descuido.** Los dos
+primeros salieron de una pantalla; el del 2026-09-29 sale de otra, dibujada en
+otro momento, y cae **en el mismo hueco de `font-display`** — entre 15 y 20. Tres
+nodos en ese rango es la evidencia que faltaba: o la escala gana un escalón ahí,
+o el `.pen` se alinea a los dos que ya tiene.
 
 **Esto NO es una pregunta nueva: es evidencia para la 9 de B0.9**, que ya
 pregunta si §2.3 gana una tabla para `font-body` y `font-display`. Ahí está
@@ -166,6 +173,25 @@ chrome de la consola conserva el monocromo.
 
 **Si la intención era el chrome**, eso sí es una decisión de marca que cambia el
 capítulo `Identidad`, y el agente no lo edita: se dice y se decide.
+
+### ⚠️ REABIERTA Y DECIDIDA · 2026-10-06 (humano) · el degradado va también al chrome
+
+Llegó el arte real del logotipo —`design/SYNAPSE BT COLORS - LIGHT BKG (3).png`— y
+con él la instrucción de usarlo en el header. **Se le señaló la regla del `.pen`
+antes de ejecutar** —«NUNCA EN DATOS NI EN CHROME DE PANEL»— y la decisión fue
+llevar el degradado igual a los tres navbars: consola, admin y builder.
+
+**Contradice el capítulo `Identidad`, y por eso es un pedido a diseño:** que el
+`.pen` lo refleje, o que lo discuta. El agente no edita el `.pen`.
+
+Lo que cambió en el código, en `src/surfaces/console/Wordmark.tsx`:
+
+- **La letra es la real.** La máscara anterior era una grotesca portada de
+  `synapse_v2`; la nueva sale del arte, recortada a la palabra.
+- **El degradado es el del arte, no tres tokens.** Es en dos ejes —el naranja se
+  aclara hacia abajo— y un `linear-gradient` de tres paradas no lo reproduce.
+- **La bajada «A LICENSED SOLUTION BY LO.BUENO GROUP» queda afuera**: va en azul
+  marino, desaparece en tema oscuro y a 20px no se lee.
 
 ## 4 · El punto decimal, que el `.pen` usa para las dos cosas
 
@@ -298,7 +324,22 @@ el evento `auditoria`, no dentro de la prosa**. Va con el pedido del chat.
 
 ## 7 · Con qué cuerpo se dibuja una cifra del agente · lo que la realidad dijo
 
-**Quién decide** · producto · **Bloquea** · nada, pero deja F3.6 casi sin efecto
+**Quién decide** · producto · **CERRADA el 2026-10-08 (humano) · opción a**
+
+> **Resuelta: se dibuja por la forma.** El orden que quedó en
+> `src/surfaces/console/ChatFigure.tsx`: la marca del agente; si no, el panel de
+> origen **si acepta** la forma; si no, **el único tipo** que la acepta según
+> `/config/blocks` (`soleTypeFor`). Se declara sólo cuando quedan dos candidatos
+> o más —un `escalar` es `kpi` o `gauge`— y el panel de origen no desempata.
+>
+> **Lo que se descartó a propósito:** buscar el panel de la pestaña por la
+> `metric_key` de la procedencia. En pestaña esa clave la infiere el backend
+> desde `9dc481e` cruzando nombres de columna por contención, y un cruce
+> equivocado elegiría el cuerpo de otra métrica además de declarar su BASE. Lo
+> pedido para eso está en `MENSAJE-2026-10-08-backend-procedencia-por-nombre.md`.
+>
+> **Lo que sigue sin dibujarse:** un dato sin familia. La regla de color no
+> cambió; con `9dc481e` desplegado debería llegar con más frecuencia.
 
 **Abierta el 2026-09-24, la primera vez que el chat habló contra Cortex de
 verdad.** No es una divergencia con el `.pen`: es una decisión nuestra que la
@@ -387,6 +428,205 @@ razón. Es el mismo mecanismo que ya tenían `SHAPE`, `FAMILY` y `LAYER`.
 se ve es lo que la instrucción de alta pide con sus marcadores `⟨REVISAR⟩`.
 
 ---
+
+## 9 · `MICRO TENDENCIA` no es un sparkline · lo encontró abrirlo · 2026-09-29
+
+**El plot se construyó el 2026-09-29 y pasó su QA. Después se abrió el modo mock
+y el dibujo decía otra cosa.**
+
+`Plot/MICRO TENDENCIA · Indicadores con sparkline` —580×200— no dibuja **un**
+sparkline. Dibuja **cuatro filas de indicador**, a 48 px una de otra, y cada fila
+tiene cinco piezas:
+
+| Pieza | Dónde, en el frame |
+|---|---|
+| El rótulo | `x: 0`, `$dim` · `VENTAS`, `ROAS`, `CONVERSIÓN`, `COBERTURA` |
+| El sparkline | de `x: 152` a `x: 400` · 248 de ancho sobre una banda de ~34 |
+| El punto de familia | `x: 396.4`, ⌀7.2 · uno por familia: `$fam-demanda-1`, `$fam-medios-1`, `$fam-cliente-1`, `$fam-inventario-1` |
+| La cifra | `x: 444`, `$ink` · `USD 4.28M`, `4.1x`, `1.31%`, `18 días` |
+| El delta | `x: 478–500`, `$dim` · `+6.4%`, `+0.2x`, `-0.04 pp`, `-1 día` |
+
+**`PlotSpark` dibuja sólo la línea, a alto de panel completo.** Sin rótulo, sin
+cifra, sin delta y sin punto — y ocupando cuatro veces la banda que el dibujo le
+da.
+
+**Las dos lecturas posibles, y por eso es propuesta y no arreglo:**
+
+1. **El frame es una HOJA que muestra el patrón aplicado a cuatro métricas**, y
+   el plot es **una fila**. Encaja con que el repertorio le dé `escalar` y
+   `serieTemporal`: una cifra con su micro tendencia al lado.
+2. **El frame es el plot entero**, y `spark` dibuja varias métricas juntas.
+
+**La segunda no se puede recibir.** Cuatro métricas con serie, cifra y delta cada
+una no es ninguna de las dieciséis formas del contrato — es exactamente el
+problema que §3 de `docs/ENTREGA-2026-09-29-repertorio-de-graficos.md` levanta
+para `DISPERSIÓN`, `BURBUJAS` y `CUADRANTES`: el mapa agrupó por la pregunta que
+contesta y no por el objeto que necesita.
+
+**Y la primera deja a `spark` sin poder dibujarse sobre `escalar`**, que es una
+de las dos formas que el repertorio le asigna: `ValorEscalar` es `{ forma, v }`
+y un sparkline necesita puntos. Hoy sólo se sostiene sobre `serieTemporal`, que
+es sobre lo que se lo miró.
+
+**Lo que esto enseña, que vale más que el gráfico:** el plot tenía pruebas, tenía
+su mutación muerta y `pen-graficos` salía verde — y las tres cosas son ciegas
+acá. Las pruebas leen los números **ya transcriptos** del frame al componente,
+así que si la transcripción es mala las dos capas coinciden igual; y
+`pen-graficos` verifica que el dibujo no cambió sin declararse, no que el
+componente se parezca al dibujo. Es el mismo hueco que la hoja del chat de 480
+contra 940, y lo encontró lo mismo: abrirlo.
+
+## 10 · El selector de agente del admin, que el `.pen` no dibuja · 2026-10-06
+
+**Quién decide** · diseño · **Bloquea** · nada, ya está construido
+
+En QA un admin de UA no podía preguntar nada: sin `agent_id`, el servicio
+busca el agente del rol `admin` en el tenant del usuario, y UA sólo tiene uno
+`Planner`. **Medido el 2026-10-06**: 409 sin el campo, 200 con él.
+
+El backend resolvió dejar elegir al admin —`GET /chat/agents` y `agent_id`
+en `POST /config/chat`, en `7b717aa`— y **C3 no dibuja dónde se elige**. Se
+construyó lo mínimo, en `ChatSheet.tsx`: un `<select>` bajo la línea de
+contexto, con el rótulo `AGENTE` y la etiqueta que sugiere el backend
+—`TENANT · AGENTE · ROL`—, que sólo ve quien es admin.
+
+**Lo que diseño tendría que decidir:** dónde va y cómo se ve, y si cambiar
+de agente a mitad de una conversación debe avisar que empieza otra. Hoy
+empieza otra **sin avisar**, porque el servicio fija el agente al crear el
+hilo; el riel lo muestra como una fila nueva.
+
+## 11 · Leer un gráfico: el hover que el `.pen` no dibuja · 2026-10-06
+
+**Quién decide** · diseño · **Bloquea** · nada, ya está construido
+
+El humano, mirando los gráficos de UA en QA: «no se entiende qué está
+mostrando, desde el título hasta los detalles […] debería haber hovers que
+indiquen los montos y detallar qué son los ejes». Se construyeron cinco cosas, y
+no todas son divergencias:
+
+| | Qué | ¿Del `.pen`? |
+|---|---|---|
+| Leyenda | Trazo de 18×3, nombre y valor | **Sí**: «Legend Item» de «Componentes de gráfico». No se había portado |
+| Eje del tiempo | «1 OCT», «NOV 25» | El dibujo lo tiene en los plots; `PlotSeries` no lo pintaba |
+| Unidad en barras | «26.5%» | Regla dura: ningún número desnudo |
+| **Hover con lectura** | Guía vertical, un punto por serie y una caja con la fecha y la cifra **entera** de cada serie; también con flechas del teclado | **No.** Ni el `.pen` ni `design.md` dibujan una interacción así. Decisión humana |
+| **Título del panel** | ~~Ancho natural hasta la mitad del panel~~ · **superado el mismo día por §12**: sin meta visible, el título toma la línea entera | §6 pone título y meta lado a lado; la Chart Card los apila |
+
+**Lo que diseño tendría que decidir:** cómo se ve la caja de lectura (hoy
+`$elev` con borde `w3`, mono de 10 para la fecha y de 11 para la cifra, igual
+que «Legend Item»), y si en barras alcanza con el `title` nativo, que es lo que
+hay hoy.
+
+## 12 · La BASE y la procedencia detrás de un ⓘ · 2026-10-06 · CONTRA DOS REGLAS DURAS
+
+**Quién decide** · diseño, sobre `design.md` §1.2 y §6 · **Bloquea** · nada, ya está construido
+
+**Es la divergencia más grande de este documento, y es deliberada.** `design.md`
+pide que toda métrica declare su BASE «en label arriba a la derecha» (regla 8) y
+su procedencia, que «no es letra chica» (regla 9), y §6 dice que el badge «es
+obligatorio. No es opcional». **El humano decidió el 2026-10-06 esconder las dos
+detrás de un ícono `info`**, mirando los diez paneles de UA en QA: «ensucian la
+lectura […] mientras más pequeña es la card es más molesto».
+
+**Lo que se midió antes de decidir**, en los diez paneles:
+
+| | `design.md` pide | El catálogo firmado manda |
+|---|---|---|
+| BASE | «unos 30 caracteres», una línea (§6.2) | **51 a 147** |
+| Fuente del badge | `ERP`, `Ads API` | **39 a 94** |
+
+Son descripciones donde la spec espera rótulos. Se ofrecieron tres salidas
+—dos capas (ventana y badge cortos visibles, la descripción en la ficha), todo
+detrás del ícono, o pedir a datos rótulos cortos sin tocar la interfaz— y se
+eligió **todo detrás del ícono**.
+
+**Cómo quedó** · `src/render/Panel/MetaInfo.tsx`:
+
+- La cabecera es una línea: bullet de familia, título a lo ancho, y el ⓘ.
+- La ficha se abre **pasando el cursor, con el foco del teclado o con un toque**
+  (que la deja fijada hasta tocar afuera o Escape). Trae BASE, ventana y
+  procedencia completas, sin recortar.
+- **El badge de DEGRADADO sigue visible**: es estado, no procedencia, y no
+  puede depender de que alguien abra algo.
+- La variante compacta de la cabecera (§6.1) se cayó sola: apilaba la meta
+  porque no entraba en una línea, y sin meta visible entra siempre.
+
+**Lo que conviene que diseño decida, porque cambia la spec:** reescribir las
+reglas 8 y 9 y la anatomía de §6, o volver a dos capas cuando datos entregue
+rótulos cortos. Las pruebas de §5.2 no se borraron: ahora afirman que la
+gobernanza sigue **declarada** en los siete estados, abriendo el ícono.
+
+## 13 · Administración: clientes y ficha lado a lado, usuarios en la ficha · 2026-10-09
+
+**Quién decide** · diseño · **Decidido por producto el 2026-10-09 · construido**
+
+Tres cosas que el `.pen` no dibuja así, y que producto decidió sobre
+`AUDITORIA-2026-10-08-admin-clientes-y-usuarios.md`:
+
+| El dibujo | Lo construido |
+|---|---|
+| A1 y A2 son dos frames: la lista, y la ficha que abre `ABRIR FICHA`, con migas | **Una pantalla**: la lista a la izquierda, la ficha del elegido a la derecha |
+| A2 no lista a los usuarios del cliente | **Los lista**, después de los roles, con cambiar rol y suspender |
+| A3 no tiene cola de solicitudes de acceso | **La tiene**, arriba de la tabla: aprobar y rechazar |
+
+**La razón de la primera** es la que dio el humano: entre «Clientes y
+plataforma» y «Ficha de cliente» el recorrido no se entendía. Lo construido
+antes tenía las dos como pestañas, con dos formas de elegir cliente. Juntarlas
+lado a lado deja un solo lugar donde se elige.
+
+**Lo que se le pide a diseño** es que el `.pen` lo dibuje, o que diga qué
+cambiar: la lista en 360 px con tres líneas por cliente, la tabla de usuarios
+dentro de la ficha y la tarjeta de cada solicitud.
+
+## 14 · Con qué color se dibuja un gráfico del agente que no es una métrica · 2026-10-09
+
+**Quién decide** · diseño · **Ya no bloquea** · **construido con la opción A el
+2026-10-09, por decisión humana**: primero se decidió preguntar a diseño antes de
+tocar código, y el mismo día el humano lo revirtió —«estamos bloqueando una
+capacidad necesaria de ver la data graficada correctamente por un tema de
+color»—. Lo que se le pide a diseño ahora es **afinar**, no destrabar.
+
+**Lo que pasa.** Con el backend desplegado en QA, el chat de pestaña dibuja las
+tablas y **ningún otro gráfico**: barras y líneas salen «Un gráfico que todavía
+no se dibuja · El catálogo no declaró de qué familia es, y sin eso no tiene
+color». Es la regla dura: la familia cromática se lee del catálogo, nunca se
+elige en el componente.
+
+**Tiene dos causas, y sólo una es de diseño.**
+
+| | Qué | De quién |
+|---|---|---|
+| 1 | El backend no lee el `chart_spec` porque llega como texto: `vegaLiteFieldHints` sólo acepta un objeto (`dd_chat_tab_provenance.go:144`, en `9dc481e`). Un gráfico que SÍ es una métrica del catálogo llega sin familia igual | Backend · ya pedido en `MENSAJE-2026-10-08-backend-procedencia-por-nombre.md`, punto 4 |
+| 2 | **Una consulta libre no es una métrica**, así que no tiene familia y no la va a tener: «inversión por plataforma», una comparación ad hoc. Arreglado el punto 1 —y con el cruce exacto que también pedimos— estos siguen sin color | **Diseño** · esto |
+
+**Lo que las reglas ya dicen**, y acotan las opciones: el naranja `acc` no es
+color de datos; ámbar y amarillo están prohibidos; el rojo `peligro` es de
+acción; y la familia no se elige en el componente.
+
+**Las opciones:**
+
+- **A · La escala neutra.** `ink` y los grises `w*`, con un rótulo que diga que
+  es una consulta fuera del catálogo. No elige una familia: el gris declara que
+  no la hay. **Era la recomendación del agente.** Lo que falta resolver: una
+  serie múltiple en grises pierde separación, y los pares que se pinten
+  tendrían que pasar `contraste` en los dos temas.
+- **B · Una familia propia para «consulta».** Un token nuevo que el `.pen`
+  emita, como cualquier otra familia. Más legible con varias series; es color
+  nuevo y es de diseño.
+- **C · Seguir declarándolos.** El agente puede graficar sólo lo que es una
+  métrica. Es lo que hay construido.
+
+**Lo construido es A** desde el 2026-10-09: la rampa `--color-fam-consulta-*` en
+`src/tokens/decisiones.css` —`ink` mezclado contra `panel` en oklab, sin un hex,
+cinco escalones entre 14.9:1 y 3.6:1 en los dos temas— y el rótulo «Consulta
+fuera del catálogo · se dibuja en neutro». El dato sigue diciendo
+`familia: null`; es el dibujo el que usa el neutro. Si diseño elige B o C, se
+cambia en `decisiones.css` y en `ChatFigure`, y nada más. La tabla sí se dibuja sin familia desde el 2026-10-09, porque ahí la
+familia es una marca de 6 px y no el color del dato · ver `TableBody`.
+
+**Lo que se le pide a diseño:** elegir entre A, B y C. Y, si es A o B, cómo se
+rotula —el agente lo escribió como «consulta fuera del catálogo»— y cómo se
+separan las series cuando son varias.
 
 ## Dónde vive cada una de las demás
 

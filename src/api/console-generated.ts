@@ -67,6 +67,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/config/plots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * El repertorio de gráficos, con sus mínimos y sus topes
+         * @description **B1.21 · LA ESCRIBIMOS NOSOTROS** · `b6f0e09` en
+         *     `feature/config-plots` del fork, medida el 2026-09-29: **200 con 49
+         *     entradas en 5 ms**. Estuvo pedida tres veces y no llegaba; la tabla era
+         *     nuestra entera, así que lo que faltaba era la ruta.
+         *
+         *     ── **UPSTREAM LA TOMÓ EN `c8b9247`** · leído el 2026-10-06 ─────────────
+         *
+         *     Hasta el 2026-10-01 contra upstream daba 404: no la habían tomado. En
+         *     `c8b9247` —«plots, matriz a mes, cuatro métricas y fechas ISO»— la
+         *     sirven ellos, desde un `plots.json` embebido en el binario y no desde
+         *     una tabla. **Sus 49 filas son idénticas a las de `tools/gen-plots.py`**,
+         *     comparadas campo por campo y en el mismo orden. Con eso el selector de
+         *     gráfico del builder anda contra su servicio, no sólo contra el fork.
+         *
+         *     Antes de eso, el 404 se vio tarde porque el binario de `:4010` era el
+         *     fork: nuestra propia ruta se veía como suya. Es la trampa de `CLAUDE.md`
+         *     —«antes de medir, mirá qué binario está corriendo»—.
+         *
+         *     Catálogo **GLOBAL, no por tenant** —qué puede dibujar un gráfico no
+         *     depende del cliente— y `data` es un **arreglo desnudo**, igual que
+         *     `blocks`. Eso último fue una decisión al escribirla: envolverlo en
+         *     `{"plots": [...]}` era más prolijo y obligaba a un segundo adaptador
+         *     para dos rutas que son la misma cosa.
+         *
+         *     Las 49 filas están **generadas y no transcritas** —`tools/gen-plots.py`,
+         *     desde el repertorio de v2, el `.pen`, la decisión de los mínimos y el
+         *     mapa de formas del adaptador—. Pedirle al backend transcribir 49 filas
+         *     de una tabla markdown era el modo de falla que ya costó quince filas mal
+         *     en otra tabla.
+         */
+        get: operations["getPlots"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/config/tabs/{tabId}": {
         parameters: {
             query?: never;
@@ -171,6 +219,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/chat/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Los agentes activos de todos los tenants · sólo admin
+         * @description `ChatHandler.ListAgents` → `AgentService.ListAll` → `ports.AgentOption`.
+         *     **Sólo `is_active = true`**, y de todos los tenants: un admin de
+         *     plataforma puede preguntarle al agente de otro cliente.
+         */
+        get: operations["listChatAgents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/config/chat/threads": {
         parameters: {
             query?: never;
@@ -193,6 +263,73 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/config/chat/threads/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Los mensajes persistidos de un hilo, para reabrirlo
+         * @description **Transcrita el 2026-10-09 desde `9dc481e`**, leyendo
+         *     `internal/core/ports/dd_chat_service.go` —`DDChatMessageDTO`,
+         *     `DDChatMessagesPage`— y `dd_chat_handler.go` —`ListMessages`—, y
+         *     capturada contra ese binario levantado acá con un hilo de pestaña.
+         *
+         *     **El `:id` es el UUID de `user_threads`**, no el `thread_id` entero:
+         *     `uuid.Parse(c.Param("id"))`, y un entero da 400.
+         *
+         *     **Lo que el historial guarda es menos que lo que el stream mostró.**
+         *     Por mensaje del asistente hay UN `structured_data`, el último que emitió
+         *     el turno —`st.lastStructured`, `dd_chat_service.go:639`—; las cifras
+         *     anteriores del mismo turno y el SQL no se persisten. Medido: una
+         *     respuesta con tres tablas y un gráfico se reabre con el gráfico solo.
+         */
+        get: operations["listChatMessages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/history/threads/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Quita una consulta del historial del usuario
+         * @description **Transcrita el 2026-10-09 desde `9dc481e`**, leyendo
+         *     `history_handler.go` —`DeleteThread`, `parseHistoryThreadParams`— y
+         *     `user_thread_repository.go` —`DeleteByID`—.
+         *
+         *     **Opera sobre los mismos hilos que `/config/chat/threads`**: los dos
+         *     pasan por `UserThreadService`. El `:id` es el UUID, y sólo borra hilos
+         *     del usuario del token (`WHERE user_id = ? AND id = ?`).
+         *
+         *     **Es un borrado SUAVE**: `UserThread` lleva `gorm.DeletedAt`, así que
+         *     `Delete` es un `UPDATE deleted_at`. La conversación sigue en la base;
+         *     deja de listarse.
+         *
+         *     **No aplica la regla de las decisiones** que nuestro contrato declara
+         *     —un hilo que es traza de una decisión de C4 no se borra, 409—. Hoy no
+         *     importa: C4 no existe y `esDecision` cae a `false`. El front no ofrece
+         *     borrar un hilo de decisión de todos modos.
+         */
+        delete: operations["deleteChatThread"];
         options?: never;
         head?: never;
         patch?: never;
@@ -231,6 +368,124 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/config/panels/{panelId}/drilldown/dimensions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Por qué dimensiones se puede desagregar este panel
+         * @description `DDDrillDownHandler.Dimensions` → `ddDrillDownService.Dimensions`.
+         *
+         *     **Es una lectura barata, y eso es lo que la hace útil al pintar.**
+         *     Resuelve el rol, autoriza el panel y consulta `sfspec.DrillRegistry`,
+         *     que es un mapa en memoria: **no toca Snowflake, no firma un JWT y no
+         *     usa el agente**. Se le puede preguntar por cada panel de la pestaña.
+         *
+         *     Con eso la consola sabe si dibuja el CTA de «ver detalle» — la regla de
+         *     la casa es que **un CTA sin manejador no se pinta**, y acá el manejador
+         *     existe sólo cuando `supported` es `true`.
+         *
+         *     **No lleva el rate limit del chat**; el POST sí. Lo dice el router:
+         *     `config.GET("/panels/:panelId/drilldown/dimensions", …)` sin
+         *     `chatLimiter`.
+         *
+         *     **No toma `period`.** Qué dimensiones existen es de la métrica, no del
+         *     mes que se está mirando.
+         *
+         *     **Medida en las quince del `overview`, una por una** · 2026-09-30 · y el
+         *     reparto es 7/8, con tres juegos de dimensiones distintos:
+         *
+         *     · `sales`, `investment`, `roas` → `['day', 'week', 'platform']`
+         *     · `orders`, `visits`, `units` → `['day', 'week']`
+         *     · `investment_by_platform` → **`['day']` y nada más**: su spec declara una
+         *       sola dimensión, la de día sobre la tabla de medios pagos
+         *
+         *     Las ocho con `supported: false` y `dimensions: []` son
+         *     `executive_summary`, `decisions`, `goals_vs_actual`, `daily_trend`,
+         *     `twelve_month_efficiency`, `platform_gap`, `platform_month_matrix` y
+         *     `spend_flow`.
+         *
+         *     **La clave que viaja es la del CATÁLOGO, no la canónica**, y es por donde
+         *     se entra a equivocarse: el registry se consulta con
+         *     `CanonicalKey(metric.Key)` —`sales` → `revenue`, `visits` → `sessions`,
+         *     `investment_by_platform` → `platform_return`— pero `metric_key` devuelve
+         *     la del catálogo. Buscar `revenue` en esta respuesta no encuentra nada.
+         */
+        get: operations["panelDrillDownDimensions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/config/panels/{panelId}/drilldown": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Desagregar la métrica del panel por una dimensión · Snowflake en vivo
+         * @description `DDDrillDownHandler.Query` → `ddDrillDownService.Query`.
+         *
+         *     **Esta sí consulta Snowflake, en vivo y con las credenciales del
+         *     tenant**: resuelve el agente del tenant y del rol, firma un JWT, arma el
+         *     SQL del registry y corre la consulta con timeout —20 s, o
+         *     `DD_DRILLDOWN_TIMEOUT_SECONDS`—. **No persiste nada**: no escribe hilo
+         *     ni materialización.
+         *
+         *     **Comparte la cuota del chat.** `config.POST("/panels/:panelId/drilldown",
+         *     chatLimiter, …)` es el mismo `UserRateLimitMiddleware` que
+         *     `POST /config/chat` —100 pedidos por usuario por minuto por defecto,
+         *     `RATE_LIMIT_ENABLED` y `RATE_LIMIT_PER_USER_PER_MINUTE`—, así que abrir
+         *     hojas de detalle gasta la misma cuota que preguntarle al agente.
+         *
+         *     **El nombre de columna NUNCA sale del input.** `dimension` se busca en
+         *     la lista blanca de `DrillRegistry`; lo que viaja al SQL es la expresión
+         *     que el registry declara. Lo que llega del cliente se compara
+         *     `strings.ToLower(strings.TrimSpace(...))` y si no está, 400 con las
+         *     soportadas.
+         *
+         *     ── **LAS PARTES NO SUMAN EL TOTAL DEL PANEL, Y HAY DOS RAZONES** ──────
+         *
+         *     Medido sobre `sales` (`80158182-…`, `2026-09`) el 2026-09-30, y es lo
+         *     primero que la hoja de C2 tiene que no prometer:
+         *
+         *     1. **`platform` sale de OTRA TABLA y con OTRA MEDIDA.** `day` y `week`
+         *        agregan `REV_TOTAL` del hecho de ecommerce; `platform` agrupa por
+         *        `FUENTE` sobre la tabla de medios pagos y suma `INGRESOS_USD`. Medido:
+         *        `day` y `week` dan **1 282 259** las dos, y `platform` da
+         *        **968 169,49** — no es un error de redondeo, es el ingreso atribuido
+         *        a medios pagos contra el total del sitio, que es justo lo que la BASE
+         *        del panel dice («ALL CHANNELS»).
+         *     2. **El panel es una foto y esto es en vivo.** El escalar del panel traía
+         *        `1 232 721` con `freshness: 2026-09-30T17:37:34Z`, y la suma por día
+         *        pedida a las 00:07 UTC daba `1 282 259`: el mes está en curso y la
+         *        materialización es de siete horas antes. `queried_at` y `freshness`
+         *        **no son lo mismo y confundirlos es el bug**, igual que en
+         *        `ChatFrameData`.
+         *
+         *     **Y la respuesta no trae gobierno.** Ni BASE, ni capa, ni fuente, ni
+         *     frescura: nueve campos y ninguno es de procedencia. El encabezado de la
+         *     hoja los tiene que tomar del panel de origen —`POST /config/panels:batch`
+         *     los trae— porque §8 pide que toda métrica declare su BASE y su
+         *     PROCEDENCIA, y una cifra desagregada sigue siendo la métrica.
+         */
+        post: operations["panelDrillDown"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -238,6 +493,21 @@ export interface components {
         Envelope: {
             /** @enum {boolean} */
             success: true;
+        };
+        /**
+         * @description `ports.AgentOption` de `internal/core/ports/agent.go` en `7b717aa`.
+         *     **`target_role` es el NOMBRE del rol tal como está guardado**, con su
+         *     mayúscula: en QA conviven `Planner` y `admin`.
+         */
+        ChatAgentOption: {
+            /** Format: uuid */
+            id: string;
+            /** @description Puede traer espacios al final · medido en QA, «Terpel Lubricantes ». */
+            name: string;
+            target_role: string;
+            /** Format: uuid */
+            tenant_id: string;
+            tenant_name: string;
         };
         /**
          * @description **`error` es una CADENA, no un objeto.** `handler/response.go`:
@@ -379,6 +649,22 @@ export interface components {
                 name: string;
                 slug: string;
                 is_default: boolean;
+                /**
+                 * @description **Cuántos meses de histórico ofrece ESTE dashboard**, contando
+                 *     el mes en curso · llegó con `d9147c3`, medido el 2026-10-01.
+                 *
+                 *     La profundidad dejó de ser una constante de doce: la decide el
+                 *     admin al crear el dashboard y el servicio la acota entre 1 y
+                 *     120 —`VALIDATION_HISTORY_MONTHS` fuera de rango—. **Un
+                 *     dashboard que no la declara sigue dando doce**, que es lo que
+                 *     pedimos para no romper los que ya existen.
+                 *
+                 *     Viaja **por dashboard y no sólo en `periods`** porque el
+                 *     usuario puede cambiar de dashboard sin recargar: `periods` es
+                 *     la del activo, y ésta es la de cada uno.
+                 * @example 12
+                 */
+                history_months: number;
             }[];
             /**
              * Format: uuid
@@ -445,6 +731,23 @@ export interface components {
                     id: string;
                     /** @example Under Armour México */
                     name: string;
+                    /**
+                     * @description **La forma corta, y acá es DONDE SE USA.** Llegó en
+                     *     `f70cec2` junto a `tenant.label` y el cable la declaraba
+                     *     sólo en el tenant activo — medido el 2026-09-28: el
+                     *     servicio la manda también en cada entrada de `tenants`.
+                     *
+                     *     **El selector de cliente del navbar es el navbar**, que es
+                     *     para lo que la forma corta existe. Mientras el adaptador
+                     *     leyó `name` acá, el selector decía «UNDER ARMOUR MÉXICO»
+                     *     con la cabecera al lado diciendo la corta: se vio abriendo
+                     *     la aplicación, no en una prueba.
+                     *
+                     *     El servicio la hace caer a `name` cuando el tenant no la
+                     *     define, así que se lee siempre y sin respaldo.
+                     * @example UA México
+                     */
+                    label: string;
                 }[];
             };
         };
@@ -463,6 +766,19 @@ export interface components {
             theme: "light" | "dark";
         };
         TenantInfo: {
+            /**
+             * @description **La forma corta para el navbar** · pedida en B1.1 y llegó el
+             *     2026-09-28. El `.pen` pinta `UA MX` donde mostrábamos
+             *     `Under Armour México`.
+             *
+             *     **Si el tenant no la define vale `name`**, y eso lo hacen ellos: «pueden
+             *     pintar `label` siempre y olvidarse del fallback». Medido con el tenant
+             *     local, que no la definió: `label` y `name` traen lo mismo.
+             *
+             *     Sale también en cada `scope.tenants[].label`.
+             * @example UA MX
+             */
+            label: string;
             /** Format: uuid */
             id: string;
             /** @example Under Armour México */
@@ -479,8 +795,28 @@ export interface components {
             locale: string;
             /**
              * @description Código ISO 4217.
-             * @example COP
-             * @example MXN
+             *
+             *     **NO es la moneda del país del cliente, y confundirlas es el bug.**
+             *     Para UA MX vale `USD` — decidido el 2026-10-01 (producto) y medido
+             *     el mismo día contra las tres fuentes que mandan acá:
+             *
+             *     · el **catálogo de Snowflake** declara `unit: USD` en las cinco
+             *       métricas de dinero —`revenue`, `spend`, `spend_flow`,
+             *       `platform_gap`, `platform_month_matrix`— y su texto de gobierno
+             *       dice «Venta total del sitio … **en USD**»;
+             *     · el **`.pen`** escribe `USD` en **62 de sus 63 nodos con moneda**;
+             *       el único `MXN` es `A2 · Ficha · tenant en alta`, que dibuja otro
+             *       cliente;
+             *     · y el `locale` es independiente: `es-MX` decide los separadores
+             *       —`1,232,721`— y no la divisa.
+             *
+             *     **El front no deriva ninguna cifra de este campo**: la unidad de un
+             *     valor sale del `unit` de su métrica en el catálogo, que es quien
+             *     conoce el dato. Este campo se ve en la ficha del cliente y, sobre
+             *     todo, **lo lee el agente al redactar la prosa** — con `COP` escribía
+             *     «los ingresos alcanzaron COP 1.144.876» sobre cifras que son
+             *     dólares.
+             * @example USD
              */
             currency: string;
             /**
@@ -515,6 +851,24 @@ export interface components {
             name: string;
             operational_question: string;
             sort_order: number;
+            /**
+             * @description **La identidad estable de la pestaña dentro del dashboard** · pedida
+             *     en B1.1 desde el principio, y llegó el 2026-09-28 por una segunda
+             *     razón que ellos levantaron.
+             *
+             *     `roles.tab_ids` guarda ids de FILA, y las filas se recrean en cada
+             *     versión publicada: **la primera publicación real desde el builder
+             *     dejaba sin pestañas a todo rol con restricción**. La `key` sobrevive
+             *     a las versiones, y la reversión la copia.
+             *
+             *     Es un slug, única por versión de layout. Ausente en el builder se
+             *     deriva del nombre —`Visión General` → `vision-general`—; repetida da
+             *     `422 VALIDATION_TAB_KEY`. Las existentes se rellenaron en la
+             *     migración: medido, la sembrada trae `overview`.
+             * @example overview
+             * @example marca
+             */
+            key: string;
             /**
              * @description **Cadena vacía cuando no hay**, no `null` · medido. La semilla no
              *     trae ninguno, así que hoy llega `""` en las tres rutas que sirven
@@ -658,6 +1012,82 @@ export interface components {
             /** Format: date-time */
             updated_at?: string;
         };
+        /**
+         * @description Una entrada del repertorio · la tabla `plots`.
+         *
+         *     **Las formas van en el idioma del CABLE** —`scalar`, `time_series`—,
+         *     igual que `accepted_shapes` de `BlockRule`, y el adaptador las traduce
+         *     con el mismo mapa.
+         */
+        PlotRule: {
+            /**
+             * @example donut
+             * @example treemap
+             */
+            id: string;
+            /**
+             * @description El título en mayúsculas, **transcripto del `.pen`** para los 43 que
+             *     dibuja. Es copy de producto: lo pinta el selector del builder.
+             * @example DONA
+             * @example PARETO
+             */
+            name: string;
+            /** @description Qué formas de dato sabe dibujar, en el idioma del cable. */
+            shapes: string[];
+            /**
+             * @description Regla dura 6 · `series_with_band` sólo admite gráficos con esto en
+             *     `true`. Un pronóstico sin banda no se publica.
+             */
+            supports_band: boolean;
+            /**
+             * @description Cuántos datos necesita para no engañar, **por forma**.
+             *
+             *     **Vacío es un valor legítimo y NUNCA llega `null`** · medido el
+             *     2026-09-29: seis de los 49 salen `[]` y son exactamente los de
+             *     `scalar` y `prose`. Vacío significa «no exige un mínimo» —una cifra
+             *     es una cifra—, que es distinto de «no se sabe»; el servicio lo
+             *     normaliza para que ningún consumidor tenga que distinguirlos.
+             */
+            minimums: {
+                /** @example categorical */
+                shape: string;
+                /**
+                 * @description La condición, legible y evaluable sobre el valor.
+                 * @example items < 2
+                 * @example puntos < 2
+                 * @example filas < 2 o columnas < 2
+                 */
+                when: string;
+                /**
+                 * @description **Copy de producto, se pinta tal cual.** Viene redactada de
+                 *     `design.md`; el front no la traduce ni la compone.
+                 * @example una barra sola no compara nada
+                 */
+                reason: string;
+            }[];
+            /**
+             * @description El techo que lo deshabilita, con su razón. Sólo cuatro de los 49 lo
+             *     llevan.
+             *
+             *     **SE OMITE cuando no hay, NO viaja en `null`** · corregido el
+             *     2026-10-02, y lo encontró el backend al implementar la ruta: acá
+             *     decía `['object', 'null']` y «`null` cuando no tiene», y el archivo
+             *     de datos que les entregamos omite la clave. Siguieron el archivo, que
+             *     es el que vale — el Go lo declara `json:"cap,omitempty"`.
+             *
+             *     **La transcripción estaba mal desde que se escribió y nada la
+             *     delató**, porque `adaptPlots` acepta las dos formas
+             *     —`p.cap === undefined || p.cap === null`— y esa tolerancia tapaba la
+             *     diferencia. Se deja igual: tolerar de más en el adaptador es barato,
+             *     y que el cable mienta no.
+             */
+            cap?: {
+                /** @example partes > 5 */
+                when: string;
+                /** @example más de cinco partes, ilegible en dona */
+                reason: string;
+            };
+        };
         /** @description `dashboard.BlockRule`. Quince filas en la tabla `blocks`. */
         BlockRule: {
             /**
@@ -729,6 +1159,27 @@ export interface components {
                 [key: string]: unknown;
             };
             /**
+             * @description **QUÉ VARIANTE dibuja este panel** · pedido el 2026-09-28 y llegó el
+             *     mismo día, medido contra `f70cec2` en los doce paneles.
+             *
+             *     `type` elige el CUERPO y esto el dibujo de adentro. Hacían falta los
+             *     dos porque **16 de los 49 gráficos sirven a más de una forma**.
+             *
+             *     **Cadena vacía = el gráfico por defecto del cuerpo**, que es lo que
+             *     los doce publicados hacen hoy. Por eso el campo es aditivo y no
+             *     migra ningún layout.
+             *
+             *     **Llega como `string` libre y lo cierra el adaptador**, igual que
+             *     `shape`, `family` y `layer`: ellos lo guardan en minúsculas y
+             *     recortado y **no lo validan contra el repertorio** —«eso es del
+             *     front, que tiene los 49 y sus mínimos»—, así que un id desconocido
+             *     puede llegar. El panel lo declara en vez de caer al de por defecto.
+             * @example
+             * @example waterfall
+             * @example control
+             */
+            chart: string;
+            /**
              * @description La nota de lectura del panel · **B1.13, llegó el 2026-09-28**.
              *
              *     La escribe el admin en el builder —`panels[].note` de
@@ -795,12 +1246,60 @@ export interface components {
              *     `DEGRADED`. §8 pide estado, razón y qué lo desbloquea.
              */
             unlocks_with?: string;
-            /** @description Solo en `ERROR`. Sale de `validatePanelOptions`. */
+            /**
+             * @description **El detalle TÉCNICO, en cualquier estado** · corregido el
+             *     2026-10-09 leyendo `9dc481e`. Acá decía «Solo en `ERROR`. Sale de
+             *     `validatePanelOptions`», y eso es una de dos fuentes: en `ERROR` lo
+             *     escribe `validatePanelOptions`, y en los demás viaja
+             *     `data.Message` de la fila materializada (`dd_config_service.go`,
+             *     `BatchPanels`). Su propio código lo separa del copy: «el motivo
+             *     técnico sigue en `data.Message`» — por eso no se pinta como razón.
+             */
             message?: string;
             /**
-             * @description Solo en `FORBIDDEN`, y es **la constante `"administrator"`** escrita
-             *     en el código, no el rol que decide sobre la métrica.
-             * @example administrator
+             * Format: date-time
+             * @description **Transcrito el 2026-10-09**: llegó en `de881e1` (B1.28) y esta ruta
+             *     figuraba verificada contra `7b717aa` sin él. Lo encontró `npm run
+             *     humo`, no la lectura.
+             *
+             *     Sólo en `DEGRADED` **por antigüedad**: el instante desde el que el
+             *     dato está vencido —última materialización exitosa +
+             *     `DD_FRESHNESS_TOLERANCE_DAYS`—. Ausente (`omitempty`) en las otras
+             *     degradaciones y en los demás estados. `governance.freshness` sigue
+             *     siendo la última materialización.
+             */
+            stale_since?: string;
+            /**
+             * @description Solo en `FORBIDDEN`, y es **la constante `"admin"`** escrita en el
+             *     código, no el rol que decide sobre la métrica.
+             *
+             *     **Acá decía `"administrator"`, y no se había inventado: se
+             *     VENCIÓ.** Ellos lo cambiaron y NOS LO AVISARON —
+             *     `docs/RESPUESTA-2026-09-25-para-backend.md` §B1.6: «Hoy
+             *     `request_from` en `FORBIDDEN` pasa de `"administrator"` a `"admin"`»,
+             *     con su ejemplo de respuesta al lado. Se anotó en el documento y
+             *     **nunca bajó al cable**, que es de donde sale el tipo.
+             *
+             *     **Es un modo de falla distinto al de escribir de memoria y conviene
+             *     tenerlo aparte**: nadie adivinó nada, el aviso llegó, se guardó en
+             *     prosa, y la prosa no la lee `openapi-typescript`. Un cambio anunciado
+             *     no está transcripto hasta que está en el cable.
+             *
+             *     Medido el 2026-09-28 pidiéndole al token de `planner` los tres
+             *     paneles que su rol oculta: los tres contestan
+             *     `{"status":"FORBIDDEN","request_from":"admin"}` y nada más.
+             *     `dd_config_service.go:726` lo declara —`const forbiddenRequestFrom =
+             *     "admin"`—.
+             *
+             *     **Es un literal, no un rol resuelto.** Si el rol de administración de
+             *     un tenant se llamara `owner` o `Administrador`, el servicio seguiría
+             *     diciendo `admin`. El adaptador lo pasa tal cual igual: redactarlo
+             *     sería el front inventando a quién pedirle.
+             *
+             *     **Y el payload de `FORBIDDEN` no trae nada más** — ni `reason` ni
+             *     `unlocks_with`, que es la gramática de §8 que los otros estados sí
+             *     traen. Pedido.
+             * @example admin
              */
             request_from?: string;
         };
@@ -865,6 +1364,23 @@ export interface components {
                 period: string;
             };
             /**
+             * Format: uuid
+             * @description **Sólo para `admin`** · leído en `7b717aa` el 2026-10-06
+             *     (`dd_chat_handler.go:45`, `parseOptionalChatAgentID`) y medido en QA
+             *     el mismo día: con él la pregunta contesta 200, sin él 409.
+             *
+             *     Omitido, el servicio busca el agente con `target_role` igual al rol
+             *     del JWT **en el tenant del JWT**. Si el tenant no tiene agente para
+             *     `admin` —el caso de UA en QA, cuyo único agente es `Planner`— eso es
+             *     409 y el admin no puede preguntar nada sin elegir.
+             *
+             *     Otro rol que lo mande recibe 403 «solo administradores pueden
+             *     seleccionar un agente». **Se ignora si va `thread_id`**: el agente
+             *     queda fijado al crear el hilo, así que cambiar de agente es empezar
+             *     un hilo nuevo.
+             */
+            agent_id?: string | null;
+            /**
              * Format: int64
              * @description **Es un ENTERO, no un uuid.** Sale del frame `thread_info` y es lo
              *     que continúa la conversación. Ausente en la primera pregunta.
@@ -921,10 +1437,21 @@ export interface components {
         /**
          * @description `event: data`. Lo que `StructuredDataFromCortex` produjo.
          *
-         *     **`shape` es la FORMA del valor, no el tipo de panel**, y `provenance`
-         *     **no trae la BASE ni la capa Medallion** — los dos huecos por los que
-         *     F3.6 sigue bloqueada. Se transcribe igual: describir el cable no es
-         *     usarlo.
+         *     **`shape` es la FORMA del valor, no el tipo de panel.** Un gráfico del
+         *     agente llega como `raw` con `{shape: 'chart', chart_spec}` adentro.
+         *
+         *     **Reverificado contra `9dc481e` el 2026-10-09.** Acá decía que
+         *     `provenance` «no trae la BASE ni la capa Medallion» y que F3.6 seguía
+         *     bloqueada: venció con `55e8419`, el 2026-09-22.
+         *
+         *     **En el chat de PESTAÑA la procedencia se DEDUCE** desde `9dc481e`:
+         *     `enrichTabProvenance` busca la métrica de la pestaña cruzando nombres de
+         *     columna del resultado, y si encuentra una le copia familia, base, capa,
+         *     fuente y versión del catálogo —y su forma, vía `tabMetricShape`—. Si no
+         *     encuentra, viaja vacía. **Que venga llena no garantiza que sea la de esta
+         *     cifra**: medido el 2026-10-08 y el 2026-10-09, una tabla de inversión de
+         *     medios llegó con la base de la venta del sitio. Pedido en
+         *     `MENSAJE-2026-10-08-backend-procedencia-por-nombre.md`.
          */
         ChatFrameData: {
             /**
@@ -997,6 +1524,33 @@ export interface components {
          *     llegó en `thread_info`, al principio.
          */
         ChatFrameDone: Record<string, never>;
+        /** @description `ports.DDChatMessagesPage`. */
+        ChatMessagesPage: {
+            messages: components["schemas"]["ChatMessage"][];
+            has_more: boolean;
+            /** Format: date-time */
+            next_before?: string;
+        };
+        /**
+         * @description `ports.DDChatMessageDTO`. Una pregunta o una respuesta persistida.
+         *
+         *     **`structured_data` es la MISMA forma que `ChatFrameData`** —se guarda
+         *     lo que se emitió—, así que se adapta con el mismo código que la trama
+         *     `data` del stream. Ausente en las preguntas y en las respuestas sin
+         *     cifra (`omitempty`).
+         */
+        ChatMessage: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            role: "user" | "assistant";
+            content: string;
+            structured_data?: components["schemas"]["ChatFrameData"];
+            /** Format: int64 */
+            cortex_message_id?: number;
+            /** Format: date-time */
+            created_at: string;
+        };
         /**
          * @description `ports.DDChatThreadDTO`. Un hilo del chat contextual, ya cruzado con el
          *     tab y la métrica de donde salió.
@@ -1063,6 +1617,172 @@ export interface components {
              *     estuvo meses declarada sin un solo consumidor.
              */
             intent: string;
+        };
+        /** @description `ports.DDDrillDownDimensions`. Qué se puede desagregar de este panel. */
+        DrillDownDimensions: {
+            /** Format: uuid */
+            panel_id: string;
+            /**
+             * @description **La clave del catálogo**, no la canónica del registry · ver la
+             *     descripción de la ruta.
+             * @example sales
+             * @example investment_by_platform
+             */
+            metric_key: string;
+            /**
+             * @description `true` cuando `DrillRegistry` tiene la métrica canónica. **Es lo que
+             *     decide si el CTA de detalle se pinta.**
+             */
+            supported: boolean;
+            /**
+             * @description **Nunca `null`.** El servicio inicializa el DTO con `[]string{}` y
+             *     sólo después mira el registry, así que una métrica sin drill-down
+             *     llega con `[]` — medido en las ocho.
+             *
+             *     Los valores son los que el registry declara, y hoy son tres:
+             *     `day`, `week` y `platform`. **No es un enum del cable**: agregar una
+             *     dimensión es agregar una fila en `DrillRegistry`, y entonces este
+             *     arreglo trae una cuarta sin que nada más cambie.
+             * @example [
+             *       "day",
+             *       "week",
+             *       "platform"
+             *     ]
+             * @example []
+             */
+            dimensions: string[];
+        };
+        /**
+         * @description `ddDrillDownRequest` de `dd_drilldown_handler.go`. Los dos primeros son
+         *     `binding:"required"`.
+         */
+        DrillDownRequest: {
+            /**
+             * @description Una de las que `GET …/drilldown/dimensions` devolvió para este panel.
+             *     El servicio la compara en minúsculas y sin espacios
+             *     —`strings.ToLower(strings.TrimSpace(...))`— contra la lista blanca.
+             * @example platform
+             * @example day
+             * @example week
+             */
+            dimension: string;
+            /**
+             * @description `YYYY-MM`, el mismo `ParsePeriod` del resto del cable. Un día
+             *     —`2026-09-01`— devuelve 400.
+             * @example 2026-09
+             */
+            period: string;
+            /**
+             * @description **No estaba en el encargo y existe**: `drillDefaultLimit = 50`,
+             *     `drillMaxLimit = 500`, y `<= 0` cae al default.
+             *
+             *     **El recorte ocurre en el SQL** —`LIMIT %d`—, así que `row_count`
+             *     ya viene recortado y **nada en la respuesta dice que se recortó**:
+             *     medido con `limit: 3` sobre `day`, contesta `row_count: 3` y tres
+             *     ítems, idéntico a un mes de tres días. Si la hoja de C2 lo usa para
+             *     paginar, el «hay más» lo tiene que saber por otro lado.
+             * @default 50
+             * @example 50
+             */
+            limit: number;
+        };
+        /**
+         * @description `ports.DDDrillDownResponse`. **Nueve campos y ninguno es de
+         *     procedencia** — ver la ruta.
+         */
+        DrillDownResponse: {
+            /** Format: uuid */
+            panel_id: string;
+            /**
+             * @description La del catálogo, igual que en `DrillDownDimensions`.
+             * @example sales
+             */
+            metric_key: string;
+            /**
+             * @description El nombre de la métrica tal como lo trae el catálogo. **Hoy sale en
+             *     inglés en los paneles del `overview`** —medido `"Sales"` y
+             *     `"Investment and return by platform"`— porque esos paneles apuntan a
+             *     las métricas de la semilla; las de Snowflake están en español. **No
+             *     se traduce acá ni en el adaptador**: el dueño del copy que describe
+             *     datos es el catálogo.
+             * @example Sales
+             * @example Investment and return by platform
+             */
+            metric_name: string;
+            /**
+             * @description La dimensión resuelta —`dim.Key` del registry—, no el texto que
+             *     mandó el cliente.
+             * @example platform
+             */
+            dimension: string;
+            /** @example 2026-09 */
+            period: string;
+            /**
+             * @description **Está CABLEADO en el servicio** —`Shape: "categorical"` en
+             *     `dd_drilldown_service.go`—, no derivado de la métrica ni de la
+             *     dimensión: las tres dimensiones de `sales` contestan lo mismo,
+             *     medido. Un `day` con treinta ítems llega como categórico y no como
+             *     serie de tiempo, así que **el cuerpo que lo dibuja lo elige la
+             *     consola**, con `/config/plots` como repertorio: para `categorical`
+             *     declara siete —`columns`, `bars`, `lollipop`, `donut`, `treemap`,
+             *     `radial`, `pareto`—.
+             * @enum {string}
+             */
+            shape: "categorical";
+            /**
+             * @description El payload **con la misma forma que un panel `categorical`**, que es
+             *     lo que permite reusar el cuerpo: `{ shape: 'categorical', items:
+             *     [{ label, v }] }`, y los ítems traen esas dos claves y nada más.
+             *     Lo produce `materialize.Materialize("categorical", rows, …)`, que
+             *     repite `shape` adentro.
+             *
+             *     **El orden lo fija el registry, no el cliente.** `platform` ordena
+             *     por valor descendente —`byValue`, `2 DESC NULLS LAST`— y `day` y
+             *     `week` por etiqueta: medido `'2026-09-01'…` en día y
+             *     `'2026-08-31', '2026-09-07', '2026-09-14', '2026-09-21',
+             *     '2026-09-28'` en semana. **La semana es el inicio del balde**
+             *     —`DATE_TRUNC('week', DATE)`—, así que el primero puede empezar en el
+             *     mes anterior y traer sólo los días que caen dentro del período.
+             *
+             *     **Y los ceros vienen.** Medido en `platform`: 29 de los 37 ítems en
+             *     `0`. Una barra en cero no es un hueco de datos, es una plataforma sin
+             *     gasto en el mes.
+             */
+            value: {
+                /** @enum {string} */
+                shape: "categorical";
+                items: {
+                    /** @example Google PMax */
+                    label: string;
+                    /** @example 537180.1 */
+                    v: number;
+                }[];
+            };
+            /**
+             * @description `len(rows)` **de Snowflake**, y **NO es la cantidad de ítems** · es
+             *     pérdida silenciosa y se midió: `platform` sobre `sales` contestó
+             *     `row_count: 39` con **37** ítems.
+             *
+             *     Las dos filas se van en `transformCategorical`, que saltea toda fila
+             *     sin `label` o sin `v` —`if !okLabel || !okV { continue }`— y también
+             *     las comparativas —`isComparativeRow`—. **Nada avisa de la
+             *     diferencia**: un «39 filas» en la hoja sobre una lista de 37 es una
+             *     cifra que no cierra con lo que se ve.
+             * @example 39
+             */
+            row_count: number;
+            /**
+             * Format: date-time
+             * @description **Cuándo se corrió ESTA consulta** · `time.Now().UTC()`, RFC 3339.
+             *
+             *     **No es la frescura del panel y confundirlos es el bug**, igual que
+             *     en `ChatFrameData.provenance`: `governance.freshness` dice cuándo se
+             *     materializó la métrica y esto dice cuándo se leyó Snowflake. Medido
+             *     el 2026-09-30 son siete horas de diferencia sobre el mes en curso, y
+             *     con ellas el total del panel y la suma del detalle no coinciden.
+             * @example 2026-10-01T00:07:50.780199Z
+             */
+            queried_at: string;
         };
     };
     responses: {
@@ -1174,6 +1894,29 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Envelope"] & {
                         data?: components["schemas"]["BlockRule"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getPlots: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El repertorio entero, en el orden de §5 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["PlotRule"][];
                     };
                 };
             };
@@ -1347,6 +2090,39 @@ export interface operations {
             };
         };
     };
+    listChatAgents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La lista, sin paginar. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ChatAgentOption"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description El rol no es admin · «acceso no autorizado» */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     listChatThreads: {
         parameters: {
             query?: {
@@ -1391,6 +2167,70 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    listChatMessages: {
+        parameters: {
+            query?: {
+                /** @description Sin él, `chatListDefaultLimit = 50`. */
+                limit?: number;
+                /** @description Cursor para la página anterior · RFC3339Nano · es `next_before`. */
+                before?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Una página en orden cronológico, el más antiguo primero. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ChatMessagesPage"];
+                    };
+                };
+            };
+        };
+    };
+    deleteChatThread: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description `gin.H{"message": "thread eliminado del historial"}`. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            message?: string;
+                        };
+                    };
+                };
+            };
+            /** @description No existe, o no es de este usuario. `ErrUserThreadNotFound`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     panelChatSuggestions: {
         parameters: {
             query?: {
@@ -1428,6 +2268,221 @@ export interface operations {
                 };
             };
             404: components["responses"]["NotFound"];
+        };
+    };
+    panelDrillDownDimensions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                panelId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las dimensiones del panel, o la lista vacía */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["DrillDownDimensions"];
+                    };
+                };
+            };
+            /**
+             * @description `panelId` que no parsea como uuid. Medido: `"panelId inválido"` con
+             *     `VALIDATION_REQUEST`. **No es un 404**: el handler no llega a
+             *     buscarlo.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /**
+             * @description El rol no ve la pestaña del panel, o la métrica está en sus
+             *     `hidden_metric_ids`. Transcrito del handler —`ErrChatPanelForbidden`—,
+             *     no medido.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /**
+             * @description Medido: `"panel o pestaña no encontrados"` con `NOT_FOUND_RESOURCE`.
+             *     Un panel de otro tenant cae acá, no en 403.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    panelDrillDown: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                panelId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DrillDownRequest"];
+            };
+        };
+        responses: {
+            /** @description La desagregación, con la misma forma que un panel `categorical` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["DrillDownResponse"];
+                    };
+                };
+            };
+            /**
+             * @description Cuatro formas distintas, las cuatro medidas, y **las cuatro con
+             *     `VALIDATION_REQUEST`** — el detalle del `code` no las distingue:
+             *
+             *     · `panelId` que no parsea · `"panelId inválido"`
+             *     · falta `dimension` o `period` · `"solicitud inválida: Key:
+             *       'ddDrillDownRequest.period' Error:Field validation for 'period'
+             *       failed on the 'required' tag"` — **el nombre del struct de Go y el
+             *       tag del validador llegan a la pantalla**, que es lo que
+             *       `ErrorResponse.error` ya advierte
+             *     · `period` que no es `YYYY-MM` · `"período inválido, formato esperado
+             *       YYYY-MM"`
+             *     · dimensión no declarada · `"dimensión inválida para esta métrica:
+             *       soportadas [day week platform]"` · **trae la lista blanca**, así
+             *       que el mensaje alcanza para corregir el pedido
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /**
+             * @description El rol no ve la pestaña del panel o la métrica está oculta para él ·
+             *     `ErrChatPanelForbidden`. Transcrito del handler, no medido.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Medido: `"panel o pestaña no encontrados"` con `NOT_FOUND_RESOURCE`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /**
+             * @description El tenant no tiene agente activo para ese rol ·
+             *     `ErrChatAgentUnavailable`. **El mismo candado que el chat**: sin
+             *     agente cargado no hay credenciales de Snowflake con las que
+             *     consultar. Transcrito del handler, no medido.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /**
+             * @description **Dos razones distintas bajo el mismo código**, y para la pantalla no
+             *     son lo mismo:
+             *
+             *     · `"la métrica no soporta drill-down"` · `VALIDATION_RULE` · medido
+             *       pidiéndole `day` a un panel de `goals_vs_actual`. Es el mismo
+             *       estado que `supported: false` y **no debería pasar** si la consola
+             *       preguntó primero por las dimensiones.
+             *     · `"Snowflake no devolvió filas para ese período y dimensión"` ·
+             *       `ErrDrillNoData`, transcrito del servicio y no medido. Acá sí hay
+             *       que pintar un vacío declarado: la dimensión existe y el período no
+             *       tiene filas.
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /**
+             * @description Rate limit por usuario, **compartido con `/config/chat`**. Viene con
+             *     cabecera `Retry-After` —segundos— y el mensaje
+             *     `"límite de peticiones por usuario excedido; reintenta más tarde"`,
+             *     que es uno de los pocos ya redactados en español. Transcrito de
+             *     `handler/ratelimit.go`, no medido: habría que gastar la cuota.
+             */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /**
+             * @description La rama `default` del handler, y **no es sólo «algo falló»**: caen acá
+             *     el tenant que no se encuentra, el JWT que no se puede firmar y
+             *     —esto importa— **que ninguna fila sobreviva a la transformación**.
+             *     `transformCategorical` devuelve `ErrInvalidRow` cuando ninguna trae
+             *     `label` y `v`, y el servicio lo envuelve como «drilldown: transformar
+             *     filas». Transcrito del código, no medido.
+             */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /**
+             * @description La consulta a Snowflake falló o se pasó del timeout ·
+             *     `ErrChatUpstream`. Transcrito del handler, no medido.
+             */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
 }

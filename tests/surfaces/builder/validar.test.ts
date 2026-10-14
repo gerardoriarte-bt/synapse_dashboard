@@ -80,9 +80,14 @@ describe('el tipo contra la forma de la métrica', () => {
     // El criterio de F4.11: «un tipo incompatible con la forma de la métrica se
     // marca con la razón, no con “inválido”».
     const p = validarBorrador([tab([panel({ metricId: 'm-cat' })])], tabla, metrics)
+    //
+    // **Con el nombre de producto, no con el id del contrato** · D6 de
+    // `docs/AUDITORIA-2026-10-06-builder-contexto-y-canvas.md`. Antes afirmaba
+    // `kpi` y `categorica`, que es lo que quien compone no puede leer.
     expect(p).toHaveLength(1)
-    expect(p[0]?.mensaje).toContain('kpi')
-    expect(p[0]?.mensaje).toContain('categorica')
+    expect(p[0]?.mensaje).toBe('Un bloque «Indicador» no sabe dibujar la forma «Por categoría».')
+    expect(p[0]?.mensaje).not.toContain('kpi')
+    expect(p[0]?.mensaje).not.toContain('categorica')
     expect(p[0]?.campo).toBe('tipo')
   })
 
@@ -90,13 +95,27 @@ describe('el tipo contra la forma de la métrica', () => {
     const p = validarBorrador([tab([panel({ colSpan: 9 })])], tabla, metrics)
     expect(p[0]?.mensaje).toMatch(/entre 3 y 4 columnas.*9/)
   })
+
+  it('el span también nombra el tipo con su nombre de producto', () => {
+    // La traducción no es sólo para el caso de la forma: `invalidReason` pone
+    // el id entre comillas en los tres mensajes · D6, 2026-10-06.
+    const p = validarBorrador(
+      [tab([panel({ tipo: 'bars', metricId: 'm-cat', colSpan: 2, rowSpan: 4 })])],
+      tabla,
+      metrics,
+    )
+    expect(p[0]?.mensaje).toBe('«Barras» ocupa entre 4 y 12 columnas; se pidieron 2.')
+  })
 })
 
 describe('la métrica', () => {
   it('sin métrica lo dice en la lengua del producto', () => {
     const p = validarBorrador([tab([panel({ metricId: '' })])], tabla, metrics)
     expect(p[0]?.campo).toBe('metricId')
-    expect(p[0]?.mensaje).toMatch(/se ancla a un metricId/)
+    // «Se ancla a un metricId» era la regla dicha en el idioma del código; ahora
+    // dice qué hacer · auditoría del 2026-10-06.
+    expect(p[0]?.mensaje).toBe('Sin métrica · elegila en la configuración del panel')
+    expect(p[0]?.mensaje).not.toContain('metricId')
   })
 
   it('una métrica que salió del catálogo se declara SIN pintar el id', () => {
@@ -133,7 +152,8 @@ describe('los params', () => {
       tabla,
       metrics,
     )
-    expect(p[0]?.mensaje).toMatch(/se va a descartar/)
+    expect(p[0]?.campo).toBe('maximo')
+    expect(p[0]?.mensaje).toBe('La opción «maximo» no es de este tipo de panel · se descarta al guardar')
   })
 })
 

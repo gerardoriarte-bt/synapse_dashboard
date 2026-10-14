@@ -21,6 +21,7 @@
  *  | botón | 32 alto, `$r-lg`, borde `$w3`, **con** icono | 28, `$r-md`, `$elev`, **sin** icono | igual que 768 |
  *  | texto del botón | mono 10 `$ink` | **mono 9 `$dim`** | igual que 768 |
  *  | derecha | punto + línea de contexto | línea corta, **sin punto** | **un botón `DECISIONES`** |
+ *  | tamaño de esa línea | mono 10 · `Label` | **mono 9 · `Note`** | — |
  *
  *  El plan resumía «banda de 56» y eso es cierto sólo en escritorio.
  *
@@ -46,6 +47,7 @@
  *  criterio de F3.15. No es una coincidencia feliz: es la misma lista.
  */
 import { Label } from '../../render/primitives/Label'
+import { Note } from '../../render/primitives/Note'
 
 type Props = {
   /** El nombre corto del cliente · la primera parte de la línea. */
@@ -109,14 +111,29 @@ export function ConsoleDock({ tenant, pestana, periodo, paneles, onPreguntar }: 
           aria-hidden
           className="hidden size-1.75 shrink-0 rounded-full bg-fam-medios-1 xl:block"
         />
-        <Label as="span">
-          {/* A seis columnas el frame acorta a cliente y período; a doce va la
-              línea completa, literal del dibujo. */}
-          <span className="xl:hidden">{`${tenant} · ${periodo}`}</span>
-          <span className="hidden xl:inline">
+        {/* ── DOS PRIMITIVOS, PORQUE SON DOS TAMAÑOS ──────────────────────────
+            **A 768 la línea es NOTA y a 1440 es LABEL**, y no es un matiz: son
+            dos de los cuatro roles mono que §2.3 declara y cierra. Censado sobre
+            los dieciséis frames de consola el 2026-09-28 — las trece pantallas
+            de escritorio la ponen en **10 `$ink`/`$dim`** y el frame de 768 en
+            **9 `$dim`**, igual que el texto de su botón.
+
+            **Acá estaba con `Label` en los tres anchos**, así que a seis
+            columnas se pintaba un punto más grande que el dibujo. F3.15 se cerró
+            diciendo que las dos composiciones responsive **no se habían podido
+            VER** —la ventana estaba maximizada— y esto es lo que aparece al
+            mirarlas: la que se vio estaba bien y la que no, no. */}
+        {/* **El color lo pone quien usa `Note`**, que no fija ninguno a
+            propósito —el `.pen` la dibuja en `$dim` acá y en `$acc` dentro del
+            badge de degradado—. El frame de 768 la pone en `$dim`. */}
+        <span className="text-dim xl:hidden">
+          <Note as="span">{`${tenant} · ${periodo}`}</Note>
+        </span>
+        <span className="hidden xl:inline">
+          <Label as="span">
             {`Contexto · ${tenant} · ${pestana} · ${periodo} · ${String(paneles)} ${paneles === 1 ? 'panel' : 'paneles'}`}
-          </span>
-        </Label>
+          </Label>
+        </span>
       </div>
     </div>
   )

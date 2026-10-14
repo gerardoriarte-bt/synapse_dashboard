@@ -4,6 +4,13 @@
    Portado de `synapse v2/src/base.css`. El reset de caja ya no está: lo hace
    preflight. */
 
+/* Los tokens que agregó una decisión humana y el `.pen` todavía no declara.
+   Se importan DESDE ACÁ y no desde `main.tsx` porque un `@theme` sólo genera
+   utilidades dentro del árbol que arranca en `@import 'tailwindcss'`, y
+   `tokens.css` —que es ese árbol— es generado. `base.css` es el primer archivo
+   escrito a mano que cuelga de él. */
+@import './decisiones.css';
+
 @layer base {
   html,
   body {

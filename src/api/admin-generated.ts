@@ -11,7 +11,45 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Los tenants, para elegir cuál se compone */
+        /**
+         * Los tenants, para elegir cuál se compone
+         * @description **MEDIDA CONTRA EL SERVICIO EL 2026-09-30, campo por campo** · `:4010`,
+         *     binario del fork en `4c80802`. Devuelve un array de 2 tenants con
+         *     **trece campos cada uno, exactamente los trece que declara
+         *     `TenantOption`**: ninguno sin declarar, ninguno declarado que no llegue.
+         *
+         *     **Y las rutas de A2 son de ELLOS**, comprobado con `git log -L` sobre
+         *     `internal/adapters/handler/router.go` y no supuesto — acá el binario es
+         *     el fork, que es la trampa del 2026-09-22: medir con el fork corriendo
+         *     hace que nuestro propio código se vea como avance suyo.
+         *     `/tenants/:tenantId/catalog` la escribió `02336d03` y
+         *     `/tenants/:tenantId/roles/composition` la escribió `1e080eed` · B4.8.
+         *
+         *     Lo medido confirma tres cosas que ya están escritas campo por campo en
+         *     `TenantOption`, y se juntan acá porque son de la respuesta entera:
+         *
+         *       · `label` llega **`""` en los dos** tenants sembrados. Quien la pinte
+         *         cae a `name`.
+         *       · `status` y `vertical` llegan **`null` en los dos**, y no es una foto:
+         *         `internal/core/ports/tenant.go:33` lo dice en el código —«Status y
+         *         Vertical quedan reservados hasta que el cliente defina sus valores
+         *         (siempre nil en v1)»—.
+         *       · `locale`, `currency` y `timezone` salen **colombianos en el tenant
+         *         mexicano** —`es-CO`/`COP`/`America/Bogota`—, que es el default de
+         *         columna ya reportado en
+         *         `docs/MENSAJE-2026-09-29-backend-tenant-colombiano.md`.
+         *
+         *     **DESDE `8272085` DEVUELVE SÓLO EL CLIENTE DEL TOKEN** · remedido el
+         *     2026-10-13 con la base local: un cliente de dos. Un usuario en
+         *     `PLATFORM_OPERATOR_USER_IDS` —configuración del servicio— sigue viendo
+         *     todos. Y toda ruta `/admin/tenants/{tenantId}/…` de otro cliente da
+         *     **403** «no puedes administrar otro cliente». Ver
+         *     `docs/RESPUESTA-2026-10-13-backend-permisos.md`.
+         *
+         *     **`catalog_version` NO viaja acá**, y no es un hueco de esta ruta: viene
+         *     por fila en `GET /admin/tenants/{tenantId}/catalog`, y lo que vale para
+         *     el cliente es una reducción. Está explicado en esa ruta.
+         */
         get: operations["listTenants"];
         put?: never;
         post?: never;
@@ -58,6 +96,33 @@ export interface paths {
          *
          *     Devuelve el mismo `CatalogMetric` que la consola — **ese struct SÍ tiene
          *     etiquetas `json:`**.
+         *
+         *     ── **`catalog_version` ES POR FILA · LA DEL CLIENTE ES EL MÁXIMO** ─────
+         *
+         *     Medido el 2026-09-30 contra `:4010`, binario del fork en `4c80802`:
+         *
+         *       · tenant `11111111-…`: **12 métricas**, las doce en `catalog_version: 1`
+         *       · tenant `e65f81ae-…`: **21 métricas con TRES valores distintos** · ocho
+         *         en `1`, cuatro en `3`, nueve en `4`
+         *
+         *     O sea que «la versión del catálogo del cliente» **no es un campo de esta
+         *     respuesta: es una reducción sobre las filas**. Y decirlo importa porque
+         *     esa reducción parece una decisión de diseño y no lo es: **la define su
+         *     código**. `internal/core/services/dd_catalog_sync_service.go:100` arranca
+         *     cada sync con `MaxCatalogVersion(ctx, tenantID)` y escribe
+         *     `currentVersion + 1` en lo que toca, así que **MAX**.
+         *
+         *     **Comprobado cruzado el mismo día**, que es lo que lo saca de deducción:
+         *     `GET /config/me` del tenant `e65f81ae-…` devuelve `catalog_version: 4`, y
+         *     4 es el máximo de sus 21 filas.
+         *
+         *     Y `/config/me` **no sirve para A2**: informa el catálogo del tenant de
+         *     QUIEN PREGUNTA, no del que se está mirando.
+         *
+         *     La respuesta trae además `measurement_window`, `semantic_direction`,
+         *     `unit`, `created_at` y `updated_at`. **No se declaran acá a propósito** —
+         *     `CatalogMetric` de este archivo lleva `additionalProperties: true` y
+         *     remite a `synapse-console-wire.yaml`, que los declara los cinco.
          */
         get: operations["adminCatalog"];
         put?: never;
@@ -125,7 +190,18 @@ export interface paths {
         };
         /**
          * Los roles del cliente, con su composición
-         * @description **LA TOMARON, y en la ruta que propusimos** · B4.8 · medida el 2026-09-26.
+         * @description **RELEÍDA EL 2026-09-30 contra `4c80802`** —de ahí la marca, que antes
+         *     decía `8633b10`—: 200 en los dos tenants sembrados, **tres roles**
+         *     (`admin`, `planner`, `user`, los tres con `user_count: 0`) en el
+         *     `11111111-…` y **cuatro** en el `e65f81ae-…`, con los **once campos** de
+         *     `Role` en cada uno.
+         *
+         *     **Y ninguno de los dos devuelve `roles: []`.** Queda escrito porque no es
+         *     un detalle de la respuesta sino un límite de lo que se puede mirar: el
+         *     estado vacío que A2 dibuja **no es alcanzable contra `:4010` hoy**, así
+         *     que se verifica con MSW o no se verifica.
+         *
+         *     **LA TOMARON, y en la ruta que propusimos** · B4.8 · medida el 2026-09-26.
          *     Acá decía «no la sirve el servicio desplegado», y eso venció el
          *     2026-09-25: `GET .../roles/composition` responde 200. La colisión con su
          *     propio `GET .../roles` se resolvió moviendo el NUESTRO, y su ruta quedó
@@ -323,6 +399,104 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/layouts/{layoutId}/publications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dónde participó esta versión · publicada o reemplazada
+         * @description Las publicaciones **en las que este layout aparece de los dos lados**:
+         *     como el que se publicó (`layout_id`) o como el que fue reemplazado
+         *     (`previous_layout_id`). No es el historial del dashboard — para eso está
+         *     `GET /admin/dashboards/{dashboardId}/publications`.
+         *
+         *     Más recientes primero, y **sin límite ni paginación**.
+         *
+         *     Medido el 2026-09-30 contra `:4010`: `16009187-…` → una fila,
+         *     `f998ae8c-…` → `{"success":true,"data":[]}`.
+         */
+        get: operations["listLayoutPublications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/dashboards/{dashboardId}/publications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * El historial de publicaciones del dashboard · §PEN:B6
+         * @description **Es la fuente de B6.** Todas las publicaciones y reversiones del
+         *     dashboard, más recientes primero.
+         *
+         *     Medido el 2026-09-30 contra `:4010`, dashboard «Marca» → cinco filas:
+         *     dos `publish` del 29, una `rollback` y dos `publish` del 28. La más vieja
+         *     **no trae `previous_layout_id`**, que es la primera publicación.
+         *
+         *     **El `limit` se acota en el repositorio, no en el handler**: `<= 0` o
+         *     `> 200` vuelven a **50**. Así que pedir `limit=500` no da 400: da 50.
+         */
+        get: operations["listDashboardPublications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tenants/{tenantId}/dashboards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Los dashboards del cliente
+         * @description `domain.DDDashboard`, con etiquetas `json:` — snake_case.
+         *
+         *     **B6 la necesita para el título**: el historial trae `dashboard_id` y
+         *     ningún nombre. Medido el 2026-09-30: dos dashboards, «Overview»
+         *     (`is_default: true`) y «Marca».
+         */
+        get: operations["listDashboards"];
+        put?: never;
+        /**
+         * Dar de alta un dashboard del cliente · **LEÍDA, NO CORRIDA**
+         * @description **Transcrita el 2026-09-30 leyendo su código, sin correrla** ·
+         *     `internal/core/services/dd_dashboard_service.go:40-79` y
+         *     `internal/adapters/repository/dd_dashboard_repository.go:23-35`.
+         *
+         *     Responde **201**, como `createDraft`.
+         *
+         *     Lo que el servicio decide y el cuerpo no dice:
+         *
+         *     · **`slug` se deriva del `name`** si no viene —`slugify`: minúsculas, sin
+         *       tildes ni `ñ`, todo lo que no sea alfanumérico a `-`—. Si de ahí no sale
+         *       nada, 400.
+         *     · **`is_default` omitido es `true` sólo para el primer dashboard** del
+         *       tenant, y `false` para los siguientes.
+         *     · **Poner `is_default: true` DEMOTA al anterior**, en la misma
+         *       transacción. No es aditivo.
+         */
+        post: operations["createDashboard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/tenants/{tenantId}/agents": {
         parameters: {
             query?: never;
@@ -421,6 +595,171 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/tenants/{tenantId}/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Cambiar el rol de un usuario, o suspenderlo y reactivarlo
+         * @description **Medida el 2026-10-09 contra el binario de `9dc481e`**, con la base
+         *     local: cambiar rol, suspender, reactivar, otro cliente y un rol ajeno.
+         *
+         *     **Los dos campos son opcionales y se aplican por separado.** Lo que no
+         *     viaja no cambia.
+         *
+         *     **El cliente NO se cambia acá**, y es la regla de §PEN:A3: el usuario
+         *     pertenece al tenant de la URL. Medido:
+         *
+         *       · el usuario con el tenant de OTRO cliente en la URL → **404**
+         *         «usuario no encontrado»;
+         *       · un `role_id` de otro cliente → **400** «el rol no existe o no
+         *         pertenece al tenant».
+         *
+         *     **`DELETE` sobre esta misma ruta no se transcribe a propósito**: su
+         *     handler pone `is_active=false` y conserva la fila —«soft delete»—, que es
+         *     exactamente suspender. Ofrecer «suspender» y «dar de baja» como dos
+         *     acciones prometería dos cosas distintas que son la misma.
+         */
+        put: operations["updateUser"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tenants/{tenantId}/schema-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Verificar el acceso a los datos del cliente
+         * @description **Medida el 2026-10-14 contra el binario de `8272085`**, con la base
+         *     local y Snowflake real. Tarda **entre 1,5 y 3,2 s**: consulta Snowflake
+         *     cada vez, y **el resultado no se guarda** —pedido el 2026-10-09 en
+         *     `MENSAJE-2026-10-09-backend-administracion.md`—. Por eso el front la
+         *     llama a pedido, no al abrir la ficha.
+         *
+         *     **No dice sólo «hay conexión».** Verifica tres cosas, y cada una es una
+         *     consecuencia distinta para la pantalla:
+         *
+         *       · que Snowflake responda con las credenciales del cliente —si no,
+         *         **422** credenciales o **502** Snowflake no respondió—;
+         *       · que existan las tablas y columnas que el producto lee
+         *         (`objects[].exists`, `objects[].missing`) y qué métricas quedan sin
+         *         datos si falta alguna (`affected_metrics`);
+         *       · que cada métrica del catálogo tenga cómo calcularse
+         *         (`keys_without_query`).
+         *
+         *     **`ok` es el AND de las tres**, así que `ok: false` no es «sin acceso».
+         *     Medido en UA: `ok: false` con todos los objetos presentes, porque seis
+         *     claves del catálogo no tienen cálculo.
+         *
+         *     **`role` no cambia el resultado**: con `planner` usa el mismo agente que
+         *     sin rol. La verificación es del cliente. Sin agente activo → **404**
+         *     `NOT_FOUND_AGENT`, medido.
+         *
+         *     **`database`, `schema` y `objects[].name` no se muestran** · §7.3: son
+         *     vocabulario de infraestructura. El adaptador los recorta.
+         */
+        get: operations["checkTenantSchema"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/access-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Las solicitudes de acceso, por estado
+         * @description **Medida el 2026-10-09 contra el binario de `9dc481e`**: se envió una
+         *     solicitud por `POST /access-requests` —la del login—, se listó y se
+         *     aprobó.
+         *
+         *     **Trae dos tipos**: `registration`, alguien que pide entrar, y
+         *     `password_reset`, alguien que olvidó su contraseña. Las dos se aprueban
+         *     por la misma ruta.
+         *
+         *     **Paginada en el servicio**: `page` y `page_size`, 20 por defecto.
+         */
+        get: operations["listAccessRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/access-requests/{requestId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Aprobar una solicitud · crea el usuario o restablece su contraseña
+         * @description **Medida el 2026-10-09 contra el binario de `9dc481e`.**
+         *
+         *     **Para `registration` pide `tenant_id` y `agent_id`, y el ROL del
+         *     usuario nuevo sale del agente**: `agent.TargetRole`, y `user` si viene
+         *     vacío. Medido: con el único agente de UA, cuyo `target_role` es
+         *     `admin`, **el usuario aprobado entró como `admin`**. Quien aprueba tiene
+         *     que ver ese rol antes de apretar.
+         *
+         *     **Genera una contraseña temporal y la manda por correo** cuando el
+         *     servicio tiene correo configurado; sin él registra una advertencia y no
+         *     la envía. `temp_password` viaja en la respuesta y **no se transcribe**:
+         *     el alta es por invitación y nadie ve ni fija la contraseña de otro
+         *     (§PEN:A3).
+         */
+        post: operations["approveAccessRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/access-requests/{requestId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rechazar una solicitud
+         * @description **Medida el 2026-10-09 desde la pantalla**, contra el binario de
+         *     `9dc481e`: rechazar una solicitud pendiente la saca de la cola. Devuelve
+         *     la solicitud con su estado nuevo, igual que aprobar.
+         */
+        post: operations["rejectAccessRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/tenants/{tenantId}/feeds": {
         parameters: {
             query?: never;
@@ -451,10 +790,132 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/tenants/{tenantId}/materialize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Calcula las métricas de un cliente para los meses pedidos
+         * @description **Asíncrona: contesta 202 y corre después.** Leído en
+         *     `dd_materialize_handler.go` (`RunTenant`) y medido el 2026-10-07 contra
+         *     `:4010`: con `["2026-07"]` la fila apareció en `/admin/materialize/runs`
+         *     a los ~5 s en `running` y terminó a los ~8 s. Una fila por período.
+         *
+         *     **`periods` VACÍO NO ES UN ERROR**: el servicio cae a sus períodos por
+         *     defecto —mes en curso más `DD_MATERIALIZE_PERIODS_BACK` anteriores,
+         *     default 1—. El front nunca lo manda vacío, porque eso calcularía meses
+         *     que nadie eligió.
+         *
+         *     **Es lo que destraba el histórico de un cliente nuevo.** El scheduler
+         *     diario sólo calcula el mes en curso y el anterior, así que un cliente que
+         *     entra a mitad de año con datos previos no los ve hasta que alguien pide
+         *     esos meses. Decisión humana del 2026-10-07: se pide desde A5.
+         *
+         *     **No verifica si ya hay una corrida en vuelo**, a diferencia de
+         *     `/admin/materialize/run`, que devuelve 409. Leído, no medido.
+         */
+        post: operations["materializeTenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/materialize/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Las últimas corridas de materialización
+         * @description Más recientes primero. Una fila **por período y por corrida**: pedir ocho
+         *     períodos deja ocho filas, no una.
+         *
+         *     **Los cinco contadores no son excluyentes entre sí de forma obvia** y
+         *     conviene no sumarlos a ciegas: `available`, `blocked`, `errors`,
+         *     `skipped` y `preserved`. `preserved` es la regla de preservación —un
+         *     `AVAILABLE` previo que no se pisó— así que una métrica puede contarse ahí
+         *     y seguir disponible.
+         *
+         *     Medido el 2026-10-01 contra `:4010`: las ocho corridas de enero a agosto
+         *     salieron `available 19 · blocked 2 · errors 0`, con `preserved 2`.
+         */
+        get: operations["listMaterializeRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description La respuesta 202 de `POST /admin/tenants/{tenantId}/materialize`, medida
+         *     el 2026-10-07 contra `:4010`. Dice qué arrancó, no cómo salió.
+         */
+        MaterializeStarted: {
+            started: boolean;
+            /** @example manual */
+            trigger: string;
+            /** Format: uuid */
+            tenant_id: string;
+            role: string;
+            periods: string[];
+        };
+        /**
+         * @description Una corrida de materialización, de un tenant y un período.
+         *
+         *     **Capturada del servicio el 2026-10-01**, campo por campo. `finished_at`
+         *     es nulo mientras `status` es `running`.
+         */
+        MaterializeRun: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            /** @example 2026-08 */
+            period: string;
+            /** @description `manual` lo disparó una persona; `schedule`, el reloj de las 03:00. */
+            trigger: string;
+            /** @example done */
+            status: string;
+            /**
+             * @description **Vacío mientras corre** y con nombre al terminar — medido: una fila
+             *     en `running` lo trae en `""` y la misma al cerrar dice `Synapse UA`.
+             */
+            agent_name?: string;
+            role?: string;
+            available: number;
+            blocked: number;
+            errors: number;
+            skipped?: number;
+            /**
+             * @description Las que **no se pisaron** porque ya tenían un `AVAILABLE` previo. No
+             *     es un fallo: es la regla de preservación del servicio.
+             */
+            preserved?: number;
+            catalog_synced?: boolean;
+            /** @description Vacío cuando no falló · el servicio no lo omite. */
+            error?: string;
+            /** Format: date-time */
+            started_at: string;
+            /**
+             * Format: date-time
+             * @description **Nulo mientras corre.** Es lo que distingue en vuelo de terminada.
+             */
+            finished_at?: string | null;
+        };
         /**
          * @description El sobre de `GET /admin/users` · B4.17 · medido el 2026-09-26.
          *
@@ -514,6 +975,78 @@ export interface components {
              * @description El alta
              */
             created_at: string;
+        };
+        /**
+         * @description Una solicitud de acceso · medida el 2026-10-09 contra `9dc481e`.
+         *
+         *     **`tenant_id`, `tenant_name`, `agent_id` y `agent_name` llegan recién
+         *     cuando se aprueba**: son a qué cliente y con qué agente entró. Pendiente
+         *     no los trae. `created_user_id` y `reviewed_*` también son de después.
+         */
+        AccessRequest: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            type: "registration" | "password_reset";
+            /** Format: uuid */
+            tenant_id?: string;
+            tenant_name?: string;
+            /** Format: uuid */
+            agent_id?: string;
+            agent_name?: string;
+            /** @description La empresa que la persona escribió · texto libre */
+            company_name: string;
+            full_name: string;
+            email: string;
+            phone: string;
+            job_title: string;
+            /** @description Para qué dice que va a usar la información */
+            info_use: string;
+            /** @enum {string} */
+            status: "pending" | "approved" | "rejected";
+            /** Format: uuid */
+            created_user_id?: string;
+            /** Format: uuid */
+            reviewed_by_user_id?: string;
+            /** Format: date-time */
+            reviewed_at?: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /** @description Medido el 2026-10-14 contra `8272085`. Ver la ruta. */
+        SchemaCheck: {
+            /** @description AND de conexión, objetos completos y claves con cálculo */
+            ok: boolean;
+            /** Format: uuid */
+            tenant_id: string;
+            agent_name: string;
+            /** @description Infraestructura · no se muestra */
+            database: string;
+            /** @description Infraestructura · no se muestra */
+            schema: string;
+            objects: {
+                /** @description Infraestructura · no se muestra */
+                name: string;
+                /** @enum {string} */
+                kind: "table" | "view";
+                exists: boolean;
+                missing: string[];
+            }[];
+            /** @description Claves del catálogo que quedan sin datos por lo que falta */
+            affected_metrics: string[];
+            /** @description Claves del catálogo sin cálculo */
+            keys_without_query: string[];
+            /** @enum {string} */
+            catalog_source: "view" | "postgres";
+            /** Format: date-time */
+            checked_at: string;
+        };
+        AccessRequestPage: {
+            items: components["schemas"]["AccessRequest"][];
+            total: number;
+            page: number;
+            page_size: number;
+            total_pages: number;
         };
         /**
          * @description Una fuente de datos del tenant · `1e080ee`.
@@ -593,8 +1126,18 @@ export interface components {
              *     `CONFLICT_NO_PREVIOUS`, `CONFLICT_REVERT_SELF`,
              *     `NOT_FOUND_REVERT_TARGET`, `VALIDATION_REVERT_TARGET`.
              *
+             *     **Sumados el 2026-09-30, releyendo el servicio en vez de esta lista**
+             *     —que es de donde salen las omisiones—: `CONFLICT_NO_DASHBOARD` y
+             *     `CONFLICT_REVERT_EMPTY` del revert, y `NOT_FOUND_DASHBOARD`, que lo
+             *     emite `GET /admin/dashboards/{dashboardId}/publications`.
+             *
+             *     **Y `NOT_FOUND_TENANT`, medido el 2026-09-30**: lo devuelve
+             *     `GET /admin/tenants/{tenantId}/catalog` con un tenant que no existe.
+             *     Faltaba acá aunque su ruta es la primera que A2 pide.
+             *
              *     **Medidos acá**: `AUTH_FORBIDDEN` con token de planner,
-             *     `CONFLICT_NO_PREVIOUS` y `CONFLICT_REVERT_SELF` en el revert.
+             *     `CONFLICT_NO_PREVIOUS` y `CONFLICT_REVERT_SELF` en el revert, y
+             *     `NOT_FOUND_TENANT` con un uuid inventado.
              * @example CONFLICT_NO_PREVIOUS
              * @example AUTH_FORBIDDEN
              * @example VALIDATION_LAYOUT
@@ -643,6 +1186,18 @@ export interface components {
             /** Format: uuid */
             id: string;
             name: string;
+            /**
+             * @description **La forma corta** · llegó en `f70cec2` con `tenant.label` del cable
+             *     de consola, y acá se transcribió tarde: lo encontró `npm run humo`
+             *     el 2026-09-28, no una lectura.
+             *
+             *     **Y acá SÍ puede venir vacía**, a diferencia de `/config/me`, donde
+             *     el servicio la hace caer a `name`. Medido ese día: el tenant
+             *     sembrado la trae en `""`. Quien la pinte cae a `name` — es lo que
+             *     hace A1.
+             * @example UA México
+             */
+            label: string;
             /** @example es-CO */
             locale: string;
             /** @example COP */
@@ -752,9 +1307,21 @@ export interface components {
             /**
              * @description Uno `published` por **dashboard**, no por tenant: publicar demota al
              *     anterior del mismo dashboard.
+             *
+             *     ── **`archived` FALTABA, Y NO ES UN ESTADO RARO** · 2026-09-30 ──────
+             *
+             *     El enum decía `[draft, published]` y su dominio declara **tres**:
+             *     `LayoutStatusArchived` está en `dd_layout_version.go` con su
+             *     comentario —«versiones reemplazadas por una publicación posterior.
+             *     Nunca se borran: quedan para auditoría y rollback»—.
+             *
+             *     **Y es el estado más común**: medido el 2026-09-30,
+             *     `GET /admin/tenants/{tenantId}/layouts` devuelve 7 versiones y son
+             *     **4 `archived`, 2 `published`, 1 `draft`**. Un historial de versiones
+             *     que no conoce `archived` no puede nombrar a qué se está volviendo.
              * @enum {string}
              */
-            status: "draft" | "published";
+            status: "draft" | "published" | "archived";
             /** @description Etiqueta legible. Cadena vacía si nunca se puso. */
             version_id: string;
             /** Format: date-time */
@@ -781,10 +1348,217 @@ export interface components {
             slug: string;
             /** @description El que resuelve cuando el rol no declara preferencia. */
             is_default: boolean;
+            /**
+             * @description **Cuántos meses de histórico ofrece el dashboard** · llegó con
+             *     `d9147c3`, medido el 2026-10-01.
+             *
+             *     Acá es donde el builder la EDITA —`PUT /admin/dashboards/{id}` con
+             *     `{"history_months": N}`, 1 a 120—, mientras que en el cable de la
+             *     consola es sólo de lectura. El mismo número con dos lectores.
+             * @example 12
+             */
+            history_months: number;
             /** Format: date-time */
             created_at?: string;
             /** Format: date-time */
             updated_at?: string;
+        };
+        /**
+         * @description `domain.DDLayoutPublication` · la fila del historial · §PEN:B6.
+         *
+         *     **Sólo se inserta, nunca se edita** —lo dice el comentario de su struct—,
+         *     así que una fila es una foto de lo que pasó y no del estado de hoy.
+         *
+         *     Leída el 2026-09-30 en `internal/core/domain/dd_layout_publication.go`
+         *     contra `de881e1`, y medida contra `:4010`. **Once campos, y dos son
+         *     `omitempty`** — eso no se dedujo del JSON, se leyó de las etiquetas.
+         */
+        LayoutPublication: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            /** Format: uuid */
+            dashboard_id: string;
+            /**
+             * Format: uuid
+             * @description La versión que quedó publicada por este evento.
+             */
+            layout_id: string;
+            /**
+             * @description La etiqueta de esa versión · `v-1790712673`, `rollback-v-1790630106`.
+             *     Cadena vacía si nunca se puso.
+             */
+            version_id: string;
+            /**
+             * @description `publish` o `rollback` · las dos constantes de su dominio.
+             *
+             *     Una reversión **no reactiva** la versión vieja: publica una copia, y
+             *     eso es lo que la deja aparecer como una fila más.
+             * @enum {string}
+             */
+            action: "publish" | "rollback";
+            /**
+             * Format: uuid
+             * @description Quién publicó. **`omitempty` y puntero**: puede venir AUSENTE.
+             *
+             *     Trae el id y ningún nombre — el nombre sale de `GET /admin/users`.
+             */
+            actor_user_id?: string;
+            /**
+             * @description Con qué rol publicó · medido `"admin"`.
+             * @example admin
+             */
+            actor_role: string;
+            /**
+             * Format: uuid
+             * @description La versión que se reemplazó. **`omitempty`: AUSENTE en la primera
+             *     publicación de un dashboard**, medido en la fila más vieja de
+             *     «Marca». Ausente no es «ninguna»: es «no había anterior».
+             */
+            previous_layout_id?: string;
+            /**
+             * @description Qué cambió respecto de la versión anterior.
+             *
+             *     **Puede ser `null`.** No es un descuido nuestro: es `JSONRaw`, y su
+             *     `MarshalJSON` emite `null` cuando el valor está vacío.
+             */
+            diff: components["schemas"]["LayoutDiff"] | null;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /**
+         * @description `dashboard.LayoutDiff` · nueve claves: el resumen y ocho listas.
+         *
+         *     ── **LAS LISTAS VIENEN DE LAS DOS FORMAS: `[]` Y `null`** ──────────────
+         *
+         *     `de881e13` inicializa las ocho y dejó escrito «Las colecciones vacías se
+         *     serializan como [] (nunca null)». **Pero el diff se PERSISTE en `jsonb`**,
+         *     así que las filas escritas antes de ese commit se sirven con `null` para
+         *     siempre. Medido el 2026-09-30 en las tres filas del 28 y del 29. **No es
+         *     transitorio: es la base**, y el adaptador tiene que tolerar las dos.
+         *
+         *     ── **EL EMPAREJADO, QUE DECIDE QUÉ CUENTA COMO CAMBIO** ───────────────
+         *
+         *     Leído en `internal/core/dashboard/diff.go`: las pestañas se emparejan por
+         *     **`Name` en minúsculas y sin espacios al borde** —la función `tabKey`—,
+         *     **no por su campo `key`**, y los paneles por el par `(pestaña, metric_id)`.
+         *     De ahí sale que mover un panel de pestaña se lea como uno quitado y otro
+         *     agregado.
+         */
+        LayoutDiff: {
+            summary: components["schemas"]["LayoutDiffCounts"];
+            /**
+             * @description **El nombre de la pestaña normalizado**, no su id ni su `key` ·
+             *     medido `["repertorio con dato real"]`.
+             */
+            tabs_added: string[] | null;
+            tabs_removed: string[] | null;
+            /**
+             * @description Las pestañas cuyo `sort_order` cambió. **El resumen NO las cuenta**:
+             *     `summary` no tiene contador de reordenamiento.
+             */
+            tabs_reordered: string[] | null;
+            panels_added: components["schemas"]["PanelRef"][] | null;
+            panels_removed: components["schemas"]["PanelRef"][] | null;
+            panels_moved: components["schemas"]["PanelMove"][] | null;
+            panels_retyped: components["schemas"]["PanelRetype"][] | null;
+            /**
+             * @description Cambió el `options` del panel. Se compara el **jsonb crudo**
+             *     —`sameJSON`, con `{}` por vacío—, así que un reordenamiento de claves
+             *     cuenta como cambio.
+             */
+            panels_options_changed: components["schemas"]["PanelRef"][] | null;
+        };
+        /**
+         * @description `dashboard.LayoutDiffCounts` · **exactamente cinco contadores**, y eso es
+         *     lo que hay que declarar: hay ocho listas y cinco números.
+         *
+         *     **`panels_changed` es la SUMA de tres listas** —`panels_moved` +
+         *     `panels_retyped` + `panels_options_changed`—, leído en `DiffLayouts` y
+         *     comprobado en las dos direcciones el 2026-09-30: `3` con las tres en 1, y
+         *     `0` con las tres vacías.
+         *
+         *     **No hay contador de `tabs_reordered`.** Un reordenamiento de pestañas es
+         *     un cambio que el resumen no ve — si la pantalla dice «sin cambios» con el
+         *     resumen en cero, va a mentir sobre ese caso.
+         */
+        LayoutDiffCounts: {
+            tabs_added: number;
+            tabs_removed: number;
+            panels_added: number;
+            panels_removed: number;
+            /** @description Movidos + retipados + con opciones cambiadas. */
+            panels_changed: number;
+        };
+        /**
+         * @description `dashboard.PanelRef` · a qué panel se refiere una entrada del diff.
+         *
+         *     **Trae `metric_id` y ningún nombre de métrica**: el nombre sale de
+         *     `GET /admin/tenants/{tenantId}/catalog`.
+         */
+        PanelRef: {
+            /** @description El nombre normalizado de la pestaña · ver `LayoutDiff`. */
+            tab: string;
+            /** Format: uuid */
+            metric_id: string;
+            /**
+             * @description El tipo de panel · `kpi`, `bars`, `gauge`…
+             * @example kpi
+             */
+            type: string;
+        };
+        /**
+         * @description `dashboard.PanelMove` · un `PanelRef` **embebido** más `from` y `to`. Se
+         *     emite cuando cambió cualquiera de los tres números de la geometría.
+         */
+        PanelMove: {
+            tab: string;
+            /** Format: uuid */
+            metric_id: string;
+            type: string;
+            from: components["schemas"]["PanelGeometry"];
+            to: components["schemas"]["PanelGeometry"];
+        };
+        /**
+         * @description `dashboard.PanelRetype` · un `PanelRef` embebido más `from_type`. El tipo
+         *     nuevo es el `type` de siempre.
+         */
+        PanelRetype: {
+            tab: string;
+            /** Format: uuid */
+            metric_id: string;
+            /** @description El tipo NUEVO */
+            type: string;
+            /** @description El tipo que tenía */
+            from_type: string;
+        };
+        /**
+         * @description `dashboard.PanelGeometry` · las tres que definen el lugar del panel en la
+         *     grilla. **No hay fila de inicio**: el layout la resuelve por orden.
+         */
+        PanelGeometry: {
+            col_start: number;
+            col_span: number;
+            row_span: number;
+        };
+        /**
+         * @description `ports.DDDashboardInput` · tres campos, y **sólo `name` es obligatorio**
+         *     (`binding:"required"`).
+         */
+        DashboardInput: {
+            /** @example Operaciones */
+            name: string;
+            /**
+             * @description Si falta, se deriva del `name`.
+             * @example operaciones
+             */
+            slug?: string;
+            /**
+             * @description **Puntero en Go**: omitirlo NO es `false`. Omitido significa «decidilo
+             *     vos» y el servicio pone `true` sólo si es el primero del tenant.
+             */
+            is_default?: boolean;
         };
         /** @description `domain.DDTab`, también en snake_case desde `8633b10`. */
         LayoutTab: {
@@ -800,6 +1574,24 @@ export interface components {
              */
             operational_question?: string;
             sort_order: number;
+            /**
+             * @description **La identidad estable de la pestaña dentro del dashboard** · llegó
+             *     en `f70cec2`, y es lo que faltaba para que una restricción de rol
+             *     sobreviva a una publicación: `dd_tabs.id` se recrea en cada versión
+             *     y `key` no.
+             *
+             *     Medido el 2026-09-28: la pestaña sembrada sale `overview`.
+             *
+             *     **Es único por versión de layout**, no por tenant.
+             */
+            key: string;
+            /**
+             * @description Cadena vacía si no se puso. El mismo campo que el cable de consola
+             *     declara en `TabMeta.icon`.
+             */
+            icon?: string;
+            /** @description Las preguntas sugeridas de la pestaña. Arreglo vacío si no hay. */
+            chat_suggestions?: string[];
             /** @description Vacío significa «la ven todos los roles». */
             role_ids?: string[];
             /** Format: date-time */
@@ -822,6 +1614,24 @@ export interface components {
             col_start: number;
             col_span: number;
             row_span: number;
+            /**
+             * @description **Cuál de los 49 gráficos dibuja el panel** · llegó en `f70cec2`,
+             *     pedido por nosotros. Va **junto a `type` y no en su lugar**: el
+             *     bloque decide la anatomía del cuerpo y el gráfico decide el dibujo,
+             *     y 16 de los 49 sirven más de una forma.
+             *
+             *     Cadena vacía = el gráfico por defecto del bloque. Los doce paneles
+             *     publicados salen así, medido el 2026-09-28.
+             *
+             *     **No lo validan contra el repertorio** —«eso es del front, que tiene
+             *     los 49 y sus mínimos»—, así que un id inventado llega tal cual y el
+             *     cuerpo lo declara con `UnknownPlotState`. Descartarlo en el
+             *     adaptador haría que el panel cayera al gráfico por defecto sin que
+             *     nadie se entere.
+             */
+            chart?: string;
+            /** @description La nota al pie del panel. Cadena vacía si no se puso. */
+            note?: string;
             /** @description Los nombres van en inglés · ver `PARAMS` del adaptador. */
             options?: {
                 [key: string]: unknown;
@@ -863,6 +1673,19 @@ export interface components {
              */
             id?: string;
             name: string;
+            /**
+             * @description Opcional. **Se SLUGIFICA, que es más de lo que su documento dice**
+             *     —ahí figura «recortado»—. Medido el 2026-09-28 contra `f70cec2`:
+             *     `"  MI-Clave  "` se guarda como `mi-clave`.
+             *
+             *     **Omitirla la deriva del nombre**, quitando los acentos:
+             *     `"Visión General"` → `vision-general`.
+             *
+             *     **Repetida dentro del mismo layout es `422 VALIDATION_TAB_KEY`**, y
+             *     el mensaje nombra las dos pestañas: `tab "Otra": la key "repe" ya la
+             *     usa la pestaña "Una"`.
+             */
+            key?: string;
             operational_question?: string;
             /** @description Default si viene 0: el índice del arreglo + 1. */
             sort_order?: number;
@@ -875,6 +1698,16 @@ export interface components {
             /** Format: uuid */
             metric_id: string;
             type: string;
+            /**
+             * @description Opcional · **se recorta y se baja a minúsculas**. Medido el
+             *     2026-09-28: `"  Waterfall  "` se guarda como `waterfall`.
+             *
+             *     Omitirlo deja cadena vacía, que es el gráfico por defecto del
+             *     bloque. **No se valida contra el repertorio** · ver `LayoutPanel`.
+             */
+            chart?: string;
+            /** @description Opcional · se recorta. Medido: `" una nota "` → `una nota`. */
+            note?: string;
             /** @description Default si viene 0: 1. */
             col_start?: number;
             /** @description Default si viene 0: 3. */
@@ -888,7 +1721,7 @@ export interface components {
         /** @description `ports.DDLayoutValidationResult` · SÍ tiene etiquetas `json:`. */
         ValidationResult: {
             valid: boolean;
-            errors: components["schemas"]["ValidationIssue"][];
+            errors: components["schemas"]["ValidationIssue"][] | null;
         };
         /**
          * @description Trae `tab_id` y `panel_id` cuando aplica, **así que el error se puede
@@ -914,6 +1747,27 @@ export interface components {
             tenant_id: string;
             /** @example Planner */
             name: string;
+            /**
+             * @description **La restricción de rol POR KEY** · llegó en `de881e1`, el 2026-09-29,
+             *     y es lo que hace que un rol restringido **sobreviva a publicar**.
+             *
+             *     `roles.tab_ids` apunta a `dd_tabs.id`, y ese id **se recrea en cada
+             *     versión de layout**: la primera publicación real desde el builder
+             *     dejaba sin pestañas a todo rol con restricción. `key` es estable.
+             *
+             *     **Verificado en sustancia y no por la existencia del campo** · se le
+             *     puso a `planner` un `tab_ids` con un uuid inexistente dejándole
+             *     `tab_keys: ["overview"]`, y `GET /config/me` le devolvió su pestaña
+             *     igual.
+             *
+             *     **Resuelve en este orden**: si hay `tab_keys` manda `key`; si está
+             *     vacía cae a `tab_ids`; las dos vacías = todas. Y la migración la
+             *     rellenó una vez desde los `tab_ids` existentes, así que los roles
+             *     sembrados quedaron protegidos sin tocar la consola.
+             *
+             *     **Siempre lista, nunca `null`.**
+             */
+            tab_keys: string[];
             /** @description Vacío significa «ve todas las pestañas». */
             tab_ids: string[];
             /**
@@ -953,6 +1807,24 @@ export interface components {
         };
         RoleInput: {
             name: string;
+            /**
+             * @description **La restricción por KEY, y es la que hay que escribir** · aceptada
+             *     desde `de881e1`, medido el 2026-09-29 creando un rol descartable:
+             *     `POST` con `tab_keys: ["overview"]` devuelve **201** y el rol vuelve
+             *     con `tab_keys: ["overview"]` y `tab_ids: []`.
+             *
+             *     **`tab_ids` sigue aceptándose y NO hay que mandarlo**: apunta a
+             *     `dd_tabs.id`, que se recrea en cada versión publicada, así que un rol
+             *     restringido por id **pierde sus pestañas en la primera publicación
+             *     real desde el builder**. Por eso la consola escribe keys.
+             *
+             *     **Una key inexistente se rechaza nombrándola** · medido:
+             *     `400 VALIDATION_REQUEST · la pestaña con key "no-existe" no existe en
+             *     ningún layout del tenant`. Valida contra **todos** los layouts del
+             *     tenant, borradores incluidos, para poder preparar un rol antes de
+             *     publicar.
+             */
+            tab_keys?: string[];
             tab_ids?: string[];
             hidden_metric_ids?: string[];
             /** @description Ausente se escribe como `{}`: «sin overrides» es un estado, no una omisión. */
@@ -1001,6 +1873,34 @@ export interface components {
          *     pedirlo.
          */
         Preview: {
+            /**
+             * @description **Sólo con `include=payloads`** · el período de los payloads. Medido
+             *     el 2026-10-07 contra `7b717aa`.
+             * @example 2026-10
+             */
+            period?: string;
+            /**
+             * @description **Sólo con `include=payloads`** · `panel_id` → payload, el MISMO
+             *     `Payload` de `POST /config/panels:batch` —`synapse-console-wire.yaml`—,
+             *     armado por el mismo código con el rol del lente: las métricas
+             *     ocultas salen `FORBIDDEN`. Medido el 2026-10-07: las mismas siete
+             *     claves —`status`, `value`, `governance`, `presentation`, `reason`,
+             *     `unlocks_with`, `stale_since`—.
+             *
+             *     **El dato es por métrica y período**, no por panel —`dd_panel_data`
+             *     tiene índice único `(tenant_id, metric_id, period)`—, así que un
+             *     panel recién creado en un borrador ya tiene dato si su métrica lo
+             *     tiene.
+             *
+             *     Se declara abierto y el adaptador lo lee con el tipo del cable de
+             *     consola: copiar el esquema acá sería una segunda fuente del mismo
+             *     hecho.
+             */
+            payloads?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
             /** Format: uuid */
             layout_id: string;
             /** Format: uuid */
@@ -1028,6 +1928,17 @@ export interface components {
                 /** Format: uuid */
                 id: string;
                 name: string;
+                /**
+                 * @description **La identidad estable de la pestaña** · llegó en `f70cec2` y
+                 *     acá se transcribió tarde: lo encontró `npm run humo` el
+                 *     2026-09-28, no una lectura del diff.
+                 *
+                 *     Es la que va a usar `roles.tab_keys` para decidir qué ve cada
+                 *     rol, así que en el preview es **el campo por el que se filtra**
+                 *     — hoy filtra por `tab_ids`, que se recrean al publicar.
+                 * @example overview
+                 */
+                key: string;
                 operational_question: string;
                 sort_order: number;
                 /** @example  */
@@ -1067,6 +1978,19 @@ export interface components {
                         [key: string]: unknown;
                     };
                     note: string;
+                    /**
+                     * @description **El gráfico, igual que en el cable de consola** · llegó
+                     *     en `f70cec2`. Cadena vacía = el de por defecto del
+                     *     bloque, y así salen los doce publicados.
+                     *
+                     *     Importa que esté acá y no sólo en la consola: **la vista
+                     *     previa por rol tiene que dibujar lo mismo que el rol va a
+                     *     ver**, y si el preview no trajera el gráfico mostraría
+                     *     una cascada como dona y nadie lo notaría.
+                     * @example
+                     * @example waterfall
+                     */
+                    chart: string;
                 }[];
             }[];
         };
@@ -1118,7 +2042,15 @@ export interface components {
         };
     };
     responses: {
-        /** @description Identificador mal formado */
+        /**
+         * @description Identificador mal formado · **`code: VALIDATION_REQUEST`**, medido el
+         *     2026-09-30 con `/admin/dashboards/no-uuid/publications`.
+         *
+         *     **El código no lo pone el handler**: `SendError` pasa `code` vacío y
+         *     `DefaultErrorCode(status)` lo llena con el de la familia
+         *     —`internal/adapters/handler/response.go:38-58`—, así que vale para todo
+         *     el 400 de admin y no sólo para esta ruta.
+         */
         BadRequest: {
             headers: {
                 [name: string]: unknown;
@@ -1171,6 +2103,7 @@ export interface components {
         tenantId: string;
         layoutId: string;
         roleId: string;
+        dashboardId: string;
     };
     requestBodies: never;
     headers: never;
@@ -1241,6 +2174,20 @@ export interface operations {
                 "application/json": {
                     /** @example borrador-f4 */
                     version_id?: string;
+                    /**
+                     * Format: uuid
+                     * @description **De qué dashboard es el borrador** · leído en `7b717aa` el
+                     *     2026-10-07 (`ports.DDLayoutCreateRequest`, `*uuid.UUID`).
+                     *     **Omitido, el servicio usa el dashboard POR DEFECTO del
+                     *     tenant** —`resolveDashboard`, `dd_layout_builder_service.go:102`—,
+                     *     y si el tenant no tiene ninguno contesta 409. Un dashboard
+                     *     de otro tenant es 404 `NOT_FOUND_DASHBOARD`.
+                     *
+                     *     Hasta el 2026-10-07 el builder no lo mandaba, y duplicar una
+                     *     versión de un dashboard que no era el por defecto dejaba el
+                     *     borrador en el otro.
+                     */
+                    dashboard_id?: string;
                 };
             };
         };
@@ -1282,6 +2229,24 @@ export interface operations {
                 };
             };
             403: components["responses"]["Forbidden"];
+            /**
+             * @description **Medido el 2026-09-30** con un uuid que no existe:
+             *     `{"success": false, "error": "tenant no encontrado", "code":
+             *     "NOT_FOUND_TENANT"}`. Lo emite
+             *     `internal/core/services/dd_layout_builder_service.go:458`.
+             *
+             *     Estaba sin declarar, y no es una omisión inocua: A2 recibe el
+             *     `tenantId` de la banda de clientes, así que es el 404 que se ve si
+             *     alguien llega con un id de una sesión vieja.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     getLayout: {
@@ -1485,6 +2450,29 @@ export interface operations {
                  *     `/config/tabs`. Se leyó del handler; mandarlo en camelCase da 400.
                  */
                 role_id: string;
+                /**
+                 * @description **`payloads` trae el DATO de cada panel** · llegó en `d9147c3`
+                 *     (2026-10-01) y se transcribió el 2026-10-07, leído en
+                 *     `dd_config_handler.go:238` de `7b717aa` y medido contra el servicio
+                 *     levantado acá: un borrador de 10 paneles devolvió **10 payloads**.
+                 *
+                 *     **Es el único valor que acepta**: cualquier otro da **400 ·
+                 *     «include solo admite el valor payloads»**, medido. Omitido, la
+                 *     respuesta no trae `period` ni `payloads`.
+                 *
+                 *     **Usa el cliente DEL LAYOUT, no el del token** —`batchForRole` recibe
+                 *     `layout.TenantID`, `dd_config_service.go:686`—. Es la diferencia con
+                 *     `POST /config/panels:batch`, que toma el del token: para el builder,
+                 *     que trabaja sobre un cliente que puede no ser el propio, ésta es la
+                 *     ruta correcta.
+                 */
+                include?: "payloads";
+                /**
+                 * @description El período del dato · `YYYY-MM`. Omitido, el servicio elige y lo
+                 *     devuelve en `period` —medido: `2026-10` el 2026-10-07—. Sólo tiene
+                 *     efecto con `include=payloads`.
+                 */
+                period?: string;
             };
             header?: never;
             path: {
@@ -1580,7 +2568,11 @@ export interface operations {
                     };
                 };
             };
-            /** @description El destino no existe o es de otro dashboard · `NOT_FOUND_REVERT_TARGET` */
+            /**
+             * @description `NOT_FOUND_LAYOUT` — el `{layoutId}` del path no existe ·
+             *     `NOT_FOUND_REVERT_TARGET` — el destino no existe o es de otro
+             *     dashboard.
+             */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1588,9 +2580,16 @@ export interface operations {
                 content?: never;
             };
             /**
-             * @description `CONFLICT_NO_PREVIOUS` — no hay a qué volver y no mandaron destino ·
-             *     **medido** · `CONFLICT_REVERT_SELF` — el destino es este mismo layout ·
-             *     **medido** · `CONFLICT_REVERT_TO_DRAFT` — el destino es un borrador.
+             * @description **Los cinco, releídos uno por uno el 2026-09-30** en
+             *     `internal/core/services/dd_layout_builder_service.go` contra
+             *     `de881e1`. Faltaban dos: el cable declaraba tres.
+             *
+             *     `CONFLICT_NO_DASHBOARD` — el layout no cuelga de ningún dashboard,
+             *     así que no hay historial contra el que revertir · `CONFLICT_NO_PREVIOUS`
+             *     — no hay a qué volver y no mandaron destino · **medido** ·
+             *     `CONFLICT_REVERT_SELF` — el destino es este mismo layout · **medido** ·
+             *     `CONFLICT_REVERT_TO_DRAFT` — el destino es un borrador ·
+             *     `CONFLICT_REVERT_EMPTY` — el destino no tiene pestañas.
              */
             409: {
                 headers: {
@@ -1604,6 +2603,161 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    listLayoutPublications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                layoutId: components["parameters"]["layoutId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Publicaciones, más recientes primero · puede ser vacío */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["LayoutPublication"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            /** @description `NOT_FOUND_LAYOUT` — el layout no existe */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listDashboardPublications: {
+        parameters: {
+            query?: {
+                /** @description Cuántas filas. Fuera de `1..200` el servicio usa 50 **en silencio**. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                dashboardId: components["parameters"]["dashboardId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /**
+             * @description Publicaciones, más recientes primero · **puede ser vacío con un
+             *     layout publicado**, si se publicó antes de que existiera la auditoría
+             */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["LayoutPublication"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            /** @description `NOT_FOUND_DASHBOARD` — el dashboard no existe */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listDashboards: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los dashboards del tenant */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["LayoutDashboard"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createDashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DashboardInput"];
+            };
+        };
+        responses: {
+            /** @description El dashboard creado · **no medido** */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["LayoutDashboard"];
+                    };
+                };
+            };
+            /**
+             * @description Sin nombre, o no se pudo derivar un slug · **sin `code` propio**: sale
+             *     `VALIDATION_REQUEST` por la familia del status.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            /**
+             * @description Ya existe un dashboard con ese slug en el tenant · **sin `code`
+             *     propio**.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
         };
     };
@@ -1682,6 +2836,162 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    updateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    role_id?: string;
+                    is_active?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description El usuario como quedó */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["User"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    checkTenantSchema: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El resultado de la verificación */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["SchemaCheck"];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listAccessRequests: {
+        parameters: {
+            query?: {
+                status?: "pending" | "approved" | "rejected" | "history";
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Una página de solicitudes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["AccessRequestPage"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    approveAccessRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    tenant_id?: string;
+                    /** Format: uuid */
+                    agent_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description La solicitud aprobada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: {
+                            request: components["schemas"]["AccessRequest"];
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    rejectAccessRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La solicitud rechazada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: {
+                            request: components["schemas"]["AccessRequest"];
+                        };
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listFeeds: {
         parameters: {
             query?: never;
@@ -1706,6 +3016,82 @@ export interface operations {
             };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    materializeTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * @description `YYYY-MM`. Uno mal formado devuelve **400** con
+                     *     «período inválido: 2026-13 (formato YYYY-MM)» — medido.
+                     */
+                    periods?: string[];
+                    /** @description Vacío = el rol del primer agente activo del cliente. */
+                    role?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description La corrida arrancó · el resultado se lee en `/admin/materialize/runs` */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["MaterializeStarted"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            /**
+             * @description «el tenant no tiene agentes activos» · sin agente no hay con qué
+             *     consultar Snowflake. Leído en el handler.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listMaterializeRuns: {
+        parameters: {
+            query?: {
+                /** @description Sin él devuelve las de todos los clientes. */
+                tenant_id?: string;
+                /** @description El servicio lo **topea en 100**, leído de su handler. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Corridas, más recientes primero · puede ser vacío */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["MaterializeRun"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
         };
     };
 }

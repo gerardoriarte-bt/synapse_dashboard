@@ -49,6 +49,7 @@ const detalle = {
     {
       tab: {
         id: 'tab-1',
+        key: 'tab-1-key',
         layout_version_id: 'l-1',
         name: 'Resumen',
         operational_question: '¿Qué movió el negocio?',
@@ -92,11 +93,33 @@ describe('el PascalCase del dominio se absorbe acá', () => {
     expect(l).toMatchObject({ estado: 'publicado', publicadoEn: '2026-09-11T14:00:00Z' })
   })
 
-  it('un estado desconocido cae en `borrador`, que es la lectura SEGURA', async () => {
-    // No se sustituye por `publicado`: un layout del que no se sabe si está
-    // publicado no se trata como publicado. La dirección importa.
+  it('`archived` → `archivado` · ESTA PRUEBA AFIRMABA LO CONTRARIO', async () => {
+    // ── LA PRUEBA ESTABA ESCRITA DESDE LA IMPLEMENTACIÓN · 2026-09-30 ───────
+    //
+    // Acá decía «un estado desconocido cae en `borrador`, que es la lectura
+    // SEGURA» y usaba **`archived`** como ejemplo de desconocido. `archived` no
+    // es desconocido: está en el dominio del servicio desde el principio y es
+    // **el estado más común** — 4 de los 7 layouts medidos el 2026-09-30.
+    //
+    // Así que la prueba no verificaba un fallback: **verificaba la mentira**. Y
+    // pasaba, porque estaba escrita mirando el mapa de `ESTADOS` en vez de el
+    // enum del cable. Es el antecedente del 2026-08-20 otra vez: una prueba
+    // escrita desde la implementación no puede fallar nunca.
+    //
+    // Lo encontró construir B6, que es la pantalla que necesita distinguir un
+    // borrador de una versión archivada.
     server.use(
       http.get(`${API}/admin/tenants/t-1/layouts`, () => ok([{ ...borrador, status: 'archived' }])),
+    )
+    expect((await adminApi.layouts('t-1'))[0]?.estado).toBe('archivado')
+  })
+
+  it('un estado que NO está en el enum cae en `borrador`, que es la lectura SEGURA', async () => {
+    // El fallback sigue existiendo y sigue siendo fallback. No se sustituye por
+    // `publicado`: un layout del que no se sabe si está publicado no se trata
+    // como publicado. La dirección importa.
+    server.use(
+      http.get(`${API}/admin/tenants/t-1/layouts`, () => ok([{ ...borrador, status: 'inventado' }])),
     )
     expect((await adminApi.layouts('t-1'))[0]?.estado).toBe('borrador')
   })
@@ -107,7 +130,7 @@ describe('el PascalCase del dominio se absorbe acá', () => {
 
     expect(d.tabs[0]?.tab).toEqual({
       id: 'tab-1',
-      nombre: 'Resumen',
+      clave: 'tab-1-key', nombre: 'Resumen',
       pregunta: '¿Qué movió el negocio?',
       orden: 1,
       roles: [],
@@ -158,7 +181,14 @@ describe('guardar · el PUT reemplaza el layout entero', () => {
           operational_question: '¿Qué movió?',
           sort_order: 1,
           role_ids: [],
-          panels: [{ metric_id: 'm-1', type: 'kpi', col_start: 1, col_span: 3, row_span: 4 }],
+          // **`chart` se agregó el 2026-09-29 y esta prueba se puso ROJA**, que
+          // es exactamente para lo que sirve fijar el cuerpo entero con
+          // `toEqual`: un campo nuevo en el `PUT` no puede entrar sin que
+          // alguien lo mire. Va vacío porque este panel no tiene gráfico
+          // elegido, y explícito porque el cuerpo dice qué se quiso.
+          panels: [
+            { metric_id: 'm-1', type: 'kpi', col_start: 1, col_span: 3, row_span: 4, chart: '' },
+          ],
         },
       ],
     })
@@ -438,5 +468,249 @@ describe('los usuarios · A3 · F4.3', () => {
     // dos mitades y quien las junta tiene que ser uno solo.
     expect(u?.nombre).toBe('Sofía Marín')
     expect(u?.rolId).toBe('r-1')
+  })
+})
+
+describe('la restricción de rol viaja por CLAVE · 2026-09-29', () => {
+  it('LEE `tab_keys` cuando están, y cae a `tab_ids` cuando no', async () => {
+    // **El orden no es cortesía: es el del backend.** Su regla es «si hay
+    // `tab_keys` manda la key; si está vacía cae a `tab_ids`». Leerlo al revés
+    // dejaría **sin restricción** a un rol que todavía no migró — y un rol sin
+    // restricción ve todo, así que el error abre acceso en vez de cerrarlo.
+    server.use(
+      http.get(`${API}/admin/tenants/:id/roles/composition`, () =>
+        ok([
+          { id: 'r-1', tenant_id: 't-1', name: 'Migrado', tab_keys: ['overview'], tab_ids: [],
+            hidden_metric_ids: [], layout_overrides: {}, user_count: 0 },
+          { id: 'r-2', tenant_id: 't-1', name: 'Sin migrar', tab_keys: [], tab_ids: ['tab-viejo'],
+            hidden_metric_ids: [], layout_overrides: {}, user_count: 0 },
+          // **El caso que importa y que faltaba**: después de SU migración los
+          // roles tienen LAS DOS pobladas —`tab_keys` se rellenó desde
+          // `tab_ids`— y los ids quedan apuntando a la versión vieja. Si se
+          // leyeran primero, la consola mostraría una restricción caduca **sin
+          // romper nada**: los dos campos existen y los dos parecen válidos.
+          //
+          // Lo encontró una mutación que sobrevivió con sólo los dos primeros.
+          { id: 'r-3', tenant_id: 't-1', name: 'Con las dos', tab_keys: ['overview'],
+            tab_ids: ['id-de-una-version-vieja'],
+            hidden_metric_ids: [], layout_overrides: {}, user_count: 0 },
+        ]),
+      ),
+    )
+    const roles = await adminApi.roles('t-1')
+
+    expect(roles[0]?.pestanas).toEqual(['overview'])
+    expect(roles[1]?.pestanas).toEqual(['tab-viejo'])
+    // Con las dos, manda la key.
+    expect(roles[2]?.pestanas).toEqual(['overview'])
+  })
+
+  it('ESCRIBE `tab_keys` y NO manda `tab_ids`', async () => {
+    // **No se mandan los dos.** El backend prioriza `tab_keys`, así que un
+    // `tab_ids` al lado sería ruido que alguien va a leer como la fuente — y
+    // mandar sólo ids era escribir una restricción con fecha de vencimiento: la
+    // próxima publicación los recrea y el rol pierde sus pestañas.
+    let cuerpo: Record<string, unknown> | undefined
+    server.use(
+      http.post(`${API}/admin/tenants/:id/roles`, async ({ request }) => {
+        cuerpo = (await request.json()) as Record<string, unknown>
+        return ok({ id: 'r-9', tenant_id: 't-1', name: 'Nuevo', tab_keys: ['overview'],
+          tab_ids: [], hidden_metric_ids: [], layout_overrides: {}, user_count: 0 })
+      }),
+    )
+    await adminApi.crearRol('t-1', { nombre: 'Nuevo', pestanas: ['overview'], metricasOcultas: [] })
+
+    expect(cuerpo?.['tab_keys']).toEqual(['overview'])
+    expect(cuerpo).not.toHaveProperty('tab_ids')
+  })
+})
+
+describe('cargar meses · POST /admin/tenants/{id}/materialize · 2026-10-07', () => {
+  it('manda los meses elegidos en `periods` y devuelve los que el servicio arrancó', async () => {
+    let cuerpo: unknown = null
+    server.use(
+      http.post(`${API}/admin/tenants/t-1/materialize`, async ({ request }) => {
+        cuerpo = await request.json()
+        // La respuesta 202 medida contra `7b717aa` ese día.
+        return HttpResponse.json(
+          { success: true, data: { started: true, trigger: 'manual', tenant_id: 't-1', role: 'admin', periods: ['2026-07', '2026-08'] } },
+          { status: 202 },
+        )
+      }),
+    )
+    expect(await adminApi.cargarPeriodos('t-1', ['2026-07', '2026-08'])).toEqual(['2026-07', '2026-08'])
+    expect(cuerpo).toEqual({ periods: ['2026-07', '2026-08'] })
+  })
+
+  it('una lista VACÍA no sale · el servicio la leería como «los meses por defecto»', async () => {
+    let llamado = false
+    server.use(
+      http.post(`${API}/admin/tenants/t-1/materialize`, () => {
+        llamado = true
+        return ok({})
+      }),
+    )
+    await expect(adminApi.cargarPeriodos('t-1', [])).rejects.toThrow()
+    expect(llamado).toBe(false)
+  })
+
+  it('el 400 del servicio llega con SU frase', async () => {
+    server.use(
+      http.post(`${API}/admin/tenants/t-1/materialize`, () =>
+        HttpResponse.json({ success: false, error: 'período inválido: 2026-13 (formato YYYY-MM)' }, { status: 400 }),
+      ),
+    )
+    await expect(adminApi.cargarPeriodos('t-1', ['2026-13'])).rejects.toThrow('período inválido: 2026-13')
+  })
+})
+
+/* ── Usuarios y solicitudes de acceso · 2026-10-09 ─────────────────────────
+ *
+ * **Los fixtures son los que el servicio devolvió ese día** —binario de
+ * `9dc481e`, base local—, recortados. Ver el cable. */
+
+const usuarioDelCable = {
+  id: 'u-9', tenant_id: 't-1', email: 'solicitante@prueba.test',
+  first_name: 'Solicitante', last_name: 'Prueba', phone: '000',
+  role_id: 'r-2', role: 'planner', last_login_at: null,
+  is_active: true, created_at: '2026-10-09T09:50:04.726489-05:00',
+}
+
+describe('cambiar un usuario · PUT sobre el usuario DEL tenant', () => {
+  it('va a la URL del cliente del usuario, con SÓLO lo que cambia', async () => {
+    let url = ''
+    let cuerpo: unknown = null
+    server.use(
+      http.put(`${API}/admin/tenants/:tenantId/users/:userId`, async ({ request }) => {
+        url = new URL(request.url).pathname
+        cuerpo = await request.json()
+        return ok({ ...usuarioDelCable, is_active: false })
+      }),
+    )
+    const u = await adminApi.editarUsuario('t-1', 'u-9', { activo: false })
+    expect(url).toBe('/api/v1/admin/tenants/t-1/users/u-9')
+    // **Sin `role_id`**: lo que no viaja no cambia, y mandarlo vacío sería pedir
+    // un rol inexistente.
+    expect(cuerpo).toEqual({ is_active: false })
+    expect(u.activo).toBe(false)
+  })
+
+  it('el cambio de rol manda `role_id` y nada más', async () => {
+    let cuerpo: unknown = null
+    server.use(
+      http.put(`${API}/admin/tenants/:tenantId/users/:userId`, async ({ request }) => {
+        cuerpo = await request.json()
+        return ok(usuarioDelCable)
+      }),
+    )
+    await adminApi.editarUsuario('t-1', 'u-9', { rolId: 'r-2' })
+    expect(cuerpo).toEqual({ role_id: 'r-2' })
+  })
+
+  it('el usuario trae su CLIENTE, que es lo que va en esa URL', async () => {
+    server.use(http.get(`${API}/admin/tenants/t-1/users`, () => ok([usuarioDelCable])))
+    const [u] = await adminApi.usuarios('t-1')
+    expect(u?.clienteId).toBe('t-1')
+  })
+})
+
+describe('el cliente trae su forma corta · para distinguir dos del mismo nombre', () => {
+  it('`label` llega como `formaCorta`, vacía si nadie la cargó', async () => {
+    server.use(
+      http.get(`${API}/admin/tenants`, () =>
+        ok([
+          { id: 't-1', name: 'Under Armour México', label: 'UA MX', locale: 'es-MX', currency: 'USD', timezone: 'America/Mexico_City', user_count: 2, created_at: '2026-09-22T09:18:45Z' },
+          { id: 't-2', name: 'Under Armour México', label: '', locale: 'es-MX', currency: 'USD', timezone: 'America/Mexico_City', user_count: 0, created_at: '2026-09-22T09:18:45Z' },
+        ]),
+      ),
+    )
+    const [a, b] = await adminApi.tenants()
+    expect(a?.formaCorta).toBe('UA MX')
+    expect(b?.formaCorta).toBe('')
+  })
+})
+
+const solicitudDelCable = {
+  id: 'ar-1', type: 'registration', company_name: 'Prueba', full_name: 'Solicitante Prueba',
+  email: 'solicitante@prueba.test', phone: '000', job_title: 'Analista', info_use: 'medir la cola',
+  status: 'pending', created_at: '2026-10-09T09:50:04.653604-05:00',
+}
+
+describe('las solicitudes de acceso', () => {
+  it('lista SÓLO las pendientes, y las adapta', async () => {
+    let consulta = ''
+    server.use(
+      http.get(`${API}/admin/access-requests`, ({ request }) => {
+        consulta = new URL(request.url).search
+        return ok({
+          items: [solicitudDelCable, { ...solicitudDelCable, id: 'ar-2', type: 'password_reset' }],
+          total: 2, page: 1, page_size: 100, total_pages: 1,
+        })
+      }),
+    )
+    const { total, solicitudes } = await adminApi.solicitudes()
+    expect(consulta).toContain('status=pending')
+    expect(total).toBe(2)
+    expect(solicitudes[0]).toMatchObject({ tipo: 'alta', estado: 'pendiente', empresa: 'Prueba', clienteNombre: null })
+    expect(solicitudes[1]?.tipo).toBe('contrasena')
+  })
+
+  it('aprobar un alta manda cliente y agente · el rol sale del agente', async () => {
+    let cuerpo: unknown = null
+    server.use(
+      http.post(`${API}/admin/access-requests/ar-1/approve`, async ({ request }) => {
+        cuerpo = await request.json()
+        // **Sin la contraseña temporal que el servicio también devuelve**: el
+        // front no la lee ni el cable la declara, y un valor de mentira con ese
+        // nombre lo marca GitGuardian como secreto —pasó en el PR #3—.
+        return ok({ message: 'solicitud aprobada', request: solicitudDelCable })
+      }),
+    )
+    await adminApi.aprobarSolicitud('ar-1', { tenantId: 't-1', agenteId: 'ag-1' })
+    expect(cuerpo).toEqual({ tenant_id: 't-1', agent_id: 'ag-1' })
+  })
+
+  it('aprobar un cambio de contraseña no manda destino', async () => {
+    let cuerpo: unknown = 'sin leer'
+    server.use(
+      http.post(`${API}/admin/access-requests/ar-2/approve`, async ({ request }) => {
+        cuerpo = await request.json()
+        return ok({ message: 'solicitud aprobada', request: solicitudDelCable })
+      }),
+    )
+    await adminApi.aprobarSolicitud('ar-2')
+    expect(cuerpo).toEqual({})
+  })
+
+  it('rechazar va a su propia ruta', async () => {
+    let llamado = false
+    server.use(
+      http.post(`${API}/admin/access-requests/ar-1/reject`, () => {
+        llamado = true
+        return ok({ message: 'solicitud rechazada', request: solicitudDelCable })
+      }),
+    )
+    await adminApi.rechazarSolicitud('ar-1')
+    expect(llamado).toBe(true)
+  })
+})
+
+describe('la verificación del acceso', () => {
+  it('va a la ruta del cliente, y no trae la plomería', async () => {
+    let url = ''
+    server.use(
+      http.get(`${API}/admin/tenants/:tenantId/schema-check`, ({ request }) => {
+        url = new URL(request.url).pathname
+        return ok({
+          ok: true, tenant_id: 't-1', agent_name: 'A', database: 'DB_BT_UA', schema: 'BT_UA_MART_ANALYTICS',
+          objects: [], affected_metrics: [], keys_without_query: [], catalog_source: 'view',
+          checked_at: '2026-10-14T15:33:07Z',
+        })
+      }),
+    )
+    const v = await adminApi.verificarAcceso('t-1')
+    expect(url).toBe('/api/v1/admin/tenants/t-1/schema-check')
+    expect(JSON.stringify(v)).not.toContain('DB_BT_UA')
+    expect(v.verificadoEn).toBe('2026-10-14T15:33:07Z')
   })
 })

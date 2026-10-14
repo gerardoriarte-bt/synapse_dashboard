@@ -14,10 +14,10 @@ import type { PestanaDeRol } from '@/surfaces/admin/RoleCard'
 import type { Rol } from '@/api/admin'
 
 const PESTANAS: PestanaDeRol[] = [
-  { id: 't1', nombre: 'eCommerce Overview', pregunta: '¿Cómo va el negocio?', paneles: 12 },
-  { id: 't2', nombre: 'Brand Momentum', pregunta: '¿La marca crece o solo pauta?', paneles: 4 },
-  { id: 't3', nombre: 'Product Sales', pregunta: '¿Qué producto empuja?', paneles: 4 },
-  { id: 't4', nombre: 'Inventory & Shopping', pregunta: '¿Qué frena la venta?', paneles: 8 },
+  { id: 't1', clave: 't1-key', nombre: 'eCommerce Overview', pregunta: '¿Cómo va el negocio?', paneles: 12 },
+  { id: 't2', clave: 't2-key', nombre: 'Brand Momentum', pregunta: '¿La marca crece o solo pauta?', paneles: 4 },
+  { id: 't3', clave: 't3-key', nombre: 'Product Sales', pregunta: '¿Qué producto empuja?', paneles: 4 },
+  { id: 't4', clave: 't4-key', nombre: 'Inventory & Shopping', pregunta: '¿Qué frena la venta?', paneles: 8 },
 ]
 
 /** El fixture se escribe desde el tipo, no de memoria: `Rol` pide los siete
@@ -66,7 +66,7 @@ describe('vacío significa TODAS, y acá es aritmética', () => {
   })
 
   it('un rol acotado suma SOLO las suyas', () => {
-    const { container } = montar(rol({ nombre: 'Planner', pestanas: ['t3', 't4'] }))
+    const { container } = montar(rol({ nombre: 'Planner', pestanas: ['t3-key', 't4-key'] }))
 
     expect(container.textContent).toContain('12')
     expect(screen.getByText('Paneles · 2 pestaña(s)')).toBeInTheDocument()
@@ -78,7 +78,7 @@ describe('vacío significa TODAS, y acá es aritmética', () => {
 
 describe('la pregunta operativa, que es lo que vuelve legible el nombre', () => {
   it('cada pestaña va con la suya', () => {
-    montar(rol({ pestanas: ['t1'] }))
+    montar(rol({ pestanas: ['t1-key'] }))
     expect(screen.getByText('eCommerce Overview')).toBeInTheDocument()
     expect(screen.getByText('¿Cómo va el negocio?')).toBeInTheDocument()
     expect(screen.getByText('12 paneles')).toBeInTheDocument()
@@ -137,6 +137,25 @@ describe('las métricas que un rol no recibe', () => {
 })
 
 describe('borrar sigue dependiendo de los usuarios', () => {
+  it('Borrar viste la señal de PELIGRO y no la del CTA · 2026-10-06', () => {
+    // Iba en `text-acc`, el naranja de «adelante»: una acción que borra con esa
+    // señal la invierte. Y sigue siendo la única que la lleva — «Editar» al
+    // lado es secundaria.
+    montar(rol({ usuarios: 0 }))
+    const borrar = screen.getByRole('button', { name: 'Borrar CEO' })
+    expect(borrar.className).toContain('text-peligro')
+    expect(borrar.className).not.toContain('text-acc')
+    expect(screen.getByRole('button', { name: 'Editar' }).className).not.toContain('text-peligro')
+  })
+
+  it('la razón de no poder borrar es una FRASE, no un rótulo · 2026-10-06', () => {
+    // Mono en mayúsculas se lee como el nombre de algo; esto explica qué hacer.
+    montar(rol({ usuarios: 3 }))
+    const razon = screen.getByText(/reasignalos primero/)
+    expect(razon.className).toContain('font-body')
+    expect(razon.className).not.toContain('uppercase')
+  })
+
   it('con usuarios asignados no hay botón, y se dice por qué', () => {
     const { container } = montar(rol({ usuarios: 3 }))
     expect(screen.queryByRole('button', { name: /borrar/i })).toBeNull()
@@ -153,7 +172,7 @@ describe('borrar sigue dependiendo de los usuarios', () => {
 
 describe('el resumen de la cabecera · en RoleEditor', () => {
   it('la cifra grande lleva su rótulo pegado · ningún número desnudo', () => {
-    const { container } = montar(rol({ pestanas: ['t1'] }))
+    const { container } = montar(rol({ pestanas: ['t1-key'] }))
     const cifra = within(container).getByText('12')
     // El rótulo es el hermano inmediato, que es lo que el `.pen` dibuja: la
     // cifra arriba y «PANELES · N PESTAÑAS» debajo.

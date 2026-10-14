@@ -36,7 +36,7 @@ import { MARGIN, axisReserve } from './core/axisGeometry'
 import { Grid } from './core/Grid'
 import { Band } from './core/Band'
 import { Line } from './core/Series'
-import type { Family } from '../../catalog/types'
+import type { FamiliaDeDibujo } from '../types'
 
 export type ControlPoint = { t: string; v: number; lo: number; hi: number }
 
@@ -53,7 +53,7 @@ export function PlotControl({
   format,
 }: {
   points: readonly ControlPoint[]
-  family: Family
+  family: FamiliaDeDibujo
   format: (v: number) => string
 }) {
   const { ref, w, h } = useSize()

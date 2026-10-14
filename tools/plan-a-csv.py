@@ -164,6 +164,21 @@ def escribir(tareas: list[dict]) -> None:
 
 
 def main() -> int:
+    # ── `--check` · verifica y NO escribe · 2026-09-28 ────────────────────────
+    #
+    # **Existe porque `plan` no estaba en la puerta y esto costó caro.** El
+    # 2026-09-28 un cierre de tarea empezó con prosa suelta donde el parser
+    # espera un marcador, F4.6–F4.12 se quedaron sin su criterio compartido, y
+    # `npm run plan` falló. `verify` salió VERDE igual, así que nadie se enteró
+    # hasta que otra sesión quiso regenerar `PARA-BACKEND.md` y su pedido no
+    # llegaba al documento que el backend lee.
+    #
+    # **No se agregó `npm run plan` a la puerta a secas**: regenera cuatro
+    # archivos, y un chequeo que escribe deja el árbol sucio en cada corrida —
+    # que es cómo un generado termina commiteado sin que nadie lo mire. Esto
+    # parsea y valida; escribir sigue siendo un acto explícito.
+    solo_verificar = '--check' in sys.argv
+
     tareas = parsear(FUENTE.read_text())
 
     # Una tarea sin criterio verificable no entra al plan: es la regla que el
@@ -173,6 +188,10 @@ def main() -> int:
         print(f'✗ {len(sin_criterio)} tareas sin criterio de aceptación: '
               f'{", ".join(sin_criterio)}', file=sys.stderr)
         return 1
+
+    if solo_verificar:
+        print(f'plan ✓ {len(tareas)} tareas parsean · todas con criterio')
+        return 0
 
     escribir(tareas)
     (RAIZ / 'tools' / 'plan-tareas.json').write_text(

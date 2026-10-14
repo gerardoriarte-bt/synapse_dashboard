@@ -12,7 +12,8 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChatStreamError, askSynapse, esDePanel } from './chat'
-import type { ChatRequest, ContextoDeChat } from './chat'
+import type { ChatRequest, ContextoDeChat, TurnoGuardado } from './chat'
+import { api } from './client'
 export type { ContextoDeChat }
 import type { ChatEvent } from './types'
 
@@ -38,6 +39,25 @@ export type ChatTurn = {
 }
 
 const VACIA: Answer = { texto: '', datos: [], auditoria: null, sugerencias: [] }
+
+/** El estado de un hilo reabierto. `null` es «no se reabrió nada»: una
+ *  consulta nueva o una conversación que se está teniendo ahora. */
+export type Historial = {
+  estado: 'cargando' | 'listo' | 'error'
+  /** La página trajo las últimas 50 y hay mensajes antes. */
+  hayAnteriores: boolean
+}
+
+/** Un turno guardado a la forma de los turnos en vivo. Sin `auditoria` ni
+ *  `sugerencias`: el servicio no los guarda, y la hoja lo declara. */
+function aTurno(t: TurnoGuardado): ChatTurn {
+  return {
+    pregunta: t.pregunta,
+    respuesta: { texto: t.texto ?? '', datos: t.datos, auditoria: null, sugerencias: [] },
+    streaming: false,
+    error: t.texto === null ? { mensaje: 'El turno se cortó antes de terminar.', parcial: false } : null,
+  }
+}
 
 /** Aplica un evento a la respuesta en curso.
  *
@@ -68,7 +88,10 @@ export function apply(previa: Answer, evento: ChatEvent): Answer {
  *  resto —la métrica, el valor, los paneles de la pestaña— leyendo por id, así
  *  que el front no los transcribe. Esa parte del criterio de F3.2 se retiró el
  *  2026-09-17 y esto no la reabre. */
-export function useChat(contexto: ContextoDeChat) {
+/** `agenteId` es el que eligió un admin en el selector · 2026-10-06. Ausente,
+ *  el servicio resuelve el agente por rol y tenant, que es el camino de
+ *  cualquier otro usuario. */
+export function useChat(contexto: ContextoDeChat, agenteId?: string) {
   const clave = esDePanel(contexto)
     ? `panel:${contexto.panelId}:${contexto.periodo}`
     : `tab:${contexto.tabId}:${contexto.periodo}`
@@ -77,21 +100,39 @@ export function useChat(contexto: ContextoDeChat) {
 
   const abort = useRef<AbortController | null>(null)
 
-  /** Retomar un hilo del riel · F3.7.
+  /** Retomar un hilo del riel · F3.7, y **reabrirlo** desde el 2026-10-09.
    *
-   *  **Apunta el próximo envío al hilo elegido, y limpia los turnos de este.**
-   *  Dejarlos arriba mostraría la conversación de un hilo bajo el id de otro:
-   *  lo que se ve y lo que se continúa serían cosas distintas, que es la forma
-   *  exacta de «arranca uno nuevo en silencio» pero al revés.
+   *  **Apunta el próximo envío al hilo elegido y trae su conversación.** Hasta
+   *  el 2026-10-09 sólo apuntaba: el criterio de F3.7 pedía que retomar
+   *  reenviara el contexto y no traer los mensajes, así que la hoja quedaba
+   *  vacía. Visto desde el uso era un clic que no abría nada, y el `.pen`
+   *  dibuja C3 con la conversación del hilo activo a la vista.
    *
-   *  **Lo que NO hace es traer los mensajes de ese hilo.** Eso es
-   *  `GET /config/chat/threads/{id}/messages`, otra ruta, y el criterio de F3.7
-   *  no la pide: pide que retomar reenvíe el contexto. El riel muestra de qué
-   *  se hablaba; la hoja arranca vacía y sigue la misma conversación. */
-  const resume = useCallback((hiloId: string) => {
+   *  **Los dos ids, cada uno a lo suyo**: el UUID trae los mensajes y el entero
+   *  continúa la conversación. Ver `ChatThread` en el cable.
+   *
+   *  **Una respuesta que llega tarde no pisa otro hilo.** Si mientras carga se
+   *  elige otro o se abre una consulta nueva, `pedido` ya cambió y se descarta. */
+  const pedido = useRef(0)
+  const [historial, setHistorial] = useState<Historial | null>(null)
+
+  const resume = useCallback((hilo: { uuid: string; hiloId: string }) => {
     abort.current?.abort()
-    setThreadId(hiloId)
+    setThreadId(hilo.hiloId)
     setTurns([])
+    const este = ++pedido.current
+    setHistorial({ estado: 'cargando', hayAnteriores: false })
+    api.threadMessages(hilo.uuid).then(
+      ({ turnos, hayAnteriores }) => {
+        if (pedido.current !== este) return
+        setTurns(turnos.map(aTurno))
+        setHistorial({ estado: 'listo', hayAnteriores })
+      },
+      () => {
+        if (pedido.current !== este) return
+        setHistorial({ estado: 'error', hayAnteriores: false })
+      },
+    )
   }, [])
 
   /** «Nueva consulta» · §PEN:C3 lo pone en la cabecera del riel.
@@ -102,9 +143,23 @@ export function useChat(contexto: ContextoDeChat) {
    *  dos consultas. */
   const reset = useCallback(() => {
     abort.current?.abort()
+    pedido.current++
+    setHistorial(null)
     setThreadId(null)
     setTurns([])
   }, [])
+
+  /** **Cambiar de agente es una conversación nueva.** El servicio fija el
+   *  agente al crear el hilo e ignora `agent_id` cuando va `thread_id`, así que
+   *  seguir el hilo después de cambiar mostraría un agente en el selector y
+   *  contestaría otro. Se compara contra el anterior y no se usa un efecto
+   *  sobre `agenteId` a secas: el primer render no es un cambio. */
+  const agenteAnterior = useRef(agenteId)
+  useEffect(() => {
+    if (agenteAnterior.current === agenteId) return
+    agenteAnterior.current = agenteId
+    reset()
+  }, [agenteId, reset])
 
   // Una sola limpieza, al desmontar. El `ref` sostiene el controlador del turno
   // en curso, sea cual sea.
@@ -131,6 +186,7 @@ export function useChat(contexto: ContextoDeChat) {
         // reconstruir la unión, y ahí es donde alguien manda las dos ramas.
         contexto,
         ...(threadId === null ? {} : { hiloId: threadId }),
+        ...(agenteId === undefined ? {} : { agenteId }),
       }
 
       try {
@@ -175,8 +231,8 @@ export function useChat(contexto: ContextoDeChat) {
     // **Una clave derivada y no el objeto**: el llamador pasa un literal, así
     // que `[contexto]` recrearía `ask` en cada render. Y con la unión ya no
     // alcanza `contexto.panelId` — la rama de pestaña no lo tiene.
-    [clave, threadId, turns.length],
+    [clave, threadId, turns.length, agenteId],
   )
 
-  return { turns, threadId, ask, resume, reset }
+  return { turns, threadId, historial, ask, resume, reset }
 }

@@ -14,10 +14,13 @@
  *  algo que nadie verificó.
  */
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
 import { AgentConfig } from '@/surfaces/admin/AgentConfig'
 import { adaptAgent } from '@/api/admin'
-import type { WireAgent } from '@/api/admin'
+import { createFormat } from '@/render/format'
+import type { WireAgent, Agente } from '@/api/admin'
+import type { EstadoDelAcceso } from '@/surfaces/admin/estadoDelAcceso'
 
 /** Un agente **como lo manda el servicio**, con toda su plomería.
  *
@@ -42,6 +45,26 @@ const crudo: WireAgent = {
 
 const agente = (parche: Partial<WireAgent> = {}) => adaptAgent({ ...crudo, ...parche })
 
+const format = createFormat('es-MX')
+const now = new Date('2026-10-14T16:00:00Z')
+
+/** **Con las props de la verificación** · 2026-10-14. Por defecto, sin
+ *  verificar: es el estado con el que se abre la ficha. */
+function bloque(agentes: readonly Agente[], extra: Partial<Parameters<typeof AgentConfig>[0]> = {}) {
+  const acceso: EstadoDelAcceso = { estado: 'sin-verificar' }
+  return render(
+    <AgentConfig
+      agentes={agentes}
+      sinRoles={false}
+      acceso={acceso}
+      nombreDeMetrica={(k) => ({ revenue_forecast: 'Proyección de revenue' })[k] ?? k}
+      format={format}
+      now={now}
+      {...extra}
+    />,
+  )
+}
+
 describe('F4.4 · §7.3 · la plomería no cruza la frontera', () => {
   it('el adaptador NO deja pasar base, esquema ni warehouse', () => {
     // **Se recorta en el adaptador y no en el componente**: si llegaran hasta
@@ -62,7 +85,7 @@ describe('F4.4 · §7.3 · la plomería no cruza la frontera', () => {
   })
 
   it('la pantalla no pinta ninguno de los cuatro', () => {
-    const { container } = render(<AgentConfig agentes={[agente()]} />)
+    const { container } = bloque([agente()])
     for (const plomeria of ['DB_BT_UA', 'BT_UA_MART_ANALYTICS', 'WH_SYNAPSE', 'SYNAPSE_METRIC_CATALOG']) {
       expect(container.textContent).not.toContain(plomeria)
     }
@@ -71,7 +94,7 @@ describe('F4.4 · §7.3 · la plomería no cruza la frontera', () => {
   it('el rol que se muestra es el de PRODUCTO', () => {
     // `target_role` sale de `roles.name` —«Planner», «CEO»— y no es un rol
     // técnico de Snowflake, que es lo que §7.3 prohíbe.
-    render(<AgentConfig agentes={[agente()]} />)
+    bloque([agente()])
     expect(screen.getByText('Planner')).toBeInTheDocument()
   })
 })
@@ -81,7 +104,7 @@ describe('F4.4 · el estado del acceso se DECLARA pendiente, no se deduce', () =
     // **Es la aserción de la tarea.** `is_active` solo dice que nadie lo dio de
     // baja: un agente activo con la credencial vencida se ve igual que uno que
     // funciona.
-    render(<AgentConfig agentes={[agente({ is_active: true })]} />)
+    bloque([agente({ is_active: true })])
 
     // **La aserción va sobre la FILA, no sobre la pantalla.** La palabra
     // «vigente» sí aparece abajo, en el texto que explica que esa verificación
@@ -94,25 +117,33 @@ describe('F4.4 · el estado del acceso se DECLARA pendiente, no se deduce', () =
   })
 
   it('activo e inactivo se distinguen', () => {
-    render(<AgentConfig agentes={[agente({ is_active: false })]} />)
+    bloque([agente({ is_active: false })])
     expect(screen.getByText('Inactivo')).toBeInTheDocument()
   })
 
-  it('la declaración de pendiente dice qué falta y qué lo desbloquea', () => {
-    render(<AgentConfig agentes={[agente()]} />)
-    expect(screen.getByText(/Pendiente · el estado del acceso/)).toBeVisible()
-    expect(screen.getByText(/Se desbloquea con/)).toBeVisible()
+  it('sin verificar lo dice, y «Verificar ahora» DISPARA · 2026-10-14', async () => {
+    // **Era «Pendiente · se desbloquea con una comprobación del acceso».** La
+    // comprobación existe —`schema-check`— y ahora se pide desde acá.
+    const onVerificar = vi.fn()
+    bloque([agente()], { onVerificar })
+    expect(screen.getByText('Sin verificar en esta sesión')).toBeVisible()
+    await userEvent.click(screen.getByRole('button', { name: 'Verificar ahora' }))
+    expect(onVerificar).toHaveBeenCalledOnce()
   })
 
-  it('sin agentes la declaración SIGUE, porque el hueco es del cable', () => {
+  it('sin agentes lo dice, y no ofrece verificar', () => {
     // Un cliente sin agente y un cable sin verificación de acceso son dos cosas
     // distintas. Esconder la segunda cuando falta la primera las confunde.
-    render(<AgentConfig agentes={[]} />)
-    expect(screen.getByText(/todavía no tiene un agente/)).toBeInTheDocument()
-    // **`toBeVisible` y no `textContent`.** Una mutación que escondía el bloque
-    // con `hidden` pasaba: `textContent` incluye lo oculto, así que la prueba
-    // leía un texto que nadie ve. Lo encontró la mutación, no la lectura.
-    expect(screen.getByText(/Pendiente · el estado del acceso/)).toBeVisible()
+    // **`sinRoles={false}` y no por defecto** · F5.20. La rama `BLOQUEADO` del
+    // dibujo REEMPLAZA este cuerpo, así que estas nueve pruebas tienen que decir
+    // en qué estado están: sin roles no hay declaración de acceso que hacer, hay
+    // un bloqueo. La prop es obligatoria justamente para que eso no se decida por
+    // omisión — y la rama nueva se prueba montando la pantalla, en `enAlta`.
+    bloque([], { onVerificar: vi.fn() })
+    expect(screen.getByText(/todavía no tiene un agente/)).toBeVisible()
+    // **Desde el 2026-10-14, sin agente no hay nada que verificar**, así que no
+    // se ofrece: un botón que contesta «no hay agente» promete algo que no hace.
+    expect(screen.queryByRole('button', { name: 'Verificar ahora' })).toBeNull()
   })
 })
 
@@ -120,13 +151,13 @@ describe('§PEN:A2 · los literales del bloque de acceso', () => {
   it('el bloque se llama «Acceso a datos», no «Agente de datos»', () => {
     // Al super-admin no le importa que haya un agente: le importa si el rol ve
     // el dato. El nombre viejo describía la plomería.
-    render(<AgentConfig agentes={[agente()]} />)
+    bloque([agente()])
     expect(screen.getByText('Acceso a datos')).toBeVisible()
   })
 
   it('el ROL va primero · la pantalla contesta «qué ve cada rol»', () => {
     // Es la misma pregunta que encabeza la ficha de cliente.
-    const { container } = render(<AgentConfig agentes={[agente()]} />)
+    const { container } = bloque([agente()])
     const encabezados = Array.from(container.querySelectorAll('th')).map((t) => t.textContent)
     expect(encabezados[0]).toBe('Rol')
   })
@@ -134,8 +165,64 @@ describe('§PEN:A2 · los literales del bloque de acceso', () => {
   it('la nota dura del permiso está escrita', () => {
     // Se puede componer un panel que un rol no va a poder ver, y eso no es un
     // error de composición. Es lo que más enseña de esta pantalla.
-    const { container } = render(<AgentConfig agentes={[agente()]} />)
-    expect(container.textContent).toMatch(/El permiso se aplica en el backend, no en la composición/)
-    expect(container.textContent).toMatch(/un rol sin\s+acceso no ve el dato aunque el panel exista/)
+    const { container } = bloque([agente()])
+    // **«en el backend» salió de la pantalla el 2026-09-30.** Es vocabulario
+    // nuestro en la ficha de un cliente, y lo que importa decir es CUÁNDO se
+    // aplica el permiso —al servir el dato, no al componer—, que es lo que vuelve
+    // útil la advertencia. `copy-producto` no lo marcó porque es texto suelto
+    // entre etiquetas y el chequeo sólo mira cadenas entre comillas: lo encontró
+    // leerlo.
+    expect(container.textContent).toMatch(/El permiso se aplica al servir el dato, no al componer/)
+    expect(container.textContent).toMatch(/un rol sin acceso no ve el\s+dato aunque el panel exista/)
+  })
+})
+
+describe('la verificación del acceso · 2026-10-14 · la consecuencia, no la plomería', () => {
+  const verificado = '2026-10-14T15:33:07Z'
+
+  it('vigente lo dice en la fila y abajo, y ya no dice «sin verificar»', () => {
+    bloque([agente()], { acceso: { estado: 'vigente', verificadoEn: verificado, sinCalculo: [] } })
+    const fila = screen.getByText('Activo').closest('tr') as HTMLElement
+    expect(fila.textContent).toContain('Vigente')
+    expect(screen.getByText(/responden y está todo lo que el producto lee/)).toBeVisible()
+    expect(screen.queryByText('Sin verificar en esta sesión')).toBeNull()
+  })
+
+  it('las métricas sin cálculo se dicen APARTE, con su nombre y no su clave', () => {
+    // **Es lo que hacía que el servicio dijera `ok: false` en UA** con el
+    // acceso andando. No es un problema de acceso, y la fila sigue vigente.
+    bloque([agente()], {
+      acceso: { estado: 'vigente', verificadoEn: verificado, sinCalculo: ['revenue_forecast', 'otra_clave'] },
+    })
+    expect(screen.getByText('Activo').closest('tr')?.textContent).toContain('Vigente')
+    expect(
+      screen.getByText(/2 métricas del catálogo todavía no tienen cálculo: Proyección de revenue, otra_clave/),
+    ).toBeVisible()
+  })
+
+  it('faltan datos nombra las métricas afectadas y quién lo resuelve', () => {
+    bloque([agente()], {
+      acceso: { estado: 'faltan-datos', verificadoEn: verificado, afectadas: ['revenue_forecast'], sinCalculo: [] },
+    })
+    expect(screen.getByText('Activo').closest('tr')?.textContent).toContain('Faltan datos')
+    expect(screen.getByText(/faltan para 1 métrica: Proyección de revenue\. Lo resuelve el equipo interno/)).toBeVisible()
+  })
+
+  it('sin acceso dice la razón y quién lo resuelve', () => {
+    bloque([agente()], {
+      acceso: { estado: 'sin-acceso', razon: 'Las credenciales de este cliente no permiten conectarse a sus datos.' },
+    })
+    expect(screen.getByText('Activo').closest('tr')?.textContent).toContain('Sin acceso')
+    expect(screen.getByText(/no permiten conectarse a sus datos\. Lo resuelve el equipo interno/)).toBeVisible()
+  })
+
+  it('mientras verifica, el botón no se puede volver a apretar', () => {
+    bloque([agente()], { acceso: { estado: 'verificando' }, onVerificar: vi.fn() })
+    expect(screen.getByRole('button', { name: 'Verificar ahora' })).toBeDisabled()
+  })
+
+  it('un agente dado de baja no queda «vigente» aunque el cliente sí', () => {
+    bloque([agente({ is_active: false })], { acceso: { estado: 'vigente', verificadoEn: verificado, sinCalculo: [] } })
+    expect(screen.getByText('Inactivo').closest('tr')?.textContent).toContain('Sin verificar')
   })
 })

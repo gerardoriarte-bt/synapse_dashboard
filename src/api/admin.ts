@@ -31,10 +31,12 @@
  */
 import { ApiError, SIN_CODIGO } from './types'
 import type { PanelConfig } from './types'
-import { adaptCatalog } from './adapt'
-import type { AdaptedCatalog, WireMetric } from './adapt'
+import { adaptCatalog, adaptPayload } from './adapt'
+import type { AdaptedCatalog, WireMetric, WirePayload } from './adapt'
+import type { NetworkPayload } from './types'
 import type { components as admin } from './admin-generated'
 import { currentToken } from '../app/auth/session'
+import { apiBase } from './base'
 
 type A = admin['schemas']
 
@@ -48,7 +50,7 @@ export type WireTenantOption = A['TenantOption']
 export type WireRole = A['Role']
 export type WirePreview = A['Preview']
 
-const BASE = import.meta.env.VITE_API_URL ?? '/api/v1'
+const BASE = apiBase()
 
 /** El mismo desenvolvimiento que `client.ts`, y por las mismas razones: el
  *  envelope se lee en un solo lugar, `error` es una cadena en este servicio, y
@@ -103,6 +105,11 @@ async function pedir<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
 export type Tenant = {
   id: string
   nombre: string
+  /** **La forma corta** · `label`. Vacía cuando nadie la cargó, y entonces la
+   *  pantalla muestra el id: dos clientes con el mismo nombre —los dos «Under
+   *  Armour México» de la base local, 2026-10-08— tienen que poder distinguirse
+   *  en la fila. */
+  formaCorta: string
   locale: string
   moneda: string
   zonaHoraria: string
@@ -123,9 +130,39 @@ export type Tenant = {
   estado: string | null
   /** `null` hasta que definamos los valores · pedido abierto. */
   vertical: string | null
+  /** Cuándo se dio de alta el cliente · lo que A2 pinta en `ALTA`.
+   *
+   *  **No es opcional y no cae a `null`**: en el cable `created_at` es
+   *  obligatorio y del lado del servicio es un `time.Time`, no un puntero, así
+   *  que llega siempre. Un `?? null` acá inventaría un caso que no existe.
+   *
+   *  Llega como instante con huso —`2026-09-22T09:18:45.919012-05:00`, medido el
+   *  2026-09-30— y **se formatea en la pantalla, no acá**: el adaptador renombra,
+   *  no reformatea fechas para mostrar. */
+  creadoEn: string
 }
 
-export type EstadoDeLayout = 'borrador' | 'publicado'
+/** ── `archivado` ES EL TERCERO, Y FALTABA · 2026-09-30 ──────────────────────
+ *
+ *  Este tipo declaraba dos estados y el dominio del servicio tiene **tres**:
+ *  `LayoutStatusArchived` son «versiones reemplazadas por una publicación
+ *  posterior. Nunca se borran: quedan para auditoría y rollback».
+ *
+ *  **Y es el estado más común.** Medido el 2026-09-30 contra `:4010`:
+ *  `GET /admin/tenants/{tenantId}/layouts` devuelve **7** versiones — 4
+ *  `archived`, 2 `published`, 1 `draft`.
+ *
+ *  **Lo que faltaba no era un valor: era una mentira.** Con el enum en dos,
+ *  `ESTADOS['archived']` es `undefined` y el `?? 'borrador'` de `adaptarVersion`
+ *  entregaba **`'borrador'` para las cuatro versiones archivadas** — o sea que
+ *  `ContextView` ofrecía editar cuatro versiones que no se pueden editar. Es el
+ *  mismo modo de falla que el PascalCase documenta abajo, con otra causa: un
+ *  fallback escrito como «la lectura SEGURA» que con la clave ausente pasa a ser
+ *  una afirmación falsa con cara de prudencia.
+ *
+ *  Sin esto B6 no puede distinguir un borrador de una versión archivada, que es
+ *  justo la distinción que el historial existe para mostrar. */
+export type EstadoDeLayout = 'borrador' | 'publicado' | 'archivado'
 
 /** Un rol del tenant · B4.8.
  *
@@ -167,6 +204,19 @@ export type RolParaGuardar = {
  *  Lo que se pierde es el nivel de panel, que es la mitad de §7.2. Queda pedido
  *  a backend; hasta entonces `RolePreview` declara el hueco en vez de pintar una
  *  grilla vacía. */
+/** Un dashboard del cliente · `GET /admin/tenants/{tenantId}/dashboards`.
+ *
+ *  **Dashboard es lo que se elige; layout es su composición** —la palabra la
+ *  fijó C6 del `.pen`—. Desde el 2026-10-07 el builder se organiza por acá:
+ *  Cliente → Dashboard → Editor. */
+export type Dashboard = {
+  id: string
+  tenantId: string
+  nombre: string
+  /** El que resuelve cuando el rol no declara preferencia. */
+  porDefecto: boolean
+}
+
 export type PreviewDeRol = {
   layoutId: string
   dashboardId: string
@@ -178,11 +228,30 @@ export type PreviewDeRol = {
    *  `hidden_metric_ids` y con los `layout_overrides` aplicados — el servidor
    *  usa el mismo código que sirve la consola, así que no pueden divergir. */
   tabs: { tab: TabDeLayout; paneles: PanelConfig[] }[]
+  /** **El dato de cada panel** · sólo si se pidió `conDatos` · 2026-10-07.
+   *
+   *  `include=payloads` existe desde `d9147c3` y no se había transcripto: B5,
+   *  el lienzo y el selector de gráfico se dibujaban sin dato con una razón
+   *  —«el preview va sin payloads»— que venció ese día. Ver
+   *  `docs/AUDITORIA-2026-10-07-editor-sin-previsualizacion.md`.
+   *
+   *  **Por panel, adaptado con el MISMO `adaptPayload` de la consola**: es el
+   *  mismo `Payload` del mismo código, y dos adaptadores de un hecho se
+   *  separan. */
+  datos?: { periodo: string; porPanel: ReadonlyMap<string, NetworkPayload> }
 }
 
 export type LayoutVersion = {
   id: string
   tenantId: string
+  /** **De qué dashboard es esta versión** · el cable lo manda desde el
+   *  multi-dashboard y este adaptador lo tiraba.
+   *
+   *  No es un campo de adorno: el historial de publicaciones se pide **por
+   *  dashboard** —`GET /admin/dashboards/{dashboardId}/publications`— y sin esto
+   *  B6 no sabe qué historial pedir a partir de la versión que el builder tiene
+   *  abierta. */
+  dashboardId: string
   estado: EstadoDeLayout
   versionId: string
   /** `null` mientras sea borrador: un borrador no tiene fecha de publicación, y
@@ -192,6 +261,9 @@ export type LayoutVersion = {
 
 export type TabDeLayout = {
   id: string
+  /** **La identidad ESTABLE de la pestaña** · el `id` se recrea en cada versión
+   *  publicada y esto no. Es con lo que la consola de roles restringe. */
+  clave: string
   nombre: string
   pregunta: string
   orden: number
@@ -221,9 +293,227 @@ export type ResultadoDeValidacion = {
   problemas: ProblemaDeComposicion[]
 }
 
+/* ── B6 · EL HISTORIAL DE PUBLICACIONES · §PEN:B6 ────────────────────────────
+ *
+ *  **La fila del historial, y es sólo de lectura.** El comentario de su struct lo
+ *  dice: «Solo se inserta, nunca se edita». Una publicación es una foto de lo que
+ *  pasó, no del estado de hoy — por eso `estado` NO está en este tipo: qué
+ *  versión está en producción hoy se contesta cruzando `layoutId` contra los
+ *  `status` de `GET /admin/tenants/{tenantId}/layouts`, que es un cruce entre dos
+ *  respuestas y no un cálculo sobre una.
+ */
+
+/** Las tres que definen el lugar del panel en la grilla. **No hay fila de
+ *  inicio**: el layout la resuelve por orden. */
+export type GeometriaDePanel = {
+  colStart: number
+  colSpan: number
+  rowSpan: number
+}
+
+/** A qué panel se refiere una entrada del diff.
+ *
+ *  **`pestana` es el NOMBRE normalizado de la pestaña, no su `key` ni su id.**
+ *  No se deduce del JSON: está leído en `internal/core/dashboard/diff.go`, donde
+ *  `tabKey(name) = strings.ToLower(strings.TrimSpace(name))` y `indexTabs` la
+ *  aplica sobre `t.Name`. Medido: `["repertorio con dato real"]`.
+ *
+ *  Importa porque **el plan decía otra cosa** —«`tabs_added` trae la `key` de la
+ *  pestaña»—, escrito de una lectura y no de la fuente. Con la `key` uno
+ *  intentaría cruzarlo contra `TabDeLayout.clave` y no encontraría nada.
+ *
+ *  **Y no trae nombre de métrica**, sólo `metricId`: el nombre sale del catálogo,
+ *  que es otra ruta. Resolverlo acá obligaría al adaptador a pedir una segunda
+ *  cosa. */
+export type RefDePanel = {
+  pestana: string
+  tipo: string
+  metricId: string
+}
+
+export type PanelMovido = RefDePanel & {
+  desde: GeometriaDePanel
+  hasta: GeometriaDePanel
+}
+
+export type PanelRetipado = RefDePanel & {
+  /** El tipo que tenía. El nuevo es el `tipo` de siempre. */
+  tipoAnterior: string
+}
+
+/** **Cinco contadores para ocho listas**, y eso es lo que hay que declarar.
+ *
+ *  `panelesCambiados` es la SUMA de tres —movidos + retipados + con parámetro
+ *  cambiado—, leída en `DiffLayouts` y comprobada en las dos direcciones el
+ *  2026-09-30: `3` con las tres en 1, `0` con las tres vacías. **Se LEE del
+ *  cable, no se suma acá**: el adaptador no calcula.
+ *
+ *  **No hay contador de pestañas reordenadas.** Un reordenamiento es un cambio
+ *  que el resumen no ve, así que una pantalla que dijera «sin cambios» mirando
+ *  sólo estos cinco mentiría sobre ese caso. */
+export type ContadoresDeDiff = {
+  pestanasAnadidas: number
+  pestanasQuitadas: number
+  panelesAnadidos: number
+  panelesQuitados: number
+  panelesCambiados: number
+}
+
+/** Qué cambió respecto de la versión anterior · ocho listas y el resumen. */
+export type DiffDePublicacion = {
+  contadores: ContadoresDeDiff
+  pestanasAnadidas: string[]
+  pestanasQuitadas: string[]
+  /** Las pestañas cuyo orden cambió. **El resumen no las cuenta.** */
+  pestanasReordenadas: string[]
+  panelesAnadidos: RefDePanel[]
+  panelesQuitados: RefDePanel[]
+  panelesMovidos: PanelMovido[]
+  panelesRetipados: PanelRetipado[]
+  panelesConParametroCambiado: RefDePanel[]
+}
+
+/** Una fila del historial · lo que `GET /admin/dashboards/{id}/publications` da.
+ *
+ *  ── QUÉ CAMPOS DEL DIBUJO **NO** ESTÁN ACÁ, Y POR QUÉ ──────────────────────
+ *
+ *  El `.pen` pinta cuatro cosas que el cable no manda, y **ninguna se compone**:
+ *  el adaptador renombra y reformatea, no escribe copy de producto.
+ *
+ *  · **`resumen`** — el renglón de 13px «Medidores de composición en los seis
+ *    KPI». Es un título redactado por una persona. El cable manda `versionId` y
+ *    contadores; armar una frase con ellos sería inventar copy.
+ *  · **`razon`** — la línea `!` «RAZÓN · los kpi repetían lo que ya muestra…».
+ *    Es el porqué de una decisión humana. No hay campo.
+ *  · **`autorNombre`** — el cable manda el uuid. Lo resuelve la SUPERFICIE
+ *    contra `GET /admin/users`; meterlo acá obligaría al adaptador a pedir una
+ *    segunda cosa.
+ *  · **`direccionSemanticaCambiada`** — el diff cubre pestañas, posición, tipo y
+ *    `options`; `semantic_direction` es atributo de la MÉTRICA y vive en el
+ *    catálogo, no en el layout. No hay nada que pintar.
+ *
+ *  Las cuatro tienen una prueba que atestigua su AUSENCIA, y no un comentario:
+ *  una prueba que afirma que la clave no está rompe el día que alguien la
+ *  rellene con una frase compuesta, que es exactamente lo que hay que impedir.
+ *  Van pedidas en `docs/PROPUESTA-2026-09-30-b6-prosa-del-historial.md`. */
+export type Publicacion = {
+  id: string
+  tenantId: string
+  dashboardId: string
+  /** La versión que quedó publicada por este evento. */
+  layoutId: string
+  /** La etiqueta de esa versión · `v-1790712673`, `rollback-v-1790630106`. Vacía
+   *  si nunca se puso. **No se renumera a `v1..vN`**: sería inventar una etiqueta
+   *  que el servicio no tiene. */
+  versionId: string
+  /** **El valor del enumerado NO se traduce**: es clave del contrato. */
+  accion: 'publish' | 'rollback'
+  /** `null` cuando el servicio no lo guardó · el campo es puntero con
+   *  `omitempty`, así que puede venir AUSENTE. */
+  autorId: string | null
+  /** Con qué rol publicó · medido `"admin"`. */
+  autorRol: string
+  /** La versión que se reemplazó. **`null` en la primera publicación de un
+   *  dashboard**, medido en la fila más vieja de «Marca». Ausente no es
+   *  «ninguna»: es «no había anterior». */
+  layoutAnteriorId: string | null
+  /** **`null` cuando el servicio no guardó diff.** No es un descuido: el campo es
+   *  `JSONRaw` y su `MarshalJSON` emite `null` con el valor vacío.
+   *
+   *  **`null` no se colapsa a un diff en cero.** «No hay registro de qué cambió»
+   *  y «no cambió nada» son dos cosas distintas, y pintar la segunda por la
+   *  primera es la clase de mentira que el `?? 0` de A5 ya documentó. */
+  diff: DiffDePublicacion | null
+  /** ISO tal cual. El formateo es del locale del tenant y vive en
+   *  `render/format.ts`. */
+  creadoEn: string
+}
+
+export type WireLayoutPublication = A['LayoutPublication']
+
+/** **El único normalizado del adaptador, y es obligatorio.**
+ *
+ *  Cada lista del diff se lee con `?? []`. No es defensa genérica: está MEDIDO
+ *  que la misma clave vuelve `[]` en las filas nuevas y `null` en las viejas.
+ *  `de881e13` inicializa las ocho y dejó escrito «Las colecciones vacías se
+ *  serializan como [] (nunca null)» — pero **el diff se persiste en `jsonb`**,
+ *  así que las filas escritas antes de ese commit se sirven con `null` para
+ *  siempre. **No es transitorio: es la base.**
+ *
+ *  Normalizar a `[]` es reformatear, que es lo que el adaptador puede hacer. */
+const lista = <T,>(xs: readonly T[] | null | undefined): T[] => (xs === null || xs === undefined ? [] : [...xs])
+
+const refDePanel = (r: A['PanelRef']): RefDePanel => ({
+  pestana: r.tab,
+  tipo: r.type,
+  metricId: r.metric_id,
+})
+
+const geometria = (g: A['PanelGeometry']): GeometriaDePanel => ({
+  colStart: g.col_start,
+  colSpan: g.col_span,
+  rowSpan: g.row_span,
+})
+
+function adaptarDiff(w: A['LayoutDiff']): DiffDePublicacion {
+  return {
+    // Los cinco se LEEN. `panelesCambiados` es la suma de tres listas del lado
+    // del servicio y acá no se recalcula: si algún día dejaran de coincidir,
+    // sumarlo nosotros esconderia la diferencia en vez de mostrarla.
+    contadores: {
+      pestanasAnadidas: w.summary.tabs_added,
+      pestanasQuitadas: w.summary.tabs_removed,
+      panelesAnadidos: w.summary.panels_added,
+      panelesQuitados: w.summary.panels_removed,
+      panelesCambiados: w.summary.panels_changed,
+    },
+    pestanasAnadidas: lista(w.tabs_added),
+    pestanasQuitadas: lista(w.tabs_removed),
+    pestanasReordenadas: lista(w.tabs_reordered),
+    panelesAnadidos: lista(w.panels_added).map(refDePanel),
+    panelesQuitados: lista(w.panels_removed).map(refDePanel),
+    panelesMovidos: lista(w.panels_moved).map((m) => ({
+      ...refDePanel(m),
+      desde: geometria(m.from),
+      hasta: geometria(m.to),
+    })),
+    panelesRetipados: lista(w.panels_retyped).map((r) => ({
+      ...refDePanel(r),
+      tipoAnterior: r.from_type,
+    })),
+    panelesConParametroCambiado: lista(w.panels_options_changed).map(refDePanel),
+  }
+}
+
+export function adaptarPublicacion(w: WireLayoutPublication): Publicacion {
+  return {
+    id: w.id,
+    tenantId: w.tenant_id,
+    dashboardId: w.dashboard_id,
+    layoutId: w.layout_id,
+    versionId: w.version_id,
+    accion: w.action,
+    // `?? null` en los dos punteros, y **nunca `?? ''`**: una cadena vacía se
+    // pinta y un `null` no, así que un `?? ''` haría que «no hubo anterior» se
+    // vea como un id que no se pudo leer.
+    autorId: w.actor_user_id ?? null,
+    autorRol: w.actor_role,
+    layoutAnteriorId: w.previous_layout_id ?? null,
+    // **`null` pasa como `null`.** Ver el comentario del campo: no se sustituye
+    // por un diff en cero, que diría «no cambió nada» sobre «no sé qué cambió».
+    diff: w.diff === null ? null : adaptarDiff(w.diff),
+    creadoEn: w.created_at,
+  }
+}
+
+
 const ESTADOS: Readonly<Record<string, EstadoDeLayout>> = {
   draft: 'borrador',
   published: 'publicado',
+  // Leído del enum del cable, que salió de `domain.LayoutStatusArchived`. Ver el
+  // comentario de `EstadoDeLayout`: sin esta línea las cuatro versiones
+  // archivadas del tenant se leían como borradores.
+  archived: 'archivado',
 }
 
 /** ── LOS QUINCE CAMPOS PASARON A snake_case · 2026-09-26 ────────────────────
@@ -253,7 +543,8 @@ function adaptarVersion(w: WireLayoutVersion): LayoutVersion {
   return {
     id: w.id,
     tenantId: w.tenant_id,
-    // Un estado que no es `draft` ni `published` no se sustituye por uno: cae en
+    dashboardId: w.dashboard_id,
+    // Un estado que no es de los TRES del enum no se sustituye por uno: cae en
     // `borrador`, que es la lectura SEGURA — un layout que no se sabe si está
     // publicado no se trata como publicado.
     //
@@ -274,6 +565,18 @@ function adaptarPanel(p: A['LayoutPanel']): PanelConfig {
     colStart: p.col_start,
     colSpan: p.col_span,
     rowSpan: p.row_span,
+    // ── **`chart` SE LEE, Y NO LEERLO BORRABA** · 2026-09-29 ──────────────
+    //
+    // El cable lo declara desde `f70cec2` en `LayoutPanel` y en `PanelInput`, y
+    // este adaptador no lo tocaba en ninguno de los dos sentidos. Eso no era un
+    // hueco: **el `PUT` del layout es un REEMPLAZO COMPLETO** —«se envía el
+    // layout entero y lo que no venga se borra», dice el cable— así que abrir en
+    // el builder un layout con gráficos y guardarlo **los borraba todos**, en
+    // silencio y sin que nada fallara.
+    //
+    // Se descubrió al construir el selector de F4.21: el borrador no tenía dónde
+    // poner lo elegido.
+    ...(p.chart === undefined || p.chart === '' ? {} : { grafico: p.chart as NonNullable<PanelConfig['grafico']> }),
     ...(p.options === undefined ? {} : { opciones: p.options }),
   }
 }
@@ -284,6 +587,7 @@ export function adaptarDetalle(w: WireLayoutDetail): LayoutDetalle {
     tabs: w.tabs.map((t) => ({
       tab: {
         id: t.tab.id,
+        clave: t.tab.key,
         nombre: t.tab.name,
         pregunta: t.tab.operational_question ?? '',
         orden: t.tab.sort_order,
@@ -297,7 +601,13 @@ export function adaptarDetalle(w: WireLayoutDetail): LayoutDetalle {
 export function adaptarValidacion(w: WireValidationResult): ResultadoDeValidacion {
   return {
     valido: w.valid,
-    problemas: w.errors.map((e) => ({
+    // **`errors` llega `null` cuando no hay ninguno**, no `[]` — es un slice de
+    // Go sin inicializar. El cable lo declara así desde el 2026-10-01; hasta ese
+    // día decía `array` y acá se hacía `w.errors.map(...)`, así que **un layout
+    // VÁLIDO reventaba al validarlo** y la barra decía «no se pudo validar ·
+    // cannot read properties of null». El camino del error andaba bien, que es
+    // por qué sobrevivió: las pruebas probaban el caso con problemas.
+    problemas: (w.errors ?? []).map((e) => ({
       tabId: e.tab_id ?? null,
       panelId: e.panel_id ?? null,
       campo: e.field ?? '',
@@ -327,7 +637,16 @@ export type TabParaGuardar = {
   pregunta: string
   orden: number
   roles: string[]
-  panels: { id?: string; metricId: string; tipo: string; colStart: number; colSpan: number; rowSpan: number; opciones?: Record<string, unknown> }[]
+  panels: { id?: string; metricId: string; tipo: string; colStart: number; colSpan: number; rowSpan: number; grafico?: NonNullable<PanelConfig['grafico']>; opciones?: Record<string, unknown> }[]
+}
+
+/** Una pestaña y sus paneles **sin los ids del layout de origen** · ver
+ *  `crearBorrador`. Se escribe con destructuring y no borrando claves: así el
+ *  día que `TabParaGuardar` gane un campo, el compilador obliga a decidir si
+ *  viaja o no. */
+const sinIds = (t: TabParaGuardar): TabParaGuardar => {
+  const { id: _id, panels, ...resto } = t
+  return { ...resto, panels: panels.map(({ id: _p, ...p }) => p) }
 }
 
 function aCuerpo(tabs: readonly TabParaGuardar[]): A['LayoutUpdateRequest'] {
@@ -345,6 +664,11 @@ function aCuerpo(tabs: readonly TabParaGuardar[]): A['LayoutUpdateRequest'] {
         col_start: p.colStart,
         col_span: p.colSpan,
         row_span: p.rowSpan,
+        // **Vacío cuando no hay, y no ausente.** El servicio recorta y baja a
+        // minúsculas, y omitir la clave deja cadena vacía igual — pero mandarla
+        // explícita hace que el cuerpo diga qué se quiso: sin gráfico elegido,
+        // el de por defecto del tipo.
+        chart: p.grafico ?? '',
         ...(p.opciones === undefined ? {} : { options: p.opciones }),
       })),
     })),
@@ -364,9 +688,60 @@ function adaptarUsuario(w: WireUser): Usuario {
     ultimoAccesoEn: w.last_login_at ?? null,
     activo: w.is_active,
     altaEn: w.created_at,
+    clienteId: w.tenant_id,
     // `?? null` por la misma razón que arriba: ausente es una procedencia —vino
     // de la ruta por cliente— y no un nombre vacío.
     clienteNombre: w.tenant_name ?? null,
+  }
+}
+
+/** Una corrida de materialización · lo que `GET /admin/materialize/runs` devuelve.
+ *
+ *  **Los cinco contadores no se suman**, y por eso viajan los cinco: `preservadas`
+ *  es la regla de preservación del servicio —un `AVAILABLE` previo que no se
+ *  pisó— así que una métrica puede contarse ahí **y seguir disponible**. Sumarlos
+ *  para sacar un total daría más métricas de las que el cliente tiene. */
+export type Corrida = {
+  id: string
+  tenantId: string
+  periodo: string
+  /** `manual` la disparó una persona; `schedule`, el reloj. */
+  disparo: string
+  estado: string
+  disponibles: number
+  bloqueadas: number
+  errores: number
+  salteadas: number
+  preservadas: number
+  /** `null` mientras corre · es lo que distingue en vuelo de terminada. */
+  terminadaEn: string | null
+  arrancadaEn: string
+  /** Vacío cuando no falló · el servicio no lo omite. */
+  error: string
+}
+
+function adaptarCorrida(w: WireMaterializeRun): Corrida {
+  return {
+    id: w.id,
+    tenantId: w.tenant_id,
+    periodo: w.period,
+    disparo: w.trigger,
+    estado: w.status,
+    disponibles: w.available,
+    bloqueadas: w.blocked,
+    errores: w.errors,
+    // **`?? 0` acá SÍ, y es la excepción que conviene razonar.** En `Fuente` el
+    // `?? null` existe porque cero y ausente significan cosas distintas. Un
+    // contador de una corrida terminada no tiene ese problema: el servicio los
+    // manda siempre y «ninguna salteada» es cero. El contrato los deja
+    // opcionales porque no están en `required`, no porque falten.
+    salteadas: w.skipped ?? 0,
+    preservadas: w.preserved ?? 0,
+    // `?? null` y no `?? ''`: mientras corre NO hay fin, y una cadena vacía se
+    // formatearía como una fecha inválida en vez de decir «en curso».
+    terminadaEn: w.finished_at ?? null,
+    arrancadaEn: w.started_at,
+    error: w.error ?? '',
   }
 }
 
@@ -394,7 +769,18 @@ function adaptarRol(w: WireRole): Rol {
     id: w.id,
     tenantId: w.tenant_id,
     nombre: w.name,
-    pestanas: w.tab_ids,
+    // ── LA RESTRICCIÓN SE LEE POR CLAVE, CON RESPALDO ──────────────────────
+    //
+    // **`tab_ids` apunta a `dd_tabs.id`, que se recrea en cada versión
+    // publicada**, así que un rol restringido por id pierde sus pestañas en la
+    // primera publicación real desde el builder. `tab_keys` es estable.
+    //
+    // **El respaldo no es cortesía, es el orden del backend**: su regla es «si
+    // hay `tab_keys` manda la key; si está vacía cae a `tab_ids`». Leerlo al
+    // revés dejaría sin restricción a un rol que todavía no migró.
+    //
+    // Lo que el front escribe es **siempre `tab_keys`** · ver `cuerpoDeRol`.
+    pestanas: (w.tab_keys ?? []).length > 0 ? w.tab_keys : w.tab_ids,
     metricasOcultas: w.hidden_metric_ids,
     overrides: (w.layout_overrides ?? {}) as Record<string, unknown>,
     usuarios: w.user_count,
@@ -419,6 +805,7 @@ function adaptarPreview(w: WirePreview): PreviewDeRol {
     tabs: w.tabs.map((t) => ({
       tab: {
         id: t.id,
+        clave: t.key,
         nombre: t.name,
         pregunta: t.operational_question ?? '',
         orden: t.sort_order,
@@ -434,14 +821,35 @@ function adaptarPreview(w: WirePreview): PreviewDeRol {
         ...(x.options === undefined ? {} : { opciones: x.options }),
         // La nota vacía se omite · misma regla que en el cable de consola.
         ...(x.note === '' ? {} : { nota: x.note }),
+        // **El gráfico, que este adaptador tiraba** · 2026-10-07. El cable lo
+        // trae desde `f70cec2` y su descripción dice por qué importa: «si el
+        // preview no trajera el gráfico mostraría una cascada como dona». Sin
+        // dato no se notaba; con dato, B5 dibujaba el de por defecto.
+        ...(x.chart === undefined || x.chart === '' ? {} : { grafico: x.chart as NonNullable<PanelConfig['grafico']> }),
       })),
     })),
+    ...(w.payloads === undefined
+      ? {}
+      : {
+          datos: {
+            periodo: w.period ?? '',
+            porPanel: new Map(
+              Object.entries(w.payloads).map(([id, x]) => [id, adaptPayload(x as unknown as WirePayload)]),
+            ),
+          },
+        }),
   }
 }
 
 const cuerpoDeRol = (r: RolParaGuardar): A['RoleInput'] => ({
   name: r.nombre,
-  tab_ids: r.pestanas,
+  // **Se escribe `tab_keys` y NO `tab_ids`** · desde el 2026-09-29, cuando el
+  // backend lo habilitó en `de881e1`. Mandar ids era escribir una restricción
+  // con fecha de vencimiento: la próxima publicación los recrea.
+  //
+  // **No se mandan los dos.** El backend prioriza `tab_keys`, así que un
+  // `tab_ids` al lado sería ruido que alguien va a leer como la fuente.
+  tab_keys: r.pestanas,
   hidden_metric_ids: r.metricasOcultas,
   ...(r.overrides === undefined ? {} : { layout_overrides: r.overrides }),
 })
@@ -451,6 +859,7 @@ export const adminApi = {
     (await pedir<WireTenantOption[]>('/admin/tenants')).map((t) => ({
       id: t.id,
       nombre: t.name,
+      formaCorta: t.label,
       locale: t.locale,
       moneda: t.currency,
       zonaHoraria: t.timezone,
@@ -462,6 +871,10 @@ export const adminApi = {
       peorFuenteHoras: t.worst_feed_freshness_hours ?? null,
       estado: t.status ?? null,
       vertical: t.vertical ?? null,
+      // **La única línea que este adaptador gana con A2 en alta** · F5.20. El
+      // campo ya estaba en el cable y acá se tiraba; lo que lo hizo falta fue
+      // que una pantalla lo pidiera.
+      creadoEn: t.created_at,
     })),
 
   /** **El catálogo SIN filtrar por rol** · es la diferencia con
@@ -512,6 +925,84 @@ export const adminApi = {
       clientes: w.tenants,
       usuarios: w.users.map(adaptarUsuario),
     }
+  },
+
+  /** Verificar el acceso a los datos del cliente · tarda segundos y consulta
+   *  Snowflake cada vez, así que se llama a pedido. Ver el cable. */
+  verificarAcceso: async (tenantId: string): Promise<VerificacionDeAcceso> =>
+    adaptarVerificacion(
+      await pedir<WireSchemaCheck>(`/admin/tenants/${encodeURIComponent(tenantId)}/schema-check`),
+    ),
+
+  /** Cambiar el rol de un usuario, o suspenderlo y reactivarlo · 2026-10-09.
+   *
+   *  **Suspender es `activo: false`**, y no un `DELETE`: el `DELETE` del
+   *  servicio hace exactamente lo mismo —baja lógica— y no se usa, para que la
+   *  pantalla no ofrezca dos acciones que son una. */
+  editarUsuario: async (tenantId: string, userId: string, cambio: CambioDeUsuario): Promise<Usuario> =>
+    adaptarUsuario(
+      await pedir<WireUser>(
+        `/admin/tenants/${encodeURIComponent(tenantId)}/users/${encodeURIComponent(userId)}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({
+            ...(cambio.rolId === undefined ? {} : { role_id: cambio.rolId }),
+            ...(cambio.activo === undefined ? {} : { is_active: cambio.activo }),
+          }),
+        },
+      ),
+    ),
+
+  /** Las solicitudes PENDIENTES · la cola de A3. Una página de 100: la cola
+   *  pendiente es corta por naturaleza, y si algún día no entra, el total que
+   *  manda el servicio lo va a decir. */
+  solicitudes: async (): Promise<{ total: number; solicitudes: SolicitudDeAcceso[] }> => {
+    const w = await pedir<WireAccessRequestPage>('/admin/access-requests?status=pending&page_size=100')
+    return { total: w.total, solicitudes: w.items.map(adaptarSolicitud) }
+  },
+
+  /** Aprobar · para un alta pide cliente y agente, y **el rol sale del agente**
+   *  —medido el 2026-10-09—. La contraseña temporal que el servicio devuelve no
+   *  se lee: va por correo a la persona y nadie más la ve. */
+  aprobarSolicitud: async (id: string, destino?: { tenantId: string; agenteId: string }): Promise<void> => {
+    await pedir<unknown>(`/admin/access-requests/${encodeURIComponent(id)}/approve`, {
+      method: 'POST',
+      body: JSON.stringify(destino === undefined ? {} : { tenant_id: destino.tenantId, agent_id: destino.agenteId }),
+    })
+  },
+
+  rechazarSolicitud: async (id: string): Promise<void> => {
+    await pedir<unknown>(`/admin/access-requests/${encodeURIComponent(id)}/reject`, { method: 'POST' })
+  },
+
+  /** El historial de materializaciones · transcripta el 2026-10-01.
+   *
+   *  **El `limit` lo topea el servicio en 100**, leído de su handler. Se pide por
+   *  cliente porque la pantalla es de un cliente; sin el parámetro devuelve las
+   *  de todos. */
+  corridas: async (tenantId: string, limite = 60): Promise<Corrida[]> =>
+    (
+      await pedir<WireMaterializeRun[]>(
+        `/admin/materialize/runs?tenant_id=${encodeURIComponent(tenantId)}&limit=${String(limite)}`,
+      )
+    ).map(adaptarCorrida),
+
+  /** Calcula las métricas del cliente para los meses pedidos · 2026-10-07.
+   *
+   *  **Asíncrona**: el servicio contesta 202 y la corrida aparece después en
+   *  `corridas`, una fila por mes. Devuelve los períodos que el servicio dice
+   *  que arrancó, que es lo único que la respuesta afirma.
+   *
+   *  **Una lista vacía no sale de acá.** El servicio la acepta y cae a sus
+   *  meses por defecto —el en curso y el anterior—, o sea que «cargar nada»
+   *  calcularía dos meses que nadie eligió. Se corta antes del viaje. */
+  cargarPeriodos: async (tenantId: string, periodos: readonly string[]): Promise<string[]> => {
+    if (periodos.length === 0) throw new Error('No hay meses elegidos para cargar.')
+    const r = await pedir<A['MaterializeStarted']>(`/admin/tenants/${encodeURIComponent(tenantId)}/materialize`, {
+      method: 'POST',
+      body: JSON.stringify({ periods: periodos }),
+    })
+    return r.periods
   },
 
   /** Las fuentes del cliente y su salud · B2.13, servida desde `1e080ee`. */
@@ -574,7 +1065,8 @@ export const adminApi = {
     )
   },
 
-  previewPorRol: async (layoutId: string, rolId: string): Promise<PreviewDeRol> =>
+  /** `conDatos` pide `include=payloads` · ver `PreviewDeRol.datos`. */
+  previewPorRol: async (layoutId: string, rolId: string, conDatos = false): Promise<PreviewDeRol> =>
     adaptarPreview(
       await pedir<WirePreview>(
         // **`role_id`, snake_case** · corregido el 2026-09-26. Mandaba `roleId`
@@ -586,22 +1078,91 @@ export const adminApi = {
         // en camelCase, en el mismo binario. Y **MSW no podía verlo** — su
         // handler leía la misma grafía que mandábamos, así que respondía igual.
         // Ahora el mock exige `role_id` y devuelve 400 sin él.
-        `/admin/layouts/${encodeURIComponent(layoutId)}/preview?role_id=${encodeURIComponent(rolId)}`,
+        `/admin/layouts/${encodeURIComponent(layoutId)}/preview?role_id=${encodeURIComponent(rolId)}${conDatos ? '&include=payloads' : ''}`,
       ),
     ),
+
+  dashboards: async (tenantId: string): Promise<Dashboard[]> =>
+    (
+      await pedir<A['LayoutDashboard'][]>(
+        `/admin/tenants/${encodeURIComponent(tenantId)}/dashboards`,
+      )
+    ).map((d) => ({ id: d.id, tenantId: d.tenant_id, nombre: d.name, porDefecto: d.is_default })),
+
+  /** **`is_default` va SIEMPRE explícito.** Omitido, el servicio lo pone en
+   *  `true` si es el primero del tenant; y en `true` **desplaza al anterior** en
+   *  la misma transacción. Un dashboard nuevo no debería cambiar lo que ven
+   *  los usuarios al entrar, así que se manda `false` salvo cuando no hay otro.
+   *  Ver el cable, `createDashboard`. */
+  crearDashboard: async (tenantId: string, nombre: string, primero: boolean): Promise<Dashboard> => {
+    const d = await pedir<A['LayoutDashboard']>(
+      `/admin/tenants/${encodeURIComponent(tenantId)}/dashboards`,
+      { method: 'POST', body: JSON.stringify({ name: nombre, is_default: primero }) },
+    )
+    return { id: d.id, tenantId: d.tenant_id, nombre: d.name, porDefecto: d.is_default }
+  },
 
   layouts: async (tenantId: string): Promise<LayoutVersion[]> =>
     (await pedir<WireLayoutVersion[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/layouts`)).map(
       adaptarVersion,
     ),
 
-  crearBorrador: async (tenantId: string, versionId?: string): Promise<LayoutVersion> =>
-    adaptarVersion(
+  /** ── **EL `POST` CREA UN BORRADOR VACÍO, Y LA COMPOSICIÓN LA COPIAMOS ACÁ** ──
+   *
+   *  **El cable lo dice con todas las letras** —«Crear un borrador vacío»— y
+   *  `version_id` es sólo cómo se va a llamar, no de dónde sale. Durante un
+   *  tiempo el front le pasaba el `versionId` de la versión abierta **como si
+   *  eso la duplicara**, detrás de un botón que dice «Crear borrador desde esta
+   *  versión».
+   *
+   *  **El resultado era un borrador de CERO pestañas**, y lo grave no es que no
+   *  copiara: es lo que viene después. Quien aprieta ese botón está por componer
+   *  y publicar, y publicar un layout vacío **reemplaza el dashboard entero por
+   *  nada**. Medido contra el servicio el 2026-10-01 sobre un layout de 14
+   *  paneles: `POST` → `tabs: 0`.
+   *
+   *  **No lo encontró ninguna prueba**: la del hook afirma que el `POST` sale y
+   *  devuelve una versión, que es exactamente lo que pasaba. Lo encontró
+   *  apretarlo.
+   *
+   *  La copia son dos llamadas porque el servicio no tiene una sola: `POST` crea
+   *  el borrador y `PUT` lo reemplaza entero —que es cómo guarda el builder—.
+   *  **Si el `PUT` falla, el borrador vacío ya existe**, así que el error se
+   *  propaga tal cual: un borrador vacío visible es mejor que uno que se cree en
+   *  silencio y nadie sepa de dónde salió. */
+  crearBorrador: async (
+    tenantId: string,
+    versionId?: string,
+    tabs?: readonly TabParaGuardar[],
+    dashboardId?: string,
+  ): Promise<LayoutVersion> => {
+    const creado = adaptarVersion(
       await pedir<WireLayoutVersion>(`/admin/tenants/${encodeURIComponent(tenantId)}/layouts`, {
         method: 'POST',
-        body: JSON.stringify({ version_id: versionId ?? '' }),
+        // **Con su dashboard** · 2026-10-07. Sin `dashboard_id` el servicio
+        // usa el POR DEFECTO, y duplicar una versión de otro dashboard dejaba
+        // el borrador en el equivocado.
+        body: JSON.stringify({
+          version_id: versionId ?? '',
+          ...(dashboardId === undefined ? {} : { dashboard_id: dashboardId }),
+        }),
       }),
-    ),
+    )
+    // Sin pestañas que copiar es un borrador nuevo de verdad, y el `PUT` de más
+    // sería un viaje para no escribir nada.
+    if (tabs === undefined || tabs.length === 0) return creado
+    // ── **LOS IDS NO VIAJAN EN UNA COPIA** ────────────────────────────────
+    //
+    // Los `id` de pestaña y de panel son del layout de ORIGEN, y mandarlos al
+    // borrador nuevo hace que el servicio intente actualizar filas de otro
+    // layout: contesta **500**, medido el 2026-10-01 con el `PUT` ya saliendo.
+    // Una copia es composición nueva — los ids los pone quien la guarda.
+    await pedir<WireLayoutDetail>(`/admin/layouts/${encodeURIComponent(creado.id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(aCuerpo(tabs.map(sinIds))),
+    })
+    return creado
+  },
 
   layout: async (layoutId: string): Promise<LayoutDetalle> =>
     adaptarDetalle(await pedir<WireLayoutDetail>(`/admin/layouts/${encodeURIComponent(layoutId)}`)),
@@ -630,6 +1191,59 @@ export const adminApi = {
         body: JSON.stringify({ version_id: versionId ?? '' }),
       }),
     ),
+
+  /** El historial de publicaciones del dashboard · §PEN:B6.
+   *
+   *  ── **ES LA DE `dashboards`, Y NO LA DE `layouts`** ──────────────────────
+   *
+   *  Las dos rutas existen y devuelven la misma forma, así que la elección se ve
+   *  arbitraria y no lo es. Está leída en
+   *  `internal/adapters/repository/dd_layout_publication_repository.go`:
+   *
+   *      ListByLayout     WHERE layout_id = ? OR previous_layout_id = ?
+   *      ListByDashboard  WHERE dashboard_id = ?
+   *
+   *  La primera contesta «dónde participó ESTA versión» y devuelve **una fila**,
+   *  porque revertir **copia** a un layout nuevo y nunca reactiva el archivado:
+   *  cada layout se publica exactamente una vez. Medido el 2026-09-30 —
+   *  `16009187-…` → 1 fila, su dashboard → **5**.
+   *
+   *  Con la de `layouts` B6 pintaría una tarjeta sola y quien la mire creería que
+   *  el servicio está pobre. **Sólo se transcribió la que la pantalla llama**:
+   *  una ruta transcripta que nadie llama envejece sin que nadie lo note.
+   *
+   *  **Un historial vacío no es un error.** «Overview» tiene su `v1` publicado y
+   *  devuelve cero filas: la auditoría se empezó a escribir con `168a761` y lo
+   *  publicado antes no dejó fila. */
+  publicaciones: async (dashboardId: string): Promise<Publicacion[]> =>
+    (
+      await pedir<WireLayoutPublication[]>(
+        `/admin/dashboards/${encodeURIComponent(dashboardId)}/publications`,
+      )
+    ).map(adaptarPublicacion),
+
+  /** Volver a una versión anterior · B4.2.
+   *
+   *  **El `{layoutId}` del path NO es el destino.** Leído en
+   *  `dd_layout_builder_service.go:228-291`: el path sólo acota tenant+dashboard
+   *  y sirve para el chequeo de sí-mismo —`CONFLICT_REVERT_SELF`—, y **el destino
+   *  es `to_layout_id` en el CUERPO**. Confundirlos revertiría al layout
+   *  equivocado sin que nada falle.
+   *
+   *  Copia las pestañas y paneles del destino a un draft nuevo, lo valida contra
+   *  el catálogo de HOY —de ahí el 422— y lo publica con `action=rollback`. **La
+   *  versión de destino sigue `archived`**, y es lo que hace cierto el literal
+   *  que la cabecera de B6 imprime: «REVERTIR NO PIERDE LO POSTERIOR».
+   *
+   *  **El 200 no está medido** y el cable lo dice: correrlo cambia el layout que
+   *  la consola está sirviendo. Lo medido son las dos compuertas de 409. */
+  revertir: async (layoutId: string, toLayoutId: string): Promise<LayoutVersion> =>
+    adaptarVersion(
+      await pedir<WireLayoutVersion>(`/admin/layouts/${encodeURIComponent(layoutId)}/revert`, {
+        method: 'POST',
+        body: JSON.stringify({ to_layout_id: toLayoutId }),
+      }),
+    ),
 }
 
 /* ── B3.9 · el agente por tenant · F4.4 ─────────────────────────────────────
@@ -651,8 +1265,83 @@ export const adminApi = {
 
 export type WireAgent = A['AgentAdmin']
 export type WireFeed = A['Feed']
+export type WireMaterializeRun = A['MaterializeRun']
 export type WireUser = A['User']
 export type WireUsersPlatform = A['UsersPlatform']
+export type WireSchemaCheck = A['SchemaCheck']
+
+/** La verificación del acceso a los datos del cliente · A2 · 2026-10-14.
+ *
+ *  **Sin nombres de base, esquema ni tablas** · §7.3: el cable los manda y acá
+ *  se recortan, igual que `adaptAgent` hace con el agente. Lo que sobrevive es
+ *  la consecuencia: si están todos los datos, qué métricas quedan sin datos por
+ *  lo que falta, y cuáles no tienen cálculo. */
+export type VerificacionDeAcceso = {
+  /** Todas las tablas y columnas que el producto lee están. */
+  datosCompletos: boolean
+  /** Claves del catálogo que quedan sin datos por lo que falta. */
+  afectadas: string[]
+  /** Claves del catálogo sin cálculo · no es un problema de acceso. */
+  sinCalculo: string[]
+  verificadoEn: string
+}
+
+export function adaptarVerificacion(w: WireSchemaCheck): VerificacionDeAcceso {
+  return {
+    datosCompletos: w.objects.every((o) => o.exists && o.missing.length === 0),
+    afectadas: w.affected_metrics,
+    sinCalculo: w.keys_without_query,
+    verificadoEn: w.checked_at,
+  }
+}
+
+export type WireAccessRequest = A['AccessRequest']
+export type WireAccessRequestPage = A['AccessRequestPage']
+
+/** Una solicitud de acceso · la cola que alimenta el login · 2026-10-09.
+ *
+ *  **Dos tipos que se aprueban por la misma ruta**: alguien que pide entrar y
+ *  alguien que olvidó su contraseña. La pantalla los separa porque aprobar
+ *  significa cosas distintas: crear una cuenta, o mandarle una contraseña
+ *  temporal a una que ya existe. */
+export type SolicitudDeAcceso = {
+  id: string
+  tipo: 'alta' | 'contrasena'
+  nombre: string
+  email: string
+  /** **La empresa que la persona ESCRIBIÓ**, texto libre. No es un cliente: el
+   *  cliente lo elige quien aprueba. */
+  empresa: string
+  cargo: string
+  telefono: string
+  /** Para qué dice que va a usar la información. */
+  uso: string
+  estado: 'pendiente' | 'aprobada' | 'rechazada'
+  creadaEn: string
+  /** El cliente con el que se aprobó · `null` mientras está pendiente. */
+  clienteNombre: string | null
+}
+
+export function adaptarSolicitud(w: WireAccessRequest): SolicitudDeAcceso {
+  return {
+    id: w.id,
+    tipo: w.type === 'password_reset' ? 'contrasena' : 'alta',
+    nombre: w.full_name,
+    email: w.email,
+    empresa: w.company_name,
+    cargo: w.job_title,
+    telefono: w.phone,
+    uso: w.info_use,
+    estado: w.status === 'approved' ? 'aprobada' : w.status === 'rejected' ? 'rechazada' : 'pendiente',
+    creadaEn: w.created_at,
+    // `?? null` y no `?? ''`: pendiente NO tiene cliente, y eso es un hecho.
+    clienteNombre: w.tenant_name ?? null,
+  }
+}
+
+/** Lo que se le cambia a un usuario · cada campo por separado. Lo ausente no
+ *  cambia. **El cliente no está**: el usuario es del tenant de la URL. */
+export type CambioDeUsuario = { rolId?: string; activo?: boolean }
 
 /** El agente, en el vocabulario del producto. */
 /** Un usuario del cliente · A3 · F4.3.
@@ -673,6 +1362,10 @@ export type Usuario = {
   ultimoAccesoEn: string | null
   activo: boolean
   altaEn: string
+  /** **El cliente al que pertenece** · llega en las dos rutas. Es lo que filtra
+   *  por cliente en A3 y lo que va en la URL para cambiarle el rol o
+   *  suspenderlo: el usuario es del tenant de la URL y de ningún otro. */
+  clienteId: string
   /** **El nombre del cliente, y sólo llega en el alcance de PLATAFORMA.**
    *
    *  `GET /admin/tenants/{id}/users` no lo trae —sería redundante, el cliente es

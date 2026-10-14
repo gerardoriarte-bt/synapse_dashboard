@@ -116,6 +116,33 @@ distintas:
 ejemplo, desde qué punto de la serie el dato está vencido— o si la frescura del
 panel entero alcanza y la trama queda como intención de diseño no implementada.
 
+---
+
+## RESUELTO EN PARTE · 2026-09-29
+
+**Se pidió el campo y llegó.** `stale_since` viaja desde `de881e1`, medido ese
+día: `2026-09-12T14:38:08Z`, que es la materialización más la tolerancia.
+**La razón 2 de arriba —«falta el dato»— venció.**
+
+**Y la trama sigue sin poder dibujarse, por una razón NUEVA y más precisa.**
+
+Marcar el tramo pide comparar cada punto con `stale_since`, y para comparar hay
+que saber qué es el `t` de un punto. El servicio manda `"20362"`, `"20393"` —
+**días desde epoch**, el primero de cada mes— y **el cable no lo declara**.
+
+**El front no lo va a interpretar**, y la razón es la misma que sostiene todo lo
+demás: un tramo mal marcado **afirma que un dato concreto está vencido cuando no
+lo está**. La trama existe para fechar; una fecha inventada no fecha, miente.
+
+**Y apareció algo que nadie había visto:** el eje X **no se pinta**. `PlotSeries`
+rinde sólo el eje de valores, así que ese número crudo nunca se mostró — por eso
+nuestro propio contrato pudo decir durante meses que `t` era «la etiqueta del eje,
+ya lista para pintar», que es falso. Corregido el mismo día.
+
+**Queda pedido como `B1.34`**, con una salida más simple que declarar la unidad:
+que el payload degradado traiga **desde qué índice** está vencido, y el front no
+compara nada.
+
 **Mientras tanto la mitad que sí se cumple es la primera**: «OBLIGA A FECHAR».
 La procedencia con su frescura —`SILVER · MERCHANT CENTER · HACE 31 H`— ya se
 pinta en los seis estados, y es lo que el dibujo pide que no falte.

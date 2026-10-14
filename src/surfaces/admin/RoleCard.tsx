@@ -37,22 +37,39 @@
  *   · **La razón en prosa** de las métricas que no recibe. Lo que sí es nuestro
  *     es la nota dura de §3.3, que es una regla y no un dato.
  *
- *  ── DOS TAMAÑOS QUE LA ESCALA NO PUEDE EMITIR ───────────────────────────────
+ *  ── LOS DOS TAMAÑOS CONVERGIERON · 2026-09-28 ───────────────────────────────
  *
- *  El `.pen` pone el nombre del rol en **17** y el de la pestaña en **12.5**, y
- *  la escala que el propio `.pen` emite no tiene ninguno de los dos: va de 15
- *  —`text-titulo`— a 20, y de 12 —`text-celda`— a 13. Se usan los tokens
- *  vecinos. Es el mismo caso que el radio 16 de la hoja del chat: **la autoridad
- *  del `.pen` no obliga a copiar un valor que el propio `.pen` no puede
- *  emitir**. Queda como propuesta de spec — `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` · §2, que es evidencia para
- *  la pregunta 9 de B0.9 y no una pregunta nueva.
+ *  Acá decía que el `.pen` ponía el nombre del rol en **17** y el de la pestaña
+ *  en **12.5**, que la escala no emitía ninguno de los dos, y que se usaban los
+ *  tokens vecinos «porque la autoridad del `.pen` no obliga a copiar un valor
+ *  que el propio `.pen` no puede emitir». Quedaba como propuesta de spec.
+ *
+ *  **El dibujo se movió al código, no al revés**: el nombre del rol pasó a **15**
+ *  —`text-titulo`— y el de la pestaña a **12** —`text-celda`—, que son
+ *  exactamente los dos tokens que este archivo ya usaba. Los 12.5 eran un
+ *  descuido repetido 134 veces, no un rol tipográfico.
+ *
+ *  Así que **no queda divergencia y §2 de
+ *  `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` se puede cerrar**. No
+ *  hubo que cambiar una línea acá — se verificó, que es distinto de suponerlo.
+ *
+ *  ── Y LA CIFRA DESTACADA ES `titulo-lg`, QUE PASÓ DE 20 A 26 ────────────────
+ *
+ *  El token medía mal: valía 20 con dos nodos en el `.pen`, contra 36 que
+ *  convergen en 26. **No hay que tocar nada acá**: la clase es la misma y el
+ *  valor llega con el token. Es lo que `token-drift` garantiza.
  */
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
+import { Accion } from '../../render/primitives/Accion'
 import type { Rol } from '../../api/admin'
 
 /** Una pestaña del layout publicado, con lo que hace falta para desglosarla. */
 export type PestanaDeRol = {
   id: string
+  /** **Con lo que el rol la restringe** · estable entre versiones, a diferencia
+   *  del `id`. Ver el filtro de abajo. */
+  clave: string
   nombre: string
   /** La pregunta operativa · es lo que vuelve legible el nombre. */
   pregunta: string
@@ -85,7 +102,12 @@ export function RoleCard({
   onVerCatalogo,
 }: Props) {
   // **Acá vive la regla.** Vacío = todas.
-  const suyas = rol.pestanas.length === 0 ? pestanas : pestanas.filter((t) => rol.pestanas.includes(t.id))
+  // **Se compara por CLAVE, no por id** · 2026-09-29. `rol.pestanas` pasó a
+  // guardar `tab_keys`, que sobreviven a publicar; el `id` se recrea en cada
+  // versión. Comparar por id acá dejaba la ficha en blanco después de la primera
+  // publicación real, con el rol correctamente restringido por detrás.
+  const suyas =
+    rol.pestanas.length === 0 ? pestanas : pestanas.filter((t) => rol.pestanas.includes(t.clave))
   const paneles = suyas.reduce((n, t) => n + t.paneles, 0)
 
   return (
@@ -116,13 +138,13 @@ export function RoleCard({
       {rol.pestanas.length === 0 && (
         // La mitad del dato que se lee al revés si falta, y acá importa más que
         // en una lista: la cifra de arriba ya sumó todas.
-        <Label as="div">Ve TODAS las pestañas · vacío no es «ninguna»</Label>
+        <Ayuda>Ve TODAS las pestañas: un rol sin pestañas elegidas las ve todas, no ninguna.</Ayuda>
       )}
 
       <div className="h-px bg-w2" />
 
       {suyas.length === 0 ? (
-        <Label as="div">Este cliente no tiene pestañas publicadas</Label>
+        <Ayuda>Este cliente todavía no tiene pestañas publicadas.</Ayuda>
       ) : (
         <ul className="flex flex-col m-0 p-0 list-none">
           {suyas.map((t) => (
@@ -153,40 +175,40 @@ export function RoleCard({
               </span>
             ))}
             {onVerCatalogo !== undefined && (
-              <button type="button" onClick={onVerCatalogo} className={`${CHIP} cursor-pointer bg-transparent hover:bg-w2`}>
+              // **Una acción, no un chip más** · 2026-10-06. Vestía la misma
+              // clase que los nombres de métrica de al lado y no se distinguía
+              // de ellos.
+              <Accion tamano="compacta" onClick={onVerCatalogo}>
                 Ver en el catálogo
-              </button>
+              </Accion>
             )}
           </div>
           {/* **La nota dura, literal del `.pen`.** No es un dato: es §3.3, y por
               eso se escribe acá en vez de esperar a que el cable la mande. */}
-          <span className={`${NOTA} text-dim leading-cuerpo`}>
-            El backend no envía el payload · ocultar no es permitir (§3.3)
-          </span>
+          {/* Decía «El backend no envía el payload · ocultar no es permitir
+              (§3.3)»: la regla en el idioma de quien la implementa. Al
+              super-admin le importa la consecuencia · 2026-10-06. */}
+          <Ayuda>
+            Estas cifras no le llegan al rol, no sólo se esconden: ocultar no es permitir.
+          </Ayuda>
         </div>
       )}
 
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onEditar}
-          className="font-mono text-label leading-rotulo tracking-rotulo uppercase px-2 py-1 rounded-sm cursor-pointer border-0 bg-transparent text-dim hover:bg-elev"
-        >
+        <Accion tamano="compacta" onClick={onEditar}>
           Editar
-        </button>
+        </Accion>
         {rol.usuarios === 0 ? (
-          <button
-            type="button"
-            onClick={onBorrar}
-            aria-label={`Borrar ${rol.nombre}`}
-            className="font-mono text-label leading-rotulo tracking-rotulo uppercase px-2 py-1 rounded-sm cursor-pointer border-0 bg-transparent text-acc hover:bg-elev"
-          >
+          // **`peligro` y no `acc`** · 2026-10-06. Iba en el naranja del CTA
+          // principal, que es el color de «adelante»: una acción que borra con
+          // esa señal la invierte.
+          <Accion tamano="compacta" variante="peligro" onClick={onBorrar} etiqueta={`Borrar ${rol.nombre}`}>
             Borrar
-          </button>
+          </Accion>
         ) : (
           // **Ausente, no deshabilitado con silencio**: se dice qué lo impide y
           // qué lo desbloquea.
-          <Label>No se borra con usuarios asignados · reasignalos primero</Label>
+          <Ayuda as="span">No se borra con usuarios asignados: reasignalos primero.</Ayuda>
         )}
       </div>
     </li>

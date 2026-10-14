@@ -6,12 +6,17 @@
  *  usuario de cliente pertenece a uno y no elige, así que un selector con una
  *  sola opción sería una elección falsa.
  */
+import { useRef, useState } from 'react'
+import { DashboardPanel } from './DashboardPanel'
 import { Label } from '../../render/primitives/Label'
 import { Wordmark } from './Wordmark'
 import { PeriodPicker } from './PeriodPicker'
 import { Tabs } from './Tabs'
 import { UserMenu } from './UserMenu'
-import { ThemeToggle } from './ThemeToggle'
+import { useNavigate } from 'react-router-dom'
+import { MenuDeTrabajo } from '../MenuDeTrabajo'
+import { RUTA_DEL_DASHBOARD } from '../trabajo'
+import { esAdmin } from '../../api/rol'
 import type { Formatter } from '../../render/format'
 import type { Theme } from '../../tokens/theme'
 import type { AppContext, Metric, Tab } from '../../api/types'
@@ -20,6 +25,10 @@ type Props = {
   context: AppContext
   activeTab: Tab | undefined
   activePeriodId: string | undefined
+  /** **Por qué se muestra un período que nadie eligió** · 2026-10-01 · baja
+   *  hasta `PeriodPicker`. Lo redacta el contenedor porque es el único que ve la
+   *  sustitución; acá sólo viaja. */
+  avisoDePeriodo?: string | undefined
   /** Las métricas de la pestaña activa · el selector de período las necesita
    *  para saber qué granos puede ofrecer. */
   tabMetrics: readonly Metric[]
@@ -28,7 +37,6 @@ type Props = {
   format: Formatter
   onSelectTab: (id: string) => void
   onSelectPeriod: (id: string) => void
-  onSelectTenant?: (id: string) => void
   onChangeTheme?: (theme: Theme) => void
   /** Abre el chat con contexto de PESTAÑA · F3.15. **Sin él no hay botón.** */
   onAskTab?: (() => void) | undefined
@@ -41,17 +49,21 @@ export function Topbar({
   context,
   activeTab,
   activePeriodId,
+  avisoDePeriodo,
   tabMetrics,
   format,
   onSelectTab,
   onSelectPeriod,
-  onSelectTenant,
   onChangeTheme,
   onAskTab,
   onSelectDashboard,
 }: Props) {
-  const platform = context.alcance === 'plataforma'
-  const tenants = context.tenantsDisponibles ?? []
+  const navegar = useNavigate()
+  const [panel, setPanel] = useState(false)
+  const chevron = useRef<HTMLButtonElement>(null)
+  const dashboardActivo =
+    context.dashboards.find((d) => d.id === context.dashboardActivoId)?.nombre ?? 'Dashboard'
+
 
   return (
     <header className="flex flex-col">
@@ -65,125 +77,146 @@ export function Topbar({
           plataforma: no cambian con la pestaña ni con el período. Al lado del
           título parecían parte de la pantalla. */}
       <div className="flex h-15 items-center gap-3 border-b border-w2 bg-dock px-6">
-        <Wordmark />
+        <Wordmark variante="marca" />
 
         {/* El divisor del dibujo: la marca es de la plataforma y el cliente es
             de quien mira. Son dos cosas y se ven como dos. */}
         <span aria-hidden className="h-4 w-px shrink-0 bg-w3" />
 
-        {platform && tenants.length > 0 ? (
-          <div className="flex min-w-0 items-center gap-2">
-            <Label as="span">Tenant · el acceso queda auditado</Label>
-            <div className="flex items-center gap-1">
-              {tenants.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => onSelectTenant?.(t.id)}
-                  aria-current={t.id === context.tenant.id ? 'true' : undefined}
-                  className={[
-                    'font-mono text-label tracking-rotulo uppercase rounded-md px-2 py-1',
-                    'cursor-pointer bg-transparent border-0',
-                    t.id === context.tenant.id ? 'text-acc' : 'text-dim hover:text-ink',
-                  ].join(' ')}
-                >
-                  {t.etiqueta}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <Label as="span">{context.tenant.etiqueta}</Label>
-        )}
+        {/* **El cliente, destacado y sin botones que no hacen nada** · 2026-10-06.
 
-        {/* ── SELECTOR DE DASHBOARD · F5.1 ──────────────────────────────────
-            **Sólo con más de uno**, que es el primer bullet del criterio: «no
-            se ofrece una elección que no existe». Es la misma regla que el
-            selector de tenant de acá al lado, que existe sólo para tokens de
-            plataforma.
+            Para un usuario de plataforma acá había un botón por cliente —el
+            `.pen` de C1 los dibuja con «TENANT · EL ACCESO QUEDA AUDITADO»—, y
+            **ninguno hacía nada**: `onSelectTenant` nunca se conectó desde
+            `ConsoleContainer`. No podía conectarse: el cliente de la consola es el
+            del token de sesión —`JWTMiddleware` pone `claims.TenantID`— y ninguna
+            ruta de `/config/*` acepta otro. Leído en el código del servicio ese
+            día. Un CTA sin manejador no se pinta.
 
-            ── DÓNDE VA, Y ES UNA PROPUESTA DE SPEC ─────────────────────────
+            Pedido humano del mismo día: «en el header se debe destacar bien el
+            tenant que se está trabajando». Va con el mismo tratamiento que el
+            selector de administración y del builder, sin la caja: acá no se
+            elige. Que la consola siga la elección de esas dos superficies es un
+            pedido al backend. */}
+        <div className="flex min-w-0 items-center gap-3">
+          <Label as="span">Cliente</Label>
+          <span className="truncate font-display text-titulo leading-titulo tracking-titulo font-medium text-ink">
+            {context.tenant.etiqueta}
+          </span>
+        </div>
 
-            **Ni el `.pen` ni `design.md` lo dibujan.** §7.1 lista el navbar
-            —«wordmark · selector de tenant · rol · tema · período ·
-            notificaciones · CTA de chat · usuario»— y no lo incluye; el `.pen`
-            tampoco, y sus «capítulos» son PESTAÑAS de un layout, no
-            dashboards. El multi-dashboard llegó después del dibujo.
+        {/* ── SELECTOR DE DASHBOARD · §PEN:C6 ──────────────────────────────
+            **Era un `<select>` en el navbar hasta el 2026-09-28**, puesto por
+            F5.1 con la pregunta de dónde iba abierta como propuesta de spec.
+            C6 la contestó: **no va en el navbar**, porque «de ocho elementos a
+            768 no entra». Lo abre el chevron del bloque de cliente, que ya
+            estaba dibujado, **y por eso el navbar no crece**.
 
-            Lo que sí dibuja el `.pen` es un `chevrons-up-down` sobre el bloque
-            de cliente, para elegir contexto. Se sigue esa vecindad —el
-            dashboard es contexto, igual que el cliente— y se usa el mismo
-            control que el selector de período, que está dibujado y ya vive en
-            esta barra. **No se inventa una forma nueva**, y la pregunta de
-            dónde va queda abierta ·
-            `docs/PROPUESTA-2026-09-26-selector-de-dashboard.md`. */}
+            **Sólo con más de uno**, que no cambió: «no se ofrece una elección
+            que no existe». */}
         {context.dashboards.length > 1 && onSelectDashboard !== undefined && (
-          <label className="flex min-w-0 items-center gap-2">
-            <Label as="span">Dashboard</Label>
-            <select
-              value={context.dashboardActivoId ?? ''}
-              onChange={(e) => onSelectDashboard(e.target.value)}
-              className="font-mono text-label leading-rotulo tracking-rotulo uppercase text-ink bg-transparent border border-w3 rounded-md px-2 py-1 cursor-pointer"
+          <div className="relative flex min-w-0 items-center">
+            <button
+              ref={chevron}
+              type="button"
+              onClick={() => setPanel((v) => !v)}
+              aria-expanded={panel}
+              aria-label="Cambiar de dashboard"
+              className="flex cursor-pointer items-center gap-1 rounded-sm border-0 bg-transparent px-1 py-1 text-dim hover:bg-elev"
             >
-              {context.dashboards.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.nombre}
-                </option>
-              ))}
-            </select>
-          </label>
+              <span className="text-celda text-ink">{dashboardActivo}</span>
+              {/* `chevrons-up-down` de 13 en `$dim` · el que el `.pen` dibuja
+                  sobre el bloque de cliente. */}
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="m7 15 5 5 5-5" />
+                <path d="m7 9 5-5 5 5" />
+              </svg>
+            </button>
+            {panel && (
+              <DashboardPanel
+                context={context}
+                pestanasActivas={context.tabs.length}
+                disparador={chevron}
+                onSelect={(id) => {
+                  setPanel(false)
+                  onSelectDashboard(id)
+                }}
+                onCerrar={() => setPanel(false)}
+              />
+            )}
+          </div>
         )}
 
         {/* El `Spacer` del dibujo. */}
         <div className="flex-1" />
 
-        {/* **El nombre abre un panel, y no es un rótulo.** `design.md` ya lo
-            declaraba así —«abre un panel con nombre, correo, rol con su
-            descripción y cliente»— y acá era texto suelto. Desde el
-            2026-09-16 cuelga de ahí además la salida a las otras dos
-            superficies, para el admin. */}
-        {/* ── CTA SYNAPSE · §PEN:C1 · F3.15 ────────────────────────────
-            Del frame: alto 32, fondo `$acc`, radio `$r-lg`, gap 8, padding
-            lateral 14, `sparkles` de 14 en `$on-acc` y el texto mono 10 **w500**
-            —el único de la barra que no es `normal`—.
+        {/* **Preguntar, el usuario y el trabajo, con aire entre sí** · decisión
+            humana del 2026-10-07: apretados con el `gap-3` de la barra se leían
+            como un solo bloque. El menú de trabajo va AL FINAL, a la derecha —
+            primero estuvo antes del logotipo y se pidió moverlo—. */}
+        <div className="flex items-center gap-6">
 
-            **Va justo antes del usuario**, que es donde el dibujo lo pone:
-            `… Notificaciones · CTA Synapse · Usuario`. Nuestro navbar no tiene
-            notificaciones y pone el tema después del usuario, que es una
-            divergencia anterior a esto y no se toca acá.
+          {/* **El nombre abre un panel, y no es un rótulo.** `design.md` ya lo
+              declaraba así —«abre un panel con nombre, correo, rol con su
+              descripción y cliente»— y acá era texto suelto. Desde el
+              2026-09-16 cuelga de ahí además la salida a las otras dos
+              superficies, para el admin. */}
+          {/* ── CTA SYNAPSE · §PEN:C1 · F3.15 ────────────────────────────
+              Del frame: alto 32, fondo `$acc`, radio `$r-lg`, gap 8, padding
+              lateral 14, `sparkles` de 14 en `$on-acc` y el texto mono 10 **w500**
+              —el único de la barra que no es `normal`—.
 
-            **Sin manejador no se pinta** · regla del CTA muerto: el builder
-            monta esta misma consola sin chat. */}
-        {onAskTab !== undefined && (
-          <button
-            type="button"
-            onClick={onAskTab}
-            // **El literal visible es del frame —`PREGUNTAR`— y el nombre
-            //   accesible dice el ALCANCE.** En la misma pantalla hay tres
-            //   botones que dicen «Preguntar»: éste, el de cada panel y el de
-            //   enviar dentro de la hoja. Los dos últimos tienen contexto
-            //   —el panel los agrupa bajo su `aria-label`, la hoja es un
-            //   diálogo—; éste queda suelto en la barra.
-            aria-label="Preguntar sobre esta pestaña"
-            className="flex h-8 shrink-0 cursor-pointer items-center gap-2 rounded-lg border-0 bg-acc px-3.5 font-mono text-label leading-rotulo tracking-rotulo uppercase text-on-acc"
-          >
-            <svg
-              aria-hidden
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="size-3.5 shrink-0"
+              **Va justo antes del usuario**, que es donde el dibujo lo pone:
+              `… Notificaciones · CTA Synapse · Usuario`. Nuestro navbar no tiene
+              notificaciones y pone el tema después del usuario, que es una
+              divergencia anterior a esto y no se toca acá.
+
+              **Sin manejador no se pinta** · regla del CTA muerto: el builder
+              monta esta misma consola sin chat. */}
+          {onAskTab !== undefined && (
+            <button
+              type="button"
+              onClick={onAskTab}
+              // **El literal visible es del frame —`PREGUNTAR`— y el nombre
+              //   accesible dice el ALCANCE.** En la misma pantalla hay tres
+              //   botones que dicen «Preguntar»: éste, el de cada panel y el de
+              //   enviar dentro de la hoja. Los dos últimos tienen contexto
+              //   —el panel los agrupa bajo su `aria-label`, la hoja es un
+              //   diálogo—; éste queda suelto en la barra.
+              aria-label="Preguntar sobre esta pestaña"
+              className="flex h-8 shrink-0 cursor-pointer items-center gap-2 rounded-lg border-0 bg-acc px-3.5 font-mono text-label leading-rotulo tracking-rotulo uppercase text-on-acc"
             >
-              <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
-            </svg>
-            Preguntar
-          </button>
-        )}
-        <UserMenu context={context} />
-        <ThemeToggle {...(onChangeTheme === undefined ? {} : { onChange: onChangeTheme })} />
+              <svg
+                aria-hidden
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="size-3.5 shrink-0"
+              >
+                <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+              </svg>
+              Preguntar
+            </button>
+          )}
+          {/* **El tema se fue adentro del panel de usuario** · 2026-09-28,
+              §PEN «Console/Panel de usuario». Estaba suelto acá al lado y el
+              dibujo lo pone entre la identidad y las salidas: es una preferencia
+              de la persona, igual que su rol y las superficies a las que entra.
+              Y de paso el navbar baja de ocho elementos a siete. */}
+          <UserMenu
+            context={context}
+            {...(onChangeTheme === undefined ? {} : { onChangeTheme })}
+          />
+          {/* Para quien no administra no se pinta: no tiene a dónde ir. */}
+          <MenuDeTrabajo
+            esAdmin={esAdmin(context.role)}
+            rutaActual={RUTA_DEL_DASHBOARD}
+            onIr={(ruta) => void navegar(ruta)}
+          />
+        </div>
       </div>
 
       {/* ── HEADER · 96px · §PEN:C1 ────────────────────────────────────────
@@ -202,6 +235,7 @@ export function Topbar({
           activeId={activePeriodId}
           metrics={tabMetrics}
           format={format}
+          {...(avisoDePeriodo === undefined ? {} : { aviso: avisoDePeriodo })}
           onSelect={onSelectPeriod}
         />
       </div>

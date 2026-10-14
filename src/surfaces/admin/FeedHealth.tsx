@@ -23,6 +23,7 @@
  */
 import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
 import { EmptyRow } from './EmptyRow'
 import { SkeletonRows } from './SkeletonRows'
 import { limiteHoras, resumen, saludDe } from './saludDeFuente'
@@ -36,13 +37,51 @@ const NOTA = 'font-mono text-nota leading-rotulo tracking-rotulo uppercase text-
 
 const COLUMNAS = ['Fuente', 'Capa', 'Cadencia', 'Última carga', 'Frescura', 'Filas', 'Fallas S › G', 'Métricas'] as const
 
+/** Las horas de frescura, REDONDEADAS · 2026-10-01.
+ *
+ *  **El defecto, visto en pantalla**: la columna decía `12.186776741388888 h`.
+ *  El servicio manda un flotante —son horas calculadas, no un entero— y se
+ *  pintaba con `String()`, que escribe los quince decimales.
+ *
+ *  **Se redondea a entero y no a un decimal**: la pregunta que esta columna
+ *  contesta es «¿está dentro del límite?», y el límite es cadencia × tolerancia,
+ *  en horas enteras. Un decimal daría una precisión que la decisión no usa.
+ *
+ *  **Y NO pasa por el formateador del tenant.** Es un conteo de horas, no una
+ *  cifra de negocio: no lleva separador de miles ni moneda, y el `.pen` lo
+ *  escribe `31 h`. Redondear acá es presentación, no cálculo — el dato que
+ *  decide el estado sigue siendo el flotante, en `saludDeFuente`. */
+const horas = (n: number) => `${String(Math.round(n))} h`
+
 /** Lo que el cable no manda, dicho en la pantalla. Misma forma que `CatalogView`
  *  y `RoleEditor`: el hueco se declara donde se ve, no en un comentario. */
-const FALTANTES = [
-  'Capa · el dibujo la pone como columna y el cable no la manda · pedido a backend',
-  'Ver rechazos · no hay ruta que liste las filas que fallaron Silver→Gold',
-  'Sincronizar todo · no hay ruta que dispare una carga',
-] as const
+/** LO QUE ESTA PANTALLA TODAVÍA NO MUESTRA · reescrito el 2026-09-30 (humano)
+ *
+ *  **Esto se PINTA, así que es copy de producto y no una nota nuestra.** Hasta
+ *  hoy citaba §7.3, nombraba rutas del servicio y hablaba de «el cable» en la
+ *  pantalla de un cliente — la auditoría de usabilidad lo puso primero en su
+ *  lista: `docs/AUDITORIA-2026-09-30-usabilidad.md` §1.1.
+ *
+ *  **Declarar lo que falta se conserva**, que es la mejor costumbre de este
+ *  repositorio y la misma gramática de §8: un panel apagado dice qué pasa. Lo
+ *  que cambia es a quién se le habla. **La razón técnica de cada línea no se
+ *  pierde: baja al comentario**, que es donde le sirve a quien la va a
+ *  construir.
+ */
+/** **Lo que esta pantalla todavía no tiene** · fuera de la pantalla desde el 2026-10-06.
+ *
+ *  Se pintaba como «Esta pantalla va a crecer · Falta: …». Decisión humana
+ *  sobre la auditoría del builder de ese día: «si no suman para el uso,
+ *  quitar». No suman: quien usa la pantalla no puede hacer nada con eso. Queda
+ *  acá, que es donde le sirve a quien lo vaya a construir.
+ *
+ *    El dibujo la pone como columna y el cable no la manda · pedido a backend.
+ *  · 'De qué capa viene cada fuente'
+ *    No hay ruta que liste los rechazos Silver→Gold.
+ *  · 'Ver las filas que una carga dejó afuera'
+ *    No hay ruta que dispare una carga.
+ *  · 'Pedir una sincronización desde acá'
+ */
 
 /** **Acá se armaban dos `Intl` con `'es-MX'` fijo** y su comentario prometía
  *  cambiar una línea el día que el locale llegara · F1.13b. Llegó el
@@ -76,11 +115,17 @@ export function FeedHealth({ fuentes, tenant, format, cargando = false }: Props)
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
-        <h1 className="font-display text-titulo tracking-titulo leading-titulo text-ink m-0">
-          Salud de feeds
-        </h1>
+        {/* ── EL TÍTULO NO VA ACÁ · 2026-09-28 ────────────────────────────
+            Había un `<h1>` con «Salud de feeds» **y `AdminChrome` pinta el mismo
+            texto**, porque sale de `pantallas.ts`. Dos `<h1>` por pantalla y el
+            título repetido; el dibujo tiene uno solo.
+
+            Lo destapó cruzar el tamaño contra el dibujo: la pregunta era de 15
+            contra 26 y la respuesta resultó ser que sobraba un título. La
+            pregunta operativa SÍ es de la vista —es lo que esta pantalla
+            contesta— y se queda. */}
         {/* La pregunta operativa, literal del frame. §1.1 la hace obligatoria. */}
-        <Label as="div">¿Por qué una métrica está degradada, y qué la desbloquea?</Label>
+        <Ayuda>¿Por qué una métrica está degradada, y qué la desbloquea?</Ayuda>
         <div className="flex items-center gap-3">
           {/* El alcance, que acá es TENANT — por eso esta pantalla lleva
               selector de cliente y A1 no: A1 opera sobre la plataforma. */}
@@ -133,10 +178,17 @@ export function FeedHealth({ fuentes, tenant, format, cargando = false }: Props)
                       <span className="text-ink text-celda">{f.nombre}</span>
                       {f.tablaGold !== '' && <span className={NOTA}>{f.tablaGold}</span>}
                       {expandida && <Expansion fuente={f} salud={salud} />}
+                      {/* **En registro de acción, no de rótulo** · 2026-10-06.
+                          Era mono 9 en mayúsculas y se leía como la nota de la
+                          celda. Queda como enlace —`acc` es color de enlace,
+                          dentro de sus usos permitidos— y no como `Accion`
+                          porque vive dentro de una celda angosta, debajo del
+                          nombre. */}
                       <button
                         type="button"
                         onClick={() => setAbierta(expandida ? null : f.clave)}
-                        className="self-start font-mono text-nota tracking-rotulo uppercase text-acc cursor-pointer bg-transparent border-0 p-0"
+                        aria-expanded={expandida}
+                        className="self-start font-body text-celda font-semibold text-acc underline cursor-pointer bg-transparent border-0 p-0 hover:text-acc-hover"
                       >
                         {expandida ? 'Plegar' : 'Por qué'}
                       </button>
@@ -165,7 +217,7 @@ export function FeedHealth({ fuentes, tenant, format, cargando = false }: Props)
                   <td className="py-3">
                     <div className="flex flex-col gap-1">
                       <span className="text-ink text-celda">
-                        {f.frescuraHoras === null ? '—' : `${String(f.frescuraHoras)} h`}
+                        {f.frescuraHoras === null ? '—' : horas(f.frescuraHoras)}
                       </span>
                       <span className={NOTA}>{TEXTO[salud]}</span>
                     </div>
@@ -191,24 +243,15 @@ export function FeedHealth({ fuentes, tenant, format, cargando = false }: Props)
         {/* Las tres reglas del pie, literales del dibujo. No son decoración:
             explican por qué la columna de estado dice lo que dice. */}
         <div className="flex flex-col gap-1 border-t border-w2 pt-3">
-          <Label as="div">
-            El estado no se escribe, se deriva · si frescura &gt; cadencia × tolerancia, degradado
-          </Label>
-          <Label as="div">
-            Una métrica compuesta hereda la peor capa y la frescura más vieja
-          </Label>
-          <Label as="div">
-            Una métrica puede endurecer su estado —degradado a bloqueado— pero nunca ablandarlo
-          </Label>
-        </div>
-
-        <div className="flex flex-col gap-1 border-t border-w2 pt-3">
-          <Label as="div">{`Faltan ${String(FALTANTES.length)} cosas que §7.3 pide de esta pantalla`}</Label>
-          {FALTANTES.map((f) => (
-            <Label as="div" key={f}>{f}</Label>
-          ))}
-        </div>
-      </section>
+          <Ayuda>
+            El estado no se escribe, se deriva: si la frescura supera cadencia × tolerancia, la
+            fuente está degradada.
+          </Ayuda>
+          <Ayuda>Una métrica compuesta hereda la peor capa y la frescura más vieja.</Ayuda>
+          <Ayuda>
+            Una métrica puede endurecer su estado —de degradado a bloqueado— pero nunca ablandarlo.
+          </Ayuda>
+        </div>      </section>
     </div>
   )
 }
@@ -222,16 +265,16 @@ function Expansion({ fuente, salud }: { fuente: Fuente; salud: SaludDeFuente }) 
       <p className="font-body text-cuerpo leading-cuerpo text-ink m-0">
         {salud === 'SIN_CARGA'
           ? `Esta fuente nunca registró una carga, así que no tiene frescura que comparar. No está atrasada: está sin estrenar.`
-          : `El dato tiene ${String(fuente.frescuraHoras)} h y la fuente se refresca cada ${String(fuente.cadenciaHoras)} h. El límite es cadencia × tolerancia = ${String(limite)} h.`}
+          : `El dato tiene ${horas(fuente.frescuraHoras ?? 0)} y la fuente se refresca cada ${String(fuente.cadenciaHoras)} h. El límite es cadencia × tolerancia = ${String(limite)} h.`}
       </p>
       {/* **Qué lo desbloquea sale del estado, no de un campo**: el cable no
           manda un `unlocks_with` por fuente. Se dice lo que es cierto en cada
           caso y no se inventa una acción que nadie puede ejecutar. */}
-      <Label as="div">
+      <Ayuda>
         {salud === 'SIN_CARGA'
-          ? 'Lo desbloquea · conectar su tabla Gold y correr la primera carga'
-          : 'Lo desbloquea · una carga más reciente que el límite de la fuente'}
-      </Label>
+          ? 'Lo desbloquea conectar su tabla Gold y correr la primera carga.'
+          : 'Lo desbloquea una carga más reciente que el límite de la fuente.'}
+      </Ayuda>
       <div className="flex flex-wrap items-center gap-2">
         <Label>Pega en</Label>
         {fuente.metricas.map((m) => (

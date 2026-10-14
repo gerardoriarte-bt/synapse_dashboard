@@ -26,7 +26,10 @@ import { ok } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
 
 const API = '*/api/v1'
-const tenants = [{ id: 't-1', name: 'Under Armour México' }]
+/** `created_at` va porque A2 lo pinta en `ALTA` y el cable lo declara
+ *  obligatorio · F5.20. Acá había dos campos de los trece que la ruta
+ *  devuelve, escritos cuando devolvía dos. */
+const tenants = [{ id: 't-1', name: 'Under Armour México', label: '', created_at: '2026-09-22T09:18:45Z' }]
 
 const metrica = (id: string, layer: string) => ({
   id, tenant_id: 't-1', key: id, name: `Métrica ${id}`,
@@ -50,7 +53,7 @@ function montar() {
 }
 
 async function abrirCatalogo() {
-  await screen.findByText('Under Armour México')
+  await screen.findByRole('button', { name: /^Under Armour México · / })
   await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
   await screen.findByRole('table')
 }
@@ -61,7 +64,7 @@ describe('vacío de SISTEMA · nadie dio de alta nada', () => {
     const { container } = montar()
 
     expect(await screen.findByText(/Ningún cliente dado de alta todavía/)).toBeInTheDocument()
-    expect(container.textContent).toContain('plantilla de vertical')
+    expect(container.textContent).toContain('después se elige su plantilla')
     // **Sin botón de deshacer**: no hay nada que deshacer.
     expect(screen.queryByRole('button', { name: 'Limpiar el filtro' })).toBeNull()
   })
@@ -75,7 +78,7 @@ describe('vacío de SISTEMA · nadie dio de alta nada', () => {
     await abrirCatalogo()
 
     expect(screen.getByText(/no tiene métricas en el catálogo/)).toBeInTheDocument()
-    expect(screen.getByText(/sincronizando desde el modelo semántico · B1.18/)).toBeInTheDocument()
+    expect(screen.getByText(/Se llenan cuando el catálogo se sincroniza/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Limpiar el filtro' })).toBeNull()
   })
 })
@@ -172,12 +175,28 @@ describe('vacío de ALTA · el cliente es nuevo', () => {
       http.get(`${API}/admin/tenants/:id/catalog`, () => ok([])),
     )
     montar()
-    await screen.findByText('Under Armour México')
-    await userEvent.click(screen.getByRole('button', { name: 'Ficha de cliente' }))
+    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await userEvent.click(screen.getByRole('button', { name: /^Under Armour México · / }))
 
-    expect(await screen.findByText(/todavía no tiene roles · está en alta/)).toBeInTheDocument()
-    // La consecuencia, que es lo que lo vuelve accionable.
-    expect(screen.getByText(/nadie puede entrar a la consola de este cliente/)).toBeInTheDocument()
-    expect(screen.getByText(/El siguiente paso es crear el primero/)).toBeInTheDocument()
+    // **El literal del `.pen`, palabra por palabra** · corregido en la auditoría
+    // del 2026-09-30. Acá se afirmaban dos labels nuestros —«Este cliente
+    // todavía no tiene roles · está en alta» y «nadie puede entrar a la
+    // consola…»— y el frame `A2 · Ficha · tenant en alta` escribe UNA frase que
+    // dice las dos cosas. Se afirma entera y no un fragmento: es un literal
+    // normativo, y media frase deja que la otra media se vaya sola.
+    expect(
+      await screen.findByText(
+        'Todavía no hay roles definidos, así que este cliente no tiene composición ni usuarios que puedan entrar.',
+      ),
+    ).toBeInTheDocument()
+    // Y el rótulo del resumen, que en alta también es del dibujo: `SIN ROLES
+    // DEFINIDOS` donde el frame normal pone las cifras.
+    expect(screen.getByText('Sin roles definidos')).toBeInTheDocument()
+    // **El siguiente paso es un CTA dentro del vacío** · §PEN:A2, 2026-09-30.
+    // Acá se afirmaba una línea que decía «"Nuevo rol", acá arriba», o sea que
+    // mandaba a buscar un botón en otra parte de la pantalla. El dibujo pone el
+    // botón adentro, y es el único de los tres tipos de vacío que lo lleva: un
+    // vacío de alta es una invitación a actuar, y la acción va donde se lee.
+    expect(screen.getByRole('button', { name: 'Definir primer rol' })).toBeInTheDocument()
   })
 })

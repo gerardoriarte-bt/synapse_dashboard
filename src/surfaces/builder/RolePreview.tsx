@@ -63,7 +63,11 @@
  *  **§PEN:B5** · B5 · «Vista previa · rol Planner sin componer».
  */
 import { Label } from '../../render/primitives/Label'
-import { gridStyle, panelStyle } from '../../render/grid'
+import { Ayuda } from '../../render/primitives/Ayuda'
+import { Accion } from '../../render/primitives/Accion'
+import { nombreDeTipo } from './rotulos'
+import { GAP, ROW, gridStyle, panelStyle } from '../../render/grid'
+import type { ReactNode } from 'react'
 import type { LayoutDetalle, PreviewDeRol } from '../../api/admin'
 import type { PanelConfig } from '../../api/types'
 
@@ -76,6 +80,10 @@ type Props = {
   completo?: LayoutDetalle | undefined
   /** El toggle de §7.2 · «un toggle vuelve a edición». */
   onVolver: () => void
+  /** **El panel dibujado con su dato** · 2026-10-07. Lo resuelve el contenedor
+   *  —tiene el catálogo, el repertorio y el formato del cliente—. Sin él, o sin
+   *  `preview.datos`, la caja con el tipo y el tamaño. */
+  dibujar?: (panel: PanelConfig) => ReactNode
 }
 
 /** Los paneles que el layout tiene y este rol no ve · §3.4 regla 3.
@@ -92,7 +100,8 @@ function huecosDe(
   return completos.filter((x) => !visibles.has(x.id))
 }
 
-export function RolePreview({ preview, completo, onVolver }: Props) {
+export function RolePreview({ preview, completo, onVolver, dibujar }: Props) {
+  const conDatos = dibujar !== undefined && preview.datos !== undefined
   const total = preview.tabs.reduce((s, x) => s + x.paneles.length, 0)
 
   return (
@@ -104,19 +113,15 @@ export function RolePreview({ preview, completo, onVolver }: Props) {
             un BORRADOR, y sin decirlo alguien compara «lo que ve el Planner»
             contra algo que el Planner todavía no ve. */}
         <Label as="div">{preview.estado === 'borrador' ? 'Borrador' : 'Publicado'}</Label>
-        <button
-          type="button"
-          onClick={onVolver}
-          className="font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2 ml-auto"
-        >
-          Volver a edición
-        </button>
+        <div className="ml-auto">
+          <Accion onClick={onVolver}>Volver a edición</Accion>
+        </div>
       </div>
 
       {preview.tabs.length === 0 && (
         // No es un error: es un rol al que no le asignaron ninguna pestaña, y
         // eso es exactamente lo que esta pantalla existe para mostrar.
-        <Label as="div">Este rol no ve ninguna pestaña de este layout</Label>
+        <Ayuda>Este rol no ve ninguna pestaña de esta versión.</Ayuda>
       )}
 
       {preview.tabs.map(({ tab, paneles }) => {
@@ -136,21 +141,36 @@ export function RolePreview({ preview, completo, onVolver }: Props) {
             )}
 
             <div style={gridStyle()}>
-              {paneles.map((p) => (
-                // **No se dibuja con `render/Panel`**, y la razón no cambió: el
-                // preview va sin payloads, así que habría que inventarle uno —un
-                // `BLOQUEADO` que nadie emitió— y eso es lo que este repositorio
-                // persigue. Se pinta la CAJA con su posición real.
+              {paneles.map((p) =>
+                conDatos ? (
+                  // **Con su dato, como lo va a ver el rol** · 2026-10-07. La
+                  // razón por la que acá había una caja —«el preview va sin
+                  // payloads»— venció con `d9147c3`. Una grilla del ancho del
+                  // panel con las filas de la consola: mide lo mismo que allá.
+                  <div
+                    key={p.id}
+                    style={{
+                      ...panelStyle(p),
+                      display: 'grid',
+                      gridTemplateColumns: `repeat(${String(p.colSpan)}, minmax(0, 1fr))`,
+                      gridAutoRows: `${String(ROW)}px`,
+                      gap: `${String(GAP)}px`,
+                    }}
+                  >
+                    {dibujar({ ...p, colStart: 1 })}
+                  </div>
+                ) : (
                 <div
                   key={p.id}
                   style={panelStyle(p)}
                   className="rounded-xl border border-w4 bg-panel p-3 flex flex-col gap-1 min-w-0"
                 >
-                  <Label as="div">{p.tipo}</Label>
+                  <Label as="div">{nombreDeTipo(p.tipo)}</Label>
                   <Label as="div">{`${String(p.colSpan)} × ${String(p.rowSpan)}`}</Label>
                   {p.nota !== undefined && <Label as="div">{p.nota}</Label>}
                 </div>
-              ))}
+                ),
+              )}
 
               {huecos.map((h) => (
                 // **En su posición original** · §3.4 regla 3. Punteado y sin
@@ -179,20 +199,22 @@ export function RolePreview({ preview, completo, onVolver }: Props) {
 
             Para que no quede como leyenda, lo que se declara es lo que se PUEDE
             comprobar mirando la pantalla: que no hay paneles. */}
-        <Label as="div">
-          Esta vista muestra la composición · sin cifras, que el preview no manda
-        </Label>
-        <Label as="div">
-          Los dos recortes los hizo el servidor · `roles.tab_ids` y `hidden_metric_ids`
-        </Label>
+        <Ayuda>
+          {conDatos
+            ? `Con el dato de ${preview.datos?.periodo ?? 'el período abierto'}, como lo va a ver este rol.`
+            : 'Esta vista muestra la composición, sin cifras: el dato todavía no llegó.'}
+        </Ayuda>
+        {/* Nombraba los dos campos del cable —`roles.tab_ids` y
+            `hidden_metric_ids`— en la pantalla · 2026-10-06. Se dice qué son. */}
+        <Ayuda>
+          Los dos recortes los hizo el servidor: qué pestañas ve el rol y qué métricas tiene ocultas.
+        </Ayuda>
         {completo === undefined && (
           // **Se declara en vez de inferirlos.** Sin el layout completo un hueco
           // sería un espacio vacío, y un espacio vacío puede ser una decisión
           // del admin. Decir «no llega a este rol» ahí afirmaría una causa que
           // nadie verificó.
-          <Label as="div">
-            Los huecos no se pueden calcular sin el layout sin lente
-          </Label>
+          <Ayuda>Los huecos no se pueden calcular sin la versión completa.</Ayuda>
         )}
       </div>
     </div>

@@ -9,6 +9,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   useBlocks,
+  useDrillSupport,
+  usePlots,
   useCatalog,
   useMe,
   usePanelsBatch,
@@ -16,16 +18,22 @@ import {
   useSaveTheme,
   useSelectDashboard,
   useTab,
+  useChatAgents,
 } from '../../api/hooks'
-import { adaptPanelParams } from '../../api/params'
+import { conParams, problemaDeGrafico } from '../resolverPanel'
 import { blockTable } from '../../catalog/blocks'
-import { applyTheme } from '../../tokens/theme'
+import { plotTable } from '../../catalog/plots'
+import type { PlotProblem } from '../../catalog/plots'
+import { useTemaGuardado } from '../useTemaGuardado'
 import { preloadBodies } from '../../render/bodies/registry'
 import { createFormat, LOCALE_POR_DEFECTO } from '../../render/format'
 import { currentTheme } from '../../tokens/theme'
 import { markTabConfig } from '../../render/budget'
 import { Console } from './Console'
 import { ChatSheet } from './ChatSheet'
+import { agentePorDefecto } from './agenteDeChat'
+import { esAdmin } from '../../api/rol'
+import { DrillSheet } from './DrillSheet'
 import { SurfaceMessage } from './SurfaceMessage'
 import type { Metric, PanelType, Payload } from '../../api/types'
 
@@ -55,12 +63,49 @@ export function ConsoleContainer() {
    *  activa, y guardar su id abriría la puerta a preguntarle a una que ya no se
    *  está mirando. Cambiar de pestaña con la hoja abierta la cierra. */
   const [askingTab, setAskingTab] = useState(false)
+  /** Desde qué panel se abrió el detalle · F3.9 · §PEN:C2.
+   *
+   *  **Un estado propio, y excluyente con el del chat.** No se apilan: el pie de
+   *  la hoja de detalle ofrece «preguntar sobre esta cifra», que es exactamente el
+   *  caso que dejaría dos hojas abiertas, y con dos el Escape cierra una sola y el
+   *  usuario no sabe cuál. La exclusión se escribe en los dos manejadores, abajo. */
+  const [drillingPanelId, setDrillingPanelId] = useState<string | null>(null)
 
   const context = useMe()
+  /** **El agente del chat que eligió el admin** · 2026-10-06. Vive acá y no en
+   *  la hoja porque la hoja se desmonta al cerrarla —y su `key` cambia con el
+   *  panel—: elegir un agente para cada pregunta sería volver a elegirlo cada
+   *  vez. `null` es «todavía no eligió», y ahí manda `agentePorDefecto`;
+   *  `undefined` es «eligió que lo resuelva el servicio». */
+  const [agenteElegido, setAgenteElegido] = useState<string | undefined | null>(null)
+  const admin = esAdmin(context.data?.role)
+  const agentesDeChat = useChatAgents(admin)
+  /** Lo que la hoja necesita para pintar el selector, o nada. **Vacío para quien
+   *  no es admin**, y entonces la hoja no lo pinta: ver la regla del CTA sin
+   *  manejador. Mientras la lista carga tampoco, para no mostrar un selector
+   *  con una sola opción que después cambia. */
+  const selectorDeAgente =
+    admin && agentesDeChat.data !== undefined && context.data !== undefined
+      ? {
+          agentes: agentesDeChat.data,
+          agenteId:
+            agenteElegido === null
+              ? agentePorDefecto(agentesDeChat.data, context.data.tenant.id)
+              : agenteElegido,
+          onAgente: (id: string | undefined) => setAgenteElegido(id),
+        }
+      : {}
   const catalog = useCatalog()
   // La tabla de bloques trae `paramsDisponibles`: es la mitad del esquema de
   // params que sí declara el contrato · F1.29.
   const blocks = useBlocks()
+  // **Arriba con los demás hooks, y no abajo donde se usa.** Puesto junto a su
+  // lógica quedaba DESPUÉS de los retornos tempranos del contenedor —el estado
+  // de carga, el dashboard sin componer— así que en unos renders se llamaba y en
+  // otros no: React lo marcó como cambio en el orden de los hooks y el
+  // contenedor entero dejó de montar. No lo vio el compilador; lo vio la primera
+  // prueba que lo ejercitó.
+  const plots = usePlots()
   const saveTheme = useSaveTheme()
   const selectDashboard = useSelectDashboard()
 
@@ -84,9 +129,77 @@ export function ConsoleContainer() {
   const tabs = context.data?.tabs ?? []
   const activeTab = tabs.find((t) => t.id === tabId) ?? tabs[0]
   const periods = context.data?.periodos ?? []
-  const activePeriod = periods.find((p) => p.id === periodId) ?? periods[0]
+  // **El mes abierto, para que el chat diga que su última cifra está
+  // incompleta** · 2026-10-10. Es `open_period` renombrado por el adaptador: si
+  // no llegó, ningún período lo es y no se marca nada.
+  const mesEnCurso = periods.find((p) => p.enCurso === true)?.id
 
-  const layout = useTab(activeTab?.id ?? null)
+  /** ── EL MES ABIERTO ARRANCA VACÍO, Y ASÍ LA CONSOLA NACÍA MUERTA ───────────
+   *
+   *  **Medido el 2026-10-01**, el día que la fecha cambió de mes: `/config/me`
+   *  ofrece `2026-10` primero y lo declara `open_period`, y `dd_panel_data` tiene
+   *  **cero filas** de ese período. El contenedor elegía `periods[0]`, así que
+   *  los quince paneles salían `BLOQUEADO · No hay datos calculados para este
+   *  período`. **Un cliente que abre el día 1 ve el dashboard entero apagado.**
+   *
+   *  ── POR QUÉ LO DECIDE EL FRONT, QUE ES LO QUE HAY QUE JUSTIFICAR ──────────
+   *
+   *  **El cable no dice si un período tiene dato.** `periods_detail` trae `key`,
+   *  `grain`, `start` y `end`, y nada más — leído del servicio, no deducido. El
+   *  único que lo sabe de verdad es el servicio, que tiene las filas, y pedirle
+   *  la señal es lo correcto a futuro; está anotado como propuesta.
+   *
+   *  Mientras tanto **no se adivina: se mira**. Se pide el mes abierto, y si
+   *  vuelve sin un solo panel con valor se muestra el anterior **y se dice que
+   *  se hizo**. Eso no es calcular un dato que no llegó: es elegir cuál de los
+   *  períodos que el servicio ofrece se abre primero, que siempre fue decisión
+   *  de esta pantalla.
+   *
+   *  ── «VACÍO» ES ESTRICTO, Y ESO IMPORTA ───────────────────────────────────
+   *
+   *  **Ni un solo panel con valor.** `DISPONIBLE` y `DEGRADADO` llevan cifra; los
+   *  otros tres no. Con el umbral estricto, apenas el mes nuevo materializa UN
+   *  panel se deja de caer — que es exactamente lo pedido: mostrar el mes nuevo
+   *  en cuanto se tenga, y el anterior mientras no.
+   *
+   *  ── Y SE LATCHEA, PORQUE SI NO OSCILA ────────────────────────────────────
+   *
+   *  Sin el `useState` esto es un lazo: el período activo decide el batch y el
+   *  batch decidiría el período. Al caer a septiembre el batch trae dato, «vacío»
+   *  se vuelve falso, y volvería a octubre — y otra vez. **El latch se escribe
+   *  UNA vez**, mirando el batch del mes abierto, y no se vuelve a evaluar.
+   *
+   *  **Elegir un período a mano gana siempre**: `periodId` se consulta antes, así
+   *  que quien quiera ver octubre vacío lo ve, con sus paneles declarando por qué.
+   *  La caída es sólo para el arranque. */
+  const [caidoA, setCaidoA] = useState<string | null>(null)
+  const abierto = periods[0]
+  const siguiente = periods[1]
+  const activePeriod =
+    periods.find((p) => p.id === periodId) ??
+    periods.find((p) => p.id === caidoA) ??
+    abierto
+
+  // ── EL LAYOUT ACTIVO SE PASA, Y SIN ESO EL MULTI-DASHBOARD NO ANDA ────────
+  //
+  // **Medido el 2026-09-29 contra `de881e1`**: publicando una pestaña en el
+  // dashboard «Marca» y cambiando a él, `/config/me` devolvía la pestaña, la
+  // consola pintaba su encabezado, y `GET /config/tabs/{ese mismo id}` contestaba
+  // **404 «pestaña no encontrada»**. Pantalla con título y cero paneles.
+  //
+  // **No era del backend.** Su handler acepta `?layoutId=` y `?dashboardId=`, y
+  // sin ninguno de los dos resuelve contra el layout del dashboard POR DEFECTO —
+  // así que una pestaña que vive en otro dashboard no existe para esa consulta.
+  // Acá se llamaba sin el parámetro desde siempre.
+  //
+  // **Andaba de casualidad**: mientras hubo un solo dashboard, el activo y el
+  // de por defecto eran el mismo y la caída acertaba. Es el modo de falla que
+  // este repositorio persigue — correcto por coincidencia, y el día que deja de
+  // serlo no falla el código que está mal.
+  //
+  // `?? undefined` y no `?? ''`: el cliente omite el parámetro cuando es
+  // `undefined`, y una cadena vacía viajaría como `?layoutId=` y daría 400.
+  const layout = useTab(activeTab?.id ?? null, context.data?.layoutActivoId ?? undefined)
   const panels = layout.data?.panels ?? []
 
   const batch = usePanelsBatch(
@@ -95,6 +208,64 @@ export function ConsoleContainer() {
     activePeriod?.id ?? '',
   )
   const retryPanel = useRetryPanel(activeTab?.id ?? null, activePeriod?.id ?? '')
+
+  /** La caída al mes anterior · se decide UNA sola vez.
+   *
+   *  Las tres guardas que quedan, cada una con un caso que rompería algo:
+   *
+   *   · `periodId !== null` — alguien eligió a mano y su elección manda.
+   *   · `caidoA !== null` — ya se decidió; volver a evaluar es el lazo.
+   *   · `siguiente === undefined` — con un solo período no hay a dónde caer.
+   *
+   *  ── DOS GUARDAS MÁS SE ESCRIBIERON Y NO PODÍAN DISPARARSE · 2026-10-01 ────
+   *
+   *  **Las dos las encontró la mutación, no la lectura.** Borrarlas no rompía
+   *  ninguna prueba, y al mirar por qué resultó que ninguna de las dos protegía
+   *  nada:
+   *
+   *   · «sólo se juzga el mes abierto» — cuando `periodId` y `caidoA` son los dos
+   *     `null`, `activePeriod` **es** el abierto por construcción.
+   *   · «una pestaña sin paneles no es un mes sin dato» — `usePanelsBatch` ya
+   *     tiene `enabled: … && panelIds.length > 0`, así que sin paneles la
+   *     consulta no corre y `isSuccess` nunca se pone en `true`.
+   *
+   *  **Una guarda que no puede fallar es peor que no tenerla**: su comentario
+   *  afirma una protección que no existe, y el día que alguien cambie `enabled`
+   *  creería que esto está cubierto. La protección real queda donde está —en el
+   *  `enabled` del hook— y **la prueba del caso sigue escrita**, que es lo que
+   *  la sostiene aunque el mecanismo se mude. */
+  useEffect(() => {
+    if (periodId !== null || caidoA !== null) return
+    if (!batch.isSuccess) return
+    if (siguiente === undefined) return
+
+    const conValor = Object.values(batch.data ?? {}).some(
+      (pl) => pl.estado === 'DISPONIBLE' || pl.estado === 'DEGRADADO',
+    )
+    if (!conValor) setCaidoA(siguiente.id)
+  }, [periodId, caidoA, batch.isSuccess, batch.data, siguiente])
+
+  /** Qué contarle a quien mira, cuando se cayó. Ausente si no se cayó: el aviso
+   *  existe para explicar una sustitución, y sin sustitución sería ruido. */
+  const avisoDePeriodo =
+    caidoA !== null && periodId === null && abierto !== undefined
+      ? `${abierto.etiqueta} todavía no tiene datos calculados · se muestra ${activePeriod?.etiqueta ?? ''}`
+      : undefined
+
+  /** De qué paneles se puede abrir el detalle · F3.9.
+   *
+   *  **Una lectura por panel, y está declarada como ruido.** No hay ruta batch, y
+   *  «un CTA sin manejador no se pinta» exige saberlo ANTES de dibujar el pie del
+   *  panel. Son lecturas baratas —el servicio resuelve el rol, autoriza y consulta
+   *  un mapa en memoria— y la caché las dedupe, pero el arreglo verdadero es que
+   *  el catálogo llene el campo que ya declara: hoy llega vacío en las 21
+   *  métricas. Ver `useDrillSupport`.
+   *
+   *  **Va arriba, con los demás hooks**, y no abajo donde se usa: puesto junto a
+   *  su lógica quedaría después de los retornos tempranos del contenedor, así que
+   *  en unos renders se llamaría y en otros no. Ya pasó con `usePlots`. */
+  const panelIds = panels.map((p) => p.id)
+  const canDrill = useDrillSupport(panelIds)
 
   // El catálogo resuelve `metricId` → métrica. Llega YA filtrado por rol: el
   // front no filtra nada · F1.27.
@@ -111,10 +282,11 @@ export function ConsoleContainer() {
 
   // El tema inicial llega en `/config/me` y lo aplica la superficie · F1.12. El
   // switcher visual no pasa por acá: escribe el atributo y ya.
-  const savedTheme = context.data?.user.preferencias?.tema
-  useEffect(() => {
-    if (savedTheme !== undefined) applyTheme(savedTheme)
-  }, [savedTheme])
+  //
+  // **El efecto se fue a `useTemaGuardado`** · 2026-10-02: era de esta
+  // superficie y de ninguna otra, así que admin y el builder abrían en oscuro
+  // aunque la persona hubiera elegido claro.
+  useTemaGuardado(context.data?.user.preferencias?.tema)
 
   // Los chunks de los cuerpos viajan EN PARALELO con `panels:batch` · §8. Sin
   // esto `lazy` recién pide el chunk cuando ya llegó el dato, y el panel
@@ -223,29 +395,29 @@ export function ConsoleContainer() {
 
   /* ── F1.29 · los params se validan ACÁ, en el adaptador de api/ ─────────── */
 
+  /* ── F1.29 y F1.31 · params y repertorio · `resolverPanel.ts` ────────────
+   *
+   *  **La regla vive en `surfaces/resolverPanel.ts` desde el 2026-10-07**, que
+   *  la comparte con el builder: el lienzo, la vista previa y el selector de
+   *  gráfico dibujan con dato desde ese día, y cuatro copias de la misma regla
+   *  se separan. Acá sólo se le pasa lo que el contenedor tiene. */
+  const repertorio = plotTable(plots.data ?? [])
+  const panelDe = (panelId: string) => panels.find((p) => p.id === panelId)
+
   const paramsOf = (panelId: string) => {
-    const panel = panels.find((p) => p.id === panelId)
-    if (panel === undefined) return { params: {}, unknown: [], invalid: [] }
-    return adaptPanelParams(panel, blocks.data?.blocks)
+    const panel = panelDe(panelId)
+    if (panel === undefined) return { params: {} }
+    return { params: conParams(panel, payloadOf(panelId), blocks.data?.blocks).params }
   }
 
-  /** Un param inválido DEGRADA el panel, no se ignora ni se reemplaza por el
-   *  default. Ignorarlo es el defecto que F1.29 arregla; reemplazarlo en
-   *  silencio es peor, porque el panel se ve bien mostrando otra cosa.
-   *
-   *  Sale como `BLOQUEADO` y no como `ERROR` porque no es un fallo del sistema:
-   *  es una composición que no se puede dibujar, tiene razón y tiene quien la
-   *  arregle. El shell conserva título, BASE y procedencia · §5.2. */
+  const plotProblemOf = (panelId: string): PlotProblem | undefined => {
+    const panel = panelDe(panelId)
+    return panel === undefined ? undefined : problemaDeGrafico(repertorio, panel, payloadOf(panelId))
+  }
+
   const payloadWithParams = (panelId: string): Payload => {
-    const { invalid } = paramsOf(panelId)
-    if (invalid.length > 0) {
-      return {
-        estado: 'BLOQUEADO',
-        razon: `La composición de este panel no es válida · ${invalid.map((i) => i.reason).join(' · ')}`,
-        desbloqueaCon: 'Corregir las opciones del panel en el builder',
-      } as Payload
-    }
-    return payloadOf(panelId)
+    const panel = panelDe(panelId)
+    return panel === undefined ? payloadOf(panelId) : conParams(panel, payloadOf(panelId), blocks.data?.blocks).payload
   }
 
   /* ── F3.3 · «Preguntar» ──────────────────────────────────────────────────
@@ -261,6 +433,20 @@ export function ConsoleContainer() {
   const askingPanel = panels.find((p) => p.id === askingPanelId)
   const askingMetric = askingPanel === undefined ? undefined : byId.get(askingPanel.metricId)
 
+  /* ── F3.9 · «Ver detalle» · §PEN:C2 ───────────────────────────────────────
+   *
+   *  Mismo idioma que el chat: la hoja se monta sólo cuando hay panel Y su
+   *  métrica resuelve. Si el panel dejó de existir —cambió la pestaña con la hoja
+   *  abierta— no se monta: titular un detalle sobre un panel que ya no está en
+   *  pantalla es peor que cerrarla.
+   *
+   *  **El payload entra por props**, y es lo que deja que el encabezado declare la
+   *  BASE y la procedencia: la respuesta de la desagregación trae nueve campos y
+   *  **ninguno es de procedencia**. Se pasa `payloadWithParams`, el mismo que ve la
+   *  grilla, para que la cifra de la hoja y la del panel no puedan decir distinto. */
+  const drillingPanel = panels.find((p) => p.id === drillingPanelId)
+  const drillingMetric = drillingPanel === undefined ? undefined : byId.get(drillingPanel.metricId)
+
   return (
     <>
     <Console
@@ -271,6 +457,7 @@ export function ConsoleContainer() {
       metricsById={byId}
       payloadOf={payloadWithParams}
       paramsOf={(id) => paramsOf(id).params}
+      plotProblemOf={plotProblemOf}
       rejectedMetrics={rejectedMetrics}
       format={format}
       onSelectTab={setTabId}
@@ -295,9 +482,49 @@ export function ConsoleContainer() {
         })
       }}
       onRetryPanel={(panelId) => retryPanel.mutate(panelId)}
-      onAskPanel={setAskingPanelId}
-      onAskTab={() => setAskingTab(true)}
+      onAskPanel={(panelId) => {
+        // **Abrir el chat cierra el detalle**, y al revés también. Es la
+        // exclusión que hace que no haya dos hojas abiertas, escrita en los
+        // manejadores y no en la hoja: la hoja no sabe de la otra.
+        setDrillingPanelId(null)
+        setAskingPanelId(panelId)
+      }}
+      onDrillPanel={(panelId) => {
+        setAskingPanelId(null)
+        setAskingTab(false)
+        setDrillingPanelId(panelId)
+      }}
+      canDrill={canDrill}
+      {...(avisoDePeriodo === undefined ? {} : { avisoDePeriodo })}
+      onAskTab={() => {
+        setDrillingPanelId(null)
+        setAskingTab(true)
+      }}
     />
+
+    {/* ── LA HOJA DE DETALLE · F3.9 · §PEN:C2 ───────────────────────────── */}
+    {drillingPanel !== undefined && drillingMetric !== undefined && activePeriod !== undefined ? (
+      <DrillSheet
+        // **La `key` es el panel**, por la misma razón que en el chat: sin ella,
+        // abrir el detalle de otro panel reutilizaría el mismo estado y la
+        // dimensión elegida en el anterior quedaría debajo de un título nuevo —
+        // y peor, podría no estar entre las que el panel nuevo declara.
+        key={drillingPanel.id}
+        panelId={drillingPanel.id}
+        metric={drillingMetric}
+        payload={payloadWithParams(drillingPanel.id)}
+        periodo={activePeriod.id}
+        format={format}
+        now={new Date()}
+        onClose={() => setDrillingPanelId(null)}
+        // **Cierra ésta y abre el chat: no se apilan.** Y sin este manejador el
+        // botón del pie no se pintaría — la regla del CTA muerto.
+        onAsk={() => {
+          setDrillingPanelId(null)
+          setAskingPanelId(drillingPanel.id)
+        }}
+      />
+    ) : null}
 
     {askingPanel !== undefined && askingMetric !== undefined && activePeriod !== undefined ? (
       <ChatSheet
@@ -314,7 +541,9 @@ export function ConsoleContainer() {
         panelTipo={askingPanel.tipo}
         bloques={blockTable(blocks.data?.blocks ?? [])}
         format={format}
+        {...(mesEnCurso === undefined ? {} : { mesEnCurso })}
         onClose={() => setAskingPanelId(null)}
+        {...selectorDeAgente}
       />
     ) : null}
 
@@ -337,7 +566,9 @@ export function ConsoleContainer() {
         titulo={activeTab.nombre}
         bloques={blockTable(blocks.data?.blocks ?? [])}
         format={format}
+        {...(mesEnCurso === undefined ? {} : { mesEnCurso })}
         onClose={() => setAskingTab(false)}
+        {...selectorDeAgente}
       />
     ) : null}
     </>

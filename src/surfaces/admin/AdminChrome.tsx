@@ -29,6 +29,11 @@
  *  de paneles; **las tablas no son grillas** y perdían contenido en silencio
  *  (PS-5). Por eso acá no hay colapso: hay scroll horizontal, que es visible.
  */
+import { IdentityBlock } from '../IdentityBlock'
+import { MenuDeTrabajo } from '../MenuDeTrabajo'
+import { VolverAlDashboard } from '../VolverAlDashboard'
+import { SelectorDeCliente } from '../SelectorDeCliente'
+import type { Theme } from '../../tokens/theme'
 import { Label } from '../../render/primitives/Label'
 import { Wordmark } from '../console/Wordmark'
 import { PANTALLAS } from './pantallas'
@@ -39,9 +44,14 @@ type Props = {
   activa: PantallaId
   /** Qué pantalla se pide. La navegación es del contenedor, no del chrome. */
   onIr: (id: PantallaId) => void
-  /** Volver a la consola · `undefined` no pinta el control, que es la regla del
-   *  CTA sin manejador. */
-  onVolver?: () => void
+  /** Ir a una RUTA · el menú de trabajo y «Volver al dashboard». Distinto de
+   *  `onIr`, que elige entre las pantallas de acá. La navegación es del
+   *  contenedor y no del chrome. */
+  onSalir: (ruta: string) => void
+  /** **El tema, que viaja hasta `IdentityBlock`** · 2026-10-02. Opcional por la
+   *  misma razón que allá: sin manejador la sección no se pinta. */
+  onChangeTheme?: (theme: Theme) => void
+
   /** Quién está mirando · **§PEN:A1 lo dibuja**: el navbar de `A1 · Clientes y
    *  plataforma` lleva un bloque `Identidad` con el ROL en `$dim` y el NOMBRE en
    *  `$ink`, los dos en mono de 9. Hasta el 2026-09-25 no se pintaba, y nada en
@@ -52,7 +62,9 @@ type Props = {
    *  pregunta que importa antes de tocar algo. Dónde vive la salida a otra
    *  superficie es otra decisión, y está preguntada al `.pen` en
    *  `docs/PROPUESTA-2026-09-25-navegacion-entre-superficies.md`. */
-  identidad?: { rol: string; nombre: string }
+  identidad?: { rol: string; nombre: string; correo?: string }
+  /** Cerrar sesión, desde el menú del nombre · sin manejador no se pinta. */
+  onCerrarSesion?: () => void
   /** El tenant en contexto, para las pantallas de alcance `tenant`. */
   tenants: readonly { id: string; nombre: string }[]
   tenantActivo: string | null
@@ -60,11 +72,7 @@ type Props = {
   children: React.ReactNode
 }
 
-/** Mono 9 · el tamaño `nota` de §2.3, que es el que el dibujo usa acá. Mismo
- *  literal que `RoleCard`, que ya lo necesitaba. */
-const NOTA = 'font-mono text-nota leading-rotulo tracking-rotulo uppercase m-0'
-
-export function AdminChrome({ activa, onIr, onVolver, identidad, tenants, tenantActivo, onTenant, children }: Props) {
+export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantActivo, onTenant, onChangeTheme, onCerrarSesion, children }: Props) {
   const pantalla = PANTALLAS.find((p) => p.id === activa) ?? PANTALLAS[0]
   const porTenant = pantalla.alcance === 'tenant'
 
@@ -73,16 +81,47 @@ export function AdminChrome({ activa, onIr, onVolver, identidad, tenants, tenant
     // pierde columnas sin decirlo; el scroll es visible.
     <div className="min-h-screen bg-bg">
       <div className="min-w-[1280px]">
-        <header className="flex flex-col gap-4 px-6 pt-6 pb-4 border-b border-w4">
+        <header className="flex flex-col gap-4 px-6 pt-6 border-b border-w4">
           {/* §PEN:A1 y §PEN:A2 encabezan con «Synapse · ADMINISTRACIÓN», y
               recién debajo va la pantalla. Faltaban las dos cosas. */}
-          <div className="flex items-center gap-3">
-            <Wordmark />
-            <Label>Administración</Label>
+          {/* ── EL NAVBAR · decisión humana del 2026-10-07 ─────────────────
+              A la derecha, con aire: el acceso rápido al dashboard, la persona
+              y el menú de trabajo —el hamburguesa, con cada pantalla de
+              administración y del builder—, que empezó a la izquierda y se
+              pidió moverlo el mismo día. La identidad subió a esta
+              fila, que es donde el navbar de A1 la dibuja. */}
+          <div className="flex items-center justify-between gap-6">
+            <div className="flex items-center gap-3">
+              <Wordmark variante="marca" />
+              <Label>Administración</Label>
+            </div>
+            {/* Con aire entre los tres, y el menú de trabajo AL FINAL · decisión
+                humana del 2026-10-07. */}
+            <div className="flex items-center gap-6">
+              <VolverAlDashboard onIr={onSalir} />
+              {identidad !== undefined && (
+                <IdentityBlock
+                  rol={identidad.rol}
+                  nombre={identidad.nombre}
+                  {...(identidad.correo === undefined ? {} : { correo: identidad.correo })}
+                  {...(onChangeTheme === undefined ? {} : { onChangeTheme })}
+                  {...(onCerrarSesion === undefined ? {} : { onCerrarSesion })}
+                />
+              )}
+              <MenuDeTrabajo esAdmin rutaActual={pantalla.ruta} onIr={onSalir} />
+            </div>
           </div>
 
           <div className="flex items-baseline justify-between gap-6">
-            <h1 className="font-display text-titulo tracking-titulo leading-titulo text-ink m-0">
+            {/* **`titulo-lg`, no `titulo`** · 2026-09-28. El dibujo pone los
+                títulos de superficie de admin en el mismo tamaño que la pregunta
+                operativa de la consola, y el token que los sirve a los dos es
+                éste. Estaba en `titulo` —15— porque el token medía 20 con dos
+                nodos; al remedirlo contra los 36 que existen quedó en 26.
+
+                **Y acá vive EL título de la pantalla, uno solo.** Las vistas ya
+                no pintan el suyo — ver abajo. */}
+            <h1 className="font-display text-titulo-lg tracking-titulo leading-titulo text-ink m-0">
               {pantalla.nombre}
             </h1>
 
@@ -90,56 +129,24 @@ export function AdminChrome({ activa, onIr, onVolver, identidad, tenants, tenant
                 eso tiene consecuencias —lo que se hace acá afecta a todos—, así
                 que no se deduce del contenido: se declara. */}
             <div className="flex items-center gap-4">
-              {/* **La vuelta a la consola.** El `.pen` no la dibuja —ninguna de las
-                  quince pantallas navega hacia otra superficie— y sin ella se
-                  entra acá y no se sale sin escribir la URL.
-
-                  **Es un callback y no un `useNavigate` acá adentro**, que es la
-                  regla que este archivo ya declaraba arriba: «la navegación es
-                  del contenedor, no del chrome». Escrito con el hook, además,
-                  rompía doce pruebas que montan el chrome sin router — y tenían
-                  razón en romperse. */}
-              {/* La identidad va PRIMERO en la fila, como en el dibujo: el
-                  navbar de A1 la pone antes que nada a la derecha. Y con
-                  `gap-2` entre rol y nombre, que son los 7 del `.pen`. */}
-              {identidad !== undefined && (
-                <span className="flex items-baseline gap-2">
-                  <span className={`${NOTA} text-dim`}>{identidad.rol}</span>
-                  <span className={`${NOTA} text-ink`}>{identidad.nombre}</span>
-                </span>
-              )}
-              {onVolver !== undefined && (
-                <button
-                  type="button"
-                  onClick={onVolver}
-                  className="font-mono text-label tracking-rotulo uppercase text-dim hover:text-ink cursor-pointer bg-transparent border-0 p-0"
-                >
-                  ← Consola
-                </button>
-              )}
-              <Label>{porTenant ? 'Alcance · cliente' : 'Alcance · plataforma'}</Label>
+              {/* **El cliente de trabajo, destacado y el mismo del builder** ·
+                  2026-10-06. Antes era un `<select>` de 12px junto a un rótulo de
+                  alcance. Las pantallas de plataforma cruzan todas las cuentas y lo
+                  dicen. */}
               {porTenant ? (
-                <select
-                  aria-label="Cliente"
-                  className="bg-w2 text-ink text-celda rounded-sm px-2 py-1 border border-w4"
-                  value={tenantActivo ?? ''}
-                  onChange={(e) => onTenant(e.target.value)}
-                >
-                  {tenants.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.nombre}
-                    </option>
-                  ))}
-                </select>
+                <SelectorDeCliente clientes={tenants} activo={tenantActivo} onElegir={onTenant} />
               ) : (
-                // **Sin selector, y se dice por qué.** A1 y A3 cruzan clientes:
-                // un selector ahí sugeriría que se está mirando uno solo.
-                <Label>Todas las cuentas</Label>
+                <Label>Alcance · todas las cuentas</Label>
               )}
             </div>
           </div>
 
-          <nav className="flex gap-1" aria-label="Administración">
+          {/* **La navegación en registro de acción, como la del builder** ·
+              2026-10-06. Vestía el traje del rótulo —mono, mayúsculas, gris— y
+              se leía como un encabezado más. Ahora es Inter, y la activa se
+              marca con el borde `acc` —«estado activo», uno de sus usos
+              permitidos— y el peso, no sólo con un fondo. */}
+          <nav className="flex gap-1 -mb-px" aria-label="Administración">
             {PANTALLAS.map((p) => (
               <button
                 key={p.id}
@@ -147,8 +154,10 @@ export function AdminChrome({ activa, onIr, onVolver, identidad, tenants, tenant
                 onClick={() => onIr(p.id)}
                 aria-current={p.id === activa ? 'page' : undefined}
                 className={
-                  'text-label tracking-rotulo uppercase px-3 py-2 rounded-sm ' +
-                  (p.id === activa ? 'bg-w3 text-ink' : 'text-dim hover:bg-w2')
+                  'px-3 py-3 font-body text-cuerpo cursor-pointer border-b-2 ' +
+                  (p.id === activa
+                    ? 'border-acc text-ink font-semibold'
+                    : 'border-transparent text-dim font-medium hover:text-ink')
                 }
               >
                 {p.nombre}

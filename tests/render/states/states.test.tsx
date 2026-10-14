@@ -95,3 +95,35 @@ describe('LoadingState · esqueleto, nunca spinner', () => {
     expect(container.querySelector('svg')).toBeNull()
   })
 })
+
+describe('`SIN_PERMISO` pinta el copy DEL SERVICIO · 2026-09-29', () => {
+  it('muestra la razón y el desbloqueo que manda el servicio, no los nuestros', () => {
+    // **Esta prueba existe porque una mutación SOBREVIVIÓ.** Se cableó el copy
+    // del servicio de punta a punta —contrato, adaptador, `Panel`, estado— y al
+    // revertir el estado a su frase fija **las 53 pruebas seguían pasando**: la
+    // del adaptador verifica que el campo VIAJE, y ninguna que se PINTE.
+    //
+    // Es el mismo modo de falla que la cadena de `chart`: un campo que llega y
+    // que nadie dibuja no rompe nada y la pantalla se ve bien.
+    render(
+      <ForbiddenState
+        requestTo="admin"
+        reason="Tu rol no tiene acceso a esta métrica"
+        unlocksWith="Pedile al administrador del tenant que la habilite para tu rol"
+      />,
+    )
+
+    expect(screen.getByText('Tu rol no tiene acceso a esta métrica')).toBeVisible()
+    expect(
+      screen.getByText('Pedile al administrador del tenant que la habilite para tu rol'),
+    ).toBeVisible()
+    // Y la nuestra NO se pinta cuando la del servicio está.
+    expect(screen.queryByText(/no está disponible para tu rol/)).toBeNull()
+  })
+
+  it('sin razón del servicio cae a la nuestra · un panel mudo es peor', () => {
+    render(<ForbiddenState requestTo="admin" />)
+    expect(screen.getByText(/no está disponible para tu rol/)).toBeVisible()
+    expect(screen.getByText(/Quién lo decide · admin/)).toBeVisible()
+  })
+})

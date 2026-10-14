@@ -13,11 +13,25 @@
 import { Icon } from './Icon'
 import { StateBody } from './StateBody'
 
+/** **El respaldo, y por qué sigue existiendo.** Era la frase que este componente
+ *  pintaba siempre, escrita por nosotros. Desde `de881e1` el servicio manda la
+ *  suya y **esa manda**; ésta queda para un payload sin `razon` —un backend más
+ *  viejo, o un fixture— porque un panel sin frase no dice nada.
+ *
+ *  **No es una traducción de la del servicio**: si algún día las dos difieren, la
+ *  que se ve es la de él, y esto no se toca. */
+const FRASE_SIN_RAZON = 'Esta métrica no está disponible para tu rol.'
+
 export function ForbiddenState({
   requestTo,
+  reason,
+  unlocksWith,
   onRequest,
 }: {
   requestTo: string
+  /** **Del servicio, no nuestra** · ver la cabecera. Vacía cae a la de antes. */
+  reason?: string
+  unlocksWith?: string
   onRequest?: () => void
 }) {
   return (
@@ -29,8 +43,12 @@ export function ForbiddenState({
           <path d="M8 11V7a4 4 0 0 1 8 0v4" />
         </Icon>
       }
-      phrase="Esta métrica no está disponible para tu rol."
-      detail={`Quién lo decide · ${requestTo}`}
+      phrase={reason !== undefined && reason !== '' ? reason : FRASE_SIN_RAZON}
+      detail={
+        unlocksWith !== undefined && unlocksWith !== ''
+          ? unlocksWith
+          : `Quién lo decide · ${requestTo}`
+      }
       {...(onRequest === undefined
         ? {}
         : { exit: { text: 'Solicitar acceso', onClick: onRequest } })}

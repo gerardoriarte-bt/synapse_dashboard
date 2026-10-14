@@ -36,6 +36,7 @@ export type FamilyStep = 0 | 1 | 2 | 3 | 4
  *  `var(--color-fam-x-N)` que no existe no falla, se dibuja sin color. */
 export const FAMILY_STEPS: Readonly<Record<string, number>> = {
   cliente: 5,
+  consulta: 5,
   demanda: 5,
   externo: 2,
   inventario: 5,

@@ -53,7 +53,12 @@ SIN_EXCEPCION = {"L1"}
 # integridad ya la verifican `token-drift` y `contract-drift`, que comparan
 # contra esa fuente. Auditarlo además produce hallazgos como «vocabulario de
 # infraestructura» sobre la palabra `schema` de OpenAPI.
-GENERADOS = ("tokens/tokens.", "api/generated.ts")
+# **Los tres contratos del cable también son generados** · 2026-10-14: `gen:admin-wire`,
+# `gen:auth` y `gen:console-wire` los emiten y `*-drift` los compara. Se auditaban
+# sólo porque esta lista nombraba `generated.ts` a secas, y una ruta del cable con
+# la palabra `schema` —`/schema-check`— salía como «texto visible».
+GENERADOS = ("tokens/tokens.", "api/generated.ts", "api/admin-generated.ts",
+             "api/auth-generated.ts", "api/console-generated.ts")
 
 # span(1) = 96·1 − 16 = 80. Es la altura de panel más chica que existe.
 FILA_MINIMA = 80
@@ -391,6 +396,11 @@ def l11(ruta, texto):
     patron = re.compile(r"warehouse|snowflake_role|grant|DB_BT_|schema|private_key|kms", re.I)
     for n, cadena, es_indice in cadenas(texto):
         if es_indice:
+            continue
+        # **Una ruta del servicio no es una frase** · 2026-10-14: empieza con `/` y
+        # no tiene espacios, así que nadie la lee en pantalla. Es la misma razón
+        # que `es_indice`: `/admin/tenants/${id}/schema-check` es una URL.
+        if cadena.startswith("/") and not re.search(r"\s", re.sub(r"\$\{[^}]*\}", "", cadena)):
             continue
         m = patron.search(cadena)
         if m:

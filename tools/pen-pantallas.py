@@ -151,10 +151,30 @@ def main() -> int:
         print(f"\n  El registro vive en {PLAN.name}, bajo «{ENCABEZADO[4:]}».")
         return 1
 
+    # ── EL CONTEO DECÍA UNA COSA Y MEDÍA OTRA · corregido el 2026-09-30 ──────
+    #
+    # Esta línea salía «18 con archivo y ancla · 18 declaradas sin construir», y
+    # la segunda mitad era FALSA: contaba toda fila que no nombrara un `src/`, y
+    # ocho de esas dieciocho están construidas — son las que delegan en el
+    # componente que otra fila ya nombra («la misma `Console`: la pestaña la
+    # manda el layout», «el vacío de filtro lo pinta `EmptyRow`»).
+    #
+    # **Ocho pantallas construidas se leían como faltantes**, y el número salía
+    # en la puerta todos los días. Es exactamente lo que este repositorio
+    # persigue en el código y se le escapó en su propia herramienta: un rótulo
+    # que promete una cosa y mide otra.
+    #
+    # Lo que distingue las tres clases es el texto de la fila, y por eso
+    # «**No construida**» se volvió una marca con significado: si falta, la
+    # pantalla está construida y la fila dice quién la cubre.
     conArchivo = sum(1 for q in registro.values() if "`src/" in q)
+    sinConstruir = sum(1 for q in registro.values() if "No construida" in q)
+    delegadas = len(registro) - conArchivo - sinConstruir
     print(
         f"pen-pantallas ✓ {len(dibujadas)} pantallas dibujadas · "
-        f"{conArchivo} con archivo y ancla · {len(dibujadas) - conArchivo} declaradas sin construir"
+        f"{conArchivo + delegadas} construidas "
+        f"({conArchivo} con archivo propio, {delegadas} cubiertas por otra) · "
+        f"{sinConstruir} sin construir"
     )
     return 0
 

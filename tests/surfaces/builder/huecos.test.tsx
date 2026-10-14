@@ -25,7 +25,7 @@ const panel = (id: string, colStart: number, colSpan: number) => ({
   rowSpan: 4,
 })
 
-const tab = { id: 'tab-a', nombre: 'Resumen', pregunta: '¿Cómo vamos?', orden: 1, roles: [] }
+const tab = { id: 'tab-a', clave: 'tab-a-key', nombre: 'Resumen', pregunta: '¿Cómo vamos?', orden: 1, roles: [] }
 
 /** El rol ve dos de los tres: falta el del medio, de 5 columnas. */
 const preview: PreviewDeRol = {
@@ -98,7 +98,7 @@ describe('sin el layout sin lente NO se inventan', () => {
     render(<RolePreview preview={preview} onVolver={vi.fn()} />)
 
     expect(screen.queryByText(/Hueco ·/)).toBeNull()
-    expect(screen.getByText('Los huecos no se pueden calcular sin el layout sin lente')).toBeVisible()
+    expect(screen.getByText('Los huecos no se pueden calcular sin la versión completa.')).toBeVisible()
   })
 })
 

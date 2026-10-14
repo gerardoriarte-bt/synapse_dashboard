@@ -5,21 +5,21 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**130 de 211 tareas cerradas.** 15 parciales · 61 pendientes · 5 diferidas.
+**180 de 226 tareas cerradas.** 15 parciales · 27 pendientes · 4 diferidas.
 
 
-## Front · 110 de 125
+## Front · 120 de 128
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██████████████████████` | 16/16 | 0 | 0 |
-| 1 · Consola y render/ | `█████████████████████·` | 43/46 | 2 | 1 |
-| 2 · Estados | `██████████████████····` | 5/6 | 1 | 0 |
-| 3 · Chat contextual | `██████████████████····` | 12/15 | 0 | 0 |
-| 4 · Admin y Builder | `█████████████████·····` | 19/24 | 0 | 5 |
-| 5 · Pruebas y pulido | `██████████████████····` | 15/18 | 0 | 2 |
+| 1 · Consola y render/ | `█████████████████████·` | 44/46 | 2 | 0 |
+| 2 · Estados | `██████████████████████` | 6/6 | 0 | 0 |
+| 3 · Chat contextual | `███████████████████···` | 13/15 | 0 | 0 |
+| 4 · Admin y Builder | `██████████████████████` | 24/24 | 0 | 0 |
+| 5 · Pruebas y pulido | `██████████████████····` | 17/21 | 0 | 3 |
 
-## Backend · 20 de 86
+## Backend · 60 de 98
 
 > ⚠️ **Este número está bajo y no refleja al backend.** El plan de acá
 > es la fuente del FRONT; el estado de las tareas `B*` solo se mueve
@@ -37,26 +37,30 @@
 > que mirar ahí, no acá** — y para cruzarlo, la tabla de equivalencias
 > de `docs/ESTADO-B1.13-B1.19-2026-09-14.md`, porque los
 > identificadores no coinciden.
+>
+> **Y para RE-verificar está `docs/ESTADO-BACKEND.md`**, que dice
+> contra qué commit suyo se verificó cada `B*` y cuáles quedaron
+> contra uno anterior. Este número dice cuántas; ése dice **desde
+> cuándo**, que es lo que hace falta para volver a medirlas.
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
-| 0 · Fundamentos | `██····················` | 1/10 | 2 | 7 |
-| 1 · API de consola | `█████████·············` | 12/28 | 4 | 12 |
-| 2 · Materialización | `███···················` | 2/13 | 1 | 10 |
-| 3 · Chat contextual | `······················` | 0/11 | 2 | 9 |
-| 4 · Admin y Builder | `██████················` | 5/17 | 2 | 10 |
-| 5 · Multi-dashboard y pulido | `······················` | 0/7 | 1 | 5 |
+| 0 · Fundamentos | `█████████████·········` | 6/10 | 1 | 3 |
+| 1 · API de consola | `███████████████·······` | 23/34 | 5 | 6 |
+| 2 · Materialización | `███████████···········` | 8/16 | 3 | 5 |
+| 3 · Chat contextual | `██████················` | 3/11 | 2 | 6 |
+| 4 · Admin y Builder | `████████████████████··` | 18/20 | 1 | 1 |
+| 5 · Multi-dashboard y pulido | `██████················` | 2/7 | 1 | 3 |
 
 ---
 
-## Se puede tomar hoy · 0 del front
+## Se puede tomar hoy · 1 del front
 
-Nada del front está libre: todo lo pendiente espera algo.
-
+- **F5.21** · Qué hace un gráfico cuando el dato excede lo legible
 
 ---
 
-## Bloqueadas · 18
+## Bloqueadas · 7
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -64,27 +68,16 @@ Lo que el front espera del backend está detallado en
 
 **Front**
 
-- **F1.31** · Registro de gráficos y verificación de mínimos
 - **F1.42** · El mes en curso está incompleto y el selector no lo dice
 - **F1.44** · El orden de una tabla se anuncia, no se aplica
-- **F2.3** · SIN_PERMISO · B0.9 (línea 1171) contestada
-- **F4.17** · ComparisonBody + ComparePlot
-- **F4.18** · MatrixBody + HeatmapPlot
-- **F4.19** · GraphBody + GraphPlot
-- **F4.20** · Registrar los tres con carga diferida
-- **F4.21** · Selector de gráfico en el builder
 - **F5.13** · Períodos libres en el selector
 - **F5.3** · Completar los plots que falten
 
 **Backend**
 
-- **B0.4** · Middleware de auth y envelope
-- **B1.1** · GET /config/me · llegaron dos de seis
-- **B1.21** · Declarar los mínimos de datos por gráfico
-- **B1.28** · PayloadDegradado dice DESDE QUÉ PUNTO el dato está vencido
 - **B2.12** · Correr el materializador contra datos reales y verificar los seis estados
-- **B2.7** · Estado SIN_PERMISO en el batch
-- **B4.2** · GET /admin/tenants/{id}/layouts
+- **B2.14** · /config/solicitudes · pedir acceso a una métrica que no se ve
+- **B2.15** · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar
 
 ---
 

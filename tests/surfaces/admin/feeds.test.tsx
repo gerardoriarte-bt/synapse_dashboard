@@ -151,10 +151,13 @@ describe('el vacío de ALTA · el tercer tipo', () => {
 })
 
 describe('lo que el cable NO manda se declara', () => {
-  it('nombra los tres huecos, y la capa entre ellos', () => {
+  it('ya NO pinta los huecos que le faltan', () => {
+    // **Desde el 2026-10-06 lo que falta no se pinta** · decisión humana sobre la
+    // auditoría del builder: «si no suman para el uso, quitar». La lista vive en
+    // el comentario del componente. Esta prueba fija que no vuelva a la pantalla.
     render(<FeedHealth format={format} fuentes={[fuente({ clave: 'x' })]} tenant="UA MX" />)
-    expect(screen.getByText(/Faltan 3 cosas/i)).toBeVisible()
-    expect(screen.getByText(/Capa · el dibujo la pone como columna/i)).toBeVisible()
+    expect(screen.queryByText(/va a crecer/i)).toBeNull()
+    expect(screen.queryByText(/De qué capa viene cada fuente/i)).toBeNull()
   })
 
   it('y NO pinta «sincronizar todo» ni «ver rechazos» · sin ruta no hay CTA', () => {
@@ -163,5 +166,27 @@ describe('lo que el cable NO manda se declara', () => {
     render(<FeedHealth format={format} fuentes={[fuente({ clave: 'x' })]} tenant="UA MX" />)
     expect(screen.queryByRole('button', { name: /sincronizar/i })).toBeNull()
     expect(screen.queryByRole('button', { name: /rechazos/i })).toBeNull()
+  })
+})
+
+describe('la frescura se redondea · 2026-10-01', () => {
+  it('un flotante del servicio no se pinta con sus quince decimales', () => {
+    // **Visto en pantalla**: la columna decía `12.186776741388888 h`. El servicio
+    // manda horas calculadas y se escribían con `String()`.
+    //
+    // Se afirma el texto exacto y además que NO aparezca el crudo: sin la
+    // segunda mitad, un redondeo a un decimal —`12,2 h`— pasaría igual, y la
+    // pregunta que la columna contesta es si está dentro del límite, que se mide
+    // en horas enteras.
+    render(
+      <FeedHealth
+        format={format}
+        tenant="Under Armour México"
+        fuentes={[fuente({ clave: 'erp', frescuraHoras: 12.186776741388888 })]}
+      />,
+    )
+
+    expect(screen.getByText('12 h')).toBeVisible()
+    expect(screen.queryByText(/12\.18/)).toBeNull()
   })
 })

@@ -21,8 +21,8 @@ import { server } from '../../mocks/server'
 const API = '*/api/v1'
 
 const tenants = [
-  { id: 't-1', name: 'Under Armour México' },
-  { id: 't-2', name: 'Keralty Colombia' },
+  { id: 't-1', name: 'Under Armour México', label: '', created_at: '2026-09-22T09:18:45Z' },
+  { id: 't-2', name: 'Keralty Colombia', label: '', created_at: '2026-09-25T10:00:00Z' },
 ]
 
 /** Escritas desde `CatalogMetric` de `contracts/synapse-admin-wire.yaml`, no de
@@ -78,7 +78,7 @@ function montar() {
 
 /** A4 es de alcance `tenant`, así que se llega por la navegación del chrome. */
 async function abrirCatalogo() {
-  await screen.findByText('Under Armour México')
+  await screen.findByRole('button', { name: /^Under Armour México · / })
   await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
 }
 
@@ -171,19 +171,29 @@ describe('§7.3 · los cuatro campos que la pantalla NO puede afirmar', () => {
     expect(encabezado).not.toContain('estado')
   })
 
-  it('los declara ausentes con su razón y qué los desbloquea · §8', async () => {
+  it('ya NO pinta lo que le falta · y tampoco su plomería', async () => {
     conCatalogo()
     const { container } = montar()
     await abrirCatalogo()
     await screen.findByText('Ventas')
 
     const texto = container.textContent ?? ''
-    expect(texto).toContain('Faltan 3 datos')
-    for (const campo of ['Frescura', 'Ventana', 'Estado']) {
-      expect(texto).toContain(campo)
-    }
-    expect(texto).toContain('B1.17')
-    expect(texto).toContain('B1.25')
+    // **Desde el 2026-10-06 lo que falta no se pinta** · decisión humana sobre la
+    // auditoría del builder: «si no suman para el uso, quitar». La lista vive en
+    // el comentario del componente. Esta prueba fija que no vuelva a la pantalla.
+    expect(texto).not.toContain('va a crecer')
+    expect(texto).not.toContain('La frescura de cada métrica, cuando llegue')
+    expect(texto).not.toContain('La ventana con la que se mide cada métrica')
+    // **NO se nombra la tarea que lo desbloquea, y ese cambio es el punto.**
+    // Decía `B1.17` en la pantalla de un cliente. La razón técnica no se perdió:
+    // bajó al comentario de `FALTANTES`, que es donde le sirve a quien lo va a
+    // construir · auditoría de usabilidad §1.1, decidido el 2026-09-30.
+    expect(texto).not.toMatch(/B\d\.\d/)
+    // Las dos acciones también dejaron de nombrar su plomería: decían
+    // «hoy es make sync-catalog», un comando que quien lee no puede correr.
+    expect(texto).not.toContain('Pedir una sincronización del catálogo')
+    expect(texto).not.toContain('Editar una métrica')
+    expect(texto).not.toContain('sync-catalog')
     // **«En cuántos paneles se usa» salió de la lista el 2026-09-15**: la
     // columna `USO` lo cuenta sobre el layout publicado. Es el único de los
     // cuatro que dejó de faltar.
@@ -191,7 +201,7 @@ describe('§7.3 · los cuatro campos que la pantalla NO puede afirmar', () => {
     expect(texto).toContain('del layout publicado')
   })
 
-  it('declara que la acción de sincronizar no existe como ruta', async () => {
+  it('sin ruta de sincronizar no hay botón, ni aviso de que falta', async () => {
     // §7.3 pide «acción de sincronizar desde el modelo semántico». Ninguna de
     // las seis rutas de `synapse-admin-wire.yaml` la expone. Un botón que no
     // llama a nada es peor que uno ausente.
@@ -201,7 +211,13 @@ describe('§7.3 · los cuatro campos que la pantalla NO puede afirmar', () => {
     await screen.findByText('Ventas')
 
     expect(screen.queryByRole('button', { name: /sincronizar/i })).toBeNull()
-    expect((container.textContent ?? '').toLowerCase()).toContain('sincronizar')
+    // **La declaración se conserva; lo que cambió es que ya no nombra el
+    // comando.** Que la acción NO exista como botón y SÍ esté declarada es lo
+    // que esta prueba fija, y eso no se tocó.
+    // **Desde el 2026-10-06 lo que falta no se pinta** · decisión humana sobre la
+    // auditoría del builder: «si no suman para el uso, quitar». La lista vive en
+    // el comentario del componente. Esta prueba fija que no vuelva a la pantalla.
+    expect((container.textContent ?? '').toLowerCase()).not.toContain('sincronización')
   })
 })
 
@@ -274,7 +290,7 @@ describe('los estados de A4 · §8', () => {
     await abrirCatalogo()
 
     expect(await screen.findByText(/no tiene métricas en el catálogo/i)).toBeInTheDocument()
-    expect(screen.getByText(/B1.18/)).toBeInTheDocument()
+    expect(screen.getByText(/Se llenan cuando el catálogo se sincroniza/)).toBeInTheDocument()
   })
 
   it('un 403 nombra el rol que falta, no «error del sistema»', async () => {
@@ -315,6 +331,7 @@ describe('los estados de A4 · §8', () => {
 
     await screen.findByText(/No se pudo cargar el catálogo/i)
     expect(screen.getByLabelText('Cliente')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Clientes y plataforma' })).toBeInTheDocument()
+    // «Clientes» desde el 2026-10-09: la ficha se unió a la lista.
+    expect(screen.getByRole('button', { name: 'Clientes' })).toBeInTheDocument()
   })
 })

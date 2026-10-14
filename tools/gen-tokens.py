@@ -263,6 +263,18 @@ def generar_ts(por_tema):
         m = re.match(r"fam-(.+)-(\d+)$", k)
         if m:
             pasos[m.group(1)] = max(pasos.get(m.group(1), -1), int(m.group(2))) + 0
+    # **Y las familias que declara `decisiones.css`** · 2026-10-09. Ahí viven los
+    # tokens que una decisión humana agregó y el `.pen` todavía no emite —ver
+    # su cabecera—. Sin contarlas, `familyVar` les daba un solo escalón y un
+    # gráfico de varias series salía todo del mismo color. **Las del `.pen`
+    # mandan**: una familia que esté en los dos se cuenta desde el `.pen`.
+    decisiones = DESTINO / "decisiones.css"
+    if decisiones.exists():
+        manuales = {}
+        for m in re.finditer(r"--color-fam-([a-z]+)-(\d+)\s*:", decisiones.read_text(encoding="utf-8")):
+            manuales[m.group(1)] = max(manuales.get(m.group(1), -1), int(m.group(2)))
+        for f, n in manuales.items():
+            pasos.setdefault(f, n)
     conteo = {f: n + 1 for f, n in pasos.items()}
     maximo = max(conteo.values()) if conteo else 1
     union_paso = " | ".join(str(i) for i in range(maximo))

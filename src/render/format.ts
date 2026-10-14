@@ -95,6 +95,15 @@ export type Formatter = {
    *  El riel de hilos es otra cosa — ahí la retención es de doce meses y el año
    *  sólo aparece cuando no es el corriente. */
   calendar: (iso: string) => string
+  /** El rótulo de un punto en el eje del tiempo · «1 oct», «oct 25» · 2026-10-06.
+   *
+   *  **El grano lo dice el llamador**, que mira la serie entera: un punto solo
+   *  no sabe si es un día o el primero de un mes. Con `dia` va día y mes; con
+   *  `mes`, mes y año corto, porque doce meses cruzan un año casi siempre.
+   *
+   *  Un `t` que no es fecha —una etiqueta como `'jul'`— vuelve tal cual: el eje
+   *  pinta lo que llegó, no lo inventa. */
+  axisDate: (t: string, grano: 'dia' | 'mes') => string
   /** La hora de un instante · «06:00». 24 horas, igual que `threadStamp`: en el
    *  producto el corte del día importa más que la costumbre local. */
   clock: (iso: string) => string
@@ -110,6 +119,10 @@ export type Formatter = {
  *  **Vive en `render/` y no en una superficie**: lo usan la consola y admin, y
  *  ponerlo en una de las dos obligaba a la otra a importarla. */
 export const LOCALE_POR_DEFECTO = 'es-MX'
+
+/** `2026-09-01` a secas · una fecha de CALENDARIO. Con `T` o con huso ya es un
+ *  instante, y se mira desde algún lado. Ver `calendar`. */
+const SOLO_FECHA = /^\d{4}-\d{2}-\d{2}$/
 
 export function createFormat(locale: string): Formatter {
   function number(value: number, options: NumberOptions = {}): string {
@@ -234,11 +247,44 @@ export function createFormat(locale: string): Formatter {
       return `HACE ${Math.floor(hours / 24)} D`
     },
 
+    axisDate(t, grano) {
+      if (!SOLO_FECHA.test(t)) return t
+      const opciones: Intl.DateTimeFormatOptions =
+        grano === 'dia' ? { day: 'numeric', month: 'short' } : { month: 'short', year: '2-digit' }
+      // UTC por la misma razón que `calendar`: `YYYY-MM-DD` es un día del
+      // calendario, y mirado desde Ciudad de México el 1 de octubre es el 30.
+      return new Intl.DateTimeFormat(locale, { ...opciones, timeZone: 'UTC' })
+        .format(new Date(t))
+        .replace(/\./g, '')
+    },
+
     calendar(iso) {
       return new Intl.DateTimeFormat(locale, {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
+        // ── UNA FECHA DE CALENDARIO NO ES UN INSTANTE · 2026-10-01 ───────────
+        //
+        // **El defecto, visto en pantalla**: el período `2026-09` pintaba su
+        // rango como «31 de ago de 2026 – 29 de sept de 2026». Septiembre
+        // empieza el 1.
+        //
+        // `new Date('2026-09-01')` parsea **medianoche UTC** —lo dice el
+        // estándar para la forma corta— y después `Intl` lo escribe en el huso
+        // del NAVEGADOR. Con cualquier huso al oeste de Greenwich, el día de
+        // atrás. **Los dos extremos se corrían**, así que el rango se veía
+        // coherente consigo mismo y era falso en los dos bordes — la clase de
+        // error que no se nota leyendo el código.
+        //
+        // **Se distingue por la forma del dato y no por quién llama.** Un
+        // `YYYY-MM-DD` nombra un día del calendario y hay que escribir ese día;
+        // un instante —`…T15:11:13-05:00`, que es lo que llega en `creadoEn`,
+        // `altaEn` o `ultimaCargaEn`— sí se mira desde un huso, y ése es el del
+        // navegador por la regla de presentación de §4.
+        //
+        // Forzar UTC a los dos habría corrido las marcas de tiempo; dejarlo como
+        // estaba corre las fechas. Son dos tipos distintos con la misma pinta.
+        ...(SOLO_FECHA.test(iso) ? { timeZone: 'UTC' } : {}),
       }).format(new Date(iso))
     },
 
@@ -250,4 +296,33 @@ export function createFormat(locale: string): Formatter {
       }).format(new Date(iso))
     },
   }
+}
+
+/** El mes en curso **de un huso**, `YYYY-MM` · 2026-10-07, para A5 · «Cargar meses».
+ *
+ *  **Acá y no en la pantalla porque este es el único archivo que arma un
+ *  `Intl`** —regla `locale` de `design-lint`—. No depende del locale: el
+ *  `en-CA` sólo fija el orden de las partes, y lo que se lee son números.
+ *
+ *  **El huso es el del tenant, no el del navegador** · regla del 2026-09-04: el
+ *  corte del negocio es uno solo. Quien opera desde Bogotá el 1 de octubre a
+ *  las 0:30 está todavía en septiembre para un cliente de Ciudad de México.
+ *  Un huso que `Intl` no reconoce cae a UTC: a lo sumo se ofrece un mes de más
+ *  o de menos un día al año, y el servicio igual acepta el que se pida. */
+export function mesEnCurso(ahora: Date, zona: string | null): string {
+  const partes = (tz: string) =>
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+    }).formatToParts(ahora)
+  let p: Intl.DateTimeFormatPart[]
+  try {
+    p = partes(zona === null || zona === '' ? 'UTC' : zona)
+  } catch {
+    p = partes('UTC')
+  }
+  const anio = p.find((x) => x.type === 'year')?.value ?? ''
+  const mes = p.find((x) => x.type === 'month')?.value ?? ''
+  return `${anio}-${mes}`
 }

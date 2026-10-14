@@ -16,6 +16,7 @@ import { COLUMNS, gridStyle, readingOrder } from '../../render/grid'
 import { useColumns } from '../../render/useColumns'
 import { measureLayoutCommit, measureLayoutPainted } from '../../render/budget'
 import { PanelInGrid } from './PanelInGrid'
+import type { PlotProblem } from '../../catalog/plots'
 import { Topbar } from './Topbar'
 import { ConsoleDock } from './ConsoleDock'
 import type { Formatter } from '../../render/format'
@@ -26,6 +27,10 @@ type Props = {
   context: AppContext
   activeTab: Tab | undefined
   activePeriodId: string | undefined
+  /** **Por qué se muestra un período que nadie eligió** · 2026-10-01 · baja
+   *  hasta `PeriodPicker`. Lo redacta el contenedor porque es el único que ve la
+   *  sustitución; acá sólo viaja. */
+  avisoDePeriodo?: string | undefined
   panels: readonly PanelConfig[]
   metricsById: ReadonlyMap<string, Metric>
   payloadOf: (panelId: string) => Payload
@@ -37,6 +42,13 @@ type Props = {
   /** Los params YA validados · F1.29. La superficie no los lee: solo los pasa.
    *  Quien valida es el adaptador de `api/`. */
   paramsOf: (panelId: string) => Record<string, unknown>
+  /** Por qué el gráfico de un panel no puede dibujar su valor · F1.31.
+   *
+   *  **Mismo idioma que `payloadOf` y `paramsOf`**: llega resuelto y esta
+   *  superficie sólo lo pasa. Quien decide es el contenedor, que es el que tiene
+   *  la tabla del repertorio. Ausente —o `undefined` para un panel— significa
+   *  que se dibuja. */
+  plotProblemOf?: (panelId: string) => PlotProblem | undefined
   format: Formatter
   onSelectTab: (id: string) => void
   onSelectPeriod: (id: string) => void
@@ -52,6 +64,29 @@ type Props = {
    *  viaje es quien monta la consola, que en el builder y en la vista previa
    *  por rol no es el mismo. */
   onAskPanel?: (panelId: string) => void
+  /** «Ver detalle» · F3.9 · §PEN:C2. Lleva el `panelId` porque la desagregación
+   *  es de ese panel: la lectura cuelga de él.
+   *
+   *  **Es un callback y no una navegación escrita acá**, igual que `onAskPanel`.
+   *  `Console` no sabe si abre una hoja, una ruta o nada — quien decide el viaje
+   *  es quien monta la consola, que en el builder y en la vista previa por rol no
+   *  es el mismo.
+   *
+   *  **Y se pasa por panel, no para todos.** Quien monta decide de cuáles: si una
+   *  métrica no se puede desagregar, su CTA no se pinta. Es la regla del CTA
+   *  muerto, y acá es lo único que distingue este diseño del que abre una hoja
+   *  para decir que no hay nada. */
+  onDrillPanel?: ((panelId: string) => void) | undefined
+  /** De qué paneles se puede abrir el detalle · F3.9.
+   *
+   *  **Separado de `onDrillPanel` a propósito.** El manejador es uno y la
+   *  respuesta es por panel, así que fundirlos obligaría a quien monta a pasar un
+   *  manejador por panel o a devolver `undefined` desde dentro del callback — y
+   *  lo segundo es un botón que se aprieta y no hace nada, que es justo lo que la
+   *  regla prohíbe.
+   *
+   *  Ausente significa **ninguno**: antes de saber, no se promete la acción. */
+  canDrill?: ReadonlySet<string>
   /** Abre el chat con contexto de PESTAÑA · F3.15 · la barra y el CTA del
    *  navbar. **Sin él ninguno de los dos se pinta.** */
   onAskTab?: (() => void) | undefined
@@ -63,10 +98,12 @@ export function Console({
   context,
   activeTab,
   activePeriodId,
+  avisoDePeriodo,
   panels,
   metricsById,
   payloadOf,
   paramsOf,
+  plotProblemOf,
   rejectedMetrics,
   format,
   onSelectTab,
@@ -74,6 +111,8 @@ export function Console({
   onChangeTheme,
   onRetryPanel,
   onAskPanel,
+  onDrillPanel,
+  canDrill,
   onAskTab,
   onSelectDashboard,
 }: Props) {
@@ -112,6 +151,7 @@ export function Console({
         context={context}
         activeTab={activeTab}
         activePeriodId={activePeriodId}
+        {...(avisoDePeriodo === undefined ? {} : { avisoDePeriodo })}
         format={format}
         tabMetrics={tabMetrics}
         onSelectTab={onSelectTab}
@@ -170,6 +210,21 @@ export function Console({
           // shell ya la aplica sobre `onChat`, y acá se sostiene hacia arriba:
           // el builder monta esta misma consola sin `onAskPanel`, y ahí
           // «Preguntar» no aparece en vez de aparecer y no hacer nada.
+          // ── «VER DETALLE» · F3.9 · §PEN:C2 ───────────────────────────
+          //
+          // **Los DOS tienen que estar.** Sin manejador no hay quien reciba el
+          // clic; sin que el panel esté en `canDrill` no se sabe si la métrica se
+          // puede desagregar, y pintar el CTA por si acaso es el botón muerto con
+          // un paso más — la hoja se abriría para decir que no hay nada.
+          //
+          // **Se resuelve acá y no en el atributo** porque el idioma del spread
+          // condicional no deja escribir un comentario entre atributos, y esta es
+          // la decisión que más falta explicar de las tres.
+          const verDetalle =
+            onDrillPanel !== undefined && canDrill?.has(panel.id) === true
+              ? () => onDrillPanel(panel.id)
+              : undefined
+
           return (
             <PanelInGrid
               key={panel.id}
@@ -182,6 +237,8 @@ export function Console({
               now={now}
               {...(onRetryPanel === undefined ? {} : { onRetry: () => onRetryPanel(panel.id) })}
               {...(onAskPanel === undefined ? {} : { onChat: () => onAskPanel(panel.id) })}
+              {...(verDetalle === undefined ? {} : { onDrill: verDetalle })}
+              {...(plotProblemOf?.(panel.id) === undefined ? {} : { plotProblem: plotProblemOf(panel.id) as PlotProblem })}
             />
           )
         })}

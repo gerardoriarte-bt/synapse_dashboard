@@ -39,7 +39,7 @@ import { useState } from 'react'
 import { useChat } from '../../api/useChat'
 import { esDePanel } from '../../api/chat'
 import type { ContextoDeChat } from '../../api/chat'
-import { useSuggestions, useThreads } from '../../api/hooks'
+import { useDeleteThread, useSuggestions, useThreads } from '../../api/hooks'
 import { Label } from '../../render/primitives/Label'
 import { ChatOverlay } from './ChatOverlay'
 import { ChatThread } from './ChatThread'
@@ -49,6 +49,8 @@ import { groupByRecency } from './threads'
 import type { Formatter } from '../../render/format'
 import type { BlockTable } from '../../catalog/blocks'
 import type { PanelType } from '../../catalog/types'
+import type { ChatAgent } from '../../api/types'
+import { etiquetaDeAgente } from './agenteDeChat'
 
 const ROTULO = 'font-mono text-label tracking-rotulo leading-rotulo uppercase text-dim'
 
@@ -74,11 +76,34 @@ type Props = {
   bloques: BlockTable
   /** Para el agrupado del riel · «HOY», «ESTA SEMANA», «JULIO». */
   format: Formatter
+  /** El mes abierto del tenant, `YYYY-MM` · `open_period` · para que una cifra
+   *  del agente diga que su último mes está incompleto. */
+  mesEnCurso?: string | undefined
   onClose: () => void
+  /** **El selector de agente, sólo para admin** · 2026-10-06. Sin
+   *  `onAgente` no se pinta: un planner no puede elegir —el servicio le
+   *  devuelve 403— y un control que promete lo que no hay no se muestra. El
+   *  `.pen` no lo dibuja; ver la propuesta del 2026-09-22 §10. */
+  agentes?: ChatAgent[] | undefined
+  /** `undefined` es «el que resuelva el servicio por rol». */
+  agenteId?: string | undefined
+  onAgente?: ((id: string | undefined) => void) | undefined
 }
 
-export function ChatSheet({ contexto, periodo, titulo, panelTipo, bloques, format, onClose }: Props) {
-  const { turns, threadId, ask, resume, reset } = useChat(contexto)
+export function ChatSheet({
+  contexto,
+  periodo,
+  titulo,
+  panelTipo,
+  bloques,
+  format,
+  mesEnCurso,
+  onClose,
+  agentes,
+  agenteId,
+  onAgente,
+}: Props) {
+  const { turns, threadId, historial, ask, resume, reset } = useChat(contexto, agenteId)
   const dePanel = esDePanel(contexto)
   const [texto, setTexto] = useState('')
   /** El riel colapsado es una pantalla propia del `.pen`. Vive acá y no en el
@@ -92,6 +117,7 @@ export function ChatSheet({ contexto, periodo, titulo, panelTipo, bloques, forma
    *  servicio: pedir todos y descartar acá traería por la red las
    *  conversaciones de los otros once paneles para tirarlas. */
   const hilos = useThreads(contexto, periodo)
+  const eliminar = useDeleteThread()
 
   /** Qué preguntar sobre este panel · §PEN:C3. Deterministas del lado del
    *  servicio, así que no se refrescan mientras la hoja está abierta. */
@@ -185,9 +211,26 @@ export function ChatSheet({ contexto, periodo, titulo, panelTipo, bloques, forma
                 onNueva={reset}
                 onSelect={(uuid) => {
                   const elegido = (hilos.data ?? []).find((h) => h.id === uuid)
-                  if (elegido?.hiloId != null) resume(elegido.hiloId)
+                  if (elegido?.hiloId != null) resume({ uuid: elegido.id, hiloId: elegido.hiloId })
                 }}
                 {...(activo === undefined ? {} : { activeId: activo.id })}
+                // **Eliminar la consulta abierta suelta el hilo** · 2026-10-09.
+                // Si no, lo próximo que se pregunte seguiría colgando de un
+                // hilo que el riel ya no muestra. Se suelta al confirmar el
+                // servicio, no antes: si falla, la conversación sigue ahí.
+                onDelete={(uuid) =>
+                  eliminar.mutate(uuid, {
+                    onSuccess: () => {
+                      if (activo?.id === uuid) reset()
+                    },
+                  })
+                }
+                {...(eliminar.isPending && eliminar.variables !== undefined
+                  ? { deletingId: eliminar.variables }
+                  : {})}
+                {...(eliminar.isError && eliminar.variables !== undefined
+                  ? { deleteFailedId: eliminar.variables }
+                  : {})}
               />
             )}
           </>
@@ -212,6 +255,29 @@ export function ChatSheet({ contexto, periodo, titulo, panelTipo, bloques, forma
             <Label as="div">
               Contexto · {titulo} · {periodo}
             </Label>
+            {onAgente !== undefined && agentes !== undefined && agentes.length > 0 ? (
+              <div className="flex items-center gap-2 pt-1">
+                <label htmlFor="chat-agente" className={ROTULO}>
+                  Agente
+                </label>
+                {/* **Cambiar de agente empieza otra conversación**: el servicio
+                    fija el agente al crear el hilo. Lo hace `useChat`; acá sólo
+                    se elige. */}
+                <select
+                  id="chat-agente"
+                  value={agenteId ?? ''}
+                  onChange={(e) => onAgente(e.target.value === '' ? undefined : e.target.value)}
+                  className="font-mono text-label tracking-rotulo uppercase text-ink bg-panel border border-w3 rounded-md px-2 py-1 outline-none focus:border-w5 min-w-0 cursor-pointer"
+                >
+                  <option value="">Por rol · el del servicio</option>
+                  {agentes.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {etiquetaDeAgente(a)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
           </div>
           {/* Dice `ESC` y no «Cerrar»: es la tecla que además funciona, así que
               el rótulo enseña el atajo. El nombre accesible sigue siendo
@@ -227,12 +293,35 @@ export function ChatSheet({ contexto, periodo, titulo, panelTipo, bloques, forma
         </div>
 
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
+          {/* **Un hilo reabierto dice qué trae y qué no** · 2026-10-09. El
+              historial guarda el texto y la última cifra de cada respuesta,
+              no el SQL ni las cifras anteriores del mismo turno: sin decirlo,
+              una respuesta reabierta se lee como completa cuando no lo es. */}
+          {historial === null ? null : (
+            <div className="flex flex-col gap-1">
+              {historial.estado === 'cargando' ? (
+                <Label as="div">Abriendo la consulta</Label>
+              ) : historial.estado === 'error' ? (
+                <Label as="div">No se pudo abrir la consulta · podés seguir preguntando en el mismo hilo</Label>
+              ) : (
+                <>
+                  <Label as="div">
+                    Reabierta del historial · se guardan el texto y la última cifra de cada respuesta, no la consulta SQL
+                  </Label>
+                  {historial.hayAnteriores ? (
+                    <Label as="div">Se muestran los últimos mensajes · los anteriores no se cargaron</Label>
+                  ) : null}
+                </>
+              )}
+            </div>
+          )}
           <ChatThread
             turns={turns}
             panelTipo={panelTipo}
             bloques={bloques}
             format={format}
             now={ahora}
+            {...(mesEnCurso === undefined ? {} : { mesEnCurso })}
           />
         </div>
 

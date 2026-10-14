@@ -40,7 +40,7 @@ import { MARGIN, axisReserve } from './core/axisGeometry'
 import { Grid } from './core/Grid'
 import { Line, Ribbon } from './core/Series'
 import { stack } from './core/stack'
-import type { Family } from '../../catalog/types'
+import type { FamiliaDeDibujo } from '../types'
 
 export type StackableSeries = { etiqueta: string; puntos: readonly { t: string; v: number }[] }
 
@@ -53,7 +53,7 @@ export function PlotStackArea({
   format,
 }: {
   series: readonly StackableSeries[]
-  family: Family
+  family: FamiliaDeDibujo
   format: (v: number) => string
 }) {
   const { ref, w, h } = useSize()

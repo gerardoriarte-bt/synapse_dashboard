@@ -4,6 +4,12 @@
 > quince pantallas, y lo que hay hoy lo inventamos nosotros. El agente no
 > modifica el `.pen` ni `design.md`.
 
+> **REEMPLAZADA EN PARTE el 2026-10-07 · decisión humana.** Las salidas dejaron
+> el punto de identidad: van en un menú de trabajo —hamburguesa, a la derecha del
+> usuario— con acceso directo a cada pantalla, y el nombre queda para lo de la
+> persona y cerrar sesión. La simetría entre superficies se conserva. Ver
+> `PROPUESTA-2026-10-07-header-usuario-y-trabajo.md`.
+
 > **CONTESTADA el 2026-09-28 · dibujando**, con permiso escrito para modificar el
 > `.pen` —`docs/INSTRUCCIONES-2026-09-28-diseno-en-el-pen.md`—. Las cuatro
 > preguntas se resolvieron con una decisión sola: **todo vive DENTRO del punto de
@@ -22,7 +28,19 @@
 >    compone: ahí dice el rol que se está componiendo, no quién compone.
 >
 > El «← Consola» que esta propuesta pedía no tocar queda **reemplazado por la
-> sección IR A**. La tarea de ajuste del código no está tomada.
+> sección IR A**.
+>
+> **EJECUTADA · 2026-10-02.** Las cuatro decisiones están en el código. La
+> consola se hizo el mismo 28; admin y el builder quedaron con identidad y
+> salidas **y sin el tema**, y se cerró hoy poniéndolo en `IdentityBlock`, que
+> es el bloque que las dos comparten.
+>
+> **Y cerrarlo destapó que el tema guardado NO SE APLICABA EN NINGUNA
+> SUPERFICIE.** `ConsoleContainer` tenía el efecto desde F1.12 leyendo
+> `preferencias.tema`, que el adaptador **no rellenaba** —con su razón escrita:
+> «nadie lo consumiría»—. El efecto corría y no hacía nada: elegir claro,
+> recargar y volver a oscuro. Con tres consumidores el campo se rellena, y el
+> efecto se movió a `useTemaGuardado` para que no vuelva a quedar en una sola.
 
 ## De dónde sale
 

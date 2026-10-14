@@ -7,7 +7,7 @@
  *  probar la UI hiciera falta un stream, el componente conocería SSE.
  */
 import { useState } from 'react'
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ChatOverlay } from '@/surfaces/console/ChatOverlay'
@@ -134,6 +134,44 @@ describe('F3.5 · los mensajes', () => {
     )
     expect(screen.queryByText('Consultando')).toBeNull()
     expect(screen.getByText(/Las ventas/)).toBeInTheDocument()
+  })
+
+  /** **La espera tiene que verse viva** · 2026-10-06. Medido contra QA: 5,8 s
+   *  hasta la primera palabra. Un rótulo quieto ese tiempo se lee como una hoja
+   *  colgada. */
+  it('el «Consultando» CUENTA los segundos · es la prueba de vida', () => {
+    vi.useFakeTimers()
+    try {
+      render(<ChatThread turns={[turno({ streaming: true })]} {...conChrome} />)
+      act(() => vi.advanceTimersByTime(3000))
+      expect(screen.getByText(/Consultando/)).toHaveTextContent('Consultando · 3 s')
+      act(() => vi.advanceTimersByTime(2000))
+      expect(screen.getByText(/Consultando/)).toHaveTextContent('Consultando · 5 s')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('el contador NO se anuncia · dentro de la región viva sonaría cada segundo', () => {
+    vi.useFakeTimers()
+    try {
+      render(<ChatThread turns={[turno({ streaming: true })]} {...conChrome} />)
+      act(() => vi.advanceTimersByTime(2000))
+      expect(screen.getByText(/· 2 s/)).toHaveAttribute('aria-hidden', 'true')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('con texto y el turno abierto dice «Escribiendo» · y se va al cerrar', () => {
+    const texto = { ...VACIA, texto: 'Las ventas ' }
+    const { rerender } = render(
+      <ChatThread turns={[turno({ streaming: true, respuesta: texto })]} {...conChrome} />,
+    )
+    expect(screen.getByText('Escribiendo')).toBeInTheDocument()
+
+    rerender(<ChatThread turns={[turno({ streaming: false, respuesta: texto })]} {...conChrome} />)
+    expect(screen.queryByText('Escribiendo')).toBeNull()
   })
 
   it('la región viva es la RESPUESTA, no la hoja entera', () => {
@@ -290,6 +328,28 @@ describe('F3.7 · el riel de hilos', () => {
     expect(elegir).toHaveBeenCalledWith('h-2')
   })
 
+  it('un hilo de DECISIÓN no ofrece eliminar · es la traza, y el contrato da 409', () => {
+    render(<ThreadRail format={format} groups={grupos} onSelect={() => {}} onDelete={() => {}} />)
+    expect(screen.getByRole('button', { name: 'Eliminar Por qué subió el ROAS si la inversión está plana' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Eliminar Quiebre de stock/ })).toBeNull()
+  })
+
+  it('sin `onDelete` no hay «Eliminar» · un CTA sin manejador no se pinta', () => {
+    render(<ThreadRail format={format} groups={grupos} onSelect={() => {}} />)
+    expect(screen.queryByRole('button', { name: /^Eliminar/ })).toBeNull()
+  })
+
+  it('eliminar pregunta ANTES de disparar · y dispara con el id', async () => {
+    const borrar = vi.fn()
+    render(<ThreadRail format={format} groups={grupos} onSelect={() => {}} onDelete={borrar} />)
+    const nombre = 'Eliminar Por qué subió el ROAS si la inversión está plana'
+    await userEvent.click(screen.getByRole('button', { name: nombre }))
+    expect(borrar).not.toHaveBeenCalled()
+    expect(screen.getByText('¿Eliminar del historial?')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: nombre }))
+    expect(borrar).toHaveBeenCalledWith('h-1')
+  })
+
   it('el hilo de una decisión lleva su badge · es la traza de por qué se decidió', () => {
     render(<ThreadRail format={format} groups={grupos} onSelect={() => {}} />)
     expect(screen.getByRole('button', { name: /Quiebre de stock/ })).toHaveTextContent('Decisión')
@@ -324,32 +384,25 @@ describe('§PEN · la identidad de la plataforma', () => {
     expect(screen.getByRole('img', { name: 'Synapse' }).className).toContain('bg-ink')
   })
 
-  /** **La regla de qué versión va dónde es del `.pen`, no nuestra** · su
-   *  capítulo `Identidad` reserva el degradado para superficies SIN datos y lo
-   *  prohíbe en el chrome: «el azul y el violeta caen sobre las familias
-   *  demanda e inventario · usarlos como chrome rompería la persistencia
-   *  cromática». Estas dos la fijan por los dos lados. */
-  it('el defecto es `mono` · quien se olvide se equivoca del lado permitido', () => {
+  /** **Desde el 2026-10-06 el degradado va también al chrome**, por decisión
+   *  humana que contradice el capítulo `Identidad` del `.pen` · ver
+   *  `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` §3. Los navbars lo
+   *  piden explícito; el defecto sigue siendo `mono`. */
+  it('el defecto es `mono` · máscara pintada con token, sin arte a color', () => {
     render(<Wordmark />)
     const marca = screen.getByRole('img', { name: 'Synapse' })
     expect(marca.className).toContain('bg-ink')
-    expect(marca.style.backgroundImage).toBe('')
+    expect(marca.tagName).toBe('SPAN')
   })
 
-  it('la variante de marca es degradado de TOKENS, sin hex ni `bg-ink`', () => {
-    // «Naranja a violeta a azul» · el orden lo declara el `.pen`. Que salga de
-    // tokens es lo que impide que entre un hex literal, que es regla dura.
+  it('la variante de marca es el ARTE REAL a color, no la máscara', () => {
+    // El degradado del logotipo es en dos ejes y un `linear-gradient` de tres
+    // tokens no lo reproduce: va el archivo recortado del arte entregado.
     render(<Wordmark variante="marca" />)
     const marca = screen.getByRole('img', { name: 'Synapse' })
 
+    expect(marca.tagName).toBe('IMG')
+    expect(marca.getAttribute('src')).toContain('wordmark-marca')
     expect(marca.className).not.toContain('bg-ink')
-    const fondo = marca.style.backgroundImage
-    expect(fondo).toContain('--color-brand-naranja')
-    expect(fondo).toContain('--color-brand-violeta')
-    expect(fondo).toContain('--color-brand-azul')
-    expect(fondo).not.toMatch(/#[0-9a-f]{3,8}/i)
-    // Y en ese orden: invertirlo daría otra marca.
-    expect(fondo.indexOf('naranja')).toBeLessThan(fondo.indexOf('violeta'))
-    expect(fondo.indexOf('violeta')).toBeLessThan(fondo.indexOf('azul'))
   })
 })

@@ -75,8 +75,15 @@ export const context: WireContext = {
   tenant: {
     id: 't-1',
     name: 'Under Armour México',
+    label: 'Under Armour México',
     locale: 'es-MX',
-    currency: 'MXN',
+    // **USD, y no la moneda del país del cliente** · decidido el 2026-10-01
+    // (humano) y medido contra las tres fuentes el mismo día: el catálogo de
+    // Snowflake declara `unit: USD` en las cinco métricas de dinero y su texto
+    // de gobierno dice «en USD»; el `.pen` escribe USD en 62 de sus 63 nodos con
+    // moneda —el único `MXN` es la variante «tenant en alta», que es otro
+    // cliente—; y producto lo confirmó. UA MX factura en dólares.
+    currency: 'USD',
     timezone: 'America/Mexico_City',
   },
   role: { id: 'r-planner', name: 'Planner' },
@@ -86,6 +93,9 @@ export const context: WireContext = {
       name: 'Inventory & Shopping',
       operational_question: '¿Tenemos stock y lo estamos mostrando?',
       sort_order: 1,
+      // **La identidad estable de la pestaña** · llegó en `f70cec2`. La semilla
+      // la rellenó con el slug del nombre.
+      key: 'inventory-shopping',
       // **Vacíos, como los emite el servicio** · medido el 2026-09-28: la
       // semilla no trae ninguno, y `chat_suggestions` llega lista y no `null`.
       icon: '',
@@ -109,7 +119,9 @@ export const context: WireContext = {
   // tiene sentido con `multi_tenant`.
   scope: {
     kind: 'single_tenant' as const,
-    tenants: [{ id: 't-1', name: 'Under Armour México' }],
+    // **`label` distinta de `name` a propósito**: el selector del navbar lee
+    // la corta, y un fixture donde las dos coinciden no distingue cuál se leyó.
+    tenants: [{ id: 't-1', name: 'Under Armour México', label: 'UA México' }],
   },
   catalog_version: 1,
   // ── MULTI-DASHBOARD · F5.1 · 2026-09-26 ──────────────────────────────────
@@ -122,7 +134,11 @@ export const context: WireContext = {
   // no se compuso», que es el estado real de un dashboard sin layout publicado
   // —medido el 2026-09-26 creando uno—. Un fixture que lo omite está simulando
   // ese estado sin querer.
-  dashboards: [{ id: 'd-1', name: 'Overview', slug: 'overview', is_default: true }],
+  // `history_months` es REQUERIDO desde `d9147c3` · medido el 2026-10-01 contra
+  // el servicio: 12 en los dos dashboards sembrados, que es el default de la
+  // columna. No se omite «porque es opcional»: el cable lo pide, y un fixture
+  // que lo omitiera dejaría de compilar — que es justamente cómo lo encontró.
+  dashboards: [{ id: 'd-1', name: 'Overview', slug: 'overview', is_default: true, history_months: 12 }],
   active_dashboard_id: 'd-1',
   active_layout_id: 'l-1',
 }
@@ -171,13 +187,58 @@ export const kpiPanel: WirePanel = {
   col_start: 1,
   col_span: 4,
   row_span: 4,
+  chart: '',
   note: '',
 }
 
 export const handlers = [
   http.get(`${API}/config/me`, () => ok(context)),
+
+  /* ── El piso de administración · 2026-10-09 ──────────────────────────────
+   *
+   * Desde que la ficha vive al lado de la lista, abrir administración pide los
+   * usuarios y los agentes del cliente elegido y la cola de solicitudes; en
+   * Usuarios, los roles de cada cliente. Vacíos: una prueba que necesite datos
+   * los declara con `server.use(...)`, que es la regla de este archivo. */
+  http.get(`${API}/admin/access-requests`, () =>
+    ok({ items: [], total: 0, page: 1, page_size: 100, total_pages: 0 }),
+  ),
+  http.get(`${API}/admin/tenants/:tenantId/agents`, () => ok([])),
+  http.get(`${API}/admin/tenants/:tenantId/users`, () => ok([])),
+  http.get(`${API}/admin/tenants/:tenantId/roles/composition`, () => ok([])),
   // **Arreglo desnudo**, no `{ metrics }` ni `{ blocks }`: es lo que sale de
   // `SendSuccess(c, 200, metrics)` en Go.
   http.get(`${API}/config/catalog`, () => ok(metrics)),
   http.get(`${API}/config/blocks`, () => ok(blocks)),
+  // **`/config/plots` va en el PISO, y no es opcional** · F1.31, 2026-09-29.
+  //
+  // Sin él `usePlots` queda en error y el contenedor no monta: la consola entera
+  // deja de renderizar por una tabla que ni siquiera bloquea nada. Lo encontró
+  // agregar el hook — cinco pruebas que no lo mencionan se pusieron rojas.
+  //
+  // **Vacío a propósito.** El piso es «el contexto mínimo con el que la app
+  // arranca», y sin repertorio la consola dibuja sin verificar, que es
+  // exactamente lo que hace contra un servicio que todavía no sirve la ruta. La
+  // prueba que necesita la tabla la sirve con `server.use`.
+  http.get(`${API}/config/plots`, () => ok([])),
+  // ── LAS DIMENSIONES DE CADA PANEL VAN EN EL PISO · F3.9, 2026-09-30 ───────
+  //
+  // La consola le pregunta por CADA panel de la pestaña para decidir si pinta
+  // «Ver detalle» —un CTA sin manejador no se pinta—, así que sin este handler
+  // toda prueba que monte el contenedor se cae: `onUnhandledRequest: 'error'`.
+  //
+  // **`supported: false`, que es el lado seguro.** El piso es «el contexto
+  // mínimo con el que la app arranca», y sin saber si una métrica se puede
+  // desagregar lo correcto es no prometer la acción. La prueba que necesita el
+  // CTA lo sirve con `server.use`, que es lo que la hace decir qué ejercita.
+  http.get(`${API}/config/panels/:panelId/drilldown/dimensions`, ({ params }) =>
+    ok({
+      panel_id: String(params['panelId']),
+      metric_key: 'sin_drilldown',
+      supported: false,
+      // **`[]` y no `null`**: el servicio inicializa el DTO con `[]string{}` y
+      // sólo después mira el registry, medido en las ocho que no soportan.
+      dimensions: [],
+    }),
+  ),
 ]

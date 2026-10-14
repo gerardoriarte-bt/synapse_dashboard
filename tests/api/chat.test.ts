@@ -20,7 +20,7 @@
  *  producción detrás de un proxy. Por eso se parten en lugares incómodos.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ChatStreamError, askSynapse } from '@/api/chat'
+import { ChatStreamError, askSynapse, turnosDelHistorial } from '@/api/chat'
 import { saveToken, signOut } from '@/app/auth/session'
 import type { ChatEvent } from '@/api/types'
 
@@ -301,7 +301,63 @@ describe('la pregunta viaja en el CUERPO, con el contexto de panel', () => {
   })
 })
 
+describe('el agente que elige un admin · 2026-10-06', () => {
+  const AGENTE = '6deffca1-013a-4489-9a98-5b0d8f1c8ced'
+
+  it('`agent_id` viaja en el PRIMER turno', async () => {
+    responde([INFO, DONE])
+    await recolectar(askSynapse({ ...PREGUNTA, agenteId: AGENTE }))
+
+    const [, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit]
+    expect(JSON.parse(init.body as string).agent_id).toBe(AGENTE)
+  })
+
+  it('con hilo NO viaja · el servicio lo ignora y el agente ya quedó fijado', async () => {
+    responde([INFO, DONE])
+    await recolectar(askSynapse({ ...PREGUNTA, hiloId: '41', agenteId: AGENTE }))
+
+    const [, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit]
+    const cuerpo = JSON.parse(init.body as string)
+    expect(cuerpo).not.toHaveProperty('agent_id')
+    expect(cuerpo.thread_id).toBe(41)
+  })
+
+  it('sin elegir no viaja · ni un null, que el binding leería como uuid inválido', async () => {
+    responde([INFO, DONE])
+    await recolectar(askSynapse(PREGUNTA))
+
+    const [, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit]
+    expect(JSON.parse(init.body as string)).not.toHaveProperty('agent_id')
+  })
+})
+
 describe('cortes y errores', () => {
+  it('un 409 dice el MOTIVO del servicio, no sólo el código', async () => {
+    // Medido en QA el 2026-10-06 con un admin sin agente para su rol. Antes la
+    // hoja decía «(409)» y nada más.
+    vi.stubGlobal('fetch', vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          success: false,
+          error: 'no hay agente activo disponible para este tenant y rol',
+          code: 'CONFLICT_STATE',
+        }),
+        { status: 409, headers: { 'content-type': 'application/json' } },
+      ),
+    ))
+    await expect(recolectar(askSynapse(PREGUNTA))).rejects.toThrow(
+      'El agente no pudo abrir la conversación (409): no hay agente activo disponible para este tenant y rol',
+    )
+  })
+
+  it('un cuerpo que no es JSON —un 502 de proxy— cae al código solo', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('<html>bad gateway</html>', { status: 502 })))
+    await expect(recolectar(askSynapse(PREGUNTA))).rejects.toThrow(
+      /^El agente no pudo abrir la conversación \(502\)\.$/,
+    )
+  })
+
+
   it('`parcial` sale de si ya se entregó contenido · el cable no lo declara', async () => {
     // El frame `error` del cable es `{code, message}`: no dice si lo recibido
     // sigue valiendo. Lo que sí es un hecho es si algo se entregó, y el servicio
@@ -442,6 +498,166 @@ describe('§F3.6 · el evento `data` se traduce · desde `55e8419`', () => {
     expect(eventos.map((e) => e.tipo)).toEqual(['fin'])
   })
 
+  /** **El gráfico del agente** · 2026-10-07. Así lo manda `7b717aa`:
+   *  `TranslateCortexEvent` pone `{shape: 'chart', chart_spec}` y
+   *  `StructuredDataFromCortex`, sin filas, lo envuelve como `raw`. Hasta hoy el
+   *  front lo tiraba en silencio. */
+  const conGrafico = (parche: Record<string, unknown> = {}) =>
+    trama('data', {
+      shape: 'raw',
+      data: {
+        shape: 'chart',
+        chart_spec: JSON.stringify({
+          title: 'Ingresos por mes',
+          mark: 'line',
+          encoding: {
+            x: { field: 'MES', type: 'temporal' },
+            y: { field: 'INGRESOS', type: 'quantitative' },
+          },
+          data: { values: [{ MES: '2026-08-01', INGRESOS: 10 }, { MES: '2026-09-01', INGRESOS: 12 }] },
+        }),
+      },
+      provenance: {
+        source: 'cortex_agent',
+        metric_key: 'revenue',
+        period: '2026-09',
+        sql_available: true,
+        base: 'Pedidos completados',
+        base_source: 'catalog',
+        family: 'demand',
+        layer: 'GOLD',
+        source_system: 'Snowflake',
+        catalog_version: 2,
+        freshness: '',
+        queried_at: '2026-10-07T10:00:00Z',
+        ...parche,
+      },
+    })
+
+  it('el `chart_spec` del agente llega como `dato`, con la marca que eligió', async () => {
+    responde([INFO, conGrafico(), DONE])
+
+    const [evento] = await recolectar(askSynapse(PREGUNTA))
+    expect(evento).toMatchObject({
+      tipo: 'dato',
+      tipoDePanel: 'series',
+      titulo: 'Ingresos por mes',
+      familia: 'demanda',
+      valor: { forma: 'serieTemporal', puntos: [{ t: '2026-08-01', v: 10 }, { t: '2026-09-01', v: 12 }] },
+    })
+  })
+
+  it('los TÍTULOS de los ejes llegan hasta el dato · 2026-10-10', async () => {
+    // Sin esto, el traductor los lee y la figura nunca los ve: cada uno pasa su
+    // prueba y el salto entre los dos queda sin cubrir.
+    responde([
+      INFO,
+      conGrafico(),
+      DONE,
+    ])
+    const [evento] = await recolectar(askSynapse(PREGUNTA))
+    expect(evento).toMatchObject({
+      tipo: 'dato',
+      ejes: { medida: 'INGRESOS', dimension: 'MES', serie: null, dimensionEsFecha: true },
+    })
+  })
+
+  it('un gráfico que no se dibuja llega como TABLA con su aviso · antes se descartaba', async () => {
+    responde([
+      INFO,
+      trama('data', {
+        shape: 'raw',
+        data: {
+          shape: 'chart',
+          chart_spec: JSON.stringify({
+            mark: 'bar',
+            encoding: {
+              x: { field: 'MES', type: 'temporal', title: 'Mes' },
+              y: { field: 'V', type: 'quantitative', title: 'Ventas (USD)' },
+              color: { field: 'P', type: 'nominal', title: 'Plataforma' },
+            },
+            data: { values: [{ MES: '2026-09-01', V: 1, P: 'Google' }] },
+          }),
+        },
+        provenance: {
+          source: 'cortex_agent', metric_key: '', period: '2026-09', sql_available: true, base: '',
+          base_source: '', family: '', layer: '', source_system: '', catalog_version: 0, freshness: '',
+          queried_at: '2026-10-10T10:00:00Z',
+        },
+      }),
+      DONE,
+    ])
+    const [evento] = await recolectar(askSynapse(PREGUNTA_DE_PESTANA))
+    expect(evento).toMatchObject({
+      tipo: 'dato',
+      tipoDePanel: 'table',
+      valor: { forma: 'tabular' },
+      aviso: expect.stringContaining('Plataforma'),
+    })
+  })
+
+  it('en la PESTAÑA `family: ""` llega como `null` · se declara, no se descarta', async () => {
+    // `provenanceFromContext` en modo pestaña sólo llena `source` y `period`;
+    // el resto viaja vacío. Antes eso tiraba todos los datos del chat de
+    // pestaña, que es el modo por defecto.
+    responde([INFO, conGrafico({ family: '', base: '', layer: '' }), DONE])
+
+    const [evento] = await recolectar(askSynapse(PREGUNTA_DE_PESTANA))
+    expect(evento).toMatchObject({ tipo: 'dato', familia: null, tipoDePanel: 'series' })
+  })
+
+  /** **Capturado del servicio, no escrito de memoria** · `9dc481e` levantado en
+   *  `:4010` el 2026-10-09, pregunta de pestaña por la inversión de medios por
+   *  plataforma. Es la segunda de sus cuatro tramas `data`, recortada a dos
+   *  filas: la consulta sale de `VW_COSTOS_CAMPANAS`, fuera del catálogo, y la
+   *  procedencia viaja vacía entera. */
+  const fueraDelCatalogo = (parche: Record<string, unknown> = {}) =>
+    trama('data', {
+      data: {
+        columns: [
+          { key: 'investment', numeric: true, title: 'investment' },
+          { key: 'share_pct', numeric: true, title: 'share_pct' },
+        ],
+        rows: [
+          { investment: 63777.61, share_pct: 57.36 },
+          { investment: 33562.86, share_pct: 30.19 },
+        ],
+        shape: 'tabular',
+      },
+      provenance: {
+        source: 'cortex_agent',
+        metric_key: '',
+        period: '2026-08',
+        sql_available: true,
+        base: '',
+        base_source: '',
+        family: '',
+        layer: '',
+        source_system: '',
+        catalog_version: 0,
+        freshness: '',
+        queried_at: '2026-10-09T15:04:03Z',
+        ...parche,
+      },
+      shape: 'tabular',
+    })
+
+  it('una consulta fuera del catálogo llega SIN capa · no se firma GOLD · 2026-10-09', async () => {
+    // Acá había `CAPAS[p.layer] ?? 'GOLD'`: la procedencia de una consulta que
+    // no la declara salía inventada, y con la misma tipografía que una real.
+    responde([INFO, fueraDelCatalogo(), DONE])
+
+    const [evento] = await recolectar(askSynapse(PREGUNTA_DE_PESTANA))
+    expect(evento).toMatchObject({ tipo: 'dato', capa: null, familia: null, base: '' })
+  })
+
+  it('una CAPA que el contrato no declara se descarta · igual que la familia', async () => {
+    responde([INFO, fueraDelCatalogo({ layer: 'PLATINUM' }), DONE])
+
+    const eventos = await recolectar(askSynapse(PREGUNTA_DE_PESTANA))
+    expect(eventos.map((e) => e.tipo)).toEqual(['fin'])
+  })
+
   it('un valor que no se puede adaptar tampoco se pinta a medias', async () => {
     responde([
       INFO,
@@ -506,5 +722,41 @@ describe('la petición lleva credencial · el defecto del 2026-09-24', () => {
     const h = init.headers as Record<string, string>
     expect(h.accept).toBe('text/event-stream')
     expect(h['content-type']).toBe('application/json')
+  })
+})
+
+describe('el historial de un hilo, en turnos · 2026-10-09', () => {
+  /** Las formas de `GET /config/chat/threads/{id}/messages`, capturadas de
+   *  `9dc481e` el 2026-10-09. Sólo lo que el emparejamiento mira. */
+  const msg = (role: 'user' | 'assistant', content: string) => ({
+    id: `${role}-${content}`,
+    role,
+    content,
+    created_at: '2026-10-09T10:00:00Z',
+  })
+
+  it('una pregunta y su respuesta son UN turno', () => {
+    const { turnos } = turnosDelHistorial({
+      messages: [msg('user', '¿Cuánto?'), msg('assistant', 'Tanto.')],
+      has_more: false,
+    })
+    expect(turnos).toEqual([{ pregunta: '¿Cuánto?', texto: 'Tanto.', datos: [] }])
+  })
+
+  it('una respuesta SIN pregunta antes se descarta · la página empezó a mitad de un turno', () => {
+    // Con 50 por página, la primera puede ser la respuesta de una pregunta que
+    // quedó en la página anterior. Colgarla de una pregunta vacía, o de la
+    // siguiente, la atribuiría mal.
+    const { turnos, hayAnteriores } = turnosDelHistorial({
+      messages: [msg('assistant', 'Huérfana.'), msg('user', '¿Y hoy?'), msg('assistant', 'Hoy no.')],
+      has_more: true,
+    })
+    expect(turnos).toEqual([{ pregunta: '¿Y hoy?', texto: 'Hoy no.', datos: [] }])
+    expect(hayAnteriores).toBe(true)
+  })
+
+  it('una pregunta sin respuesta queda con texto `null` · no con una respuesta vacía', () => {
+    const { turnos } = turnosDelHistorial({ messages: [msg('user', '¿Y?')], has_more: false })
+    expect(turnos).toEqual([{ pregunta: '¿Y?', texto: null, datos: [] }])
   })
 })

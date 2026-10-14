@@ -17,6 +17,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, within } from '@testing-library/react'
 import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
+import { abrirTodas } from '../../gobierno'
 import { ConsoleContainer } from '@/surfaces/console/ConsoleContainer'
 import { API, ok, tab } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
@@ -214,6 +215,9 @@ describe('fallo parcial · un panel roto no arrastra a los otros', () => {
     expect(screen.getByText(/El almacén no respondió/)).toBeInTheDocument()
     // Y el shell del que falló sigue entero: título y BASE.
     expect(screen.getByRole('heading', { name: 'Detalle por tienda' })).toBeInTheDocument()
-    expect(screen.getAllByText(/^Base ·/)).toHaveLength(5)
+    // Las cinco gobernanzas, detrás de sus cinco ⓘ · 2026-10-06.
+    await abrirTodas()
+    expect(screen.getAllByRole('tooltip')).toHaveLength(5)
+    for (const ficha of screen.getAllByRole('tooltip')) expect(ficha).toHaveTextContent('48 tiendas sobre 52')
   })
 })

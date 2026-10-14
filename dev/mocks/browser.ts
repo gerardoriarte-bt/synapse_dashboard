@@ -28,10 +28,32 @@
  */
 import { http, HttpResponse, delay } from 'msw'
 import { setupWorker } from 'msw/browser'
-import { LAYOUT_PUB, bloques, catalogo, contexto, detalle, layouts, roles, tenants, usuario } from './datos'
+import repertorio from './repertorio.json'
+import { DASH_A, DASH_B, LAYOUT_PUB, TENANT_EN_ALTA, bloques, catalogo, contexto, detalle, layouts, publicaciones, roles, tenants, usuario, PANELES_MUESTRARIO } from './datos'
 
 const API = '*/api/v1'
 const ok = <T,>(data: T) => HttpResponse.json({ success: true, data })
+
+/** Las corridas de materialización, en memoria · 2026-10-07. Como el resto del
+ *  estado del modo mock: recargar vuelve a cero. La forma es la de
+ *  `MaterializeRun`, medida contra `7b717aa` ese día. */
+type CorridaMock = Record<string, unknown> & { status: string; finished_at: string | null }
+const corrida = (tenantId: string, period: string, trigger: string): CorridaMock => ({
+  id: `run-${period}-${String(Math.random()).slice(2, 8)}`,
+  tenant_id: tenantId, period, trigger, status: 'running',
+  agent_name: 'Synapse UA', role: 'admin',
+  available: 0, blocked: 0, errors: 0, skipped: 0, preserved: 0,
+  catalog_synced: true, error: '',
+  started_at: new Date().toISOString(), finished_at: null,
+})
+const terminar = (c: CorridaMock) => {
+  Object.assign(c, { status: 'done', available: 21, blocked: 12, preserved: 5, finished_at: new Date().toISOString() })
+}
+const CORRIDAS: CorridaMock[] = ['2026-09', '2026-10'].map((p) => {
+  const c = corrida('t-1', p, 'cron')
+  terminar(c)
+  return c
+})
 const mal = (mensaje: string, status: number) =>
   HttpResponse.json({ success: false, error: mensaje }, { status })
 
@@ -41,10 +63,30 @@ const mal = (mensaje: string, status: number) =>
  * llamadas. Que se pierda al recargar es correcto — nadie debería confundir
  * esto con una base.
  */
+/** El slug de una `key` de pestaña · como lo hace el servicio, medido el
+ *  2026-09-28: recorta, baja a minúsculas, **quita los acentos** y junta con
+ *  guiones. `"Visión General"` → `vision-general`. */
+const slug = (v: string) =>
+  v
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
 const estado = {
   layouts: structuredClone(layouts),
   detalles: new Map(layouts.map((l) => [l.id, structuredClone(detalle(l.id))])),
   roles: structuredClone(roles),
+  // B6 · el historial crece con cada reversión, igual que en el servicio.
+  publicaciones: structuredClone(publicaciones),
+  /** Los dashboards del cliente · 2026-10-07, para el primer nivel del builder.
+   *  `Marca` sin layouts: es el caso «Todavía no se compuso». */
+  dashboards: [
+    { id: DASH_A, tenant_id: tenants[0]!.id, name: 'Overview', slug: 'overview', is_default: true, history_months: 12 },
+    { id: DASH_B, tenant_id: tenants[0]!.id, name: 'Marca', slug: 'marca', is_default: false, history_months: 12 },
+  ],
 }
 
 /** `panelId` → la forma de la métrica que ese panel dibuja.
@@ -57,6 +99,50 @@ function formaDe(panelId: string): string {
   const panel = paneles.find((p) => p.id === panelId)
   if (panel === undefined) return 'scalar'
   return catalogo.find((m) => m.id === panel.metric_id)?.shape ?? 'scalar'
+}
+
+/** `panelId` → la clave de su métrica. **La del catálogo y no la canónica**, que
+ *  es lo que el servicio devuelve. */
+function claveDe(panelId: string): string {
+  const paneles = [...estado.detalles.values()].flatMap((d) => d.tabs.flatMap((t) => t.panels))
+  const panel = paneles.find((p) => p.id === panelId)
+  if (panel === undefined) return 'desconocida'
+  return catalogo.find((m) => m.id === panel.metric_id)?.key ?? 'desconocida'
+}
+
+/** Por qué dimensiones se puede desagregar · ver el handler, abajo: la regla sale
+ *  de la FORMA de la métrica, igual que el reparto 7/15 medido en el servicio. */
+function dimensionesDe(panelId: string): string[] {
+  return formaDe(panelId) === 'scalar' ? ['day', 'week', 'platform'] : []
+}
+
+/** Los ítems de cada dimensión, con los tamaños y los ceros MEDIDOS. */
+function itemsDe(dimension: string): { label: string; v: number }[] {
+  if (dimension === 'day') {
+    // 30 ítems, ordenados por etiqueta, que es lo que hace el registry con el día.
+    return Array.from({ length: 30 }, (_, k) => ({
+      label: `2026-09-${String(k + 1).padStart(2, '0')}`,
+      v: 32_000 + ((k * 7919) % 19_000),
+    }))
+  }
+  if (dimension === 'week') {
+    // Cinco baldes, y **el primero empieza en el mes anterior** —`DATE_TRUNC`—,
+    // así que trae sólo los días que caen dentro del período.
+    return ['2026-08-31', '2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28'].map((label, k) => ({
+      label,
+      v: k === 0 ? 71_400 : 240_000 + k * 9_100,
+    }))
+  }
+  // `platform` · 37 ítems ordenados por valor descendente, **29 en cero**.
+  const conGasto = [
+    'Google PMax', 'Meta Advantage+', 'Google Shopping', 'Google Search',
+    'Meta Retargeting', 'TikTok Ads', 'Criteo', 'Pinterest Ads',
+  ].map((label, k) => ({ label, v: Math.round(537_180 / (k + 1)) }))
+  const enCero = Array.from({ length: 29 }, (_, k) => ({
+    label: `Plataforma sin gasto ${String(k + 1)}`,
+    v: 0,
+  }))
+  return [...conGasto, ...enCero]
 }
 
 /** Un valor del CABLE para cada una de las nueve formas que el backend
@@ -106,6 +192,60 @@ function valorPara(forma: string, i: number): Record<string, unknown> {
           { label: '5 – 10', v: n * 0.34 },
           { label: '10 – 20', v: n * 0.25 },
           { label: '20 +', v: n * 0.12 },
+        ],
+      }
+    case 'compared_categorical':
+      // **Tres ítems de la salida real de `platform_gap`**, y el tercero llega
+      // SIN `reference`: es el caso de quince de sus 37 ítems —plataformas con
+      // retorno atribuido y sin costo— y el que hace visible que la pesa no se
+      // dibuja desde el origen.
+      return {
+        shape: 'compared_categorical',
+        items: [
+          { label: 'Google PMax', v: 502449.76, reference: 85134.28, delta: 417315.48 },
+          { label: 'Google', v: 197060.78, reference: 43422.49, delta: 153638.29 },
+          { label: 'Facebook', v: 155645.76, reference: 43692.57, delta: 111953.19 },
+          { label: 'Criteo', v: 36813.49, reference: 2574.17, delta: 34239.32 },
+          { label: 'MGID', v: 221.48, reference: 7842.45, delta: -7620.97 },
+          { label: 'YouTube', v: 12455.52 },
+        ],
+      }
+    case 'matrix':
+      // Cinco plataformas por seis meses de `platform_month_matrix`, con sus
+      // `null` reales: la plataforma no tuvo inversión ese mes. **Se recorta a
+      // cinco filas y no a las 38 que devuelve** — mirarlas las 38 es lo que hizo
+      // ver que la forma no tiene tope, y eso está anotado aparte.
+      return {
+        shape: 'matrix',
+        rows: ['Criteo', 'DV360', 'Facebook', 'Google', 'Adsmovil'],
+        columns: ['2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09'],
+        cells: [
+          [7933.11, 1939.7, 4032.44, 3333.74, 1782.43, 1383.86],
+          [1398.95, null, 2259.97, null, 1851.48, 642.01],
+          [133397.25, 23698.11, 100811.13, 76124.1, 59614.31, 35455.82],
+          [39998.02, 26888.85, 43297.82, 48462.64, 31122.54, 29607.82],
+          [1766.49, 0.04, null, null, null, null],
+        ],
+      }
+    case 'flow':
+      // Cinco plataformas hacia el nodo `total`, que es la forma que la consulta
+      // produce: cada una aporta su inversión y el total sólo recibe.
+      return {
+        shape: 'flow',
+        stages: [
+          { id: 'Dailymotion', label: 'Dailymotion', v: 1883185 },
+          { id: 'GCM-Other', label: 'GCM-Other', v: 1058397 },
+          { id: 'Google PMax', label: 'Google PMax', v: 85134.28 },
+          { id: 'Facebook', label: 'Facebook', v: 43692.57 },
+          { id: 'TikTok', label: 'TikTok', v: 18358.88 },
+          { id: 'total', label: 'Total invertido', v: 3088767.73 },
+        ],
+        links: [
+          { from: 'Dailymotion', to: 'total', v: 1883185 },
+          { from: 'GCM-Other', to: 'total', v: 1058397 },
+          { from: 'Google PMax', to: 'total', v: 85134.28 },
+          { from: 'Facebook', to: 'total', v: 43692.57 },
+          { from: 'TikTok', to: 'total', v: 18358.88 },
         ],
       }
     case 'categorical':
@@ -161,6 +301,62 @@ function valorPara(forma: string, i: number): Record<string, unknown> {
   }
 }
 
+/** El payload de un panel · lo comparten el batch y el preview con datos
+ *  (`include=payloads`), igual que en el servicio, donde los arma el mismo
+ *  `batchForRole`. Dos generadores de datos falsos se separan. */
+function payloadDelMock(id: string, i: number): Record<string, unknown> {
+  return (
+    PANELES_MUESTRARIO.has(id)
+      ? {
+          status: 'AVAILABLE',
+          governance: {
+            base: '312 SKU críticos sobre 18.240 activos',
+            layer: 'GOLD',
+            source: 'ERP',
+            freshness: new Date().toISOString(),
+            catalog_version: 4,
+          },
+          value: valorPara(formaDe(id), i),
+        }
+      : i % 4 === 3
+      ? { status: 'BLOCKED', reason: 'Su fuente tiene 31 h y se refresca cada hora', unlocks_with: 'Esperar la próxima materialización' }
+      : {
+          status: i % 4 === 2 ? 'DEGRADED' : 'AVAILABLE',
+          governance: {
+            base: '312 SKU críticos sobre 18.240 activos',
+            layer: 'GOLD',
+            source: 'ERP',
+            freshness: new Date().toISOString(),
+            catalog_version: 4,
+          },
+          // **El valor tiene que corresponder a la FORMA de su métrica.**
+          // Hasta el 2026-09-16 esto emitía `{ valor, delta }` para todos:
+          // ni la forma del cable ni la del contrato. El adaptador lo
+          // rechazaba con razón —«El valor no declara su forma»— y **la
+          // consola del modo mock se veía rota**, que es justo lo que este
+          // modo existe para evitar. Se descubrió abriéndolo en el
+          // navegador por primera vez.
+          value: valorPara(formaDe(id), i),
+          // **En español desde el 2026-09-28, porque el servicio lo
+          // cambió y nosotros no lo pedimos.** El copy medido contra
+          // `f70cec2`, textual — un mock que se queda con la frase vieja
+          // hace que el modo mock muestre un idioma que el producto ya no
+          // habla, y es lo que se ve al abrirlo.
+          //
+          // Va con `unlocks_with`, que el real también manda: §8 pide que
+          // un estado diga qué lo desbloquea, y sin las dos frases este
+          // modo no deja mirar la gramática completa.
+          ...(i % 4 === 2
+            ? {
+                reason:
+                  'Esta métrica todavía no se calculó con datos reales; el valor que se muestra es de referencia',
+                unlocks_with: 'Falta registrar la fuente de datos de esta métrica',
+              }
+            : {}),
+        }
+  )
+}
+
 export const worker = setupWorker(
   /* ── Acceso ─────────────────────────────────────────────────────────────── */
   http.post(`${API}/auth/login`, async () => {
@@ -181,20 +377,55 @@ export const worker = setupWorker(
   // `SendSuccess(c, 200, metrics)` en Go.
   http.get(`${API}/config/catalog`, () => ok(catalogo)),
   http.get(`${API}/config/blocks`, () => ok(bloques)),
+  /* **El repertorio, y hasta el 2026-09-30 no tenía handler.** MSW avisaba
+     «intercepted a request without a matching request handler» en la consola del
+     navegador y la aplicación seguía andando: `usePlots` caía a lista vacía y
+     `plotProblemOf` devuelve `undefined` con el repertorio vacío —lo dice su
+     propia guardia— así que **ningún mínimo ni tope se ejercitaba en `dev:mock`**.
+
+     Se sirve el JSON GENERADO y no una copia a mano: lo emite `tools/gen-plots.py`
+     junto con los otros dos, de modo que las 49 filas de acá son las mismas que
+     las del servicio. Una tercera tabla escrita aparte es cómo se desincroniza. */
+  http.get(`${API}/config/plots`, () => ok(repertorio)),
   http.get(`${API}/config/tabs/:tabId`, ({ params }) => {
     const d = estado.detalles.get(LAYOUT_PUB)
     const t = d?.tabs.find((x) => x.tab.id === params['tabId'])
     if (t === undefined) return mal('tab not found', 404)
+    // **Este `map` copia campo por campo, y por eso silencia los nuevos.**
+    // `chart` y `key` existían en `datos.ts` y no llegaban a la consola porque
+    // acá no estaban escritos: el gráfico apilado se dibujaba como dos líneas,
+    // que es un dibujo equivocado y no un panel roto. Lo encontró abrirlo.
+    //
+    // Se deja el copiado explícito a propósito —un `...p` haría que el mock
+    // devolviera campos que el cable no declara, que es la otra forma de
+    // mentir— pero queda anotado: **un campo nuevo del cable se agrega acá
+    // también**, y el síntoma de olvidarlo es que se vea bien.
     return ok({
       tab: {
         id: t.tab.id,
         name: t.tab.name,
+        key: t.tab.key,
         operational_question: t.tab.operational_question,
         sort_order: t.tab.sort_order,
       },
       panels: t.panels.map((p) => ({
         id: p.id, metric_id: p.metric_id, type: p.type,
         col_start: p.col_start, col_span: p.col_span, row_span: p.row_span,
+        chart: p.chart, note: p.note,
+        // **`options` FALTABA, y con él todos los params de layout** · agregado
+        // el 2026-09-29. El aviso de arriba acertó dos veces: la primera con
+        // `chart`, y ésta. Mientras no estuvo, **ningún panel del modo mock
+        // recibió un solo param** —ni `meter`, ni `comparative`, ni `cut`, ni
+        // `order`—, así que todo lo que un param cambia se veía con el default
+        // y parecía correcto.
+        //
+        // Lo destapó el BULLET, que sin `maximum` cae a «sin máximo declarado»:
+        // un panel que dice por qué no dibuja es lo único que hace ruido cuando
+        // el param se pierde. Los demás params se pierden en silencio.
+        //
+        // El servicio real lo manda siempre, vacío incluido — medido contra
+        // `de881e1`: el panel de prosa trae `"options": {}`.
+        options: p.options,
       })),
     })
   }),
@@ -204,34 +435,7 @@ export const worker = setupWorker(
     // **Uno de cada cuatro llega degradado y uno bloqueado.** Con todo en
     // DISPONIBLE, los siete estados de §8 no se ven nunca — que es justamente lo
     // que este modo existe para poder mirar.
-    return ok(
-      Object.fromEntries(
-        panel_ids.map((id, i) => [
-          id,
-          i % 4 === 3
-            ? { status: 'BLOCKED', reason: 'Su fuente tiene 31 h y se refresca cada hora', unlocks_with: 'Esperar la próxima materialización' }
-            : {
-                status: i % 4 === 2 ? 'DEGRADED' : 'AVAILABLE',
-                governance: {
-                  base: '312 SKU críticos sobre 18.240 activos',
-                  layer: 'GOLD',
-                  source: 'ERP',
-                  freshness: new Date().toISOString(),
-                  catalog_version: 4,
-                },
-                // **El valor tiene que corresponder a la FORMA de su métrica.**
-                // Hasta el 2026-09-16 esto emitía `{ valor, delta }` para todos:
-                // ni la forma del cable ni la del contrato. El adaptador lo
-                // rechazaba con razón —«El valor no declara su forma»— y **la
-                // consola del modo mock se veía rota**, que es justo lo que este
-                // modo existe para evitar. Se descubrió abriéndolo en el
-                // navegador por primera vez.
-                value: valorPara(formaDe(id), i),
-                ...(i % 4 === 2 ? { reason: 'Stale data: last materialization is older than 3 days' } : {}),
-              },
-        ]),
-      ),
-    )
+    return ok(Object.fromEntries(panel_ids.map((id, i) => [id, payloadDelMock(id, i)])))
   }),
   http.put(`${API}/config/me/preferences`, () => ok({ theme: 'dark' })),
 
@@ -246,6 +450,15 @@ export const worker = setupWorker(
    *  **Manda `event: data` desde el 2026-09-22** · F3.6 se destrabó con
    *  `55e8419`, que agregó la BASE, la familia, la capa, la fuente, la versión
    *  del catálogo y las dos frescuras. */
+  // **El selector del admin** · 2026-10-06. La forma es la medida en QA ese
+  // día; los nombres de tenant son los del mock, para que el defecto —el agente
+  // del tenant del usuario— caiga en uno que exista acá.
+  http.get(`${API}/chat/agents`, () =>
+    ok([
+      { id: '0b7e1d2c-0000-4000-8000-000000000001', name: 'Under Armour México', target_role: 'Planner', tenant_id: contexto.tenant.id, tenant_name: contexto.tenant.name },
+      { id: '0b7e1d2c-0000-4000-8000-000000000002', name: 'Terpel Lubricantes ', target_role: 'admin', tenant_id: '0b7e1d2c-0000-4000-8000-0000000000aa', tenant_name: 'Lobueno Analytics Terpel' },
+    ]),
+  ),
   /** El historial de hilos · F3.7. **Con los DOS ids**, que es lo que hay que
    *  poder mirar: el uuid nombra la fila y el entero continúa la conversación.
    *  Uno de los tres va sin contexto de panel, como los hilos viejos. */
@@ -287,8 +500,73 @@ export const worker = setupWorker(
     { question: '¿Cómo se reparte por canal?', intent: 'breakdown' },
   ])),
 
+  /** ── C2 · EL DRILL-DOWN · F3.9 · §PEN:C2 ───────────────────────────────
+   *
+   *  **Las dos rutas van acá para poder MIRAR la hoja**, que es la mitad de la
+   *  regla que los ocho defectos del 2026-09-16/17 dejaron escrita: ninguno lo
+   *  encontró una prueba, los ocho salieron de usar la aplicación.
+   *
+   *  **`supported` sale de la FORMA de la métrica, no de un índice.** En el
+   *  servicio real el reparto medido es 7 de 15, y los siete que soportan son los
+   *  escalares —ventas, inversión, retorno, órdenes, visitas, unidades— mientras
+   *  los ocho que no son la prosa, la matriz, el flujo y las series. Acá se
+   *  reproduce con esa misma regla, así que en pantalla se ve lo que importa:
+   *  **unos paneles con «Ver detalle» y otros sin él**, que es la regla del CTA
+   *  muerto en acción. Un mock que lo pintara en los quince escondería justo eso. */
+  http.get(`${API}/config/panels/:panelId/drilldown/dimensions`, ({ params }) => {
+    const id = String(params['panelId'])
+    const dims = dimensionesDe(id)
+    return ok({
+      panel_id: id,
+      metric_key: claveDe(id),
+      supported: dims.length > 0,
+      // `[]` y no `null`: el servicio inicializa el DTO con `[]string{}`.
+      dimensions: dims,
+    })
+  }),
+
+  /** La desagregación · **con las formas MEDIDAS, no con tres filas cómodas**.
+   *
+   *  Lo medido el 2026-09-30 contra el servicio, que es lo que hay que poder ver:
+   *
+   *  · `platform` → 37 ítems, **29 de ellos en cero**, y `row_count: 39`.
+   *  · `day` → 30 ítems, `row_count: 30`, ordenados por etiqueta.
+   *  · `week` → 5 ítems, el primer balde empieza en el mes anterior.
+   *
+   *  **Los 29 ceros están a propósito** y no son relleno: con dato real la hoja
+   *  dibuja 37 barras de las que 29 miden cero, y eso hay que verlo en vez de
+   *  deducirlo. Y **el 39 contra 37 es la trampa del cable**: `row_count` es lo
+   *  que Snowflake devolvió, no los ítems que sobrevivieron a la transformación. */
+  http.post(`${API}/config/panels/:panelId/drilldown`, async ({ request, params }) => {
+    const id = String(params['panelId'])
+    const { dimension, period } = (await request.json()) as { dimension: string; period: string }
+    const dims = dimensionesDe(id)
+    await delay(500)
+    if (dims.length === 0) return mal('la métrica no soporta drill-down', 422)
+    if (!dims.includes(dimension)) {
+      return mal(`dimensión inválida para esta métrica: soportadas [${dims.join(' ')}]`, 400)
+    }
+    const items = itemsDe(dimension)
+    return ok({
+      panel_id: id,
+      metric_key: claveDe(id),
+      // **En inglés**, igual que lo mide el servicio: los paneles del dashboard
+      // por defecto apuntan a las métricas de la semilla. Escribirlo en español
+      // acá escondería el pedido que la hoja declara.
+      metric_name: 'Sales',
+      dimension,
+      period,
+      // Cableado del lado del servicio, igual en las tres dimensiones.
+      shape: 'categorical',
+      value: { shape: 'categorical', items },
+      // **Dos más que los ítems en `platform`**, que es lo medido: 39 contra 37.
+      row_count: dimension === 'platform' ? items.length + 2 : items.length,
+      queried_at: new Date().toISOString(),
+    })
+  }),
+
   http.post(`${API}/config/chat`, async ({ request }) => {
-    const { question } = (await request.json()) as { question: string }
+    const { question, tab_context } = (await request.json()) as { question: string; tab_context?: unknown }
 
     const trama = (evento: string, datos: unknown) =>
       `event: ${evento}\ndata: ${JSON.stringify(datos)}\n\n`
@@ -297,6 +575,13 @@ export const worker = setupWorker(
       'Cayó 12% contra el mes anterior. ',
       'El quiebre se concentra en 312 SKU de la familia de inventario, ',
       'todos con cobertura menor a siete días.\n\n',
+      // Una tabla y recomendaciones · 2026-10-07. Es lo que el agente escribe
+      // en Snowflake Intelligence, y hasta hoy la tabla se unía en un párrafo.
+      '| Canal | Ventas | Variación |\n|---|---:|---:|\n',
+      '| Web | $82,300 | **-14%** |\n| App | $46,100 | -8% |\n\n',
+      '### Recomendaciones\n',
+      '1. Reponer los 312 SKU antes del fin de semana.\n',
+      '2. Pausar la pauta de los productos sin cobertura.\n\n',
       '### Límite declarado\n',
       'No cubre las tiendas sin lectura de inventario en el período.',
     ]
@@ -340,6 +625,49 @@ export const worker = setupWorker(
               }),
             ),
           )
+          // **El gráfico del agente, como lo manda `7b717aa`** · 2026-10-07.
+          // `response.chart` sale como `raw` con el spec Vega-Lite adentro, y
+          // en la PESTAÑA la procedencia viaja sin familia: es lo que hace
+          // `provenanceFromContext`, y por eso ahí se ve declarado.
+          controller.enqueue(
+            encoder.encode(
+              trama('data', {
+                shape: 'raw',
+                data: {
+                  shape: 'chart',
+                  chart_spec: JSON.stringify({
+                    title: 'Ventas diarias · últimas cuatro semanas',
+                    mark: { type: 'line', color: '#E11A2B' },
+                    encoding: {
+                      x: { field: 'SEMANA', type: 'temporal' },
+                      y: { field: 'VENTAS', type: 'quantitative' },
+                    },
+                    data: {
+                      values: [
+                        { SEMANA: '2026-09-01', VENTAS: '146200' },
+                        { SEMANA: '2026-09-08', VENTAS: '141800' },
+                        { SEMANA: '2026-09-15', VENTAS: '133900' },
+                        { SEMANA: '2026-09-22', VENTAS: '128400' },
+                      ],
+                    },
+                  }),
+                },
+                provenance: {
+                  source: 'cortex_agent', tool: 'data_to_chart',
+                  metric_key: tab_context === undefined ? 'ventas_dia' : '',
+                  period: '2026-09', sql_available: true,
+                  base: tab_context === undefined ? 'Pedidos completados' : '',
+                  base_source: tab_context === undefined ? 'catalog' : '',
+                  family: tab_context === undefined ? 'demand' : '',
+                  layer: tab_context === undefined ? 'GOLD' : '',
+                  source_system: tab_context === undefined ? 'ERP' : '',
+                  catalog_version: 4,
+                  freshness: '',
+                  queried_at: new Date().toISOString(),
+                },
+              }),
+            ),
+          )
           controller.enqueue(
             encoder.encode(
               trama('sql', {
@@ -358,26 +686,104 @@ export const worker = setupWorker(
 
   /* ── Admin y builder ────────────────────────────────────────────────────── */
   http.get(`${API}/admin/tenants`, () => ok(tenants)),
-  http.get(`${API}/admin/tenants/:id/catalog`, () => ok(catalogo)),
-  http.get(`${API}/admin/tenants/:id/layouts`, () => ok(estado.layouts)),
+  /* ── EL CLIENTE EN ALTA DEVUELVE VACÍO EN SUS DOS RUTAS · §PEN:A2, F5.20 ───
+   *
+   * **Las dos, y por eso el `if` está acá y no en el componente.** El estado de
+   * alta se DERIVA de no tener roles ni catálogo: si el catálogo siguiera
+   * respondiendo las treinta métricas de arriba, el cliente daría «Activo» y el
+   * frame que se quiere mirar no se podría mirar. Es la misma razón por la que
+   * hay un tercer cliente: contra el servicio este estado no existe. */
+  http.get(`${API}/admin/tenants/:id/catalog`, ({ params }) =>
+    ok(params['id'] === TENANT_EN_ALTA ? [] : catalogo),
+  ),
+  /** **Y tampoco tiene layout** · lo encontró MIRAR la pantalla: con los layouts
+   *  compartidos, la cabecera del cliente en alta decía «0 rol(es) · 3 pestaña(s)
+   *  · 24 paneles», o sea que un cliente sin nada mostraba las pestañas de otro.
+   *  Un cliente en alta no publicó todavía; ése es el punto del estado. */
+  http.get(`${API}/admin/tenants/:id/layouts`, ({ params }) =>
+    ok(params['id'] === TENANT_EN_ALTA ? [] : estado.layouts),
+  ),
 
+  /** **Igual que el servicio desde el 2026-10-07**: `dashboard_id` omitido es
+   *  el por defecto, y el borrador nace VACÍO —la copia la hace el front con un
+   *  `PUT`, ver `crearBorrador`—. Antes este mock copiaba solo y ponía todo en
+   *  `DASH_A`, que escondía el defecto de no mandar el dashboard. */
   http.post(`${API}/admin/tenants/:id/layouts`, async ({ request }) => {
-    const { version_id } = (await request.json()) as { version_id?: string }
+    const { version_id, dashboard_id } = (await request.json()) as { version_id?: string; dashboard_id?: string }
     const nuevo = {
-      id: crypto.randomUUID(), tenant_id: tenants[0]!.id, status: 'draft',
-      version_id: `${version_id ?? 'v'}-copia`, published_at: null,
+      id: crypto.randomUUID(), tenant_id: tenants[0]!.id,
+      dashboard_id: dashboard_id ?? estado.dashboards.find((d) => d.is_default)?.id ?? DASH_A,
+      status: 'draft' as string,
+      version_id: version_id ?? '', published_at: null as string | null,
     }
     estado.layouts = [nuevo, ...estado.layouts]
-    // Duplicar copia el contenido de la versión de origen, que es lo que hace
-    // que «duplicar para editar» sirva de algo.
-    const origen = estado.detalles.get(LAYOUT_PUB)
-    estado.detalles.set(nuevo.id, { layout: nuevo, tabs: structuredClone(origen?.tabs ?? []) })
+    estado.detalles.set(nuevo.id, { layout: nuevo, tabs: [] })
+    return HttpResponse.json({ success: true, data: nuevo }, { status: 201 })
+  }),
+
+  http.get(`${API}/admin/tenants/:id/dashboards`, ({ params }) =>
+    ok(params['id'] === TENANT_EN_ALTA ? [] : estado.dashboards),
+  ),
+
+  http.post(`${API}/admin/tenants/:id/dashboards`, async ({ request }) => {
+    const { name, is_default } = (await request.json()) as { name: string; is_default?: boolean }
+    const nuevo = {
+      id: crypto.randomUUID(), tenant_id: tenants[0]!.id, name,
+      slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), is_default: is_default === true, history_months: 12,
+    }
+    if (nuevo.is_default) estado.dashboards = estado.dashboards.map((d) => ({ ...d, is_default: false }))
+    estado.dashboards = [...estado.dashboards, nuevo]
     return HttpResponse.json({ success: true, data: nuevo }, { status: 201 })
   }),
 
   http.get(`${API}/admin/layouts/:id`, ({ params }) => {
     const d = estado.detalles.get(params['id'] as string)
     return d === undefined ? mal('layout not found', 404) : ok(d)
+  }),
+
+  /* ── B6 · el historial y la reversión · §PEN:B6 ──────────────────────────
+   *
+   * **Es la ruta de `dashboards` y no la de `layouts`**, igual que en el
+   * servicio: aquella filtra por layout y devuelve una fila sola, porque
+   * revertir COPIA a un layout nuevo y cada layout se publica una vez. Sin este
+   * handler B6 en modo mock pintaba «no se pudo traer el historial», que es un
+   * fallo nuestro leído como uno del servicio.
+   */
+  http.get(`${API}/admin/dashboards/:id/publications`, ({ params }) =>
+    ok(estado.publicaciones.filter((p) => p.dashboard_id === params['id'])),
+  ),
+
+  /** Revertir **publica una versión nueva**, no reactiva la archivada. El estado
+   *  en memoria hace lo mismo: el destino pasa a `published`, el que estaba se
+   *  archiva, y queda una fila más con `action: 'rollback'`. Sin eso el botón se
+   *  apretaría y la lista no cambiaría, que es el defecto silencioso que el hook
+   *  describe. */
+  http.post(`${API}/admin/layouts/:id/revert`, async ({ params, request }) => {
+    const desde = params['id'] as string
+    const { to_layout_id } = (await request.json()) as { to_layout_id?: string }
+    const destino = estado.layouts.find((l) => l.id === to_layout_id)
+    if (destino === undefined) return mal('layout not found', 404)
+    if (destino.id === desde) return mal('no se puede revertir a sí mismo', 409)
+    estado.layouts = estado.layouts.map((l) =>
+      l.id === desde
+        ? { ...l, status: 'archived' }
+        : l.id === destino.id
+          ? { ...l, status: 'published' }
+          : l,
+    )
+    estado.publicaciones = [
+      {
+        ...estado.publicaciones[0]!,
+        id: crypto.randomUUID(),
+        layout_id: destino.id,
+        version_id: `rollback-${destino.version_id}`,
+        action: 'rollback',
+        previous_layout_id: desde,
+        created_at: new Date().toISOString(),
+      },
+      ...estado.publicaciones,
+    ]
+    return ok(estado.layouts.find((l) => l.id === destino.id))
   }),
 
   http.put(`${API}/admin/layouts/:id`, async ({ params, request }) => {
@@ -388,7 +794,7 @@ export const worker = setupWorker(
     if (layout?.status === 'published') return mal('layout is published', 409)
 
     const cuerpo = (await request.json()) as {
-      tabs: { id?: string; name: string; operational_question: string; sort_order: number; role_ids?: string[]; panels?: unknown[] }[]
+      tabs: { id?: string; name: string; key?: string; operational_question: string; sort_order: number; role_ids?: string[]; panels?: unknown[] }[]
     }
     await delay(300)
     const d = {
@@ -400,16 +806,35 @@ export const worker = setupWorker(
           id: t.id ?? crypto.randomUUID(),
           layout_version_id: id,
           name: t.name,
+          // **La `key` se SLUGIFICA, y omitirla la deriva del nombre.** Medido
+          // el 2026-09-28 contra `f70cec2`: `"  MI-Clave  "` se guarda como
+          // `mi-clave`, y `"Visión General"` sin key queda `vision-general` —
+          // los acentos se van. Su documento decía sólo «recortado».
+          //
+          // **El mock lo replica en vez de guardar lo que le llegó**, porque un
+          // mock que devuelve el valor tal cual esconde justo la transformación:
+          // el builder mandaría `"Visión General"` y vería `"Visión General"`,
+          // y el día que se compare contra el real no coincidiría.
+          key: slug(t.key ?? t.name),
           operational_question: t.operational_question,
           sort_order: t.sort_order,
           role_ids: t.role_ids ?? [],
         },
         panels: (t.panels ?? []).map((p) => {
-          const q = p as { id?: string; metric_id: string; type: string; col_start: number; col_span: number; row_span: number; options?: unknown }
+          const q = p as { id?: string; metric_id: string; type: string; col_start: number; col_span: number; row_span: number; options?: unknown; chart?: string; note?: string }
           return {
             id: q.id ?? crypto.randomUUID(), tab_id: t.id ?? '', metric_id: q.metric_id,
             type: q.type, col_start: q.col_start, col_span: q.col_span, row_span: q.row_span,
-            ...(q.options === undefined ? {} : { options: q.options }),
+            // **Recortado y en minúsculas**, medido: `"  Waterfall  "` →
+            // `waterfall`. Ausente queda cadena vacía, que es el gráfico por
+            // defecto del bloque y lo que salen los doce publicados.
+            chart: (q.chart ?? '').trim().toLowerCase(),
+            note: (q.note ?? '').trim(),
+            // **Siempre va, vacío si no hay** · alineado el 2026-09-29 con lo
+            // medido: el servicio manda `"options": {}` en el panel de prosa,
+            // no omite la clave. El spread condicional de antes hacía que el
+            // tipo saliera opcional acá y requerido en `datos.ts`.
+            options: (q.options ?? {}) as Record<string, unknown>,
           }
         }),
       })),
@@ -538,7 +963,35 @@ export const worker = setupWorker(
     },
   ])),
 
-  http.get(`${API}/admin/tenants/:id/agents`, () => ok([
+  /** **El historial arranca como QA el 2026-10-07**: sólo septiembre y octubre,
+   *  que es lo único que el scheduler calcula —mes en curso y el anterior—. Lo
+   *  demás hay que pedirlo desde A5, que es lo que este mock deja recorrer. */
+  http.get(`${API}/admin/materialize/runs`, () => ok([...CORRIDAS].reverse())),
+
+  /** **202 y la fila llega después**, como en el servicio: medido contra
+   *  `7b717aa` el 2026-10-07, aparece a los ~5 s en `running` y termina a los
+   *  ~8 s. Acá es más corto para mirarlo sin esperar, pero en el mismo orden. */
+  http.post(`${API}/admin/tenants/:id/materialize`, async ({ request, params }) => {
+    const { periods } = (await request.json()) as { periods?: string[] }
+    const pedidos = periods ?? []
+    pedidos.forEach((periodo, i) => {
+      const fila = corrida(String(params.id), periodo, 'manual')
+      setTimeout(() => CORRIDAS.push(fila), 1500 + i * 1200)
+      setTimeout(() => terminar(fila), 3000 + i * 1200)
+    })
+    return HttpResponse.json(
+      { success: true, data: { started: true, trigger: 'manual', tenant_id: params.id, role: 'admin', periods: pedidos } },
+      { status: 202 },
+    )
+  }),
+
+  /** **El cliente en alta tampoco tiene agente**, y que igual salga `BLOQUEADO`
+   *  es lo que hay que poder mirar: la condición del bloqueo son los ROLES, no
+   *  los agentes, y con los dos en cero las dos lecturas se ven idénticas. Para
+   *  distinguirlas a mano, cambiá este `[]` por la lista de abajo: el bloque
+   *  tiene que seguir diciendo `BLOQUEADO`. */
+  http.get(`${API}/admin/tenants/:id/agents`, ({ params }) =>
+    params['id'] === TENANT_EN_ALTA ? ok([]) : ok([
     {
       id: 'ag-1', tenant_id: 't-1', name: 'Agente UA MX', target_role: 'Planner',
       snowflake_db: 'DB_BT_UA', snowflake_schema: 'BT_UA_MART_ANALYTICS',
@@ -557,9 +1010,10 @@ export const worker = setupWorker(
     },
   ])),
 
-  http.get(`${API}/admin/tenants/:id/roles/composition`, async () => {
+  http.get(`${API}/admin/tenants/:id/roles/composition`, async ({ params }) => {
     await delay(200)
-    return ok(estado.roles)
+    // Sin roles, que es lo que pone al cliente en alta · ver el catálogo arriba.
+    return ok(params['id'] === TENANT_EN_ALTA ? [] : estado.roles)
   }),
   http.post(`${API}/admin/tenants/:id/roles`, async ({ request }) => {
     const r = (await request.json()) as { name: string; tab_ids?: string[]; hidden_metric_ids?: string[] }
@@ -592,11 +1046,25 @@ export const worker = setupWorker(
     return new HttpResponse(null, { status: 204 })
   }),
 
+  /** **La forma medida contra `7b717aa` el 2026-10-07**, no la del fork.
+   *
+   *  Hasta ese día leía `roleId` —el servicio pide `role_id` y da 400 sin él—
+   *  y devolvía pestañas envueltas en `{tab, panels}` con `without_payloads`,
+   *  que es la forma de nuestro fork de septiembre. **La vista previa del modo
+   *  mock no podía funcionar con el cliente actual**, y nadie lo notó porque B5
+   *  no dibujaba nada que se viera roto.
+   *
+   *  Con `include=payloads` arma el dato con `payloadDelMock`, el mismo del
+   *  batch: en el servicio los dos salen de `batchForRole`. */
   http.get(`${API}/admin/layouts/:id/preview`, async ({ params, request }) => {
     await delay(300)
-    const rolId = new URL(request.url).searchParams.get('roleId') ?? ''
+    const url = new URL(request.url)
+    const rolId = url.searchParams.get('role_id') ?? ''
+    if (rolId === '') return mal('role_id es requerido y debe ser un uuid', 400)
+    const include = url.searchParams.get('include')
+    if (include !== null && include !== 'payloads') return mal('include solo admite el valor payloads', 400)
     const rol = estado.roles.find((r) => r.id === rolId)
-    if (rol === undefined) return mal('role not found', 404)
+    if (rol === undefined) return mal('el rol no existe o no pertenece al tenant del layout', 404)
     const d = estado.detalles.get(params['id'] as string)
 
     // **El recorte lo hace el servidor** · acá se simula con las mismas reglas:
@@ -604,24 +1072,32 @@ export const worker = setupWorker(
     const tabs = (d?.tabs ?? [])
       .filter((t) => rol.tab_ids.length === 0 || rol.tab_ids.includes(t.tab.id))
       .map((t) => ({
-        tab: {
-          id: t.tab.id, name: t.tab.name,
-          operational_question: t.tab.operational_question, sort_order: t.tab.sort_order,
-        },
+        id: t.tab.id,
+        name: t.tab.name,
+        key: t.tab.id,
+        operational_question: t.tab.operational_question,
+        sort_order: t.tab.sort_order,
+        icon: '',
+        chat_suggestions: [],
         panels: t.panels
           .filter((p) => !rol.hidden_metric_ids.includes(p.metric_id))
           .map((p) => ({
             id: p.id, metric_id: p.metric_id, type: p.type,
             col_start: p.col_start, col_span: p.col_span, row_span: p.row_span,
+            options: p.options ?? {}, note: '', chart: p.chart ?? '',
           })),
       }))
 
+    const ids = tabs.flatMap((t) => t.panels.map((p) => p.id))
     return ok({
       layout_id: params['id'],
-      role_id: rolId,
-      role_name: rol.name,
+      dashboard_id: d?.layout?.dashboard_id ?? '',
+      status: d?.layout?.status ?? 'draft',
+      role: { id: rol.id, name: rol.name },
       tabs,
-      without_payloads: true,
+      ...(include === 'payloads'
+        ? { period: '2026-09', payloads: Object.fromEntries(ids.map((id, i) => [id, payloadDelMock(id, i)])) }
+        : {}),
     })
   }),
 )

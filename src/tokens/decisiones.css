@@ -1,0 +1,64 @@
+/* ESCRITO A MANO. Tokens que una DECISIÓN HUMANA agregó y el `.pen` todavía no
+ * declara · 2026-10-06.
+ *
+ * `tokens.css` lo genera `gen:tokens` desde el `.pen` y `token-drift` lo compara
+ * byte a byte, así que un token nuevo no se puede escribir ahí: se perdería en la
+ * próxima corrida. Y el agente no modifica el `.pen`. Este archivo es el lugar
+ * intermedio, y su forma es la de una deuda declarada: **cada token de acá es una
+ * propuesta de spec para diseño**, y el día que el `.pen` lo emita se borra de
+ * acá y `token-drift` pasa a cuidarlo.
+ *
+ * La decisión y su razón están en
+ * `docs/AUDITORIA-2026-10-06-builder-contexto-y-canvas.md` §5 · D4.
+ *
+ * ── `peligro` · lo destructivo ───────────────────────────────────────────────
+ *
+ * **Quitar una pestaña o un panel se pintaba con `acc`**, el mismo naranja del
+ * CTA principal: la acción que borra tenía el color de «adelante». La regla de
+ * `design.md` prohíbe el rojo **semántico en deltas** —un número no es bueno ni
+ * malo por su color— y eso no cambia: este rojo es de ACCIÓN, nunca de dato.
+ * Ni una serie, ni una celda, ni un delta lo usan.
+ *
+ * Carmesí y no rojo anaranjado, para que no se confunda con `acc`. Medido con
+ * `contraste`: sobre panel da 5.96 en oscuro y 5.90 en claro.
+ */
+
+@theme static {
+  --color-peligro: #f4676a;
+
+  /* ── `consulta` · los datos que no son una métrica · 2026-10-09 ─────────────
+   *
+   * El agente grafica consultas libres —«inversión por plataforma»— que no
+   * son una métrica del catálogo y por eso no tienen familia. La regla dice
+   * que sin familia no hay color, y se declaraban sin dibujarse. **Decisión
+   * humana del 2026-10-09**: ver la data pesa más que el tono, así que se
+   * dibujan en NEUTRO mientras diseño decide — §14 de
+   * `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md`.
+   *
+   * **Sin un hex**: sale de `ink` mezclado contra `panel`, así que invierte con
+   * el tema sin un segundo bloque. Los `w*` no sirven —son veladuras
+   * translúcidas— y `dim` quedaba pegado a uno de los escalones: dos series del
+   * mismo gris.
+   *
+   * **Contraste medido contra `panel`, mezclando en oklab** como lo hace el
+   * navegador · el 1 es el trazo principal, como en las familias del `.pen`:
+   *
+   *   escalón       1      3      0      2      4
+   *   oscuro     14.89   9.76   6.78   4.97   3.80
+   *   claro      17.38  10.90   6.87   4.76   3.57
+   *
+   * Todos sobre 3:1, el mínimo para un trazo de gráfico, y separados entre sí.
+   * `contraste` no mide colores de datos; estos números son de un cálculo
+   * aparte, del 2026-10-09. */
+  --color-fam-consulta-0: color-mix(in oklab, var(--color-ink) 68%, var(--color-panel));
+  --color-fam-consulta-1: var(--color-ink);
+  --color-fam-consulta-2: color-mix(in oklab, var(--color-ink) 57%, var(--color-panel));
+  --color-fam-consulta-3: color-mix(in oklab, var(--color-ink) 82%, var(--color-panel));
+  --color-fam-consulta-4: color-mix(in oklab, var(--color-ink) 48%, var(--color-panel));
+}
+
+/* Mismo selector y misma razón que el bloque claro de `tokens.css`: sin
+   `@layer`, gana sobre el `@layer theme` que emite `@theme`. */
+:root[data-theme='light'] {
+  --color-peligro: #c0262d;
+}

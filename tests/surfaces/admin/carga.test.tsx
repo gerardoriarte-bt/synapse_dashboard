@@ -25,7 +25,10 @@ import { ok } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
 
 const API = '*/api/v1'
-const tenants = [{ id: 't-1', name: 'Under Armour México' }]
+/** `created_at` va porque A2 lo pinta en `ALTA` y el cable lo declara
+ *  obligatorio · F5.20. Acá había dos campos de los trece que la ruta
+ *  devuelve, escritos cuando devolvía dos. */
+const tenants = [{ id: 't-1', name: 'Under Armour México', label: '', created_at: '2026-09-22T09:18:45Z' }]
 
 /** Nunca contesta · deja la pantalla en carga. */
 const colgada = async () => {
@@ -53,9 +56,10 @@ describe('A1 · la lista de clientes mientras carga', () => {
     server.use(http.get(`${API}/admin/tenants`, colgada))
     montar()
 
-    const tabla = await screen.findByRole('table')
-    expect(within(tabla).getByText('Cliente')).toBeInTheDocument()
-    expect(within(tabla).getByText('Acción')).toBeInTheDocument()
+    // **Desde el 2026-10-09 la lista es una columna elegible y no una tabla**
+    // —va al lado de la ficha—. Lo que no depende de los datos es la búsqueda.
+    const lista = await screen.findByRole('region', { name: 'Clientes' })
+    expect(within(lista).getByRole('searchbox', { name: 'Buscar cliente' })).toBeInTheDocument()
   })
 
   it('el conteo dice CARGANDO, no una cifra', async () => {
@@ -71,10 +75,12 @@ describe('A1 · la lista de clientes mientras carga', () => {
     server.use(http.get(`${API}/admin/tenants`, colgada))
     const { container } = montar()
 
-    const tabla = await screen.findByRole('table')
-    expect(tabla).toHaveAttribute('aria-busy', 'true')
+    // **Desde el 2026-10-09 la lista es una columna elegible** —va al lado de la
+    // ficha—, así que el esqueleto son filas de lista y no de tabla.
+    const lista = await screen.findByRole('region', { name: 'Clientes' })
+    expect(lista).toHaveAttribute('aria-busy', 'true')
     // Cuatro, como el `.pen`.
-    expect(tabla.querySelectorAll('tbody tr')).toHaveLength(4)
+    expect(lista.querySelectorAll('li[aria-hidden="true"]')).toHaveLength(4)
     // Ni animación ni ruleta: la forma alcanza.
     expect(container.querySelector('[class*="animate"]')).toBeNull()
     expect(container.textContent).not.toMatch(/cargando…|espera/i)
@@ -87,10 +93,10 @@ describe('A1 · la lista de clientes mientras carga', () => {
     // lo encontró una mutación que las igualaba y sobrevivía.
     server.use(http.get(`${API}/admin/tenants`, colgada))
     const { container } = montar()
-    await screen.findByRole('table')
+    await screen.findByRole('region', { name: 'Clientes' })
 
     const anchos = new Set(
-      Array.from(container.querySelectorAll('tbody td > div')).map(
+      Array.from(container.querySelectorAll('li[aria-hidden="true"] > div')).map(
         (d) => Array.from(d.classList).find((c) => c.startsWith('w-')) ?? '',
       ),
     )
@@ -103,22 +109,22 @@ describe('A1 · la lista de clientes mientras carga', () => {
     server.use(http.get(`${API}/admin/tenants`, colgada))
     montar()
 
-    await screen.findByRole('table')
-    expect(screen.queryByText(/No hay clientes todavía/)).toBeNull()
+    await screen.findByRole('region', { name: 'Clientes' })
+    expect(screen.queryByText(/Ningún cliente dado de alta/)).toBeNull()
   })
 
   it('al llegar los datos, el esqueleto se va', async () => {
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     montar()
 
-    expect(await screen.findByText('Under Armour México')).toBeInTheDocument()
-    expect(screen.getByRole('table')).toHaveAttribute('aria-busy', 'false')
+    expect(await screen.findByRole('button', { name: /^Under Armour México · / })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Clientes' })).toHaveAttribute('aria-busy', 'false')
     expect(screen.getByText('Clientes · 1')).toBeInTheDocument()
   })
 })
 
 describe('A4 · el catálogo mientras carga', () => {
-  it('conserva el filtro y la declaración de lo que falta', async () => {
+  it('conserva el filtro mientras carga', async () => {
     // **Reemplazar la pantalla por «Cargando…» tira información que ya estaba
     // lista.** El filtro, el encabezado y los cuatro campos que §7.3 pide y el
     // cable no trae no dependen de los datos.
@@ -127,11 +133,14 @@ describe('A4 · el catálogo mientras carga', () => {
       http.get(`${API}/admin/tenants/:id/catalog`, colgada),
     )
     const { container } = montar()
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
     await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
 
     expect(await screen.findByLabelText('Capa')).toBeInTheDocument()
-    expect(container.textContent).toContain('Faltan 3 datos')
+    // **Desde el 2026-10-06 lo que falta no se pinta** · decisión humana sobre la
+    // auditoría del builder: «si no suman para el uso, quitar». La lista vive en
+    // el comentario del componente. Esta prueba fija que no vuelva a la pantalla.
+    expect(container.textContent).not.toContain('va a crecer')
 
     const tabla = screen.getByRole('table')
     expect(tabla).toHaveAttribute('aria-busy', 'true')
@@ -147,7 +156,7 @@ describe('A4 · el catálogo mientras carga', () => {
       http.get(`${API}/admin/tenants/:id/catalog`, colgada),
     )
     const { container } = montar()
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
     await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
 
     await screen.findByRole('table')
@@ -160,7 +169,7 @@ describe('A4 · el catálogo mientras carga', () => {
       http.get(`${API}/admin/tenants/:id/catalog`, colgada),
     )
     montar()
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
     await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
 
     await screen.findByRole('table')
@@ -179,8 +188,8 @@ describe('A2 · los roles mientras cargan', () => {
       http.get(`${API}/admin/tenants/:id/roles/composition`, colgada),
     )
     montar()
-    await screen.findByText('Under Armour México')
-    await userEvent.click(screen.getByRole('button', { name: 'Ficha de cliente' }))
+    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await userEvent.click(screen.getByRole('button', { name: /^Under Armour México · / }))
 
     // El rótulo de la sección no depende de los datos y está desde el
     // principio; el resumen sí, y mientras carga dice CARGANDO.
@@ -193,7 +202,27 @@ describe('A2 · los roles mientras cargan', () => {
     // «paneles» aparece con razón en la lista de carencias, y prohibirla entera
     // hacía fallar esta prueba por el lugar equivocado.
     expect(screen.queryByText(/\d+ rol\(es\) ·/)).toBeNull()
-    expect(screen.queryByText(/no tiene roles definidos todavía/i)).toBeNull()
+    // **Y el vacío de ALTA tampoco**, que es la otra afirmación prematura: con
+    // la vuelta en vuelo «cero roles» es lo que todavía no se sabe, no lo que
+    // hay · §PEN:A2, F5.20.
+    //
+    // **Acá el ejemplo negativo había dejado de serlo dos veces**, y la segunda
+    // la produjo el arreglo de la primera:
+    //
+    // 1. decía `/no tiene roles definidos todavía/i`, una redacción que esta
+    //    pantalla nunca usó —vive en el BUILDER—, así que no podía fallar. Lo
+    //    encontró QA por mutación el 2026-09-30;
+    // 2. se retargeteó al literal nuestro, y ese mismo día la auditoría lo
+    //    reemplazó por el del `.pen`. Una aserción negativa apuntada a un texto
+    //    que ya no existe es exactamente el mismo defecto con otra cara.
+    //
+    // Se afirma contra el literal del dibujo, que es el que la pantalla pinta.
+    expect(
+      screen.queryByText(/Todavía no hay roles definidos, así que este cliente/i),
+    ).toBeNull()
+    // Y el rótulo del resumen tampoco: mientras carga dice CARGANDO, no «SIN
+    // ROLES DEFINIDOS», que también es una afirmación sobre lo que no llegó.
+    expect(screen.queryByText('Sin roles definidos')).toBeNull()
     // El CTA no depende de los datos y sigue ahí.
     expect(screen.getByRole('button', { name: 'Nuevo rol' })).toBeInTheDocument()
   })

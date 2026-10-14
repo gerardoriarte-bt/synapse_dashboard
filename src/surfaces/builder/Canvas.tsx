@@ -48,17 +48,16 @@
  *
  *  **§PEN:B2** · B2 · «Canvas de composición».
  */
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Label } from '../../render/primitives/Label'
-import { COLUMNS } from '../../render/grid'
+import { Ayuda } from '../../render/primitives/Ayuda'
+import { nombreDeTipo } from './rotulos'
+import { COLUMNS, GAP, ROW } from '../../render/grid'
 import { choqueCon, disposicion, huecos, ordenPara } from './disposicion'
 import type { PanelDeBorrador } from './borrador'
 import type { Metric } from '../../api/types'
 import type { BlockTable } from '../../catalog/blocks'
-
-/** Alto de fila del `.pen`: «FILA BASE 80» más el gap de 16. Es el mismo 96 del
- *  que sale `px = 96·N − 16`, escrito una sola vez. */
-const FILA = 96
 
 type Props = {
   panels: readonly PanelDeBorrador[]
@@ -73,6 +72,20 @@ type Props = {
   onSoltarTipo: (tipo: string, colStart: number, indiceDestino: number) => void
   /** Qué tipo viene en el aire, para saber su ancho antes de soltarlo. */
   arrastrando: string | null
+  /** **La versión publicada no se edita en el lugar** · 2026-10-07. Sin
+   *  arrastre, sin teclas que muevan y sin controles de tamaño: se mira. */
+  soloLectura?: boolean
+  /** **El panel dibujado con su dato** · 2026-10-07, D1 de
+   *  `docs/AUDITORIA-2026-10-07-editor-sin-previsualizacion.md`: «es como
+   *  construir de memoria». Lo resuelve el contenedor —tiene el dato, el
+   *  catálogo y el repertorio— y el lienzo sólo lo ubica. Sin él, la ficha. */
+  dibujar?: (indice: number) => ReactNode
+  /** El nombre del gráfico elegido · la ficha decía el BLOQUE —«Barras»— de un
+   *  panel que se dibuja como anillo. Visto en pantalla el 2026-10-07. */
+  nombreDeGrafico?: (id: string) => string
+  /** Cambia cuando la configuración se abre más o menos: el lienzo se corrió y
+   *  el panel elegido se vuelve a traer a la vista. */
+  encuadre?: string
 }
 
 export function Canvas({
@@ -85,7 +98,23 @@ export function Canvas({
   onRedimensionar,
   onSoltarTipo,
   arrastrando,
+  soloLectura = false,
+  dibujar,
+  nombreDeGrafico,
+  encuadre,
 }: Props) {
+  /** **El panel elegido, a la vista** · D6 del 2026-10-07. Las columnas de la
+   *  configuración corren el lienzo hacia la derecha, y el panel que se está
+   *  configurando no puede quedar fuera de la pantalla: es lo que hay que
+   *  mirar. `scrollIntoView` no existe en jsdom; ahí no hace falta. */
+  const grilla = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (seleccionado === null) return
+    const el = grilla.current?.querySelector<HTMLElement>(`[data-panel="${String(seleccionado)}"]`)
+    if (el !== null && el !== undefined && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' })
+    }
+  }, [seleccionado, encuadre])
   /** La celda bajo el cursor mientras se arrastra. **Solo para la vista previa
    *  del span** —«Span al soltar» en el `.pen`—: no decide nada, porque las
    *  decisiones salen del dato del soltado. */
@@ -137,6 +166,7 @@ export function Canvas({
 
   const soltar = (col: number, fila: number, e: React.DragEvent) => {
     e.preventDefault()
+    if (soloLectura) return
     const dato = e.dataTransfer.getData('text/plain')
     // Un índice numérico es un panel que ya existe; cualquier otra cosa es un
     // tipo que viene de la biblioteca.
@@ -150,7 +180,7 @@ export function Canvas({
 
   const teclas = (e: React.KeyboardEvent, indice: number) => {
     const p = panels[indice]
-    if (p === undefined) return
+    if (p === undefined || soloLectura) return
 
     if (e.key === 'Escape') {
       onSeleccionar(null)
@@ -187,34 +217,35 @@ export function Canvas({
 
   return (
     <div className="flex-1 flex flex-col gap-2">
-      {/* La regla del `.pen`, literal: son los números con los que se compone. */}
-      <div className="flex items-center gap-6">
-        <Label as="div">Grilla 12 · columna 80 · gap 16 · fila base 80</Label>
-        <Label as="div">El alto se declara en rowSpan · nunca en píxeles</Label>
-        {/* **El gesto de mover, dicho.** Reportado el 2026-09-17: «no veo la
-            capacidad de mover un bloque». La capacidad estaba y funcionaba —el
-            panel es `draggable` desde F4.9— y **no había nada que la anunciara**:
-            `cursor: grab` solo aparece al pasar por encima, y el `.pen` dibuja
-            «ARRASTRAR AL LIENZO» para la biblioteca y nada para el lienzo.
+      {/* **D7 de la auditoría del 2026-10-06**: las reglas de la grilla —«GRILLA
+          12 · COLUMNA 80 · GAP 16», «EL ALTO SE DECLARA EN rowSpan»— son
+          literales del `.pen`, pero hablan del handoff y no de quien compone:
+          `rowSpan` es un nombre de campo. El humano dejó la decisión a la
+          usabilidad, y lo que sirve acá es decir los gestos, en una frase.
 
-            Va acá y no en el panel por lo que la propuesta del canvas ya
-            resolvió en su punto 1: se descartó una manija de arrastre dedicada
-            porque «§4 ya gastó el espacio de cabecera» —título, BASE y
-            procedencia son shell que nunca se reemplaza—. La regla es donde el
-            lienzo ya declara sus reglas, y queda simétrico con la biblioteca,
-            que sí anuncia el suyo. */}
-        <Label as="div">Arrastrá un panel para moverlo · los handles redimensionan</Label>
-      </div>
+          El gesto de mover tiene historia: reportado el 2026-09-17, «no veo la
+          capacidad de mover un bloque». Estaba, y nada lo anunciaba. */}
+      {!soloLectura && <Ayuda>
+        Arrastrá un tipo de la biblioteca a un espacio libre. Elegí un panel para configurarlo:
+        arrastralo para moverlo, o usá las flechas; con Shift y las flechas cambiás su tamaño.
+      </Ayuda>}
 
       <div
+        ref={grilla}
         role="grid"
         aria-label="Lienzo de composición"
         className="relative w-full"
+        // **Filas de 80 y separación de 16, las de la consola** · corregido el
+        // 2026-10-07. Eran filas de 96 MÁS la separación de 16: el espacio
+        // entre filas se contaba dos veces y un panel de 4 filas medía 432 en
+        // vez de los 368 de `96·N − 16`. Con la ficha no se notaba; con el panel
+        // real adentro quedaba un hueco abajo. Las constantes son las de
+        // `render/grid`, para que el lienzo no pueda volver a medir distinto.
         style={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${String(COLUMNS)}, 1fr)`,
-          gridAutoRows: `${String(FILA)}px`,
-          gap: '16px',
+          gridTemplateColumns: `repeat(${String(COLUMNS)}, minmax(0, 1fr))`,
+          gridAutoRows: `${String(ROW)}px`,
+          gap: `${String(GAP)}px`,
         }}
       >
         {/* Las guías · son las celdas de soltado y se ven. Una cosa para las dos. */}
@@ -259,7 +290,7 @@ export function Canvas({
               }
             >
               <Label>
-                {problema ?? `${arrastrando} · ${String(colSpan)} × ${String(rowSpan)}`}
+                {problema ?? `${nombreDeTipo(arrastrando)} · ${String(colSpan)} × ${String(rowSpan)}`}
               </Label>
             </div>
           )
@@ -316,10 +347,11 @@ export function Canvas({
           return (
             <div
               key={`panel-${String(c.indice)}`}
-              draggable
+              draggable={!soloLectura}
               tabIndex={0}
               role="gridcell"
-              aria-label={`${p.tipo} · ${nombre(p.metricId)}`}
+              data-panel={c.indice}
+              aria-label={`${nombreDeTipo(p.tipo)} · ${nombre(p.metricId)}`}
               aria-selected={elegido}
               onDragStart={(e) => {
                 e.dataTransfer.setData('text/plain', String(c.indice))
@@ -332,40 +364,93 @@ export function Canvas({
                 gridRow: `${String(c.filaInicio)} / span ${String(c.rowSpan)}`,
               }}
               className={
-                'relative rounded-xl bg-panel p-6 flex flex-col gap-1 cursor-grab ' +
-                (elegido ? 'border-2 border-acc' : 'border border-w3')
+                'relative rounded-xl ' + (soloLectura ? 'cursor-default ' : 'cursor-grab ') +
+                (dibujar === undefined
+                  ? 'bg-panel p-6 flex flex-col gap-1 ' + (elegido ? 'border-2 border-acc' : 'border border-w3')
+                  : // **Con dato, el borde es del panel**: la selección va como
+                    // anillo por FUERA para no correr el dibujo un píxel.
+                    elegido
+                    ? 'outline-2 outline-offset-2 outline-acc'
+                    : '')
               }
             >
-              <Label as="div">{p.tipo}</Label>
-              <span className="text-ink text-celda">{nombre(p.metricId)}</span>
-              {/* La medida en unidades y en píxeles · `px = 96·N − 16`. */}
-              <Label as="div">
-                {`${String(c.colSpan)} × ${String(c.rowSpan)} · ${String(FILA * c.rowSpan - 16)} px de alto`}
-              </Label>
+              {dibujar === undefined ? (
+                <>
+                  <Label as="div">{p.grafico !== undefined && nombreDeGrafico !== undefined ? nombreDeGrafico(p.grafico) : nombreDeTipo(p.tipo)}</Label>
+                  <span className="font-body text-cuerpo font-medium text-ink">{nombre(p.metricId)}</span>
+                  {/* La medida en unidades de grilla · las mismas que pide el
+                      configurador. Los píxeles los decide `96·N − 16`, no quien
+                      compone. */}
+                  <Label as="div">{`${String(c.colSpan)} col × ${String(c.rowSpan)} filas`}</Label>
+                </>
+              ) : (
+                <>
+                  {/* **El panel como lo verá el cliente**, en una grilla del
+                      ancho de la celda con las filas de la consola: mide lo
+                      mismo que allá sin tocar `render/`. **Sin eventos**: es un
+                      dibujo; tocarlo elige el panel, no abre su ⓘ. */}
+                  <div
+                    aria-hidden
+                    className="pointer-events-none h-full"
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: `repeat(${String(c.colSpan)}, minmax(0, 1fr))`,
+                      gridAutoRows: `${String(ROW)}px`,
+                      gap: `${String(GAP)}px`,
+                    }}
+                  >
+                    {dibujar(c.indice)}
+                  </div>
+                  {/* **La ficha, como banda** · qué gráfico y de qué tamaño. Es
+                      lo que el dibujo no dice solo. */}
+                  <div className="absolute -top-2.5 left-4 flex items-center gap-2 rounded-sm border border-w4 bg-bg px-2 py-0.5">
+                    <Label>{p.grafico !== undefined && nombreDeGrafico !== undefined ? nombreDeGrafico(p.grafico) : nombreDeTipo(p.tipo)}</Label>
+                    <Label>{`${String(c.colSpan)} × ${String(c.rowSpan)}`}</Label>
+                  </div>
+                </>
+              )}
 
-              {elegido && b !== undefined && (
-                // Los handles · redimensionan de a una celda. No hay arrastre
-                // continuo, y no hace falta: la unidad es la grilla.
-                <div className="flex gap-1">
+              {elegido && b !== undefined && !soloLectura && (
+                // Los handles · redimensionan de a una celda. **Dos grupos de
+                // − y +** donde había cuatro palabras que desbordaban un panel
+                // de 3 columnas —«AGRANDA» cortado, medido el 2026-10-06—. El
+                // nombre accesible sigue diciendo la acción entera.
+                <div
+                  className={
+                    dibujar === undefined
+                      ? 'mt-2 flex flex-wrap gap-3'
+                      : 'absolute bottom-3 right-3 flex flex-wrap gap-3 rounded-md border border-w4 bg-bg p-2 shadow-[0_8px_24px_var(--color-shad)]'
+                  }
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {(
                     [
-                      ['colSpan', -1, 'Angostar'],
-                      ['colSpan', 1, 'Ensanchar'],
-                      ['rowSpan', -1, 'Achicar'],
-                      ['rowSpan', 1, 'Agrandar'],
+                      ['colSpan', 'Ancho', 'Angostar', 'Ensanchar'],
+                      ['rowSpan', 'Alto', 'Achicar', 'Agrandar'],
                     ] as const
-                  ).map(([campo, delta, texto]) => (
-                    <button
-                      key={texto}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onRedimensionar(c.indice, campo, delta)
-                      }}
-                      className="text-label tracking-rotulo uppercase px-2 py-1 rounded-sm text-dim hover:bg-elev"
-                    >
-                      {texto}
-                    </button>
+                  ).map(([campo, rotulo, menos, mas]) => (
+                    <div key={campo} className="flex items-center gap-1">
+                      <Label>{rotulo}</Label>
+                      {(
+                        [
+                          [-1, '−', menos],
+                          [1, '+', mas],
+                        ] as const
+                      ).map(([delta, signo, accion]) => (
+                        <button
+                          key={accion}
+                          type="button"
+                          aria-label={accion}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onRedimensionar(c.indice, campo, delta)
+                          }}
+                          className="size-7 inline-flex items-center justify-center rounded-md border border-w5 font-body text-cuerpo font-semibold text-ink cursor-pointer hover:bg-w2"
+                        >
+                          {signo}
+                        </button>
+                      ))}
+                    </div>
                   ))}
                 </div>
               )}

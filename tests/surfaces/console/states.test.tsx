@@ -21,6 +21,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
+import { abrirGobierno } from '../../gobierno'
 import { ConsoleContainer } from '@/surfaces/console/ConsoleContainer'
 import { API, context, kpiMetric, kpiPanel, ok, tab } from '../../mocks/handlers'
 import type { WirePayload } from '@/api/adapt'
@@ -120,7 +121,7 @@ describe('F2.6 · el gobierno sigue visible en los seis estados', () => {
   it.each(SEIS)('en %s la BASE sigue declarando el denominador', async (_, payload) => {
     conUnPanel(payload)
     montar()
-    const base = await screen.findByText(/^Base ·/)
+    const base = await abrirGobierno()
     expect(base).toHaveTextContent('48 tiendas sobre 52')
   })
 
@@ -137,11 +138,10 @@ describe('F2.6 · el gobierno sigue visible en los seis estados', () => {
   it.each(SEIS)('en %s la BASE declara sus DOS mitades · B1.25', async (_, payload) => {
     conUnPanel(payload)
     montar()
-    const base = await screen.findByText(/^Base ·/)
+    const base = await abrirGobierno()
     // §1.3: «toda métrica declara su BASE (denominador + ventana)». Las dos.
     expect(base).toHaveTextContent('48 tiendas sobre 52')
     expect(base).toHaveTextContent('Mes calendario seleccionado')
-    expect(base.textContent?.trimEnd().endsWith('·')).toBe(false)
   })
 
   // **Y el caso vacío no desapareció: es 8 de 18 métricas.** Las que la vista
@@ -153,15 +153,18 @@ describe('F2.6 · el gobierno sigue visible en los seis estados', () => {
   it('sin ventana, la BASE no deja el separador colgando', async () => {
     conUnPanel(DISPONIBLE, { ...kpiMetric, measurement_window: '' })
     montar()
-    const base = await screen.findByText(/^Base ·/)
+    const base = await abrirGobierno()
     expect(base).toHaveTextContent('48 tiendas sobre 52')
-    expect(base.textContent?.trimEnd().endsWith('·')).toBe(false)
+    // Sin ventana el rótulo «Ventana» no se pinta: un segmento vacío no se
+    // declara, que era lo que el `·` colgando significaba en la línea vieja.
+    expect(base).not.toHaveTextContent('Ventana')
   })
 
   it.each(SEIS)('en %s la procedencia sigue declarando capa y fuente', async (_, payload) => {
     conUnPanel(payload)
     const { container } = montar()
     await screen.findByRole('heading', { level: 2 })
+    await abrirGobierno()
     expect(container.textContent).toContain('GOLD')
     expect(container.textContent).toContain('Snowflake')
   })
@@ -175,7 +178,7 @@ describe('F2.6 · el gobierno sigue visible en los seis estados', () => {
 
     conUnPanel(BLOQUEADO)
     montar()
-    expect(await screen.findByText(/^Base ·/)).toHaveTextContent('48 tiendas sobre 52')
+    expect(await abrirGobierno()).toHaveTextContent('48 tiendas sobre 52')
   })
 })
 
@@ -189,6 +192,7 @@ describe('F2.5 · la frescura es relativa a cuándo se materializó', () => {
     conUnPanel({ ...DISPONIBLE, governance: { ...governance, freshness: haceTresHoras } })
     const { container } = montar()
     await screen.findByText('USD 4.28M')
+    await abrirGobierno()
     expect(container.textContent).toContain('HACE 3 H')
   })
 
@@ -199,6 +203,7 @@ describe('F2.5 · la frescura es relativa a cuándo se materializó', () => {
     })
     const { container } = montar()
     await screen.findByText('USD 4.28M')
+    await abrirGobierno()
     expect(container.textContent).toContain('RECIÉN')
   })
 })

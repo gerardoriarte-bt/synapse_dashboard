@@ -24,7 +24,7 @@
 import { useSize } from './core/useSize'
 import { envelope, linearScale } from './core/scale'
 import { familyVar } from '../../tokens/tokens'
-import type { Family } from '../../catalog/types'
+import type { FamiliaDeDibujo } from '../types'
 
 /** El alto del riel · 10px en el `.pen`. */
 const TRACK = 10
@@ -36,7 +36,7 @@ export function PlotInterval({
 }: {
   lo: number
   hi: number
-  family: Family
+  family: FamiliaDeDibujo
 }) {
   const { ref, w, h } = useSize()
 

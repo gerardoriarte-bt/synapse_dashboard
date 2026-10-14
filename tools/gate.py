@@ -35,11 +35,25 @@ CHEQUEOS = [
     ("auth-drift", [sys.executable, "tools/contract-drift.py", "--auth"], True),
     ("console-drift", [sys.executable, "tools/contract-drift.py", "--console-wire"], True),
     ("admin-drift", [sys.executable, "tools/contract-drift.py", "--admin-wire"], True),
+    # **`plan --check` parsea sin escribir** · agregado el 2026-09-28. Estaba
+    # afuera, y un cierre de tarea mal empezado dejó el plan sin parsear con la
+    # puerta en verde: `PARA-BACKEND.md` no se podía regenerar y un pedido no
+    # llegaba al documento que el backend lee. Una regla que la puerta no
+    # comprueba no es una regla.
+    ("plan", [sys.executable, "tools/plan-a-csv.py", "--check"], True),
     ("plan-ancestro", [sys.executable, "tools/plan-ancestro.py"], True),
-    ("para-backend", [sys.executable, "tools/para-backend.py"], True),
+    ("para-backend", [sys.executable, "tools/para-backend.py", "--check"], True),
     ("pen-pantallas", [sys.executable, "tools/pen-pantallas.py"], True),
+    # El hermano de arriba para los 43 gráficos, que `pen-pantallas` no mira:
+    # reconoce `A*`, `B*` y `C*` y la biblioteca de plots quedaba afuera.
+    ("pen-graficos", [sys.executable, "tools/pen-graficos.py"], True),
     ("docs-registro", [sys.executable, "tools/docs-registro.py"], True),
     ("afirmaciones", [sys.executable, "tools/afirmaciones.py"], True),
+    # **El vocabulario interno no se pinta** · desde el 2026-09-30. Nació de la
+    # auditoría de usabilidad: siete bloques citando §7.3 y nombrando rutas del
+    # servicio en la pantalla de un cliente, acumulados durante meses sin que
+    # nadie los viera como un defecto. Al escribirlo encontró SEIS más.
+    ("copy-producto", [sys.executable, "tools/copy-producto.py"], True),
     ("mocks-fuera", [sys.executable, "tools/mocks-fuera.py"], True),
     ("token-drift", [sys.executable, "tools/token-drift.py"], True),
     ("contraste", [sys.executable, "tools/contraste.py"], True),

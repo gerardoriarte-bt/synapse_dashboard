@@ -18,7 +18,16 @@
  *  botón que devuelve 403 promete una acción que no existe.
  */
 import { Label } from '../primitives/Label'
+import { UnknownPlotState } from '../states/UnknownPlotState'
 import type { BodyProps } from '../types'
+
+/** Los gráficos que este cuerpo sabe dibujar HOY.
+ *
+ *  **`reco` es de los seis que no son plots** y es el espejo de `prose`: la
+ *  misma forma, otra anatomía. `prose` se declara y no se sustituye — dibujar
+ *  estas recomendaciones como prosa dejaría los botones afuera sin avisar, que
+ *  es la misma familia del CTA que no llama a nada. */
+const DIBUJA = ['reco'] as const
 
 export type RecoParams = {
   tope?: number
@@ -31,7 +40,21 @@ const CTA =
   'font-mono text-label tracking-rotulo uppercase rounded-md px-3 py-1 ' +
   'cursor-pointer border border-w4 bg-transparent text-ink hover:bg-w2'
 
-export function RecoBody({ value, params, actions, onRespond }: BodyProps<'prosa', RecoParams>) {
+export function RecoBody({
+  value,
+  params,
+  grafico,
+  actions,
+  onRespond,
+}: BodyProps<'prosa', RecoParams>) {
+  // La comprobación va ANTES de dibujar, no dentro de una rama · mismo idioma
+  // que `SeriesBody` y `ForecastBody`: resuelta abajo, la rama que se olvide se
+  // ve bien.
+  const conocidos: readonly string[] = DIBUJA
+  if (grafico !== undefined && !conocidos.includes(grafico)) {
+    return <UnknownPlotState grafico={grafico} />
+  }
+
   const items = (value.pilares ?? []).slice(0, params.tope ?? DEFAULT_TOP)
 
   return (

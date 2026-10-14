@@ -113,6 +113,11 @@ def render(tareas) -> str:
                 "> que mirar ahí, no acá** — y para cruzarlo, la tabla de equivalencias\n"
                 "> de `docs/ESTADO-B1.13-B1.19-2026-09-14.md`, porque los\n"
                 "> identificadores no coinciden.\n"
+                ">\n"
+                "> **Y para RE-verificar está `docs/ESTADO-BACKEND.md`**, que dice\n"
+                "> contra qué commit suyo se verificó cada `B*` y cuáles quedaron\n"
+                "> contra uno anterior. Este número dice cuántas; ése dice **desde\n"
+                "> cuándo**, que es lo que hace falta para volver a medirlas.\n"
             )
         o.append("| Fase | Avance | Hechas | Parciales | Pendientes |")
         o.append("|---|---|---|---|---|")

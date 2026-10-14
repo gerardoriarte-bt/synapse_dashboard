@@ -94,14 +94,44 @@ hacerlo. **El valor con el que se escribe tiene que ser el mismo con el que se
 lee.** Si mañana levantás con otro, lo guardado no descifra y el error no va a
 decir eso: va a parecer una credencial mal cargada.
 
-En local alcanza con fijarla y no volver a tocarla:
+**Y desde `f70cec2` este valor NO SIRVE** · medido el 2026-09-28. La variable se
+lee como **base64**, así que esos 32 caracteres decodifican a 24 bytes y el
+servicio se planta:
 
 ```
-DATA_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef
+DATA_ENCRYPTION_KEY debe decodificar a 32 bytes (AES-256), got 24
 ```
 
-**No es un secreto real** —es una base descartable— pero anotarla acá evita
-perder media hora persiguiendo un fantasma.
+**El mensaje ahora sí dice qué pasa**, que es lo contrario de lo que esta sección
+advertía —«el error no va a decir eso»—. Lo declara
+`internal/core/crypto/atrest/atrest.go:39`.
+
+**La llave que descifra la base de acá vive en el `.env` del repositorio del
+backend**, no en este archivo, porque las credenciales de Snowflake del tenant
+están cifradas con ella y **son las reales**: son las que hicieron andar el chat
+contra Cortex el 2026-09-24. Poner otra llave no es un inconveniente, es perder
+el acceso a Snowflake de la base local.
+
+Así que el arranque es:
+
+```
+cd ~/Documents/GitHub/synapse-api-go && set -a && . ./.env && set +a
+DB_HOST=localhost DB_PORT=5433 DB_USER=synapse DB_PASSWORD=synapse \
+DB_NAME=synapse DB_SSLMODE=disable APP_PORT=4010 ./el-binario
+```
+
+**El puerto es `APP_PORT`, no `PORT`** —`internal/bootstrap/app.go:186`—, y
+equivocarse no da error: arranca en `:8080` y el proxy de Vite pega a `:4010`, así
+que parece que el servicio no está.
+
+**El síntoma de la llave equivocada es engañoso y conviene reconocerlo**: el
+login funciona y `/config/*` también, porque no descifran nada. Lo que se cae es
+`/admin/*`, con `TenantRepository.FindByID: decrypt SnowflakeURL`. Si `/admin`
+falla y la consola anda, es la llave.
+
+El valor que este archivo documentaba antes era
+`0123456789abcdef0123456789abcdef`, en texto plano. **No es un secreto real**
+—era una base descartable— pero ya no es el que hay que usar.
 
 ## Y un SEGUNDO dashboard, sin componer · desde el 2026-09-26
 
@@ -109,7 +139,109 @@ perder media hora persiguiendo un fantasma.
 poder verificar F5.1: con un solo dashboard el selector no aparece —es su propio
 criterio— así que no había nada que mirar.
 
-**No tiene layout publicado, y eso es lo que lo hace útil.** Es el estado normal
+**⚠️ DESDE EL 2026-09-28 SÍ TIENE LAYOUT, y hay que saberlo.** Se publicaron dos
+versiones y se revirtió una para cerrar B4.2 —era la única forma de generar filas
+de auditoría sin tocar el dashboard que la consola sirve—. **Así que el caso «sin
+componer» que este párrafo describe ya no está disponible en esta base.**
+
+Para recuperarlo: crear un tercer dashboard con
+`POST /admin/tenants/{tenantId}/dashboards`, o recrear el contenedor —que es para
+lo que es descartable—.
+
+**⚠️ Y DESDE EL 2026-09-30 HAY TRES MÉTRICAS SEMBRADAS A MANO.**
+`platform_gap`, `platform_month_matrix` y `spend_flow`, insertadas directo en
+`dd_catalog_metrics` para probar las tres entradas nuevas de `MetricRegistry`
+contra Snowflake real **antes** de que datos cure sus filas.
+
+**No están en `SYNAPSE_METRIC_CATALOG`**, así que la próxima corrida de
+`sync-catalog` **no las borra** —el sync no elimina lo que no está en la view, que
+es lo mismo que sostiene a `executive_summary` y `decisions`— pero tampoco las
+actualiza. Cuando datos las cure de verdad, conviene borrar estas tres primero
+para no quedarse con dos filas de la misma clave.
+
+Las tres se materializaron bien —`available 19, blocked 2, errors 0`— y lo que
+devolvieron está en `docs/MENSAJE-2026-09-30-datos-lo-que-encontro-correrlo.md`.
+
+**⚠️ Y DESDE EL 2026-09-29 SU LAYOUT ES UN MUESTRARIO DE GRÁFICOS.** Se publicó
+ahí una pestaña `repertorio-real` con **doce paneles que llevan `chart`** —
+`bullet`, `rings`, `donut`, `columns`, `lollipop`, `pareto`, `treemap`, `radial`,
+`combo`, `smallmult`, `bump` y `slope`— sobre métricas reales del catálogo de
+Snowflake. Es lo que permitió verificar que los gráficos dibujan **con dato del
+negocio** y no sólo contra MSW; los doce paneles del dashboard por defecto siguen
+con `chart: ''`, que es como los emite el servicio.
+
+**Y DESDE EL 2026-09-30 LA PESTAÑA `overview` LLEVA TRES PANELES MÁS**, que son
+los de las formas v1.1: `comparison`/`dumbbell` sobre `platform_gap`,
+`matrix`/`heatmap` sobre `platform_month_matrix` y `graph`/`sankey` sobre
+`spend_flow`. **Van en `overview` y no en `repertorio-real` a propósito**: es la
+pestaña del layout ACTIVO, así que se ven abriendo la consola sin cambiar de
+dashboard. El footer dice **15 paneles**.
+
+Se insertaron a mano en `dd_panels` porque el builder no ofrece todavía esas
+métricas —el catálogo las trae desde que sembramos su fila—; el SQL está en el
+historial de esta sesión y se rehace con un `INSERT … SELECT` sobre
+`dd_catalog_metrics`.
+
+**⚠️ «MARCA» NO ES UN DASHBOARD DE PRODUCTO: ES ANDAMIO.** Y confunde — se
+levantó el 2026-10-01 al ver dos dashboards con distinta cantidad de gráficos.
+Su única pestaña se llama `repertorio-real` y su pregunta operativa es
+**«¿Los gráficos dibujan con el dato de Snowflake?»**, que no es una pregunta de
+negocio: es la nuestra. Se publicó ahí para poder mirar los trece gráficos con
+dato real sin ensuciar el dashboard de verdad.
+
+| Dashboard | Pestaña | Paneles | Qué es |
+|---|---|---|---|
+| **Overview** · por defecto | `overview` | 14 | **El real.** Es el que sigue el `.pen` |
+| Marca | `repertorio-real` | 12 | **Andamio nuestro** · el muestrario de gráficos |
+
+**Si confunde, se borra**: `DELETE FROM dd_dashboards WHERE slug='marca'` en la
+base descartable. Lo que se pierde es poder mirar los gráficos que ningún panel
+del dashboard real usa.
+
+**Y SE SACÓ UN PANEL DEL REAL · 2026-10-01**: `spend_flow` dibujado como sankey.
+Eran 22 enlaces al mismo nodo «total», que es la suma de los otros 22 — **un
+gráfico de barras dibujado como sankey**, repitiendo una tabla que ya estaba dos
+paneles más arriba. Lo detectó quien lo miró, no una prueba. El flujo que sí se
+entiende es el embudo, y lo traba una regla del backend ·
+`docs/MENSAJE-2026-10-01-backend-la-ultima-etapa-del-flujo.md`. Overview quedó
+en 14.
+
+**Y EL AÑO 2026 ESTÁ MATERIALIZADO ENTERO · 2026-10-01.** Se corrió
+`POST /admin/tenants/{id}/materialize` con los ocho períodos de enero a agosto,
+que es lo que faltaba para que las tres formas v1.1 —`platform_gap`,
+`platform_month_matrix` y `spend_flow`— existieran fuera de septiembre: se
+escribieron el 30 y sólo se habían materializado para el mes de esa corrida.
+
+Las ocho cerraron `available 19 · blocked 2 · errors 0`. La cobertura del tenant
+`e65f81ae` quedó así, y conviene saber leerla:
+
+| Período | Disponibles | Bloqueadas |
+|---|---|---|
+| 2026-07 … 2026-09 | **21 de 21** | — |
+| 2026-01 … 2026-06 | 19 | **2** |
+| 2025-10 … 2025-12 | 16 | 2 |
+
+**Las dos bloqueadas de 2026 no son un hueco nuestro ni se arreglan corriendo el
+materializador otra vez**: son `executive_summary` y `decisions`, y el servicio
+dice por qué con todas las letras — «Requires BT_UA_DECISION_LOG actionable
+framework (not in Snowflake Gold yet)». Son prosa del agente, no métricas.
+
+**Y 2025 quedó corto a propósito**: no se pidió. Cada corrida consulta Snowflake
+de verdad, en la cuenta del cliente, así que el rango se decide y no se asume.
+
+**Dos efectos más que hay que saber**, porque no se deducen de mirar la consola:
+
+- **El rol `admin` ganó la clave `repertorio-real` en `tab_keys`.** Sin eso la
+  pestaña no se ve: `/config/me` la filtra por rol y el rol traía sólo
+  `["overview"]`. Es B4.18 funcionando, y el síntoma de no saberlo es una
+  pantalla vacía sin error.
+- **La preferencia `preferred_dashboard_id` del usuario `dev@synapse.local`
+  quedó apuntando a «Marca».** Para volver a Overview:
+  `PUT /config/me/preferences` con el id del dashboard por defecto.
+
+Lo que sigue describe para qué existía, y sigue siendo la razón de tenerlo:
+
+**No tenía layout publicado, y eso es lo que lo hacía útil.** Es el estado normal
 de uno recién creado, y el que destapó dos defectos: el servicio devuelve
 `active_layout_id: null` **y `tabs: null`**, el adaptador tiraba, y la consola
 decía «No se pudo cargar tu contexto · sin detalle del servidor» — atribuyéndole

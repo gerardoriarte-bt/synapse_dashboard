@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { ApiError } from '../../api/types'
 import { signOut } from '../auth/session'
+import { ClienteDeTrabajoProvider } from '../../surfaces/ClienteDeTrabajoProvider'
 
 /** Cache de servidor con defaults declarados · F0.3.
  *
@@ -50,7 +51,11 @@ const client = new QueryClient({
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={client}>
-      <BrowserRouter>{children}</BrowserRouter>
+      {/* El cliente de trabajo, compartido entre administración y builder ·
+          2026-10-06. Ver `surfaces/clienteDeTrabajo.ts`. */}
+      <ClienteDeTrabajoProvider>
+        <BrowserRouter>{children}</BrowserRouter>
+      </ClienteDeTrabajoProvider>
     </QueryClientProvider>
   )
 }

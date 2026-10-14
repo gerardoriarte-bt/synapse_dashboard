@@ -7,7 +7,20 @@
 import { Label } from '../primitives/Label'
 import { Value } from '../primitives/Value'
 import { hue } from '../plots/core/seriesColor'
+import { UnknownPlotState } from '../states/UnknownPlotState'
 import type { BodyProps } from '../types'
+
+/** Los gráficos que este cuerpo sabe dibujar HOY.
+ *
+ *  **`list` es de los seis que no son plots**: es cómo el cuerpo dibuja SIN
+ *  gráfico, y por eso es también un valor por defecto de `ranking`.
+ *
+ *  Los otros cuatro que §5 le da a `ranking` —`bars`, `lollipop`, `bump` y
+ *  `table`— se declaran. **`bars` y `table` existen y no se dibujan acá**: los
+ *  dibujan `BarsBody` y `TableBody`, que leen otra forma o la misma con otra
+ *  anatomía. Sustituir sería pintar el cuerpo de otro tipo, que es lo que §1
+ *  principio 6 prohíbe. */
+const DIBUJA = ['list'] as const
 
 export type ListParams = {
   tope?: number
@@ -19,7 +32,22 @@ export type ListParams = {
 const DEFAULT_TOP = 5
 const PERCENT = 100
 
-export function ListBody({ value, params, family, metric, format }: BodyProps<'ranking', ListParams>) {
+export function ListBody({
+  value,
+  params,
+  family,
+  grafico,
+  metric,
+  format,
+}: BodyProps<'ranking', ListParams>) {
+  // La comprobación va ANTES de dibujar, no dentro de una rama · mismo idioma
+  // que `SeriesBody` y `ForecastBody`: resuelta abajo, la rama que se olvide se
+  // ve bien.
+  const conocidos: readonly string[] = DIBUJA
+  if (grafico !== undefined && !conocidos.includes(grafico)) {
+    return <UnknownPlotState grafico={grafico} />
+  }
+
   const { tope = DEFAULT_TOP, orden = 'posicion' } = params
 
   // ORDENA POR `posicion`, NO POR VALOR. Un `ranking` ya viene rankeado: la

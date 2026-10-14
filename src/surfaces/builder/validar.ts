@@ -23,6 +23,7 @@
  *  el servidor sí vienen por id, y juntarlos es trabajo de F4.14, cuando existan
  *  los dos lados.
  */
+import { nombreDeForma, nombreDeTipo } from './rotulos'
 import { invalidReason } from '../../catalog/blocks'
 import { validateParams } from '../../api/params'
 import { problemas as problemasDeTab } from './borrador'
@@ -67,7 +68,9 @@ export function validarBorrador(
           tab: i,
           panel: j,
           campo: 'metricId',
-          mensaje: 'Sin métrica · un panel se ancla a un metricId, no a un nombre de tabla',
+          // «Se ancla a un metricId» era la regla dicha en el idioma del código ·
+          // 2026-10-06. Quien compone necesita saber qué hacer.
+          mensaje: 'Sin métrica · elegila en la configuración del panel',
         })
         return
       }
@@ -87,7 +90,19 @@ export function validarBorrador(
       }
 
       const falla = invalidReason(tabla, tipo, metrica.forma, p.colSpan, p.rowSpan)
-      if (falla !== null) out.push({ tab: i, panel: j, campo: 'tipo', mensaje: falla })
+      // `invalidReason` es de `catalog/` y la usa también la consola, así que
+      // nombra con los ids del contrato. **Acá se traducen al nombre de
+      // producto** —«bars» → «Barras»— porque esto lo lee quien compone (D6 de
+      // la auditoría del 2026-10-06). La regla no cambia: cambia cómo se dice.
+      if (falla !== null)
+        out.push({
+          tab: i,
+          panel: j,
+          campo: 'tipo',
+          mensaje: falla
+            .replaceAll(`«${p.tipo}»`, `«${nombreDeTipo(p.tipo)}»`)
+            .replaceAll(`«${metrica.forma}»`, `«${nombreDeForma(metrica.forma)}»`),
+        })
 
       // Los params, con la misma función que valida al leer un layout de vuelta.
       const validado = validateParams(tipo, p.opciones, tabla.get(tipo)?.paramsDisponibles)
@@ -99,7 +114,7 @@ export function validarBorrador(
           tab: i,
           panel: j,
           campo: nombre,
-          mensaje: `«${nombre}» no lo lee este tipo de panel · se va a descartar`,
+          mensaje: `La opción «${nombre}» no es de este tipo de panel · se descarta al guardar`,
         })
       }
     })

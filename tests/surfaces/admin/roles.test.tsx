@@ -23,7 +23,10 @@ import { server } from '../../mocks/server'
 
 const API = '*/api/v1'
 
-const tenants = [{ id: 't-1', name: 'Under Armour México' }]
+/** `created_at` va porque A2 lo pinta en `ALTA` y el cable lo declara
+ *  obligatorio · F5.20. Acá había dos campos de los trece que la ruta
+ *  devuelve, escritos cuando devolvía dos. */
+const tenants = [{ id: 't-1', name: 'Under Armour México', label: '', created_at: '2026-09-22T09:18:45Z' }]
 
 const roles = [
   {
@@ -39,7 +42,10 @@ const roles = [
     id: 'r-2',
     tenant_id: 't-1',
     name: 'Planner',
-    tab_ids: ['tab-a'],
+    // **Por KEY**, que es lo que la consola escribe desde el 2026-09-29:
+    // `tab_ids` apunta a `dd_tabs.id`, que se recrea al publicar.
+    tab_keys: ['tab-a-key'],
+    tab_ids: [],
     hidden_metric_ids: ['m-2'],
     layout_overrides: {},
     user_count: 0,
@@ -58,11 +64,11 @@ const detalle = {
   layout: layouts[1],
   tabs: [
     {
-      tab: { id: 'tab-a', layout_version_id: 'l-1', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+      tab: { id: 'tab-a', key: 'tab-a-key', layout_version_id: 'l-1', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
       panels: [],
     },
     {
-      tab: { id: 'tab-b', layout_version_id: 'l-1', name: 'Inventario', operational_question: '¿?', sort_order: 2, role_ids: [] },
+      tab: { id: 'tab-b', key: 'tab-b-key', layout_version_id: 'l-1', name: 'Inventario', operational_question: '¿?', sort_order: 2, role_ids: [] },
       panels: [],
     },
   ],
@@ -119,8 +125,8 @@ function montar() {
 }
 
 async function abrirFicha() {
-  await screen.findByText('Under Armour México')
-  await userEvent.click(screen.getByRole('button', { name: 'Ficha de cliente' }))
+  await screen.findByRole('button', { name: /^Under Armour México · / })
+  await userEvent.click(screen.getByRole('button', { name: /^Under Armour México · / }))
   await screen.findByText('CEO')
 }
 
@@ -243,7 +249,7 @@ describe('crear y editar', () => {
     await waitFor(() => expect(cuerpos).toHaveLength(1))
     expect(cuerpos[0]).toEqual({
       name: 'Analista',
-      tab_ids: ['tab-b'],
+      tab_keys: ['tab-b-key'],
       hidden_metric_ids: ['m-1'],
     })
   })
@@ -272,7 +278,7 @@ describe('crear y editar', () => {
     await waitFor(() => expect(cuerpos).toHaveLength(1))
     expect(cuerpos[0]).toEqual({
       name: 'Planner',
-      tab_ids: ['tab-a'],
+      tab_keys: ['tab-a-key'],
       hidden_metric_ids: ['m-2'],
     })
   })
@@ -288,6 +294,58 @@ describe('crear y editar', () => {
   })
 })
 
+describe('«admin» y «Admin» · el mismo rol para el servicio · 2026-10-06', () => {
+  /** Visto en QA: dos filas de rol que sólo difieren en mayúsculas. El servicio
+   *  compara el rol con `EqualFold`, así que para los permisos son uno solo. El
+   *  front no fusiona datos del cliente: lo dice, e impide crear otro par. */
+  const conDuplicado = http.get(`${API}/admin/tenants/:id/roles/composition`, () =>
+    ok([
+      ...roles,
+      { id: 'r-a1', tenant_id: 't-1', name: 'admin', tab_keys: [], tab_ids: [], hidden_metric_ids: [], layout_overrides: {}, user_count: 1 },
+      { id: 'r-a2', tenant_id: 't-1', name: 'Admin', tab_keys: [], tab_ids: [], hidden_metric_ids: [], layout_overrides: {}, user_count: 3 },
+    ]),
+  )
+
+  it('avisa que hay dos roles con el mismo nombre en distinta caja', async () => {
+    base([conDuplicado])
+    montar()
+    await abrirFicha()
+    expect(
+      await screen.findByText(/Hay roles con el mismo nombre en distinta caja: «admin», «Admin»/),
+    ).toBeInTheDocument()
+  })
+
+  it('sin duplicados no avisa nada', async () => {
+    base()
+    montar()
+    await abrirFicha()
+    expect(screen.queryByText(/mismo nombre en distinta caja/)).toBeNull()
+  })
+
+  it('no deja crear «PLANNER» si ya existe «Planner», y no manda nada', async () => {
+    const enviados: unknown[] = []
+    base([
+      http.post(`${API}/admin/tenants/:id/roles`, async ({ request }) => {
+        enviados.push(await request.json())
+        return ok({})
+      }),
+    ])
+    montar()
+    await abrirFicha()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Nuevo rol' }))
+    await userEvent.type(screen.getByRole('textbox'), 'PLANNER{Enter}')
+
+    expect(screen.getByRole('button', { name: 'Guardar rol' })).toBeDisabled()
+    expect(screen.getByText('Ya existe el rol «Planner». Las mayúsculas no cuentan: sería el mismo.')).toBeInTheDocument()
+    // Enter también intentó enviar, y no salió nada. **Lo frena el botón
+    // deshabilitado**: con el botón de envío deshabilitado el navegador no hace
+    // el envío implícito. El `return` del `onSubmit` es una segunda defensa que
+    // esta prueba no distingue — medido: quitarlo sobrevive.
+    expect(enviados).toEqual([])
+  })
+})
+
 describe('las pestañas que se ofrecen salen del layout PUBLICADO', () => {
   it('no ofrece las de un borrador', async () => {
     // `tab_ids` apunta a pestañas concretas. Marcar una de un borrador dejaría
@@ -299,7 +357,7 @@ describe('las pestañas que se ofrecen salen del layout PUBLICADO', () => {
             layout: layouts[0],
             tabs: [
               {
-                tab: { id: 'tab-z', layout_version_id: 'l-2', name: 'Borrador', operational_question: '¿?', sort_order: 1, role_ids: [] },
+                tab: { id: 'tab-z', key: 'tab-z-key', layout_version_id: 'l-2', name: 'Borrador', operational_question: '¿?', sort_order: 1, role_ids: [] },
                 panels: [],
               },
             ],
@@ -334,21 +392,26 @@ describe('el 404 mientras el fork no esté desplegado', () => {
       ),
     )
     montar()
-    await screen.findByText('Under Armour México')
-    await userEvent.click(screen.getByRole('button', { name: 'Ficha de cliente' }))
+    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await userEvent.click(screen.getByRole('button', { name: /^Under Armour México · / }))
 
     expect(
-      await screen.findByText(/todavía no sirve las rutas de roles · están escritas en el fork/),
+      await screen.findByText(/La composición por rol de este cliente todavía no se puede consultar/),
     ).toBeInTheDocument()
   })
 })
 
 describe('lo que A2 y A3 todavía no pueden mostrar', () => {
-  it('declara las dos de la ficha y la lista de usuarios', async () => {
-    // **Eran tres hasta el 2026-09-21.** El estado del acceso salió de esta
-    // lista y no porque llegara: lo declara `AgentConfig`, al lado de los
-    // agentes y diciendo con precisión qué significa «Activo». Tenerlo en los
-    // dos lados era la misma carencia contada dos veces en la misma pantalla.
+  it('ya NO declara lo que le falta a la ficha · y sus usuarios están EN la ficha', async () => {
+    // **Eran cuatro hasta el 2026-09-30 y quedó una.** Las otras tres no
+    // llegaron: se MUDARON, al construir `A2 · Ficha · tenant en alta`. Los
+    // datos del cliente los pinta la tarjeta de identidad —con un guión donde el
+    // valor falta—, quién trata los datos lo pinta el bloque de subprocesadores,
+    // y lo que aporta la plantilla lo declara la línea al pie de esa tarjeta.
+    //
+    // Es el mismo movimiento que el estado del acceso en 2026-09-21: declararlo
+    // en los dos lados era la misma carencia contada dos veces en la misma
+    // pantalla. La declaración se conserva; lo que cambia es dónde se lee.
     base()
     const { container } = montar()
     await abrirFicha()
@@ -358,21 +421,46 @@ describe('lo que A2 y A3 todavía no pueden mostrar', () => {
     // se puede vencer; escribirlo acá sí — y se venció el 2026-09-22, cuando
     // §9 sumó dos carencias más. Lo que la prueba fija es que cada carencia
     // esté nombrada, que es lo que vale.
-    expect(texto).toMatch(/Faltan \d+ cosas/)
+    // **Desde el 2026-10-06 lo que falta no se pinta** · decisión humana sobre la
+    // auditoría del builder: «si no suman para el uso, quitar». La lista vive en
+    // el comentario del componente. Esta prueba fija que no vuelva a la pantalla.
+    expect(texto).not.toMatch(/va a crecer/i)
+    expect(texto).not.toContain('La descripción de cada rol')
+    // **La línea que mandaba a otra pantalla se fue** · 2026-10-09, P2 de la
+    // auditoría de administración: los usuarios del cliente se listan en su
+    // ficha. Decía «hoy se ven en la pantalla de usuarios, no acá».
+    expect(texto).not.toContain('hoy se ven en la pantalla de usuarios')
+    expect(texto).toContain('Usuarios de este cliente')
+    // Y las dos que se mudaron, cada una en su bloque nuevo: acá se afirma que
+    // NO están duplicadas, que es la mitad que puede volver sin que nadie mire.
+    expect(texto).not.toContain('Quiénes tratan los datos de este cliente')
     expect(texto).toContain('Subprocesadores')
-    expect(texto).toContain('POST /admin/users')
   })
 
-  it('el estado del acceso se declara UNA vez, y en el bloque del agente', async () => {
-    // La prueba de que no se duplicó: la ficha lo dice una sola vez.
+  it('la verificación del acceso aparece UNA vez, y en el bloque del acceso', async () => {
+    // La prueba de que no se duplicó: la ficha la ofrece una sola vez. **Era
+    // «Pendiente · el estado del acceso» hasta el 2026-10-14**, cuando la
+    // comprobación llegó con `schema-check`.
+    // **Con un agente**: sin agente no hay acceso que verificar y el bloque no
+    // se ofrece, que es otra prueba —en `agente.test.tsx`—.
     base()
+    server.use(
+      http.get(`${API}/admin/tenants/:id/agents`, () =>
+        ok([{
+          id: 'ag-1', tenant_id: 't-1', name: 'Synapse UA', target_role: 'admin',
+          snowflake_db: 'DB', snowflake_schema: 'S', snowflake_cortex_agent_name: 'A', warehouse: 'W',
+          semantic_views: ['V'], system_prompt_base: '', is_active: true,
+          created_at: '2026-09-24T10:00:00Z', updated_at: '2026-09-25T10:00:00Z',
+        }]),
+      ),
+    )
     const { container } = montar()
     await abrirFicha()
+    await screen.findByText('Synapse UA')
 
     const texto = container.textContent ?? ''
-    const veces = texto.split('estado del acceso').length - 1
-    expect(veces).toBe(1)
-    expect(texto).toContain('Pendiente · el estado del acceso')
+    expect(texto.split('Última verificación').length - 1).toBe(1)
+    expect(texto).not.toContain('Pendiente · el estado del acceso')
   })
 })
 
@@ -381,7 +469,7 @@ describe('A4 · la columna USO · divergencia 6', () => {
     layout: layouts[1],
     tabs: [
       {
-        tab: { id: 'tab-a', layout_version_id: 'l-1', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+        tab: { id: 'tab-a', key: 'tab-a-key', layout_version_id: 'l-1', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
         panels: [
           { id: 'p-1', tab_id: 'tab-a', metric_id: 'm-1', type: 'kpi', col_start: 1, col_span: 3, row_span: 4 },
           { id: 'p-2', tab_id: 'tab-a', metric_id: 'm-1', type: 'kpi', col_start: 4, col_span: 3, row_span: 4 },
@@ -391,7 +479,7 @@ describe('A4 · la columna USO · divergencia 6', () => {
   }
 
   async function abrirCatalogo() {
-    await screen.findByText('Under Armour México')
+    await screen.findByRole('button', { name: /^Under Armour México · / })
     await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
     await screen.findByRole('table')
   }
@@ -416,7 +504,7 @@ describe('A4 · la columna USO · divergencia 6', () => {
 
     const fila = (await screen.findByText('Ventas')).closest('tr')
     expect(
-      within(fila as HTMLElement).getByText(/Editarla cambia lo que ven 2 rol\(es\) · CEO y Planner/),
+      within(fila as HTMLElement).getByText(/Editarla cambia lo que ven 2 rol\(es\): CEO y Planner/),
     ).toBeInTheDocument()
   })
 
@@ -429,7 +517,7 @@ describe('A4 · la columna USO · divergencia 6', () => {
 
     const fila = (await screen.findByText('Margen')).closest('tr')
     expect(
-      within(fila as HTMLElement).getByText(/Sin uso publicado · puede estar en un borrador/),
+      within(fila as HTMLElement).getByText(/Sin uso publicado: puede estar en un borrador/),
     ).toBeInTheDocument()
     expect(within(fila as HTMLElement).queryByText('0 panel(es)')).toBeNull()
   })
@@ -448,7 +536,10 @@ describe('A4 · la columna USO · divergencia 6', () => {
     const { container } = montar()
     await abrirCatalogo()
 
-    expect(container.textContent).toContain('Faltan 3 datos')
+    // **Desde el 2026-10-06 lo que falta no se pinta** · decisión humana sobre la
+    // auditoría del builder: «si no suman para el uso, quitar». La lista vive en
+    // el comentario del componente. Esta prueba fija que no vuelva a la pantalla.
+    expect(container.textContent).not.toContain('va a crecer')
     expect(container.textContent).not.toContain('en cuántos paneles se usa')
   })
 })
@@ -475,7 +566,7 @@ describe('el desglose de §9, desde la superficie · A2 §9', () => {
           tabs: [
             {
               tab: {
-                id: 'tab-a', layout_version_id: 'l-1', name: 'Resumen',
+                id: 'tab-a', key: 'tab-a-key', layout_version_id: 'l-1', name: 'Resumen',
                 operational_question: '¿Cómo va el negocio?', sort_order: 1, role_ids: [],
               },
               panels: [{ id: 'p-1' }, { id: 'p-2' }, { id: 'p-3' }],

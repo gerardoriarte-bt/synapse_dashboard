@@ -630,8 +630,14 @@ export interface components {
                  *     el cable lo trae**: la unidad de una cifra sale de la MÉTRICA
                  *     —`metric.unidad`, que dice `USD`— y no del tenant. El día que
                  *     haya una cifra sin unidad propia, ésta es la que corresponde.
-                 * @example MXN
-                 * @example COP
+                 *
+                 *     **Para UA MX vale `USD`** · decidido el 2026-10-01 (producto) y
+                 *     medido contra las tres fuentes · ver
+                 *     `docs/DECISIONES-2026-10-01-la-moneda-del-tenant.md`. El ejemplo
+                 *     decía `MXN` y era una deducción desde el país: la moneda es la
+                 *     del DATO, y el catálogo la declara en dólares. Cuando este campo
+                 *     y el `unidad` de la métrica discrepen, **gana la métrica**.
+                 * @example USD
                  */
                 moneda?: string;
                 /**
@@ -1021,6 +1027,32 @@ export interface components {
             /**
              * @description `USD` (moneda, va delante), `%` o `x` (símbolo, va pegado), o un
              *     NOMBRE como «órdenes» (no se pega: pertenece al label).
+             *
+             *     ── **ESTE CAMPO ES EL DUEÑO DE LA UNIDAD** · decidido el 2026-10-01 ──
+             *
+             *     **Lo declara Snowflake, POR MÉTRICA** —es la columna `UNIT` de
+             *     `SYNAPSE_METRIC_CATALOG`— y lo que venga acá es lo que se muestra.
+             *     No se deduce del país del cliente, ni del `locale`, ni de
+             *     `tenant.moneda`, ni se elige en un componente.
+             *
+             *     **Cuando discrepe con `tenant.moneda`, gana éste**, porque es quien
+             *     conoce el dato. El campo del tenant es respaldo: para una cifra sin
+             *     unidad propia, y para que el agente tenga algo que escribir.
+             *
+             *     **Por métrica y no por tenant, y eso decide el diseño.** Un campo por
+             *     tenant no puede expresar ingresos en USD con inversión en la moneda
+             *     local: obliga a elegir una y rotular la otra mal, en silencio y con
+             *     aritmética coherente. Y la unidad no siempre es moneda —hoy el
+             *     catálogo trae `%`, `x`, `órdenes`, `unidades`, `visitas`—, así que
+             *     «la moneda del tenant» no tiene nada que decir sobre la mayoría.
+             *
+             *     **`null` sobre una métrica numérica es información, no un hueco.**
+             *     `daily_trend` no declara unidad porque mezcla venta, visitas e
+             *     inversión: no hay UNA. Es la misma señal que la auditoría de
+             *     comprensión de gráficos encontró mirando la multilínea, legible sin
+             *     abrir la pantalla.
+             *
+             *     Ver `docs/DECISIONES-2026-10-01-la-unidad-la-define-snowflake.md`.
              */
             unidad?: string | null;
             /** @description Por dónde se puede desagregar en el drill-down. */
@@ -1163,6 +1195,29 @@ export interface components {
              */
             estado: "SIN_PERMISO";
             /**
+             * @description **Por qué este rol no lo ve, redactado por el servicio** · llegó en
+             *     `de881e1` el 2026-09-29, y con él `desbloqueaCon`.
+             *
+             *     **Acá el front escribía su propia frase** —«Esta métrica no está
+             *     disponible para tu rol»— y eso era el adaptador inventando copy de
+             *     producto, que la regla prohíbe: el dueño del texto que describe datos
+             *     es quien los emite. Se pidió, llegó, y se reemplazó.
+             * @example Tu rol no tiene acceso a esta métrica
+             */
+            razon: string;
+            /**
+             * @description **A quién pedirle**, redactado. Completa la gramática de §8 —estado,
+             *     razón y qué lo desbloquea— que este estado era el único en no tener
+             *     entera junto con `BLOQUEADO`.
+             *
+             *     **No promete una acción que no existe:** dice a quién pedirle, no
+             *     «solicitá acceso». El backend confirmó el 2026-09-29 que una ruta de
+             *     solicitud **no está planeada**, así que el estado se pinta sin CTA —
+             *     un botón que devuelve 404 es peor que su ausencia.
+             * @example Pedile al administrador del tenant que la habilite para tu rol
+             */
+            desbloqueaCon: string;
+            /**
              * @description Qué rol decide sobre esta métrica.
              * @example CMO
              */
@@ -1186,7 +1241,14 @@ export interface components {
             tipo: "texto";
             delta: string;
         };
-        DatoDeRespuesta: components["schemas"]["Gobierno"] & {
+        DatoDeRespuesta: {
+            base: string;
+            capa: components["schemas"]["Capa"] | null;
+            fuente: string;
+            /** Format: date-time */
+            frescura: string;
+            catalogVersion: number;
+        } & {
             valor: components["schemas"]["Valor"];
             /**
              * @description Con qué familia se pinta. **Obligatoria, y entró al contrato el
@@ -1195,9 +1257,49 @@ export interface components {
              *     una cifra del chat era inventado. §2.2 hace del color una
              *     propiedad de la métrica, no una decisión del componente — y eso
              *     vale igual cuando la cifra la compuso el agente para responder.
+             *
+             *     **`null` desde el 2026-10-07: el catálogo no la declaró.** Pasa
+             *     en el chat de pestaña, donde no hay una métrica de origen. Antes
+             *     el adaptador descartaba el dato entero y la respuesta quedaba
+             *     sin una sola cifra; ahora llega y **se declara sin pintarse**.
+             *     Null no habilita un color por defecto: es lo contrario.
              */
-            familia: components["schemas"]["Familia"];
+            familia: components["schemas"]["Familia"] | null;
+            /**
+             * @description Con qué cuerpo se dibuja, **cuando lo decidió el agente** · desde
+             *     el 2026-10-07. Sale de la marca del `chart_spec` —`line` →
+             *     `series`, `bar` → `bars`—, así que no es una elección nuestra.
+             *     Ausente cuando el dato no trajo gráfico: ahí manda el panel de
+             *     origen, que es la regla de F3.6.
+             */
+            tipoDePanel?: components["schemas"]["TipoPanel"];
             presentacion?: components["schemas"]["Presentacion"];
+            /**
+             * @description **Qué gráfico del repertorio dibuja la marca del agente** ·
+             *     2026-10-10. `bars` o `columns` según la orientación que eligió,
+             *     `multiline` o `stackarea` según la marca. Ausente: el del cuerpo.
+             */
+            grafico?: components["schemas"]["GraficoId"];
+            /**
+             * @description **Lo que el agente escribió para leer el gráfico** · 2026-10-10.
+             *     Los títulos de sus ejes —«Ingresos (USD)», «Plataforma»—, que se
+             *     descartaban: un eje decía «1.5M» y no de qué. Ausente cuando la
+             *     cifra no salió de un `chart_spec`.
+             */
+            ejes?: {
+                medida: string | null;
+                dimension: string | null;
+                serie: string | null;
+                dimensionEsFecha: boolean;
+            };
+            /**
+             * @description **Por qué un gráfico del agente se muestra como TABLA** ·
+             *     2026-10-10. Hasta ese día, lo que no se sabía dibujar se
+             *     descartaba en silencio; ahora sus datos se muestran y esto dice
+             *     por qué no como gráfico —«faltan cifras…», «las barras agrupadas…
+             *     todavía no tienen un gráfico»—.
+             */
+            aviso?: string;
             /**
              * @description Cuando la respuesta se apoya en una métrica del catálogo. Null
              *     si el agente la compuso para responder — y en ese caso el front
@@ -1604,9 +1706,26 @@ export interface components {
         Valor: components["schemas"]["ValorEscalar"] | components["schemas"]["ValorEscalarConIntervalo"] | components["schemas"]["ValorSerieTemporal"] | components["schemas"]["ValorSerieConBanda"] | components["schemas"]["ValorSeriesMultiples"] | components["schemas"]["ValorCategorica"] | components["schemas"]["ValorRanking"] | components["schemas"]["ValorComposicion"] | components["schemas"]["ValorDistribucion"] | components["schemas"]["ValorCategoricaComparada"] | components["schemas"]["ValorPerfilMultiatributo"] | components["schemas"]["ValorMatriz"] | components["schemas"]["ValorGrafo"] | components["schemas"]["ValorFlujo"] | components["schemas"]["ValorTabular"] | components["schemas"]["ValorProsa"];
         Punto: {
             /**
-             * @description La etiqueta del eje, ya lista para pintar.
-             * @example jul
-             * @example 2026-07-15
+             * @description **Una fecha ISO, `YYYY-MM-DD`** · desde `c8b9247`, remedido contra
+             *     `9dc481e` el 2026-10-09 · B1.34.
+             *
+             *     La SQL API de Snowflake devuelve los `DATE` como días desde epoch
+             *     —`"20362"` es 2025-10-01— y el materializador los convierte con
+             *     `isoDate`. **Pero sólo al materializar**: una fila calculada antes de
+             *     `c8b9247` conserva el número hasta que se rematerialice su período,
+             *     y así lo dicen ellos. Un `t` numérico es eso —un período sin
+             *     recalcular—, no otra unidad: se arregla desde A5, «Cargar meses».
+             *
+             *     **Acá decía, desde el 2026-09-29, que NO era una etiqueta lista para
+             *     pintar** y que eso bloqueaba la trama del degradado, que necesita
+             *     comparar cada punto con `stale_since`. **Con la unidad declarada,
+             *     ese candado venció**: la comparación ya no es una interpretación
+             *     nuestra.
+             *
+             *     **Sigue sin ser una ETIQUETA**: es una fecha, y cómo se rotula —mes,
+             *     día— lo decide el cuerpo con el formateador del tenant.
+             * @example 2025-10-01
+             * @example 2026-09-30
              */
             t: string;
             v: number;

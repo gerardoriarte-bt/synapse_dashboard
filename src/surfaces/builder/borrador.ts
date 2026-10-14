@@ -41,6 +41,10 @@ export function sembrar(detalle: LayoutDetalle): TabParaGuardar[] {
         colStart: p.colStart,
         colSpan: p.colSpan,
         rowSpan: p.rowSpan,
+        // **El gráfico viaja con el panel.** Sin esta línea el borrador lo
+        // perdía al serializarse, y como el `PUT` reemplaza el layout entero,
+        // guardar borraba el gráfico de todos los paneles.
+        ...(p.grafico === undefined ? {} : { grafico: p.grafico }),
         ...(p.opciones === undefined ? {} : { opciones: p.opciones }),
       })),
     }))
@@ -62,11 +66,29 @@ export function editar(
  *  Y nace con la pregunta vacía, que es lo que la deja inválida desde el primer
  *  render: el producto dice que una pestaña que no contesta una pregunta no se
  *  compone, así que la pantalla tiene que pedirla, no aceptarla en blanco. */
-export function agregar(tabs: readonly TabParaGuardar[]): TabParaGuardar[] {
+export function agregar(tabs: readonly TabParaGuardar[], roles: readonly string[] = []): TabParaGuardar[] {
   return [
     ...tabs,
-    { nombre: 'Pestaña nueva', pregunta: '', orden: tabs.length + 1, roles: [], panels: [] },
+    { nombre: 'Pestaña nueva', pregunta: '', orden: tabs.length + 1, roles: [...roles], panels: [] },
   ]
+}
+
+/** Qué roles ven una pestaña · D5 de la auditoría del 2026-10-06.
+ *
+ *  **Vacío significa «la ven todos»**, que es lo que el cable declara en
+ *  `roles` de `TabParaGuardar`. Por eso quitar el último rol no deja la pestaña
+ *  invisible: la deja para todos. Lo dice la pantalla, no esta función. */
+export function asignarRoles(
+  tabs: readonly TabParaGuardar[],
+  indice: number,
+  roles: readonly string[],
+): TabParaGuardar[] {
+  return tabs.map((t, i) => (i === indice ? { ...t, roles: [...roles] } : t))
+}
+
+/** Si una pestaña la ve un rol · `null` es «todos los roles», el filtro apagado. */
+export function laVe(tab: TabParaGuardar, rol: string | null): boolean {
+  return rol === null || tab.roles.length === 0 || tab.roles.includes(rol)
 }
 
 /** **Quitar renumera.** El `sort_order` que llegue en 0 lo reemplaza el servicio
@@ -155,6 +177,35 @@ export function quitarPanel(
 ): TabParaGuardar[] {
   return tabs.map((t, i) =>
     i === indiceTab ? { ...t, panels: t.panels.filter((_, j) => j !== indicePanel) } : t,
+  )
+}
+
+/** Pone o QUITA el gráfico de un panel.
+ *
+ *  **Aparte de `editarPanel` porque quitar no es editar.** Aquél toma un
+ *  `Partial` y lo mezcla con spread: `{ grafico: undefined }` deja la clave
+ *  intacta en vez de borrarla, así que «quitar» no haría nada y el control se
+ *  vería funcionando. Es el modo de falla del spread condicional, del otro lado.
+ *
+ *  Y borrar importa: sin gráfico el panel usa el de por defecto de su tipo, que
+ *  es un estado legítimo y el cuarto bullet del criterio de F4.21. */
+export function quitarOPonerGrafico(
+  tabs: readonly TabParaGuardar[],
+  indiceTab: number,
+  indicePanel: number,
+  grafico: PanelDeBorrador['grafico'],
+): TabParaGuardar[] {
+  return tabs.map((t, i) =>
+    i === indiceTab
+      ? {
+          ...t,
+          panels: t.panels.map((p, j) => {
+            if (j !== indicePanel) return p
+            const { grafico: _, ...resto } = p
+            return grafico === undefined ? resto : { ...resto, grafico }
+          }),
+        }
+      : t,
   )
 }
 
@@ -295,4 +346,54 @@ export function redimensionarPanel(
         }
       : t,
   )
+}
+
+/** **Los ids que el servidor acaba de asignar, adoptados por el borrador local**
+ *  · 2026-10-07, con el guardado automático.
+ *
+ *  Guardar devuelve el layout con `id` para lo que se creó. Hasta hoy el
+ *  borrador local se descartaba al guardar —`setBorrador(null)`— y eso estaba
+ *  bien porque guardar era un acto explícito y nadie editaba mientras tanto.
+ *  **Con el guardado automático se puede seguir editando mientras el `PUT`
+ *  viaja**, y descartar el borrador tiraría esas ediciones.
+ *
+ *  Así que lo que se conserva es el borrador local, y lo único que se le pide
+ *  al servidor son los ids de lo nuevo.
+ *
+ *  **Se empareja contra lo ENVIADO, no contra el nombre.** La primera versión
+ *  reconocía una pestaña nueva por su nombre, y renombrarla mientras el `PUT`
+ *  viajaba la dejaba sin id: el guardado siguiente la mandaba otra vez como
+ *  nueva y **el servicio la duplicaba**. Lo encontró una prueba el mismo día.
+ *  Ahora una fila local sin id adopta el de la fila guardada en su posición si
+ *  la ENVIADA en esa posición también iba sin id —o sea, si esa fila es la que
+ *  el servidor acaba de crear— y si ese id no lo tiene ya otra fila local.
+ *  Nombre, tipo o métrica pueden haber cambiado en el medio: no importa, es la
+ *  misma fila. */
+export function adoptarIds(
+  local: readonly TabParaGuardar[],
+  enviado: readonly TabParaGuardar[],
+  guardado: readonly TabParaGuardar[],
+): TabParaGuardar[] {
+  const tabsEnUso = new Set(local.flatMap((t) => (t.id === undefined ? [] : [t.id])))
+  return local.map((t, i) => {
+    const e = enviado[i]
+    const g = guardado[i]
+    const adoptaTab =
+      t.id === undefined && e !== undefined && e.id === undefined && g?.id !== undefined && !tabsEnUso.has(g.id)
+    const id = adoptaTab ? g.id : t.id
+    // Los paneles sólo se emparejan dentro de la MISMA pestaña: la local tiene
+    // que ser la enviada —por id, o recién adoptada—.
+    const misma = e !== undefined && g !== undefined && (adoptaTab || (t.id !== undefined && t.id === e.id && e.id === g.id))
+    const panelesEnUso = new Set(t.panels.flatMap((p) => (p.id === undefined ? [] : [p.id])))
+    const panels = !misma
+      ? t.panels
+      : t.panels.map((p, j) => {
+          const ep = e.panels[j]
+          const gp = g.panels[j]
+          if (p.id !== undefined || ep === undefined || ep.id !== undefined || gp?.id === undefined) return p
+          if (panelesEnUso.has(gp.id)) return p
+          return { ...p, id: gp.id }
+        })
+    return { ...t, ...(id === undefined ? {} : { id }), panels }
+  })
 }

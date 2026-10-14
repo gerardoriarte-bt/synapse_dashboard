@@ -50,6 +50,7 @@
  */
 import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
 import { EmptyRow } from './EmptyRow'
 import { SkeletonRows } from './SkeletonRows'
 import type { Metric } from '../../api/types'
@@ -76,11 +77,37 @@ const COLUMNAS = [
  *  **«En cuántos paneles se usa» salió de esta lista el 2026-09-15**, y es la
  *  única que se fue: la columna `USO` la cuenta sobre el layout publicado, que
  *  es el dato que A2 ya tiene en la mano. Ver `uso.ts`. */
-const FALTANTES = [
-  'Frescura · es del payload y depende del período · llega con la salud de feeds · B2.13',
-  'Ventana · el cable no la trae y el adaptador la deja vacía · B1.17 y B1.25',
-  'Estado y su filtro · se DERIVA de la salud de la fuente, que no llega · B2.13',
-] as const
+/** LO QUE ESTA PANTALLA TODAVÍA NO MUESTRA · reescrito el 2026-09-30 (humano)
+ *
+ *  **Esto se PINTA, así que es copy de producto y no una nota nuestra.** Hasta
+ *  hoy citaba §7.3, nombraba rutas del servicio y hablaba de «el cable» en la
+ *  pantalla de un cliente — la auditoría de usabilidad lo puso primero en su
+ *  lista: `docs/AUDITORIA-2026-09-30-usabilidad.md` §1.1.
+ *
+ *  **Declarar lo que falta se conserva**, que es la mejor costumbre de este
+ *  repositorio y la misma gramática de §8: un panel apagado dice qué pasa. Lo
+ *  que cambia es a quién se le habla. **La razón técnica de cada línea no se
+ *  pierde: baja al comentario**, que es donde le sirve a quien la va a
+ *  construir.
+ */
+/** **Lo que esta pantalla todavía no tiene** · fuera de la pantalla desde el 2026-10-06.
+ *
+ *  Se pintaba como «Esta pantalla va a crecer · Falta: …». Decisión humana
+ *  sobre la auditoría del builder de ese día: «si no suman para el uso,
+ *  quitar». No suman: quien usa la pantalla no puede hacer nada con eso. Queda
+ *  acá, que es donde le sirve a quien lo vaya a construir.
+ *
+ *    Es del payload y depende del período · llega con B2.13.
+ *  · 'La frescura de cada métrica, cuando llegue la salud de sus fuentes'
+ *    El cable no la trae y el adaptador la deja vacía · B1.17 y B1.25.
+ *  · 'La ventana con la que se mide cada métrica'
+ *    Se DERIVA de la salud de la fuente, que no llega · B2.13.
+ *  · 'El estado de cada métrica, y poder filtrar por él'
+ *  · Pedir una sincronización del catálogo desde acá: no hay ruta de
+ *    sincronización —`POST /admin/tenants/{id}/sync-catalog` da 404—.
+ *  · Editar una métrica, con el aviso de a qué paneles afecta: no hay ruta de
+ *    escritura sobre el catálogo.
+ */
 
 type Props = {
   metrics: readonly Metric[]
@@ -169,7 +196,7 @@ export function CatalogView({ metrics, rejected, uso, cargando = false }: Props)
               : `${String(visibles.length)} de ${String(metrics.length)} métricas`}
         </Label>
         {/* Se declara que este NO es el filtro de §7.3. */}
-        <Label>El filtro por estado no se puede ofrecer · el estado no llega</Label>
+        <Ayuda as="span">El filtro por estado no se puede ofrecer todavía: el estado de cada métrica no llega.</Ayuda>
       </div>
 
       <table className="w-full border-collapse" aria-busy={cargando}>
@@ -202,7 +229,8 @@ export function CatalogView({ metrics, rejected, uso, cargando = false }: Props)
               clase="sistema"
               columnas={COLUMNAS.length + 1}
               razon="Este cliente no tiene métricas en el catálogo"
-              salida="Se llenan sincronizando desde el modelo semántico · B1.18"
+              /* Se llenan sincronizando desde el modelo semántico · B1.18. */
+              salida="Se llenan cuando el catálogo se sincroniza"
             />
           )}
           {filtroVacio && (
@@ -238,34 +266,14 @@ export function CatalogView({ metrics, rejected, uso, cargando = false }: Props)
 
       {rejected.length > 0 && (
         <div className="flex flex-col gap-1 rounded-sm bg-w2 p-3">
-          <Label as="div">
-            {`${String(rejected.length)} métrica(s) del catálogo no se pueden componer`}
-          </Label>
+          <Ayuda>
+            {`${String(rejected.length)} métrica(s) del catálogo no se pueden componer:`}
+          </Ayuda>
           {rejected.map((r) => (
-            <Label key={r.id} as="div">{`${r.key} · ${r.razon}`}</Label>
+            <Ayuda key={r.id}>{`${r.key} · ${r.razon}`}</Ayuda>
           ))}
         </div>
       )}
-
-      {/* **La pantalla declara lo que no puede afirmar.** Sin esto el inventario
-          se lee como completo, que es justo lo contrario de lo que §7.3 quiere de
-          él. */}
-      <div className="flex flex-col gap-1 rounded-sm bg-w2 p-3">
-        <Label as="div">{`Faltan ${String(FALTANTES.length)} datos que §7.3 pide por métrica`}</Label>
-        {FALTANTES.map((f) => (
-          <Label key={f} as="div">
-            {f}
-          </Label>
-        ))}
-        <Label as="div">
-          Y la acción de sincronizar · ninguna de las seis rutas de admin la expone · hoy es
-          make sync-catalog
-        </Label>
-        <Label as="div">
-          Editar tampoco · no hay ruta de escritura sobre el catálogo, así que el aviso de qué
-          paneles afecta no tiene dónde dispararse
-        </Label>
-      </div>
     </div>
   )
 }
@@ -279,7 +287,7 @@ export function CatalogView({ metrics, rejected, uso, cargando = false }: Props)
  */
 function Uso({ uso }: { uso: UsoDeMetrica | undefined }) {
   if (uso === undefined) {
-    return <Label as="div">Sin uso publicado · puede estar en un borrador</Label>
+    return <Ayuda as="div">Sin uso publicado: puede estar en un borrador.</Ayuda>
   }
   return (
     <div className="flex flex-col gap-1">
@@ -289,7 +297,7 @@ function Uso({ uso }: { uso: UsoDeMetrica | undefined }) {
           VEN 2 ROLES». Es lo que §7.3 pide antes de guardar una edición, y
           mientras editar no exista, es lo que hace útil al conteo. */}
       {uso.roles.length > 0 && (
-        <Label as="div">{`Editarla cambia lo que ven ${String(uso.roles.length)} rol(es) · ${uso.roles.join(' y ')}`}</Label>
+        <Ayuda as="div">{`Editarla cambia lo que ven ${String(uso.roles.length)} rol(es): ${uso.roles.join(' y ')}.`}</Ayuda>
       )}
     </div>
   )

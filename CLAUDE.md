@@ -17,7 +17,7 @@ Fase 1 es portar el motor de panel desde el repositorio archivado.
 | Fuente | Define | Autoridad |
 |---|---|---|
 | `nuevo-desarrollo.md` | Arquitectura del front dinámico | **Normativo** |
-| `plan-de-trabajo.md` | Las 170 tareas con fase, estado y criterio | **Fuente del plan** |
+| `plan-de-trabajo.md` | Las tareas con fase, estado y criterio · **el conteo sale de `docs/ESTADO.md`** | **Fuente del plan** |
 | `contracts/synapse-api.yaml` | Forma de las respuestas del backend | **El contrato**, y su casa |
 | `.cursorrules` | Idioma, estructura, convenciones de componente | Normativo |
 | `tareas-front-back.md` | El desglose original del backend | Histórico · lo extiende `plan-de-trabajo.md` |
@@ -132,7 +132,7 @@ revés de lo que parecía**. Medido ese día contra las cuatro fuentes:
 | **El catálogo de Snowflake** · el real, firmado | **Español** · `Ingresos`, «Venta total del sitio medida por Adobe Analytics…» | Datos |
 | Nuestro chrome | Español | Nosotros |
 | La semilla del backend | **Inglés** · `Executive summary`, `ALL CHANNELS` | Backend |
-| El copy de estados · `reason`, `unlocks_with` | **Inglés** | Backend |
+| El copy de estados · `reason`, `unlocks_with` | ~~Inglés~~ · **ESPAÑOL desde `f70cec2`** · medido el 2026-09-28, y no lo pedimos | Backend |
 
 **El inglés que se ve en pantalla no es el producto: es la semilla, y está
 derivada del dibujo.** El `.pen` dice `Resumen ejecutivo` donde la semilla dice
@@ -142,7 +142,8 @@ servirse desde la semilla, el inglés se va casi solo.
 
 Pasar todo a inglés costaría que **datos recure las diez métricas que acaba de
 firmar**, que **el `.pen` se retraduzca** —y es normativo, no lo tocamos—, ~189
-cadenas en 63 archivos nuestros con sus pruebas, y 43 documentos. A cambio
+cadenas en 63 archivos nuestros con sus pruebas, y 43 documentos —**medido el
+2026-09-25; hoy son más**—. A cambio
 arreglaría **dos cosas que son del backend** y que ya están pedidas en
 `docs/MENSAJE-2026-09-25-backend-chat-y-rebase.md`.
 
@@ -221,6 +222,19 @@ equivocado.
 - **Ámbar y amarillo: prohibidos.**
 - **Deltas en color neutro.** El signo comunica dirección; prohibido verde/rojo
   semántico.
+- **El rojo `--color-peligro` es de ACCIÓN, nunca de dato** · decisión humana del
+  2026-10-06 (D4 de `docs/AUDITORIA-2026-10-06-builder-contexto-y-canvas.md`).
+  Sólo para lo que borra —quitar una pestaña, un panel, un rol—, vía
+  `<Accion variante="peligro">`. Vive en `src/tokens/decisiones.css`, escrito a
+  mano porque el `.pen` todavía no lo emite: es una propuesta de spec para
+  diseño, y el día que el `.pen` lo declare se borra de ahí.
+
+**Cuatro registros de texto en builder y administración** · 2026-10-06. Rótulo
+(`Label`, mono mayúsculas) nombra algo; ayuda (`Ayuda`, frase en Inter) explica;
+acción (`Accion`, siempre con caja) ejecuta; opción (`Opcion`, `aria-pressed`)
+se elige. **Un botón con el traje del rótulo es el defecto que esto corrige**:
+medido ese día, 18 de 21 botones del builder se veían como texto. La consola
+queda como está: ahí casi todo es dato con su rótulo.
 - La familia cromática **se lee del catálogo, nunca se elige en el componente**.
 
 ## Reglas de panel que el código tiene que sostener
@@ -266,7 +280,7 @@ equivocado.
 | `npm run plan` | regenera `plan-tareas.csv` y la página desde `plan-de-trabajo.md` |
 | `npm run plan:diff <export.csv>` | compara un export de la plataforma de seguimiento contra el plan |
 | `npm run mocks-fuera` | ningún archivo de `src/` importa un mock · F0.8 |
-| `npm run afirmaciones` | lo citable de `docs/` se verifica · método+ruta, commits y tareas |
+| `npm run afirmaciones` | lo citable de `docs/` se verifica · método+ruta, commits, tareas **y que un mensaje no prometa adjuntos** |
 | `SYNAPSE_EMAIL=… SYNAPSE_PASSWORD=… npm run humo` | el servicio real == los dos yaml transcriptos |
 | `docker compose -f dev/postgres/docker-compose.yml up -d` | **la base local** · desde el 2026-09-22 · ver `dev/postgres/README.md` |
 
@@ -321,6 +335,30 @@ hayan derivado.
   `RecoBody`: «un botón que se aprieta y devuelve 403 es peor que un botón
   ausente». El estado no queda sin salida —el detalle sigue diciendo qué
   hacer—, pero no promete una acción que no existe.
+- **Una validación que pasa en local puede fallar en la IMAGEN, y callar.** El
+  2026-10-02 el `PUT` del huso del tenant devolvía 400 en QA —«`America/Mexico_City`
+  no es una zona IANA válida»— sobre un backend cuyo código estaba bien y que su
+  equipo había validado. **Lo cerró probar con el valor que el servicio ya tenía
+  guardado**: `America/Bogota` también se rechazaba, así que no era la zona. La
+  causa era `FROM alpine:latest` sin `tzdata` y sin `import _ "time/tzdata"`:
+  `time.LoadLocation` falla con **todas**. En local Go usa el zoneinfo del
+  sistema operativo y no se nota.
+
+  **Y lo peor no era el 400, que al menos se ve.** Su `tenantNow` cae a UTC
+  cuando `LoadLocation` falla —un fallback correcto— así que el cálculo del mes
+  en curso quedaba en el reloj del servidor **sin avisar**. Un fallback sensato
+  puede tapar un defecto de despliegue.
+
+  **Nuestra imagen no tiene el problema** —`nginx:alpine` sirviendo estáticos, y
+  todo el `Intl` corre en el navegador— pero se comprobó en vez de suponerlo.
+
+- **El cliente de la consola es el del TOKEN, y el front no lo puede cambiar.**
+  `JWTMiddleware` pone `claims.TenantID` y ninguna ruta de `/config/*` acepta
+  otro — leído el 2026-10-06. Los botones de cliente del navbar de la consola
+  nunca hicieron nada (`onSelectTenant` no estaba conectado) y se quitaron.
+  Administración y builder sí comparten un **cliente de trabajo**
+  (`surfaces/useClienteDeTrabajo.ts`) que arranca en el propio; que la consola
+  lo siga es un pedido al backend.
 - **`params` de layout llega como `Record<string, unknown>`.** Un param mal
   escrito hoy se ignora en silencio; F1.29 lo resuelve validando en el adaptador
   de `api/`, no en `render/`.
@@ -362,12 +400,17 @@ el **2026-09-16**: `gerardo.riarte@buentipo.com` pasó a rol `Admin` —lo hizo 
 backend, no nosotros— y `/admin/*` dejó de dar 403. El claim se compara contra
 `roles.name` **normalizando la mayúscula**, así que `Admin` entra.
 
-**De las dos rutas del fork ya queda una** · medido el 2026-09-25 contra
-`1e080ee`. **B4.8 la tomaron**, y en la ruta que propusimos:
-`GET /admin/tenants/{tenantId}/roles/composition` → 200, así que A2 y A3 se ven
-contra el servicio real. **B4.9 sigue en 404** —`/admin/layouts/{id}/preview`—,
-así que para la vista previa por rol el modo mock sigue siendo la única forma de
-recorrerla.
+**NINGUNA DE LAS DOS RUTAS DEL FORK SIGUE EN 404** · remedido el 2026-09-28
+contra upstream `f70cec2`, levantado acá. **B4.8** la tomaron en la ruta que
+propusimos —`GET /admin/tenants/{tenantId}/roles/composition` → 200— y **B4.9
+TAMBIÉN**: `GET /admin/layouts/{layoutId}/preview?role_id=…&period=…` contesta
+200 con `tabs[]`, y cada pestaña trae sus `panels[]` ya filtrados por el rol.
+
+Acá decía «B4.9 sigue en 404, así que para la vista previa por rol el modo mock
+sigue siendo la única forma de recorrerla». **Dejó de ser cierto** y lo encontró
+`npm run humo`, no una lectura: el humo marcó deriva en esa ruta —campos que el
+servicio manda y el yaml no declaraba— y para que marque deriva tiene que haber
+contestado.
 
 **Y el humo de `/admin/*` ya corrió** · 2026-09-16, las ocho rutas contra
 `synapse-admin-wire.yaml`, campo por campo. **El PascalCase quedó confirmado y no
@@ -422,7 +465,7 @@ construyeron F3.3, F3.7, F3.13 y F4.4 encima, y no se abrió ninguna. La hoja de
 chat mide 480 donde el `.pen` dibuja 940, con riel lateral y estado colapsado.
 
 **Una advertencia que no se puede comprobar no es una regla**, así que desde el
-2026-09-21 hay un chequeo: `npm run pen-pantallas`, en la puerta. Lista las 33
+2026-09-21 hay un chequeo: `npm run pen-pantallas`, en la puerta. Lista las
 pantallas del `.pen` y **falla con cualquiera que no esté declarada** en el
 registro del plan, con el archivo que la implementa o la razón por la que
 todavía no. El archivo lleva el ancla `§PEN:<id>`, que se escribe mirando el
@@ -467,6 +510,36 @@ plan. **No verifica que algo sea verdadero, solo que sea citable** — lo que cu
 es citar mal lo que está a dos archivos de distancia, que es la clase barata y
 frecuente.
 
+**ANTES DE PEDIRLE ALGO A OTRO EQUIPO, SE MIDE LO NUESTRO.**
+
+**Agregado el 2026-10-05, y lo pagó el equipo de backend.** Les pedimos los
+períodos semanales como si destrabaran seis métricas. **No las destraban**, y la
+prueba era nuestra: `coarsestRequired` toma el grano más grueso de la pestaña,
+así que una métrica semanal nunca apaga los meses. Trabajaron un viernes sobre un
+pedido que se caía leyendo `src/surfaces/console/periodGrain.ts`.
+
+**No fue aislado, y eso es lo que importa.** El mismo mes pedimos `MXN` cuando
+`/config/catalog` ya servía `unit: USD`, y `UNIT = 'x'` sobre dos métricas que son
+correctamente sin unidad. **Tres pedidos, y las tres respuestas estaban de este
+lado.**
+
+**La regla ya existía y no cubría el caso.** `para-backend` exige
+«**Medido contra `<sha>` el `<fecha>`**» desde el 2026-09-28 — pero **sólo sobre
+`plan-de-trabajo.md`**. Un pedido escrito directo como `MENSAJE-*` no pasaba por
+ningún chequeo, y los tres se escribieron así. Medido ese día: **cero de catorce**
+mensajes de octubre llevaban la marca.
+
+**Desde el 2026-10-05 la pide `afirmaciones`**, en la puerta: todo `MENSAJE-*`
+declara qué se midió de nuestro lado, o dice
+«**Sin medición previa:** `<por qué>`» con la razón en la misma línea. Los
+anteriores quedan afuera a propósito — llevan «Histórico · no se actualiza», y
+exigirles la marca sería escribir hoy qué se midió entonces, o sea **de memoria**,
+que es la falla que la regla ataja.
+
+**Lo que el chequeo NO hace es verificar que la medición sea buena**, igual que
+`pen-pantallas` no compara el dibujo con la pantalla. Obliga a que la frase
+exista; hacerla es el trabajo.
+
 **UN BLOQUEO ESCRITO NO SE RAZONA POR ENCIMA.** El 2026-09-16 se tomaron
 F4.17–F4.20 con el plan diciendo «se construyen cuando el backend envíe esas
 formas, no antes» y la instrucción diciendo «no tomar». Había un argumento —que
@@ -501,7 +574,393 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-09-25 · el backend contestó todo el mismo día
+### ⇩ ACÁ SE PARÓ · 2026-10-10 · los gráficos del agente se entienden
+
+**`main` está en `2c79384`** (#11 y #12). Lo que costó y lo que quedó está en
+`docs/AUDITORIA-2026-10-10-graficos-del-chat.md`, que tiene al final qué
+resolvió el #12.
+
+**El traductor de `chart_spec` es una tabla por PAPEL** —medida, dimensión,
+serie—, no por caso: crecer a un gráfico nuevo es agregar una entrada a
+`TRADUCCIONES` en `src/api/vegaLite.ts`. **Lo que no se dibuja se muestra como
+tabla con su razón**; nada desaparece. Un gráfico sin familia se dibuja en
+neutro (`consulta`, en `decisiones.css`).
+
+**Abierto**: el tramo del mes en curso en el trazo (hoy sólo el aviso), los
+huecos dibujados —piden `Punto.v` nulo en todo el repertorio de series—, separar
+series en neutro (§14, diseño) y la narración del agente en inglés (datos).
+
+**Otra terminal trabaja UX en paralelo**: lo de cada una va en su rama y su PR ·
+memoria `sesiones-paralelas-rama-y-pr`.
+
+### ⇩ ACÁ SE PARÓ · 2026-10-09 (tarde) · esperando los dos mensajes del chat
+
+**`main` está en `e87fefb`.** Después de las tablas del chat entraron: el riel
+que reabre una consulta y la elimina con confirmación (#6, #7), la puerta que ya
+no reescribe `PARA-BACKEND.md` (#8), el cable de consola reverificado entero
+contra `9dc481e` (#9) y los pedidos al backend remedidos —de diez quedan tres,
+ninguno de código suyo— con B1.34 cerrada (#10).
+
+**ESPERANDO AL BACKEND, y lo que sigue es esperar, no volver a pedirlo**:
+`MENSAJE-2026-10-08-backend-procedencia-por-nombre.md` —el cruce por nombre que
+firma una tabla de medios con la base de la venta del sitio— y
+`MENSAJE-2026-10-09-backend-tablas-del-chat.md` —la columna `label` que se
+descarta—. Hasta que lleguen, las tablas del chat de pestaña se declaran en vez
+de dibujarse.
+
+**Los meses viejos ya se cargaron en QA** (el humano, desde A5), así que el `t`
+de las series llega en ISO también ahí.
+
+**Desplegado en QA, el chat dibuja tablas y ningún otro gráfico.** Dos causas:
+el backend no lee el `chart_spec` porque llega como texto —ya pedido, punto 4
+del mensaje del 10-08— y **una consulta libre no tiene familia y no la va a
+tener**. Lo segundo **se destrabó el mismo día, por decisión humana**: un gráfico
+sin familia se dibuja en NEUTRO —la rampa `consulta` de `decisiones.css`— con un
+rótulo que lo dice. Diseño puede afinarlo: §14 de
+`docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md`.
+
+### ⇩ ACÁ SE PARÓ · 2026-10-09 · las tablas del chat, y la puerta en clone limpio
+
+**`main` está en `f86f2b4`**, del PR #4 (`chat/tablas-sin-rotulos`). Empezó
+porque QA no dibujaba los gráficos del chat, y **QA sirve una imagen anterior a
+`920ec8d`**: el texto «no salió de un panel» ya no existe en el código.
+
+**Al medirlo contra `9dc481e` apareció lo de fondo**: las tablas del chat de
+pestaña llegan **sin la columna de la dimensión** —`inferTabularColumns`
+descarta `label`, y el agente escribe `fuente AS label`—. Del lado nuestro: una
+tabla sin rótulos se declara, una con rótulos y sin familia se dibuja sin la
+marca, y la capa vacía ya no se firma `GOLD` (`DatoDeRespuesta.capa` es
+anulable).
+
+**ESPERANDO AL BACKEND**, en `docs/MENSAJE-2026-10-09-backend-tablas-del-chat.md`,
+**enviado el 2026-10-09**: columnas desde `rowType`, por qué una tabla llega dos
+veces, y desplegar el front desde `main` en QA. Confirma el pedido del 10-08 sin
+repetirlo. **Lo que sigue es esperar, no volver a pedirlo.**
+
+**La puerta no corría en un clone limpio**: `afirmaciones` leía
+`tools/plan-tareas.json`, que `.gitignore` excluye, y marcaba 221 tareas «fuera
+del plan». Ahora lee el markdown con el parser del plan (`b6cffcb`).
+
+**Sin mirar**: al reabrir desde el riel un hilo creado por `curl`, la
+conversación salió vacía. No se sabe si pasa con hilos del front.
+
+### ⇩ el 2026-10-09 · administración: clientes, ficha y usuarios
+
+**`main` está en `9728d3a`**, del PR #3 (`admin/clientes-y-usuarios`).
+Clientes y su ficha van lado a lado, los usuarios se organizan por cliente con
+cambiar rol y suspender, y está la cola de solicitudes de acceso. Las decisiones
+del humano están escritas dentro de
+`docs/AUDITORIA-2026-10-08-admin-clientes-y-usuarios.md`.
+
+**ESPERANDO AL BACKEND**, en `docs/MENSAJE-2026-10-09-backend-administracion.md`,
+**enviado el 2026-10-09**, y avisado el merge: el alta de cliente sin
+credenciales de Snowflake, que el estado de la conexión viaje con el cliente,
+la invitación directa, el rol elegido al aprobar, y confirmar en QA el cambio de
+rol y la suspensión. **Lo que sigue es esperar, no volver a pedirlo.**
+
+**Lo siguiente nuestro, sin tomar:** la verificación del acceso en la ficha con
+`schema-check`, que el `.pen` dibuja como «Última verificación · Verificar
+ahora».
+
+**GitGuardian marcó un falso positivo** en el PR #3: un texto inventado en un
+fixture. Se sacó en `9728d3a`, y marcar el incidente le queda al humano.
+
+**Otra terminal trabajaba el chat en paralelo** sobre el mismo árbol. Lo de
+cada una va en su rama y su PR · ver la memoria `sesiones-paralelas-rama-y-pr`.
+
+### ⇩ el 2026-10-08 · el chat dibuja por la forma
+
+**Lo que costó descubrir está en `docs/BITACORA-2026-10-08.md`.** **`main` está
+en `00d40d4`**, fast-forward de `Gerardo`.
+
+**§7 está cerrada**: si el panel de origen no acepta la forma, la cifra del chat
+se dibuja con el único tipo que la acepta. **No se busca el panel por la
+`metric_key` de la procedencia**: en pestaña la adivina el backend por nombre, y
+con el dato real las mismas filas de paid media salieron como `revenue` y como
+`platform_return`.
+
+**ESPERANDO AL BACKEND**, en `docs/MENSAJE-2026-10-08-backend-procedencia-por-nombre.md`,
+enviado el 2026-10-08: cruce exacto contra su propio `MetricColumnUsage`
+(`schema.go`), base vacía cuando la consulta filtra, y `chart_spec` leído como
+texto. **Si despliegan `9dc481e` tal como está junto con este front**, la tabla de
+paid media del chat se ve con la base de la venta del sitio.
+
+**La familia es de la métrica; la base es de la consulta.** Es la distinción que
+decide qué se puede copiar del catálogo a una cifra del agente.
+
+### ⇩ el 2026-10-07 · el chat dibuja y los meses se cargan desde A5
+
+**Lo que costó descubrir está en `docs/BITACORA-2026-10-07.md`.** Esto es dónde
+retomar. **`main` está en `bce2e95`**, fast-forward de `Gerardo`, y el backend
+ya está avisado para desplegarlo en QA.
+
+**LO PRIMERO DESPUÉS DEL DESPLIEGUE: cargar enero–agosto de 2026 en QA**, desde
+Administración → Salud de feeds → «Cargar meses». El scheduler sólo calcula el
+mes en curso y el anterior (`DD_MATERIALIZE_PERIODS_BACK`, default 1), así que
+**todo cliente que entre con historia necesita este paso**. Está en el runbook.
+
+**Y una trampa que vale para adelante: el local mostraba los meses porque los
+cargamos a mano**, no porque el producto los cargue. Antes de concluir «anda»,
+mirar quién dejó andando lo que se mira — `dd_materialize_runs.trigger`.
+
+**Esperando al backend**, en `docs/MENSAJE-2026-10-07-backend-respuestas-del-chat.md`:
+el bloque de formato del prompt —que le pide al agente «una o dos frases»— y la
+familia en los datos del chat de pestaña. Hasta que llegue, en la pestaña el
+gráfico del agente se declara sin dibujarse; en el chat de panel ya se dibuja.
+
+### ⇩ ACÁ SE PARÓ · 2026-10-05 · el día que QA dejó de ser una pregunta
+
+**TODO LO QUE FALTA ESTÁ DEL LADO DEL BACKEND, y el mensaje ya se mandó** ·
+`docs/MENSAJE-2026-10-05-backend-desplegar-el-front.md`, enviado el 2026-10-05.
+Dos pedidos: subir la imagen del front a `qa-synapse.lobueno.co` y redesplegar su
+API a `c8b9247`. **Lo que sigue es esperar, no volver a pedirlo.**
+
+**EL DASHBOARD DE UA ESTÁ EN QA Y ES EL DEFAULT.** Quien entra ve **10 paneles,
+los 10 `AVAILABLE`**, con frescura del día y la gobernanza en español del catálogo
+firmado. Verificado con la preferencia personal **borrada**, que es lo que simula a
+un usuario nuevo. `Overview` —la semilla, con sus dos paneles de prosa en inglés—
+queda como segundo dashboard para comparar.
+
+**Se publicó SIN los tres gráficos** —`radial` en `goal_attainment`, `smallmult` en
+`daily_trend` y `media_efficiency_12m`—, porque QA no sirve `/config/plots` y un
+panel que declara un gráfico sin repertorio se pinta nombrando el error.
+Reponerlos es correr `tools/aplicar-dashboard.py` sin `--sin-graficos`.
+
+**El front está probado contra la API de QA de verdad**, no contra mocks: la
+imagen levantada con `API_ORIGIN=https://qa-synapse-api.lobueno.co`, login y
+`/config/me` con token atravesando el proxy, y construida desde un clone limpio de
+`main`. **`main` se mergeó** —fast-forward— así que el clone por defecto ya trae el
+`Dockerfile`: antes estaba 245 commits atrás y sin él.
+
+**Y el repositorio ya era público**, así que no hubo nada que compartir. Se
+verificó que es seguro apuntarlos ahí: ningún valor de `docs/backdocs/` aparece en
+el repositorio ni en su historial, y esa carpeta **nunca estuvo trackeada**.
+
+**LO QUE ESTE DÍA ENSEÑÓ, Y NO ES LO CONSTRUIDO:**
+
+**Una solicitud sin medir lo NUESTRO cuesta el día de otro equipo.** Les pedimos
+los períodos semanales como si destrabaran seis métricas y no las destrababan — la
+prueba era `coarsestRequired`, código nuestro. Fue el tercer caso del mes.
+`afirmaciones` ahora exige que todo `MENSAJE-*` declare qué se midió de este lado;
+está arriba, en su propia sección.
+
+**Tres cosas anduvieron de casualidad y la medición las separó:**
+
+- **El TLS al upstream iba sin SNI y sin verificar el certificado.** Andaba porque
+  el endpoint de QA lo tolera. Puesto y comprobado rompiéndolo: con un
+  certificado autofirmado la imagen ahora da **502**.
+- **Un `tab_keys` vacío significa TODAS**, y `aplicar-dashboard.py` le agregaba la
+  clave nueva a todos los roles activos. `Admin` y `Planner` —los que tienen los
+  12 usuarios— pasaron de `[]` a `['resumen']` y **`/config/me` devolvió cero
+  pestañas**. Restaurado, y la herramienta ya no toca un rol vacío.
+- **Un 404 que parecía del producto era de la medición.**
+  `GET /config/tabs/{tabId}` exige que la pestaña pertenezca al layout que
+  `resolveLayout` elige; nuestro cliente manda `layoutId` y mi script no.
+
+**Y antes de escribir en QA se leyó SU código, no se supuso:** que el `PUT` de rol
+es parcial, y que esa semántica llegó en `1e080ee` — el mismo commit que trajo
+`/roles/composition`, que QA sirve. Por eso `layout_overrides` y los `hidden` de
+`planner` sobrevivieron.
+
+**El corte medido está en `docs/ESTADO-qa-2026-10-05.md`**, con la priorización y
+con su §0 diciendo qué cambió después de la medición de la mañana.
+
+### ⇩ el 2026-09-29 · el día que escribimos lo que veníamos pidiendo
+
+**Lo que costó descubrir está en `docs/BITACORA-2026-09-29.md`.** Lo de acá es
+dónde retomar.
+
+**TRES MENSAJES ESCRITOS Y SIN ENVIAR**, los tres medidos, y **los tres los manda
+el humano**:
+
+| Archivo | A quién | Qué pide |
+|---|---|---|
+| `MENSAJE-2026-09-29-backend-el-despliegue.md` | Backend | **Tres preguntas y una entrega** · si existe el servicio, en qué commit, contra qué base · y el empaquetado del front, que es de ellos desplegar |
+| `MENSAJE-2026-09-29-datos-formas-sin-metrica.md` | Datos | La fila del catálogo y **el esquema de Gold** · el SQL lo escribimos nosotros |
+| `MENSAJE-2026-09-29-backend-tenant-colombiano.md` | Backend | El tenant de México está en `es-CO`/`COP`/`America/Bogota` por un **default de columna** |
+
+**Y una especificación que reemplaza pedir métricas de a una**:
+`docs/snowflake/COMO-ENTREGAR-UNA-METRICA.md`. Su tesis es del humano y conviene
+no perderla: **casi todas las decisiones de qué se grafica salen de saber qué
+hay**, así que el primer entregable no es una métrica sino **el inventario de
+Gold** — con el **grano** y la **cardinalidad** de cada dimensión, que son los dos
+que no se leen de un `DESCRIBE`.
+
+**LA PREGUNTA QUE DECIDE LO QUE SIGUE NO ES UNA TAREA: ¿hay un backend
+desplegado?** Todo lo verificado —la consola, el chat, los trece gráficos,
+`/config/plots`, la prosa por agente— está medido contra un binario que
+**levantamos nosotros**. Ya está preguntado; lo que sigue es esperar.
+
+**ESCRIBIMOS `GET /config/plots`** · `b6f0e09` en `feature/config-plots` del fork,
+sobre `de881e1` limpio. Estuvo pedido **tres veces** y no llegaba; al medir, la
+tabla era nuestra entera y lo único que faltaba era la ruta. **Las 49 filas las
+genera `tools/gen-plots.py`** desde cuatro fuentes — pedirles transcribir 49 filas
+de una tabla markdown era el modo de falla que ya costó quince filas mal.
+
+**LOS TRECE GRÁFICOS CON DATO REAL ESTÁN DIBUJANDO**, y F1.31 y F4.21 cerradas.
+Lo que enseñó está en la bitácora; en corto: **los 13 que faltaban eran
+exactamente los 13 que se dibujaban como otra cosa**, y dos cosas andaban de
+casualidad —el multi-dashboard y el `chart` del builder, que **borraba** al
+guardar—.
+
+**LA PROSA POR AGENTE ANDA**, probada acá con el flag prendido: los dos paneles
+pasan de `DEGRADED` con el texto de la semilla a `AVAILABLE` en español y con las
+cifras del período. B2.15 queda en ⚠️ porque lo que pide es encenderla **en dev**.
+
+**Y DOS PREGUNTAS DEL HUMANO ATAJARON DOS PEDIDOS EQUIVOCADOS EN DOS DÍAS.** El 28
+fue «¿validaste contra el repositorio?» y cayeron cinco de doce. El 29 fue «¿no
+podemos definirlos nosotros?» y movió medio pedido de datos a nuestra mesa.
+**Ninguna herramienta las hizo**, y es la clase de control que conviene pedir
+antes de mandar algo.
+
+### ⇩ el 2026-09-28 (noche) · el día que la prosa propia costó cinco pedidos falsos
+
+**Todo lo que costó descubrir está en `docs/BITACORA-2026-09-28.md`.** Lo de abajo
+es sólo dónde retomar.
+
+---
+
+## ⇨ POR ACÁ SE SIGUE · ¿HAY UN BACKEND DESPLEGADO?
+
+**Decidido el 2026-09-28 (noche, humano): es lo primero de mañana.**
+
+**PREGUNTADO EL 2026-09-29** · `docs/MENSAJE-2026-09-29-backend-el-despliegue.md`,
+con las cuatro preguntas de abajo y el empaquetado del front ya medido. **Lo que
+sigue es esperar respuesta, no volver a preguntarlo.**
+
+Es la pregunta que decide si el front puede subir, y **no la podemos contestar
+desde acá**: todo lo verificado esta semana vale contra el binario que
+**levantamos nosotros** en `:4010` desde un clone de su repositorio.
+
+**Lo que hay que averiguar, en este orden:**
+
+1. **¿Existe un servicio de Synapse corriendo en algún AWS?** Si no existe, el
+   front no tiene a dónde apuntar y todo lo demás es teórico.
+2. **¿En qué commit está?** Si no es `f70cec2`, **nada de lo medido esta semana
+   vale ahí**: hay que correr `SYNAPSE_EMAIL=… SYNAPSE_PASSWORD=… npm run humo`
+   contra **ese** servicio, que es exactamente para lo que existe.
+3. **¿Contra qué base?** La RDS compartida dejó de responder desde acá el 22, y
+   `DB_AUTO_MIGRATE=true` **sigue prohibido** contra una base compartida.
+4. **¿Quién lo despliega y con qué?** El front ya tiene su `Dockerfile` y su
+   `nginx.conf.template`, probados incluso con raíz de sólo lectura. Lo que falta
+   saber es si hay un pipeline donde meterlos o hay que escribirlo.
+
+**Y una trampa registrada que aplica de nuevo acá:** antes de medir cualquier
+cosa, **mirar qué binario está corriendo**. El 2026-09-22 medir con el fork
+levantado hizo que seis campos nuestros se vieran como avance de ellos.
+
+**La pregunta 1 no es nuestra**: se la hacemos al backend o a quien opere la
+cuenta. Las otras tres se contestan solas una vez que haya una URL.
+
+---
+
+**EL FRONT ESTÁ PARA DESPLEGARSE EN PRUEBAS**, y el empaquetado se construyó,
+se corrió y se midió: `Dockerfile`, `deploy/nginx.conf.template` y
+`.dockerignore` · **77,3 MB**, sin Node adentro · `deploy/README.md`.
+
+`try_files` se comprobó **rompiéndolo**: sin él `/` sigue en 200 y `/admin` da
+404 — **por eso no se nota probando desde el login**. Y el SSE del chat se corrió
+contra Cortex real a través del proxy.
+
+**Lo que NO va a andar en pruebas está listado con su razón** en
+`docs/AUDITORIA-2026-09-28-barrido-y-despliegue.md`: seis candados de backend o
+datos, y **ninguno es una pantalla rota** — son pantallas que no existen todavía.
+
+**LOS PEDIDOS AL BACKEND SON ONCE, Y LOS ONCE DICEN CÓMO SE COMPROBARON.**
+`docs/PARA-BACKEND.md` se regenera; el mensaje redactado está en
+`docs/MENSAJE-2026-09-28-backend-todo-lo-que-falta.md` y **lo manda el humano** —
+se decidió así el 28, teniendo el PR del fork disponible.
+
+**El saldo del día en esto, que es lo que conviene no repetir:** el archivo
+mostraba 8 pedidos, faltaban 7 escritos sólo en mensajes, y **se cayeron 5 al
+validarlos contra su código**. Cinco de doce llevaban entre uno y cuatro días
+siendo falsos.
+
+**Y AHORA HAY CHEQUEO PARA ESO.** Cada pedido declara contra qué commit suyo se
+midió. `para-backend` **falla** si alguien escribe uno sin decirlo —error de
+autoría— y **avisa sin fallar** si envejeció, porque eso se vence cuando ellos
+trabajan y un chequeo que se pone rojo cada vez que empujan es uno que alguien
+apaga.
+
+**LA PREGUNTA QUE MÁS VALIÓ, Y NO LA HIZO NINGUNA HERRAMIENTA: «¿validaste contra
+el repositorio?».** Atajó tres de los cinco. Las otras dos las atajó
+`backend-drift` y una mutación que **sobrevivió**.
+
+**Lo que sigue mañana, por si sirve el orden:**
+
+1. **Nada del front está bloqueado por nosotros.** Las 15 tareas abiertas esperan
+   backend o datos, cada una con su candado medido el 28.
+2. **El responsive quedó diferido por decisión humana** · el `.pen` dibuja **tres
+   navbars** y pintamos uno · `docs/AUDITORIA-2026-09-28-pen-vs-responsive.md`.
+3. **`B1.26` sigue ⬜** —«decidir cómo escala el registro **antes del segundo
+   tenant**»— y es lo que más encarece dar de alta un cliente nuevo. El criterio
+   ya lo eligió de hecho —opción A— pero **su propio criterio pide que B quede con
+   fecha, y la fecha no la pone el front**.
+4. **Tres decisiones de las pantallas de alta** esperan a producto y diseño ·
+   `docs/PROPUESTA-2026-09-28-pantallas-de-alta.md`. Una ya se resolvió sola: el
+   `.pen` dibujó `B7 · Guardar como plantilla` el mismo 28.
+
+**DOS COSAS DEL ENTORNO LOCAL QUE CAMBIARON HOY:**
+
+- **La llave del `.env` del backend es la que descifra la base**, no la que
+  `dev/postgres/README.md` documentaba — ese valor ya no sirve, se lee como
+  base64. El síntoma engaña: el login anda, `/config/*` anda, y **lo que se cae es
+  `/admin/*`**. Y el puerto es `APP_PORT`, no `PORT`.
+- **«Marca» ya NO sirve como dashboard sin componer**: se publicó ahí para cerrar
+  B4.2. Cómo recuperarlo está en ese mismo README.
+
+### ⇩ el 2026-09-28 (mañana) · el gráfico ya viaja, y un aviso que no bajó al cable
+
+**`chart` llegó y la cadena está cerrada.** Los cuatro gráficos de esta semana
+—`control`, `interval`, `stackarea` y la caída a `UnknownPlotState`— tenían cuerpo
+y repertorio y no tenían por dónde llegarles el id. Ahora sale del layout en los
+dos cables, lo adapta `adapt.ts` y **hay una prueba que lo sigue por los cuatro
+saltos** · `tests/surfaces/console/graficoViaja.test.tsx`.
+
+**Esa prueba es la que faltaba, no una más.** Las nueve que había rinden el cuerpo
+directo —`render(<SeriesBody grafico="stackarea" />)`—, así que verificaban el
+cuerpo y dejaban sin cubrir lo único que podía romperse: que el id **llegue**. El
+camino tiene un spread condicional en cada salto y una prop mal nombrada compila.
+Tres mutaciones fieles, tres muertas.
+
+**Y una de las tres mutaciones murió primero por la razón equivocada** —`CONOCIDOS`
+no existía, así que fue un `ReferenceError` y no el filtrado que quería probar—.
+Se rehízo con una lista blanca de verdad y entonces falló **exactamente una** de
+las tres pruebas, la que predecía. Es la misma lección de siempre con una cara
+nueva: una mutación que no reproduce el defecto real miente en las dos
+direcciones.
+
+**UN CAMBIO ANUNCIADO NO ESTÁ TRANSCRIPTO HASTA QUE ESTÁ EN EL CABLE**, y es el
+hallazgo que vale para adelante. `request_from` decía `"administrator"` y el
+servicio manda `"admin"`. **No se escribió de memoria**: ellos lo cambiaron y nos
+lo avisaron por escrito el 2026-09-25, con el ejemplo de respuesta al lado. El
+aviso se archivó en prosa y nunca bajó al yaml, que es de donde sale el tipo.
+
+La regla «nada se escribe de memoria» no cubre esto, porque nadie adivinó. Lo
+encontró **`backend-drift` releyendo la ruta**, que es el único que podía: la
+prueba del adaptador suministra el literal y lo afirma, así que verifica el
+paso-a-través y nunca el valor.
+
+**Los estados pasaron de cuatro a cinco.** `FORBIDDEN` dejó de ser inalcanzable
+—el usuario `planner` existe y oculta tres métricas—, y su payload es
+`{status, request_from}` **y nada más**: sin `reason` ni `unlocks_with`, que es la
+gramática de §8 que los otros cinco traen. Y **`ERROR` cambió de razón**: el
+builder ahora rechaza un `gauge` sin `maximum` antes de guardar, así que el
+disparador que el criterio declara ya no existe. Preguntado con qué se prueba.
+
+**Lo que sigue es esperar**: el mensaje está en
+`docs/MENSAJE-2026-09-28-backend-lo-que-piden.md`, con los tres archivos que nos
+piden, el sí a `roles.tab_keys`, y tres pedidos chicos. `backend-drift` ✓ las nueve
+contra `f70cec2`.
+
+**Y el entorno local cambió de llave.** `dev/postgres/README.md` documentaba una
+`DATA_ENCRYPTION_KEY` que este binario rechaza —se lee como base64—. **La que
+descifra la base de acá vive en el `.env` del repositorio del backend**, y eso
+importa: las credenciales de Snowflake del tenant son las reales, las del chat del
+24. Poner otra no es un inconveniente, es perderlas. El síntoma engaña — el login
+anda, `/config/*` anda, y lo que se cae es `/admin/*`.
+
+### ⇩ el 2026-09-25 · el backend contestó todo el mismo día
 
 **Lo que costó descubrir está en las bitácoras**: `docs/BITACORA-2026-09-25.md`
 —el día que nuestra propia transcripción nos hizo acusar al backend—,
@@ -538,11 +997,16 @@ no volver a pedirlo.
 
 ## LO QUE FRENA HOY, y es poco
 
+**⚠️ LAS DOS PRIMERAS FILAS DE ESTA TABLA VENCIERON, remedido el 2026-09-30** ·
+`docs/AUDITORIA-2026-09-30-pantallas-faltantes.md`. Se dejan tachadas porque el
+modo de falla —una razón escrita cuando era cierta que envejece sin aviso— es más
+útil visible que borrado.
+
 | | Qué falta | De quién |
 |---|---|---|
-| **A1 · las cinco columnas** | `GET /admin/tenants` devuelve `id` y `name` · B4.1, **escrita en nuestro fork** | Que la tomen |
-| **A3 · alcance de plataforma** | No hay ruta que liste usuarios de todos los clientes; `/admin/users` da 404 | Backend |
-| **F3.15 · el chat presente** | Que `POST /config/chat` acepte contexto de pestaña | Backend · pedido |
+| ~~**A1 · las cinco columnas**~~ | ~~`GET /admin/tenants` devuelve `id` y `name`~~ · **LAS TOMARON** en `6e521cc`: devuelve **trece** campos, con `status` y `vertical` declarados «reservados … siempre nil en v1» | Nadie · es nuestra |
+| ~~**A3 · alcance de plataforma**~~ | ~~`/admin/users` da 404~~ · **contesta 200** desde `6e521cc`, con `total`, `tenants` y `tenant_name` por usuario | Nadie · es nuestra |
+| ~~**F3.15 · el chat presente**~~ | **NO FRENA NADA · LA TAREA ESTÁ ✅** desde el 2026-09-26, verificada contra el servicio corriendo. Esta fila quedó de cuando el candado estaba vigente y **sobrevivió tres días a la tarea que la venció**: el 28 se la volvió a leer como pendiente. Lo único sin mirar son sus dos composiciones responsive | Nadie |
 | **F4.17–F4.19** | `Valor` no declara `matriz`, `grafo`, `flujo` ni las otras dos · **y B5.3 pide que el dato exista**, que no existe | Las dos condiciones, verificadas el 2026-09-25 |
 | **Seis filas de `SEMANTIC_DIRECTION`** | Traen el código en vez del texto | Datos |
 
@@ -747,13 +1211,21 @@ correr el formateador sobre un directorio en vez de sobre los archivos propios.
 **La colisión de `/roles` se resolvió como propusimos**: nuestro listado se corrió
 a `GET /admin/tenants/{tenantId}/roles/composition` y el suyo no se tocó.
 
-**Pero apareció una segunda colisión, y es de diseño.** `168a761` agregó en
-`resolveLayout` una compuerta —`if layout.Status != published &&
-!isAdminRoleName(role.Name) { return nil, nil }`— que **rompe el preview por
-rol**: el preview pasa el rol SIMULADO, que no es admin, así que un borrador se
-rechaza. Confunde quién pregunta con a quién se simula. No lo muestra el
-conflicto ni el compilador: lo encontró una prueba nuestra. **Es una decisión
-pendiente**, no un arreglo.
+**Y la «segunda colisión» que esta nota anunciaba NO EXISTE** · corregido el
+2026-09-28. Decía que `168a761` había agregado en `resolveLayout` una compuerta
+—`!isAdminRoleName(role.Name)`— que rompía el preview por rol, porque el preview
+pasa el rol SIMULADO.
+
+**Su código dice `sel.CallerRole`**, el rol de quien PREGUNTA —
+`dd_config_service.go:498`—, que es exactamente la distinción que la nota decía
+que faltaba. Y se midió el caso: previsualizar un **borrador** con lente
+`planner` contesta **200** con `status: draft`.
+
+**Cómo llegó acá, que es lo que importa:** se escribió leyendo un diff de rebase,
+quedó tres días, y el 28 casi se le manda al backend como pedido **sin volver a
+abrir su código**. Es la falla del 2026-09-25 otra vez — **citar una
+transcripción nuestra como si fuera una medición**. La atajó una sola pregunta:
+«¿validaste contra el repositorio?».
 
 **El rebase viejo sigue en `rebase-prueba`**, sobre `82da946`. Son dos hunks de
 adyacencia pura más un rompimiento que el conflicto no muestra: su commit agregó
