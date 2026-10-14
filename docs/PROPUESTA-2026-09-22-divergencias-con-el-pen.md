@@ -649,6 +649,39 @@ panel —§6— y en el inspector del builder (B2), o que diga qué cambiar. Y q
 editoriales), que es otra: aquella es del catálogo y vale en todo panel que use
 la métrica; ésta es del panel.
 
+## 15 · Múltiplos pequeños con series de distinta unidad · 2026-10-14
+
+**Quién decide** · diseño · **Construido el 2026-10-14**, sin decisión humana
+explícita: lo impuso el dato
+
+`Plot/MÚLTIPLOS` dibuja **una sola escala compartida** entre las divisiones, y
+eso es lo que el gráfico afirma: son la misma métrica partida, y sus alturas se
+comparan. El frame `Unidades por división` lo demuestra con números —alturas y
+cifras proporcionales al tercer decimal—.
+
+**El dato real rompió el supuesto.** Desde `3651d70` el backend manda cada serie
+con su unidad, y «Eficiencia de medios · 12m» mezcla inversión y ventas en USD
+con el ROAS como ratio. Con una escala, 11,7 al lado de 280.313 dólares salía
+como una línea plana en cero. Lo encontró mirarlo en pantalla.
+
+| El dibujo | Lo construido |
+|---|---|
+| Una escala para todas las divisiones | **Una escala por unidad**: comparten las series de la misma unidad, y cada unidad tiene la suya. Sin unidades, una sola, como el dibujo |
+| La cifra con la unidad de la métrica («8.9K u.») | La unidad de **su serie**, con la regla del producto: «USD 280K», «11.7x» |
+| Nada sobre el período en curso | **«· en curso»** en la cifra del mes que no cerró. Es la cifra real hasta hoy, y sin la marca se lee como un desplome |
+
+**Lo que se le pide a diseño:**
+
+- **Si dos escalas en el mismo gráfico se tienen que ver.** Hoy nada en pantalla
+  dice que el ROAS se mide en otra escala que los dólares: lo dice la unidad de la
+  cifra. El dibujo no tiene eje de valores, así que no hay dónde marcarlo.
+- **Cómo se marca un punto parcial.** Se eligió texto en la cifra porque es lo
+  único del gráfico que se lee; un trazo punteado o un punto hueco serían otra
+  opción.
+- **Si un multiserie de unidades distintas debería ser otro gráfico.** Un
+  `combo` —barras y línea con dos ejes— está en el repertorio y dice lo mismo
+  sin pedirle a los múltiplos algo que no prometen.
+
 ## Dónde vive cada una de las demás
 
 Para que este documento no crezca hasta pisar a los otros:

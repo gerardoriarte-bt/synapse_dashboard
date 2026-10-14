@@ -378,6 +378,11 @@ export function Canvas({
                 <>
                   <Label as="div">{p.grafico !== undefined && nombreDeGrafico !== undefined ? nombreDeGrafico(p.grafico) : nombreDeTipo(p.tipo)}</Label>
                   <span className="font-body text-cuerpo font-medium text-ink">{nombre(p.metricId)}</span>
+                  {/* La nota de lectura · 2026-10-14, igual que bajo el título
+                      del panel en la consola. */}
+                  {p.nota === undefined || p.nota === '' ? null : (
+                    <p className="font-body text-celda leading-cuerpo text-dim m-0 line-clamp-2">{p.nota}</p>
+                  )}
                   {/* La medida en unidades de grilla · las mismas que pide el
                       configurador. Los píxeles los decide `96·N − 16`, no quien
                       compone. */}
