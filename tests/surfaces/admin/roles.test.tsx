@@ -437,16 +437,30 @@ describe('lo que A2 y A3 todavía no pueden mostrar', () => {
     expect(texto).toContain('Subprocesadores')
   })
 
-  it('el estado del acceso se declara UNA vez, y en el bloque del agente', async () => {
-    // La prueba de que no se duplicó: la ficha lo dice una sola vez.
+  it('la verificación del acceso aparece UNA vez, y en el bloque del acceso', async () => {
+    // La prueba de que no se duplicó: la ficha la ofrece una sola vez. **Era
+    // «Pendiente · el estado del acceso» hasta el 2026-10-14**, cuando la
+    // comprobación llegó con `schema-check`.
+    // **Con un agente**: sin agente no hay acceso que verificar y el bloque no
+    // se ofrece, que es otra prueba —en `agente.test.tsx`—.
     base()
+    server.use(
+      http.get(`${API}/admin/tenants/:id/agents`, () =>
+        ok([{
+          id: 'ag-1', tenant_id: 't-1', name: 'Synapse UA', target_role: 'admin',
+          snowflake_db: 'DB', snowflake_schema: 'S', snowflake_cortex_agent_name: 'A', warehouse: 'W',
+          semantic_views: ['V'], system_prompt_base: '', is_active: true,
+          created_at: '2026-09-24T10:00:00Z', updated_at: '2026-09-25T10:00:00Z',
+        }]),
+      ),
+    )
     const { container } = montar()
     await abrirFicha()
+    await screen.findByText('Synapse UA')
 
     const texto = container.textContent ?? ''
-    const veces = texto.split('estado del acceso').length - 1
-    expect(veces).toBe(1)
-    expect(texto).toContain('Pendiente · el estado del acceso')
+    expect(texto.split('Última verificación').length - 1).toBe(1)
+    expect(texto).not.toContain('Pendiente · el estado del acceso')
   })
 })
 

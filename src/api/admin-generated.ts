@@ -632,6 +632,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/tenants/{tenantId}/schema-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Verificar el acceso a los datos del cliente
+         * @description **Medida el 2026-10-14 contra el binario de `8272085`**, con la base
+         *     local y Snowflake real. Tarda **entre 1,5 y 3,2 s**: consulta Snowflake
+         *     cada vez, y **el resultado no se guarda** —pedido el 2026-10-09 en
+         *     `MENSAJE-2026-10-09-backend-administracion.md`—. Por eso el front la
+         *     llama a pedido, no al abrir la ficha.
+         *
+         *     **No dice sólo «hay conexión».** Verifica tres cosas, y cada una es una
+         *     consecuencia distinta para la pantalla:
+         *
+         *       · que Snowflake responda con las credenciales del cliente —si no,
+         *         **422** credenciales o **502** Snowflake no respondió—;
+         *       · que existan las tablas y columnas que el producto lee
+         *         (`objects[].exists`, `objects[].missing`) y qué métricas quedan sin
+         *         datos si falta alguna (`affected_metrics`);
+         *       · que cada métrica del catálogo tenga cómo calcularse
+         *         (`keys_without_query`).
+         *
+         *     **`ok` es el AND de las tres**, así que `ok: false` no es «sin acceso».
+         *     Medido en UA: `ok: false` con todos los objetos presentes, porque seis
+         *     claves del catálogo no tienen cálculo.
+         *
+         *     **`role` no cambia el resultado**: con `planner` usa el mismo agente que
+         *     sin rol. La verificación es del cliente. Sin agente activo → **404**
+         *     `NOT_FOUND_AGENT`, medido.
+         *
+         *     **`database`, `schema` y `objects[].name` no se muestran** · §7.3: son
+         *     vocabulario de infraestructura. El adaptador los recorta.
+         */
+        get: operations["checkTenantSchema"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/access-requests": {
         parameters: {
             query?: never;
@@ -966,6 +1012,34 @@ export interface components {
             reviewed_at?: string;
             /** Format: date-time */
             created_at: string;
+        };
+        /** @description Medido el 2026-10-14 contra `8272085`. Ver la ruta. */
+        SchemaCheck: {
+            /** @description AND de conexión, objetos completos y claves con cálculo */
+            ok: boolean;
+            /** Format: uuid */
+            tenant_id: string;
+            agent_name: string;
+            /** @description Infraestructura · no se muestra */
+            database: string;
+            /** @description Infraestructura · no se muestra */
+            schema: string;
+            objects: {
+                /** @description Infraestructura · no se muestra */
+                name: string;
+                /** @enum {string} */
+                kind: "table" | "view";
+                exists: boolean;
+                missing: string[];
+            }[];
+            /** @description Claves del catálogo que quedan sin datos por lo que falta */
+            affected_metrics: string[];
+            /** @description Claves del catálogo sin cálculo */
+            keys_without_query: string[];
+            /** @enum {string} */
+            catalog_source: "view" | "postgres";
+            /** Format: date-time */
+            checked_at: string;
         };
         AccessRequestPage: {
             items: components["schemas"]["AccessRequest"][];
@@ -2794,6 +2868,32 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    checkTenantSchema: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El resultado de la verificación */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["SchemaCheck"];
+                    };
+                };
+            };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };

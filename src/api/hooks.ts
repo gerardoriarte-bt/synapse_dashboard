@@ -73,6 +73,7 @@ export const keys = {
   // es la clase de mentira que costó el defecto del cache del preview por rol.
   usuariosDePlataforma: () => ['admin', 'usuarios', 'plataforma'] as const,
   solicitudes: ['admin', 'solicitudes'] as const,
+  verificacion: (tenantId: string) => ['admin', 'verificacion', tenantId] as const,
   preview: (layoutId: string, rolId: string) => ['admin', 'preview', layoutId, rolId] as const,
   layout: (layoutId: string) => ['admin', 'layout', layoutId] as const,
   /** **Por DASHBOARD y no por layout** · §PEN:B6. El historial es del dashboard:
@@ -485,6 +486,24 @@ export function useEditUser() {
       void qc.invalidateQueries({ queryKey: keys.tenants })
       void qc.invalidateQueries({ queryKey: keys.roles(v.tenantId) })
     },
+  })
+}
+
+/** **La verificación del acceso, a pedido** · 2026-10-14.
+ *
+ *  `enabled: false`: no corre al abrir la ficha, corre con «Verificar ahora»
+ *  —`refetch`—. Tarda segundos y consulta Snowflake. Y el resultado queda en el
+ *  cache de la sesión, por cliente: volver a la ficha muestra la última
+ *  verificación en vez de borrarla. **No sobrevive a recargar**, porque el
+ *  servicio no la guarda; está pedido. */
+export function useVerifyAccess(tenantId: string | null) {
+  return useQuery({
+    queryKey: keys.verificacion(tenantId ?? ''),
+    queryFn: () => adminApi.verificarAcceso(tenantId as string),
+    enabled: false,
+    retry: false,
+    staleTime: Infinity,
+    gcTime: Infinity,
   })
 }
 

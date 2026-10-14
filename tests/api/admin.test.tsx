@@ -694,3 +694,23 @@ describe('las solicitudes de acceso', () => {
     expect(llamado).toBe(true)
   })
 })
+
+describe('la verificación del acceso', () => {
+  it('va a la ruta del cliente, y no trae la plomería', async () => {
+    let url = ''
+    server.use(
+      http.get(`${API}/admin/tenants/:tenantId/schema-check`, ({ request }) => {
+        url = new URL(request.url).pathname
+        return ok({
+          ok: true, tenant_id: 't-1', agent_name: 'A', database: 'DB_BT_UA', schema: 'BT_UA_MART_ANALYTICS',
+          objects: [], affected_metrics: [], keys_without_query: [], catalog_source: 'view',
+          checked_at: '2026-10-14T15:33:07Z',
+        })
+      }),
+    )
+    const v = await adminApi.verificarAcceso('t-1')
+    expect(url).toBe('/api/v1/admin/tenants/t-1/schema-check')
+    expect(JSON.stringify(v)).not.toContain('DB_BT_UA')
+    expect(v.verificadoEn).toBe('2026-10-14T15:33:07Z')
+  })
+})
