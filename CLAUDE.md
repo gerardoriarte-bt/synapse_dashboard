@@ -574,7 +574,31 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-10-10 · los gráficos del agente se entienden
+### ⇩ ACÁ SE PARÓ · 2026-10-14 · la prosa lista, falta desplegar
+
+**Lo que costó descubrir está en `docs/BITACORA-2026-10-14.md`.** **`main` está
+en `78660b1`** más esta entrada. Del front no queda nada tomable.
+
+**EL DESPLIEGUE ES DEL BACKEND**: `3651d70` en QA con
+`DD_MATERIALIZE_PROSE_ENABLED=true` —**no es `DD_MATERIALIZE_ENABLED`**, ésa
+prende el programador— y `PLATFORM_OPERATOR_USER_IDS` cargada; los ids de Lo
+Bueno los pasa el humano. **Sin la de prosa, los dos paneles de prosa de UA
+quedan bloqueados**, porque `3651d70` bloquea la semilla.
+
+**DESPUÉS DEL DESPLIEGUE, LO NUESTRO: «Cargar meses» desde A5.** El programador
+sólo genera el mes en curso y el anterior. En local se cargaron los catorce
+restantes y la prosa quedó en 16 de 16 meses.
+
+**«Executive summary» no se traduce en el front**: `dd_panels` no tiene título,
+sale del catálogo, y la fila es de la semilla. Renombrarla es del backend y **el
+humano lo difirió**.
+
+**Esperando al backend, sin volver a pedirlo**: la prosa por card
+(`MENSAJE-2026-10-14-backend-instruccion-de-prosa.md`), permisos 2–6,
+`GET /admin/layouts/{layoutId}` abierto entre clientes, el alta sin credenciales
+y la invitación directa.
+
+### ⇩ el 2026-10-10 · los gráficos del agente se entienden
 
 **`main` está en `2c79384`** (#11 y #12). Lo que costó y lo que quedó está en
 `docs/AUDITORIA-2026-10-10-graficos-del-chat.md`, que tiene al final qué
