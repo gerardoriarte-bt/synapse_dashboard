@@ -659,3 +659,52 @@ describe('las acciones de usuarios llegan al servicio', () => {
     expect(screen.getByText(/Usuarios de este cliente · 1/)).toBeVisible()
   })
 })
+
+/* ── «Verificar ahora» llega al servicio · 2026-10-14 ─────────────────────── */
+describe('la verificación del acceso, desde la ficha', () => {
+  it('pide la verificación del cliente ELEGIDO, y pinta la consecuencia sin plomería', async () => {
+    const pedidos: string[] = []
+    server.use(
+      http.get(`${API}/admin/tenants`, () => ok(tenants)),
+      http.get(`${API}/admin/tenants/:id/agents`, () =>
+        ok([{
+          id: 'ag-1', tenant_id: 't-2', name: 'Synapse K', target_role: 'admin',
+          snowflake_db: 'DB_K', snowflake_schema: 'S_K', snowflake_cortex_agent_name: 'A', warehouse: 'W',
+          semantic_views: ['V'], system_prompt_base: '', is_active: true,
+          created_at: '2026-09-24T10:00:00Z', updated_at: '2026-09-25T10:00:00Z',
+        }]),
+      ),
+      // **Con un rol**: sin roles la ficha muestra el BLOQUEADO del dibujo en
+      // vez del acceso, que es otra rama.
+      http.get(`${API}/admin/tenants/:id/roles/composition`, () =>
+        ok([{ id: 'r-k', tenant_id: 't-2', name: 'admin', tab_ids: [], hidden_metric_ids: [], layout_overrides: {}, user_count: 1 }]),
+      ),
+      http.get(`${API}/admin/tenants/:id/schema-check`, ({ params }) => {
+        pedidos.push(String(params['id']))
+        return ok({
+          ok: false, tenant_id: params['id'], agent_name: 'Synapse K', database: 'DB_K', schema: 'S_K',
+          objects: [{ name: 'GLD_PAID_MEDIA', kind: 'table', exists: true, missing: [] }],
+          affected_metrics: [], keys_without_query: ['revenue_forecast'], catalog_source: 'view',
+          checked_at: '2026-10-14T15:33:07Z',
+        })
+      }),
+    )
+    const { container } = montar()
+    await userEvent.click(await screen.findByRole('button', { name: /^Keralty Colombia · / }))
+
+    // **A pedido**: abrir la ficha no verifica nada.
+    await screen.findByText('Sin verificar en esta sesión')
+    expect(pedidos).toEqual([])
+
+    await userEvent.click(screen.getByRole('button', { name: 'Verificar ahora' }))
+    await screen.findByText(/responden y está todo lo que el producto lee/)
+    expect(pedidos).toEqual(['t-2'])
+
+    // `ok: false` con todo presente es VIGENTE: la métrica sin cálculo va aparte.
+    expect(screen.getByText('Synapse K').closest('tr')?.textContent).toContain('Vigente')
+    expect(screen.getByText(/1 métrica del catálogo todavía no tiene cálculo/)).toBeVisible()
+    for (const plomeria of ['DB_K', 'S_K', 'GLD_PAID_MEDIA']) {
+      expect(container.textContent).not.toContain(plomeria)
+    }
+  })
+})

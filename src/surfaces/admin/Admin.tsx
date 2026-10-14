@@ -39,6 +39,7 @@ import {
   useReviewAccessRequest,
   useRolesOf,
   useAgentsOf,
+  useVerifyAccess,
   useAdminCatalog,
   useDeleteRole,
   useLayoutDetail,
@@ -69,6 +70,8 @@ import { distintivo } from './distintivo'
 import { useClienteDeTrabajo } from '../useClienteDeTrabajo'
 import { SurfaceMessage } from '../console/SurfaceMessage'
 import { AgentConfig } from './AgentConfig'
+import { estadoDelAcceso } from './estadoDelAcceso'
+import type { EstadoDelAcceso } from './estadoDelAcceso'
 import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
 import { Accion } from '../../render/primitives/Accion'
@@ -156,6 +159,13 @@ export function Admin() {
    *  tenant, igual que los roles: las dos contestan «qué hay configurado para
    *  este cliente». */
   const agentes = useAgents(activo)
+  /** **La verificación del acceso, a pedido** · 2026-10-14. Una por cliente, y
+   *  queda en el cache de la sesión: volver a la ficha la sigue mostrando. */
+  const verificacion = useVerifyAccess(activo)
+  const acceso = estadoDelAcceso(verificacion.data, verificacion.error, verificacion.isFetching)
+  /** El «hoy» de la última verificación. **Fijo por montaje**: leer el reloj en
+   *  cada render da una hora que cambia según cuándo se repinta. */
+  const [ahora] = useState(() => new Date())
   // A5 · F4.24. La ruta llegó el 2026-09-25 con `1e080ee`.
   const fuentes = useFeeds(activo)
   /** **Lo pedido desde A5, y cuándo** · 2026-10-07. La carga contesta 202 y
@@ -379,6 +389,10 @@ export function Admin() {
               estado={estado}
               version={version}
               format={format}
+              acceso={acceso}
+              ahora={ahora}
+              nombreDeMetrica={(clave) => metricas.find((m) => m.key === clave)?.nombre ?? clave}
+              onVerificar={() => void verificacion.refetch()}
               usuarios={
                 <UserList
                   alcance="cliente"
@@ -481,6 +495,10 @@ function Cliente({
   version,
   format,
   usuarios,
+  acceso,
+  ahora,
+  nombreDeMetrica,
+  onVerificar,
   // **`...paraRoles` y no una prop más en la lista** · 2026-09-22. Estaba
   // escrito prop por prop, y al sumar `onVerCatalogo` —opcional— el compilador
   // no dijo nada: la prop llegaba a `Cliente`, se perdía acá, y el enlace del
@@ -501,6 +519,14 @@ function Cliente({
   /** **Los usuarios del cliente** · P2, 2026-10-09. Obligatoria por la misma
    *  razón que las cuatro de arriba. */
   usuarios: React.ReactNode
+  /** **La verificación del acceso** · 2026-10-14. Las dos primeras
+   *  obligatorias, por la misma razón; el manejador no, porque sin él el CTA
+   *  no se pinta. */
+  acceso: EstadoDelAcceso
+  ahora: Date
+  /** Del catálogo completo, que tiene la clave; las métricas de los roles no. */
+  nombreDeMetrica: (clave: string) => string
+  onVerificar?: () => void
 } & Omit<Parameters<typeof RoleEditor>[0], 'roles'>) {
   if (roles.isError) {
     return (
@@ -548,6 +574,11 @@ function Cliente({
         <AgentConfig
           agentes={agentes.data ?? []}
           sinRoles={roles.data !== undefined && roles.data.length === 0}
+          acceso={acceso}
+          nombreDeMetrica={nombreDeMetrica}
+          format={format}
+          now={ahora}
+          {...(onVerificar === undefined ? {} : { onVerificar })}
         />
       )}
 

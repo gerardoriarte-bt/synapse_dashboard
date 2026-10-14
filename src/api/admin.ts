@@ -927,6 +927,13 @@ export const adminApi = {
     }
   },
 
+  /** Verificar el acceso a los datos del cliente · tarda segundos y consulta
+   *  Snowflake cada vez, así que se llama a pedido. Ver el cable. */
+  verificarAcceso: async (tenantId: string): Promise<VerificacionDeAcceso> =>
+    adaptarVerificacion(
+      await pedir<WireSchemaCheck>(`/admin/tenants/${encodeURIComponent(tenantId)}/schema-check`),
+    ),
+
   /** Cambiar el rol de un usuario, o suspenderlo y reactivarlo · 2026-10-09.
    *
    *  **Suspender es `activo: false`**, y no un `DELETE`: el `DELETE` del
@@ -1261,6 +1268,33 @@ export type WireFeed = A['Feed']
 export type WireMaterializeRun = A['MaterializeRun']
 export type WireUser = A['User']
 export type WireUsersPlatform = A['UsersPlatform']
+export type WireSchemaCheck = A['SchemaCheck']
+
+/** La verificación del acceso a los datos del cliente · A2 · 2026-10-14.
+ *
+ *  **Sin nombres de base, esquema ni tablas** · §7.3: el cable los manda y acá
+ *  se recortan, igual que `adaptAgent` hace con el agente. Lo que sobrevive es
+ *  la consecuencia: si están todos los datos, qué métricas quedan sin datos por
+ *  lo que falta, y cuáles no tienen cálculo. */
+export type VerificacionDeAcceso = {
+  /** Todas las tablas y columnas que el producto lee están. */
+  datosCompletos: boolean
+  /** Claves del catálogo que quedan sin datos por lo que falta. */
+  afectadas: string[]
+  /** Claves del catálogo sin cálculo · no es un problema de acceso. */
+  sinCalculo: string[]
+  verificadoEn: string
+}
+
+export function adaptarVerificacion(w: WireSchemaCheck): VerificacionDeAcceso {
+  return {
+    datosCompletos: w.objects.every((o) => o.exists && o.missing.length === 0),
+    afectadas: w.affected_metrics,
+    sinCalculo: w.keys_without_query,
+    verificadoEn: w.checked_at,
+  }
+}
+
 export type WireAccessRequest = A['AccessRequest']
 export type WireAccessRequestPage = A['AccessRequestPage']
 

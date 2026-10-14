@@ -1095,6 +1095,55 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /admin/tenants/{tenantId}/schema-check:
+    x-verificado-en: 8272085
+    get:
+      tags: [admin]
+      operationId: checkTenantSchema
+      summary: Verificar el acceso a los datos del cliente
+      description: |
+        **Medida el 2026-10-14 contra el binario de `8272085`**, con la base
+        local y Snowflake real. Tarda **entre 1,5 y 3,2 s**: consulta Snowflake
+        cada vez, y **el resultado no se guarda** —pedido el 2026-10-09 en
+        `MENSAJE-2026-10-09-backend-administracion.md`—. Por eso el front la
+        llama a pedido, no al abrir la ficha.
+
+        **No dice sólo «hay conexión».** Verifica tres cosas, y cada una es una
+        consecuencia distinta para la pantalla:
+
+          · que Snowflake responda con las credenciales del cliente —si no,
+            **422** credenciales o **502** Snowflake no respondió—;
+          · que existan las tablas y columnas que el producto lee
+            (`objects[].exists`, `objects[].missing`) y qué métricas quedan sin
+            datos si falta alguna (`affected_metrics`);
+          · que cada métrica del catálogo tenga cómo calcularse
+            (`keys_without_query`).
+
+        **`ok` es el AND de las tres**, así que `ok: false` no es «sin acceso».
+        Medido en UA: `ok: false` con todos los objetos presentes, porque seis
+        claves del catálogo no tienen cálculo.
+
+        **`role` no cambia el resultado**: con `planner` usa el mismo agente que
+        sin rol. La verificación es del cliente. Sin agente activo → **404**
+        `NOT_FOUND_AGENT`, medido.
+
+        **`database`, `schema` y `objects[].name` no se muestran** · §7.3: son
+        vocabulario de infraestructura. El adaptador los recorta.
+      parameters: [{ $ref: '#/components/parameters/tenantId' }]
+      responses:
+        '200':
+          description: El resultado de la verificación
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/SchemaCheck' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   # ── Las solicitudes de acceso · la cola que el login alimenta ────────────
   /admin/access-requests:
     x-verificado-en: 9dc481e
@@ -1580,6 +1629,31 @@ components:
         reviewed_by_user_id: { type: string, format: uuid }
         reviewed_at: { type: string, format: date-time }
         created_at: { type: string, format: date-time }
+
+    SchemaCheck:
+      type: object
+      description: Medido el 2026-10-14 contra `8272085`. Ver la ruta.
+      required: [ok, tenant_id, agent_name, database, schema, objects, affected_metrics, keys_without_query, catalog_source, checked_at]
+      properties:
+        ok: { type: boolean, description: 'AND de conexión, objetos completos y claves con cálculo' }
+        tenant_id: { type: string, format: uuid }
+        agent_name: { type: string }
+        database: { type: string, description: 'Infraestructura · no se muestra' }
+        schema: { type: string, description: 'Infraestructura · no se muestra' }
+        objects:
+          type: array
+          items:
+            type: object
+            required: [name, kind, exists, missing]
+            properties:
+              name: { type: string, description: 'Infraestructura · no se muestra' }
+              kind: { type: string, enum: [table, view] }
+              exists: { type: boolean }
+              missing: { type: array, items: { type: string } }
+        affected_metrics: { type: array, items: { type: string }, description: Claves del catálogo que quedan sin datos por lo que falta }
+        keys_without_query: { type: array, items: { type: string }, description: Claves del catálogo sin cálculo }
+        catalog_source: { type: string, enum: [view, postgres] }
+        checked_at: { type: string, format: date-time }
 
     AccessRequestPage:
       type: object
