@@ -71,6 +71,22 @@
  *  valores —ni ticks ni rótulos— y se copia tal cual: lo que se lee es la forma
  *  de cada división y su cifra final. Que la comparación entre divisiones sea
  *  válida depende de la escala compartida, y **eso no se ve en pantalla**.
+ *
+ *  ── LA ESCALA SE COMPARTE POR UNIDAD · 2026-10-14 ───────────────────────────
+ *
+ *  **Comparar sólo vale entre cosas de la misma unidad.** «Eficiencia de medios
+ *  · 12m» trae inversión y ventas en USD y el ROAS como ratio. Mientras el
+ *  backend mandaba el ROAS ×100 entraba en la escala de los dólares; desde
+ *  `3651d70` es el ratio —11.7— y al lado de 280 mil dólares salía una línea
+ *  plana en cero. Lo encontró mirarlo en pantalla.
+ *
+ *  Así que la escala se comparte **entre las series de la misma unidad** y cada
+ *  unidad tiene la suya. Inversión y ventas siguen siendo comparables entre sí,
+ *  que es lo que el gráfico afirma; el ROAS deja de medirse en dólares. **Si
+ *  ninguna serie declara unidad, hay una sola escala**, que es el dibujo.
+ *
+ *  **El mes en curso se dice en la cifra** —«· en curso»—: es la cifra real
+ *  hasta hoy, no una caída, y sin la marca se lee como un desplome.
  */
 import { AxisText } from './core/Axis'
 import { charsThatFit } from './core/axisGeometry'
@@ -79,7 +95,12 @@ import { Area, Line } from './core/Series'
 import { useSize } from './core/useSize'
 import type { FamiliaDeDibujo } from '../types'
 
-export type FacetSeries = { etiqueta: string; puntos: readonly { t: string; v: number }[] }
+export type FacetSeries = {
+  etiqueta: string
+  /** La unidad de ESTA serie · desde `3651d70`. Decide con quién comparte escala. */
+  unidad?: string
+  puntos: readonly { t: string; v: number; parcial?: boolean }[]
+}
 
 /** Separación entre divisiones · 202 − 186 en el frame, y la misma en vertical
  *  cuando hay más de una fila. */
@@ -171,6 +192,7 @@ export function PlotSmallMult({
   family,
   format,
   unit,
+  withUnit,
 }: {
   series: readonly FacetSeries[]
   family: FamiliaDeDibujo
@@ -181,6 +203,9 @@ export function PlotSmallMult({
    *  Sin ella la cifra sale sin unidad y no queda desnuda —el rótulo de la
    *  división es su label—, pero el literal del dibujo no se reproduce. */
   unit?: string
+  /** Pega la unidad a la cifra como lo hace el resto del producto —«USD 280K»,
+   *  «11.7x»—. Sin él, la unidad va separada por un espacio. */
+  withUnit?: (figure: string, unit?: string) => string
 }) {
   const { ref, w, h } = useSize()
 
@@ -205,8 +230,15 @@ export function PlotSmallMult({
   // división ES la escala compartida; escribirlas acá lo hace estructural en vez
   // de depender de que nadie las mueva adentro.
   const altoDibujo = Math.max(0, (celda?.h ?? 0) - BANDA.rotulo - BANDA.cifra)
-  const techo = ceiling(series.flatMap((s) => s.puntos.map((p) => p.v)))
-  const y = linearScale([0, techo], [altoDibujo, 0])
+  // **Un techo por unidad**, ver la cabecera. La clave es la unidad de la serie,
+  // o la de la métrica si la serie no trae; sin ninguna, todas caen en la misma.
+  const unidadDe = (s: FacetSeries) => s.unidad ?? unit ?? ''
+  const techos = new Map<string, number>()
+  for (const u of new Set(series.map(unidadDe))) {
+    techos.set(u, ceiling(series.filter((s) => unidadDe(s) === u).flatMap((s) => s.puntos.map((p) => p.v))))
+  }
+  const escalaDe = (s: FacetSeries) => linearScale([0, techos.get(unidadDe(s)) ?? 1], [altoDibujo, 0])
+  const y = linearScale([0, 1], [altoDibujo, 0])
   const x = linearScale([0, Math.max(1, eje.length - 1)], [0, celda?.w ?? 0])
   const base = y(0)
   const cap = charsThatFit(celda?.w ?? 0)
@@ -220,7 +252,9 @@ export function PlotSmallMult({
             if (s === undefined) return null
             const puntos = s.puntos.map((p) => ({ x: indice.get(p.t) ?? 0, y: p.v }))
             const step = RAMPA[i % RAMPA.length] ?? 1
-            const ultimo = s.puntos[s.puntos.length - 1]?.v
+            const ys = escalaDe(s)
+            const fin = s.puntos[s.puntos.length - 1]
+            const ultimo = fin?.v
             const rotulo = s.etiqueta.length > cap ? `${s.etiqueta.slice(0, cap - 1)}…` : s.etiqueta
             return (
               <g key={`${i}·${s.etiqueta}`} transform={`translate(${r.x},${r.y})`}>
@@ -228,8 +262,8 @@ export function PlotSmallMult({
                   {rotulo}
                 </AxisText>
                 <g transform={`translate(0,${BANDA.rotulo})`}>
-                  <Area points={puntos} x={x} y={y} base={base} family={family} step={step} />
-                  <Line points={puntos} x={x} y={y} family={family} step={step} />
+                  <Area points={puntos} x={x} y={ys} base={base} family={family} step={step} />
+                  <Line points={puntos} x={x} y={ys} family={family} step={step} />
                   {/* El riel de cero. Es papel y no dato —el mismo trato que
                       `Grid` le da a la rejilla—, así que va en `c-grid` y no
                       lleva familia. `Grid` dibuja en los ticks de una escala y
@@ -246,7 +280,7 @@ export function PlotSmallMult({
                 </g>
                 {ultimo !== undefined && (
                   <FigureText x={r.w} y={BANDA.rotulo + base + CIFRA_DY}>
-                    {unit === undefined ? format(ultimo) : `${format(ultimo)} ${unit}`}
+                    {cifraCon(format(ultimo), s.unidad ?? unit, withUnit) + (fin?.parcial === true ? ' · en curso' : '')}
                   </FigureText>
                 )}
               </g>
@@ -256,4 +290,11 @@ export function PlotSmallMult({
       )}
     </div>
   )
+}
+
+/** La cifra con su unidad. Con `withUnit` es la regla del producto; sin él, la
+ *  unidad va separada, que es lo que este gráfico hacía antes. */
+function cifraCon(figura: string, unidad: string | undefined, withUnit?: (f: string, u?: string) => string): string {
+  if (withUnit !== undefined) return withUnit(figura, unidad)
+  return unidad === undefined || unidad === '' ? figura : `${figura} ${unidad}`
 }

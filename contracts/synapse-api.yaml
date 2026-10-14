@@ -2491,6 +2491,14 @@ components:
             día— lo decide el cuerpo con el formateador del tenant.
           examples: ['2025-10-01', '2026-09-30']
         v: { type: number }
+        parcial:
+          type: boolean
+          description: |
+            **El punto es de un período que todavía no terminó** · desde
+            `3651d70`, medido el 2026-10-14: el mes en curso de
+            `media_efficiency_12m`. Ausente en un punto cerrado. No es una
+            estimación: es la cifra real hasta hoy, y el cuerpo la marca para
+            que no se lea como un desplome.
 
     ValorEscalar:
       type: object
@@ -2558,6 +2566,14 @@ components:
             required: [etiqueta, puntos]
             properties:
               etiqueta: { type: string }
+              unidad:
+                type: string
+                description: |
+                  **La unidad de ESTA serie** · desde `3651d70`, medido el
+                  2026-10-14: `USD` en inversión y ventas, `x` en el ROAS, y
+                  ausente en sesiones. Un multiserie puede mezclar unidades, y
+                  entonces dos series no se pueden dibujar en la misma escala.
+                examples: ['USD', 'x']
               puntos:
                 type: array
                 items: { $ref: '#/components/schemas/Punto' }
