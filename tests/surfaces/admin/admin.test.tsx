@@ -94,7 +94,20 @@ describe('§7.3 · las cinco pantallas y su alcance', () => {
     await screen.findByRole('button', { name: /^Under Armour México · / })
 
     expect(screen.queryByLabelText('Cliente')).toBeNull()
-    expect(screen.getByText(/Alcance · todas las cuentas/)).toBeInTheDocument()
+    expect(screen.getByText('Alcance · 2 clientes')).toBeInTheDocument()
+  })
+
+  it('el alcance dice lo que llegó · un admin de UN cliente no ve «todas las cuentas»', async () => {
+    // **Medido el 2026-10-16 contra `3651d70`**: sin `PLATFORM_OPERATOR_USER_IDS`,
+    // `GET /admin/tenants` devuelve sólo el cliente del token. El rótulo fijo
+    // «todas las cuentas» quedaba falso para cualquier admin que no opere la
+    // plataforma; se afirma su ausencia para que no vuelva.
+    server.use(http.get(`${API}/admin/tenants`, () => ok(tenants.slice(0, 1))))
+    montar()
+    await screen.findByText('Under Armour México')
+
+    expect(screen.getByText('Alcance · 1 cliente')).toBeInTheDocument()
+    expect(screen.queryByText(/todas las cuentas/i)).toBeNull()
   })
 
   it('una pantalla de tenant SÍ lo muestra, con los clientes', async () => {
