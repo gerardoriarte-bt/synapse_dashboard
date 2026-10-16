@@ -131,13 +131,22 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
             <div className="flex items-center gap-4">
               {/* **El cliente de trabajo, destacado y el mismo del builder** ·
                   2026-10-06. Antes era un `<select>` de 12px junto a un rótulo de
-                  alcance. Las pantallas de plataforma cruzan todas las cuentas y lo
-                  dicen. */}
+                  alcance. Las pantallas de plataforma dicen cuántos clientes cruzan. */}
+              {/* **El alcance es lo que llegó, no «todas las cuentas»** ·
+                  2026-10-16. Desde `8272085` el backend devuelve en
+                  `GET /admin/tenants` sólo el cliente del token, salvo a los
+                  operadores de `PLATFORM_OPERATOR_USER_IDS`: el rótulo fijo
+                  quedó falso para cualquier admin de un cliente. El front no
+                  sabe quién es operador —`/config/me` no lo dice—, así que
+                  cuenta lo que vino. Con la lista vacía —todavía cargando— no
+                  se afirma nada. */}
               {porTenant ? (
                 <SelectorDeCliente clientes={tenants} activo={tenantActivo} onElegir={onTenant} />
-              ) : (
-                <Label>Alcance · todas las cuentas</Label>
-              )}
+              ) : tenants.length > 0 ? (
+                <Label>
+                  Alcance · {tenants.length} {tenants.length === 1 ? 'cliente' : 'clientes'}
+                </Label>
+              ) : null}
             </div>
           </div>
 
