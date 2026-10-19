@@ -539,6 +539,6 @@ export function DrillSheet({
 
 /** Todas las etiquetas son fechas ISO · `2026-10-17`, o una semana que empieza
  *  en una. Una sola que no lo sea alcanza para tratar el corte como nominal. */
-export function esTemporal(items: readonly { etiqueta: string }[]): boolean {
+function esTemporal(items: readonly { etiqueta: string }[]): boolean {
   return items.length > 0 && items.every((i) => /^\d{4}-\d{2}-\d{2}/.test(i.etiqueta))
 }

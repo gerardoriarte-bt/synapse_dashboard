@@ -7731,7 +7731,7 @@ de dólares. §1.4 de la auditoría.
 unidad no se dibuja con un solo eje: cada unidad tiene su escala. Una prueba con
 `USD` y `x` que verifique que la serie chica no queda aplastada.
 
-### ➕ F5.26 ⬜ El riel del chat muestra la consulta recién hecha
+### ➕ F5.26 ✅ El riel del chat muestra la consulta recién hecha
 
 **Descripción.** Después de preguntar el riel sigue en «Todavía no preguntaste
 nada», y al reabrir la hoja la conversación no está. El hilo se guarda; el riel
@@ -7739,6 +7739,11 @@ no se vuelve a pedir. §1.6 de la auditoría.
 
 **Criterio de aceptación.** Al terminar una respuesta la lista de hilos se
 vuelve a pedir, y la consulta aparece en el riel sin recargar.
+
+**Verificado el 2026-10-19** · `useChat.ts` invalida `['chat', 'hilos']` al
+llegar el `fin`, igual que al borrar. Prueba en
+`tests/surfaces/console/rielSeActualiza.test.tsx`; sin la invalidación, el riel
+sigue en «Todavía no preguntaste nada».
 
 ### ➕ F5.27 ⬜ «Editar» un rol abre a la vista
 
