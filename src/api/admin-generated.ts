@@ -1689,7 +1689,14 @@ export interface components {
             dashboard?: components["schemas"]["LayoutDashboard"];
             tabs: {
                 tab: components["schemas"]["LayoutTab"];
-                panels: components["schemas"]["LayoutPanel"][];
+                /**
+                 * @description **`null` cuando la pestaña no tiene paneles**, no `[]` · medido
+                 *     en QA el 2026-10-19 y en local contra `7324b26`. Lo arma
+                 *     `byTab[tab.ID]` en `dd_layout_builder_service.go:508`, y una
+                 *     clave ausente es un slice nil. Pedido `[]` en
+                 *     `docs/MENSAJE-2026-10-19-backend-lo-que-ya-tiene-qa.md`.
+                 */
+                panels: components["schemas"]["LayoutPanel"][] | null;
             }[];
         };
         /**
