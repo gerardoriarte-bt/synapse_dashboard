@@ -17,7 +17,7 @@ en cada corrida de la puerta con `npm run plan:ancestro`.
 ## Lo que ya está de nuestro lado
 
 No hace falta que esperen nada de estas para probar: están en la rama
-`Gerardo` del repositorio del front, con prueba y con la puerta en
+`main` del repositorio del front, con prueba y con la puerta en
 verde.
 
 - **F1.32** · Transcribir el cable de consola a un contrato versionado
@@ -65,6 +65,8 @@ tiempo buscando qué implementar.
 **Medido contra `de881e1` el 2026-09-29** · `DD_MATERIALIZE_PROSE_ENABLED` existe con default `false` · `dd_materializer_service.go:57`.
 
 **Medido contra `9dc481e` el 2026-10-09** · el flag sigue con default `false` (`dd_materializer_service.go:55-58`). Lo que queda es lo mismo: encenderlo, que es B2.15.
+
+**Medido contra `3651d70` el 2026-10-14** · la migración deja `BLOCKED` las 143 filas de semilla del cliente con Snowflake, **incluidos los dos paneles de prosa**, que eran la última maqueta que se servía `AVAILABLE`. Con el flag encendido en local, la prosa los llenó en 16 de 16 meses · `docs/AUDITORIA-2026-10-14-respuestas-graficos-y-semanas.md` y `docs/BITACORA-2026-10-14.md` §7. Lo que queda es el despliegue en QA, que es B2.15.
 
 Esto decía «los paneles de prosa los genera el AGENTE, y hoy no hay camino», y era
 cierto cuando se escribió. **Lo construyeron:** `internal/core/services/dd_prose_generator.go`
@@ -149,15 +151,37 @@ nuestro lado. · Bloquea **B2.12**.
 *Estado de la tarea: parcial.* · **Lo tiene: DESPLIEGUE**
 
 
-**Que se encienda en dev y nos avisen** — lo ofrecieron ellos en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
+**Desplegar `3651d70` en QA con `DD_MATERIALIZE_PROSE_ENABLED=true` y decir qué commit quedó** · pedido el 2026-10-14 en `docs/MENSAJE-2026-10-14-backend-desplegar-en-qa.md`. **No es `DD_MATERIALIZE_ENABLED`**: el backend contestó que ésa ya estaba, y son dos banderas independientes —ésa prende el programador—. El ofrecimiento original de encenderla y avisar está en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
 
-**Lo tiene: DESPLIEGUE** · prender el flag en dev después del próximo despliegue. **Fecha, no código.**
+**Lo tiene: DESPLIEGUE** · prender el flag en QA junto con el despliegue de `3651d70`. **Fecha, no código.**
 
 **Medido contra `de881e1` el 2026-09-29** · `ProseGeneratorEnabledFromEnv` lee el flag con default `false`.
 
 **Medido contra `9dc481e` el 2026-10-09** · `ProseGeneratorEnabledFromEnv` sigue leyendo el flag con default `false` (`dd_materializer_service.go:55-58`). **Si ya está encendido en dev no se ve desde el código**, y no lo medimos: sigue en pie el «avísennos».
 
-Hasta entonces los dos paneles de prosa se sirven con el valor de la semilla, **en inglés**, y salen `DEGRADED`.
+**Medido contra `3651d70` el 2026-10-14** · con el flag en el `.env` del backend —fuera de git— el programador generó septiembre y octubre, y los catorce meses anteriores se cargaron a mano, que es lo mismo que «Cargar meses» de A5: `executive_summary` y `decisions` quedaron en 16 de 16 meses con `agent:Synapse UA` · `docs/BITACORA-2026-10-14.md` §7.
+
+Hasta entonces los dos paneles de prosa se servían con el valor de la semilla, **en inglés**, y salían `DEGRADED`. **Con `3651d70` eso cambia**: la migración bloquea la semilla, así que desplegado sin el flag los dos salen **`BLOCKED`**. Desplegar uno sin el otro empeora la consola de UA.
+
+
+---
+
+## ⚠️ 2 pedido(s) sin reverificar
+
+**Estos se midieron contra un commit suyo que ya no es el último.**
+No quiere decir que sigan faltando: quiere decir que **no lo
+sabemos**, y un pedido que no sabemos si sigue vigente no debería
+hacerles perder tiempo.
+
+El 2026-09-28 revalidamos los doce que había y **cinco ya estaban
+resueltos** — llevaban días acá diciendo que faltaban. Por eso esta
+sección existe.
+
+
+| Pedido | Medido contra | Cuándo |
+|---|---|---|
+| **B2.12** · Correr el materializador contra datos reales y verificar los seis estados | `3651d70` | 2026-10-14 |
+| **B2.15** · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | `3651d70` | 2026-10-14 |
 
 
 ---
