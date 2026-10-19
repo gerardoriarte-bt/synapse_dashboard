@@ -349,7 +349,7 @@ export function DrillSheet({
             <Label as="div">Tabla origen</Label>
             <div className="flex min-w-0 flex-col gap-1 rounded-md border border-w3 px-3.5 py-3">
               <p className={CUERPO}>
-                Las filas que están detrás de esta cifra todavía no se publican.
+                El detalle fila por fila todavía no está disponible.
               </p>
               <p className={NOTA}>
                 Lo más fino que hay hoy es la desagregación de arriba · una fila por categoría, no
@@ -512,7 +512,14 @@ export function DrillSheet({
         <Suspense fallback={<LoadingState />}>
           <Body
             value={valor.valor}
-            params={{}}
+            // **Un corte por fecha se lee en el tiempo** · F5.23, 2026-10-19.
+            // Con `params={}` el cuerpo ordenaba por valor —su defecto— y el
+            // desglose por día salía 17, 1, 15, 13… El servicio ya lo manda en
+            // orden de fecha (`ORDER BY 1` en `drilldown.go`), así que se respeta
+            // el orden de llegada. **Se decide por el dato, no por la clave**: la
+            // dimensión llega como `day` o `week` sin decir que es temporal, y
+            // una lista de claves escrita acá envejecería con la primera nueva.
+            params={esTemporal(valor.valor.items) ? { orden: 'natural' } : {}}
             // La hoja no vive en la grilla, pero los cuerpos piden un
             // `Placement` para decidir densidad. Se le da el que mide la hoja
             // contra la pantalla: 60% de doce columnas son siete.
@@ -528,4 +535,10 @@ export function DrillSheet({
       </div>
     )
   }
+}
+
+/** Todas las etiquetas son fechas ISO · `2026-10-17`, o una semana que empieza
+ *  en una. Una sola que no lo sea alcanza para tratar el corte como nominal. */
+function esTemporal(items: readonly { etiqueta: string }[]): boolean {
+  return items.length > 0 && items.every((i) => /^\d{4}-\d{2}-\d{2}/.test(i.etiqueta))
 }

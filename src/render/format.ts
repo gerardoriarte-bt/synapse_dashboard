@@ -104,6 +104,11 @@ export type Formatter = {
    *  Un `t` que no es fecha —una etiqueta como `'jul'`— vuelve tal cual: el eje
    *  pinta lo que llegó, no lo inventa. */
   axisDate: (t: string, grano: 'dia' | 'mes') => string
+  /** **El nombre de un período mensual** · F5.30, 2026-10-19 · «octubre 2026»
+   *  para `2026-10`. El selector listaba el id del cable porque el servicio no
+   *  manda rótulo. Lo que no es `YYYY-MM` —una semana— se devuelve tal cual:
+   *  el formato no inventa cómo se llama. */
+  periodName: (id: string) => string
   /** La hora de un instante · «06:00». 24 horas, igual que `threadStamp`: en el
    *  producto el corte del día importa más que la costumbre local. */
   clock: (iso: string) => string
@@ -256,6 +261,15 @@ export function createFormat(locale: string): Formatter {
       return new Intl.DateTimeFormat(locale, { ...opciones, timeZone: 'UTC' })
         .format(new Date(t))
         .replace(/\./g, '')
+    },
+
+    periodName(id) {
+      if (!/^\d{4}-\d{2}$/.test(id)) return id
+      // UTC y el día 1 por la misma razón que `axisDate`: es un mes del
+      // calendario, no un instante.
+      return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' })
+        .format(new Date(`${id}-01T00:00:00Z`))
+        .replace(' de ', ' ')
     },
 
     calendar(iso) {

@@ -82,7 +82,7 @@ import {
   adoptarIds,
   agregar,
   agregarPanel,
-  asignarRoles,
+  asignarRoles, fijarSugerencias,
   laVe,
   cambiarTipo,
   redimensionarPanel,
@@ -1024,6 +1024,7 @@ export function Builder() {
                             .map((pr) => pr.mensaje)}
                           onEditar={(campo, valor) => cambiar(editar(tabs, ajustesDe, campo, valor))}
                           onRoles={(r) => cambiar(asignarRoles(tabs, ajustesDe, r))}
+                          onSugerencias={(l) => cambiar(fijarSugerencias(tabs, ajustesDe, l))}
                           onMover={(d) => {
                             cambiar(mover(tabs, ajustesDe, d))
                             setTabActiva(ajustesDe + d)

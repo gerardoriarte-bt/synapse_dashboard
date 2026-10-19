@@ -17,11 +17,11 @@ const detalle: LayoutDetalle = {
   layout: { id: 'l-1', tenantId: 't-1', dashboardId: 'd-1', estado: 'publicado', versionId: 'v3', publicadoEn: null },
   tabs: [
     {
-      tab: { id: 'tab-a', clave: 'tab-a-key', nombre: 'Resumen', pregunta: '¿?', orden: 1, roles: [] },
+      tab: { id: 'tab-a', clave: 'tab-a-key', nombre: 'Resumen', pregunta: '¿?', orden: 1, roles: [], icono: '', sugerencias: [] },
       panels: [panel('p-1', 'm-1'), panel('p-2', 'm-1'), panel('p-3', 'm-2')],
     },
     {
-      tab: { id: 'tab-b', clave: 'tab-b-key', nombre: 'Inventario', pregunta: '¿?', orden: 2, roles: [] },
+      tab: { id: 'tab-b', clave: 'tab-b-key', nombre: 'Inventario', pregunta: '¿?', orden: 2, roles: [], icono: '', sugerencias: [] },
       panels: [panel('p-4', 'm-1')],
     },
   ],

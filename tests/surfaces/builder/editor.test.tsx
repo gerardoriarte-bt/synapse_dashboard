@@ -412,6 +412,18 @@ describe('mover y quitar', () => {
     expect(screen.getByRole('button', { name: 'Mover Inventario a la derecha' })).toBeDisabled()
   })
 
+  it('cancelar no quita la pestaña', async () => {
+    servir()
+    montar()
+    await abrirEditor()
+    await ajustes('Inventario')
+    await userEvent.click(screen.getByRole('button', { name: 'Quitar Inventario' }))
+    await userEvent.click(
+      within(screen.getByRole('group', { name: 'Confirmar quitar la pestaña' })).getByRole('button', { name: 'Cancelar' }),
+    )
+    expect(pestanas()).toEqual(['Resumen', 'Inventario'])
+  })
+
   it('«Quitar» saca la pestaña y cierra sus ajustes', async () => {
     servir()
     montar()
@@ -419,6 +431,11 @@ describe('mover y quitar', () => {
     await ajustes('Inventario')
 
     await userEvent.click(screen.getByRole('button', { name: 'Quitar Inventario' }))
+    // **El primer clic no quita** · F5.24: pide confirmar, con cuántos paneles.
+    expect(screen.getByRole('tab', { name: 'Inventario' })).toBeInTheDocument()
+    const confirmar = screen.getByRole('group', { name: 'Confirmar quitar la pestaña' })
+    expect(within(confirmar).getByText(/¿Quitar «Inventario» y su/)).toBeVisible()
+    await userEvent.click(within(confirmar).getByRole('button', { name: 'Quitar pestaña' }))
     await waitFor(() => expect(screen.queryByRole('tab', { name: 'Inventario' })).toBeNull())
     expect(pestanas()).toEqual(['Resumen'])
     expect(screen.queryByRole('complementary', { name: 'Ajustes de la pestaña' })).toBeNull()
@@ -501,8 +518,11 @@ describe('§7.2 · los campos del modelo que el cable no tiene', () => {
 
     const texto = container.textContent ?? ''
     expect(texto).not.toContain('Cada pestaña va a poder declarar más cosas')
-    expect(texto).not.toMatch(/preguntas sugeridas/i)
     expect(texto).not.toMatch(/plantilla/i)
-    expect(inspector.getAllByRole('textbox')).toHaveLength(2)
+    // **Las sugeridas SÍ están desde el 2026-10-19** · F5.33. La premisa de esta
+    // prueba era que el cable no las tenía, y venció: `chat_suggestions` viaja
+    // en `TabInput` y en la respuesta (B4.4, leído contra `7324b26`). Nombre,
+    // Pregunta operativa y las sugeridas: tres campos que se escriben.
+    expect(inspector.getAllByRole('textbox')).toHaveLength(3)
   })
 })

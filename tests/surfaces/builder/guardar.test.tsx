@@ -393,7 +393,7 @@ describe('§7.2 · guardado explícito', () => {
 
     expect(screen.getByText('1 problema de composición')).toBeInTheDocument()
     expect(
-      screen.getByText('Se puede guardar igual; no se publica hasta corregirlos. El servidor tiene la última palabra.'),
+      screen.getByText('Se puede guardar igual; para publicar hay que corregirlos.'),
     ).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Guardar' }))
     await waitFor(() => expect(puts).toBe(1))

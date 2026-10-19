@@ -19,7 +19,7 @@
  */
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
@@ -111,6 +111,14 @@ describe('con DOS aparece, y cambiarlo escribe la preferencia', () => {
     // el punto va `aria-hidden` porque el color no puede ser el único portador.
     expect(screen.getByRole('button', { name: /Overview/ })).toHaveAttribute('aria-current', 'true')
     expect(screen.getByRole('button', { name: /Marca/ })).not.toHaveAttribute('aria-current')
+  })
+
+  it('marca el de por defecto, y sólo ése · F5.35', async () => {
+    laConsola(conDos)
+    montar()
+    await abrir()
+    expect(within(screen.getByRole('button', { name: /Overview/ })).getByText('Por defecto')).toBeInTheDocument()
+    expect(within(screen.getByRole('button', { name: /Marca/ })).queryByText('Por defecto')).toBeNull()
   })
 
   it('el clic AFUERA también cierra · es la otra salida de un desplegable', async () => {

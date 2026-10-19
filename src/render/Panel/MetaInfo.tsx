@@ -45,9 +45,13 @@ type Props = {
    *  a dos líneas; acá entera, primero, porque es lo que hay que saber antes
    *  de leer la cifra. */
   nota?: string
+  /** **El título del panel, para el nombre accesible** · F5.29, 2026-10-19.
+   *  Catorce botones llamados «Base y procedencia» no le dicen a un lector de
+   *  pantalla de qué panel es cada uno. */
+  panel: string
 }
 
-export function MetaInfo({ base, ventana, capa, fuente, frescura, format, now, nota }: Props) {
+export function MetaInfo({ panel, base, ventana, capa, fuente, frescura, format, now, nota }: Props) {
   const [encima, setEncima] = useState(false)
   const [fijado, setFijado] = useState(false)
   const caja = useRef<HTMLDivElement>(null)
@@ -80,7 +84,7 @@ export function MetaInfo({ base, ventana, capa, fuente, frescura, format, now, n
     >
       <button
         type="button"
-        aria-label="Base y procedencia"
+        aria-label={`Base y procedencia de ${panel}`}
         aria-expanded={abierto}
         aria-controls={id}
         onClick={() => setFijado((f) => !f)}
@@ -99,7 +103,9 @@ export function MetaInfo({ base, ventana, capa, fuente, frescura, format, now, n
         <div
           id={id}
           role="tooltip"
-          className="absolute right-0 top-full mt-2 z-20 w-72 flex flex-col gap-3 bg-elev border border-w3 rounded-md p-4 text-left"
+          // **Se abre hacia ARRIBA** · F5.29: hacia abajo tapaba la cifra del
+          // panel, que es justo lo que la base y la procedencia explican.
+          className="absolute right-0 bottom-full mb-2 z-20 w-72 flex flex-col gap-3 bg-elev border border-w3 rounded-md p-4 text-left"
         >
           <dl className="flex flex-col gap-3 m-0">
             {nota === undefined ? null : (

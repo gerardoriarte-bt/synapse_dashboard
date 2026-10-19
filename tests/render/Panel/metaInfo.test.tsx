@@ -52,7 +52,7 @@ function montar(payload: Payload = conCifra) {
   )
 }
 
-const boton = () => screen.getByRole('button', { name: 'Base y procedencia' })
+const boton = () => screen.getByRole('button', { name: /^Base y procedencia/ })
 
 describe('cerrada, la card no muestra la gobernanza', () => {
   it('ni la BASE, ni la fuente, ni la capa', () => {
@@ -116,5 +116,16 @@ describe('lo que es estado NO se esconde', () => {
     montar({ ...conCifra, estado: 'DEGRADADO' } as Payload)
     expect(screen.getByText('Degradado')).toBeVisible()
     expect(screen.queryByRole('tooltip')).toBeNull()
+  })
+})
+
+// ── EL BOTÓN NOMBRA SU PANEL · F5.29, 2026-10-19 ───────────────────────────
+//
+// Catorce botones llamados «Base y procedencia» no le dicen a un lector de
+// pantalla de cuál panel es cada uno. El de «Preguntar» ya lo decía.
+describe('el nombre accesible', () => {
+  it('lleva el título del panel', () => {
+    montar()
+    expect(screen.getByRole('button', { name: `Base y procedencia de ${metric.nombre}` })).toBeInTheDocument()
   })
 })

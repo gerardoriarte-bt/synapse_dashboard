@@ -283,6 +283,16 @@ describe('crear y editar', () => {
     })
   })
 
+  it('«Editar» lleva el foco al formulario · F5.27, se abría fuera de la vista', async () => {
+    base()
+    montar()
+    await abrirFicha()
+    const planner = screen.getAllByText('Planner').map((e) => e.closest('li')).find(Boolean)
+    await userEvent.click(within(planner as HTMLElement).getByRole('button', { name: 'Editar' }))
+    // El nombre precargado y con el foco: lo que se ve y lo que se edita primero.
+    await waitFor(() => expect(document.activeElement).toHaveValue('Planner'))
+  })
+
   it('un rol sin nombre no se puede guardar, y se dice', async () => {
     base()
     montar()
@@ -609,5 +619,38 @@ describe('el desglose de §9, desde la superficie · A2 §9', () => {
     expect(within(planner).getByText('¿Cómo va el negocio?')).toBeInTheDocument()
     // Y su conteo, que es la otra mitad del desglose.
     expect(within(planner).getByText('3 paneles')).toBeInTheDocument()
+  })
+})
+
+// ── LA FICHA SE RECORRE POR SECCIONES · F5.34, 2026-10-19 ──────────────────
+describe('la ficha por secciones', () => {
+  it('cada botón lleva a su sección', async () => {
+    base()
+    montar()
+    await abrirFicha()
+    const nav = screen.getByRole('navigation', { name: 'Secciones de la ficha' })
+    const destinos: string[] = []
+    const original = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = function (this: Element) {
+      destinos.push(this.id)
+    }
+    try {
+      await userEvent.click(within(nav).getByRole('button', { name: 'Ir a Usuarios' }))
+      await userEvent.click(within(nav).getByRole('button', { name: 'Ir a Acceso a datos' }))
+    } finally {
+      Element.prototype.scrollIntoView = original
+    }
+    expect(destinos).toEqual(['ficha-usuarios', 'ficha-acceso'])
+  })
+
+  it('el aviso de roles duplicados va ANTES de las tarjetas', async () => {
+    base([http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([...roles, { ...roles[1], id: 'r-dup', name: 'planner' }]))])
+    montar()
+    await abrirFicha()
+    const aviso = await screen.findByText(/Hay roles con el mismo nombre en distinta caja/)
+    // Una tarjeta de ROL, no cualquier ítem: la lista de clientes va antes.
+    const primeraTarjeta = screen.getAllByText('Planner').map((e) => e.closest('li')).find(Boolean) as HTMLElement
+    // DOCUMENT_POSITION_FOLLOWING: la tarjeta viene DESPUÉS del aviso.
+    expect(aviso.compareDocumentPosition(primeraTarjeta) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })

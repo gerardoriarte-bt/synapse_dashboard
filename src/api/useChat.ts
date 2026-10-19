@@ -11,6 +11,7 @@
  *  llega a un `setState` sobre algo desmontado.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { ChatStreamError, askSynapse, esDePanel } from './chat'
 import type { ChatRequest, ContextoDeChat, TurnoGuardado } from './chat'
 import { api } from './client'
@@ -97,6 +98,7 @@ export function useChat(contexto: ContextoDeChat, agenteId?: string) {
     : `tab:${contexto.tabId}:${contexto.periodo}`
   const [turns, setTurns] = useState<ChatTurn[]>([])
   const [threadId, setThreadId] = useState<string | null>(null)
+  const client = useQueryClient()
 
   const abort = useRef<AbortController | null>(null)
 
@@ -194,6 +196,12 @@ export function useChat(contexto: ContextoDeChat, agenteId?: string) {
           if (evento.tipo === 'fin') {
             setThreadId(evento.hiloId)
             parche((t) => ({ ...t, streaming: false }))
+            // **El riel se entera de la consulta recién hecha** · F5.26,
+            // 2026-10-19. El hilo ya está guardado cuando llega el `fin`, pero
+            // la lista seguía en caché: el riel decía «Todavía no preguntaste
+            // nada» hasta recargar la página. Se invalidan TODOS los rieles,
+            // por la misma razón que al borrar: la clave lleva contexto.
+            void client.invalidateQueries({ queryKey: ['chat', 'hilos'] })
             continue
           }
           if (evento.tipo === 'error') {
@@ -231,7 +239,7 @@ export function useChat(contexto: ContextoDeChat, agenteId?: string) {
     // **Una clave derivada y no el objeto**: el llamador pasa un literal, así
     // que `[contexto]` recrearía `ask` en cada render. Y con la unión ya no
     // alcanza `contexto.panelId` — la rama de pestaña no lo tiene.
-    [clave, threadId, turns.length, agenteId],
+    [clave, threadId, turns.length, agenteId, client],
   )
 
   return { turns, threadId, historial, ask, resume, reset }

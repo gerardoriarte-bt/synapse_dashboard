@@ -173,7 +173,7 @@ function montar() {
 async function abrirFicha() {
   await screen.findByRole('button', { name: /^Grupo Axo · / })
   await userEvent.click(screen.getByRole('button', { name: /^Grupo Axo · / }))
-  await screen.findByText('Identidad del tenant')
+  await screen.findByText('Identidad del cliente')
 }
 
 /** El valor que está debajo de un rótulo de columna · las dos mitades de un
@@ -188,7 +188,7 @@ async function abrirFicha() {
  *  una coincidencia del escenario y no una propiedad de la pantalla. Un ayudante
  *  que falla por su propia resolución esconde lo que venía a medir. */
 function celda(rotulo: string): HTMLElement {
-  const identidad = screen.getByText('Identidad del tenant').closest('section') as HTMLElement
+  const identidad = screen.getByText('Identidad del cliente').closest('section') as HTMLElement
   const r = within(identidad).getByText(rotulo)
   return r.closest('div')?.parentElement as HTMLElement
 }
@@ -539,7 +539,7 @@ describe('mientras una de las dos vueltas no llegó · no se afirma nada', () =>
     montar()
     await screen.findByRole('button', { name: /^Grupo Axo · / })
     await userEvent.click(screen.getByRole('button', { name: /^Grupo Axo · / }))
-    await screen.findByText('Identidad del tenant')
+    await screen.findByText('Identidad del cliente')
 
     expect(celda('Estado').textContent).toContain('—')
     expect(screen.queryAllByText('En alta')).toHaveLength(0)
