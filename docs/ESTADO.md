@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**193 de 242 tareas cerradas.** 15 parciales · 30 pendientes · 4 diferidas.
+**194 de 242 tareas cerradas.** 15 parciales · 29 pendientes · 4 diferidas.
 
 
-## Front · 133 de 144
+## Front · 134 de 144
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -17,7 +17,7 @@
 | 2 · Estados | `██████████████████████` | 6/6 | 0 | 0 |
 | 3 · Chat contextual | `███████████████████···` | 13/15 | 0 | 0 |
 | 4 · Admin y Builder | `██████████████████████` | 24/24 | 0 | 0 |
-| 5 · Pruebas y pulido | `██████████████████····` | 30/37 | 0 | 6 |
+| 5 · Pruebas y pulido | `██████████████████····` | 31/37 | 0 | 5 |
 
 ## Backend · 60 de 98
 
@@ -54,11 +54,10 @@
 
 ---
 
-## Se puede tomar hoy · 4 del front
+## Se puede tomar hoy · 3 del front
 
 - **F5.21** · Qué hace un gráfico cuando el dato excede lo legible
 - **F5.25** · Series de unidades distintas no comparten un eje
-- **F5.33** · El chat vacío ofrece preguntas
 - **F5.34** · La ficha de cliente se recorre por secciones
 
 ---

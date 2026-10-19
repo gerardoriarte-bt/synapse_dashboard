@@ -575,6 +575,7 @@ export function ConsoleContainer() {
         bloques={blockTable(blocks.data?.blocks ?? [])}
         format={format}
         {...(mesEnCurso === undefined ? {} : { mesEnCurso })}
+        sugerenciasDePestana={layout.data?.tab.chatSugerencias ?? []}
         onClose={() => setAskingTab(false)}
         {...selectorDeAgente}
       />

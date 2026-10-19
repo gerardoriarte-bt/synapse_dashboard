@@ -61,6 +61,17 @@ export function sembrar(detalle: LayoutDetalle): TabParaGuardar[] {
 
 type Editable = 'nombre' | 'pregunta'
 
+/** **Las preguntas sugeridas del chat de la pestaña** · F5.33, 2026-10-19. Se
+ *  guardan los renglones como se escriben —también los vacíos, para poder
+ *  escribir uno nuevo—; el servicio recorta y descarta los vacíos. */
+export function fijarSugerencias(
+  tabs: readonly TabParaGuardar[],
+  indice: number,
+  sugerencias: readonly string[],
+): TabParaGuardar[] {
+  return tabs.map((t, i) => (i === indice ? { ...t, sugerencias: [...sugerencias] } : t))
+}
+
 export function editar(
   tabs: readonly TabParaGuardar[],
   indice: number,

@@ -518,8 +518,11 @@ describe('§7.2 · los campos del modelo que el cable no tiene', () => {
 
     const texto = container.textContent ?? ''
     expect(texto).not.toContain('Cada pestaña va a poder declarar más cosas')
-    expect(texto).not.toMatch(/preguntas sugeridas/i)
     expect(texto).not.toMatch(/plantilla/i)
-    expect(inspector.getAllByRole('textbox')).toHaveLength(2)
+    // **Las sugeridas SÍ están desde el 2026-10-19** · F5.33. La premisa de esta
+    // prueba era que el cable no las tenía, y venció: `chat_suggestions` viaja
+    // en `TabInput` y en la respuesta (B4.4, leído contra `7324b26`). Nombre,
+    // Pregunta operativa y las sugeridas: tres campos que se escriben.
+    expect(inspector.getAllByRole('textbox')).toHaveLength(3)
   })
 })

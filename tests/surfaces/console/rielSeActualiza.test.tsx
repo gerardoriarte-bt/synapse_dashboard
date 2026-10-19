@@ -93,3 +93,43 @@ describe('el riel después de preguntar', () => {
     await waitFor(() => expect(within(hoja).queryByText('Todavía no preguntaste nada.')).toBeNull())
   })
 })
+
+// ── EL CHAT DE PESTAÑA OFRECE LAS SUGERIDAS DE LA PESTAÑA · F5.33 ───────────
+//
+// Arrancaba con una línea aunque la pestaña trajera `chat_suggestions`.
+describe('las sugeridas de la pestaña', () => {
+  const SUGERIDA = '¿Qué plataforma rindió más este mes?'
+
+  it('se ofrecen al abrir, y tocar una la pregunta', async () => {
+    const preguntas: Record<string, unknown>[] = []
+    laConsola()
+    server.use(
+      http.get(`${API}/config/tabs/:tabId`, ({ params }) =>
+        ok({
+          tab: { id: String(params['tabId']), name: 'Resumen', key: 'resumen', operational_question: '¿Cómo vamos?', sort_order: 1, icon: '', chat_suggestions: [SUGERIDA] },
+          panels: [],
+        }),
+      ),
+      http.post(`${API}/config/chat`, async ({ request }) => {
+        preguntas.push((await request.json()) as Record<string, unknown>)
+        return new HttpResponse(
+          new ReadableStream({
+            start(controller) {
+              const e = new TextEncoder()
+              controller.enqueue(e.encode(trama('delta', { text: 'Google PMax.' })))
+              controller.enqueue(e.encode(trama('done', {})))
+              controller.close()
+            },
+          }),
+          { headers: { 'Content-Type': 'text/event-stream' } },
+        )
+      }),
+    )
+    montar()
+    await userEvent.click(await screen.findByRole('button', { name: /Preguntar a Synapse/i }))
+    const hoja = await screen.findByRole('dialog')
+    await userEvent.click(await within(hoja).findByRole('button', { name: SUGERIDA }))
+    await waitFor(() => expect(preguntas).toHaveLength(1))
+    expect(preguntas[0]?.['question']).toBe(SUGERIDA)
+  })
+})

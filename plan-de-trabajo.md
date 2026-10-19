@@ -7851,13 +7851,24 @@ celda ninguna columna se pisa. La forma sale de `nombreDeForma`, la misma tabla
 del builder. Prueba en `tests/surfaces/admin/catalogo.test.tsx`; volver al
 identificador la mata.
 
-### ➕ F5.33 ⬜ El chat vacío ofrece preguntas
+### ➕ F5.33 ✅ El chat vacío ofrece preguntas
 
 **Descripción.** La hoja del chat arranca con una línea. La pestaña trae
 `chat_suggestions` en el cable. §1.9.
 
 **Criterio de aceptación.** Con sugerencias en la pestaña, el chat vacío las
 muestra y una toca envía la pregunta; sin sugerencias, no se inventa ninguna.
+
+**Verificado el 2026-10-19** · `ChatSheet` recibe `sugerenciasDePestana` desde
+`layout.data.tab.chatSugerencias` y las ofrece en el chat de pestaña; las de
+panel siguen saliendo de su ruta. **Y se pueden escribir**: «Preguntas sugeridas
+para el chat» en los ajustes de la pestaña, una por renglón, con el aviso de las
+ocho que acepta el servicio. Que viajen en el `PUT` lo hizo F5.37 —antes guardar
+las borraba—. Pruebas en `tests/surfaces/console/rielSeActualiza.test.tsx` y
+`tests/surfaces/builder/sugeridasDePestana.test.tsx`.
+
+**Hoy ninguna pestaña de UA tiene sugeridas** —medido en local: `[]`—, así que
+el chat se ve igual hasta que alguien las escriba.
 
 ### ➕ F5.34 ⬜ La ficha de cliente se recorre por secciones
 

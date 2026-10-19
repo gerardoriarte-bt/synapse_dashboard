@@ -79,6 +79,11 @@ type Props = {
   /** El mes abierto del tenant, `YYYY-MM` · `open_period` · para que una cifra
    *  del agente diga que su último mes está incompleto. */
   mesEnCurso?: string | undefined
+  /** **Las sugeridas de la PESTAÑA** · F5.33, 2026-10-19. Las de panel se
+   *  piden a su ruta; las de pestaña vienen en el cable de la pestaña
+   *  —`chat_suggestions`— y la hoja de pestaña no mostraba ninguna: arrancaba
+   *  con una línea. Sin sugeridas no se inventa ninguna. */
+  sugerenciasDePestana?: readonly string[]
   onClose: () => void
   /** **El selector de agente, sólo para admin** · 2026-10-06. Sin
    *  `onAgente` no se pinta: un planner no puede elegir —el servicio le
@@ -98,6 +103,7 @@ export function ChatSheet({
   bloques,
   format,
   mesEnCurso,
+  sugerenciasDePestana = [],
   onClose,
   agentes,
   agenteId,
@@ -122,6 +128,7 @@ export function ChatSheet({
   /** Qué preguntar sobre este panel · §PEN:C3. Deterministas del lado del
    *  servicio, así que no se refrescan mientras la hoja está abierta. */
   const sugeridas = useSuggestions(dePanel ? contexto.panelId : null, periodo)
+  const abridoras = dePanel ? (sugeridas.data ?? []) : sugerenciasDePestana
 
   /** El agrupado por tiempo **es la excepción a que el front no calcule**, y el
    *  contrato la concede explícitamente: «HOY, ESTA SEMANA, JULIO lo hace el
@@ -332,7 +339,7 @@ export function ChatSheet({
               no manda ninguna — son un ABRIDOR, y lo descubrió una prueba. */}
           <Suggestions
             preguntas={
-              turns.length === 0 ? (sugeridas.data ?? []) : (ultimo?.respuesta.sugerencias ?? [])
+              turns.length === 0 ? abridoras : (ultimo?.respuesta.sugerencias ?? [])
             }
             onPreguntar={(pregunta) => void ask(pregunta)}
             esperando={enVuelo}
