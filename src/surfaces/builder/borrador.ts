@@ -29,6 +29,12 @@ export function sembrar(detalle: LayoutDetalle): TabParaGuardar[] {
     .sort((a, b) => a.tab.orden - b.tab.orden)
     .map(({ tab, panels }) => ({
       id: tab.id,
+      // **La clave, el ícono y las sugeridas viajan** · 2026-10-19: el editor
+      // no los muestra y el `PUT` los pisaba. Sin la clave, renombrar la
+      // pestaña le cambiaba la identidad con que los roles la restringen.
+      clave: tab.clave,
+      icono: tab.icono,
+      sugerencias: [...tab.sugerencias],
       nombre: tab.nombre,
       pregunta: tab.pregunta,
       orden: tab.orden,
@@ -72,7 +78,8 @@ export function editar(
 export function agregar(tabs: readonly TabParaGuardar[], roles: readonly string[] = []): TabParaGuardar[] {
   return [
     ...tabs,
-    { nombre: 'Pestaña nueva', pregunta: '', orden: tabs.length + 1, roles: [...roles], panels: [] },
+    // Sin clave: el servicio la deriva del nombre al crearla.
+    { nombre: 'Pestaña nueva', pregunta: '', orden: tabs.length + 1, roles: [...roles], icono: '', sugerencias: [], panels: [] },
   ]
 }
 

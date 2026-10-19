@@ -30,13 +30,13 @@ const detalle: LayoutDetalle = {
     {
       // A propósito fuera de orden: `sembrar` ordena por `orden`, no por el
       // arreglo — confiar en el arreglo es confiar en el servidor.
-      tab: { id: 'tab-b', clave: 'tab-b-key', nombre: 'Inventario', pregunta: '¿Hay stock?', orden: 2, roles: ['r-1'] },
+      tab: { id: 'tab-b', clave: 'tab-b-key', nombre: 'Inventario', pregunta: '¿Hay stock?', orden: 2, roles: ['r-1'], icono: 'box', sugerencias: ['¿Qué se agota primero?'] },
       panels: [
         { id: 'p-1', tipo: 'kpi', metricId: 'm-1', colStart: 1, colSpan: 3, rowSpan: 4 },
       ],
     },
     {
-      tab: { id: 'tab-a', clave: 'tab-a-key', nombre: 'Resumen', pregunta: '¿Cómo vamos?', orden: 1, roles: [] },
+      tab: { id: 'tab-a', clave: 'tab-a-key', nombre: 'Resumen', pregunta: '¿Cómo vamos?', orden: 1, roles: [], icono: '', sugerencias: [] },
       panels: [
         { id: 'p-2', tipo: 'series', metricId: 'm-2', colStart: 1, colSpan: 6, rowSpan: 4 },
         { id: 'p-3', tipo: 'table', metricId: 'm-3', colStart: 7, colSpan: 6, rowSpan: 4 },
@@ -46,6 +46,12 @@ const detalle: LayoutDetalle = {
 }
 
 describe('sembrar · lo que el editor no toca igual viaja', () => {
+  it('la clave, el ícono y las sugeridas · el PUT los pisaba · 2026-10-19', () => {
+    const inventario = sembrar(detalle).find((t) => t.nombre === 'Inventario')
+    expect(inventario).toMatchObject({ clave: 'tab-b-key', icono: 'box', sugerencias: ['¿Qué se agota primero?'] })
+  })
+
+
   it('arrastra roles y paneles', () => {
     // **La trampa.** El PUT borra lo que no venga. Un borrador de tres campos
     // convierte «renombrar» en «vaciar», y el servicio devuelve 200.
@@ -322,7 +328,7 @@ describe('adoptarIds · los ids de lo recién creado, sin perder lo editado en e
     nombre,
     pregunta: '¿?',
     orden: 1,
-    roles: [],
+    roles: [], icono: '', sugerencias: [],
     panels,
   })
 

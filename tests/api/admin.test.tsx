@@ -134,6 +134,9 @@ describe('el PascalCase del dominio se absorbe acá', () => {
       pregunta: '¿Qué movió el negocio?',
       orden: 1,
       roles: [],
+      // **Se leen para que guardar no los borre** · 2026-10-19.
+      icono: '',
+      sugerencias: [],
     })
     // **El panel del builder es el mismo `PanelConfig` que dibuja la consola.**
     // Darle dos formas sería garantizar que se separen.
@@ -166,7 +169,7 @@ describe('guardar · el PUT reemplaza el layout entero', () => {
         nombre: 'Resumen',
         pregunta: '¿Qué movió?',
         orden: 1,
-        roles: [],
+        roles: [], icono: '', sugerencias: [],
         panels: [
           { metricId: 'm-1', tipo: 'kpi', colStart: 1, colSpan: 3, rowSpan: 4 },
         ],
@@ -181,6 +184,10 @@ describe('guardar · el PUT reemplaza el layout entero', () => {
           operational_question: '¿Qué movió?',
           sort_order: 1,
           role_ids: [],
+          // **`icon` y `chat_suggestions` el 2026-10-19**, la misma trampa: el
+          // servicio arma la pestaña con lo que llega y deja vacío lo demás.
+          icon: '',
+          chat_suggestions: [],
           // **`chart` se agregó el 2026-09-29 y esta prueba se puso ROJA**, que
           // es exactamente para lo que sirve fijar el cuerpo entero con
           // `toEqual`: un campo nuevo en el `PUT` no puede entrar sin que
@@ -193,6 +200,38 @@ describe('guardar · el PUT reemplaza el layout entero', () => {
           ],
         },
       ],
+    })
+  })
+
+  it('la clave, el ícono y las sugeridas VIAJAN · sin la clave, renombrar la cambiaba', async () => {
+    // **Leído contra `7324b26`**: `buildTabsAndPanels` deriva `key` del nombre
+    // si no llega, y deja vacíos `icon` y `chat_suggestions`. Renombrar una
+    // pestaña le cambiaba la clave con que `roles.tab_keys` la restringe.
+    let cuerpo: { tabs: Record<string, unknown>[] } | null = null
+    server.use(
+      http.put(`${API}/admin/layouts/l-1`, async ({ request }) => {
+        cuerpo = (await request.json()) as { tabs: Record<string, unknown>[] }
+        return ok(detalle)
+      }),
+    )
+    await adminApi.guardar('l-1', [
+      {
+        id: 'tab-1',
+        clave: 'resumen',
+        nombre: 'Resumen del mes',
+        pregunta: '¿Qué movió?',
+        orden: 1,
+        roles: [],
+        icono: 'chart',
+        sugerencias: ['¿Qué plataforma rindió más?'],
+        panels: [],
+      },
+    ])
+    expect(cuerpo!.tabs[0]).toMatchObject({
+      key: 'resumen',
+      name: 'Resumen del mes',
+      icon: 'chart',
+      chat_suggestions: ['¿Qué plataforma rindió más?'],
     })
   })
 
@@ -209,7 +248,7 @@ describe('guardar · el PUT reemplaza el layout entero', () => {
       }),
     )
     await adminApi.guardar('l-1', [
-      { nombre: 'Nueva', pregunta: '¿?', orden: 1, roles: [], panels: [] },
+      { nombre: 'Nueva', pregunta: '¿?', orden: 1, roles: [], icono: '', sugerencias: [], panels: [] },
     ])
     expect(cuerpos[0]?.tabs[0]).not.toHaveProperty('id')
   })

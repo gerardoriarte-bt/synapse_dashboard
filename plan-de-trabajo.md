@@ -7891,6 +7891,26 @@ tarea exista en el plan.
 reintento · `tests/surfaces/builder/binder.test.tsx`, «un detalle que no se
 puede leer se dice como ERROR».
 
+### ➕ F5.37 ✅ Guardar desde el builder no pisa la clave, el ícono ni las sugeridas de una pestaña
+
+**Descripción.** Encontrado el 2026-10-19 al preparar F5.33, leyendo
+`buildTabsAndPanels` en `7324b26`: el `PUT` arma cada pestaña SÓLO con lo que
+llega. Sin `key` la deriva del nombre —**renombrar una pestaña le cambiaba la
+clave**, y un rol con `tab_keys` dejaba de verla—, y sin `icon` ni
+`chat_suggestions` los deja vacíos. El builder no mandaba ninguno de los tres.
+Es la misma trampa que `chart` (2026-09-29) y `note` (2026-10-14).
+
+**Criterio de aceptación.** El detalle lee los tres, el borrador los arrastra y
+el cuerpo del `PUT` los manda; una pestaña nueva va sin clave para que el
+servicio la derive. Pruebas que fijen el cuerpo.
+
+**Verificado el 2026-10-19** · `adaptarDetalle` y `adaptarPreview` leen `icono` y
+`sugerencias`, `sembrar` arrastra clave, ícono y sugeridas, y `aCuerpo` manda
+`key`, `icon` y `chat_suggestions`. `TabInput` del cable los declara. Pruebas en
+`tests/api/admin.test.tsx` —el cuerpo entero y el viaje de ida y vuelta— y
+`tests/surfaces/builder/borrador.test.ts`; quitar `key` del cuerpo o las
+sugeridas de `sembrar` mata la suya.
+
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
 **Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio

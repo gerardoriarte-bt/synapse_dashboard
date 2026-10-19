@@ -269,6 +269,10 @@ export type TabDeLayout = {
   orden: number
   /** Vacío significa «la ven todos los roles». */
   roles: string[]
+  /** El ícono y las preguntas sugeridas · se leen para que guardar no los borre
+   *  (2026-10-19): el `PUT` deja vacío lo que no llega. */
+  icono: string
+  sugerencias: string[]
 }
 
 export type LayoutDetalle = {
@@ -597,6 +601,8 @@ export function adaptarDetalle(w: WireLayoutDetail): LayoutDetalle {
         pregunta: t.tab.operational_question ?? '',
         orden: t.tab.sort_order,
         roles: t.tab.role_ids ?? [],
+        icono: t.tab.icon ?? '',
+        sugerencias: t.tab.chat_suggestions ?? [],
       },
       // **`null` es «sin paneles»** · 2026-10-19. Una pestaña vacía llega con
       // `"panels": null`: el servicio arma la lista con `byTab[tab.ID]` y una
@@ -644,6 +650,12 @@ export function adaptarValidacion(w: WireValidationResult): ResultadoDeValidacio
  *  que averiguar si era una prueba débil o un cambio sin efecto. Era lo segundo. */
 export type TabParaGuardar = {
   id?: string
+  /** **La clave estable** · 2026-10-19. Sin ella el servicio la deriva del
+   *  nombre en cada guardado, y renombrar una pestaña la cambiaba: un rol con
+   *  `tab_keys` dejaba de verla. Ausente sólo en una pestaña nueva. */
+  clave?: string
+  icono: string
+  sugerencias: string[]
   nombre: string
   pregunta: string
   orden: number
@@ -664,10 +676,15 @@ function aCuerpo(tabs: readonly TabParaGuardar[]): A['LayoutUpdateRequest'] {
   return {
     tabs: tabs.map((t) => ({
       ...(t.id === undefined ? {} : { id: t.id }),
+      ...(t.clave === undefined ? {} : { key: t.clave }),
       name: t.nombre,
       operational_question: t.pregunta,
       sort_order: t.orden,
       role_ids: t.roles,
+      // **Explícitos, aunque vacíos** · como `chart` y `note`: el `PUT` arma la
+      // pestaña con lo que llega, y lo que no viaja queda vacío.
+      icon: t.icono,
+      chat_suggestions: t.sugerencias,
       panels: t.panels.map((p) => ({
         ...(p.id === undefined ? {} : { id: p.id }),
         metric_id: p.metricId,
@@ -824,6 +841,8 @@ function adaptarPreview(w: WirePreview): PreviewDeRol {
         pregunta: t.operational_question ?? '',
         orden: t.sort_order,
         roles: [],
+        icono: t.icon ?? '',
+        sugerencias: t.chat_suggestions ?? [],
       },
       paneles: t.panels.map((x) => ({
         id: x.id,

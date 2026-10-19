@@ -1734,6 +1734,9 @@ export interface components {
             /** @description Default si viene 0: el índice del arreglo + 1. */
             sort_order?: number;
             role_ids?: string[];
+            icon?: string;
+            /** @description Se recortan y se descartan las vacías. Hay un máximo por pestaña: 422 `VALIDATION_CHAT_SUGGESTIONS`. */
+            chat_suggestions?: string[];
             panels?: components["schemas"]["PanelInput"][];
         };
         PanelInput: {
