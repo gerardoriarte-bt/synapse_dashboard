@@ -598,7 +598,13 @@ export function adaptarDetalle(w: WireLayoutDetail): LayoutDetalle {
         orden: t.tab.sort_order,
         roles: t.tab.role_ids ?? [],
       },
-      panels: t.panels.map(adaptarPanel),
+      // **`null` es «sin paneles»** · 2026-10-19. Una pestaña vacía llega con
+      // `"panels": null`: el servicio arma la lista con `byTab[tab.ID]` y una
+      // clave ausente es un slice nil de Go. Leerlo con `.map` reventaba el
+      // detalle entero, y con él el editor del borrador · medido en QA, con
+      // «+ Pestaña» como único paso. La consola y la vista previa no lo
+      // necesitan: las arma `make(…, 0)` y siempre llega `[]`.
+      panels: (t.panels ?? []).map(adaptarPanel),
     })),
   }
 }

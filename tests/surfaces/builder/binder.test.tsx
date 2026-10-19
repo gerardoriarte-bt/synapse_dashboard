@@ -1105,3 +1105,32 @@ describe('la nota de lectura', () => {
     expect(notaDelPut(cuerpos[cuerpos.length - 1])).toBe(NOTA)
   })
 })
+
+// ── UNA PESTAÑA SIN PANELES LLEGA CON `panels: null` · 2026-10-19 ─────────────
+//
+// Medido en QA: el borrador de UA MX tenía una pestaña vacía y el editor decía
+// «Elegí un dashboard» con el dashboard elegido arriba. El servicio arma la
+// lista con un mapa, y una clave ausente es un slice nil de Go.
+describe('el borrador con una pestaña vacía', () => {
+  it('abre el editor · `panels: null` es una pestaña sin paneles', async () => {
+    servir()
+    server.use(
+      http.get(`${API}/admin/layouts/:id`, () =>
+        ok({ ...detalle, tabs: [{ ...detalle.tabs[0], panels: null }] }),
+      ),
+    )
+    montar()
+    await componer()
+    expect(screen.queryByText('Elegí un dashboard para abrir su editor.')).toBeNull()
+  })
+
+  it('un detalle que no se puede leer se dice como ERROR, no como «elegí un dashboard»', async () => {
+    servir()
+    server.use(http.get(`${API}/admin/layouts/:id`, () => ok({ ...detalle, tabs: 'roto' })))
+    montar()
+    await userEvent.click(await screen.findByRole('button', { name: /Overview/ }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Abrir el editor de Overview' }))
+    expect(await screen.findByText('No se pudo abrir este borrador')).toBeInTheDocument()
+    expect(screen.queryByText('Elegí un dashboard para abrir su editor.')).toBeNull()
+  })
+})

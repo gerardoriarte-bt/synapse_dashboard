@@ -2395,7 +2395,13 @@ components:
             properties:
               tab: { $ref: '#/components/schemas/LayoutTab' }
               panels:
-                type: array
+                type: [array, 'null']
+                description: |
+                  **`null` cuando la pestaña no tiene paneles**, no `[]` · medido
+                  en QA el 2026-10-19 y en local contra `7324b26`. Lo arma
+                  `byTab[tab.ID]` en `dd_layout_builder_service.go:508`, y una
+                  clave ausente es un slice nil. Pedido `[]` en
+                  `docs/MENSAJE-2026-10-19-backend-lo-que-ya-tiene-qa.md`.
                 items: { $ref: '#/components/schemas/LayoutPanel' }
 
     # ── LO QUE VA EN snake_case ──────────────────────────────────────────────
