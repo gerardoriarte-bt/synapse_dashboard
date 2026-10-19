@@ -7825,13 +7825,18 @@ descripción de la ruta en `contracts/synapse-console-wire.yaml` («es una lectu
 barata, y eso es lo que la hace útil al pintar»). Pedir la columna a datos queda
 para cuando se junte con otro pedido del catálogo.
 
-### ➕ F5.32 ⬜ El catálogo legible: columnas y formas
+### ➕ F5.32 ✅ El catálogo legible: columnas y formas
 
 **Descripción.** En A4 las columnas se pisan («escalarConIntervalodemanda») y la
 forma se muestra con el identificador del contrato. §3 de la auditoría de QA.
 
 **Criterio de aceptación.** Ninguna columna se superpone a 1440 px, y la forma
 se muestra con su nombre de producto.
+
+**Verificado el 2026-10-19** · mirado a 1440 px en local: con `pr-4` en cada
+celda ninguna columna se pisa. La forma sale de `nombreDeForma`, la misma tabla
+del builder. Prueba en `tests/surfaces/admin/catalogo.test.tsx`; volver al
+identificador la mata.
 
 ### ➕ F5.33 ⬜ El chat vacío ofrece preguntas
 

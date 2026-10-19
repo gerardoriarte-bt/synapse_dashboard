@@ -103,7 +103,10 @@ describe('§7.3 · el inventario de lo que la plataforma puede afirmar', () => {
     const fila = screen.getByText('Ventas').closest('tr')
     expect(fila).not.toBeNull()
     const celdas = within(fila as HTMLElement)
-    expect(celdas.getByText('escalar')).toBeInTheDocument()
+    // **Con su nombre de producto** · F5.32: el identificador del contrato
+    // —`escalar`— no es un rótulo.
+    expect(celdas.getByText('Cifra única')).toBeInTheDocument()
+    expect(celdas.queryByText('escalar')).toBeNull()
     expect(celdas.getByText('GOLD')).toBeInTheDocument()
     expect(celdas.getByText('ERP + Analítica de sitio')).toBeInTheDocument()
     // Texto ya redactado, pasa tal cual · el front no lo traduce.
