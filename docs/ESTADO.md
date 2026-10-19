@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**195 de 247 tareas cerradas.** 15 parciales · 33 pendientes · 4 diferidas.
+**200 de 247 tareas cerradas.** 15 parciales · 28 pendientes · 4 diferidas.
 
 
-## Front · 135 de 149
+## Front · 140 de 149
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -17,7 +17,7 @@
 | 2 · Estados | `██████████████████████` | 6/6 | 0 | 0 |
 | 3 · Chat contextual | `███████████████████···` | 13/15 | 0 | 0 |
 | 4 · Admin y Builder | `██████████████████████` | 24/24 | 0 | 0 |
-| 5 · Pruebas y pulido | `█████████████████·····` | 32/42 | 0 | 9 |
+| 5 · Pruebas y pulido | `███████████████████···` | 37/42 | 0 | 4 |
 
 ## Backend · 60 de 98
 
@@ -54,15 +54,10 @@
 
 ---
 
-## Se puede tomar hoy · 7 del front
+## Se puede tomar hoy · 2 del front
 
 - **F5.21** · Qué hace un gráfico cuando el dato excede lo legible
 - **F5.25** · Series de unidades distintas no comparten un eje
-- **F5.38** · El cliente de trabajo viaja en la URL
-- **F5.39** · El cliente propio se marca
-- **F5.40** · «Volver al dashboard» dice adónde va
-- **F5.41** · Usuarios arranca en el cliente de trabajo
-- **F5.42** · «Cargar meses» nombra el cliente
 
 ---
 

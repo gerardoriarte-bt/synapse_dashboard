@@ -69,10 +69,13 @@ type Props = {
   tenants: readonly { id: string; nombre: string }[]
   tenantActivo: string | null
   onTenant: (id: string) => void
+  /** El cliente de la sesión · F5.39 y F5.40. */
+  propio?: { id: string; nombre: string } | null
   children: React.ReactNode
 }
 
-export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantActivo, onTenant, onChangeTheme, onCerrarSesion, children }: Props) {
+export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantActivo, onTenant, onChangeTheme, onCerrarSesion, propio = null, children }: Props) {
+  const otroCliente = propio !== null && tenantActivo !== null && tenantActivo !== propio.id
   const pantalla = PANTALLAS.find((p) => p.id === activa) ?? PANTALLAS[0]
   const porTenant = pantalla.alcance === 'tenant'
 
@@ -98,7 +101,7 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
             {/* Con aire entre los tres, y el menú de trabajo AL FINAL · decisión
                 humana del 2026-10-07. */}
             <div className="flex items-center gap-6">
-              <VolverAlDashboard onIr={onSalir} />
+              <VolverAlDashboard onIr={onSalir} {...(otroCliente ? { alCliente: propio.nombre } : {})} />
               {identidad !== undefined && (
                 <IdentityBlock
                   rol={identidad.rol}
@@ -141,7 +144,7 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
                   cuenta lo que vino. Con la lista vacía —todavía cargando— no
                   se afirma nada. */}
               {porTenant ? (
-                <SelectorDeCliente clientes={tenants} activo={tenantActivo} onElegir={onTenant} />
+                <SelectorDeCliente clientes={tenants} activo={tenantActivo} onElegir={onTenant} propio={propio?.id ?? null} />
               ) : tenants.length > 0 ? (
                 <Label>
                   Alcance · {tenants.length} {tenants.length === 1 ? 'cliente' : 'clientes'}

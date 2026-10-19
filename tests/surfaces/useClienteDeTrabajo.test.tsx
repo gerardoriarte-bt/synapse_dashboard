@@ -9,14 +9,28 @@
  */
 import { act, renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { ClienteDeTrabajoProvider } from '@/surfaces/ClienteDeTrabajoProvider'
 import { useClienteDeTrabajo } from '@/surfaces/useClienteDeTrabajo'
 
 const LISTA = [{ id: 'keralty' }, { id: 'ua' }, { id: 'terpel' }]
+// **En un router desde el 2026-10-19** · F5.38: el proveedor lee la URL.
 const conProvider = ({ children }: { children: ReactNode }) => (
-  <ClienteDeTrabajoProvider>{children}</ClienteDeTrabajoProvider>
+  <MemoryRouter initialEntries={['/admin']}>
+    <ClienteDeTrabajoProvider>{children}</ClienteDeTrabajoProvider>
+  </MemoryRouter>
 )
+
+/** Monta el proveedor en una URL dada, y devuelve también la URL actual. */
+const enUrl = (url: string) =>
+  function Envoltorio({ children }: { children: ReactNode }) {
+    return (
+      <MemoryRouter initialEntries={[url]}>
+        <ClienteDeTrabajoProvider>{children}</ClienteDeTrabajoProvider>
+      </MemoryRouter>
+    )
+  }
 
 describe('el cliente de trabajo', () => {
   it('arranca en el cliente PROPIO, no en el primero de la lista', () => {
@@ -84,5 +98,39 @@ describe('el cliente de trabajo', () => {
     const { result } = renderHook(() => useClienteDeTrabajo(LISTA, undefined), { wrapper: conProvider })
     act(() => result.current[1]('terpel'))
     expect(result.current[0]).toBe('terpel')
+  })
+})
+
+
+// ── EL CLIENTE DE TRABAJO VIAJA EN LA URL · F5.38, 2026-10-19 ──────────────
+//
+// Visto en la auditoría del cambio de cliente: recargar volvía al propio sin
+// aviso, porque la elección vivía sólo en memoria.
+describe('en la URL', () => {
+  const useBusqueda = () => {
+    const ubicacion = useLocation()
+    return ubicacion.search
+  }
+
+  it('una URL con `?cliente=` arranca en ese cliente · es lo que sobrevive a recargar', () => {
+    const { result } = renderHook(() => useClienteDeTrabajo(LISTA, 'ua'), { wrapper: enUrl('/admin?cliente=terpel') })
+    expect(result.current[0]).toBe('terpel')
+  })
+
+  it('elegir pone el cliente en la URL', () => {
+    const { result } = renderHook(() => ({ c: useClienteDeTrabajo(LISTA, 'ua'), q: useBusqueda() }), { wrapper: enUrl('/builder') })
+    act(() => result.current.c[1]('keralty'))
+    expect(result.current.q).toBe('?cliente=keralty')
+  })
+
+  it('en la consola NO se pone · su cliente es el del token', () => {
+    const { result } = renderHook(() => ({ c: useClienteDeTrabajo(LISTA, 'ua'), q: useBusqueda() }), { wrapper: enUrl('/') })
+    act(() => result.current.c[1]('keralty'))
+    expect(result.current.q).toBe('')
+  })
+
+  it('un id de la URL que no está en la lista se ignora', () => {
+    const { result } = renderHook(() => useClienteDeTrabajo(LISTA, 'ua'), { wrapper: enUrl('/admin?cliente=inventado') })
+    expect(result.current[0]).toBe('ua')
   })
 })

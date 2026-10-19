@@ -7936,7 +7936,7 @@ servicio la derive. Pruebas que fijen el cuerpo.
 `tests/surfaces/builder/borrador.test.ts`; quitar `key` del cuerpo o las
 sugeridas de `sembrar` mata la suya.
 
-### ➕ F5.38 ⬜ El cliente de trabajo viaja en la URL
+### ➕ F5.38 ✅ El cliente de trabajo viaja en la URL
 
 **Descripción.** El cliente elegido en administración y builder vive en memoria:
 recargar la página, abrir una pestaña nueva o compartir un enlace vuelve al
@@ -7946,7 +7946,9 @@ cliente propio sin aviso. §1 y A de `docs/AUDITORIA-2026-10-19-cambio-de-client
 administración y builder, y una URL con ese parámetro arranca en ese cliente. Un
 id que no está en la lista se ignora. Prueba que recargue con el parámetro.
 
-### ➕ F5.39 ⬜ El cliente propio se marca
+**Verificado el 2026-10-19** · `ClienteDeTrabajoProvider` vive debajo del router y lleva `?cliente=<id>` en administración y builder; la consola no lo lleva. Mirado en local: recargar `/admin?cliente=…` arranca en ese cliente y el parámetro acompaña al pasar de pantalla. Pruebas en `tests/surfaces/useClienteDeTrabajo.test.tsx`; sin la escritura en la URL, la suya falla.
+
+### ➕ F5.39 ✅ El cliente propio se marca
 
 **Descripción.** En la lista de clientes y en el selector nada dice cuál es el
 cliente de la sesión, que es el que muestra la consola. §1 y B.
@@ -7954,7 +7956,9 @@ cliente de la sesión, que es el que muestra la consola. §1 y B.
 **Criterio de aceptación.** El cliente propio lleva «tu cliente» en la lista de
 Clientes y en el selector de la cabecera.
 
-### ➕ F5.40 ⬜ «Volver al dashboard» dice adónde va
+**Verificado el 2026-10-19** · «tu cliente» en la lista de Clientes y en la opción del selector. Prueba en `tests/surfaces/cambioDeCliente.test.tsx` y `tests/surfaces/admin/admin.test.tsx`.
+
+### ➕ F5.40 ✅ «Volver al dashboard» dice adónde va
 
 **Descripción.** Con otro cliente de trabajo, el botón lleva a la consola del
 cliente propio sin decirlo: es el salto que más confunde. §1 y C.
@@ -7962,7 +7966,9 @@ cliente propio sin decirlo: es el salto que más confunde. §1 y C.
 **Criterio de aceptación.** Si el cliente de trabajo no es el propio, el botón
 nombra el cliente al que vuelve, y su nombre accesible lo dice entero.
 
-### ➕ F5.41 ⬜ Usuarios arranca en el cliente de trabajo
+**Verificado el 2026-10-19** · con otro cliente de trabajo dice «Volver a la consola de <propio>», y su nombre accesible agrega «el cliente de tu sesión». Mirado en local en administración y builder. Pruebas en `tests/surfaces/cambioDeCliente.test.tsx` y la cadena en `admin.test.tsx`; sin el dato en la cabecera, falla.
+
+### ➕ F5.41 ✅ Usuarios arranca en el cliente de trabajo
 
 **Descripción.** La pantalla es de plataforma y su filtro arranca en «Todos los
 clientes»: se pasa de trabajar sobre un cliente a ver todos sin aviso. §1 y D.
@@ -7970,12 +7976,16 @@ clientes»: se pasa de trabajar sobre un cliente a ver todos sin aviso. §1 y D.
 **Criterio de aceptación.** Con un cliente de trabajo elegido, el filtro de
 Usuarios arranca en ese cliente, y «Todos los clientes» sigue a un clic.
 
-### ➕ F5.42 ⬜ «Cargar meses» nombra el cliente
+**Verificado el 2026-10-19** · `UserList` toma `clienteInicial` mientras nadie toca el filtro; un cliente sin usuarios arranca en todos. Pruebas en `tests/surfaces/admin/usuariosAcciones.test.tsx`; sin el valor inicial, falla.
+
+### ➕ F5.42 ✅ «Cargar meses» nombra el cliente
 
 **Descripción.** La acción escribe sobre el cliente elegido y el botón no lo
 nombra; al bajar, el selector queda fuera de la vista. §1 y E.
 
 **Criterio de aceptación.** El botón dice «Cargar meses de <cliente>».
+
+**Verificado el 2026-10-19** · el botón dice «Cargar 1 mes de <cliente>». Prueba en `tests/surfaces/admin/admin.test.tsx`; sin el nombre, falla.
 
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
