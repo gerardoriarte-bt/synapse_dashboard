@@ -17,7 +17,7 @@ en cada corrida de la puerta con `npm run plan:ancestro`.
 ## Lo que ya está de nuestro lado
 
 No hace falta que esperen nada de estas para probar: están en la rama
-`Gerardo` del repositorio del front, con prueba y con la puerta en
+`main` del repositorio del front, con prueba y con la puerta en
 verde.
 
 - **F1.32** · Transcribir el cable de consola a un contrato versionado
@@ -157,7 +157,29 @@ nuestro lado. · Bloquea **B2.12**.
 
 **Medido contra `9dc481e` el 2026-10-09** · `ProseGeneratorEnabledFromEnv` sigue leyendo el flag con default `false` (`dd_materializer_service.go:55-58`). **Si ya está encendido en dev no se ve desde el código**, y no lo medimos: sigue en pie el «avísennos».
 
+**Medido contra `7324b26` el 2026-10-19** · **SIGUE ⚠️.** El flag sigue con default `false`, y su respuesta del 14 lo dice: prenderlo es del entorno de QA, no de código (`RESPUESTA-2026-10-14-backend-instruccion-de-prosa.md`, punto 1). Con el flag, acá la prosa sale `AVAILABLE` con `agent:Synapse UA`, y desde `5af3b86` acepta una instrucción por métrica · `AUDITORIA-2026-10-19-prosa-por-metrica.md`. **Despliegue con el flag pedido de nuevo** en `MENSAJE-2026-10-19-backend-desplegar-y-fuente-de-la-prosa.md`, que reemplaza al del 14.
+
 Hasta entonces los dos paneles de prosa se sirven con el valor de la semilla, **en inglés**, y salen `DEGRADED`.
+
+
+---
+
+## ⚠️ 2 pedido(s) sin reverificar
+
+**Estos se midieron contra un commit suyo que ya no es el último.**
+No quiere decir que sigan faltando: quiere decir que **no lo
+sabemos**, y un pedido que no sabemos si sigue vigente no debería
+hacerles perder tiempo.
+
+El 2026-09-28 revalidamos los doce que había y **cinco ya estaban
+resueltos** — llevaban días acá diciendo que faltaban. Por eso esta
+sección existe.
+
+
+| Pedido | Medido contra | Cuándo |
+|---|---|---|
+| **B2.12** · Correr el materializador contra datos reales y verificar los seis estados | `9dc481e` | 2026-10-09 |
+| **B2.14** · /config/solicitudes · pedir acceso a una métrica que no se ve | `9dc481e` | 2026-10-09 |
 
 
 ---

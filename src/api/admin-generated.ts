@@ -133,6 +133,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/tenants/{tenantId}/catalog/{metricId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Escribe la instrucción de una métrica de prosa
+         * @description **Llegó en `5af3b86`**, respuesta al
+         *     `MENSAJE-2026-10-14-backend-instruccion-de-prosa.md`. **Sólo la
+         *     instrucción**: el resto de los campos editoriales del catálogo sigue sin
+         *     ruta. Medido el 2026-10-19 contra `7324b26`, todos los casos de abajo.
+         *
+         *     **Cadena vacía o sólo espacios la borra** y vuelve al texto fijo de la
+         *     clave —el servicio hace `TrimSpace`—. **Un cuerpo sin el campo también
+         *     la borra**: el `struct` no distingue ausente de vacío, así que el front
+         *     manda siempre el campo, con lo que quiere que quede.
+         *
+         *     **Una métrica que no es `prose` acepta el vacío** (200) y rechaza el
+         *     texto (422): borrar algo que no hay no es un error.
+         *
+         *     **Pide la columna migrada.** Con `DB_AUTO_MIGRATE=false` sobre una base
+         *     anterior a `5af3b86`, contesta **500** con el SQL de Postgres en el
+         *     `error` —«column "prose_instruction" … does not exist»—, mientras
+         *     `/config/catalog` sigue en 200 porque lee con `SELECT *`. Es la forma en
+         *     que un despliegue sin migrar fallaría en QA.
+         */
+        patch: operations["adminUpdateProseInstruction"];
+        trace?: never;
+    };
     "/admin/layouts/{layoutId}": {
         parameters: {
             query?: never;
@@ -1120,7 +1157,7 @@ export interface components {
              *     detalles sin avisar. Ver el cable de consola para el juego completo.
              *
              *     Los de acá, declarados por ellos: `CONFLICT_NOT_DRAFT`,
-             *     `VALIDATION_LAYOUT`, `VALIDATION_CHAT_SUGGESTIONS`,
+             *     `VALIDATION_LAYOUT`, `VALIDATION_PROSE_INSTRUCTION`, `NOT_FOUND_METRIC`, `VALIDATION_CHAT_SUGGESTIONS`,
              *     `NOT_FOUND_LAYOUT`, `NOT_FOUND_ROLE`, `AUTH_DRAFT_PREVIEW`,
              *     `VALIDATION_THEME`, `VALIDATION_DASHBOARD_NOT_VISIBLE`,
              *     `CONFLICT_NO_PREVIOUS`, `CONFLICT_REVERT_SELF`,
@@ -2240,6 +2277,74 @@ export interface operations {
              *     alguien llega con un id de una sesión vieja.
              */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminUpdateProseInstruction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+                metricId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Hasta 2000 **caracteres**, no bytes · medido con 2000 «é». */
+                    prose_instruction?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description La métrica entera, con la instrucción ya recortada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["CatalogMetric"];
+                    };
+                };
+            };
+            /**
+             * @description `AUTH_FORBIDDEN` «no puedes administrar otro cliente» · el
+             *     `tenantId` de la ruta no es el del token, salvo operador.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /**
+             * @description `NOT_FOUND_METRIC` «métrica no encontrada» · también cuando la
+             *     métrica existe pero es de otro cliente: no se distingue.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /**
+             * @description `VALIDATION_PROSE_INSTRUCTION` · con texto sobre una métrica que no
+             *     es `prose`, o con más de 2000 caracteres.
+             */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

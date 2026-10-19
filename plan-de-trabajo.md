@@ -4825,6 +4825,8 @@ corrida —`/admin/materialize/runs`— es lo que dice cuándo mirar.
 
 **Medido contra `9dc481e` el 2026-10-09** · `ProseGeneratorEnabledFromEnv` sigue leyendo el flag con default `false` (`dd_materializer_service.go:55-58`). **Si ya está encendido en dev no se ve desde el código**, y no lo medimos: sigue en pie el «avísennos».
 
+**Medido contra `7324b26` el 2026-10-19** · **SIGUE ⚠️.** El flag sigue con default `false`, y su respuesta del 14 lo dice: prenderlo es del entorno de QA, no de código (`RESPUESTA-2026-10-14-backend-instruccion-de-prosa.md`, punto 1). Con el flag, acá la prosa sale `AVAILABLE` con `agent:Synapse UA`, y desde `5af3b86` acepta una instrucción por métrica · `AUDITORIA-2026-10-19-prosa-por-metrica.md`. **Despliegue con el flag pedido de nuevo** en `MENSAJE-2026-10-19-backend-desplegar-y-fuente-de-la-prosa.md`, que reemplaza al del 14.
+
 Hasta entonces los dos paneles de prosa se sirven con el valor de la semilla, **en inglés**, y salen `DEGRADED`.
 
 **Criterio de aceptación.**
