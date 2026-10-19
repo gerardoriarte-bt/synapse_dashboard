@@ -32,7 +32,10 @@ de prosa. Las dos andan como dicen. Les pasamos qué desplegar y una pregunta.
 3. **Con `DD_MATERIALIZE_PROSE_ENABLED=true`.** Sin ella, desde `3651d70` los dos
    paneles de prosa de UA quedan `BLOCKED`.
 4. **Con `PLATFORM_OPERATOR_USER_IDS` cargada** con los usuarios de Lo Bueno que
-   operan varios clientes. Los ids se los pasamos aparte.
+   operan varios clientes. Por ahora es uno: **`jose.rodriguez@lobueno.co`**.
+   La variable pide el `user_id`, no el correo, y desde acá no lo vemos: ¿lo
+   sacan de `users` en QA y lo cargan? Si va vacía, ese usuario sólo ve su
+   propio cliente en administración y builder.
 5. **El front: `main`** de `gerardoriarte-bt/synapse_dashboard`.
 
 Cuando esté arriba, **¿nos dicen qué commit quedó?** Después cargamos los meses
