@@ -7868,13 +7868,18 @@ al final de las tarjetas. §2 de la auditoría de QA.
 **Criterio de aceptación.** La ficha ofrece saltar a cada sección, y el aviso de
 roles duplicados aparece antes de las tarjetas.
 
-### ➕ F5.35 ⬜ El menú de dashboards dice cuál es el de por defecto
+### ➕ F5.35 ✅ El menú de dashboards dice cuál es el de por defecto
 
 **Descripción.** El menú no marca el dashboard por defecto, y su pie —«SIN
 PESTAÑAS NI PANELES DE LOS DEMÁS · FALTA EN EL CONTEXTO»— no se entiende.
 
 **Criterio de aceptación.** El de por defecto lleva su marca y el pie dice en
 palabras de quien lee qué muestra el menú.
+
+**Verificado el 2026-10-19** · `DashboardPanel.tsx` marca «Por defecto» con
+`esDefault` —la palabra de B1— y el pie dice «Las pestañas se cuentan sólo del
+dashboard abierto». C6 no dibuja la marca: anotado en §16 de las divergencias.
+Prueba en `tests/surfaces/console/dashboards.test.tsx`; quitar la marca la mata.
 
 ### ➕ F5.36 ✅ El builder no muestra un error como instrucción
 

@@ -123,6 +123,11 @@ export function DashboardPanel({ context, pestanasActivas, disparador, onSelect,
               >
                 <span className="flex min-w-0 flex-col gap-0.5">
                   <span className="text-celda text-ink">{d.nombre}</span>
+                  {/* **El de por defecto se marca** · F5.35, 2026-10-19: es el que
+                      ve quien entra, y el menú no lo decía. C6 no lo dibuja; el
+                      builder sí —«POR DEFECTO» en B1— y se usa la misma palabra.
+                      Anotado en §16 de las divergencias con el `.pen`. */}
+                  {d.esDefault && <Note as="span">Por defecto</Note>}
                   {/* **Sólo del activo, y sólo las pestañas.** Ver la cabecera:
                       de los demás no llega ni el conteo ni si están compuestos, y
                       deducirlo de la ausencia sería inventar. */}
@@ -138,7 +143,8 @@ export function DashboardPanel({ context, pestanasActivas, disparador, onSelect,
         })}
       </ul>
       {/* El hueco declarado, con la gramática de §8: qué falta y de quién es. */}
-      <Label as="div">Sin pestañas ni paneles de los demás · falta en el contexto</Label>
+      {/* Dicho para quien lee · F5.35: «falta en el contexto» hablaba del cable. */}
+      <Label as="div">Las pestañas se cuentan sólo del dashboard abierto</Label>
     </div>
   )
 }

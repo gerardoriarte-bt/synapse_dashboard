@@ -694,6 +694,7 @@ se proponen acá:
 | A2 · Ficha de cliente | `CATALOG VERSION` | Inglés suelto en un chrome en español | `VERSIÓN DEL CATÁLOGO` |
 | C3 · Chat expandido | `LAS CONSULTAS QUEDAN EN EL TENANT` | «Tenant» no es una palabra de quien lee la consola | `LAS CONSULTAS QUEDAN EN ESTE CLIENTE` |
 | C2 · Drill-down | `ESTA VISTA NO CAMBIA LA COMPOSICIÓN · SOLO EL BUILDER LA MODIFICA` | Habla de cómo se arma el producto, no de lo que se ve | `ESTE DETALLE NO CAMBIA EL DASHBOARD` |
+| C6 · Selector de dashboard | No marca el de por defecto | Es el que ve quien entra | **Ya lo hace el front** · F5.35, con la palabra de B1: `POR DEFECTO` |
 
 **Pregunta para diseño:** ¿se retipean en el dibujo? Si sí, el front los cambia
 el mismo día; si no, se quedan como están.
