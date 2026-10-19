@@ -109,7 +109,7 @@ describe('se marca, NO se deshabilita', () => {
 
   it('con el período en curso ELEGIDO, se declara por qué importa', () => {
     montar([periodo('2026-09', true), periodo('2026-08', false)], '2026-09')
-    expect(screen.getByText(/incompleto, no compara contra uno cerrado/i)).toBeVisible()
+    expect(screen.getByText(/incompleto: sus comparaciones son parciales/i)).toBeVisible()
   })
 
   it('con un período CERRADO elegido, esa línea no está', () => {

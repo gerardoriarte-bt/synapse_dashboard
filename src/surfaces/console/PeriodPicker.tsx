@@ -137,7 +137,7 @@ export function PeriodPicker({ periods, activeId, metrics, format, aviso, onSele
       )}
 
       {activo?.enCurso === true && (
-        <Label as="div">Período en curso · incompleto, no compara contra uno cerrado</Label>
+        <Label as="div">Período en curso · incompleto: sus comparaciones son parciales</Label>
       )}
 
       {/* **Va acá y no sobre los paneles**: es una explicación del período, y

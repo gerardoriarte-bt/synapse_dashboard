@@ -7676,7 +7676,7 @@ sea seis columnas, así que la grilla colapsaba —F1.30 funcionando— y el alt
 es un `height` sino `gridRow: span N` sobre `gridAutoRows`. Y la celda se busca
 por su panel y no por índice, porque `readingOrder` ordena el DOM.
 
-### ➕ F5.22 ⬜ Los deltas del mes en curso se dicen parciales
+### ➕ F5.22 ✅ Los deltas del mes en curso se dicen parciales
 
 **Descripción.** Las tarjetas comparan el mes en curso contra el anterior
 completo —«VS MES ANTERIOR −74,5 %» el 19-oct— mientras el selector dice «no
@@ -7688,6 +7688,17 @@ abierto por `open_period` de `/config/me`.
 comparación contra el mes anterior lleva un rótulo que dice que es parcial, y el
 selector deja de afirmar que no compara. Una prueba con un período abierto y una
 con uno cerrado.
+
+**Verificado el 2026-10-19** · `surfaces/console/comparativoParcial.ts` marca
+`parcial` en cada comparativo cuando el período elegido es `open_period`, y
+`KpiBody` escribe «· mes incompleto» al lado del rótulo. **El delta no se toca**:
+es del servicio. El selector dice ahora «sus comparaciones son parciales».
+`parcial` está declarado en `synapse-api.yaml` como del front, no del cable.
+Prueba de punta a punta en `tests/surfaces/console/comparativoParcial.test.tsx`;
+quitar la marca en la consola o en el cuerpo mata las dos de pantalla.
+
+**Lo que sigue siendo del backend**: comparar contra los mismos días del período
+anterior. Hasta entonces la consola lo dice en vez de corregirlo.
 
 ### ➕ F5.23 ✅ «Ver detalle» por día en orden de fecha
 
