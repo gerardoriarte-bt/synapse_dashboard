@@ -574,7 +574,44 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-10-14 · la prosa lista, falta desplegar
+### ⇩ ACÁ SE PARÓ · 2026-10-19 · el backend contestó las dos, y falta desplegar
+
+**`main` está en `0a90c25`** (#24, #25, #27, #28). Las mediciones están en
+`docs/AUDITORIA-2026-10-16-selector-de-clientes.md`,
+`docs/AUDITORIA-2026-10-19-rutas-entre-clientes.md` y
+`docs/AUDITORIA-2026-10-19-prosa-por-metrica.md`.
+
+**EL SELECTOR DE CLIENTES ANDA en administración y builder**, contra el
+aislamiento de `8272085`: un admin ve sólo su cliente, y un operador de
+`PLATFORM_OPERATOR_USER_IDS` ve todos. **En la consola no va**: el cliente es el
+del token, y el backend pide no armarlo hasta el super-admin.
+
+**EL BACKEND ESTÁ EN `7324b26`**: cerró las dos rutas que cruzaban clientes y
+trajo `prose_instruction` con su `PATCH`. Los dos cables están medidos contra
+ese commit y el humo da verde.
+
+**EL DESPLIEGUE ES DEL BACKEND**, pedido en
+`docs/MENSAJE-2026-10-19-backend-desplegar-y-fuente-de-la-prosa.md` —**lo manda
+el humano**—: `7324b26` **migrado** —sin migrar, el `PATCH` da 500 y todo lo
+demás se ve sano—, con `DD_MATERIALIZE_PROSE_ENABLED=true` y
+`PLATFORM_OPERATOR_USER_IDS`. Los ids de Lo Bueno los pasa el humano. Después,
+«Cargar meses» desde A5.
+
+**LA PANTALLA PARA EDITAR LA INSTRUCCIÓN NO SE CONSTRUYÓ, a propósito.** Con una
+instrucción sobre Meta, el agente dio ROAS 7,28 «en alza» donde el panel
+`platform_return` de la misma corrida dice 2,07 y en baja, igual las dos veces.
+**Consulta otra fuente y la prosa no dice cuál.** Está preguntado en el mismo
+mensaje.
+
+**Una trampa que costó un PR:** el `main` local estaba 73 commits atrás y de ahí
+salió la rama del #24, que entró a `main` con una prueba rota. **Las ramas salen
+de `origin/main`**, y `verify` se corre sobre lo que queda mergeado.
+
+**`Gerardo` diverge de `main`** por `aaadc8c` (#26, de la otra sesión, sin
+mergear). Se actualiza con merge, y el conflicto del plan con #28 ya está
+resuelto en `Gerardo`.
+
+### ⇩ el 2026-10-14 · la prosa lista, falta desplegar
 
 **Lo que costó descubrir está en `docs/BITACORA-2026-10-14.md`.** **`main` está
 en `78660b1`** más esta entrada. Del front no queda nada tomable.
