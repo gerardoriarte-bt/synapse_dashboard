@@ -31,7 +31,7 @@
  *
  *  **§PEN:A2** · A2 · «Ficha de cliente» · DIVERGE · ver docs/AUDITORIA-2026-09-21-pen-vs-chat-y-ficha.md §9.
  */
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
 import { Accion } from '../../render/primitives/Accion'
@@ -125,6 +125,18 @@ export function RoleEditor({
   const [nombre, setNombre] = useState('')
   const [elegidas, setElegidas] = useState<string[]>([])
   const [ocultas, setOcultas] = useState<string[]>([])
+  const campoNombre = useRef<HTMLInputElement>(null)
+
+  // **El formulario se abre A LA VISTA** · F5.27, 2026-10-19. Se dibuja debajo
+  // de todas las tarjetas y la pantalla no se movía: «Editar» parecía no hacer
+  // nada, con el formulario a una o dos pantallas de distancia. Se lleva a la
+  // vista y el foco entra al nombre, que es lo primero que se edita.
+  // `scrollIntoView` no existe en jsdom, de ahí el `?.`.
+  useEffect(() => {
+    if (editando === null) return
+    campoNombre.current?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
+    campoNombre.current?.focus({ preventScroll: true })
+  }, [editando])
 
   const abrir = (r: Rol | null) => {
     setEditando(r?.id ?? '')
@@ -258,6 +270,17 @@ export function RoleEditor({
         </ul>
       )}
 
+      {/* **Antes de las tarjetas** · F5.34, 2026-10-19. Iba al final, debajo de
+          cinco tarjetas casi iguales, y los duplicados se veían antes que el
+          aviso que los explica. */}
+      {repetidos.length > 0 && (
+        <Ayuda>
+          {`Hay roles con el mismo nombre en distinta caja: ${repetidos
+            .map((r) => `«${r.nombre}»`)
+            .join(', ')}. Para los permisos cuentan como uno solo; conviene dejar uno y pasarle los usuarios del otro.`}
+        </Ayuda>
+      )}
+
       <ul className="flex flex-col gap-6 m-0 p-0 list-none">
         {roles.map((r) => (
           <RoleCard
@@ -292,14 +315,6 @@ export function RoleEditor({
         </Ayuda>
       )}
 
-      {repetidos.length > 0 && (
-        <Ayuda>
-          {`Hay roles con el mismo nombre en distinta caja: ${repetidos
-            .map((r) => `«${r.nombre}»`)
-            .join(', ')}. Para los permisos cuentan como uno solo; conviene dejar uno y pasarle los usuarios del otro.`}
-        </Ayuda>
-      )}
-
       {editando !== null && (
         <form
           className="flex flex-col gap-3 rounded-sm bg-w2 p-3"
@@ -318,6 +333,7 @@ export function RoleEditor({
           <label className="flex flex-col gap-1">
             <Label as="div">Nombre</Label>
             <input
+              ref={campoNombre}
               type="text"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}

@@ -7676,6 +7676,266 @@ sea seis columnas, así que la grilla colapsaba —F1.30 funcionando— y el alt
 es un `height` sino `gridRow: span N` sobre `gridAutoRows`. Y la celda se busca
 por su panel y no por índice, porque `readingOrder` ordena el DOM.
 
+### ➕ F5.22 ✅ Los deltas del mes en curso se dicen parciales
+
+**Descripción.** Las tarjetas comparan el mes en curso contra el anterior
+completo —«VS MES ANTERIOR −74,5 %» el 19-oct— mientras el selector dice «no
+compara contra uno cerrado». §1.1 de `docs/AUDITORIA-2026-10-19-experiencia-de-usuario.md`.
+La comparación viene calculada del backend; el front sabe qué período está
+abierto por `open_period` de `/config/me`.
+
+**Criterio de aceptación.** Con el período elegido igual a `open_period`, cada
+comparación contra el mes anterior lleva un rótulo que dice que es parcial, y el
+selector deja de afirmar que no compara. Una prueba con un período abierto y una
+con uno cerrado.
+
+**Verificado el 2026-10-19** · `surfaces/console/comparativoParcial.ts` marca
+`parcial` en cada comparativo cuando el período elegido es `open_period`, y
+`KpiBody` escribe «· mes incompleto» al lado del rótulo. **El delta no se toca**:
+es del servicio. El selector dice ahora «sus comparaciones son parciales».
+`parcial` está declarado en `synapse-api.yaml` como del front, no del cable.
+Prueba de punta a punta en `tests/surfaces/console/comparativoParcial.test.tsx`;
+quitar la marca en la consola o en el cuerpo mata las dos de pantalla.
+
+**Lo que sigue siendo del backend**: comparar contra los mismos días del período
+anterior. Hasta entonces la consola lo dice en vez de corregirlo.
+
+### ➕ F5.23 ✅ «Ver detalle» por día en orden de fecha
+
+**Descripción.** `DrillSheet.tsx` le pasa `params={}` a `BarsBody`, que ordena
+`desc`, así que el desglose por día sale por valor. El servicio lo manda en
+orden de fecha (`ORDER BY 1` en `drilldown.go`). §1.3 de la auditoría.
+
+**Criterio de aceptación.** Las dimensiones de tiempo —día y semana— se dibujan
+en el orden en que llegan; las nominales, por valor. Una prueba por cada una.
+
+**Verificado el 2026-10-19** · `DrillSheet.tsx` pasa `orden: 'natural'` cuando
+todas las etiquetas son fechas ISO —se decide por el dato, porque la dimensión
+llega como `day` sin decir que es temporal—. Dos pruebas en
+`tests/surfaces/console/drilldown.test.tsx` §8; volver a `params={{}}` mata la de
+día y no la de plataforma.
+
+### ➕ F5.24 ✅ Cambiar el rol, suspender y quitar una pestaña piden confirmación
+
+**Descripción.** Las tres se aplican con un clic y sin deshacer: el `<select>`
+de rol de la tabla de usuarios, «Suspender», y «Quitar pestaña» en el builder,
+que borra sus paneles y autoguarda. §1.2 de `docs/AUDITORIA-2026-10-19-usabilidad-qa.md`.
+
+**Criterio de aceptación.** Cada una pide un segundo paso que nombra a quién o
+qué afecta antes de mandar nada, y se puede cancelar. Las pruebas verifican que
+el primer clic NO dispara la llamada y que el segundo sí.
+
+**Verificado el 2026-10-19** · `FilaDeUsuario.tsx` deja el rol elegido y la
+suspensión PENDIENTES, con «¿Pasar a X al rol Y?» o «¿Suspender a X?»; reactivar
+sigue directo. `TabInspector.tsx` confirma quitar una pestaña con paneles y dice
+cuántos; la vacía se quita directo. Pruebas en `usuariosAcciones.test.tsx`,
+`admin.test.tsx`, `editor.test.tsx` y `binder.test.tsx`; quitar cada
+confirmación mata la suya.
+
+### ➕ F5.25 ⬜ Series de unidades distintas no comparten un eje
+
+**Descripción.** La escala por unidad del #18 vale sólo para `smallmult`. En el
+gráfico de líneas por defecto el ROAS (`x`) queda plano en cero junto a millones
+de dólares. §1.4 de la auditoría.
+
+**Criterio de aceptación.** Un `seriesMultiples` cuyas series traen más de una
+unidad no se dibuja con un solo eje: cada unidad tiene su escala. Una prueba con
+`USD` y `x` que verifique que la serie chica no queda aplastada.
+
+**Espera a diseño · 2026-10-19.** No se construye todavía: es la tercera pregunta
+de §15 de `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` —«si un
+multiserie de unidades distintas debería ser otro gráfico»—, abierta desde el
+14. Las tres salidas cambian lo que el gráfico afirma: **dos escalas en el mismo
+gráfico** (y cómo se ve que son dos), **caer a múltiplos pequeños** cuando las
+unidades difieren, o que **el builder avise** y ofrezca `combo`, que el
+repertorio ya tiene. Elegir una acá sería resolver una decisión de diseño.
+
+### ➕ F5.26 ✅ El riel del chat muestra la consulta recién hecha
+
+**Descripción.** Después de preguntar el riel sigue en «Todavía no preguntaste
+nada», y al reabrir la hoja la conversación no está. El hilo se guarda; el riel
+no se vuelve a pedir. §1.6 de la auditoría.
+
+**Criterio de aceptación.** Al terminar una respuesta la lista de hilos se
+vuelve a pedir, y la consulta aparece en el riel sin recargar.
+
+**Verificado el 2026-10-19** · `useChat.ts` invalida `['chat', 'hilos']` al
+llegar el `fin`, igual que al borrar. Prueba en
+`tests/surfaces/console/rielSeActualiza.test.tsx`; sin la invalidación, el riel
+sigue en «Todavía no preguntaste nada».
+
+### ➕ F5.27 ✅ «Editar» un rol abre a la vista
+
+**Descripción.** El formulario se dibuja debajo de todas las tarjetas
+(`RoleEditor.tsx`) y la pantalla no se mueve. §2.2 de la auditoría.
+
+**Criterio de aceptación.** Al abrir el editor de un rol, el formulario queda a
+la vista y con el foco en su primer campo.
+
+**Verificado el 2026-10-19** · `RoleEditor.tsx` lleva el campo del nombre a la
+vista y le da el foco al abrir. Prueba en `tests/surfaces/admin/roles.test.tsx`;
+sin el `focus`, falla.
+
+### ➕ F5.28 ✅ El copy del chrome sin notas de desarrollo ni inglés suelto
+
+**Descripción.** «TENANT», «CATALOG VERSION», «DAY · WEEK · PLATFORM», «El
+filtro por estado no se puede ofrecer todavía», «publicar no despliega nada:
+cambiá qué versión ve la consola», «1 PESTAÑAS». §4.2 y §4.3 de la auditoría.
+**No incluye** el copy del catálogo, la semilla ni el agente: ése se pide a
+quien lo emite (regla del 2026-09-25).
+
+**Criterio de aceptación.** Ningún literal nuestro en inglés en el chrome, las
+notas para desarrolladores fuera de pantalla, y los plurales concuerdan.
+
+**Verificado el 2026-10-19** · cambiados: «Identidad del cliente», «Todavía no se
+puede filtrar por estado», el texto de publicar —«Al publicar, es la versión
+que ven los roles en la consola»—, el del detalle por fila, el de la validación
+y el del chat vacío, sin «SQL». «1 pestaña» concuerda. Las pruebas que ataban el
+texto viejo se actualizaron.
+
+**Lo que NO es nuestro y quedó escrito:** tres literales del `.pen` —«CATALOG
+VERSION», «LAS CONSULTAS QUEDAN EN EL TENANT», «ESTA VISTA NO CAMBIA LA
+COMPOSICIÓN»— van como propuesta en §16 de
+`docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md`. Y «DAY · WEEK · PLATFORM»
+son las claves del cable: el servicio tiene el rótulo (`Label: "Plataforma"` en
+`drilldown.go`) y no lo serializa.
+
+### ➕ F5.29 ✅ El ⓘ nombra su panel y no tapa la cifra
+
+**Descripción.** Los catorce botones se llaman «Base y procedencia» para un
+lector de pantalla, y el recuadro se abre encima del número. §1.8 y §4.1.
+
+**Criterio de aceptación.** El nombre accesible incluye el título del panel, y
+el recuadro no cubre la cifra principal.
+
+**Verificado el 2026-10-19** · `MetaInfo.tsx` se llama «Base y procedencia de
+<panel>» y se abre hacia arriba (`bottom-full`), sobre la cabecera y no sobre la
+cifra. Prueba en `tests/render/Panel/metaInfo.test.tsx`; volver al nombre fijo la
+mata.
+
+### ➕ F5.30 ✅ Los períodos con nombre de mes
+
+**Descripción.** El selector lista «2026-09», el id del cable.
+
+**Criterio de aceptación.** Cada opción dice el mes y el año en el locale del
+tenant; el valor sigue siendo el id.
+
+**Verificado el 2026-10-19** · `format.periodName` redacta `YYYY-MM` como
+«septiembre 2026» con el locale del tenant y deja tal cual lo que no es un mes.
+Prueba en `tests/surfaces/console/periodoEnCurso.test.tsx`.
+
+### ➕ F5.31 ✅ Las dimensiones del detalle · la auditoría pedía cambiar una decisión ya escrita
+
+**Descripción.** La auditoría de experiencia (§4.4) contó catorce pedidos de
+`drilldown/dimensions` al abrir la consola y propuso pedirlos al abrir el
+detalle. **Ya estaba decidido, y por una razón que sigue en pie**:
+`ConsoleContainer.tsx`, sobre `useDrillSupport`, lo declara «una lectura por
+panel, y está declarada como ruido». «Un CTA sin manejador no se pinta» exige
+saber ANTES de dibujar el pie qué paneles admiten detalle, y no hay ruta batch.
+Cada lectura es un mapa en memoria del servicio y la caché las deduplica.
+
+**El arreglo verdadero no es del front**: que el catálogo llene `dimensions`,
+que existe en el contrato y llega vacío en las 21 métricas. Con eso el CTA se
+decide sin ningún pedido.
+
+**Criterio de aceptación.** Queda escrito por qué no se cambia y dónde está el
+arreglo.
+
+**Verificado el 2026-10-19** · leído en `ConsoleContainer.tsx` y en la
+descripción de la ruta en `contracts/synapse-console-wire.yaml` («es una lectura
+barata, y eso es lo que la hace útil al pintar»). Pedir la columna a datos queda
+para cuando se junte con otro pedido del catálogo.
+
+### ➕ F5.32 ✅ El catálogo legible: columnas y formas
+
+**Descripción.** En A4 las columnas se pisan («escalarConIntervalodemanda») y la
+forma se muestra con el identificador del contrato. §3 de la auditoría de QA.
+
+**Criterio de aceptación.** Ninguna columna se superpone a 1440 px, y la forma
+se muestra con su nombre de producto.
+
+**Verificado el 2026-10-19** · mirado a 1440 px en local: con `pr-4` en cada
+celda ninguna columna se pisa. La forma sale de `nombreDeForma`, la misma tabla
+del builder. Prueba en `tests/surfaces/admin/catalogo.test.tsx`; volver al
+identificador la mata.
+
+### ➕ F5.33 ✅ El chat vacío ofrece preguntas
+
+**Descripción.** La hoja del chat arranca con una línea. La pestaña trae
+`chat_suggestions` en el cable. §1.9.
+
+**Criterio de aceptación.** Con sugerencias en la pestaña, el chat vacío las
+muestra y una toca envía la pregunta; sin sugerencias, no se inventa ninguna.
+
+**Verificado el 2026-10-19** · `ChatSheet` recibe `sugerenciasDePestana` desde
+`layout.data.tab.chatSugerencias` y las ofrece en el chat de pestaña; las de
+panel siguen saliendo de su ruta. **Y se pueden escribir**: «Preguntas sugeridas
+para el chat» en los ajustes de la pestaña, una por renglón, con el aviso de las
+ocho que acepta el servicio. Que viajen en el `PUT` lo hizo F5.37 —antes guardar
+las borraba—. Pruebas en `tests/surfaces/console/rielSeActualiza.test.tsx` y
+`tests/surfaces/builder/sugeridasDePestana.test.tsx`.
+
+**Hoy ninguna pestaña de UA tiene sugeridas** —medido en local: `[]`—, así que
+el chat se ve igual hasta que alguien las escriba.
+
+### ➕ F5.34 ✅ La ficha de cliente se recorre por secciones
+
+**Descripción.** Identidad, roles, usuarios, acceso y subprocesadores son una
+sola página de seis pantallas. Y el aviso de roles duplicados por mayúscula va
+al final de las tarjetas. §2 de la auditoría de QA.
+
+**Criterio de aceptación.** La ficha ofrece saltar a cada sección, y el aviso de
+roles duplicados aparece antes de las tarjetas.
+
+**Verificado el 2026-10-19** · `Admin.tsx` pinta una fila «Secciones de la
+ficha» —Identidad, Roles, Usuarios, Acceso a datos, Subprocesadores— que lleva a
+cada bloque, y `RoleEditor.tsx` pone el aviso de duplicados antes de las
+tarjetas. A2 no dibuja la fila: §16 de las divergencias. Pruebas en
+`tests/surfaces/admin/roles.test.tsx`; con el aviso al final, la suya falla.
+
+### ➕ F5.35 ✅ El menú de dashboards dice cuál es el de por defecto
+
+**Descripción.** El menú no marca el dashboard por defecto, y su pie —«SIN
+PESTAÑAS NI PANELES DE LOS DEMÁS · FALTA EN EL CONTEXTO»— no se entiende.
+
+**Criterio de aceptación.** El de por defecto lleva su marca y el pie dice en
+palabras de quien lee qué muestra el menú.
+
+**Verificado el 2026-10-19** · `DashboardPanel.tsx` marca «Por defecto» con
+`esDefault` —la palabra de B1— y el pie dice «Las pestañas se cuentan sólo del
+dashboard abierto». C6 no dibuja la marca: anotado en §16 de las divergencias.
+Prueba en `tests/surfaces/console/dashboards.test.tsx`; quitar la marca la mata.
+
+### ➕ F5.36 ✅ El builder no muestra un error como instrucción
+
+**Descripción.** Un borrador que no se podía leer decía «Elegí un dashboard».
+Arreglado en `87ae5db` junto con `panels: null`; queda escrito acá para que la
+tarea exista en el plan.
+
+**Criterio de aceptación.** Un detalle que falla se muestra como error con
+reintento · `tests/surfaces/builder/binder.test.tsx`, «un detalle que no se
+puede leer se dice como ERROR».
+
+### ➕ F5.37 ✅ Guardar desde el builder no pisa la clave, el ícono ni las sugeridas de una pestaña
+
+**Descripción.** Encontrado el 2026-10-19 al preparar F5.33, leyendo
+`buildTabsAndPanels` en `7324b26`: el `PUT` arma cada pestaña SÓLO con lo que
+llega. Sin `key` la deriva del nombre —**renombrar una pestaña le cambiaba la
+clave**, y un rol con `tab_keys` dejaba de verla—, y sin `icon` ni
+`chat_suggestions` los deja vacíos. El builder no mandaba ninguno de los tres.
+Es la misma trampa que `chart` (2026-09-29) y `note` (2026-10-14).
+
+**Criterio de aceptación.** El detalle lee los tres, el borrador los arrastra y
+el cuerpo del `PUT` los manda; una pestaña nueva va sin clave para que el
+servicio la derive. Pruebas que fijen el cuerpo.
+
+**Verificado el 2026-10-19** · `adaptarDetalle` y `adaptarPreview` leen `icono` y
+`sugerencias`, `sembrar` arrastra clave, ícono y sugeridas, y `aCuerpo` manda
+`key`, `icon` y `chat_suggestions`. `TabInput` del cable los declara. Pruebas en
+`tests/api/admin.test.tsx` —el cuerpo entero y el viaje de ida y vuelta— y
+`tests/surfaces/builder/borrador.test.ts`; quitar `key` del cuerpo o las
+sugeridas de `sembrar` mata la suya.
+
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
 **Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio

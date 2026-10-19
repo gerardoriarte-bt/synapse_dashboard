@@ -30,6 +30,7 @@ import { createFormat, LOCALE_POR_DEFECTO } from '../../render/format'
 import { currentTheme } from '../../tokens/theme'
 import { markTabConfig } from '../../render/budget'
 import { Console } from './Console'
+import { marcarParcial } from './comparativoParcial'
 import { ChatSheet } from './ChatSheet'
 import { agentePorDefecto } from './agenteDeChat'
 import { esAdmin } from '../../api/rol'
@@ -387,11 +388,18 @@ export function ConsoleContainer() {
   // Un fallo del batch NO baja acá: los shells siguen visibles y cada panel
   // muestra su estado de error · F1.26. Por eso el payload cae a CARGANDO y no
   // a una pantalla de error.
-  const payloadOf = (panelId: string): Payload =>
-    batch.data?.[panelId] ??
-    (batch.isError
+  //
+  // **Y en el mes abierto los comparativos se marcan parciales** · F5.22: el
+  // servicio los calcula contra el período anterior completo. Ver
+  // `comparativoParcial.ts`.
+  const enMesAbierto = mesEnCurso !== undefined && activePeriod?.id === mesEnCurso
+  const payloadOf = (panelId: string): Payload => {
+    const p = batch.data?.[panelId]
+    if (p !== undefined) return marcarParcial(p, enMesAbierto)
+    return batch.isError
       ? { estado: 'ERROR', mensaje: batch.error?.message ?? 'No se pudieron traer los datos' }
-      : { estado: 'CARGANDO' })
+      : { estado: 'CARGANDO' }
+  }
 
   /* ── F1.29 · los params se validan ACÁ, en el adaptador de api/ ─────────── */
 
@@ -567,6 +575,7 @@ export function ConsoleContainer() {
         bloques={blockTable(blocks.data?.blocks ?? [])}
         format={format}
         {...(mesEnCurso === undefined ? {} : { mesEnCurso })}
+        sugerenciasDePestana={layout.data?.tab.chatSugerencias ?? []}
         onClose={() => setAskingTab(false)}
         {...selectorDeAgente}
       />

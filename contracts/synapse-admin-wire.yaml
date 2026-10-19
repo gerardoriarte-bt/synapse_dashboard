@@ -2451,6 +2451,17 @@ components:
         role_ids:
           type: array
           items: { type: string, format: uuid }
+        # ── Lo que el PUT pisa si no viaja · 2026-10-19, leído contra `7324b26` ──
+        #
+        # `buildTabsAndPanels` arma la pestaña SÓLO con lo que llega: sin
+        # `key` la deriva del nombre —renombrar le cambia la clave y un rol con
+        # `tab_keys` la pierde—, y sin `icon` ni `chat_suggestions` los deja
+        # vacíos. El builder no los mandaba.
+        icon: { type: string }
+        chat_suggestions:
+          type: array
+          description: 'Se recortan y se descartan las vacías. Hay un máximo por pestaña: 422 `VALIDATION_CHAT_SUGGESTIONS`.'
+          items: { type: string }
         panels:
           type: array
           items: { $ref: '#/components/schemas/PanelInput' }

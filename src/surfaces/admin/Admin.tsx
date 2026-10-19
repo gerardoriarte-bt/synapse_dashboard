@@ -543,18 +543,42 @@ function Cliente({
     // acceso, y los subprocesadores aplican igual desde el alta, así que van al
     // final.
     <div className="flex flex-col gap-6">
-      <TenantIdentity tenant={tenant} estado={estado} version={version} format={format} />
+      {/* **La ficha se recorre por secciones** · F5.34, 2026-10-19. Son unas
+          seis pantallas seguidas, y los usuarios aparecían recién en la
+          cuarta. El dibujo de A2 no trae esta fila: anotado en §16 de las
+          divergencias con el `.pen`. */}
+      <nav aria-label="Secciones de la ficha" className="flex flex-wrap items-center gap-2">
+        {SECCIONES.map(([id, nombre]) => (
+          <Accion
+            key={id}
+            tamano="compacta"
+            // «Ir a…» y no el nombre a secas: «Usuarios» ya es la pestaña de
+            // administración, y dos botones iguales no se distinguen.
+            etiqueta={`Ir a ${nombre}`}
+            onClick={() => document.getElementById(id)?.scrollIntoView?.({ block: 'start', behavior: 'smooth' })}
+          >
+            {nombre}
+          </Accion>
+        ))}
+      </nav>
 
-      <RoleEditor {...paraRoles} roles={roles.data ?? []} cargando={roles.data === undefined} />
+      <div id="ficha-identidad">
+        <TenantIdentity tenant={tenant} estado={estado} version={version} format={format} />
+      </div>
+
+      <div id="ficha-roles">
+        <RoleEditor {...paraRoles} roles={roles.data ?? []} cargando={roles.data === undefined} />
+      </div>
 
       {/* **Después de los roles**: primero qué ve cada rol, después quién lo
           tiene. Es el orden en que se decide. */}
-      {usuarios}
+      <div id="ficha-usuarios">{usuarios}</div>
 
       {/* **El agente se pinta aunque su petición falle, y con la razón.** Hoy
           esa ruta da 500 contra el servicio —las columnas del CRUD no están en
           la base compartida, B3.11— y un bloque que desaparece haría parecer
           que el cliente no tiene agente, que es una afirmación distinta. */}
+      <div id="ficha-acceso">
       {agentes.isError ? (
         <section className="flex flex-col gap-2">
           <Label as="div">Agente de datos</Label>
@@ -581,8 +605,20 @@ function Cliente({
           {...(onVerificar === undefined ? {} : { onVerificar })}
         />
       )}
+      </div>
 
-      <Subprocessors />
+      <div id="ficha-subprocesadores">
+        <Subprocessors />
+      </div>
     </div>
   )
 }
+
+/** Las secciones de la ficha, en el orden del dibujo · F5.34. */
+const SECCIONES = [
+  ['ficha-identidad', 'Identidad'],
+  ['ficha-roles', 'Roles'],
+  ['ficha-usuarios', 'Usuarios'],
+  ['ficha-acceso', 'Acceso a datos'],
+  ['ficha-subprocesadores', 'Subprocesadores'],
+] as const

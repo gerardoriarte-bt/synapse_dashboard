@@ -591,6 +591,7 @@ describe('las acciones de usuarios llegan al servicio', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Usuarios' }))
 
     await userEvent.click(await screen.findByRole('button', { name: 'Suspender a Bruno K' }))
+    await userEvent.click(within(screen.getByRole('group', { name: 'Confirmar el cambio de Bruno K' })).getByRole('button', { name: 'Suspender' }))
     // **`t-2` y no el cliente activo**: el usuario es de Keralty, y el activo es
     // UA. Mandarlo al activo daría 404 —medido—.
     await waitFor(() => expect(url).toBe('/api/v1/admin/tenants/t-2/users/u-2'))

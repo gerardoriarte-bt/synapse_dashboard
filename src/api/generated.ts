@@ -1699,6 +1699,14 @@ export interface components {
                 delta: number;
                 /** @example % */
                 unidad?: string;
+                /**
+                 * @description **El período mirado está abierto** · F5.22, 2026-10-19. El
+                 *     servicio compara el mes en curso contra el anterior COMPLETO
+                 *     —medido: «VS MES ANTERIOR −74,5 %» el 19 de octubre— y no lo
+                 *     dice. Lo pone la consola, que es la que sabe qué período está
+                 *     mirando y cuál es `open_period`; no viene del cable.
+                 */
+                parcial?: boolean;
             }[];
             /** @description Lectura al pie del panel, cuando la métrica la necesita. */
             nota?: string;

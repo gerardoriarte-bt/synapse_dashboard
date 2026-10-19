@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**180 de 226 tareas cerradas.** 15 parciales · 27 pendientes · 4 diferidas.
+**195 de 242 tareas cerradas.** 15 parciales · 28 pendientes · 4 diferidas.
 
 
-## Front · 120 de 128
+## Front · 135 de 144
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -17,7 +17,7 @@
 | 2 · Estados | `██████████████████████` | 6/6 | 0 | 0 |
 | 3 · Chat contextual | `███████████████████···` | 13/15 | 0 | 0 |
 | 4 · Admin y Builder | `██████████████████████` | 24/24 | 0 | 0 |
-| 5 · Pruebas y pulido | `██████████████████····` | 17/21 | 0 | 3 |
+| 5 · Pruebas y pulido | `███████████████████···` | 32/37 | 0 | 4 |
 
 ## Backend · 60 de 98
 
@@ -54,9 +54,10 @@
 
 ---
 
-## Se puede tomar hoy · 1 del front
+## Se puede tomar hoy · 2 del front
 
 - **F5.21** · Qué hace un gráfico cuando el dato excede lo legible
+- **F5.25** · Series de unidades distintas no comparten un eje
 
 ---
 

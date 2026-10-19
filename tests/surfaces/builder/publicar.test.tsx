@@ -229,7 +229,7 @@ describe('F4.14 · el servidor valida lo GUARDADO', () => {
     await abrir()
 
     await userEvent.click(validarBtn())
-    expect(await screen.findByText(/El servidor la dio por válida/)).toBeInTheDocument()
+    expect(await screen.findByText(/Está lista para publicar/)).toBeInTheDocument()
     expect(screen.getByText('Validación del servidor')).toBeInTheDocument()
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Publicar' })).toBeInTheDocument(),
@@ -329,7 +329,7 @@ describe('F4.15 · publicar', () => {
     await editar()
     expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
     // Y el veredicto viejo deja de mostrarse: era sobre otra composición.
-    expect(screen.queryByText(/El servidor la dio por válida/)).toBeNull()
+    expect(screen.queryByText(/Está lista para publicar/)).toBeNull()
     expect(screen.getByText(ESPERAR_Y_VALIDAR)).toBeInTheDocument()
   })
 
@@ -422,7 +422,7 @@ describe('F4.15 · publicar', () => {
     await userEvent.click(validarBtn())
     expect(
       await screen.findByText(
-        'El servidor la dio por válida. Ya se puede publicar; publicar no despliega nada, cambia qué versión ve la consola.',
+        'Está lista para publicar. Al publicar, es la versión que ven los roles en la consola.',
       ),
     ).toBeInTheDocument()
   })

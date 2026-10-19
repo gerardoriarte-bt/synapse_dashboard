@@ -98,7 +98,10 @@ export function KpiBody({
         <div className="flex flex-col gap-1 mt-auto">
           {comparativo.map((c) => (
             <div key={c.label} className="flex items-baseline justify-between gap-2">
-              <Label>{c.label}</Label>
+              {/* **Parcial cuando el mes está abierto** · F5.22: el delta es del
+                  servicio y compara contra un período completo. Se dice al lado,
+                  no se esconde ni se recalcula. */}
+              <Label>{c.parcial === true ? `${c.label} · mes incompleto` : c.label}</Label>
               {/* El delta va en texto y en color neutro · regla dura 3: el signo
                   comunica la dirección, y prohibido verde/rojo semántico. */}
               <Label>{format.delta(c.delta, { decimals: 1 }) + (c.unidad ?? '%')}</Label>

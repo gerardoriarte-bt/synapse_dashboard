@@ -55,7 +55,7 @@ const tab = (panels: TabParaGuardar['panels']): TabParaGuardar => ({
   nombre: 'Resumen',
   pregunta: '¿Cómo vamos?',
   orden: 1,
-  roles: [],
+  roles: [], icono: '', sugerencias: [],
   panels,
 })
 

@@ -87,8 +87,10 @@ export function ChatThread({ turns, panelTipo, bloques, format, now, mesEnCurso 
   if (turns.length === 0) {
     return (
       <p className="font-body text-cuerpo leading-cuerpo text-dim m-0">
-        Preguntá sobre lo que estás viendo. La respuesta llega con su SQL y su
-        procedencia.
+        {/* Sin «SQL» · F5.28: quien pregunta quiere saber de dónde sale la cifra,
+            no con qué lenguaje se consultó. El SQL sigue en el desplegable. */}
+        Preguntá sobre lo que estás viendo. Cada respuesta dice de dónde salen sus
+        cifras.
       </p>
     )
   }
