@@ -7803,13 +7803,27 @@ tenant; el valor sigue siendo el id.
 «septiembre 2026» con el locale del tenant y deja tal cual lo que no es un mes.
 Prueba en `tests/surfaces/console/periodoEnCurso.test.tsx`.
 
-### ➕ F5.31 ⬜ Las dimensiones del detalle se piden al abrirlo
+### ➕ F5.31 ✅ Las dimensiones del detalle · la auditoría pedía cambiar una decisión ya escrita
 
-**Descripción.** La consola pide `drilldown/dimensions` por cada panel al
-cargar: catorce pedidos que nadie usó. §4.4.
+**Descripción.** La auditoría de experiencia (§4.4) contó catorce pedidos de
+`drilldown/dimensions` al abrir la consola y propuso pedirlos al abrir el
+detalle. **Ya estaba decidido, y por una razón que sigue en pie**:
+`ConsoleContainer.tsx`, sobre `useDrillSupport`, lo declara «una lectura por
+panel, y está declarada como ruido». «Un CTA sin manejador no se pinta» exige
+saber ANTES de dibujar el pie qué paneles admiten detalle, y no hay ruta batch.
+Cada lectura es un mapa en memoria del servicio y la caché las deduplica.
 
-**Criterio de aceptación.** Las dimensiones de un panel se piden cuando se abre
-su detalle, o cuando hace falta decidir si se ofrece «Ver detalle», y no antes.
+**El arreglo verdadero no es del front**: que el catálogo llene `dimensions`,
+que existe en el contrato y llega vacío en las 21 métricas. Con eso el CTA se
+decide sin ningún pedido.
+
+**Criterio de aceptación.** Queda escrito por qué no se cambia y dónde está el
+arreglo.
+
+**Verificado el 2026-10-19** · leído en `ConsoleContainer.tsx` y en la
+descripción de la ruta en `contracts/synapse-console-wire.yaml` («es una lectura
+barata, y eso es lo que la hace útil al pintar»). Pedir la columna a datos queda
+para cuando se junte con otro pedido del catálogo.
 
 ### ➕ F5.32 ⬜ El catálogo legible: columnas y formas
 
