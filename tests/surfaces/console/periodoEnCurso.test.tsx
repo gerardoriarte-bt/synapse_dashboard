@@ -39,9 +39,9 @@ describe('se marca el que el CABLE declara, no el primero', () => {
   it('el período en curso lleva la palabra y los cerrados no', () => {
     montar([periodo('2026-09', true), periodo('2026-08', false), periodo('2026-07', false)])
 
-    expect(screen.getByRole('option', { name: /2026-09 · en curso/i })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: '2026-08' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: '2026-07' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /septiembre 2026 · en curso/i })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'agosto 2026' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'julio 2026' })).toBeInTheDocument()
   })
 
   it('si el abierto NO es el primero, se marca el abierto', () => {
@@ -50,8 +50,8 @@ describe('se marca el que el CABLE declara, no el primero', () => {
     // adivinar en vez de leer lo que el cable declaró.
     montar([periodo('2026-09', false), periodo('2026-08', true)], '2026-08')
 
-    expect(screen.getByRole('option', { name: /2026-08 · en curso/i })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: '2026-09' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /agosto 2026 · en curso/i })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'septiembre 2026' })).toBeInTheDocument()
   })
 })
 
@@ -147,5 +147,14 @@ describe('el desplegable · 2026-09-24', () => {
     // `optgroup` es lo que agrupa; sin él los doce salen en una lista plana y
     // se pierde de qué grano es cada uno.
     expect(screen.getByRole('group', { name: /meses/i })).toBeInTheDocument()
+  })
+})
+
+// ── EL PERÍODO CON NOMBRE DE MES · F5.30, 2026-10-19 ───────────────────────
+describe('el rótulo de cada opción', () => {
+  it('es el mes con su año, y el valor sigue siendo el id del cable', () => {
+    montar([periodo('2026-09', false)])
+    const opcion = screen.getByRole('option', { name: 'septiembre 2026' })
+    expect(opcion).toHaveValue('2026-09')
   })
 })

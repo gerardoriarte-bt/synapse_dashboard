@@ -7779,7 +7779,7 @@ quien lo emite (regla del 2026-09-25).
 **Criterio de aceptación.** Ningún literal nuestro en inglés en el chrome, las
 notas para desarrolladores fuera de pantalla, y los plurales concuerdan.
 
-### ➕ F5.29 ⬜ El ⓘ nombra su panel y no tapa la cifra
+### ➕ F5.29 ✅ El ⓘ nombra su panel y no tapa la cifra
 
 **Descripción.** Los catorce botones se llaman «Base y procedencia» para un
 lector de pantalla, y el recuadro se abre encima del número. §1.8 y §4.1.
@@ -7787,12 +7787,21 @@ lector de pantalla, y el recuadro se abre encima del número. §1.8 y §4.1.
 **Criterio de aceptación.** El nombre accesible incluye el título del panel, y
 el recuadro no cubre la cifra principal.
 
-### ➕ F5.30 ⬜ Los períodos con nombre de mes
+**Verificado el 2026-10-19** · `MetaInfo.tsx` se llama «Base y procedencia de
+<panel>» y se abre hacia arriba (`bottom-full`), sobre la cabecera y no sobre la
+cifra. Prueba en `tests/render/Panel/metaInfo.test.tsx`; volver al nombre fijo la
+mata.
+
+### ➕ F5.30 ✅ Los períodos con nombre de mes
 
 **Descripción.** El selector lista «2026-09», el id del cable.
 
 **Criterio de aceptación.** Cada opción dice el mes y el año en el locale del
 tenant; el valor sigue siendo el id.
+
+**Verificado el 2026-10-19** · `format.periodName` redacta `YYYY-MM` como
+«septiembre 2026» con el locale del tenant y deja tal cual lo que no es un mes.
+Prueba en `tests/surfaces/console/periodoEnCurso.test.tsx`.
 
 ### ➕ F5.31 ⬜ Las dimensiones del detalle se piden al abrirlo
 
