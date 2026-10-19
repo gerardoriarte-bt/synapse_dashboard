@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**184 de 241 tareas cerradas.** 15 parciales · 38 pendientes · 4 diferidas.
+**185 de 241 tareas cerradas.** 15 parciales · 37 pendientes · 4 diferidas.
 
 
-## Front · 124 de 143
+## Front · 125 de 143
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -17,7 +17,7 @@
 | 2 · Estados | `██████████████████████` | 6/6 | 0 | 0 |
 | 3 · Chat contextual | `███████████████████···` | 13/15 | 0 | 0 |
 | 4 · Admin y Builder | `██████████████████████` | 24/24 | 0 | 0 |
-| 5 · Pruebas y pulido | `█████████████·········` | 21/36 | 0 | 14 |
+| 5 · Pruebas y pulido | `█████████████·········` | 22/36 | 0 | 13 |
 
 ## Backend · 60 de 98
 
@@ -54,12 +54,11 @@
 
 ---
 
-## Se puede tomar hoy · 12 del front
+## Se puede tomar hoy · 11 del front
 
 - **F5.21** · Qué hace un gráfico cuando el dato excede lo legible
 - **F5.22** · Los deltas del mes en curso se dicen parciales
 - **F5.25** · Series de unidades distintas no comparten un eje
-- **F5.27** · «Editar» un rol abre a la vista
 - **F5.28** · El copy del chrome sin notas de desarrollo ni inglés suelto
 - **F5.29** · El ⓘ nombra su panel y no tapa la cifra
 - **F5.30** · Los períodos con nombre de mes

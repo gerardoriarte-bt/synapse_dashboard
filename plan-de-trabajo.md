@@ -7745,13 +7745,17 @@ llegar el `fin`, igual que al borrar. Prueba en
 `tests/surfaces/console/rielSeActualiza.test.tsx`; sin la invalidación, el riel
 sigue en «Todavía no preguntaste nada».
 
-### ➕ F5.27 ⬜ «Editar» un rol abre a la vista
+### ➕ F5.27 ✅ «Editar» un rol abre a la vista
 
 **Descripción.** El formulario se dibuja debajo de todas las tarjetas
 (`RoleEditor.tsx`) y la pantalla no se mueve. §2.2 de la auditoría.
 
 **Criterio de aceptación.** Al abrir el editor de un rol, el formulario queda a
 la vista y con el foco en su primer campo.
+
+**Verificado el 2026-10-19** · `RoleEditor.tsx` lleva el campo del nombre a la
+vista y le da el foco al abrir. Prueba en `tests/surfaces/admin/roles.test.tsx`;
+sin el `focus`, falla.
 
 ### ➕ F5.28 ⬜ El copy del chrome sin notas de desarrollo ni inglés suelto
 

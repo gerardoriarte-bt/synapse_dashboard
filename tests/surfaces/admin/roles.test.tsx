@@ -283,6 +283,16 @@ describe('crear y editar', () => {
     })
   })
 
+  it('«Editar» lleva el foco al formulario · F5.27, se abría fuera de la vista', async () => {
+    base()
+    montar()
+    await abrirFicha()
+    const planner = screen.getAllByText('Planner').map((e) => e.closest('li')).find(Boolean)
+    await userEvent.click(within(planner as HTMLElement).getByRole('button', { name: 'Editar' }))
+    // El nombre precargado y con el foco: lo que se ve y lo que se edita primero.
+    await waitFor(() => expect(document.activeElement).toHaveValue('Planner'))
+  })
+
   it('un rol sin nombre no se puede guardar, y se dice', async () => {
     base()
     montar()
