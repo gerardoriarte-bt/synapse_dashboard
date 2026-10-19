@@ -270,6 +270,17 @@ export function RoleEditor({
         </ul>
       )}
 
+      {/* **Antes de las tarjetas** · F5.34, 2026-10-19. Iba al final, debajo de
+          cinco tarjetas casi iguales, y los duplicados se veían antes que el
+          aviso que los explica. */}
+      {repetidos.length > 0 && (
+        <Ayuda>
+          {`Hay roles con el mismo nombre en distinta caja: ${repetidos
+            .map((r) => `«${r.nombre}»`)
+            .join(', ')}. Para los permisos cuentan como uno solo; conviene dejar uno y pasarle los usuarios del otro.`}
+        </Ayuda>
+      )}
+
       <ul className="flex flex-col gap-6 m-0 p-0 list-none">
         {roles.map((r) => (
           <RoleCard
@@ -301,14 +312,6 @@ export function RoleEditor({
         <Ayuda>
           Ocultar una métrica NO es un permiso: al servir el dato se vuelve a verificar qué
           puede ver cada rol.
-        </Ayuda>
-      )}
-
-      {repetidos.length > 0 && (
-        <Ayuda>
-          {`Hay roles con el mismo nombre en distinta caja: ${repetidos
-            .map((r) => `«${r.nombre}»`)
-            .join(', ')}. Para los permisos cuentan como uno solo; conviene dejar uno y pasarle los usuarios del otro.`}
         </Ayuda>
       )}
 

@@ -7870,7 +7870,7 @@ las borraba—. Pruebas en `tests/surfaces/console/rielSeActualiza.test.tsx` y
 **Hoy ninguna pestaña de UA tiene sugeridas** —medido en local: `[]`—, así que
 el chat se ve igual hasta que alguien las escriba.
 
-### ➕ F5.34 ⬜ La ficha de cliente se recorre por secciones
+### ➕ F5.34 ✅ La ficha de cliente se recorre por secciones
 
 **Descripción.** Identidad, roles, usuarios, acceso y subprocesadores son una
 sola página de seis pantallas. Y el aviso de roles duplicados por mayúscula va
@@ -7878,6 +7878,12 @@ al final de las tarjetas. §2 de la auditoría de QA.
 
 **Criterio de aceptación.** La ficha ofrece saltar a cada sección, y el aviso de
 roles duplicados aparece antes de las tarjetas.
+
+**Verificado el 2026-10-19** · `Admin.tsx` pinta una fila «Secciones de la
+ficha» —Identidad, Roles, Usuarios, Acceso a datos, Subprocesadores— que lleva a
+cada bloque, y `RoleEditor.tsx` pone el aviso de duplicados antes de las
+tarjetas. A2 no dibuja la fila: §16 de las divergencias. Pruebas en
+`tests/surfaces/admin/roles.test.tsx`; con el aviso al final, la suya falla.
 
 ### ➕ F5.35 ✅ El menú de dashboards dice cuál es el de por defecto
 
