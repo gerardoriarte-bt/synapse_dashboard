@@ -76,6 +76,11 @@ type Estado = 'todos' | 'activos' | 'suspendidos'
  */
 
 type Props = {
+  /** **El cliente de trabajo, como filtro inicial** · F5.41, 2026-10-19. La
+   *  pantalla es de plataforma y arrancaba en «Todos los clientes»: se pasaba
+   *  de trabajar sobre un cliente a ver todos sin aviso. Si el cliente no tiene
+   *  usuarios, no hay a qué filtrar y arranca en todos. */
+  clienteInicial?: string | null
   usuarios: readonly Usuario[]
   /** Del locale de quien mira · F1.13b. */
   format: Formatter
@@ -101,6 +106,7 @@ type Props = {
 }
 
 export function UserList({
+  clienteInicial = null,
   format,
   usuarios,
   alcance = 'plataforma',
@@ -115,7 +121,8 @@ export function UserList({
   cargando = false,
 }: Props) {
   const [busqueda, setBusqueda] = useState('')
-  const [cliente, setCliente] = useState('')
+  // `null` es «nadie tocó el filtro»: hasta entonces manda el cliente de trabajo.
+  const [clienteElegido, setCliente] = useState<string | null>(null)
   const [rol, setRol] = useState('')
   const [estado, setEstado] = useState<Estado>('todos')
 
@@ -123,6 +130,8 @@ export function UserList({
   const columnas = dePlataforma ? COLUMNAS_PLATAFORMA : COLUMNAS_CLIENTE
 
   const clientes = [...new Set(usuarios.map((u) => u.clienteId))]
+  const cliente =
+    clienteElegido ?? (clienteInicial !== null && clientes.includes(clienteInicial) ? clienteInicial : '')
   const roles = [...new Set(usuarios.map((u) => u.rol))].sort()
 
   const q = busqueda.trim().toLowerCase()

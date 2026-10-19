@@ -17,9 +17,12 @@ type Props = {
   clientes: readonly { id: string; nombre: string }[]
   activo: string | null
   onElegir: (id: string) => void
+  /** **El cliente de la sesión, marcado** · F5.39, 2026-10-19: es el que ve la
+   *  consola, y entre varios nada lo distinguía. */
+  propio?: string | null
 }
 
-export function SelectorDeCliente({ clientes, activo, onElegir }: Props) {
+export function SelectorDeCliente({ clientes, activo, onElegir, propio = null }: Props) {
   const nombre = clientes.find((c) => c.id === activo)?.nombre ?? null
   return (
     <div className="flex items-center gap-3">
@@ -38,7 +41,7 @@ export function SelectorDeCliente({ clientes, activo, onElegir }: Props) {
         >
           {clientes.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.nombre}
+              {c.id === propio ? `${c.nombre} · tu cliente` : c.nombre}
             </option>
           ))}
         </select>

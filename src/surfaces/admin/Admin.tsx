@@ -140,6 +140,8 @@ export function Admin() {
     // Si falla, `null`, y cae al primero en vez de quedarse sin cliente.
     contexto.isPending ? undefined : (contexto.data?.tenant.id ?? null),
   )
+  /** El nombre del cliente de trabajo, para las acciones que escriben sobre él. */
+  const nombreDeTrabajo = lista.find((t) => t.id === activo)?.nombre
 
   // **El hook del catálogo se llama siempre y se apaga por `enabled`**, que es lo
   // que las reglas de hooks exigen: no puede colgar de `pantalla`. Mientras A4 no
@@ -279,6 +281,7 @@ export function Admin() {
       onIr={setPantalla}
       tenants={lista}
       tenantActivo={activo}
+      propio={contexto.data === undefined ? null : { id: contexto.data.tenant.id, nombre: contexto.data.tenant.nombre }}
       onTenant={setTenant}
       {...(contexto.data === undefined
         ? {}
@@ -311,6 +314,7 @@ export function Admin() {
             cargando={solicitudes.data === undefined}
           />
           <UserList
+            clienteInicial={activo}
             usuarios={usuarios.data?.usuarios ?? []}
             total={usuarios.data?.total ?? 0}
             clientesConUsuarios={usuarios.data?.clientes ?? 0}
@@ -335,6 +339,7 @@ export function Admin() {
           />
           <CargarPeriodos
             key={activo ?? ''}
+            {...(nombreDeTrabajo === undefined ? {} : { cliente: nombreDeTrabajo })}
             mesActual={mesEnCurso(new Date(), lista.find((x) => x.id === activo)?.zonaHoraria ?? null)}
             cargados={mesesCargados(corridas.data ?? [])}
             enCurso={mesesEnCurso(corridas.data ?? [])}
@@ -375,6 +380,7 @@ export function Admin() {
             format={format}
             seleccionado={activo}
             onElegir={setTenant}
+            propio={contexto.data?.tenant.id ?? null}
             cargando={tenants.data === undefined}
           />
           {activo === null ? (

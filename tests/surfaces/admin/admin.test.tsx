@@ -517,7 +517,8 @@ describe('A5 · cargar meses atraviesa la cadena entera · 2026-10-07', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Salud de feeds' }))
 
     await userEvent.click(await screen.findByRole('button', { name: /jun.*sin cargar/i }))
-    await userEvent.click(screen.getByRole('button', { name: 'Cargar 1 mes' }))
+    // **Nombra el cliente** · F5.42: la acción escribe sobre el cliente de trabajo.
+    await userEvent.click(screen.getByRole('button', { name: 'Cargar 1 mes de Under Armour México' }))
 
     await waitFor(() => expect(cuerpo).toEqual({ tenant: 't-1', periods: ['2026-06'] }))
     expect(await screen.findByText(/Cargando 2026-06/)).toBeInTheDocument()
@@ -724,5 +725,22 @@ describe('la verificación del acceso, desde la ficha', () => {
     for (const plomeria of ['DB_K', 'S_K', 'GLD_PAID_MEDIA']) {
       expect(container.textContent).not.toContain(plomeria)
     }
+  })
+})
+
+// ── EL CAMBIO DE CLIENTE SE DICE · F5.39 y F5.40, 2026-10-19 ───────────────
+describe('trabajar sobre otro cliente', () => {
+  it('la lista marca el propio, y «Volver» nombra la consola a la que vuelve', async () => {
+    server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
+    montar()
+    await screen.findByRole('button', { name: /^Under Armour México · / })
+    // El propio —el de la sesión, `t-1`— lleva la marca; el otro no.
+    expect(screen.getByText(/· tu cliente/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Volver al dashboard' })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /^Keralty Colombia · / }))
+    expect(
+      await screen.findByRole('button', { name: /^Volver a la consola de .*, el cliente de tu sesión$/ }),
+    ).toBeInTheDocument()
   })
 })

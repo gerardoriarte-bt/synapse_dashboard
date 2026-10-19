@@ -41,9 +41,14 @@ type Props = {
    *  mirar, en vez de prometer «cargando» para siempre. */
   sinTerminar?: readonly string[]
   format: Formatter
+  /** **El cliente sobre el que se carga, en el botón** · F5.42, 2026-10-19:
+   *  la acción escribe sobre el cliente de trabajo y, al bajar, el selector
+   *  queda fuera de la vista. */
+  cliente?: string
 }
 
 export function CargarPeriodos({
+  cliente,
   mesActual,
   cargados,
   enCurso,
@@ -134,11 +139,11 @@ export function CargarPeriodos({
               setElegidos(new Set())
             }}
           >
-            {pedido.length === 0
+            {(pedido.length === 0
               ? 'Cargar meses'
               : pedido.length === 1
                 ? 'Cargar 1 mes'
-                : `Cargar ${String(pedido.length)} meses`}
+                : `Cargar ${String(pedido.length)} meses`) + (cliente === undefined ? '' : ` de ${cliente}`)}
           </Accion>
         </div>
       )}

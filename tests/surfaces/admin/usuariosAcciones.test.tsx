@@ -267,3 +267,21 @@ describe('aprobar dice con qué rol entra, ANTES de apretar', () => {
     expect(screen.queryByText(/Llegan desde/)).toBeNull()
   })
 })
+
+// ── EL FILTRO ARRANCA EN EL CLIENTE DE TRABAJO · F5.41, 2026-10-19 ─────────
+describe('el cliente de trabajo como filtro inicial', () => {
+  it('arranca en ese cliente, y «Todos los clientes» está a un clic', async () => {
+    lista({ clienteInicial: 'c-k' })
+    expect(screen.getByRole('combobox', { name: 'Cliente' })).toHaveValue('c-k')
+    expect(screen.getByText('Carla')).toBeVisible()
+    expect(screen.queryByText('Bruno')).toBeNull()
+
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Cliente' }), '')
+    expect(screen.getByText('Bruno')).toBeVisible()
+  })
+
+  it('un cliente sin usuarios no filtra a nada · arranca en todos', () => {
+    lista({ clienteInicial: 'c-sin-usuarios' })
+    expect(screen.getByRole('combobox', { name: 'Cliente' })).toHaveValue('')
+  })
+})

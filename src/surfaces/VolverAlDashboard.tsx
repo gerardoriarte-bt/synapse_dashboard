@@ -12,9 +12,18 @@
 import { Accion } from '../render/primitives/Accion'
 import { RUTA_DEL_DASHBOARD } from './trabajo'
 
-export function VolverAlDashboard({ onIr }: { onIr: (ruta: string) => void }) {
+/** **Dice adónde va cuando el cliente de trabajo no es el propio** · F5.40,
+ *  2026-10-19. La consola muestra el cliente de la SESIÓN —su cliente es el del
+ *  token— y el botón llevaba ahí sin decirlo: se venía trabajando sobre otro y
+ *  se terminaba mirando el propio. `alCliente` es el nombre del propio, y sólo
+ *  llega cuando difiere del de trabajo. */
+export function VolverAlDashboard({ onIr, alCliente }: { onIr: (ruta: string) => void; alCliente?: string | undefined }) {
   return (
-    <Accion tamano="compacta" onClick={() => onIr(RUTA_DEL_DASHBOARD)}>
+    <Accion
+      tamano="compacta"
+      onClick={() => onIr(RUTA_DEL_DASHBOARD)}
+      {...(alCliente === undefined ? {} : { etiqueta: `Volver a la consola de ${alCliente}, el cliente de tu sesión` })}
+    >
       {/* `arrow-left` de línea · hereda el color. */}
       <svg
         width="14"
@@ -30,7 +39,7 @@ export function VolverAlDashboard({ onIr }: { onIr: (ruta: string) => void }) {
         <path d="M19 12H5" />
         <path d="m12 19-7-7 7-7" />
       </svg>
-      Volver al dashboard
+      {alCliente === undefined ? 'Volver al dashboard' : `Volver a la consola de ${alCliente}`}
     </Accion>
   )
 }
