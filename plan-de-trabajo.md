@@ -7742,6 +7742,14 @@ de dólares. §1.4 de la auditoría.
 unidad no se dibuja con un solo eje: cada unidad tiene su escala. Una prueba con
 `USD` y `x` que verifique que la serie chica no queda aplastada.
 
+**Espera a diseño · 2026-10-19.** No se construye todavía: es la tercera pregunta
+de §15 de `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` —«si un
+multiserie de unidades distintas debería ser otro gráfico»—, abierta desde el
+14. Las tres salidas cambian lo que el gráfico afirma: **dos escalas en el mismo
+gráfico** (y cómo se ve que son dos), **caer a múltiplos pequeños** cuando las
+unidades difieren, o que **el builder avise** y ofrezca `combo`, que el
+repertorio ya tiene. Elegir una acá sería resolver una decisión de diseño.
+
 ### ➕ F5.26 ✅ El riel del chat muestra la consulta recién hecha
 
 **Descripción.** Después de preguntar el riel sigue en «Todavía no preguntaste
