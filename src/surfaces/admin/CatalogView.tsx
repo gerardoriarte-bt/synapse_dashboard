@@ -200,7 +200,7 @@ export function CatalogView({ metrics, rejected, uso, cargando = false }: Props)
               : `${String(visibles.length)} de ${String(metrics.length)} métricas`}
         </Label>
         {/* Se declara que este NO es el filtro de §7.3. */}
-        <Ayuda as="span">El filtro por estado no se puede ofrecer todavía: el estado de cada métrica no llega.</Ayuda>
+        <Ayuda as="span">Todavía no se puede filtrar por estado.</Ayuda>
       </div>
 
       <table className="w-full border-collapse" aria-busy={cargando}>

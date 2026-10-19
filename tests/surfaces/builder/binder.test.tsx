@@ -903,11 +903,11 @@ describe('§F4.11 · el resumen dice dónde y que NO decide', () => {
     expect(screen.getByText('Para publicar, validá.')).toBeInTheDocument()
   })
 
-  it('con problemas, el resumen dice que el servidor tiene la última palabra', async () => {
+  it('con problemas, el resumen dice que se guarda igual y que publicar pide corregirlos', async () => {
     servir({ tipo: 'series' })
     montar()
     await abrirPanel()
-    expect(await screen.findByText(/El servidor tiene la última palabra/)).toBeInTheDocument()
+    expect(await screen.findByText(/para publicar hay que corregirlos/)).toBeInTheDocument()
   })
 
   it('publicar NO está autorizado sin veredicto del servidor', async () => {

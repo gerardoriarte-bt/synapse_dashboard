@@ -232,7 +232,7 @@ describe('§7.3 · el filtro', () => {
     await screen.findByText('Ventas')
 
     expect((container.textContent ?? '').toLowerCase()).toContain(
-      'el filtro por estado no se puede ofrecer',
+      'todavía no se puede filtrar por estado',
     )
 
     // Y filtra de verdad: un `select` que no filtra se ve igual que uno que sí.

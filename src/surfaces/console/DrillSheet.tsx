@@ -349,7 +349,7 @@ export function DrillSheet({
             <Label as="div">Tabla origen</Label>
             <div className="flex min-w-0 flex-col gap-1 rounded-md border border-w3 px-3.5 py-3">
               <p className={CUERPO}>
-                Las filas que están detrás de esta cifra todavía no se publican.
+                El detalle fila por fila todavía no está disponible.
               </p>
               <p className={NOTA}>
                 Lo más fino que hay hoy es la desagregación de arriba · una fila por categoría, no

@@ -126,7 +126,7 @@ export function DashboardPanel({ context, pestanasActivas, disparador, onSelect,
                   {/* **Sólo del activo, y sólo las pestañas.** Ver la cabecera:
                       de los demás no llega ni el conteo ni si están compuestos, y
                       deducirlo de la ausencia sería inventar. */}
-                  {activo && <Note as="span">{`${String(pestanasActivas)} pestañas`}</Note>}
+                  {activo && <Note as="span">{pestanasActivas === 1 ? '1 pestaña' : `${String(pestanasActivas)} pestañas`}</Note>}
                 </span>
                 <span className="flex-1" />
                 {/* El punto de 13 en `$acc` del dibujo. `aria-current` ya lo

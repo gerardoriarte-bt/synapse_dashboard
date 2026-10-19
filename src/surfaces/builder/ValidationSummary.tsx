@@ -50,7 +50,7 @@ export function ValidationSummary({ problemas, nombres, onIr }: Props) {
         {/* **El caso peligroso es el limpio**, y por eso esto se decía siempre.
             Ahora va junto a los problemas: con la lista vacía el resumen no se
             pinta, y publicar sigue exigiendo que el servidor valide. */}
-        <Ayuda>Se puede guardar igual; no se publica hasta corregirlos. El servidor tiene la última palabra.</Ayuda>
+        <Ayuda>Se puede guardar igual; para publicar hay que corregirlos.</Ayuda>
       </summary>
 
       <ul className="flex flex-col gap-2 m-0 mt-3 p-0 list-none">

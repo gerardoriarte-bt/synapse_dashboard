@@ -7768,7 +7768,7 @@ la vista y con el foco en su primer campo.
 vista y le da el foco al abrir. Prueba en `tests/surfaces/admin/roles.test.tsx`;
 sin el `focus`, falla.
 
-### ➕ F5.28 ⬜ El copy del chrome sin notas de desarrollo ni inglés suelto
+### ➕ F5.28 ✅ El copy del chrome sin notas de desarrollo ni inglés suelto
 
 **Descripción.** «TENANT», «CATALOG VERSION», «DAY · WEEK · PLATFORM», «El
 filtro por estado no se puede ofrecer todavía», «publicar no despliega nada:
@@ -7778,6 +7778,19 @@ quien lo emite (regla del 2026-09-25).
 
 **Criterio de aceptación.** Ningún literal nuestro en inglés en el chrome, las
 notas para desarrolladores fuera de pantalla, y los plurales concuerdan.
+
+**Verificado el 2026-10-19** · cambiados: «Identidad del cliente», «Todavía no se
+puede filtrar por estado», el texto de publicar —«Al publicar, es la versión
+que ven los roles en la consola»—, el del detalle por fila, el de la validación
+y el del chat vacío, sin «SQL». «1 pestaña» concuerda. Las pruebas que ataban el
+texto viejo se actualizaron.
+
+**Lo que NO es nuestro y quedó escrito:** tres literales del `.pen` —«CATALOG
+VERSION», «LAS CONSULTAS QUEDAN EN EL TENANT», «ESTA VISTA NO CAMBIA LA
+COMPOSICIÓN»— van como propuesta en §16 de
+`docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md`. Y «DAY · WEEK · PLATFORM»
+son las claves del cable: el servicio tiene el rótulo (`Label: "Plataforma"` en
+`drilldown.go`) y no lo serializa.
 
 ### ➕ F5.29 ✅ El ⓘ nombra su panel y no tapa la cifra
 

@@ -57,7 +57,7 @@ export function PublishBar({ sucio, publicada, veredicto, nombreDeTab, error }: 
           {veredicto.valido
             ? publicada
               ? 'Esta versión ya está publicada.'
-              : 'El servidor la dio por válida. Ya se puede publicar; publicar no despliega nada, cambia qué versión ve la consola.'
+              : 'Está lista para publicar. Al publicar, es la versión que ven los roles en la consola.'
             : `El servidor encontró ${String(veredicto.problemas.length)} ${veredicto.problemas.length === 1 ? 'problema' : 'problemas'}. Hasta corregirlos no se publica.`}
         </Ayuda>
       )}

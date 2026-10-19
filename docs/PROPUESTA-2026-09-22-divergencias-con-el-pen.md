@@ -682,6 +682,22 @@ como una línea plana en cero. Lo encontró mirarlo en pantalla.
   `combo` —barras y línea con dos ejes— está en el repertorio y dice lo mismo
   sin pedirle a los múltiplos algo que no prometen.
 
+## 16 · Tres literales del dibujo que quien lee no entiende · 2026-10-19
+
+**De dónde sale:** §4.2 de `docs/AUDITORIA-2026-10-19-experiencia-de-usuario.md`.
+El copy nuestro que estaba igual se corrigió en F5.28; **estos tres son literal
+del `.pen`**, que manda en el texto de la UI, así que se pintan como el dibujo y
+se proponen acá:
+
+| Pantalla | El `.pen` escribe | Qué cuesta | Propuesta |
+|---|---|---|---|
+| A2 · Ficha de cliente | `CATALOG VERSION` | Inglés suelto en un chrome en español | `VERSIÓN DEL CATÁLOGO` |
+| C3 · Chat expandido | `LAS CONSULTAS QUEDAN EN EL TENANT` | «Tenant» no es una palabra de quien lee la consola | `LAS CONSULTAS QUEDAN EN ESTE CLIENTE` |
+| C2 · Drill-down | `ESTA VISTA NO CAMBIA LA COMPOSICIÓN · SOLO EL BUILDER LA MODIFICA` | Habla de cómo se arma el producto, no de lo que se ve | `ESTE DETALLE NO CAMBIA EL DASHBOARD` |
+
+**Pregunta para diseño:** ¿se retipean en el dibujo? Si sí, el front los cambia
+el mismo día; si no, se quedan como están.
+
 ## Dónde vive cada una de las demás
 
 Para que este documento no crezca hasta pisar a los otros:

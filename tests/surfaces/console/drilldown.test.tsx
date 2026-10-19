@@ -360,7 +360,7 @@ describe('9 · la tabla origen y el linaje están DECLARADOS como ausentes', () 
     const hoja = await screen.findByRole('dialog')
 
     expect(within(hoja).getByText(/TABLA ORIGEN/i)).toBeInTheDocument()
-    expect(within(hoja).getByText(/todavía no se publican/i)).toBeInTheDocument()
+    expect(within(hoja).getByText(/fila por fila todavía no está disponible/i)).toBeInTheDocument()
     expect(within(hoja).getByText(/LINAJE HASTA LA FUENTE CRUDA/i)).toBeInTheDocument()
     expect(within(hoja).getByText(/El recorrido del dato entre capas/i)).toBeInTheDocument()
   })
