@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**181 de 241 tareas cerradas.** 15 parciales · 41 pendientes · 4 diferidas.
+**182 de 241 tareas cerradas.** 15 parciales · 40 pendientes · 4 diferidas.
 
 
-## Front · 121 de 143
+## Front · 122 de 143
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -17,7 +17,7 @@
 | 2 · Estados | `██████████████████████` | 6/6 | 0 | 0 |
 | 3 · Chat contextual | `███████████████████···` | 13/15 | 0 | 0 |
 | 4 · Admin y Builder | `██████████████████████` | 24/24 | 0 | 0 |
-| 5 · Pruebas y pulido | `███████████···········` | 18/36 | 0 | 17 |
+| 5 · Pruebas y pulido | `████████████··········` | 19/36 | 0 | 16 |
 
 ## Backend · 60 de 98
 
@@ -54,11 +54,10 @@
 
 ---
 
-## Se puede tomar hoy · 15 del front
+## Se puede tomar hoy · 14 del front
 
 - **F5.21** · Qué hace un gráfico cuando el dato excede lo legible
 - **F5.22** · Los deltas del mes en curso se dicen parciales
-- **F5.23** · «Ver detalle» por día en orden de fecha
 - **F5.24** · Cambiar el rol, suspender y quitar una pestaña piden confirmación
 - **F5.25** · Series de unidades distintas no comparten un eje
 - **F5.26** · El riel del chat muestra la consulta recién hecha

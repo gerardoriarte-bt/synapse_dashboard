@@ -112,11 +112,13 @@ type Opciones = {
   filas?: number
   /** Las métricas del catálogo, cuando la prueba necesita otras. */
   catalogo?: WireMetric[]
+  /** Los ítems del corte, cuando la prueba necesita otros · F5.23. */
+  items?: { label: string; v: number }[]
 }
 
 /** Monta los handlers y devuelve los cuerpos de los POST que llegaron. */
 function laConsola(opciones: Opciones = {}) {
-  const { dimensiones = { 'p-ventas': ['day', 'week', 'platform'] }, fallo, filas, catalogo } = opciones
+  const { dimensiones = { 'p-ventas': ['day', 'week', 'platform'] }, fallo, filas, catalogo, items = ITEMS } = opciones
   const cortes: { panelId: string; cuerpo: Record<string, unknown> }[] = []
 
   server.use(
@@ -147,8 +149,8 @@ function laConsola(opciones: Opciones = {}) {
         dimension: String(cuerpo['dimension']),
         period: String(cuerpo['period']),
         shape: 'categorical',
-        value: { shape: 'categorical', items: ITEMS },
-        row_count: filas ?? ITEMS.length,
+        value: { shape: 'categorical', items },
+        row_count: filas ?? items.length,
         queried_at: '2026-10-01T00:07:50.780199Z',
       })
     }),
@@ -516,5 +518,45 @@ describe('14 · la línea de BASE no cuelga el separador', () => {
     expect(within(hoja).getByText(/^Base · ALL CHANNELS$/i)).toBeInTheDocument()
     expect(within(hoja).getByText('GOLD')).toBeInTheDocument()
     expect(within(hoja).getByText(/ERP/)).toBeInTheDocument()
+  })
+})
+
+// ── EL CORTE POR FECHA SE LEE EN EL TIEMPO · F5.23, 2026-10-19 ──────────────
+//
+// Visto en la consola: «por día» salía 17, 1, 15, 13… porque el cuerpo de barras
+// ordena por valor por defecto. El servicio lo manda en orden de fecha.
+describe('8 · el orden del corte', () => {
+  /** Las etiquetas en el orden en que las escribe el plot · en mayúsculas, que
+   *  es como las escribe, y leídas sólo dentro de él: la hoja nombra las
+   *  categorías también en otros lados. Mismo método que `bodies.test.tsx`. */
+  const ordenDibujado = (hoja: HTMLElement, etiquetas: string[]) => {
+    const texto = within(hoja).getByRole('img', { name: '3 categorías' }).textContent ?? ''
+    return etiquetas
+      .map((e) => ({ e, i: texto.indexOf(e.toUpperCase()) }))
+      .sort((a, b) => a.i - b.i)
+      .map((x) => x.e)
+  }
+
+  it('por día respeta el orden de llegada, aunque los valores no lo sigan', async () => {
+    const dias = [
+      { label: '2026-10-01', v: 43570 },
+      { label: '2026-10-02', v: 18289 },
+      { label: '2026-10-03', v: 49862 },
+    ]
+    laConsola({ dimensiones: { 'p-ventas': ['day'] }, items: dias })
+    montar()
+    await verDetalleDe('Ventas')
+    const hoja = await screen.findByRole('dialog')
+    await within(hoja).findByRole('img', { name: '3 categorías' })
+    expect(ordenDibujado(hoja, dias.map((d) => d.label))).toEqual(['2026-10-01', '2026-10-02', '2026-10-03'])
+  })
+
+  it('por plataforma sigue ordenado por valor', async () => {
+    laConsola({ dimensiones: { 'p-ventas': ['platform'] } })
+    montar()
+    await verDetalleDe('Ventas')
+    const hoja = await screen.findByRole('dialog')
+    await within(hoja).findByRole('img', { name: '3 categorías' })
+    expect(ordenDibujado(hoja, ['Criteo', 'Google PMax', 'Meta Advantage+'])).toEqual(['Google PMax', 'Meta Advantage+', 'Criteo'])
   })
 })

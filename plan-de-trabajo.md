@@ -7689,7 +7689,7 @@ comparación contra el mes anterior lleva un rótulo que dice que es parcial, y 
 selector deja de afirmar que no compara. Una prueba con un período abierto y una
 con uno cerrado.
 
-### ➕ F5.23 ⬜ «Ver detalle» por día en orden de fecha
+### ➕ F5.23 ✅ «Ver detalle» por día en orden de fecha
 
 **Descripción.** `DrillSheet.tsx` le pasa `params={}` a `BarsBody`, que ordena
 `desc`, así que el desglose por día sale por valor. El servicio lo manda en
@@ -7697,6 +7697,12 @@ orden de fecha (`ORDER BY 1` en `drilldown.go`). §1.3 de la auditoría.
 
 **Criterio de aceptación.** Las dimensiones de tiempo —día y semana— se dibujan
 en el orden en que llegan; las nominales, por valor. Una prueba por cada una.
+
+**Verificado el 2026-10-19** · `DrillSheet.tsx` pasa `orden: 'natural'` cuando
+todas las etiquetas son fechas ISO —se decide por el dato, porque la dimensión
+llega como `day` sin decir que es temporal—. Dos pruebas en
+`tests/surfaces/console/drilldown.test.tsx` §8; volver a `params={{}}` mata la de
+día y no la de plataforma.
 
 ### ➕ F5.24 ⬜ Cambiar el rol, suspender y quitar una pestaña piden confirmación
 
