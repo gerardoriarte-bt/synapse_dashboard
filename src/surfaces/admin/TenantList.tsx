@@ -81,11 +81,13 @@ type Props = {
   seleccionado: string | null
   /** Elegir un cliente · su ficha se abre al lado. */
   onElegir: (id: string) => void
+  /** El cliente de la sesión · F5.39: se marca «tu cliente». */
+  propio?: string | null
   /** Mientras la lista vuela. */
   cargando?: boolean
 }
 
-export function TenantList({ format, tenants, seleccionado, onElegir, cargando = false }: Props) {
+export function TenantList({ format, tenants, seleccionado, onElegir, cargando = false, propio = null }: Props) {
   const [busqueda, setBusqueda] = useState('')
   const q = busqueda.trim().toLowerCase()
   const visibles = tenants.filter(
@@ -152,7 +154,7 @@ export function TenantList({ format, tenants, seleccionado, onElegir, cargando =
             >
               <span className="flex flex-col gap-1 min-w-0">
                 <span className="text-ink text-celda">{t.nombre}</span>
-                <Label as="span">{distintivo(t)}</Label>
+                <Label as="span">{t.id === propio ? `${distintivo(t)} · tu cliente` : distintivo(t)}</Label>
                 {/* Usuarios, feed y publicación en una línea: son el estado
                     operativo, que es lo que decide a cuál entrar. «Nunca» y no
                     un guion: que un cliente jamás haya publicado es un hecho. */}

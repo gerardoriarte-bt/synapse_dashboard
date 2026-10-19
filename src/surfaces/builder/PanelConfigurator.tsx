@@ -90,7 +90,7 @@ import { Ayuda } from '../../render/primitives/Ayuda'
 import { Accion } from '../../render/primitives/Accion'
 import { Opcion } from '../../render/primitives/Opcion'
 import { invalidReason } from '../../catalog/blocks'
-import { invalidPlotReason } from '../../catalog/plots'
+import { invalidPlotReason, unidadesMezcladas, UN_SOLO_EJE } from '../../catalog/plots'
 import { hasValue } from '../../render/state'
 import { PARAM_SCHEMAS, describirParam } from '../../api/params'
 import { MuestraDeGrafico } from './MuestraDeGrafico'
@@ -595,6 +595,12 @@ function ComoSeVe({
   const tipos = bloques.filter((b) => b.tipo !== 'blocked' && b.formasAceptadas.includes(metrica.forma))
   const ahora = new Date()
   const conDato = payload !== undefined && hasValue(payload)
+  // **Unidades distintas en un solo eje** · F5.25: se avisa y se ofrece el
+  // gráfico que les da una escala a cada una. Ver `unidadesMezcladas`.
+  const mezcla = conDato ? unidadesMezcladas(payload.valor) : null
+  const tipoDeLaSugerencia = tipos.some((b) => b.tipo === panel.tipo) ? panel.tipo : tipos[0]?.tipo
+  const nombreSugerido = mezcla === null ? null : (plots.find((x) => x.id === mezcla.sugerido)?.nombre ?? mezcla.sugerido)
+  const enUnEje = UN_SOLO_EJE.includes(panel.grafico)
 
   return (
     <>
@@ -603,6 +609,16 @@ function ComoSeVe({
           ? `Cada opción está dibujada con el dato de ${metrica.nombre}.`
           : `Todavía no hay dato de ${metrica.nombre} para dibujar las opciones: se ven al guardar.`}
       </Ayuda>
+      {mezcla !== null && enUnEje && tipoDeLaSugerencia !== undefined && (
+        <div role="note" aria-label="Unidades distintas" className="flex flex-col items-start gap-2">
+          <Ayuda>
+            {`Las series vienen en unidades distintas —${mezcla.unidades.join(' y ')}— y este gráfico las pone en un solo eje: la más chica queda plana. «${nombreSugerido ?? ''}» le da a cada una su escala.`}
+          </Ayuda>
+          <Accion tamano="compacta" onClick={() => onComoSeVe(tipoDeLaSugerencia, mezcla.sugerido)}>
+            {`Usar «${nombreSugerido ?? ''}»`}
+          </Accion>
+        </div>
+      )}
       {tipos.map((b) => {
         const graficos = plots.filter((x) => x.formas.includes(metrica.forma as never))
         const descripcion = descripcionDeTipo(b.tipo)
@@ -640,6 +656,10 @@ function ComoSeVe({
                   {/* **El tope y el mínimo se EVALÚAN**, ya no se declaran: con
                       el dato a mano se sabe si el gráfico queda vacío. La razón
                       va donde iría el dibujo, que es donde el ojo ya está. */}
+                  {/* La opción de un solo eje lo dice, aunque se pueda elegir · F5.25. */}
+                  {!bloqueado && mezcla !== null && UN_SOLO_EJE.includes(id) && (
+                    <Note as="span">{`Un solo eje para ${mezcla.unidades.join(' y ')}`}</Note>
+                  )}
                   {bloqueado ? (
                     <Note as="span">{problema.razon}</Note>
                   ) : conDato ? (

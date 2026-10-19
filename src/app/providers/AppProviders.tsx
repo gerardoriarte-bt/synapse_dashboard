@@ -53,9 +53,12 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <QueryClientProvider client={client}>
       {/* El cliente de trabajo, compartido entre administración y builder ·
           2026-10-06. Ver `surfaces/clienteDeTrabajo.ts`. */}
-      <ClienteDeTrabajoProvider>
-        <BrowserRouter>{children}</BrowserRouter>
-      </ClienteDeTrabajoProvider>
+      {/* **Adentro del router desde el 2026-10-19** · F5.38: el cliente de
+          trabajo viaja en la URL, y para leerla el proveedor tiene que estar
+          debajo del `BrowserRouter`. */}
+      <BrowserRouter>
+        <ClienteDeTrabajoProvider>{children}</ClienteDeTrabajoProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   )
 }

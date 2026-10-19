@@ -145,6 +145,8 @@ type Props = {
   clientes: readonly { id: string; nombre: string }[]
   clienteActivo: string | null
   onCliente: (id: string) => void
+  /** El cliente de la sesión · F5.39 y F5.40. */
+  propio?: { id: string; nombre: string } | null
   /** `null` sin versión: no hay nada que previsualizar. */
   onVistaPrevia: (() => void) | null
   /** `null` cuando no hay nada que publicar todavía · la razón la da la pantalla. */
@@ -174,6 +176,7 @@ export function BuilderChrome({
   clientes,
   clienteActivo,
   onCliente,
+  propio = null,
   onVistaPrevia,
   onPublicar,
   guardado,
@@ -224,7 +227,7 @@ export function BuilderChrome({
                   <Label>Builder</Label>
                 </div>
                 <span aria-hidden className="h-6 w-px shrink-0 bg-w3" />
-                <SelectorDeCliente clientes={clientes} activo={clienteActivo} onElegir={onCliente} />
+                <SelectorDeCliente clientes={clientes} activo={clienteActivo} onElegir={onCliente} propio={propio?.id ?? null} />
               </div>
 
               {/* «Ancho 1600 · lienzo 1:1 a 1200 más 300 de biblioteca» vivía
@@ -235,7 +238,10 @@ export function BuilderChrome({
                   persona y el menú de trabajo al final · decisión humana del
                   2026-10-07. */}
               <div className="flex items-center gap-6">
-                <VolverAlDashboard onIr={onSalir} />
+                <VolverAlDashboard
+                  onIr={onSalir}
+                  {...(propio !== null && clienteActivo !== null && clienteActivo !== propio.id ? { alCliente: propio.nombre } : {})}
+                />
                 {identidad !== undefined && (
                   <IdentityBlock
                     rol={identidad.rol}
