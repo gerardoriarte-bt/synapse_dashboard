@@ -7,7 +7,12 @@
  *
  *  **Quién la ve** sigue siendo de la pestaña · D5 de la auditoría del
  *  2026-10-06. Vacío es «todos los roles», que es lo que declara el cable.
+ *
+ *  **Quitar una pestaña con paneles se confirma** · F5.24, 2026-10-19. Era un
+ *  clic, se llevaba todos sus paneles y el borrador se autoguarda: no había
+ *  cómo volver. Una pestaña vacía se quita directo, porque no hay qué perder.
  */
+import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
 import { Accion } from '../../render/primitives/Accion'
@@ -31,6 +36,8 @@ const CAMPO = 'h-8 bg-w1 text-ink text-cuerpo rounded-md px-3 border border-w5'
 
 export function TabInspector({ tab, indice, total, roles, problemas, onEditar, onRoles, onMover, onQuitar }: Props) {
   const n = tab.panels.length
+  const [confirmando, setConfirmando] = useState(false)
+  const nombre = tab.nombre === '' ? 'la pestaña sin nombre' : `«${tab.nombre}»`
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
@@ -38,11 +45,38 @@ export function TabInspector({ tab, indice, total, roles, problemas, onEditar, o
           <Label as="div">Pestaña</Label>
           {tab.id === undefined && <Label as="div">Nueva · se crea al guardar</Label>}
           <div className="ml-auto">
-            <Accion variante="peligro" tamano="compacta" onClick={onQuitar} etiqueta={`Quitar ${tab.nombre}`}>
-              Quitar pestaña
-            </Accion>
+            {!confirmando && (
+              <Accion
+                variante="peligro"
+                tamano="compacta"
+                onClick={() => (n === 0 ? onQuitar() : setConfirmando(true))}
+                etiqueta={`Quitar ${tab.nombre}`}
+              >
+                Quitar pestaña
+              </Accion>
+            )}
           </div>
         </div>
+        {confirmando && (
+          <div className="flex flex-col gap-2" role="group" aria-label="Confirmar quitar la pestaña">
+            <Ayuda>{`¿Quitar ${nombre} y ${n === 1 ? 'su panel' : `sus ${String(n)} paneles`}? El borrador se guarda solo.`}</Ayuda>
+            <div className="flex items-center gap-2">
+              <Accion
+                variante="peligro"
+                tamano="compacta"
+                onClick={() => {
+                  setConfirmando(false)
+                  onQuitar()
+                }}
+              >
+                Quitar pestaña
+              </Accion>
+              <Accion tamano="compacta" onClick={() => setConfirmando(false)}>
+                Cancelar
+              </Accion>
+            </div>
+          </div>
+        )}
         <span className="font-display text-titulo leading-titulo tracking-titulo font-medium text-ink">
           {tab.nombre === '' ? 'Pestaña sin nombre' : tab.nombre}
         </span>

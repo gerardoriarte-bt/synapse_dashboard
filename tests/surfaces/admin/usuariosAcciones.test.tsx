@@ -102,7 +102,20 @@ describe('las acciones DISPARAN, con el usuario y el cambio correctos', () => {
   it('suspender manda `activo: false` del usuario de esa fila', async () => {
     const onCambiar = lista()
     await userEvent.click(within(fila('Bruno')).getByRole('button', { name: 'Suspender a Bruno' }))
+    // **El primer clic no manda nada** · F5.24: pide confirmar, nombrando a quién.
+    expect(onCambiar).not.toHaveBeenCalled()
+    const confirmacion = within(fila('Bruno')).getByRole('group', { name: 'Confirmar el cambio de Bruno' })
+    expect(within(confirmacion).getByText(/¿Suspender a Bruno\?/)).toBeVisible()
+    await userEvent.click(within(confirmacion).getByRole('button', { name: 'Suspender' }))
     expect(onCambiar).toHaveBeenCalledWith(expect.objectContaining({ id: 'u-2', clienteId: 'c-ua' }), { activo: false })
+  })
+
+  it('cancelar la suspensión no manda nada y vuelve a ofrecerla', async () => {
+    const onCambiar = lista()
+    await userEvent.click(within(fila('Bruno')).getByRole('button', { name: 'Suspender a Bruno' }))
+    await userEvent.click(within(fila('Bruno')).getByRole('button', { name: 'Cancelar' }))
+    expect(onCambiar).not.toHaveBeenCalled()
+    expect(within(fila('Bruno')).getByRole('button', { name: 'Suspender a Bruno' })).toBeVisible()
   })
 
   it('a un suspendido se lo reactiva', async () => {
@@ -118,6 +131,11 @@ describe('las acciones DISPARAN, con el usuario y el cambio correctos', () => {
     expect(within(selector).getAllByRole('option').map((o) => o.textContent)).toEqual(['admin', 'planner'])
 
     await userEvent.selectOptions(selector, 'r-admin')
+    // **Elegir no aplica** · F5.24: una rueda de mouse sobre el selector le
+    // cambiaba el permiso a una persona.
+    expect(onCambiar).not.toHaveBeenCalled()
+    expect(within(fila('Bruno')).getByText('¿Pasar a Bruno al rol admin?')).toBeVisible()
+    await userEvent.click(within(fila('Bruno')).getByRole('button', { name: 'Cambiar rol' }))
     expect(onCambiar).toHaveBeenCalledWith(expect.objectContaining({ id: 'u-2' }), { rolId: 'r-admin' })
   })
 

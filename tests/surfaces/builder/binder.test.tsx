@@ -665,6 +665,11 @@ describe('agregar y quitar paneles', () => {
         name: 'Quitar Resumen',
       }),
     )
+    await userEvent.click(
+      within(screen.getByRole('group', { name: 'Confirmar quitar la pestaña' })).getByRole('button', {
+        name: 'Quitar pestaña',
+      }),
+    )
 
     await waitFor(() => expect(screen.queryByRole('tab', { name: 'Resumen' })).toBeNull())
     expect(screen.getByRole('tab', { name: 'Pestaña nueva' })).toHaveAttribute('aria-selected', 'true')

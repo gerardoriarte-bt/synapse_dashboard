@@ -412,6 +412,18 @@ describe('mover y quitar', () => {
     expect(screen.getByRole('button', { name: 'Mover Inventario a la derecha' })).toBeDisabled()
   })
 
+  it('cancelar no quita la pestaña', async () => {
+    servir()
+    montar()
+    await abrirEditor()
+    await ajustes('Inventario')
+    await userEvent.click(screen.getByRole('button', { name: 'Quitar Inventario' }))
+    await userEvent.click(
+      within(screen.getByRole('group', { name: 'Confirmar quitar la pestaña' })).getByRole('button', { name: 'Cancelar' }),
+    )
+    expect(pestanas()).toEqual(['Resumen', 'Inventario'])
+  })
+
   it('«Quitar» saca la pestaña y cierra sus ajustes', async () => {
     servir()
     montar()
@@ -419,6 +431,11 @@ describe('mover y quitar', () => {
     await ajustes('Inventario')
 
     await userEvent.click(screen.getByRole('button', { name: 'Quitar Inventario' }))
+    // **El primer clic no quita** · F5.24: pide confirmar, con cuántos paneles.
+    expect(screen.getByRole('tab', { name: 'Inventario' })).toBeInTheDocument()
+    const confirmar = screen.getByRole('group', { name: 'Confirmar quitar la pestaña' })
+    expect(within(confirmar).getByText(/¿Quitar «Inventario» y su/)).toBeVisible()
+    await userEvent.click(within(confirmar).getByRole('button', { name: 'Quitar pestaña' }))
     await waitFor(() => expect(screen.queryByRole('tab', { name: 'Inventario' })).toBeNull())
     expect(pestanas()).toEqual(['Resumen'])
     expect(screen.queryByRole('complementary', { name: 'Ajustes de la pestaña' })).toBeNull()

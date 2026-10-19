@@ -7704,7 +7704,7 @@ llega como `day` sin decir que es temporal—. Dos pruebas en
 `tests/surfaces/console/drilldown.test.tsx` §8; volver a `params={{}}` mata la de
 día y no la de plataforma.
 
-### ➕ F5.24 ⬜ Cambiar el rol, suspender y quitar una pestaña piden confirmación
+### ➕ F5.24 ✅ Cambiar el rol, suspender y quitar una pestaña piden confirmación
 
 **Descripción.** Las tres se aplican con un clic y sin deshacer: el `<select>`
 de rol de la tabla de usuarios, «Suspender», y «Quitar pestaña» en el builder,
@@ -7713,6 +7713,13 @@ que borra sus paneles y autoguarda. §1.2 de `docs/AUDITORIA-2026-10-19-usabilid
 **Criterio de aceptación.** Cada una pide un segundo paso que nombra a quién o
 qué afecta antes de mandar nada, y se puede cancelar. Las pruebas verifican que
 el primer clic NO dispara la llamada y que el segundo sí.
+
+**Verificado el 2026-10-19** · `FilaDeUsuario.tsx` deja el rol elegido y la
+suspensión PENDIENTES, con «¿Pasar a X al rol Y?» o «¿Suspender a X?»; reactivar
+sigue directo. `TabInspector.tsx` confirma quitar una pestaña con paneles y dice
+cuántos; la vacía se quita directo. Pruebas en `usuariosAcciones.test.tsx`,
+`admin.test.tsx`, `editor.test.tsx` y `binder.test.tsx`; quitar cada
+confirmación mata la suya.
 
 ### ➕ F5.25 ⬜ Series de unidades distintas no comparten un eje
 
