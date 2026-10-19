@@ -102,6 +102,7 @@ export function PanelShell({
         {/* El degradado NO se esconde: es estado, no procedencia. */}
         {state === 'DEGRADADO' && <DegradedBadge>Degradado</DegradedBadge>}
         <MetaInfo
+          panel={metric.nombre}
           base={governance.base}
           ventana={governance.ventana}
           capa={governance.capa}
