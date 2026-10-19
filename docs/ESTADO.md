@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**180 de 226 tareas cerradas.** 15 parciales · 27 pendientes · 4 diferidas.
+**181 de 241 tareas cerradas.** 15 parciales · 41 pendientes · 4 diferidas.
 
 
-## Front · 120 de 128
+## Front · 121 de 143
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -17,7 +17,7 @@
 | 2 · Estados | `██████████████████████` | 6/6 | 0 | 0 |
 | 3 · Chat contextual | `███████████████████···` | 13/15 | 0 | 0 |
 | 4 · Admin y Builder | `██████████████████████` | 24/24 | 0 | 0 |
-| 5 · Pruebas y pulido | `██████████████████····` | 17/21 | 0 | 3 |
+| 5 · Pruebas y pulido | `███████████···········` | 18/36 | 0 | 17 |
 
 ## Backend · 60 de 98
 
@@ -54,9 +54,23 @@
 
 ---
 
-## Se puede tomar hoy · 1 del front
+## Se puede tomar hoy · 15 del front
 
 - **F5.21** · Qué hace un gráfico cuando el dato excede lo legible
+- **F5.22** · Los deltas del mes en curso se dicen parciales
+- **F5.23** · «Ver detalle» por día en orden de fecha
+- **F5.24** · Cambiar el rol, suspender y quitar una pestaña piden confirmación
+- **F5.25** · Series de unidades distintas no comparten un eje
+- **F5.26** · El riel del chat muestra la consulta recién hecha
+- **F5.27** · «Editar» un rol abre a la vista
+- **F5.28** · El copy del chrome sin notas de desarrollo ni inglés suelto
+- **F5.29** · El ⓘ nombra su panel y no tapa la cifra
+- **F5.30** · Los períodos con nombre de mes
+- **F5.31** · Las dimensiones del detalle se piden al abrirlo
+- **F5.32** · El catálogo legible: columnas y formas
+- **F5.33** · El chat vacío ofrece preguntas
+- **F5.34** · La ficha de cliente se recorre por secciones
+- **F5.35** · El menú de dashboards dice cuál es el de por defecto
 
 ---
 

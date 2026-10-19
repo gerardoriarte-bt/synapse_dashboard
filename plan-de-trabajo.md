@@ -7676,6 +7676,142 @@ sea seis columnas, así que la grilla colapsaba —F1.30 funcionando— y el alt
 es un `height` sino `gridRow: span N` sobre `gridAutoRows`. Y la celda se busca
 por su panel y no por índice, porque `readingOrder` ordena el DOM.
 
+### ➕ F5.22 ⬜ Los deltas del mes en curso se dicen parciales
+
+**Descripción.** Las tarjetas comparan el mes en curso contra el anterior
+completo —«VS MES ANTERIOR −74,5 %» el 19-oct— mientras el selector dice «no
+compara contra uno cerrado». §1.1 de `docs/AUDITORIA-2026-10-19-experiencia-de-usuario.md`.
+La comparación viene calculada del backend; el front sabe qué período está
+abierto por `open_period` de `/config/me`.
+
+**Criterio de aceptación.** Con el período elegido igual a `open_period`, cada
+comparación contra el mes anterior lleva un rótulo que dice que es parcial, y el
+selector deja de afirmar que no compara. Una prueba con un período abierto y una
+con uno cerrado.
+
+### ➕ F5.23 ⬜ «Ver detalle» por día en orden de fecha
+
+**Descripción.** `DrillSheet.tsx` le pasa `params={}` a `BarsBody`, que ordena
+`desc`, así que el desglose por día sale por valor. El servicio lo manda en
+orden de fecha (`ORDER BY 1` en `drilldown.go`). §1.3 de la auditoría.
+
+**Criterio de aceptación.** Las dimensiones de tiempo —día y semana— se dibujan
+en el orden en que llegan; las nominales, por valor. Una prueba por cada una.
+
+### ➕ F5.24 ⬜ Cambiar el rol, suspender y quitar una pestaña piden confirmación
+
+**Descripción.** Las tres se aplican con un clic y sin deshacer: el `<select>`
+de rol de la tabla de usuarios, «Suspender», y «Quitar pestaña» en el builder,
+que borra sus paneles y autoguarda. §1.2 de `docs/AUDITORIA-2026-10-19-usabilidad-qa.md`.
+
+**Criterio de aceptación.** Cada una pide un segundo paso que nombra a quién o
+qué afecta antes de mandar nada, y se puede cancelar. Las pruebas verifican que
+el primer clic NO dispara la llamada y que el segundo sí.
+
+### ➕ F5.25 ⬜ Series de unidades distintas no comparten un eje
+
+**Descripción.** La escala por unidad del #18 vale sólo para `smallmult`. En el
+gráfico de líneas por defecto el ROAS (`x`) queda plano en cero junto a millones
+de dólares. §1.4 de la auditoría.
+
+**Criterio de aceptación.** Un `seriesMultiples` cuyas series traen más de una
+unidad no se dibuja con un solo eje: cada unidad tiene su escala. Una prueba con
+`USD` y `x` que verifique que la serie chica no queda aplastada.
+
+### ➕ F5.26 ⬜ El riel del chat muestra la consulta recién hecha
+
+**Descripción.** Después de preguntar el riel sigue en «Todavía no preguntaste
+nada», y al reabrir la hoja la conversación no está. El hilo se guarda; el riel
+no se vuelve a pedir. §1.6 de la auditoría.
+
+**Criterio de aceptación.** Al terminar una respuesta la lista de hilos se
+vuelve a pedir, y la consulta aparece en el riel sin recargar.
+
+### ➕ F5.27 ⬜ «Editar» un rol abre a la vista
+
+**Descripción.** El formulario se dibuja debajo de todas las tarjetas
+(`RoleEditor.tsx`) y la pantalla no se mueve. §2.2 de la auditoría.
+
+**Criterio de aceptación.** Al abrir el editor de un rol, el formulario queda a
+la vista y con el foco en su primer campo.
+
+### ➕ F5.28 ⬜ El copy del chrome sin notas de desarrollo ni inglés suelto
+
+**Descripción.** «TENANT», «CATALOG VERSION», «DAY · WEEK · PLATFORM», «El
+filtro por estado no se puede ofrecer todavía», «publicar no despliega nada:
+cambiá qué versión ve la consola», «1 PESTAÑAS». §4.2 y §4.3 de la auditoría.
+**No incluye** el copy del catálogo, la semilla ni el agente: ése se pide a
+quien lo emite (regla del 2026-09-25).
+
+**Criterio de aceptación.** Ningún literal nuestro en inglés en el chrome, las
+notas para desarrolladores fuera de pantalla, y los plurales concuerdan.
+
+### ➕ F5.29 ⬜ El ⓘ nombra su panel y no tapa la cifra
+
+**Descripción.** Los catorce botones se llaman «Base y procedencia» para un
+lector de pantalla, y el recuadro se abre encima del número. §1.8 y §4.1.
+
+**Criterio de aceptación.** El nombre accesible incluye el título del panel, y
+el recuadro no cubre la cifra principal.
+
+### ➕ F5.30 ⬜ Los períodos con nombre de mes
+
+**Descripción.** El selector lista «2026-09», el id del cable.
+
+**Criterio de aceptación.** Cada opción dice el mes y el año en el locale del
+tenant; el valor sigue siendo el id.
+
+### ➕ F5.31 ⬜ Las dimensiones del detalle se piden al abrirlo
+
+**Descripción.** La consola pide `drilldown/dimensions` por cada panel al
+cargar: catorce pedidos que nadie usó. §4.4.
+
+**Criterio de aceptación.** Las dimensiones de un panel se piden cuando se abre
+su detalle, o cuando hace falta decidir si se ofrece «Ver detalle», y no antes.
+
+### ➕ F5.32 ⬜ El catálogo legible: columnas y formas
+
+**Descripción.** En A4 las columnas se pisan («escalarConIntervalodemanda») y la
+forma se muestra con el identificador del contrato. §3 de la auditoría de QA.
+
+**Criterio de aceptación.** Ninguna columna se superpone a 1440 px, y la forma
+se muestra con su nombre de producto.
+
+### ➕ F5.33 ⬜ El chat vacío ofrece preguntas
+
+**Descripción.** La hoja del chat arranca con una línea. La pestaña trae
+`chat_suggestions` en el cable. §1.9.
+
+**Criterio de aceptación.** Con sugerencias en la pestaña, el chat vacío las
+muestra y una toca envía la pregunta; sin sugerencias, no se inventa ninguna.
+
+### ➕ F5.34 ⬜ La ficha de cliente se recorre por secciones
+
+**Descripción.** Identidad, roles, usuarios, acceso y subprocesadores son una
+sola página de seis pantallas. Y el aviso de roles duplicados por mayúscula va
+al final de las tarjetas. §2 de la auditoría de QA.
+
+**Criterio de aceptación.** La ficha ofrece saltar a cada sección, y el aviso de
+roles duplicados aparece antes de las tarjetas.
+
+### ➕ F5.35 ⬜ El menú de dashboards dice cuál es el de por defecto
+
+**Descripción.** El menú no marca el dashboard por defecto, y su pie —«SIN
+PESTAÑAS NI PANELES DE LOS DEMÁS · FALTA EN EL CONTEXTO»— no se entiende.
+
+**Criterio de aceptación.** El de por defecto lleva su marca y el pie dice en
+palabras de quien lee qué muestra el menú.
+
+### ➕ F5.36 ✅ El builder no muestra un error como instrucción
+
+**Descripción.** Un borrador que no se podía leer decía «Elegí un dashboard».
+Arreglado en `87ae5db` junto con `panels: null`; queda escrito acá para que la
+tarea exista en el plan.
+
+**Criterio de aceptación.** Un detalle que falla se muestra como error con
+reintento · `tests/surfaces/builder/binder.test.tsx`, «un detalle que no se
+puede leer se dice como ERROR».
+
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
 **Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio
