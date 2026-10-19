@@ -7732,7 +7732,7 @@ cuántos; la vacía se quita directo. Pruebas en `usuariosAcciones.test.tsx`,
 `admin.test.tsx`, `editor.test.tsx` y `binder.test.tsx`; quitar cada
 confirmación mata la suya.
 
-### ➕ F5.25 ⬜ Series de unidades distintas no comparten un eje
+### ➕ F5.25 ✅ Series de unidades distintas no comparten un eje
 
 **Descripción.** La escala por unidad del #18 vale sólo para `smallmult`. En el
 gráfico de líneas por defecto el ROAS (`x`) queda plano en cero junto a millones
@@ -7749,6 +7749,24 @@ multiserie de unidades distintas debería ser otro gráfico»—, abierta desde 
 gráfico** (y cómo se ve que son dos), **caer a múltiplos pequeños** cuando las
 unidades difieren, o que **el builder avise** y ofrezca `combo`, que el
 repertorio ya tiene. Elegir una acá sería resolver una decisión de diseño.
+
+**Decidido por el humano el 2026-10-19: la tercera** —el builder avisa y ofrece
+otro gráfico—.
+
+**Verificado el 2026-10-19** · `unidadesMezcladas` (`catalog/plots.ts`) detecta
+un multiserie con más de una unidad declarada. En «Cómo se ve», con un gráfico de
+un solo eje elegido, un aviso nombra las unidades y ofrece **«Combinado» con dos
+series y «Múltiplos» con más**: `combo` dibuja las dos primeras —`SeriesBody`
+las reparte por orden— y con Inversión, Ventas y ROAS perdería el ROAS sin
+avisar. Cada opción de un solo eje dice «Un solo eje para USD y x». Mirado con
+«Eficiencia de medios · 12m» de UA en local. Pruebas en
+`tests/catalog/unidadesMezcladas.test.ts` y `tests/surfaces/builder/binder.test.tsx`;
+sugerir siempre `combo` mata la de tres series.
+
+**El criterio de arriba pedía otra cosa** —una escala por unidad en el gráfico
+de un eje— y se reemplazó por la decisión. **Lo que queda abierto en `combo`**:
+con tres o más series dibuja las dos primeras sin decirlo; ya no se lo ofrece
+para ese caso, pero quien lo elija a mano lo sigue viendo así.
 
 ### ➕ F5.26 ✅ El riel del chat muestra la consulta recién hecha
 

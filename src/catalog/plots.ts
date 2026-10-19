@@ -199,3 +199,29 @@ export function invalidPlotReason(
 
   return null
 }
+
+/** ── UNIDADES DISTINTAS EN UN MULTISERIE · F5.25, 2026-10-19 ─────────────────
+ *
+ *  **Decidido por el humano el 2026-10-19: el builder avisa y ofrece otro
+ *  gráfico** —la tercera salida de §15 de las divergencias con el `.pen`—. En
+ *  un gráfico de un solo eje, una serie en `x` al lado de una en USD queda plana
+ *  en cero: la que se lee como constante es la que más importaba mirar.
+ *
+ *  **Qué se ofrece depende de cuántas series hay, y no es un detalle.**
+ *  `combo` tiene dos escalas pero dibuja **las dos primeras** —`SeriesBody` las
+ *  reparte por orden—: con Inversión, Ventas y ROAS dibujaría las dos en USD y
+ *  perdería el ROAS sin avisar. Así que con dos series se ofrece `combo`, y con
+ *  más, `smallmult`, que desde el 2026-10-14 da una escala por unidad.
+ *
+ *  Sólo cuentan las unidades DECLARADAS: una serie sin unidad no se compara
+ *  con nada —es la regla del adaptador, que no inventa una—. */
+export function unidadesMezcladas(value: Value): { unidades: string[]; sugerido: ChartId } | null {
+  if (value.forma !== 'seriesMultiples') return null
+  const unidades = [...new Set(value.series.flatMap((s) => (s.unidad === undefined ? [] : [s.unidad])))]
+  if (unidades.length < 2) return null
+  return { unidades, sugerido: value.series.length === 2 ? 'combo' : 'smallmult' }
+}
+
+/** Los gráficos que ponen todas las series sobre UN eje de valores · F5.25.
+ *  `undefined` es el de por defecto del cuerpo de series, que es la línea. */
+export const UN_SOLO_EJE: readonly (ChartId | undefined)[] = [undefined, 'multiline', 'stackarea', 'bump', 'slope']
