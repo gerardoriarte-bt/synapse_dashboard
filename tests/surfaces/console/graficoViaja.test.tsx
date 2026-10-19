@@ -51,6 +51,7 @@ const metrica: WireMetric = {
   unit: 'USD',
   min_grain: 'month',
   measurement_window: 'Mes calendario seleccionado',
+  prose_instruction: '',
   dimensions: [],
   catalog_version: 1,
 }
