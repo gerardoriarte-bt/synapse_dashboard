@@ -13,6 +13,19 @@ openapi: 3.1.0
 #
 # ── LA VERIFICACIÓN ES POR RUTA, DESDE EL 2026-09-25 ─────────────────────────
 #
+# ── 2026-10-19 · TODAS PASARON A `7324b26`, MEDIDAS Y LEÍDAS ──────────────────
+#
+#   · **Medidas:** `npm run humo` contra el binario de `7324b26` en `:4010`,
+#     verde en las dos direcciones, después de transcribir `prose_instruction`
+#     en `CatalogMetric` · la única deriva que había.
+#   · **Leídas, las tres que el humo saltea** —`/config/chat` y las dos del
+#     drill-down—: entre `9dc481e` y `7324b26` sus handlers no cambian y ninguna
+#     clave del cable aparece ni se va. El chat cambió su LÓGICA de procedencia
+#     (`dd_chat_sql_provenance.go`, en `8272085`), no su forma, y eso se midió
+#     en vivo el 2026-10-13 · `AUDITORIA-2026-10-13-respuestas-del-backend.md`.
+#   · `unit` y `partial` de las series (`3651d70`) viven dentro de `value`, que
+#     este cable no tipa.
+#
 # ── 2026-10-06 · LAS DOCE RUTAS PASARON A `7b717aa`, REVERIFICADAS POR LECTURA ──
 #
 # Al traer `feature/dynamic-dashboard-backend` de upstream, su cabeza era
@@ -126,7 +139,7 @@ tags:
 
 paths:
   /config/me:
-    x-verificado-en: 9dc481e
+    x-verificado-en: 7324b26
     get:
       tags: [config]
       operationId: getMe
@@ -149,7 +162,7 @@ paths:
         '500': { $ref: '#/components/responses/ServerError' }
 
   /config/catalog:
-    x-verificado-en: 9dc481e
+    x-verificado-en: 7324b26
     get:
       tags: [config]
       operationId: getCatalog
@@ -173,7 +186,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/blocks:
-    x-verificado-en: 9dc481e
+    x-verificado-en: 7324b26
     get:
       tags: [config]
       operationId: getBlocks
@@ -197,7 +210,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/plots:
-    x-verificado-en: 9dc481e
+    x-verificado-en: 7324b26
     get:
       tags: [config]
       operationId: getPlots
@@ -248,7 +261,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/tabs/{tabId}:
-    x-verificado-en: 9dc481e
+    x-verificado-en: 7324b26
     get:
       tags: [config]
       operationId: getTab
@@ -284,7 +297,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   /config/panels:batch:
-    x-verificado-en: 9dc481e
+    x-verificado-en: 7324b26
     post:
       tags: [config]
       operationId: batchPanels
@@ -318,7 +331,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/me/preferences:
-    x-verificado-en: 9dc481e
+    x-verificado-en: 7324b26
     put:
       tags: [config]
       operationId: updatePreferences
@@ -403,7 +416,7 @@ paths:
     #
     # **Las seis formas `ChatFrame*` siguen sin verse contra el servicio.** Eso
     # es cobertura que falta, y queda dicho acá y en la salida de `humo`.
-    x-verificado-en: 9dc481e
+    x-verificado-en: 7324b26
     post:
       tags: [config]
       operationId: askChat
@@ -469,7 +482,7 @@ paths:
     # **Vive fuera de `/config`** pero va en este cable porque sólo la usa el
     # chat de la consola. No es el CRUD de `/admin/tenants/{id}/agents`, que
     # incluye inactivos y trae otro DTO.
-    x-verificado-en: 9dc481e
+    x-verificado-en: 7324b26
     get:
       tags: [chat]
       operationId: listChatAgents
@@ -500,7 +513,7 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   /config/chat/threads:
-    x-verificado-en: 9dc481e
+    x-verificado-en: 7324b26
     get:
       tags: [config]
       operationId: listChatThreads
@@ -563,7 +576,7 @@ paths:
 
   # ── B3.2 · las preguntas sugeridas · TRANSCRITO DE 82da946 ───────────────
   /config/chat/threads/{id}/messages:
-    x-verificado-en: 9dc481e
+    x-verificado-en: 7324b26
     get:
       tags: [config]
       operationId: listChatMessages
@@ -609,7 +622,7 @@ paths:
                   data: { $ref: '#/components/schemas/ChatMessagesPage' }
 
   /history/threads/{id}:
-    x-verificado-en: 9dc481e
+    x-verificado-en: 7324b26
     delete:
       tags: [config]
       operationId: deleteChatThread
@@ -655,7 +668,7 @@ paths:
           description: No existe, o no es de este usuario. `ErrUserThreadNotFound`.
 
   /config/panels/{panelId}/chat-suggestions:
-    x-verificado-en: 9dc481e
+    x-verificado-en: 7324b26
     get:
       tags: [config]
       operationId: panelChatSuggestions
@@ -753,7 +766,7 @@ paths:
   # redactado, y `daily_trend` corrige su forma sembrada. Eso le toca a
   # `Payload.message` de `/config/panels:batch`, que sigue declarando `de881e1`.
   /config/panels/{panelId}/drilldown/dimensions:
-    x-verificado-en: 9dc481e
+    x-verificado-en: 7324b26
     get:
       tags: [config]
       operationId: panelDrillDownDimensions
@@ -838,7 +851,7 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   /config/panels/{panelId}/drilldown:
-    x-verificado-en: 9dc481e
+    x-verificado-en: 7324b26
     post:
       tags: [config]
       operationId: panelDrillDown
@@ -1477,7 +1490,8 @@ components:
         `measurement_window`, abajo.
       required:
         [id, tenant_id, key, name, shape, family, layer, source, base,
-         min_grain, dimensions, catalog_version, measurement_window]
+         min_grain, dimensions, catalog_version, measurement_window,
+         prose_instruction]
       properties:
         id: { type: string, format: uuid }
         tenant_id: { type: string, format: uuid }
@@ -1569,6 +1583,32 @@ components:
             Ventana **ya redactada**, de la columna `MEASUREMENT_WINDOW`.
             `string` sin `omitempty`: siempre viene, vacío si no hay.
           examples: ['Mes calendario seleccionado']
+        # ── La instrucción de prosa · agregado el 2026-10-19, contra `7324b26` ──
+        #
+        # Llegó en `5af3b86`, respuesta al MENSAJE-2026-10-14 de la prosa por
+        # card. La marcó `npm run humo` antes de transcribirla.
+        prose_instruction:
+          type: string
+          description: |
+            **El encargo de una métrica de prosa**, en texto libre. Lo escribe
+            administración con `PATCH /admin/tenants/{tenantId}/catalog/{metricId}`
+            y **`sync-catalog` no lo toca**: no está en el `DoUpdates` del upsert.
+
+            **Vacío es «el texto fijo de la clave»**, no «sin prosa»: con vacío,
+            `BuildProsePrompt` sigue con su `switch` de siempre —`month_decisions`
+            o el resumen ejecutivo—. Con texto, lo usa en su lugar **y le permite
+            al agente consultar los datos del período**, que sin instrucción no
+            puede.
+
+            `string` sin `omitempty`: viene en **todas** las métricas, también
+            las que no son `prose`, siempre vacío en esas.
+
+            **Medido el 2026-10-19**: con una instrucción sobre el ROAS de Meta,
+            el agente devolvió `{headline, pillars}` válido dos corridas de dos,
+            con las mismas cifras —y esas cifras **no son las del panel
+            `platform_return`** del mismo período. Ver
+            `docs/AUDITORIA-2026-10-19-prosa-por-metrica.md`.
+          examples: ['', 'Explicá qué movió el ROAS de Meta en el período.']
         dimensions:
           type: array
           items: { type: string }

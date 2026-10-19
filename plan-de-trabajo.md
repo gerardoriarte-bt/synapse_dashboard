@@ -4828,9 +4828,9 @@ dijo que `executive_summary` no se había regenerado. Era falso: la ruta devuelv
 **202 y corre asíncrono**, y se consultó antes de que terminara. El `status` de la
 corrida —`/admin/materialize/runs`— es lo que dice cuándo mirar.
 
-**Espera del backend.** **Desplegar `3651d70` en QA con `DD_MATERIALIZE_PROSE_ENABLED=true` y decir qué commit quedó** · pedido el 2026-10-14 en `docs/MENSAJE-2026-10-14-backend-desplegar-en-qa.md`. **No es `DD_MATERIALIZE_ENABLED`**: el backend contestó que ésa ya estaba, y son dos banderas independientes —ésa prende el programador—. El ofrecimiento original de encenderla y avisar está en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
+**Espera del backend.** **Desplegar `7324b26` en QA, migrado y con `DD_MATERIALIZE_PROSE_ENABLED=true`, y decir qué commit quedó** · pedido el 2026-10-19 en `docs/MENSAJE-2026-10-19-backend-desplegar-y-fuente-de-la-prosa.md`, que reemplaza al del 2026-10-14 (`docs/MENSAJE-2026-10-14-backend-desplegar-en-qa.md`, que pedía `3651d70`). **No es `DD_MATERIALIZE_ENABLED`**: el backend contestó que ésa ya estaba, y son dos banderas independientes —ésa prende el programador—. El ofrecimiento original de encenderla y avisar está en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
 
-**Lo tiene: DESPLIEGUE** · prender el flag en QA junto con el despliegue de `3651d70`. **Fecha, no código.**
+**Lo tiene: DESPLIEGUE** · prender el flag en QA junto con el despliegue de `7324b26`. **Fecha, no código.**
 
 **Medido contra `de881e1` el 2026-09-29** · `ProseGeneratorEnabledFromEnv` lee el flag con default `false`.
 
@@ -4839,6 +4839,8 @@ corrida —`/admin/materialize/runs`— es lo que dice cuándo mirar.
 **Medido contra `3651d70` el 2026-10-14** · con el flag en el `.env` del backend —fuera de git— el programador generó septiembre y octubre, y los catorce meses anteriores se cargaron a mano, que es lo mismo que «Cargar meses» de A5: `executive_summary` y `decisions` quedaron en 16 de 16 meses con `agent:Synapse UA` · `docs/BITACORA-2026-10-14.md` §7.
 
 Hasta entonces los dos paneles de prosa se servían con el valor de la semilla, **en inglés**, y salían `DEGRADED`. **Con `3651d70` eso cambia**: la migración bloquea la semilla, así que desplegado sin el flag los dos salen **`BLOCKED`**. Desplegar uno sin el otro empeora la consola de UA.
+
+**Medido contra `7324b26` el 2026-10-19** · **SIGUE ⚠️.** El flag sigue con default `false`, y su respuesta del 14 lo dice: prenderlo es del entorno de QA, no de código (`RESPUESTA-2026-10-14-backend-instruccion-de-prosa.md`, punto 1). Con el flag, acá la prosa sale `AVAILABLE` con `agent:Synapse UA`, y desde `5af3b86` acepta una instrucción por métrica · `AUDITORIA-2026-10-19-prosa-por-metrica.md`. **Despliegue con el flag pedido de nuevo** en `MENSAJE-2026-10-19-backend-desplegar-y-fuente-de-la-prosa.md`, que reemplaza al del 14.
 
 **Criterio de aceptación.**
 - Los dos paneles traen `governance.source = agent:<nombre>` y un `headline`, no el valor de la semilla.

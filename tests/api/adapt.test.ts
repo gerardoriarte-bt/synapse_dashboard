@@ -76,6 +76,7 @@ const metrica: WireMetric = {
   semantic_direction: 'HIGHER_IS_BETTER',
   min_grain: 'month',
   measurement_window: 'Mes calendario seleccionado',
+  prose_instruction: '',
   dimensions: ['canal'],
   catalog_version: 7,
 }

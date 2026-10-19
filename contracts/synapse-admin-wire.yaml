@@ -304,6 +304,81 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
+  /admin/tenants/{tenantId}/catalog/{metricId}:
+    x-verificado-en: 7324b26
+    patch:
+      tags: [admin]
+      operationId: adminUpdateProseInstruction
+      summary: Escribe la instrucción de una métrica de prosa
+      description: |
+        **Llegó en `5af3b86`**, respuesta al
+        `MENSAJE-2026-10-14-backend-instruccion-de-prosa.md`. **Sólo la
+        instrucción**: el resto de los campos editoriales del catálogo sigue sin
+        ruta. Medido el 2026-10-19 contra `7324b26`, todos los casos de abajo.
+
+        **Cadena vacía o sólo espacios la borra** y vuelve al texto fijo de la
+        clave —el servicio hace `TrimSpace`—. **Un cuerpo sin el campo también
+        la borra**: el `struct` no distingue ausente de vacío, así que el front
+        manda siempre el campo, con lo que quiere que quede.
+
+        **Una métrica que no es `prose` acepta el vacío** (200) y rechaza el
+        texto (422): borrar algo que no hay no es un error.
+
+        **Pide la columna migrada.** Con `DB_AUTO_MIGRATE=false` sobre una base
+        anterior a `5af3b86`, contesta **500** con el SQL de Postgres en el
+        `error` —«column "prose_instruction" … does not exist»—, mientras
+        `/config/catalog` sigue en 200 porque lee con `SELECT *`. Es la forma en
+        que un despliegue sin migrar fallaría en QA.
+      parameters:
+        - { $ref: '#/components/parameters/tenantId' }
+        - name: metricId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prose_instruction:
+                  type: string
+                  maxLength: 2000
+                  description: Hasta 2000 **caracteres**, no bytes · medido con 2000 «é».
+      responses:
+        '200':
+          description: La métrica entera, con la instrucción ya recortada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/CatalogMetric' }
+        '403':
+          description: |
+            `AUTH_FORBIDDEN` «no puedes administrar otro cliente» · el
+            `tenantId` de la ruta no es el del token, salvo operador.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: |
+            `NOT_FOUND_METRIC` «métrica no encontrada» · también cuando la
+            métrica existe pero es de otro cliente: no se distingue.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '422':
+          description: |
+            `VALIDATION_PROSE_INSTRUCTION` · con texto sobre una métrica que no
+            es `prose`, o con más de 2000 caracteres.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
   /admin/layouts/{layoutId}:
     x-verificado-en: f70cec2
     get:
@@ -1754,7 +1829,7 @@ components:
             detalles sin avisar. Ver el cable de consola para el juego completo.
 
             Los de acá, declarados por ellos: `CONFLICT_NOT_DRAFT`,
-            `VALIDATION_LAYOUT`, `VALIDATION_CHAT_SUGGESTIONS`,
+            `VALIDATION_LAYOUT`, `VALIDATION_PROSE_INSTRUCTION`, `NOT_FOUND_METRIC`, `VALIDATION_CHAT_SUGGESTIONS`,
             `NOT_FOUND_LAYOUT`, `NOT_FOUND_ROLE`, `AUTH_DRAFT_PREVIEW`,
             `VALIDATION_THEME`, `VALIDATION_DASHBOARD_NOT_VISIBLE`,
             `CONFLICT_NO_PREVIOUS`, `CONFLICT_REVERT_SELF`,

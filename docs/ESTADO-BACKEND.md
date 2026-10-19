@@ -19,7 +19,7 @@ falta para re-verificar. Para su avance real está
 | De ésas, **contra el último commit** | **1** |
 | ⬜ Esperando algo de ellos | **1** |
 | ⬜ **Que NUNCA verificamos** | **22** |
-| El último commit que leímos | `9dc481e` |
+| El último commit que leímos | `7324b26` |
 
 
 ## ⚠️ 52 verificadas contra un commit anterior
@@ -58,13 +58,13 @@ Re-verificar una es leer su criterio y medirlo de nuevo.
 | **B1.30** · sync-catalog como ruta HTTP | ✅ | `de881e1` | 2026-09-29 |
 | **B1.31** · La plataforma genera el par de claves del usuario de servicio | ⚠️ | `de881e1` | 2026-09-29 |
 | **B1.32** · cut es day o month, y lo aplica el front | ✅ | `de881e1` | 2026-09-29 |
+| **B1.34** · Declarar qué es el t de una serie, o mandar el tramo vencido | ✅ | `9dc481e` | 2026-10-09 |
 | **B2.1** · Tabla panel_data | ✅ | `de881e1` | 2026-09-29 |
 | **B2.5** · Estado DEGRADADO | ✅ | `733c13c` | 2026-09-14 |
 | **B2.6** · Estado BLOQUEADO | ⚠️ | `de881e1` | 2026-09-29 |
 | **B2.11** · Filtrado por rol también en el batch | ✅ | `de881e1` | 2026-09-29 |
 | **B2.12** · Correr el materializador contra datos reales y verificar los seis estados | ⚠️ | `3651d70` | 2026-10-14 |
 | **B2.13** · Salud de feeds por fuente | ✅ | `de881e1` | 2026-09-29 |
-| **B2.15** · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | ⚠️ | `3651d70` | 2026-10-14 |
 | **B2.16** · El materializador emite presentation | ✅ | `f70cec2` | 2026-09-28 |
 | **B3.1** · POST /config/chat con SSE | ⚠️ | `8633b10` | 2026-09-26 |
 | **B3.8** · La respuesta puede incluir { forma, datos, procedencia } | ✅ | `8272085` | 2026-10-13 |
@@ -157,7 +157,7 @@ esperan algo de ellos: **1**, y salen en `PARA-BACKEND.md`.
 | ⚠️ | **B1.31** ➕ · La plataforma genera el par de claves del usuario de servicio | `de881e1` ⚠ | 2026-09-29 |
 | ✅ | **B1.32** ➕ · cut es day o month, y lo aplica el front | `de881e1` ⚠ | 2026-09-29 |
 | ✅ | **B1.33** ➕ · El patrón de PeriodoId | — | — |
-| ✅ | **B1.34** ➕ · Declarar qué es el t de una serie, o mandar el tramo vencido | `9dc481e` | 2026-10-09 |
+| ✅ | **B1.34** ➕ · Declarar qué es el t de una serie, o mandar el tramo vencido | `9dc481e` ⚠ | 2026-10-09 |
 
 
 ### Fase 2 · Estados y cache — 8 de 16
@@ -177,8 +177,8 @@ esperan algo de ellos: **1**, y salen en `PARA-BACKEND.md`.
 | ✅ | **B2.11** · Filtrado por rol también en el batch | `de881e1` ⚠ | 2026-09-29 |
 | ⚠️ | **B2.12** ➕ · Correr el materializador contra datos reales y verificar los seis estados | `3651d70` ⚠ | 2026-10-14 |
 | ✅ | **B2.13** ➕ · Salud de feeds por fuente | `de881e1` ⚠ | 2026-09-29 |
-| ⬜ | **B2.14** ➕ · /config/solicitudes | `9dc481e` | 2026-10-09 |
-| ⚠️ | **B2.15** ➕ · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | `3651d70` ⚠ | 2026-10-14 |
+| ⬜ | **B2.14** ➕ · /config/solicitudes | `9dc481e` ⚠ | 2026-10-09 |
+| ⚠️ | **B2.15** ➕ · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | `7324b26` | 2026-10-19 |
 | ✅ | **B2.16** ➕ · El materializador emite presentation | `f70cec2` ⚠ | 2026-09-28 |
 
 

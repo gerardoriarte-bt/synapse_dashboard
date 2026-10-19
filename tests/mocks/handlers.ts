@@ -176,6 +176,7 @@ export const kpiMetric: WireMetric = {
   // mostrarlo: `base` es el denominador —48 sobre 52— y esto es la ventana.
   // El texto es uno real de Snowflake, medido el 2026-09-26.
   measurement_window: 'Mes calendario seleccionado',
+  prose_instruction: '',
   dimensions: [],
   catalog_version: 1,
 }
