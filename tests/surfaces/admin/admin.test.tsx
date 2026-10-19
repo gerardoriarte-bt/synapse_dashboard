@@ -102,11 +102,15 @@ describe('§7.3 · las cinco pantallas y su alcance', () => {
     // `GET /admin/tenants` devuelve sólo el cliente del token. El rótulo fijo
     // «todas las cuentas» quedaba falso para cualquier admin que no opere la
     // plataforma; se afirma su ausencia para que no vuelva.
+    //
+    // **Se espera el rótulo, no el nombre** · 2026-10-19. Con un solo cliente
+    // el nombre sale dos veces —la lista y su ficha al lado— y `findByText`
+    // falla con «multiple elements». La prueba se escribió sobre una base
+    // vieja, sin la ficha, y entró a `main` en rojo.
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants.slice(0, 1))))
     montar()
-    await screen.findByText('Under Armour México')
 
-    expect(screen.getByText('Alcance · 1 cliente')).toBeInTheDocument()
+    expect(await screen.findByText('Alcance · 1 cliente')).toBeInTheDocument()
     expect(screen.queryByText(/todas las cuentas/i)).toBeNull()
   })
 
