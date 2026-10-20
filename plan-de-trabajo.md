@@ -8088,6 +8088,29 @@ anterior. Pruebas en `tests/surfaces/admin/admin.test.tsx`,
 **Recargar vuelve a la grilla**: el cliente activo sí sobrevive, porque lo lleva
 la URL.
 
+### ➕ F5.46 ✅ La ficha se lee: roles plegados, cada regla una vez
+
+**Descripción.** Medido en QA el 2026-10-20: seis tarjetas de rol abiertas
+repetían la misma pestaña, «Ve TODAS las pestañas…» cuatro veces y «No se borra
+con usuarios asignados…» tres. §5 de
+`docs/PROPUESTA-2026-10-20-identidad-del-cliente-y-ficha.md`.
+
+**Criterio de aceptación.** Cada rol es una fila plegada —nombre, usuarios,
+«Todas las pestañas» o «No recibe · N» si corresponde, paneles, Editar y
+Borrar— y el detalle se abre. Las tres reglas de los roles se dicen una vez,
+arriba de la lista. Los subprocesadores van plegados con sus nombres a la vista.
+
+**Verificado el 2026-10-20** · `RoleCard` plegada, las reglas en `RoleEditor` y
+`Subprocessors` con los tres nombres en la fila. Mirado en local. Cinco
+mutaciones mueren —abierta por defecto, sin la marca de «todas», sin los nombres
+de los subprocesadores, Borrar con usuarios y la card de roles llevando a otra
+sección—. Pruebas en `tests/surfaces/admin/composicion.test.tsx`,
+`roles.test.tsx` y `enAlta.test.tsx`.
+
+**Lo que la propuesta pedía y no hizo falta**: el rol del usuario ya era un solo
+selector. La medición de QA leyó las opciones del `<select>` como texto de la
+fila; está corregido en la propuesta.
+
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
 **Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio

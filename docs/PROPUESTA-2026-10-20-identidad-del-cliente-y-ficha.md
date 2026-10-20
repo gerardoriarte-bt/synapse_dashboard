@@ -92,7 +92,7 @@ La ficha de «Synapse UA HTML» en QA, el 2026-10-20, tiene en una sola columna:
 |---|---|
 | Identidad | 7 campos, dos en guión, más una línea de aviso |
 | Roles | **6 tarjetas**. Las seis repiten «Overview · 13 paneles». La explicación «Ve TODAS las pestañas…» aparece **4 veces**, y «No se borra con usuarios asignados…», **3** |
-| Usuarios | **12 filas**, cada una con **las 6 opciones de rol** escritas en la fila |
+| Usuarios | **12 filas**, cada una con un selector de rol. ~~Con las 6 opciones de rol escritas en la fila~~: **corregido el 2026-10-20**, ver abajo |
 | Acceso a datos | Una fila, dos párrafos de explicación |
 | Subprocesadores | 3 filas y un aviso |
 | Avisos sueltos | 3 más, entre bloques |
@@ -235,7 +235,11 @@ su sección:
 - **Cada explicación, una vez.** La regla de «un rol sin pestañas las ve todas»
   va una vez en la cabecera de Roles, no en cada tarjeta.
 - **Roles plegados**: nombre, usuarios y paneles. El detalle se abre.
-- **El rol del usuario en un solo control**, no seis opciones en la fila.
+- ~~**El rol del usuario en un solo control**, no seis opciones en la fila.~~
+  **No hacía falta: ya era un solo control.** Corregido el 2026-10-20 al
+  construirlo. La medición de QA leyó la página como texto, y el texto de un
+  `<select>` incluye todas sus opciones: se leyeron como escritas en la fila. Es
+  la falla de citar una transcripción como si fuera la pantalla.
 - **Subprocesadores plegados.** Son de plataforma y casi no cambian.
 
 ## 6 · Lo que se pide, y a quién

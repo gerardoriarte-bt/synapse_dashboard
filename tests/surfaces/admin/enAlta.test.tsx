@@ -394,14 +394,16 @@ describe('subprocesadores · lo que el frame de alta OMITE', () => {
     montar()
     await abrirFicha()
 
-    expect(screen.getByText('Snowflake Inc.')).toBeInTheDocument()
-    expect(screen.getByText('Amazon Web Services')).toBeInTheDocument()
-    expect(screen.getByText('Anthropic')).toBeInTheDocument()
-    expect(screen.getAllByText('US-EAST-1')).toHaveLength(2)
-    expect(screen.getByText('US')).toBeInTheDocument()
-    expect(
-      screen.getByText(/Son de plataforma: aplican desde el alta/),
-    ).toBeInTheDocument()
+    // **Plegada desde el 2026-10-20, con los nombres a la vista**: son la
+    // obligación legal y se leen sin tocar nada.
+    const seccion = screen.getByRole('region', { name: 'Subprocesadores' })
+    expect(within(seccion).getByText('Snowflake Inc. · Amazon Web Services · Anthropic')).toBeInTheDocument()
+    expect(within(seccion).getByText(/De plataforma · aplican desde el alta/)).toBeInTheDocument()
+    expect(within(seccion).queryByText('US-EAST-1')).toBeNull()
+    // Y el detalle, al abrirlo: la región, que es lo que una revisión busca.
+    await userEvent.click(within(seccion).getByRole('button', { name: 'Ver detalle' }))
+    expect(within(seccion).getAllByText('US-EAST-1')).toHaveLength(2)
+    expect(within(seccion).getByText('US')).toBeInTheDocument()
   })
 
   it('NO trae la fecha de revisión ni el acuerdo, que este frame no dibuja', async () => {

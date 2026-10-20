@@ -281,7 +281,24 @@ export function RoleEditor({
         </Ayuda>
       )}
 
-      <ul className="flex flex-col gap-6 m-0 p-0 list-none">
+      {/* **Las reglas de los roles, una vez y arriba** · 2026-10-20. Medido en QA:
+          «Ve TODAS las pestañas…» se repetía en cuatro tarjetas y «No se borra
+          con usuarios asignados…» en tres. Cada tarjeta conserva su marca
+          —«Todas las pestañas», el botón Borrar ausente— y la explicación vive
+          acá. **Y no con cero roles** · §PEN:A2, 2026-09-30: una advertencia
+          sobre algo que no está presente. */}
+      {roles.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <Ayuda>Un rol sin pestañas elegidas ve TODAS las pestañas, no ninguna.</Ayuda>
+          <Ayuda>
+            Ocultar una métrica NO es un permiso: al servir el dato se vuelve a verificar qué puede ver cada
+            rol. Lo que un rol no recibe, no le llega.
+          </Ayuda>
+          <Ayuda>Un rol con usuarios no se borra: reasignalos primero.</Ayuda>
+        </div>
+      )}
+
+      <ul className="flex flex-col gap-2 m-0 p-0 list-none">
         {roles.map((r) => (
           <RoleCard
             key={r.id}
@@ -294,26 +311,6 @@ export function RoleEditor({
           />
         ))}
       </ul>
-
-      {/* **La advertencia va una vez, no por rol** —es una propiedad del campo y
-          repetirla por fila la vuelve decoración— **y no va cuando no hay ningún
-          rol** · §PEN:A2, corregido en la auditoría del 2026-09-30.
-
-          Se vio al abrir la ficha en alta: debajo del vacío aparecía una
-          advertencia sobre ocultar métricas en un cliente que no tiene roles ni
-          métricas que ocultar, y el frame de alta no dibuja nada en ese hueco.
-          Es la misma clase que los otros cuatro hallazgos de mirar la pantalla:
-          **una carencia o una advertencia sobre algo que no está presente**.
-
-          Y de paso es el único texto de esta superficie que sigue nombrando
-          plomería —«el servidor», «el batch»—; se deja donde tiene sentido
-          porque ahí le habla a quien compone, que es quien va a usar el campo. */}
-      {roles.length > 0 && (
-        <Ayuda>
-          Ocultar una métrica NO es un permiso: al servir el dato se vuelve a verificar qué
-          puede ver cada rol.
-        </Ayuda>
-      )}
 
       {editando !== null && (
         <form
