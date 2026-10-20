@@ -28,9 +28,12 @@ import { elegirCliente } from '../elegirCliente'
 const TENANTS = [
   { id: 't-1', name: 'Under Armour México', label: 'UA México', created_at: '2026-09-22T09:18:45Z' },
   { id: 't-2', name: 'Terpel Colombia', label: 'Terpel CO', created_at: '2026-09-22T09:18:45Z' },
+  { id: 't-3', name: 'Cliente recién dado de alta', label: '', created_at: '2026-10-20T22:00:00Z' },
 ]
 
 const SCOPE = { kind: 'multi_tenant' as const, tenants: TENANTS.map(({ id, name, label }) => ({ id, name, label })) }
+
+const { active_dashboard_id: _d, active_layout_id: _l, ...sinActivos } = context
 
 /** El contexto que el servicio devuelve para cada cliente del token. */
 const POR_CLIENTE: Record<string, typeof context> = {
@@ -44,6 +47,17 @@ const POR_CLIENTE: Record<string, typeof context> = {
     dashboards: [{ id: 'd-terpel', name: 'Terpel', slug: 'terpel', is_default: true, history_months: 12 }],
     active_dashboard_id: 'd-terpel',
     active_layout_id: 'l-terpel',
+  },
+  // **Recién dado de alta** · medido contra `4ceb36c` el 2026-10-20: el salto da
+  // 200 y `/config/me` llega con `dashboards: []` y `tabs: []`, y SIN
+  // `active_dashboard_id` ni `active_layout_id` —ausentes, no nulos—.
+  't-3': {
+    ...sinActivos,
+    role: { id: 'r-s3', name: 'superadmin' },
+    scope: SCOPE,
+    tenant: { ...context.tenant, id: 't-3', name: 'Cliente recién dado de alta', label: 'Cliente recién dado de alta' },
+    tabs: [],
+    dashboards: [],
   },
 }
 
@@ -91,6 +105,7 @@ function montar() {
         <ClienteDeTrabajoProvider>
           <Routes>
             <Route path="/" element={<ConsoleContainer />} />
+            <Route path="/builder" element={<p>EN EL BUILDER</p>} />
           </Routes>
         </ClienteDeTrabajoProvider>
       </MemoryRouter>
@@ -132,6 +147,30 @@ describe('el superadmin elige otro cliente', () => {
     expect(await screen.findByRole('heading', { level: 1, name: /Tenemos stock/ })).toBeInTheDocument()
     expect(r.saltos).toEqual(['t-2', 't-1'])
     expect(currentToken()).toBe('tok-t-1')
+  })
+})
+
+describe('un cliente sin ningún dashboard', () => {
+  it('se puede dejar: la barra sigue arriba con su selector, y se ofrece componerlo', async () => {
+    const r = servicio()
+    montar()
+    await elegirCliente(/Cliente recién dado de alta/)
+    expect(await screen.findByRole('heading', { name: 'Este cliente todavía no tiene un dashboard' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Componer un dashboard en el builder' })).toBeInTheDocument()
+    const barra = screen.getByRole('region', { name: 'Cliente activo' })
+    expect(within(barra).getByText('Cliente recién dado de alta')).toBeInTheDocument()
+
+    await elegirCliente(/Under Armour México/)
+    expect(await screen.findByRole('heading', { level: 1, name: /Tenemos stock/ })).toBeInTheDocument()
+    expect(r.saltos).toEqual(['t-3', 't-1'])
+  })
+
+  it('«Componer» lleva al builder', async () => {
+    servicio()
+    montar()
+    await elegirCliente(/Cliente recién dado de alta/)
+    await userEvent.click(await screen.findByRole('button', { name: 'Componer un dashboard en el builder' }))
+    expect(await screen.findByText('EN EL BUILDER')).toBeInTheDocument()
   })
 })
 

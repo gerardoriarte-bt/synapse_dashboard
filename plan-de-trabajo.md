@@ -8253,6 +8253,21 @@ fila.
 `useRoles` y `useRolesOf`. Mirado en Usuarios en local. Pruebas en
 `tests/api/rolInterno.test.tsx`; tres mutaciones mueren.
 
+### ➕ F5.52 ✅ Un cliente sin ningún dashboard se puede dejar
+
+**Descripción.** Desde `4ceb36c` el superadmin puede saltar a un cliente recién
+dado de alta, y ese cliente llega sin dashboards. La consola mostraba el aviso
+sin navbar, sin barra del cliente y sin acción: quedaba encerrado. Ver
+`docs/AUDITORIA-2026-10-20-alta-con-superadmin.md`.
+
+**Criterio de aceptación.** Con un cliente sin ningún dashboard, la consola
+lleva arriba la barra del cliente con su selector, y elegir otro salta a ese
+cliente. Quien administra ve «Componer un dashboard en el builder», que navega.
+
+**Verificado el 2026-10-20** · contra `4ceb36c` en local, en el navegador, con un
+cliente creado para la prueba. Pruebas en
+`tests/surfaces/console/saltoDeCliente.test.tsx`; tres mutaciones mueren.
+
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
 **Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio

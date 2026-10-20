@@ -40,6 +40,7 @@ import { useClienteDeTrabajo } from '../useClienteDeTrabajo'
 import { DrillSheet } from './DrillSheet'
 import { useSaltoDeCliente } from './useSaltoDeCliente'
 import { SurfaceMessage } from './SurfaceMessage'
+import { BarraDeCliente } from '../BarraDeCliente'
 import type { Metric, PanelType, Payload } from '../../api/types'
 
 /** **El locale del tenant, y ya no un supuesto** · F1.13b, cerrado el 2026-09-26.
@@ -414,8 +415,22 @@ export function ConsoleContainer() {
     // Si el activo YA es el default, no se ofrece: volver a donde ya se está
     // es un botón que no hace nada.
     const porDefecto = context.data.dashboards.find((d) => d.esDefault)
+    /** **Un cliente sin ningún dashboard no tiene a dónde volver** · 2026-10-20.
+     *  Pasa al saltar a un cliente recién dado de alta: `4ceb36c` le crea el rol
+     *  y el salto anda, pero `/config/me` llega con `dashboards: []`. La salida
+     *  es la barra, con su selector, y componerlo en el builder. */
+    const sesion = { id: context.data.tenant.id, nombre: context.data.tenant.nombre, formaCorta: context.data.tenant.etiqueta }
+    const componer =
+      porDefecto === undefined && admin ? { rotulo: 'Componer un dashboard en el builder', onAccion: () => void navegar('/builder') } : undefined
     return (
       <SurfaceMessage
+        barra={
+          <BarraDeCliente
+            activo={clientes.find((c) => c.id === sesion.id) ?? sesion}
+            clientes={clientes}
+            onElegir={elegirCliente}
+          />
+        }
         title={
           activo === undefined
             ? 'Este cliente todavía no tiene un dashboard'
@@ -423,7 +438,9 @@ export function ConsoleContainer() {
         }
         detail="Un dashboard sin layout publicado no tiene pestañas que mostrar · se compone en el builder"
         {...(porDefecto === undefined || porDefecto.id === context.data.dashboardActivoId
-          ? {}
+          ? componer === undefined
+            ? {}
+            : { accion: componer }
           : {
               accion: {
                 rotulo: `Volver a ${porDefecto.nombre}`,
