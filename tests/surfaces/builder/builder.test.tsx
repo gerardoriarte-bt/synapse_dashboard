@@ -396,6 +396,12 @@ describe('el chrome NO es uniforme · corregido contra el `.pen`', () => {
       expect(cabecera.getByText('Overview')).toBeInTheDocument()
       expect(cabecera.getByText('Borrador v1')).toBeInTheDocument()
       expect(cabecera.getByText('Rol')).toBeInTheDocument()
+      // **En el navbar** · decisión humana del 2026-10-20: el rol, el dashboard
+      // y las pantallas van ANTES de la barra del cliente, no debajo.
+      const barra = cabecera.getByRole('region', { name: 'Cliente activo' })
+      const antes = (a: Element) => (a.compareDocumentPosition(barra) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+      expect(antes(cabecera.getByText('Rol'))).toBe(true)
+      expect(antes(cabecera.getByRole('navigation', { name: 'Builder' }))).toBe(true)
       expect(cabecera.queryByText('Pestaña')).toBeNull()
       // Sin filtro de rol, la cabecera lo dice: no «—», que se leería como
       // «ninguno».

@@ -123,5 +123,9 @@ describe('el orden · decisiones humanas del 2026-10-07 y del 2026-10-20', () =>
     const sigue = (a: Element, b: Element) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
     expect(sigue(usuario, menu)).toBe(true)
     expect(sigue(menu, barra)).toBe(true)
+    // **Las pantallas, en el navbar** · decisión humana del 2026-10-20: antes de
+    // la barra, no debajo del título.
+    const pantallas = screen.getByRole('navigation', { name: inicio === '/admin' ? 'Administración' : 'Builder' })
+    expect(sigue(pantallas, barra)).toBe(true)
   })
 })

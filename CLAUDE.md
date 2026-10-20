@@ -580,7 +580,9 @@ nunca, ni cuando el código está mal.
 `docs/propuesta-identidad-de-cliente`, PR #37, **sin mergear a `main`**, y está
 mergeada en `Gerardo` en local.
 
-**F5.43–F5.47 construidas**: una barra del cliente activo bajo el navbar de las
+**F5.43–F5.49 construidas** —F5.48 y F5.49 salieron de
+`docs/AUDITORIA-2026-10-20-diseno-de-la-identidad-del-cliente.md`, con las
+pantallas y el rol en el navbar—: una barra del cliente activo bajo el navbar de las
 tres superficies —monograma, nombre, forma corta y «Cambiar de cliente»—, el
 perfil como ícono, la consola en el menú ≡, Clientes en cards, la ficha como
 página con su resumen, roles plegados y la forma corta editable. Decisión humana

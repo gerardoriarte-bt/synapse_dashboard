@@ -8152,6 +8152,25 @@ mutaciones mueren. Los puntos 6 y 7 de la auditoría —el chrome de
 administración y la fila de contexto del builder— son anteriores a la propuesta
 y quedan para decidir.
 
+### ➕ F5.49 ✅ Las pantallas y el rol, en el navbar
+
+**Descripción.** En administración y en el builder las pantallas iban como
+pestañas debajo del título, y el rol del builder en una fila bajo la barra del
+cliente. El `.pen` las pone en el navbar. Puntos 6 y 7 de
+`docs/AUDITORIA-2026-10-20-diseno-de-la-identidad-del-cliente.md`; decidido por
+el humano el 2026-10-20: «tiene más sentido para la navegación».
+
+**Criterio de aceptación.** El navbar de administración lleva sus cuatro
+pantallas, y el del builder sus tres, el dashboard y el rol que se editan. Las
+dos navegaciones usan el mismo componente y el registro de acción. Guardar,
+validar y publicar siguen en su fila.
+
+**Verificado el 2026-10-20** · `NavDeSuperficie.tsx`, montado por `AdminChrome` y
+`BuilderChrome`. Mirado en local en Catálogo y en el editor. Pruebas en
+`tests/surfaces/navegacionDeTrabajo.test.tsx` y `builder/builder.test.tsx` que
+afirman que la navegación y el rol van antes de la barra; fallan con los chromes
+anteriores.
+
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
 **Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio
