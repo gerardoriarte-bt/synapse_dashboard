@@ -53,6 +53,7 @@ import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
 import { EmptyRow } from './EmptyRow'
 import { SkeletonRows } from './SkeletonRows'
+import { nombreDeForma } from '../builder/rotulos'
 import type { Metric } from '../../api/types'
 import type { RejectedMetric } from '../../api/adapt'
 import type { UsoDeMetrica } from './uso'
@@ -62,7 +63,10 @@ import type { UsoDeMetrica } from './uso'
  *  ven igual, y la diferencia es qué pasa con ellos en la próxima sincronización. */
 const COLUMNAS = [
   { titulo: 'Métrica', origen: 'editorial', leer: (m: Metric) => m.nombre },
-  { titulo: 'Forma', origen: 'derivado', leer: (m: Metric) => m.forma },
+  // **Con su nombre de producto** · F5.32, 2026-10-19: mostraba el identificador
+  // del contrato —`escalarConIntervalo`—. El nombre sale de la misma tabla que
+  // usa el builder, para que las dos superficies digan lo mismo.
+  { titulo: 'Forma', origen: 'derivado', leer: (m: Metric) => nombreDeForma(m.forma) },
   { titulo: 'Familia', origen: 'editorial', leer: (m: Metric) => m.familia },
   { titulo: 'Capa', origen: 'derivado', leer: (m: Metric) => m.capa },
   { titulo: 'Fuente', origen: 'derivado', leer: (m: Metric) => m.fuente },
@@ -196,14 +200,16 @@ export function CatalogView({ metrics, rejected, uso, cargando = false }: Props)
               : `${String(visibles.length)} de ${String(metrics.length)} métricas`}
         </Label>
         {/* Se declara que este NO es el filtro de §7.3. */}
-        <Ayuda as="span">El filtro por estado no se puede ofrecer todavía: el estado de cada métrica no llega.</Ayuda>
+        <Ayuda as="span">Todavía no se puede filtrar por estado.</Ayuda>
       </div>
 
       <table className="w-full border-collapse" aria-busy={cargando}>
         <thead>
           <tr className="border-b border-w4">
             {COLUMNAS.map((c) => (
-              <th key={c.titulo} className="text-left py-2 align-bottom">
+              // **`pr-4`** · F5.32: sin padding lateral las columnas se pisaban,
+              // «escalarConIntervalodemanda» a 1440 px.
+              <th key={c.titulo} className="text-left py-2 pr-4 align-bottom">
                 <div className="flex flex-col gap-1">
                   <Label as="div">{c.titulo}</Label>
                   {/* El origen · A4 muestra los derivados con el suyo. */}
@@ -252,7 +258,7 @@ export function CatalogView({ metrics, rejected, uso, cargando = false }: Props)
           {visibles.map((m) => (
             <tr key={m.id} className="border-b border-w3">
               {COLUMNAS.map((c) => (
-                <td key={c.titulo} className="py-2 text-ink text-celda">
+                <td key={c.titulo} className="py-2 pr-4 text-ink text-celda">
                   {c.leer(m)}
                 </td>
               ))}

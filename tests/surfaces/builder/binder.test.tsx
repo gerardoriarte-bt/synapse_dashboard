@@ -665,6 +665,11 @@ describe('agregar y quitar paneles', () => {
         name: 'Quitar Resumen',
       }),
     )
+    await userEvent.click(
+      within(screen.getByRole('group', { name: 'Confirmar quitar la pestaña' })).getByRole('button', {
+        name: 'Quitar pestaña',
+      }),
+    )
 
     await waitFor(() => expect(screen.queryByRole('tab', { name: 'Resumen' })).toBeNull())
     expect(screen.getByRole('tab', { name: 'Pestaña nueva' })).toHaveAttribute('aria-selected', 'true')
@@ -898,11 +903,11 @@ describe('§F4.11 · el resumen dice dónde y que NO decide', () => {
     expect(screen.getByText('Para publicar, validá.')).toBeInTheDocument()
   })
 
-  it('con problemas, el resumen dice que el servidor tiene la última palabra', async () => {
+  it('con problemas, el resumen dice que se guarda igual y que publicar pide corregirlos', async () => {
     servir({ tipo: 'series' })
     montar()
     await abrirPanel()
-    expect(await screen.findByText(/El servidor tiene la última palabra/)).toBeInTheDocument()
+    expect(await screen.findByText(/para publicar hay que corregirlos/)).toBeInTheDocument()
   })
 
   it('publicar NO está autorizado sin veredicto del servidor', async () => {
@@ -1103,5 +1108,112 @@ describe('la nota de lectura', () => {
 
     await waitFor(() => expect(cuerpos.length).toBeGreaterThan(0))
     expect(notaDelPut(cuerpos[cuerpos.length - 1])).toBe(NOTA)
+  })
+})
+
+// ── UNA PESTAÑA SIN PANELES LLEGA CON `panels: null` · 2026-10-19 ─────────────
+//
+// Medido en QA: el borrador de UA MX tenía una pestaña vacía y el editor decía
+// «Elegí un dashboard» con el dashboard elegido arriba. El servicio arma la
+// lista con un mapa, y una clave ausente es un slice nil de Go.
+describe('el borrador con una pestaña vacía', () => {
+  it('abre el editor · `panels: null` es una pestaña sin paneles', async () => {
+    servir()
+    server.use(
+      http.get(`${API}/admin/layouts/:id`, () =>
+        ok({ ...detalle, tabs: [{ ...detalle.tabs[0], panels: null }] }),
+      ),
+    )
+    montar()
+    await componer()
+    expect(screen.queryByText('Elegí un dashboard para abrir su editor.')).toBeNull()
+  })
+
+  it('un detalle que no se puede leer se dice como ERROR, no como «elegí un dashboard»', async () => {
+    servir()
+    server.use(http.get(`${API}/admin/layouts/:id`, () => ok({ ...detalle, tabs: 'roto' })))
+    montar()
+    await userEvent.click(await screen.findByRole('button', { name: /Overview/ }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Abrir el editor de Overview' }))
+    expect(await screen.findByText('No se pudo abrir este borrador')).toBeInTheDocument()
+    expect(screen.queryByText('Elegí un dashboard para abrir su editor.')).toBeNull()
+  })
+})
+
+// ── UNIDADES DISTINTAS EN UN SOLO EJE · F5.25, 2026-10-19 ──────────────────
+//
+// Decidido por el humano: el builder avisa y ofrece otro gráfico. Con dos
+// series, «Combinado»; con más, «Múltiplos», porque `combo` dibuja las dos
+// primeras y perdería la tercera sin avisar.
+describe('series con unidades distintas', () => {
+  const multi = {
+    id: 'm-6', tenant_id: 't-1', key: 'media_efficiency_12m', name: 'Eficiencia de medios',
+    shape: 'multi_series', family: 'media', layer: 'GOLD', source: 'Ads API',
+    base: 'x', min_grain: 'month', dimensions: [], catalog_version: 1, prose_instruction: '',
+  }
+  const repertorioDeSeries = [
+    { id: 'multiline', name: 'Multilínea', shapes: ['multi_series'], supports_band: false, minimums: [] },
+    { id: 'combo', name: 'Combinado', shapes: ['multi_series'], supports_band: false, minimums: [] },
+    { id: 'smallmult', name: 'Múltiplos', shapes: ['multi_series'], supports_band: false, minimums: [] },
+  ]
+  const serie = (label: string, unit: string) => ({ label, unit, points: [{ t: '2026-09-01', v: 1 }, { t: '2026-10-01', v: 2 }] })
+
+  function conSeries(series: ReturnType<typeof serie>[]) {
+    servir({ tipo: 'series', metricId: 'm-6' })
+    server.use(
+      http.get(`${API}/admin/tenants/:id/catalog`, () => ok([...metricas, multi])),
+      http.get(`${API}/config/plots`, () => ok(repertorioDeSeries)),
+      http.get(`${API}/admin/tenants/:id/roles/composition`, () =>
+        ok([{ id: 'r-admin', tenant_id: 't-1', name: 'admin', tab_ids: [], hidden_metric_ids: [], layout_overrides: {}, user_count: 1 }]),
+      ),
+      http.get(`${API}/admin/layouts/:id/preview`, () =>
+        ok({
+          layout_id: 'l-2', dashboard_id: 'd-1', status: 'draft', role: { id: 'r-admin', name: 'admin' },
+          tabs: [{
+            id: 'tab-a', name: 'Resumen', key: 'resumen', operational_question: '¿Cómo vamos?', sort_order: 1, icon: '', chat_suggestions: [],
+            panels: [{ id: 'p-1', metric_id: 'm-6', type: 'series', col_start: 1, col_span: 6, row_span: 4, options: {}, note: '', chart: '' }],
+          }],
+          period: '2026-10',
+          payloads: {
+            'p-1': {
+              status: 'AVAILABLE',
+              value: { shape: 'multi_series', series },
+              governance: { base: 'x', layer: 'GOLD', source: 'Ads API', freshness: '2026-10-07T00:00:00Z', catalog_version: 1 },
+            },
+          },
+        }),
+      ),
+    )
+  }
+
+  it('con dos series avisa y ofrece «Combinado», que DISPARA', async () => {
+    conSeries([serie('Inversión', 'USD'), serie('ROAS', 'x')])
+    montar()
+    await abrirPanel()
+    const col = await abrir('Cómo se ve')
+    const aviso = await col.findByRole('note', { name: 'Unidades distintas' })
+    expect(within(aviso).getByText(/USD y x/)).toBeInTheDocument()
+    await userEvent.click(within(aviso).getByRole('button', { name: 'Usar «Combinado»' }))
+    expect(col.getByRole('button', { name: 'Serie temporal · Combinado' })).toHaveAttribute('aria-pressed', 'true')
+    // Ya no está en un solo eje: el aviso se va.
+    expect(col.queryByRole('note', { name: 'Unidades distintas' })).toBeNull()
+  })
+
+  it('con tres series ofrece «Múltiplos» · combo perdería la tercera', async () => {
+    conSeries([serie('Inversión', 'USD'), serie('Ventas', 'USD'), serie('ROAS', 'x')])
+    montar()
+    await abrirPanel()
+    const col = await abrir('Cómo se ve')
+    const aviso = await col.findByRole('note', { name: 'Unidades distintas' })
+    expect(within(aviso).getByRole('button', { name: 'Usar «Múltiplos»' })).toBeInTheDocument()
+  })
+
+  it('con una sola unidad no avisa nada', async () => {
+    conSeries([serie('Inversión', 'USD'), serie('Ventas', 'USD')])
+    montar()
+    await abrirPanel()
+    const col = await abrir('Cómo se ve')
+    await waitFor(() => expect(col.getByText(/Cada opción está dibujada con el dato/)).toBeInTheDocument())
+    expect(col.queryByRole('note', { name: 'Unidades distintas' })).toBeNull()
   })
 })

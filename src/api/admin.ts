@@ -269,6 +269,10 @@ export type TabDeLayout = {
   orden: number
   /** Vacío significa «la ven todos los roles». */
   roles: string[]
+  /** El ícono y las preguntas sugeridas · se leen para que guardar no los borre
+   *  (2026-10-19): el `PUT` deja vacío lo que no llega. */
+  icono: string
+  sugerencias: string[]
 }
 
 export type LayoutDetalle = {
@@ -597,8 +601,16 @@ export function adaptarDetalle(w: WireLayoutDetail): LayoutDetalle {
         pregunta: t.tab.operational_question ?? '',
         orden: t.tab.sort_order,
         roles: t.tab.role_ids ?? [],
+        icono: t.tab.icon ?? '',
+        sugerencias: t.tab.chat_suggestions ?? [],
       },
-      panels: t.panels.map(adaptarPanel),
+      // **`null` es «sin paneles»** · 2026-10-19. Una pestaña vacía llega con
+      // `"panels": null`: el servicio arma la lista con `byTab[tab.ID]` y una
+      // clave ausente es un slice nil de Go. Leerlo con `.map` reventaba el
+      // detalle entero, y con él el editor del borrador · medido en QA, con
+      // «+ Pestaña» como único paso. La consola y la vista previa no lo
+      // necesitan: las arma `make(…, 0)` y siempre llega `[]`.
+      panels: (t.panels ?? []).map(adaptarPanel),
     })),
   }
 }
@@ -638,6 +650,12 @@ export function adaptarValidacion(w: WireValidationResult): ResultadoDeValidacio
  *  que averiguar si era una prueba débil o un cambio sin efecto. Era lo segundo. */
 export type TabParaGuardar = {
   id?: string
+  /** **La clave estable** · 2026-10-19. Sin ella el servicio la deriva del
+   *  nombre en cada guardado, y renombrar una pestaña la cambiaba: un rol con
+   *  `tab_keys` dejaba de verla. Ausente sólo en una pestaña nueva. */
+  clave?: string
+  icono: string
+  sugerencias: string[]
   nombre: string
   pregunta: string
   orden: number
@@ -658,10 +676,15 @@ function aCuerpo(tabs: readonly TabParaGuardar[]): A['LayoutUpdateRequest'] {
   return {
     tabs: tabs.map((t) => ({
       ...(t.id === undefined ? {} : { id: t.id }),
+      ...(t.clave === undefined ? {} : { key: t.clave }),
       name: t.nombre,
       operational_question: t.pregunta,
       sort_order: t.orden,
       role_ids: t.roles,
+      // **Explícitos, aunque vacíos** · como `chart` y `note`: el `PUT` arma la
+      // pestaña con lo que llega, y lo que no viaja queda vacío.
+      icon: t.icono,
+      chat_suggestions: t.sugerencias,
       panels: t.panels.map((p) => ({
         ...(p.id === undefined ? {} : { id: p.id }),
         metric_id: p.metricId,
@@ -818,6 +841,8 @@ function adaptarPreview(w: WirePreview): PreviewDeRol {
         pregunta: t.operational_question ?? '',
         orden: t.sort_order,
         roles: [],
+        icono: t.icon ?? '',
+        sugerencias: t.chat_suggestions ?? [],
       },
       paneles: t.panels.map((x) => ({
         id: x.id,
@@ -960,6 +985,18 @@ export const adminApi = {
         },
       ),
     ),
+
+  /** **La forma corta del cliente** · F5.47, 2026-10-20 · `PUT /admin/tenants/{tenantId}`.
+   *  Vacía la saca: el cliente vuelve a no tenerla y la pantalla muestra el id
+   *  corto. **No se devuelve nada**: la respuesta trae la infraestructura del
+   *  cliente y lo que se refresca es la lista, que es de donde leen la barra y
+   *  las cards. */
+  editarFormaCorta: async (tenantId: string, formaCorta: string): Promise<void> => {
+    await pedir<WireTenantSettings>(`/admin/tenants/${encodeURIComponent(tenantId)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ label: formaCorta.trim() }),
+    })
+  },
 
   /** Las solicitudes PENDIENTES · la cola de A3. Una página de 100: la cola
    *  pendiente es corta por naturaleza, y si algún día no entra, el total que
@@ -1275,6 +1312,8 @@ export type WireAgent = A['AgentAdmin']
 export type WireFeed = A['Feed']
 export type WireMaterializeRun = A['MaterializeRun']
 export type WireUser = A['User']
+/** Lo que `PUT /admin/tenants/{tenantId}` devuelve y el front lee · F5.47. */
+export type WireTenantSettings = { id: string; name: string; label: string }
 export type WireUsersPlatform = A['UsersPlatform']
 export type WireSchemaCheck = A['SchemaCheck']
 

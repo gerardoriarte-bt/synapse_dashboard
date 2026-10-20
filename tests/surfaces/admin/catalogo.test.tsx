@@ -103,7 +103,10 @@ describe('§7.3 · el inventario de lo que la plataforma puede afirmar', () => {
     const fila = screen.getByText('Ventas').closest('tr')
     expect(fila).not.toBeNull()
     const celdas = within(fila as HTMLElement)
-    expect(celdas.getByText('escalar')).toBeInTheDocument()
+    // **Con su nombre de producto** · F5.32: el identificador del contrato
+    // —`escalar`— no es un rótulo.
+    expect(celdas.getByText('Cifra única')).toBeInTheDocument()
+    expect(celdas.queryByText('escalar')).toBeNull()
     expect(celdas.getByText('GOLD')).toBeInTheDocument()
     expect(celdas.getByText('ERP + Analítica de sitio')).toBeInTheDocument()
     // Texto ya redactado, pasa tal cual · el front no lo traduce.
@@ -229,7 +232,7 @@ describe('§7.3 · el filtro', () => {
     await screen.findByText('Ventas')
 
     expect((container.textContent ?? '').toLowerCase()).toContain(
-      'el filtro por estado no se puede ofrecer',
+      'todavía no se puede filtrar por estado',
     )
 
     // Y filtra de verdad: un `select` que no filtra se ve igual que uno que sí.
@@ -330,7 +333,7 @@ describe('los estados de A4 · §8', () => {
     await abrirCatalogo()
 
     await screen.findByText(/No se pudo cargar el catálogo/i)
-    expect(screen.getByLabelText('Cliente')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Cliente activo' })).toBeInTheDocument()
     // «Clientes» desde el 2026-10-09: la ficha se unió a la lista.
     expect(screen.getByRole('button', { name: 'Clientes' })).toBeInTheDocument()
   })

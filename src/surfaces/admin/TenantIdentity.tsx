@@ -95,7 +95,7 @@ export function TenantIdentity({ tenant, estado, version, format }: Props) {
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
-        <Label as="div">Identidad del tenant</Label>
+        <Label as="div">Identidad del cliente</Label>
         {tenant !== null && <span className={VALOR}>{tenant.nombre}</span>}
         {/* **El chip sólo cuando el cliente está en alta.** Un chip que se pinta
             siempre no distingue nada, y «ACTIVO» al lado del nombre de cada

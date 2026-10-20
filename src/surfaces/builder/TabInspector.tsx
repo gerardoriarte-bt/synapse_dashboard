@@ -7,7 +7,12 @@
  *
  *  **Quién la ve** sigue siendo de la pestaña · D5 de la auditoría del
  *  2026-10-06. Vacío es «todos los roles», que es lo que declara el cable.
+ *
+ *  **Quitar una pestaña con paneles se confirma** · F5.24, 2026-10-19. Era un
+ *  clic, se llevaba todos sus paneles y el borrador se autoguarda: no había
+ *  cómo volver. Una pestaña vacía se quita directo, porque no hay qué perder.
  */
+import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
 import { Accion } from '../../render/primitives/Accion'
@@ -23,14 +28,21 @@ type Props = {
   problemas: readonly string[]
   onEditar: (campo: 'nombre' | 'pregunta', valor: string) => void
   onRoles: (roles: string[]) => void
+  /** Las preguntas sugeridas del chat de esta pestaña · F5.33. */
+  onSugerencias: (sugerencias: string[]) => void
   onMover: (direccion: -1 | 1) => void
   onQuitar: () => void
 }
 
 const CAMPO = 'h-8 bg-w1 text-ink text-cuerpo rounded-md px-3 border border-w5'
 
-export function TabInspector({ tab, indice, total, roles, problemas, onEditar, onRoles, onMover, onQuitar }: Props) {
+/** Lo que acepta el servicio · `MaxChatSuggestionsPerTab` en `7324b26`. */
+const MAX_SUGERIDAS = 8
+
+export function TabInspector({ tab, indice, total, roles, problemas, onEditar, onRoles, onSugerencias, onMover, onQuitar }: Props) {
   const n = tab.panels.length
+  const [confirmando, setConfirmando] = useState(false)
+  const nombre = tab.nombre === '' ? 'la pestaña sin nombre' : `«${tab.nombre}»`
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
@@ -38,11 +50,38 @@ export function TabInspector({ tab, indice, total, roles, problemas, onEditar, o
           <Label as="div">Pestaña</Label>
           {tab.id === undefined && <Label as="div">Nueva · se crea al guardar</Label>}
           <div className="ml-auto">
-            <Accion variante="peligro" tamano="compacta" onClick={onQuitar} etiqueta={`Quitar ${tab.nombre}`}>
-              Quitar pestaña
-            </Accion>
+            {!confirmando && (
+              <Accion
+                variante="peligro"
+                tamano="compacta"
+                onClick={() => (n === 0 ? onQuitar() : setConfirmando(true))}
+                etiqueta={`Quitar ${tab.nombre}`}
+              >
+                Quitar pestaña
+              </Accion>
+            )}
           </div>
         </div>
+        {confirmando && (
+          <div className="flex flex-col gap-2" role="group" aria-label="Confirmar quitar la pestaña">
+            <Ayuda>{`¿Quitar ${nombre} y ${n === 1 ? 'su panel' : `sus ${String(n)} paneles`}? El borrador se guarda solo.`}</Ayuda>
+            <div className="flex items-center gap-2">
+              <Accion
+                variante="peligro"
+                tamano="compacta"
+                onClick={() => {
+                  setConfirmando(false)
+                  onQuitar()
+                }}
+              >
+                Quitar pestaña
+              </Accion>
+              <Accion tamano="compacta" onClick={() => setConfirmando(false)}>
+                Cancelar
+              </Accion>
+            </div>
+          </div>
+        )}
         <span className="font-display text-titulo leading-titulo tracking-titulo font-medium text-ink">
           {tab.nombre === '' ? 'Pestaña sin nombre' : tab.nombre}
         </span>
@@ -78,6 +117,32 @@ export function TabInspector({ tab, indice, total, roles, problemas, onEditar, o
         {problemas.map((p) => (
           <Ayuda key={p}>{p}</Ayuda>
         ))}
+      </section>
+
+      {/* **Las preguntas que el chat de la pestaña ofrece al abrir** · F5.33,
+          2026-10-19. El cable las tenía y nadie podía escribirlas: el chat de
+          pestaña arrancaba vacío. Una por renglón; el servicio descarta las
+          vacías y rechaza más de ocho. */}
+      <section className="flex flex-col gap-1">
+        <Label id="tab-sugeridas" as="div">
+          Preguntas sugeridas para el chat
+        </Label>
+        <textarea
+          aria-labelledby="tab-sugeridas"
+          rows={3}
+          value={tab.sugerencias.join('\n')}
+          placeholder="Una por renglón · ¿Qué plataforma rindió más este mes?"
+          onChange={(e) => onSugerencias(e.target.value.split('\n'))}
+          className="bg-w1 text-ink text-cuerpo rounded-md px-3 py-2 border border-w5"
+        />
+        {(() => {
+          const n = tab.sugerencias.filter((s) => s.trim() !== '').length
+          return n > MAX_SUGERIDAS ? (
+            <Ayuda>{`Son ${String(n)}; el chat ofrece hasta ${String(MAX_SUGERIDAS)}. Así no se guarda.`}</Ayuda>
+          ) : (
+            <Ayuda>{`Se ofrecen al abrir el chat de esta pestaña · hasta ${String(MAX_SUGERIDAS)}.`}</Ayuda>
+          )
+        })()}
       </section>
 
       {roles.length > 0 && (

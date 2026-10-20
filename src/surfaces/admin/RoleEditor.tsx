@@ -31,7 +31,7 @@
  *
  *  **§PEN:A2** · A2 · «Ficha de cliente» · DIVERGE · ver docs/AUDITORIA-2026-09-21-pen-vs-chat-y-ficha.md §9.
  */
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
 import { Accion } from '../../render/primitives/Accion'
@@ -125,6 +125,18 @@ export function RoleEditor({
   const [nombre, setNombre] = useState('')
   const [elegidas, setElegidas] = useState<string[]>([])
   const [ocultas, setOcultas] = useState<string[]>([])
+  const campoNombre = useRef<HTMLInputElement>(null)
+
+  // **El formulario se abre A LA VISTA** · F5.27, 2026-10-19. Se dibuja debajo
+  // de todas las tarjetas y la pantalla no se movía: «Editar» parecía no hacer
+  // nada, con el formulario a una o dos pantallas de distancia. Se lleva a la
+  // vista y el foco entra al nombre, que es lo primero que se edita.
+  // `scrollIntoView` no existe en jsdom, de ahí el `?.`.
+  useEffect(() => {
+    if (editando === null) return
+    campoNombre.current?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
+    campoNombre.current?.focus({ preventScroll: true })
+  }, [editando])
 
   const abrir = (r: Rol | null) => {
     setEditando(r?.id ?? '')
@@ -258,7 +270,41 @@ export function RoleEditor({
         </ul>
       )}
 
-      <ul className="flex flex-col gap-6 m-0 p-0 list-none">
+      {/* **Antes de las tarjetas** · F5.34, 2026-10-19. Iba al final, debajo de
+          cinco tarjetas casi iguales, y los duplicados se veían antes que el
+          aviso que los explica. */}
+      {repetidos.length > 0 && (
+        <Ayuda>
+          {`Hay roles con el mismo nombre en distinta caja: ${repetidos
+            .map((r) => `«${r.nombre}»`)
+            .join(', ')}. Para los permisos cuentan como uno solo; conviene dejar uno y pasarle los usuarios del otro.`}
+        </Ayuda>
+      )}
+
+      {/* **Las reglas de los roles, una vez y arriba** · 2026-10-20. Medido en QA:
+          «Ve TODAS las pestañas…» se repetía en cuatro tarjetas y «No se borra
+          con usuarios asignados…» en tres. Cada tarjeta conserva su marca
+          —«Todas las pestañas», el botón Borrar ausente— y la explicación vive
+          acá. **Y no con cero roles** · §PEN:A2, 2026-09-30: una advertencia
+          sobre algo que no está presente. */}
+      {roles.length > 0 && (
+        // **Una línea, como el dibujo** · auditoría del 2026-10-20: en tres
+        // párrafos pesaba más que las tarjetas que explica.
+        <p className="m-0 flex items-start gap-2 font-mono text-nota leading-rotulo tracking-rotulo uppercase text-dim">
+          {/* `info` de línea · hereda el color. */}
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-px shrink-0" aria-hidden>
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 16v-4" />
+            <path d="M12 8h.01" />
+          </svg>
+          <span>
+            Un rol sin pestañas elegidas ve TODAS las pestañas · Ocultar una métrica NO es un permiso: lo que un
+            rol no recibe, no le llega · Un rol con usuarios no se borra: reasignalos primero
+          </span>
+        </p>
+      )}
+
+      <ul className="flex flex-col gap-2 m-0 p-0 list-none">
         {roles.map((r) => (
           <RoleCard
             key={r.id}
@@ -271,34 +317,6 @@ export function RoleEditor({
           />
         ))}
       </ul>
-
-      {/* **La advertencia va una vez, no por rol** —es una propiedad del campo y
-          repetirla por fila la vuelve decoración— **y no va cuando no hay ningún
-          rol** · §PEN:A2, corregido en la auditoría del 2026-09-30.
-
-          Se vio al abrir la ficha en alta: debajo del vacío aparecía una
-          advertencia sobre ocultar métricas en un cliente que no tiene roles ni
-          métricas que ocultar, y el frame de alta no dibuja nada en ese hueco.
-          Es la misma clase que los otros cuatro hallazgos de mirar la pantalla:
-          **una carencia o una advertencia sobre algo que no está presente**.
-
-          Y de paso es el único texto de esta superficie que sigue nombrando
-          plomería —«el servidor», «el batch»—; se deja donde tiene sentido
-          porque ahí le habla a quien compone, que es quien va a usar el campo. */}
-      {roles.length > 0 && (
-        <Ayuda>
-          Ocultar una métrica NO es un permiso: al servir el dato se vuelve a verificar qué
-          puede ver cada rol.
-        </Ayuda>
-      )}
-
-      {repetidos.length > 0 && (
-        <Ayuda>
-          {`Hay roles con el mismo nombre en distinta caja: ${repetidos
-            .map((r) => `«${r.nombre}»`)
-            .join(', ')}. Para los permisos cuentan como uno solo; conviene dejar uno y pasarle los usuarios del otro.`}
-        </Ayuda>
-      )}
 
       {editando !== null && (
         <form
@@ -318,6 +336,7 @@ export function RoleEditor({
           <label className="flex flex-col gap-1">
             <Label as="div">Nombre</Label>
             <input
+              ref={campoNombre}
               type="text"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}

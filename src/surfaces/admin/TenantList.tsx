@@ -32,7 +32,16 @@
  *  Snowflake, su rol técnico y su llave privada, y **ninguna de las tres aparece
  *  acá ni va a aparecer**: esa capa la opera el equipo interno.
  *
- *  ── UNA LISTA PARA ELEGIR, NO UNA TABLA · 2026-10-09 ───────────────────────
+ *  ── CARDS · 2026-10-20 ────────────────────────────────────────────────────
+ *
+ *  **La lista lado a lado con la ficha se reabrió** por decisión humana del
+ *  2026-10-20 —«un scroll muy grande, se puede organizar la mayoría de la info
+ *  en cards»—: Clientes es una grilla de cards y la ficha, una página propia ·
+ *  §5 de `docs/PROPUESTA-2026-10-20-identidad-del-cliente-y-ficha.md`. Cada card
+ *  lleva la identidad —placa, nombre y forma corta— y el estado operativo, y
+ *  la card entera abre la ficha. La del cliente activo dice «En uso».
+ *
+ *  ── UNA LISTA PARA ELEGIR, NO UNA TABLA · 2026-10-09 · reemplazado ────────
  *
  *  **Decisión humana (P1 de `AUDITORIA-2026-10-08-admin-clientes-y-usuarios.md`):
  *  la lista va a la izquierda y la ficha del elegido a la derecha**, en la misma
@@ -51,35 +60,26 @@
 import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
-import { Opcion } from '../../render/primitives/Opcion'
 import type { Formatter } from '../../render/format'
 import type { Tenant } from '../../api/admin'
+import { PlacaDeCliente } from '../PlacaDeCliente'
 import { distintivo } from './distintivo'
 
-/** **Las dos columnas de A1 que el diseño pide y no se pintan** · el aviso
- *  salió de la pantalla el 2026-10-06 (decisión humana: «si no suman para el
- *  uso, quitar»). Quedan acá:
- *
- *  · Estado: los valores ya están decididos —activo, piloto y suspendido—;
- *    falta que el servicio lo envíe (`status`, «reservado … nil en v1»).
- *  · Vertical: son dos campos, la vertical y su plantilla de origen; falta que
- *    la plantilla entre en alcance (`vertical`, también nil en v1).
- */
-
-/** `null` es «nunca cargó» y `0` es «recién». No se colapsan. */
+/** La frescura del feed más atrasado, en palabras. **`null` es «nunca» y `0`
+ *  es «recién»**: confundirlas pinta una fuente muerta como sana. */
 function frescura(horas: number | null, estado: string): string {
   if (horas === null) return estado === 'unknown' ? 'Nunca cargó' : '—'
   if (horas < 1) return 'Recién'
-  return `${String(Math.round(horas))} h`
+  return `Hace ${String(Math.round(horas))} h`
 }
 
 type Props = {
   tenants: readonly Tenant[]
   /** Del locale de quien mira · F1.13b. */
   format: Formatter
-  /** El cliente cuya ficha está a la derecha. */
+  /** El cliente activo · su card dice «En uso». */
   seleccionado: string | null
-  /** Elegir un cliente · su ficha se abre al lado. */
+  /** Abrir la ficha de un cliente, que lo vuelve el activo. */
   onElegir: (id: string) => void
   /** Mientras la lista vuela. */
   cargando?: boolean
@@ -92,38 +92,38 @@ export function TenantList({ format, tenants, seleccionado, onElegir, cargando =
     (t) =>
       q === '' ||
       t.nombre.toLowerCase().includes(q) ||
-      t.formaCorta.toLowerCase().includes(q) ||
+      distintivo(t).toLowerCase().includes(q) ||
       t.id.toLowerCase().startsWith(q),
   )
 
   return (
-    <section className="flex flex-col gap-3" aria-label="Clientes" aria-busy={cargando}>
-      {/* El conteo dice CARGANDO y no una cifra: «3 clientes» mientras carga es
-          afirmar algo que todavía no llegó. */}
-      <Label as="div">
-        {cargando ? 'Clientes · cargando' : `Clientes · ${String(tenants.length)}`}
-      </Label>
-
-      <input
-        type="search"
-        value={busqueda}
-        onChange={(e) => setBusqueda(e.target.value)}
-        aria-label="Buscar cliente"
-        placeholder="BUSCAR CLIENTE"
-        className="font-mono text-label leading-rotulo tracking-rotulo uppercase text-ink bg-transparent border border-w3 rounded-md px-2 py-1"
-      />
+    <section className="flex flex-col gap-4" aria-label="Clientes" aria-busy={cargando}>
+      <div className="flex items-center justify-between gap-4">
+        {/* El conteo dice CARGANDO y no una cifra: «3 clientes» mientras carga es
+            afirmar algo que todavía no llegó. */}
+        <Label as="div">
+          {cargando ? 'Clientes · cargando' : `Clientes · ${String(tenants.length)}`}
+        </Label>
+        <input
+          type="search"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          aria-label="Buscar cliente"
+          placeholder="Buscar cliente"
+          className="h-8 w-64 rounded-md border-0 bg-elev px-3 font-body text-celda text-ink placeholder:text-dim"
+        />
+      </div>
 
       {/* **Esqueleto y nunca spinner** · la nota de `A1 · Clientes · cargando`:
-          la lista ya sabe qué forma va a llegar y la promete. Cuatro filas, como
-          el dibujo, sin animación, y barras de anchos distintos para que se lean
-          como texto que viene y no como un patrón. */}
+          la grilla ya sabe qué forma va a llegar y la promete. Barras de anchos
+          distintos para que se lean como texto que viene y no como un patrón. */}
       {cargando && (
-        <ul className="flex flex-col gap-2 list-none m-0 p-0">
-          {[0, 1, 2, 3].map((f) => (
-            <li key={f} aria-hidden="true" className="flex flex-col gap-2 rounded-md border border-w3 px-3 py-2">
-              <div className="bg-w2 rounded-xs h-3 w-3/4" />
-              <div className="bg-w2 rounded-xs h-3 w-1/3" />
-              <div className="bg-w2 rounded-xs h-3 w-2/3" />
+        <ul className="m-0 grid list-none grid-cols-3 gap-4 p-0">
+          {[0, 1, 2].map((f) => (
+            <li key={f} aria-hidden="true" className="flex flex-col gap-3 rounded-xl border border-w3 bg-panel p-5">
+              <div className="h-3 w-3/4 rounded-xs bg-w2" />
+              <div className="h-3 w-1/3 rounded-xs bg-w2" />
+              <div className="h-3 w-2/3 rounded-xs bg-w2" />
             </li>
           ))}
         </ul>
@@ -137,32 +137,78 @@ export function TenantList({ format, tenants, seleccionado, onElegir, cargando =
           <Ayuda>Un cliente aparece acá cuando se lo da de alta; después se elige su plantilla.</Ayuda>
         </div>
       )}
-      {tenants.length > 0 && visibles.length === 0 && (
-        <Ayuda>Ningún cliente coincide con la búsqueda.</Ayuda>
-      )}
+      {tenants.length > 0 && visibles.length === 0 && <Ayuda>Ningún cliente coincide con la búsqueda.</Ayuda>}
 
-      <ul className="flex flex-col gap-2 list-none m-0 p-0">
-        {visibles.map((t) => (
-          <li key={t.id}>
-            <Opcion
-              forma="fila"
-              elegida={t.id === seleccionado}
-              onClick={() => onElegir(t.id)}
-              etiqueta={`${t.nombre} · ${distintivo(t)}`}
-            >
-              <span className="flex flex-col gap-1 min-w-0">
-                <span className="text-ink text-celda">{t.nombre}</span>
-                <Label as="span">{distintivo(t)}</Label>
-                {/* Usuarios, feed y publicación en una línea: son el estado
-                    operativo, que es lo que decide a cuál entrar. «Nunca» y no
-                    un guion: que un cliente jamás haya publicado es un hecho. */}
-                <Label as="span">
-                  {`${String(t.usuarios)} ${t.usuarios === 1 ? 'usuario' : 'usuarios'} · feed ${frescura(t.peorFuenteHoras, t.peorFuente)} · ${t.publicadoEn === null ? 'nunca publicó' : `publicó ${format.calendar(t.publicadoEn)}`}`}
-                </Label>
-              </span>
-            </Opcion>
-          </li>
-        ))}
+      <ul className="m-0 grid list-none grid-cols-3 gap-4 p-0">
+        {visibles.map((t) => {
+          const enUso = t.id === seleccionado
+          return (
+            <li key={t.id} className="flex">
+              <button
+                type="button"
+                onClick={() => onElegir(t.id)}
+                aria-pressed={enUso}
+                aria-label={`${t.nombre} · ${distintivo(t)}`}
+                className={
+                  'flex w-full cursor-pointer flex-col gap-4 rounded-xl border bg-panel p-5 text-left hover:bg-w1 ' +
+                  (enUso ? 'border-acc' : 'border-w3')
+                }
+              >
+                <span className="flex w-full items-center gap-3">
+                  <PlacaDeCliente nombre={t.nombre} />
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="truncate font-display text-titulo leading-titulo tracking-titulo font-medium text-ink">
+                      {t.nombre}
+                    </span>
+                    <Label as="span">{distintivo(t)}</Label>
+                  </span>
+                  {enUso && (
+                    <span className="shrink-0 rounded-sm border border-acc px-2 py-0.5 font-mono text-nota leading-rotulo tracking-rotulo uppercase text-ink">
+                      En uso
+                    </span>
+                  )}
+                </span>
+
+                <span aria-hidden className="h-px w-full bg-w3" />
+
+                {/* Usuarios, feed y publicación: el estado operativo, que es lo
+                    que decide a cuál entrar. «Nunca» y no un guion: que un
+                    cliente jamás haya publicado es un hecho. */}
+                <span className="grid w-full grid-cols-[auto_1fr_auto] gap-6">
+                  <span className="flex flex-col gap-1">
+                    <Label as="span">Usuarios</Label>
+                    <span className="font-body text-cuerpo text-ink">{t.usuarios}</span>
+                  </span>
+                  <span className="flex flex-col gap-1">
+                    <Label as="span">Feed más atrasado</Label>
+                    <span className="font-body text-cuerpo text-ink">{frescura(t.peorFuenteHoras, t.peorFuente)}</span>
+                  </span>
+                  <span className="flex flex-col gap-1">
+                    <Label as="span">Última publicación</Label>
+                    <span className="font-body text-cuerpo text-ink">
+                      {t.publicadoEn === null ? 'Nunca' : format.calendar(t.publicadoEn)}
+                    </span>
+                  </span>
+                </span>
+
+                {/* **Con forma de acción** · auditoría del 2026-10-20: era un
+                    rótulo y no se leía como algo que se aprieta. Sigue sin ser
+                    un botón propio —la card entera lo es— y por eso es un
+                    `span` con el traje de `Accion`. */}
+                <span className="flex w-full justify-end">
+                <span className="flex h-7 items-center gap-1.5 rounded-md border border-w5 px-2.5 font-body text-celda font-semibold text-ink">
+                  Abrir ficha
+                  {/* `arrow-right` de línea · hereda el color. */}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                  </svg>
+                </span>
+                </span>
+              </button>
+            </li>
+          )
+        })}
       </ul>
     </section>
   )

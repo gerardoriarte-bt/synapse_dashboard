@@ -4828,9 +4828,9 @@ dijo que `executive_summary` no se había regenerado. Era falso: la ruta devuelv
 **202 y corre asíncrono**, y se consultó antes de que terminara. El `status` de la
 corrida —`/admin/materialize/runs`— es lo que dice cuándo mirar.
 
-**Espera del backend.** **Desplegar `3651d70` en QA con `DD_MATERIALIZE_PROSE_ENABLED=true` y decir qué commit quedó** · pedido el 2026-10-14 en `docs/MENSAJE-2026-10-14-backend-desplegar-en-qa.md`. **No es `DD_MATERIALIZE_ENABLED`**: el backend contestó que ésa ya estaba, y son dos banderas independientes —ésa prende el programador—. El ofrecimiento original de encenderla y avisar está en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
+**Espera del backend.** **Desplegar `7324b26` en QA, migrado y con `DD_MATERIALIZE_PROSE_ENABLED=true`, y decir qué commit quedó** · pedido el 2026-10-19 en `docs/MENSAJE-2026-10-19-backend-desplegar-y-fuente-de-la-prosa.md`, que reemplaza al del 2026-10-14 (`docs/MENSAJE-2026-10-14-backend-desplegar-en-qa.md`, que pedía `3651d70`). **No es `DD_MATERIALIZE_ENABLED`**: el backend contestó que ésa ya estaba, y son dos banderas independientes —ésa prende el programador—. El ofrecimiento original de encenderla y avisar está en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
 
-**Lo tiene: DESPLIEGUE** · prender el flag en QA junto con el despliegue de `3651d70`. **Fecha, no código.**
+**Lo tiene: DESPLIEGUE** · prender el flag en QA junto con el despliegue de `7324b26`. **Fecha, no código.**
 
 **Medido contra `de881e1` el 2026-09-29** · `ProseGeneratorEnabledFromEnv` lee el flag con default `false`.
 
@@ -4839,6 +4839,8 @@ corrida —`/admin/materialize/runs`— es lo que dice cuándo mirar.
 **Medido contra `3651d70` el 2026-10-14** · con el flag en el `.env` del backend —fuera de git— el programador generó septiembre y octubre, y los catorce meses anteriores se cargaron a mano, que es lo mismo que «Cargar meses» de A5: `executive_summary` y `decisions` quedaron en 16 de 16 meses con `agent:Synapse UA` · `docs/BITACORA-2026-10-14.md` §7.
 
 Hasta entonces los dos paneles de prosa se servían con el valor de la semilla, **en inglés**, y salían `DEGRADED`. **Con `3651d70` eso cambia**: la migración bloquea la semilla, así que desplegado sin el flag los dos salen **`BLOCKED`**. Desplegar uno sin el otro empeora la consola de UA.
+
+**Medido contra `7324b26` el 2026-10-19** · **SIGUE ⚠️.** El flag sigue con default `false`, y su respuesta del 14 lo dice: prenderlo es del entorno de QA, no de código (`RESPUESTA-2026-10-14-backend-instruccion-de-prosa.md`, punto 1). Con el flag, acá la prosa sale `AVAILABLE` con `agent:Synapse UA`, y desde `5af3b86` acepta una instrucción por métrica · `AUDITORIA-2026-10-19-prosa-por-metrica.md`. **Despliegue con el flag pedido de nuevo** en `MENSAJE-2026-10-19-backend-desplegar-y-fuente-de-la-prosa.md`, que reemplaza al del 14.
 
 **Criterio de aceptación.**
 - Los dos paneles traen `governance.source = agent:<nombre>` y un `headline`, no el valor de la semilla.
@@ -7718,6 +7720,501 @@ Dos cosas del entorno que parecían fallos y no lo eran: jsdom abre en 1024px, o
 sea seis columnas, así que la grilla colapsaba —F1.30 funcionando— y el alto no
 es un `height` sino `gridRow: span N` sobre `gridAutoRows`. Y la celda se busca
 por su panel y no por índice, porque `readingOrder` ordena el DOM.
+
+### ➕ F5.22 ✅ Los deltas del mes en curso se dicen parciales
+
+**Descripción.** Las tarjetas comparan el mes en curso contra el anterior
+completo —«VS MES ANTERIOR −74,5 %» el 19-oct— mientras el selector dice «no
+compara contra uno cerrado». §1.1 de `docs/AUDITORIA-2026-10-19-experiencia-de-usuario.md`.
+La comparación viene calculada del backend; el front sabe qué período está
+abierto por `open_period` de `/config/me`.
+
+**Criterio de aceptación.** Con el período elegido igual a `open_period`, cada
+comparación contra el mes anterior lleva un rótulo que dice que es parcial, y el
+selector deja de afirmar que no compara. Una prueba con un período abierto y una
+con uno cerrado.
+
+**Verificado el 2026-10-19** · `surfaces/console/comparativoParcial.ts` marca
+`parcial` en cada comparativo cuando el período elegido es `open_period`, y
+`KpiBody` escribe «· mes incompleto» al lado del rótulo. **El delta no se toca**:
+es del servicio. El selector dice ahora «sus comparaciones son parciales».
+`parcial` está declarado en `synapse-api.yaml` como del front, no del cable.
+Prueba de punta a punta en `tests/surfaces/console/comparativoParcial.test.tsx`;
+quitar la marca en la consola o en el cuerpo mata las dos de pantalla.
+
+**Lo que sigue siendo del backend**: comparar contra los mismos días del período
+anterior. Hasta entonces la consola lo dice en vez de corregirlo.
+
+### ➕ F5.23 ✅ «Ver detalle» por día en orden de fecha
+
+**Descripción.** `DrillSheet.tsx` le pasa `params={}` a `BarsBody`, que ordena
+`desc`, así que el desglose por día sale por valor. El servicio lo manda en
+orden de fecha (`ORDER BY 1` en `drilldown.go`). §1.3 de la auditoría.
+
+**Criterio de aceptación.** Las dimensiones de tiempo —día y semana— se dibujan
+en el orden en que llegan; las nominales, por valor. Una prueba por cada una.
+
+**Verificado el 2026-10-19** · `DrillSheet.tsx` pasa `orden: 'natural'` cuando
+todas las etiquetas son fechas ISO —se decide por el dato, porque la dimensión
+llega como `day` sin decir que es temporal—. Dos pruebas en
+`tests/surfaces/console/drilldown.test.tsx` §8; volver a `params={{}}` mata la de
+día y no la de plataforma.
+
+### ➕ F5.24 ✅ Cambiar el rol, suspender y quitar una pestaña piden confirmación
+
+**Descripción.** Las tres se aplican con un clic y sin deshacer: el `<select>`
+de rol de la tabla de usuarios, «Suspender», y «Quitar pestaña» en el builder,
+que borra sus paneles y autoguarda. §1.2 de `docs/AUDITORIA-2026-10-19-usabilidad-qa.md`.
+
+**Criterio de aceptación.** Cada una pide un segundo paso que nombra a quién o
+qué afecta antes de mandar nada, y se puede cancelar. Las pruebas verifican que
+el primer clic NO dispara la llamada y que el segundo sí.
+
+**Verificado el 2026-10-19** · `FilaDeUsuario.tsx` deja el rol elegido y la
+suspensión PENDIENTES, con «¿Pasar a X al rol Y?» o «¿Suspender a X?»; reactivar
+sigue directo. `TabInspector.tsx` confirma quitar una pestaña con paneles y dice
+cuántos; la vacía se quita directo. Pruebas en `usuariosAcciones.test.tsx`,
+`admin.test.tsx`, `editor.test.tsx` y `binder.test.tsx`; quitar cada
+confirmación mata la suya.
+
+### ➕ F5.25 ✅ Series de unidades distintas no comparten un eje
+
+**Descripción.** La escala por unidad del #18 vale sólo para `smallmult`. En el
+gráfico de líneas por defecto el ROAS (`x`) queda plano en cero junto a millones
+de dólares. §1.4 de la auditoría.
+
+**Criterio de aceptación.** Un `seriesMultiples` cuyas series traen más de una
+unidad no se dibuja con un solo eje: cada unidad tiene su escala. Una prueba con
+`USD` y `x` que verifique que la serie chica no queda aplastada.
+
+**Espera a diseño · 2026-10-19.** No se construye todavía: es la tercera pregunta
+de §15 de `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` —«si un
+multiserie de unidades distintas debería ser otro gráfico»—, abierta desde el
+14. Las tres salidas cambian lo que el gráfico afirma: **dos escalas en el mismo
+gráfico** (y cómo se ve que son dos), **caer a múltiplos pequeños** cuando las
+unidades difieren, o que **el builder avise** y ofrezca `combo`, que el
+repertorio ya tiene. Elegir una acá sería resolver una decisión de diseño.
+
+**Decidido por el humano el 2026-10-19: la tercera** —el builder avisa y ofrece
+otro gráfico—.
+
+**Verificado el 2026-10-19** · `unidadesMezcladas` (`catalog/plots.ts`) detecta
+un multiserie con más de una unidad declarada. En «Cómo se ve», con un gráfico de
+un solo eje elegido, un aviso nombra las unidades y ofrece **«Combinado» con dos
+series y «Múltiplos» con más**: `combo` dibuja las dos primeras —`SeriesBody`
+las reparte por orden— y con Inversión, Ventas y ROAS perdería el ROAS sin
+avisar. Cada opción de un solo eje dice «Un solo eje para USD y x». Mirado con
+«Eficiencia de medios · 12m» de UA en local. Pruebas en
+`tests/catalog/unidadesMezcladas.test.ts` y `tests/surfaces/builder/binder.test.tsx`;
+sugerir siempre `combo` mata la de tres series.
+
+**El criterio de arriba pedía otra cosa** —una escala por unidad en el gráfico
+de un eje— y se reemplazó por la decisión. **Lo que queda abierto en `combo`**:
+con tres o más series dibuja las dos primeras sin decirlo; ya no se lo ofrece
+para ese caso, pero quien lo elija a mano lo sigue viendo así.
+
+### ➕ F5.26 ✅ El riel del chat muestra la consulta recién hecha
+
+**Descripción.** Después de preguntar el riel sigue en «Todavía no preguntaste
+nada», y al reabrir la hoja la conversación no está. El hilo se guarda; el riel
+no se vuelve a pedir. §1.6 de la auditoría.
+
+**Criterio de aceptación.** Al terminar una respuesta la lista de hilos se
+vuelve a pedir, y la consulta aparece en el riel sin recargar.
+
+**Verificado el 2026-10-19** · `useChat.ts` invalida `['chat', 'hilos']` al
+llegar el `fin`, igual que al borrar. Prueba en
+`tests/surfaces/console/rielSeActualiza.test.tsx`; sin la invalidación, el riel
+sigue en «Todavía no preguntaste nada».
+
+### ➕ F5.27 ✅ «Editar» un rol abre a la vista
+
+**Descripción.** El formulario se dibuja debajo de todas las tarjetas
+(`RoleEditor.tsx`) y la pantalla no se mueve. §2.2 de la auditoría.
+
+**Criterio de aceptación.** Al abrir el editor de un rol, el formulario queda a
+la vista y con el foco en su primer campo.
+
+**Verificado el 2026-10-19** · `RoleEditor.tsx` lleva el campo del nombre a la
+vista y le da el foco al abrir. Prueba en `tests/surfaces/admin/roles.test.tsx`;
+sin el `focus`, falla.
+
+### ➕ F5.28 ✅ El copy del chrome sin notas de desarrollo ni inglés suelto
+
+**Descripción.** «TENANT», «CATALOG VERSION», «DAY · WEEK · PLATFORM», «El
+filtro por estado no se puede ofrecer todavía», «publicar no despliega nada:
+cambiá qué versión ve la consola», «1 PESTAÑAS». §4.2 y §4.3 de la auditoría.
+**No incluye** el copy del catálogo, la semilla ni el agente: ése se pide a
+quien lo emite (regla del 2026-09-25).
+
+**Criterio de aceptación.** Ningún literal nuestro en inglés en el chrome, las
+notas para desarrolladores fuera de pantalla, y los plurales concuerdan.
+
+**Verificado el 2026-10-19** · cambiados: «Identidad del cliente», «Todavía no se
+puede filtrar por estado», el texto de publicar —«Al publicar, es la versión
+que ven los roles en la consola»—, el del detalle por fila, el de la validación
+y el del chat vacío, sin «SQL». «1 pestaña» concuerda. Las pruebas que ataban el
+texto viejo se actualizaron.
+
+**Lo que NO es nuestro y quedó escrito:** tres literales del `.pen` —«CATALOG
+VERSION», «LAS CONSULTAS QUEDAN EN EL TENANT», «ESTA VISTA NO CAMBIA LA
+COMPOSICIÓN»— van como propuesta en §16 de
+`docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md`. Y «DAY · WEEK · PLATFORM»
+son las claves del cable: el servicio tiene el rótulo (`Label: "Plataforma"` en
+`drilldown.go`) y no lo serializa.
+
+### ➕ F5.29 ✅ El ⓘ nombra su panel y no tapa la cifra
+
+**Descripción.** Los catorce botones se llaman «Base y procedencia» para un
+lector de pantalla, y el recuadro se abre encima del número. §1.8 y §4.1.
+
+**Criterio de aceptación.** El nombre accesible incluye el título del panel, y
+el recuadro no cubre la cifra principal.
+
+**Verificado el 2026-10-19** · `MetaInfo.tsx` se llama «Base y procedencia de
+<panel>» y se abre hacia arriba (`bottom-full`), sobre la cabecera y no sobre la
+cifra. Prueba en `tests/render/Panel/metaInfo.test.tsx`; volver al nombre fijo la
+mata.
+
+### ➕ F5.30 ✅ Los períodos con nombre de mes
+
+**Descripción.** El selector lista «2026-09», el id del cable.
+
+**Criterio de aceptación.** Cada opción dice el mes y el año en el locale del
+tenant; el valor sigue siendo el id.
+
+**Verificado el 2026-10-19** · `format.periodName` redacta `YYYY-MM` como
+«septiembre 2026» con el locale del tenant y deja tal cual lo que no es un mes.
+Prueba en `tests/surfaces/console/periodoEnCurso.test.tsx`.
+
+### ➕ F5.31 ✅ Las dimensiones del detalle · la auditoría pedía cambiar una decisión ya escrita
+
+**Descripción.** La auditoría de experiencia (§4.4) contó catorce pedidos de
+`drilldown/dimensions` al abrir la consola y propuso pedirlos al abrir el
+detalle. **Ya estaba decidido, y por una razón que sigue en pie**:
+`ConsoleContainer.tsx`, sobre `useDrillSupport`, lo declara «una lectura por
+panel, y está declarada como ruido». «Un CTA sin manejador no se pinta» exige
+saber ANTES de dibujar el pie qué paneles admiten detalle, y no hay ruta batch.
+Cada lectura es un mapa en memoria del servicio y la caché las deduplica.
+
+**El arreglo verdadero no es del front**: que el catálogo llene `dimensions`,
+que existe en el contrato y llega vacío en las 21 métricas. Con eso el CTA se
+decide sin ningún pedido.
+
+**Criterio de aceptación.** Queda escrito por qué no se cambia y dónde está el
+arreglo.
+
+**Verificado el 2026-10-19** · leído en `ConsoleContainer.tsx` y en la
+descripción de la ruta en `contracts/synapse-console-wire.yaml` («es una lectura
+barata, y eso es lo que la hace útil al pintar»). Pedir la columna a datos queda
+para cuando se junte con otro pedido del catálogo.
+
+### ➕ F5.32 ✅ El catálogo legible: columnas y formas
+
+**Descripción.** En A4 las columnas se pisan («escalarConIntervalodemanda») y la
+forma se muestra con el identificador del contrato. §3 de la auditoría de QA.
+
+**Criterio de aceptación.** Ninguna columna se superpone a 1440 px, y la forma
+se muestra con su nombre de producto.
+
+**Verificado el 2026-10-19** · mirado a 1440 px en local: con `pr-4` en cada
+celda ninguna columna se pisa. La forma sale de `nombreDeForma`, la misma tabla
+del builder. Prueba en `tests/surfaces/admin/catalogo.test.tsx`; volver al
+identificador la mata.
+
+### ➕ F5.33 ✅ El chat vacío ofrece preguntas
+
+**Descripción.** La hoja del chat arranca con una línea. La pestaña trae
+`chat_suggestions` en el cable. §1.9.
+
+**Criterio de aceptación.** Con sugerencias en la pestaña, el chat vacío las
+muestra y una toca envía la pregunta; sin sugerencias, no se inventa ninguna.
+
+**Verificado el 2026-10-19** · `ChatSheet` recibe `sugerenciasDePestana` desde
+`layout.data.tab.chatSugerencias` y las ofrece en el chat de pestaña; las de
+panel siguen saliendo de su ruta. **Y se pueden escribir**: «Preguntas sugeridas
+para el chat» en los ajustes de la pestaña, una por renglón, con el aviso de las
+ocho que acepta el servicio. Que viajen en el `PUT` lo hizo F5.37 —antes guardar
+las borraba—. Pruebas en `tests/surfaces/console/rielSeActualiza.test.tsx` y
+`tests/surfaces/builder/sugeridasDePestana.test.tsx`.
+
+**Hoy ninguna pestaña de UA tiene sugeridas** —medido en local: `[]`—, así que
+el chat se ve igual hasta que alguien las escriba.
+
+### ➕ F5.34 ✅ La ficha de cliente se recorre por secciones
+
+**Descripción.** Identidad, roles, usuarios, acceso y subprocesadores son una
+sola página de seis pantallas. Y el aviso de roles duplicados por mayúscula va
+al final de las tarjetas. §2 de la auditoría de QA.
+
+**Criterio de aceptación.** La ficha ofrece saltar a cada sección, y el aviso de
+roles duplicados aparece antes de las tarjetas.
+
+**Verificado el 2026-10-19** · `Admin.tsx` pinta una fila «Secciones de la
+ficha» —Identidad, Roles, Usuarios, Acceso a datos, Subprocesadores— que lleva a
+cada bloque, y `RoleEditor.tsx` pone el aviso de duplicados antes de las
+tarjetas. A2 no dibuja la fila: §16 de las divergencias. Pruebas en
+`tests/surfaces/admin/roles.test.tsx`; con el aviso al final, la suya falla.
+
+### ➕ F5.35 ✅ El menú de dashboards dice cuál es el de por defecto
+
+**Descripción.** El menú no marca el dashboard por defecto, y su pie —«SIN
+PESTAÑAS NI PANELES DE LOS DEMÁS · FALTA EN EL CONTEXTO»— no se entiende.
+
+**Criterio de aceptación.** El de por defecto lleva su marca y el pie dice en
+palabras de quien lee qué muestra el menú.
+
+**Verificado el 2026-10-19** · `DashboardPanel.tsx` marca «Por defecto» con
+`esDefault` —la palabra de B1— y el pie dice «Las pestañas se cuentan sólo del
+dashboard abierto». C6 no dibuja la marca: anotado en §16 de las divergencias.
+Prueba en `tests/surfaces/console/dashboards.test.tsx`; quitar la marca la mata.
+
+### ➕ F5.36 ✅ El builder no muestra un error como instrucción
+
+**Descripción.** Un borrador que no se podía leer decía «Elegí un dashboard».
+Arreglado en `87ae5db` junto con `panels: null`; queda escrito acá para que la
+tarea exista en el plan.
+
+**Criterio de aceptación.** Un detalle que falla se muestra como error con
+reintento · `tests/surfaces/builder/binder.test.tsx`, «un detalle que no se
+puede leer se dice como ERROR».
+
+### ➕ F5.37 ✅ Guardar desde el builder no pisa la clave, el ícono ni las sugeridas de una pestaña
+
+**Descripción.** Encontrado el 2026-10-19 al preparar F5.33, leyendo
+`buildTabsAndPanels` en `7324b26`: el `PUT` arma cada pestaña SÓLO con lo que
+llega. Sin `key` la deriva del nombre —**renombrar una pestaña le cambiaba la
+clave**, y un rol con `tab_keys` dejaba de verla—, y sin `icon` ni
+`chat_suggestions` los deja vacíos. El builder no mandaba ninguno de los tres.
+Es la misma trampa que `chart` (2026-09-29) y `note` (2026-10-14).
+
+**Criterio de aceptación.** El detalle lee los tres, el borrador los arrastra y
+el cuerpo del `PUT` los manda; una pestaña nueva va sin clave para que el
+servicio la derive. Pruebas que fijen el cuerpo.
+
+**Verificado el 2026-10-19** · `adaptarDetalle` y `adaptarPreview` leen `icono` y
+`sugerencias`, `sembrar` arrastra clave, ícono y sugeridas, y `aCuerpo` manda
+`key`, `icon` y `chat_suggestions`. `TabInput` del cable los declara. Pruebas en
+`tests/api/admin.test.tsx` —el cuerpo entero y el viaje de ida y vuelta— y
+`tests/surfaces/builder/borrador.test.ts`; quitar `key` del cuerpo o las
+sugeridas de `sembrar` mata la suya.
+
+### ➕ F5.38 ✅ El cliente de trabajo viaja en la URL
+
+**Descripción.** El cliente elegido en administración y builder vive en memoria:
+recargar la página, abrir una pestaña nueva o compartir un enlace vuelve al
+cliente propio sin aviso. §1 y A de `docs/AUDITORIA-2026-10-19-cambio-de-cliente.md`.
+
+**Criterio de aceptación.** Elegir un cliente pone `?cliente=<id>` en la URL de
+administración y builder, y una URL con ese parámetro arranca en ese cliente. Un
+id que no está en la lista se ignora. Prueba que recargue con el parámetro.
+
+**Verificado el 2026-10-19** · `ClienteDeTrabajoProvider` vive debajo del router y lleva `?cliente=<id>` en administración y builder; la consola no lo lleva. Mirado en local: recargar `/admin?cliente=…` arranca en ese cliente y el parámetro acompaña al pasar de pantalla. Pruebas en `tests/surfaces/useClienteDeTrabajo.test.tsx`; sin la escritura en la URL, la suya falla.
+
+### ➕ F5.39 ✅ El cliente propio se marca
+
+**Descripción.** En la lista de clientes y en el selector nada dice cuál es el
+cliente de la sesión, que es el que muestra la consola. §1 y B.
+
+**Criterio de aceptación.** El cliente propio lleva «tu cliente» en la lista de
+Clientes y en el selector de la cabecera.
+
+**Verificado el 2026-10-19** · «tu cliente» en la lista de Clientes y en la opción del selector. Prueba en `tests/surfaces/cambioDeCliente.test.tsx` y `tests/surfaces/admin/admin.test.tsx`.
+
+**Reemplazada el 2026-10-20 por F5.43**, por decisión humana: «eso de mostrar Terpel pero tu sesión es Under Armour es confuso». Ya no hay un cliente «de la sesión» marcado aparte: hay uno, el activo, y lo dice la barra.
+
+### ➕ F5.40 ✅ «Volver al dashboard» dice adónde va
+
+**Descripción.** Con otro cliente de trabajo, el botón lleva a la consola del
+cliente propio sin decirlo: es el salto que más confunde. §1 y C.
+
+**Criterio de aceptación.** Si el cliente de trabajo no es el propio, el botón
+nombra el cliente al que vuelve, y su nombre accesible lo dice entero.
+
+**Verificado el 2026-10-19** · con otro cliente de trabajo dice «Volver a la consola de <propio>», y su nombre accesible agrega «el cliente de tu sesión». Mirado en local en administración y builder. Pruebas en `tests/surfaces/cambioDeCliente.test.tsx` y la cadena en `admin.test.tsx`; sin el dato en la cabecera, falla.
+
+**Reemplazada el 2026-10-20 por F5.44**: el botón se fue, y la consola es una entrada del menú de trabajo. El humano encontró raro «volver a UA México» estando en Terpel.
+
+### ➕ F5.41 ✅ Usuarios arranca en el cliente de trabajo
+
+**Descripción.** La pantalla es de plataforma y su filtro arranca en «Todos los
+clientes»: se pasa de trabajar sobre un cliente a ver todos sin aviso. §1 y D.
+
+**Criterio de aceptación.** Con un cliente de trabajo elegido, el filtro de
+Usuarios arranca en ese cliente, y «Todos los clientes» sigue a un clic.
+
+**Verificado el 2026-10-19** · `UserList` toma `clienteInicial` mientras nadie toca el filtro; un cliente sin usuarios arranca en todos. Pruebas en `tests/surfaces/admin/usuariosAcciones.test.tsx`; sin el valor inicial, falla.
+
+### ➕ F5.42 ✅ «Cargar meses» nombra el cliente
+
+**Descripción.** La acción escribe sobre el cliente elegido y el botón no lo
+nombra; al bajar, el selector queda fuera de la vista. §1 y E.
+
+**Criterio de aceptación.** El botón dice «Cargar meses de <cliente>».
+
+**Verificado el 2026-10-19** · el botón dice «Cargar 1 mes de <cliente>». Prueba en `tests/surfaces/admin/admin.test.tsx`; sin el nombre, falla.
+
+### ➕ F5.43 ✅ La barra del cliente activo, la misma en las tres superficies
+
+**Descripción.** El cliente vivía en tres lugares distintos —un rótulo junto al
+logotipo en la consola, un selector a la derecha del título en administración,
+una caja junto al logotipo en el builder— y se reconocía sólo por el nombre: en
+local los dos clientes se llaman «Under Armour México» y el selector decía lo
+mismo antes y después de cambiar. §3 y §4 de
+`docs/PROPUESTA-2026-10-20-identidad-del-cliente-y-ficha.md`, dibujada en el
+`.pen` y aprobada por el humano el 2026-10-20: «si cambia de cliente, todo el
+entorno es de uso exclusivo de ese cliente».
+
+**Criterio de aceptación.** Debajo del navbar de consola, administración y
+builder hay una barra con el cliente activo —placa con su monograma, nombre y
+forma corta (o el id corto si la forma corta no dice nada que el nombre no
+diga)— y «Cambiar de cliente» a la derecha cuando hay más de uno. Cada opción
+del selector lleva la misma identidad. En la consola, elegir un cliente que no es
+el de la sesión NO pinta los paneles de la sesión: declara el bloqueo con su
+razón y lleva a administración con ese cliente. Pruebas que lo sigan disparando.
+
+**Verificado el 2026-10-20** · `BarraDeCliente`, `SelectorDeCliente` y
+`PlacaDeCliente` en `src/surfaces/`, montadas por `AdminChrome`,
+`BuilderChrome` y `Topbar`. Mirado en local con un operador contra `7324b26`:
+en la consola, elegir el otro cliente declara «La consola de … todavía no se
+puede abrir» y esconde título, pestañas, selector de dashboard y «Preguntar»;
+«Abrir … en administración» llega con `?cliente=` puesto. Pruebas en
+`tests/surfaces/cambioDeCliente.test.tsx` y
+`tests/surfaces/console/barraDeCliente.test.tsx`; cinco mutaciones mueren, y una
+sexta sobrevivió porque el `?cliente=` escrito a mano era redundante con el
+proveedor —se sacó—.
+
+**Lo que espera al backend:** que la consola muestre otro cliente (un token por
+cliente) y el logo, que reemplaza al monograma.
+
+### ➕ F5.44 ✅ El perfil es un ícono, y la consola entra al menú de trabajo
+
+**Descripción.** Pedido humano del 2026-10-20: «reducir el botón del perfil a un
+ícono de usuario». Y «Volver al dashboard» nombraba dos clientes a la vez cuando
+se trabajaba sobre otro.
+
+**Criterio de aceptación.** El disparador del menú de la persona es un ícono, con
+el nombre en su nombre accesible y en el panel. El menú de trabajo (≡) ofrece
+«Consola · Dashboard» antes de administración y del builder, y «Volver al
+dashboard» no existe.
+
+**Verificado el 2026-10-20** · `IconoDeUsuario` reemplaza a `ChipDeUsuario` en
+`IdentityBlock` y `UserMenu`; `trabajo.ts` suma el grupo de la consola y
+`VolverAlDashboard.tsx` se borró. Pruebas en `tests/surfaces/identidad.test.tsx`,
+`menuDeTrabajo.test.tsx` y `navegacionDeTrabajo.test.tsx`.
+
+### ➕ F5.45 ✅ Clientes en cards, y la ficha como página con su resumen
+
+**Descripción.** La lista de clientes iba al lado de la ficha (decisión del
+2026-10-09) y la ficha era una sola columna de seis pantallas, todo con el mismo
+peso. El humano la reabrió el 2026-10-20: «un scroll muy grande … organizar la
+mayoría de la info en cards». §5 de
+`docs/PROPUESTA-2026-10-20-identidad-del-cliente-y-ficha.md`.
+
+**Criterio de aceptación.** Clientes es una grilla de cards: placa, nombre,
+forma corta, usuarios, feed más atrasado y última publicación, y «En uso» en la
+del cliente activo. La card entera abre la ficha y vuelve activo a ese cliente.
+La ficha es una página con migaja de vuelta a la grilla y cuatro cards de
+resumen —identidad, roles, usuarios, acceso a datos— que llevan a su sección.
+Las cifras del resumen son conteos de lo que la ficha ya trajo, y mientras no
+llegan dicen «cargando».
+
+**Verificado el 2026-10-20** · `TenantList` pasó a grilla de cards,
+`ResumenDeFicha.tsx` reemplaza a la fila «Secciones de la ficha» de F5.34, y
+`distintivo` usa la misma regla que la barra (`formaCortaVisible`). Mirado en
+local con un operador contra `7324b26`, abriendo las dos cards y volviendo por
+la migaja. **Abrirla lo encontró roto**: con `?ficha=1` en la URL, la card del
+cliente en uso no abría la ficha —el proveedor del cliente de trabajo escribe la
+URL en el mismo clic y la pisaba—. La ficha abierta pasó a ser estado de la
+pantalla, y hay una prueba que monta el proveedor real y falla con la versión
+anterior. Pruebas en `tests/surfaces/admin/admin.test.tsx`,
+`listaDeClientes.test.tsx`, `carga.test.tsx` y `roles.test.tsx`.
+
+**Recargar vuelve a la grilla**: el cliente activo sí sobrevive, porque lo lleva
+la URL.
+
+### ➕ F5.46 ✅ La ficha se lee: roles plegados, cada regla una vez
+
+**Descripción.** Medido en QA el 2026-10-20: seis tarjetas de rol abiertas
+repetían la misma pestaña, «Ve TODAS las pestañas…» cuatro veces y «No se borra
+con usuarios asignados…» tres. §5 de
+`docs/PROPUESTA-2026-10-20-identidad-del-cliente-y-ficha.md`.
+
+**Criterio de aceptación.** Cada rol es una fila plegada —nombre, usuarios,
+«Todas las pestañas» o «No recibe · N» si corresponde, paneles, Editar y
+Borrar— y el detalle se abre. Las tres reglas de los roles se dicen una vez,
+arriba de la lista. Los subprocesadores van plegados con sus nombres a la vista.
+
+**Verificado el 2026-10-20** · `RoleCard` plegada, las reglas en `RoleEditor` y
+`Subprocessors` con los tres nombres en la fila. Mirado en local. Cinco
+mutaciones mueren —abierta por defecto, sin la marca de «todas», sin los nombres
+de los subprocesadores, Borrar con usuarios y la card de roles llevando a otra
+sección—. Pruebas en `tests/surfaces/admin/composicion.test.tsx`,
+`roles.test.tsx` y `enAlta.test.tsx`.
+
+**Lo que la propuesta pedía y no hizo falta**: el rol del usuario ya era un solo
+selector. La medición de QA leyó las opciones del `<select>` como texto de la
+fila; está corregido en la propuesta.
+
+### ➕ F5.47 ✅ La forma corta se edita desde la ficha
+
+**Descripción.** La forma corta (`label`) es lo que distingue a dos clientes con
+el mismo nombre en la barra, el selector y las cards, y en QA está vacía o igual
+al nombre. El servicio la edita con `PUT /admin/tenants/{tenantId}` desde
+`6e521cc` —leído con `git log -S` sobre su handler—, y no estaba transcripto ni había dónde cargarla. §3 de
+`docs/PROPUESTA-2026-10-20-identidad-del-cliente-y-ficha.md`.
+
+**Criterio de aceptación.** La card de identidad de la ficha muestra la forma
+corta y ofrece «Editar forma corta»: un campo que guarda con `PUT` al cliente de
+la ficha, recortando espacios, y vacía la saca. Después de guardar, la barra y
+las cards la muestran sin recargar. Cancelar no manda nada.
+
+**Verificado el 2026-10-20** · la ruta medida contra `7324b26` —puesta, vuelta a
+vacía, 400 con un id que no es UUID y 404 con uno que no existe— y transcripta
+en `contracts/synapse-admin-wire.yaml` **sin** las claves de Snowflake que la
+respuesta trae. `adminApi.editarFormaCorta` y `useEditTenantShortName`, que
+invalida `/admin/tenants` y `/config/me`. Prueba en
+`tests/surfaces/admin/admin.test.tsx` que sigue la cadena hasta el `PUT`; cuatro
+mutaciones mueren.
+
+### ➕ F5.48 ✅ Lo que la auditoría del diseño encontró en la ficha y en las cards
+
+**Descripción.** Los cinco puntos del front de §4 de
+`docs/AUDITORIA-2026-10-20-diseno-de-la-identidad-del-cliente.md`: la ficha sin
+título ni «Abrir en builder», la identidad repetida debajo de las cards, las
+reglas de los roles en tres párrafos, la versión del catálogo ausente de la card
+y «Abrir ficha» que no se leía como acción.
+
+**Criterio de aceptación.** La ficha lleva el nombre del cliente como título con
+su forma corta y «Abrir en builder», que navega. La identidad completa no se
+pinta hasta «Ver identidad», y se puede ocultar. Las reglas de los roles van en
+una línea. La card de identidad dice la versión del catálogo. «Abrir ficha» se
+ve como acción.
+
+**Verificado el 2026-10-20** · mirado en local con un operador contra `7324b26`.
+Pruebas en `tests/surfaces/admin/admin.test.tsx` y `enAlta.test.tsx`; cinco
+mutaciones mueren. Los puntos 6 y 7 de la auditoría —el chrome de
+administración y la fila de contexto del builder— son anteriores a la propuesta
+y quedan para decidir.
+
+### ➕ F5.49 ✅ Las pantallas y el rol, en el navbar
+
+**Descripción.** En administración y en el builder las pantallas iban como
+pestañas debajo del título, y el rol del builder en una fila bajo la barra del
+cliente. El `.pen` las pone en el navbar. Puntos 6 y 7 de
+`docs/AUDITORIA-2026-10-20-diseno-de-la-identidad-del-cliente.md`; decidido por
+el humano el 2026-10-20: «tiene más sentido para la navegación».
+
+**Criterio de aceptación.** El navbar de administración lleva sus cuatro
+pantallas, y el del builder sus tres, el dashboard y el rol que se editan. Las
+dos navegaciones usan el mismo componente y el registro de acción. Guardar,
+validar y publicar siguen en su fila.
+
+**Verificado el 2026-10-20** · `NavDeSuperficie.tsx`, montado por `AdminChrome` y
+`BuilderChrome`. Mirado en local en Catálogo y en el editor. Pruebas en
+`tests/surfaces/navegacionDeTrabajo.test.tsx` y `builder/builder.test.tsx` que
+afirman que la navegación y el rol van antes de la barra; fallan con los chromes
+anteriores.
 
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 

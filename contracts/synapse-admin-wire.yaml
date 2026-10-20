@@ -170,6 +170,66 @@ paths:
                         items: { $ref: '#/components/schemas/TenantOption' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+  /admin/tenants/{tenantId}:
+    x-verificado-en: 7324b26
+    put:
+      tags: [admin]
+      operationId: updateTenantSettings
+      summary: Editar la ficha del cliente · nombre, forma corta, locale, moneda y huso
+      description: |
+        **Medida el 2026-10-20 contra el binario de `7324b26`**, con la base
+        local: `label` puesto y vuelto a vacío, un id que no es UUID (**400**) y
+        uno que no existe (**404** «tenant no encontrado»).
+
+        **Edición parcial**: lo que no viaja no cambia (`TenantSettingsInput`,
+        punteros `nil` = sin cambio). `label` **puede ir vacío** —vuelve a no
+        tener forma corta—; `name`, `locale`, `currency` y `timezone` no, y
+        `timezone` tiene que ser una zona IANA.
+
+        **La usa el campo «Forma corta» de la ficha** · F5.47. Las otras cuatro
+        claves se transcriben porque el servicio las acepta, no porque el front
+        las mande hoy.
+
+        **La respuesta NO se transcribe entera, a propósito.** Es
+        `TenantAdminDTO`, que trae la cuenta, el usuario, el rol y la URL de
+        Snowflake: vocabulario de infraestructura que administración no muestra
+        (§7.3). Se declaran las claves que el front lee; el resto existe y no se
+        usa. Lo que se refresca después de guardar es `GET /admin/tenants`.
+      parameters:
+        - { $ref: '#/components/parameters/tenantId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                label: { type: string }
+                locale: { type: string }
+                currency: { type: string }
+                timezone: { type: string }
+      responses:
+        '200':
+          description: El cliente como quedó · sólo las claves que el front lee
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [id, name, label]
+                        properties:
+                          id: { type: string, format: uuid }
+                          name: { type: string }
+                          label: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   /admin/tenants/{tenantId}/layouts:
     x-verificado-en: f70cec2
     get:
@@ -300,6 +360,81 @@ paths:
             Estaba sin declarar, y no es una omisión inocua: A2 recibe el
             `tenantId` de la banda de clientes, así que es el 404 que se ve si
             alguien llega con un id de una sesión vieja.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /admin/tenants/{tenantId}/catalog/{metricId}:
+    x-verificado-en: 7324b26
+    patch:
+      tags: [admin]
+      operationId: adminUpdateProseInstruction
+      summary: Escribe la instrucción de una métrica de prosa
+      description: |
+        **Llegó en `5af3b86`**, respuesta al
+        `MENSAJE-2026-10-14-backend-instruccion-de-prosa.md`. **Sólo la
+        instrucción**: el resto de los campos editoriales del catálogo sigue sin
+        ruta. Medido el 2026-10-19 contra `7324b26`, todos los casos de abajo.
+
+        **Cadena vacía o sólo espacios la borra** y vuelve al texto fijo de la
+        clave —el servicio hace `TrimSpace`—. **Un cuerpo sin el campo también
+        la borra**: el `struct` no distingue ausente de vacío, así que el front
+        manda siempre el campo, con lo que quiere que quede.
+
+        **Una métrica que no es `prose` acepta el vacío** (200) y rechaza el
+        texto (422): borrar algo que no hay no es un error.
+
+        **Pide la columna migrada.** Con `DB_AUTO_MIGRATE=false` sobre una base
+        anterior a `5af3b86`, contesta **500** con el SQL de Postgres en el
+        `error` —«column "prose_instruction" … does not exist»—, mientras
+        `/config/catalog` sigue en 200 porque lee con `SELECT *`. Es la forma en
+        que un despliegue sin migrar fallaría en QA.
+      parameters:
+        - { $ref: '#/components/parameters/tenantId' }
+        - name: metricId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prose_instruction:
+                  type: string
+                  maxLength: 2000
+                  description: Hasta 2000 **caracteres**, no bytes · medido con 2000 «é».
+      responses:
+        '200':
+          description: La métrica entera, con la instrucción ya recortada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/CatalogMetric' }
+        '403':
+          description: |
+            `AUTH_FORBIDDEN` «no puedes administrar otro cliente» · el
+            `tenantId` de la ruta no es el del token, salvo operador.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: |
+            `NOT_FOUND_METRIC` «métrica no encontrada» · también cuando la
+            métrica existe pero es de otro cliente: no se distingue.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '422':
+          description: |
+            `VALIDATION_PROSE_INSTRUCTION` · con texto sobre una métrica que no
+            es `prose`, o con más de 2000 caracteres.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -1754,7 +1889,7 @@ components:
             detalles sin avisar. Ver el cable de consola para el juego completo.
 
             Los de acá, declarados por ellos: `CONFLICT_NOT_DRAFT`,
-            `VALIDATION_LAYOUT`, `VALIDATION_CHAT_SUGGESTIONS`,
+            `VALIDATION_LAYOUT`, `VALIDATION_PROSE_INSTRUCTION`, `NOT_FOUND_METRIC`, `VALIDATION_CHAT_SUGGESTIONS`,
             `NOT_FOUND_LAYOUT`, `NOT_FOUND_ROLE`, `AUTH_DRAFT_PREVIEW`,
             `VALIDATION_THEME`, `VALIDATION_DASHBOARD_NOT_VISIBLE`,
             `CONFLICT_NO_PREVIOUS`, `CONFLICT_REVERT_SELF`,
@@ -2320,7 +2455,13 @@ components:
             properties:
               tab: { $ref: '#/components/schemas/LayoutTab' }
               panels:
-                type: array
+                type: [array, 'null']
+                description: |
+                  **`null` cuando la pestaña no tiene paneles**, no `[]` · medido
+                  en QA el 2026-10-19 y en local contra `7324b26`. Lo arma
+                  `byTab[tab.ID]` en `dd_layout_builder_service.go:508`, y una
+                  clave ausente es un slice nil. Pedido `[]` en
+                  `docs/MENSAJE-2026-10-19-backend-lo-que-ya-tiene-qa.md`.
                 items: { $ref: '#/components/schemas/LayoutPanel' }
 
     # ── LO QUE VA EN snake_case ──────────────────────────────────────────────
@@ -2370,6 +2511,17 @@ components:
         role_ids:
           type: array
           items: { type: string, format: uuid }
+        # ── Lo que el PUT pisa si no viaja · 2026-10-19, leído contra `7324b26` ──
+        #
+        # `buildTabsAndPanels` arma la pestaña SÓLO con lo que llega: sin
+        # `key` la deriva del nombre —renombrar le cambia la clave y un rol con
+        # `tab_keys` la pierde—, y sin `icon` ni `chat_suggestions` los deja
+        # vacíos. El builder no los mandaba.
+        icon: { type: string }
+        chat_suggestions:
+          type: array
+          description: 'Se recortan y se descartan las vacías. Hay un máximo por pestaña: 422 `VALIDATION_CHAT_SUGGESTIONS`.'
+          items: { type: string }
         panels:
           type: array
           items: { $ref: '#/components/schemas/PanelInput' }

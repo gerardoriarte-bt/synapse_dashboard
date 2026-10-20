@@ -130,6 +130,13 @@ async function abrirFicha() {
   await screen.findByText('CEO')
 }
 
+/** **La tarjeta del rol va plegada** · 2026-10-20: el detalle se abre. */
+async function abrirRol(nombre: string): Promise<HTMLElement> {
+  const li = screen.getAllByText(nombre).map((e) => e.closest('li')).find(Boolean) as HTMLElement
+  await userEvent.click(within(li).getByRole('button', { expanded: false }))
+  return li
+}
+
 describe('§7.3 · el vocabulario de los dos campos', () => {
   it('«pestañas vacío» se lee como VE TODAS, no como ninguna', async () => {
     // Es la diferencia entre un rol recién creado y un rol tapiado. Pintar
@@ -138,9 +145,11 @@ describe('§7.3 · el vocabulario de los dos campos', () => {
     montar()
     await abrirFicha()
 
+    // La tarjeta lo MARCA; la explicación va una vez, arriba de la lista.
     const ceo = screen.getByText('CEO').closest('li')
-    expect(within(ceo as HTMLElement).getByText(/Ve TODAS las pestañas/)).toBeInTheDocument()
+    expect(within(ceo as HTMLElement).getByText('Todas las pestañas')).toBeInTheDocument()
     expect(within(ceo as HTMLElement).queryByText(/0 pestañas/)).toBeNull()
+    expect(screen.getAllByText(/ve TODAS las pestañas/i)).toHaveLength(1)
   })
 
   it('nombra las pestañas del rol, no sus UUID', async () => {
@@ -150,8 +159,8 @@ describe('§7.3 · el vocabulario de los dos campos', () => {
 
     // Acotado a la lista: desde el 2026-09-25 el navbar pinta la identidad
     // —§PEN:A1— y el nombre del rol activo puede aparecer también ahí.
-    const planner = screen.getAllByText('Planner').map((e) => e.closest('li')).find(Boolean)
-    expect(within(planner as HTMLElement).getByText(/Resumen/)).toBeInTheDocument()
+    const planner = await abrirRol('Planner')
+    expect(within(planner).getByText(/Resumen/)).toBeInTheDocument()
     expect(container.textContent ?? '').not.toContain('tab-a')
   })
 
@@ -174,8 +183,8 @@ describe('§7.3 · el vocabulario de los dos campos', () => {
 
     // Acotado a la lista: desde el 2026-09-25 el navbar pinta la identidad
     // —§PEN:A1— y el nombre del rol activo puede aparecer también ahí.
-    const planner = screen.getAllByText('Planner').map((e) => e.closest('li')).find(Boolean)
-    expect(within(planner as HTMLElement).getByText(/Margen/)).toBeInTheDocument()
+    const planner = await abrirRol('Planner')
+    expect(within(planner).getByText(/Margen/)).toBeInTheDocument()
     expect(container.textContent ?? '').not.toContain('m-2')
   })
 })
@@ -190,7 +199,8 @@ describe('borrar · el conteo va ANTES del botón', () => {
     const ceo = screen.getByText('CEO').closest('li')
     expect(within(ceo as HTMLElement).getByText(/2 usuario\(s\)/)).toBeInTheDocument()
     expect(within(ceo as HTMLElement).queryByRole('button', { name: 'Borrar CEO' })).toBeNull()
-    expect(within(ceo as HTMLElement).getByText(/reasignalos primero/)).toBeInTheDocument()
+    // El porqué, una vez arriba de la lista y no en cada tarjeta · 2026-10-20.
+    expect(screen.getAllByText(/reasignalos primero/)).toHaveLength(1)
   })
 
   it('un rol sin usuarios sí lo ofrece, y el 204 se trata como ÉXITO', async () => {
@@ -281,6 +291,16 @@ describe('crear y editar', () => {
       tab_keys: ['tab-a-key'],
       hidden_metric_ids: ['m-2'],
     })
+  })
+
+  it('«Editar» lleva el foco al formulario · F5.27, se abría fuera de la vista', async () => {
+    base()
+    montar()
+    await abrirFicha()
+    const planner = screen.getAllByText('Planner').map((e) => e.closest('li')).find(Boolean)
+    await userEvent.click(within(planner as HTMLElement).getByRole('button', { name: 'Editar' }))
+    // El nombre precargado y con el foco: lo que se ve y lo que se edita primero.
+    await waitFor(() => expect(document.activeElement).toHaveValue('Planner'))
   })
 
   it('un rol sin nombre no se puede guardar, y se dice', async () => {
@@ -581,7 +601,10 @@ describe('el desglose de §9, desde la superficie · A2 §9', () => {
     montar()
     await abrirFicha()
 
-    // La tarjeta de Planner es la que oculta una métrica.
+    // La tarjeta de Planner es la que oculta una métrica; el enlace está en su
+    // detalle, que se abre.
+    await screen.findAllByText('Planner')
+    await abrirRol('Planner')
     await userEvent.click(await screen.findByRole('button', { name: /ver en el catálogo/i }))
 
     // **Navegó de verdad**, y se asserta por lo que CAMBIÓ: «Catálogo de
@@ -600,14 +623,56 @@ describe('el desglose de §9, desde la superficie · A2 §9', () => {
     conComposicion()
     montar()
     await abrirFicha()
-    // Una vez por tarjeta: son tres roles y los tres ven esa pestaña. Se
-    // asserta dentro de UNA, que es el ámbito que la afirma.
-    await screen.findAllByText('¿Cómo va el negocio?')
-    // Acotado a la lista: desde el 2026-09-25 el navbar pinta la identidad
-    // —§PEN:A1— y el nombre del rol activo puede aparecer también ahí.
-    const planner = screen.getAllByText('Planner').map((e) => e.closest('li')).find(Boolean) as HTMLElement
+    // Se asserta dentro de UNA tarjeta, que es el ámbito que la afirma, y
+    // abierta: el desglose va plegado desde el 2026-10-20.
+    await screen.findAllByText('Planner')
+    const planner = await abrirRol('Planner')
     expect(within(planner).getByText('¿Cómo va el negocio?')).toBeInTheDocument()
     // Y su conteo, que es la otra mitad del desglose.
     expect(within(planner).getByText('3 paneles')).toBeInTheDocument()
+  })
+})
+
+// ── LA FICHA, CON SU RESUMEN ARRIBA · 2026-10-20 ───────────────────────────
+// Reemplaza a la fila «Secciones de la ficha» de F5.34: cada card dice lo que
+// importa de su bloque y lleva a él.
+describe('la ficha por secciones', () => {
+  it('cada card del resumen lleva a su sección', async () => {
+    base()
+    montar()
+    await abrirFicha()
+    const destinos: string[] = []
+    const original = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = function (this: Element) {
+      destinos.push(this.id)
+    }
+    try {
+      await userEvent.click(within(screen.getByRole('region', { name: 'Resumen · Roles' })).getByRole('button', { name: 'Ver roles' }))
+      await userEvent.click(within(screen.getByRole('region', { name: 'Resumen · Usuarios' })).getByRole('button', { name: 'Ver usuarios' }))
+      // Un cuadro después: la sección de identidad no existe hasta abrirla, y se
+      // espera a pintar antes de ir a cualquiera.
+      await waitFor(() => expect(destinos).toEqual(['ficha-roles', 'ficha-usuarios']))
+    } finally {
+      Element.prototype.scrollIntoView = original
+    }
+  })
+
+  it('la card de roles cuenta lo que la ficha trajo', async () => {
+    base()
+    montar()
+    await abrirFicha()
+    const card = await screen.findByRole('region', { name: 'Resumen · Roles' })
+    expect(await within(card).findByText(String(roles.length))).toBeInTheDocument()
+  })
+
+  it('el aviso de roles duplicados va ANTES de las tarjetas', async () => {
+    base([http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([...roles, { ...roles[1], id: 'r-dup', name: 'planner' }]))])
+    montar()
+    await abrirFicha()
+    const aviso = await screen.findByText(/Hay roles con el mismo nombre en distinta caja/)
+    // Una tarjeta de ROL, no cualquier ítem: la lista de clientes va antes.
+    const primeraTarjeta = screen.getAllByText('Planner').map((e) => e.closest('li')).find(Boolean) as HTMLElement
+    // DOCUMENT_POSITION_FOLLOWING: la tarjeta viene DESPUÉS del aviso.
+    expect(aviso.compareDocumentPosition(primeraTarjeta) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })

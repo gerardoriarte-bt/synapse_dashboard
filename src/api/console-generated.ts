@@ -1005,6 +1005,29 @@ export interface components {
              * @example Mes calendario seleccionado
              */
             measurement_window: string;
+            /**
+             * @description **El encargo de una métrica de prosa**, en texto libre. Lo escribe
+             *     administración con `PATCH /admin/tenants/{tenantId}/catalog/{metricId}`
+             *     y **`sync-catalog` no lo toca**: no está en el `DoUpdates` del upsert.
+             *
+             *     **Vacío es «el texto fijo de la clave»**, no «sin prosa»: con vacío,
+             *     `BuildProsePrompt` sigue con su `switch` de siempre —`month_decisions`
+             *     o el resumen ejecutivo—. Con texto, lo usa en su lugar **y le permite
+             *     al agente consultar los datos del período**, que sin instrucción no
+             *     puede.
+             *
+             *     `string` sin `omitempty`: viene en **todas** las métricas, también
+             *     las que no son `prose`, siempre vacío en esas.
+             *
+             *     **Medido el 2026-10-19**: con una instrucción sobre el ROAS de Meta,
+             *     el agente devolvió `{headline, pillars}` válido dos corridas de dos,
+             *     con las mismas cifras —y esas cifras **no son las del panel
+             *     `platform_return`** del mismo período. Ver
+             *     `docs/AUDITORIA-2026-10-19-prosa-por-metrica.md`.
+             * @example
+             * @example Explicá qué movió el ROAS de Meta en el período.
+             */
+            prose_instruction: string;
             dimensions: string[];
             catalog_version: number;
             /** Format: date-time */

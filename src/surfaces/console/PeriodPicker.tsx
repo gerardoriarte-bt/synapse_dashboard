@@ -117,7 +117,8 @@ export function PeriodPicker({ periods, activeId, metrics, format, aviso, onSele
               <option key={p.id} value={p.id}>
                 {/* El mes en curso se marca acá también · F1.42. Elegirlo es
                     legítimo; verlo igual que uno cerrado, no. */}
-                {p.enCurso === true ? `${p.etiqueta} · en curso` : p.etiqueta}
+                {/* Con nombre de mes · F5.30: el id del cable no es un rótulo. */}
+                {p.enCurso === true ? `${format.periodName(p.etiqueta)} · en curso` : format.periodName(p.etiqueta)}
               </option>
             ))}
           </optgroup>
@@ -137,7 +138,7 @@ export function PeriodPicker({ periods, activeId, metrics, format, aviso, onSele
       )}
 
       {activo?.enCurso === true && (
-        <Label as="div">Período en curso · incompleto, no compara contra uno cerrado</Label>
+        <Label as="div">Período en curso · incompleto: sus comparaciones son parciales</Label>
       )}
 
       {/* **Va acá y no sobre los paneles**: es una explicación del período, y

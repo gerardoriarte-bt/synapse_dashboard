@@ -7,8 +7,8 @@
  *  sola opción sería una elección falsa.
  */
 import { useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { DashboardPanel } from './DashboardPanel'
-import { Label } from '../../render/primitives/Label'
 import { Wordmark } from './Wordmark'
 import { PeriodPicker } from './PeriodPicker'
 import { Tabs } from './Tabs'
@@ -43,6 +43,13 @@ type Props = {
   /** Cambiar de dashboard · F5.1. **Sin él no hay selector**, aunque haya
    *  varios: el builder monta esta consola sin poder cambiar de contexto. */
   onSelectDashboard?: ((id: string) => void) | undefined
+  /** **La barra del cliente activo**, debajo del navbar · 2026-10-20. La arma
+   *  `Console`: es la misma pieza de administración y del builder. */
+  barra?: ReactNode
+  /** Sin título, período, pestañas, selector de dashboard ni «Preguntar»: son
+   *  del cliente de la sesión, y con otro cliente elegido nombrarían uno
+   *  distinto del de la barra. */
+  soloNavbar?: boolean
 }
 
 export function Topbar({
@@ -57,6 +64,8 @@ export function Topbar({
   onChangeTheme,
   onAskTab,
   onSelectDashboard,
+  barra,
+  soloNavbar = false,
 }: Props) {
   const navegar = useNavigate()
   const [panel, setPanel] = useState(false)
@@ -79,31 +88,11 @@ export function Topbar({
       <div className="flex h-15 items-center gap-3 border-b border-w2 bg-dock px-6">
         <Wordmark variante="marca" />
 
-        {/* El divisor del dibujo: la marca es de la plataforma y el cliente es
-            de quien mira. Son dos cosas y se ven como dos. */}
+        {/* **El cliente se fue a la barra de abajo** · 2026-10-20. Estaba acá
+            como rótulo junto al logotipo, y en administración y el builder vivía
+            en otros lugares: la barra del cliente activo es la misma en las tres
+            superficies. El divisor queda entre la marca y el dashboard. */}
         <span aria-hidden className="h-4 w-px shrink-0 bg-w3" />
-
-        {/* **El cliente, destacado y sin botones que no hacen nada** · 2026-10-06.
-
-            Para un usuario de plataforma acá había un botón por cliente —el
-            `.pen` de C1 los dibuja con «TENANT · EL ACCESO QUEDA AUDITADO»—, y
-            **ninguno hacía nada**: `onSelectTenant` nunca se conectó desde
-            `ConsoleContainer`. No podía conectarse: el cliente de la consola es el
-            del token de sesión —`JWTMiddleware` pone `claims.TenantID`— y ninguna
-            ruta de `/config/*` acepta otro. Leído en el código del servicio ese
-            día. Un CTA sin manejador no se pinta.
-
-            Pedido humano del mismo día: «en el header se debe destacar bien el
-            tenant que se está trabajando». Va con el mismo tratamiento que el
-            selector de administración y del builder, sin la caja: acá no se
-            elige. Que la consola siga la elección de esas dos superficies es un
-            pedido al backend. */}
-        <div className="flex min-w-0 items-center gap-3">
-          <Label as="span">Cliente</Label>
-          <span className="truncate font-display text-titulo leading-titulo tracking-titulo font-medium text-ink">
-            {context.tenant.etiqueta}
-          </span>
-        </div>
 
         {/* ── SELECTOR DE DASHBOARD · §PEN:C6 ──────────────────────────────
             **Era un `<select>` en el navbar hasta el 2026-09-28**, puesto por
@@ -114,7 +103,7 @@ export function Topbar({
 
             **Sólo con más de uno**, que no cambió: «no se ofrece una elección
             que no existe». */}
-        {context.dashboards.length > 1 && onSelectDashboard !== undefined && (
+        {!soloNavbar && context.dashboards.length > 1 && onSelectDashboard !== undefined && (
           <div className="relative flex min-w-0 items-center">
             <button
               ref={chevron}
@@ -173,7 +162,7 @@ export function Topbar({
 
               **Sin manejador no se pinta** · regla del CTA muerto: el builder
               monta esta misma consola sin chat. */}
-          {onAskTab !== undefined && (
+          {!soloNavbar && onAskTab !== undefined && (
             <button
               type="button"
               onClick={onAskTab}
@@ -219,6 +208,10 @@ export function Topbar({
         </div>
       </div>
 
+      {barra}
+
+      {soloNavbar ? null : (
+      <>
       {/* ── HEADER · 96px · §PEN:C1 ────────────────────────────────────────
           El bloque del título, con su propio aire. El dibujo le da 96 de alto
           y acá se consigue con el padding: una altura fija recortaría una
@@ -247,6 +240,8 @@ export function Topbar({
       <div className="flex items-end gap-4 border-b border-w2 px-6 pb-2">
         <Tabs tabs={context.tabs} activeId={activeTab?.id} onSelect={onSelectTab} />
       </div>
+      </>
+      )}
     </header>
   )
 }

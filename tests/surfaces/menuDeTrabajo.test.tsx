@@ -24,8 +24,10 @@ const montar = (esAdmin = true, rutaActual = '/', onIr = vi.fn()) => {
 const abrir = async () => userEvent.click(screen.getByRole('button', { name: 'Menú de trabajo' }))
 
 describe('el registro · qué se ofrece', () => {
-  it('administración con TODAS sus pantallas, y el builder con las que tienen pestaña', () => {
-    const [admin, builder] = gruposDeTrabajo(true)
+  it('la consola primero, administración con TODAS sus pantallas, y el builder con las que tienen pestaña', () => {
+    const [consola, admin, builder] = gruposDeTrabajo(true)
+    // «Volver al dashboard» se fue el 2026-10-20: la consola es una entrada del menú.
+    expect(consola?.entradas).toEqual([{ ruta: '/', nombre: 'Dashboard' }])
     expect(admin?.entradas.map((e) => e.ruta)).toEqual(DE_ADMIN.map((p) => p.ruta))
     expect(builder?.entradas.map((e) => e.ruta)).toEqual(
       DEL_BUILDER.filter((p) => p.enNav).map((p) => p.ruta),
@@ -38,7 +40,7 @@ describe('el registro · qué se ofrece', () => {
     expect(gruposDeTrabajo(false)).toEqual([])
   })
 
-  it('«Volver al dashboard» lleva a la consola', () => {
+  it('la ruta del dashboard es la consola', () => {
     expect(RUTA_DEL_DASHBOARD).toBe('/')
   })
 })

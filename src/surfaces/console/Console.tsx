@@ -18,6 +18,9 @@ import { measureLayoutCommit, measureLayoutPainted } from '../../render/budget'
 import { PanelInGrid } from './PanelInGrid'
 import type { PlotProblem } from '../../catalog/plots'
 import { Topbar } from './Topbar'
+import { BarraDeCliente } from '../BarraDeCliente'
+import { Accion } from '../../render/primitives/Accion'
+import type { ClienteVisible } from '../clienteVisible'
 import { ConsoleDock } from './ConsoleDock'
 import type { Formatter } from '../../render/format'
 import type { Theme } from '../../tokens/theme'
@@ -92,6 +95,13 @@ type Props = {
   onAskTab?: (() => void) | undefined
   /** Cambiar de dashboard · F5.1. **Sin él no hay selector.** */
   onSelectDashboard?: ((id: string) => void) | undefined
+  /** **La barra del cliente activo** · 2026-10-20. `clientes` vacío —quien no
+   *  administra— la deja sin selector. */
+  clientes?: readonly ClienteVisible[]
+  clienteActivo?: string
+  onElegirCliente?: ((id: string) => void) | undefined
+  /** La salida cuando el cliente elegido no es el de la sesión. */
+  onAbrirEnAdministracion?: ((id: string) => void) | undefined
 }
 
 export function Console({
@@ -115,6 +125,10 @@ export function Console({
   canDrill,
   onAskTab,
   onSelectDashboard,
+  clientes = [],
+  clienteActivo,
+  onElegirCliente,
+  onAbrirEnAdministracion,
 }: Props) {
   // El colapso · F1.30. No lo puede hacer solo el CSS: el `colSpan` viaja en un
   // estilo en línea y una media query no lo alcanza.
@@ -122,6 +136,15 @@ export function Console({
 
   /** El período activo, con su etiqueta · para la línea de contexto del dock. */
   const periodoActivo = context.periodos.find((p) => p.id === activePeriodId)
+
+  /** **El cliente activo y el de la sesión** · 2026-10-20. Casi siempre son el
+   *  mismo. Cuando no, la barra nombra el elegido y el cuerpo NO pinta los
+   *  paneles: serían del cliente de la sesión —`/config/*` sirve el del token—
+   *  con el nombre de otro arriba. Ver §4 de la propuesta del 2026-10-20. */
+  const sesion: ClienteVisible = { id: context.tenant.id, nombre: context.tenant.nombre, formaCorta: context.tenant.etiqueta }
+  const activoId = clienteActivo ?? sesion.id
+  const activo = clientes.find((c) => c.id === activoId) ?? sesion
+  const otroCliente = activo.id !== sesion.id ? activo : null
 
   // Un solo `now` para toda la pantalla. Si cada panel llamara a `new Date()`,
   // dos paneles del mismo lote podrían escribir frescuras distintas para la
@@ -159,7 +182,40 @@ export function Console({
         {...(onChangeTheme === undefined ? {} : { onChangeTheme })}
         {...(onAskTab === undefined ? {} : { onAskTab })}
         {...(onSelectDashboard === undefined ? {} : { onSelectDashboard })}
+        barra={<BarraDeCliente activo={activo} clientes={clientes} onElegir={onElegirCliente} />}
+        soloNavbar={otroCliente !== null}
       />
+
+      {otroCliente !== null && (
+        // **Bloqueado, con la gramática de §8**: estado, razón, qué lo
+        // desbloquea y una salida. No se pinta una cifra de otro cliente.
+        <div className="p-6">
+          <section
+            aria-labelledby="consola-de-otro-cliente"
+            className="flex max-w-2xl flex-col gap-3 rounded-xl border border-w4 bg-panel p-6"
+          >
+            <Label as="div">Bloqueado</Label>
+            <h2 id="consola-de-otro-cliente" className="m-0 font-display text-titulo leading-titulo tracking-titulo font-medium text-ink">
+              La consola de {otroCliente.nombre} todavía no se puede abrir
+            </h2>
+            <p className="m-0 font-body text-cuerpo text-dim">
+              La consola muestra los datos de la sesión, que es de {sesion.nombre}. El servicio todavía no entrega
+              los de otro cliente.
+            </p>
+            <Label as="div">Lo desbloquea · que el servicio abra una sesión por cliente</Label>
+            {onAbrirEnAdministracion !== undefined && (
+              <div>
+                <Accion variante="primaria" onClick={() => onAbrirEnAdministracion(otroCliente.id)}>
+                  Abrir {otroCliente.nombre} en administración
+                </Accion>
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+
+      {otroCliente === null && (
+      <>
 
       {/* El cuerpo sí lleva el padding de la grilla · §4. */}
       <div className="p-6" style={gridStyle(columns)}>
@@ -267,6 +323,8 @@ export function Console({
           paneles={panels.length}
           {...(onAskTab === undefined ? {} : { onPreguntar: onAskTab })}
         />
+      )}
+      </>
       )}
     </main>
   )

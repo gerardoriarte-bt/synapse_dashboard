@@ -47,6 +47,7 @@ import {
   useRoles,
   useSaveRole,
   useMe,
+  useEditTenantShortName,
   useTenants,
   useSaveTheme,
 } from '../../api/hooks'
@@ -66,6 +67,8 @@ import { TenantIdentity } from './TenantIdentity'
 import { estadoDeAlta, versionDeCatalogo } from './alta'
 import { usoPorMetrica } from './uso'
 import { TenantList } from './TenantList'
+import { ResumenDeFicha } from './ResumenDeFicha'
+import type { ResumenDeUsuarios } from './ResumenDeFicha'
 import { distintivo } from './distintivo'
 import { useClienteDeTrabajo } from '../useClienteDeTrabajo'
 import { SurfaceMessage } from '../console/SurfaceMessage'
@@ -101,6 +104,16 @@ export function Admin() {
    *  De paso, recargar y «atrás» dejan de devolver a «Clientes». Una ruta que
    *  no es de acá —las pruebas montan en `/`— cae en la primera. */
   const { pathname } = useLocation()
+  /** **La ficha es una página aparte** · 2026-10-20, decisión humana que reabre
+   *  la del 2026-10-09. **Es estado de la pantalla y no de la URL**: probado con
+   *  `?ficha=1` y el parámetro se perdía al abrir la card del cliente en uso. El
+   *  proveedor del cliente de trabajo también escribe la URL en ese mismo clic,
+   *  React Router navega dentro de una transición, y su escritura —calculada
+   *  sobre los parámetros de antes— llegaba después y la pisaba. Dos escritores
+   *  de la misma URL en el mismo clic es una carrera. Recargar vuelve a la
+   *  grilla; el cliente activo sí sobrevive, porque lo lleva la URL. */
+  const [enFicha, setEnFicha] = useState(false)
+  const conFicha = (abierta: boolean) => setEnFicha(abierta)
   const pantalla: PantallaId = PANTALLAS.find((p) => p.ruta === pathname)?.id ?? 'clientes'
   const setPantalla = (id: PantallaId) => {
     const destino = PANTALLAS.find((p) => p.id === id)
@@ -140,6 +153,10 @@ export function Admin() {
     // Si falla, `null`, y cae al primero en vez de quedarse sin cliente.
     contexto.isPending ? undefined : (contexto.data?.tenant.id ?? null),
   )
+  /** El cliente de trabajo, para el título de la ficha y las acciones que
+   *  escriben sobre él. */
+  const tenantDeTrabajo = lista.find((t) => t.id === activo) ?? null
+  const nombreDeTrabajo = tenantDeTrabajo?.nombre
 
   // **El hook del catálogo se llama siempre y se apaga por `enabled`**, que es lo
   // que las reglas de hooks exigen: no puede colgar de `pantalla`. Mientras A4 no
@@ -194,6 +211,8 @@ export function Admin() {
   // **Los de la ficha** · P2 de la auditoría del 2026-10-08: quiénes son los
   // usuarios del cliente se ve en su ficha, no en otra pantalla.
   const usuariosDelCliente = useUsers(activo)
+  /** La forma corta del cliente activo · F5.47. */
+  const editarFormaCorta = useEditTenantShortName()
   /* ── LAS ACCIONES SOBRE USUARIOS Y LA COLA DE SOLICITUDES · 2026-10-09 ───
    *
    * **Roles y agentes de todos los clientes**: cambiar el rol de alguien ofrece
@@ -311,6 +330,7 @@ export function Admin() {
             cargando={solicitudes.data === undefined}
           />
           <UserList
+            clienteInicial={activo}
             usuarios={usuarios.data?.usuarios ?? []}
             total={usuarios.data?.total ?? 0}
             clientesConUsuarios={usuarios.data?.clientes ?? 0}
@@ -335,6 +355,7 @@ export function Admin() {
           />
           <CargarPeriodos
             key={activo ?? ''}
+            {...(nombreDeTrabajo === undefined ? {} : { cliente: nombreDeTrabajo })}
             mesActual={mesEnCurso(new Date(), lista.find((x) => x.id === activo)?.zonaHoraria ?? null)}
             cargados={mesesCargados(corridas.data ?? [])}
             enCurso={mesesEnCurso(corridas.data ?? [])}
@@ -364,24 +385,73 @@ export function Admin() {
         // para la pregunta que responde: qué ven los usuarios hoy.
         <Catalogo query={catalogo} uso={usoPorMetrica(detalle.data, roles.data ?? [])} />
       ) : (
-        /* ── CLIENTES · LA LISTA Y LA FICHA LADO A LADO · 2026-10-09 ──────────
-           Decisión humana (P1 de `AUDITORIA-2026-10-08-admin-clientes-y-usuarios.md`).
-           Eran dos pestañas y dos formas de elegir cliente que no se hablaban;
-           ahora se elige en un solo lugar y la ficha se abre al lado. Se
-           aparta del `.pen`, que las une como lista y detalle con migas. */
-        <div className="grid grid-cols-[360px_1fr] gap-8 items-start">
+        /* ── CLIENTES · CARDS, Y LA FICHA COMO PÁGINA · 2026-10-20 ─────────────
+           Decisión humana que reabre la del 2026-10-09 (lista y ficha lado a
+           lado): «un scroll muy grande … organizar la mayoría de la info en
+           cards». Abrir una card vuelve activo a ese cliente —la barra lo dice— y
+           abre su ficha con migaja, que es lo que A2 dibuja. */
+        !enFicha || activo === null ? (
           <TenantList
             tenants={lista}
             format={format}
             seleccionado={activo}
-            onElegir={setTenant}
+            onElegir={(id) => {
+              setTenant(id)
+              conFicha(true)
+            }}
             cargando={tenants.data === undefined}
           />
-          {activo === null ? (
-            <Ayuda>Elegí un cliente de la lista para ver su ficha.</Ayuda>
-          ) : (
+        ) : (
+          <div className="flex flex-col gap-6">
+            <nav aria-label="Migaja" className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => conFicha(false)}
+                className="flex cursor-pointer items-center gap-1.5 border-0 bg-transparent p-0 font-mono text-nota leading-rotulo tracking-rotulo uppercase text-ink hover:text-acc"
+              >
+                {/* `arrow-left` de línea · hereda el color. */}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M19 12H5" />
+                  <path d="m12 19-7-7 7-7" />
+                </svg>
+                Clientes
+              </button>
+              <span aria-hidden className="font-mono text-nota text-dim">/</span>
+              <span className="font-mono text-nota leading-rotulo tracking-rotulo uppercase text-dim">
+                {nombreDeTrabajo ?? ''}
+              </span>
+            </nav>
+
+            {/* **El cliente como título, y el viaje al builder** · A2 del `.pen`.
+                La barra ya lo nombra; acá es el título de la página, que es lo
+                que el dibujo pone arriba de las cards. Lo encontró la auditoría
+                del 2026-10-20. */}
+            <div className="flex items-center gap-4">
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <h2 className="m-0 truncate font-display text-titulo-lg leading-titulo tracking-titulo text-ink">
+                  {nombreDeTrabajo ?? ''}
+                </h2>
+                {tenantDeTrabajo !== null && <Label as="span">{distintivo(tenantDeTrabajo)}</Label>}
+              </div>
+              {/* Sin `?cliente=` a mano: el proveedor lo lleva al builder. */}
+              <Accion onClick={() => void navegar('/builder')}>Abrir en builder</Accion>
+            </div>
             <Cliente
               agentes={agentes}
+              formaCorta={{
+                onGuardar: (valor: string) => editarFormaCorta.mutate({ tenantId: activo, formaCorta: valor }),
+                guardando: editarFormaCorta.isPending,
+                error: editarFormaCorta.error === null ? null : `No se pudo guardar la forma corta: ${editarFormaCorta.error.message}`,
+              }}
+              resumenDeUsuarios={
+                usuariosDelCliente.data === undefined
+                  ? null
+                  : {
+                      total: usuariosDelCliente.data.length,
+                      activos: usuariosDelCliente.data.filter((u) => u.activo).length,
+                      nuncaEntraron: usuariosDelCliente.data.filter((u) => u.ultimoAccesoEn === null).length,
+                    }
+              }
               roles={roles}
               // **El `Tenant` de la fila activa, no un viaje nuevo**: `lista` ya lo
               // trae con sus campos desde que A1 pidió sus columnas.
@@ -421,8 +491,8 @@ export function Admin() {
               // pinta. Sin este manejador `RoleCard` no lo dibuja.
               onVerCatalogo={() => setPantalla('catalogo')}
             />
-          )}
-        </div>
+          </div>
+        )
       )}
     </AdminChrome>
   )
@@ -489,6 +559,8 @@ function mensajeDeRol(e: Error | null): string | null {
  *  propio `<main>` y acá el chrome sigue en pie. */
 function Cliente({
   agentes,
+  resumenDeUsuarios,
+  formaCorta,
   roles,
   tenant,
   estado,
@@ -508,6 +580,11 @@ function Cliente({
   ...paraRoles
 }: {
   agentes: ReturnType<typeof useAgents>
+  /** Los conteos de la card de usuarios · `null` mientras cargan. */
+  resumenDeUsuarios: ResumenDeUsuarios | null
+  /** Editar la forma corta · F5.47. **Obligatoria** por la misma razón que las
+   *  de abajo: una opcional mal escrita compila y el botón no aparece. */
+  formaCorta: Parameters<typeof ResumenDeFicha>[0]['formaCorta']
   roles: ReturnType<typeof useRoles>
   /** Los cuatro de `TenantIdentity` · §PEN:A2. **Ninguno es opcional**, que es lo
    *  único que el compilador puede hacer contra el spread de arriba: una prop
@@ -528,6 +605,10 @@ function Cliente({
   nombreDeMetrica: (clave: string) => string
   onVerificar?: () => void
 } & Omit<Parameters<typeof RoleEditor>[0], 'roles'>) {
+  /** **La identidad completa, a pedido** · auditoría del 2026-10-20. La card del
+   *  resumen la resume, y mostrarla entera debajo repetía lo mismo —la
+   *  repetición que la propuesta venía a sacar—. «Ver identidad» la abre. */
+  const [identidadAbierta, setIdentidadAbierta] = useState(false)
   if (roles.isError) {
     return (
       <div className="flex flex-col gap-2">
@@ -543,18 +624,59 @@ function Cliente({
     // acceso, y los subprocesadores aplican igual desde el alta, así que van al
     // final.
     <div className="flex flex-col gap-6">
-      <TenantIdentity tenant={tenant} estado={estado} version={version} format={format} />
+      {/* **El resumen arriba** · 2026-10-20. Reemplaza a la fila «Secciones
+          de la ficha» de F5.34: cada card dice lo que importa de su bloque y
+          lleva a él. */}
+      <ResumenDeFicha
+        tenant={tenant}
+        format={format}
+        roles={
+          roles.data === undefined
+            ? null
+            : {
+                roles: roles.data.length,
+                pestanas: paraRoles.pestanas.length,
+                paneles: paraRoles.pestanas.reduce((n, p) => n + p.paneles, 0),
+              }
+        }
+        usuarios={resumenDeUsuarios}
+        acceso={acceso}
+        onIr={(id) => {
+          if (id === 'ficha-identidad') setIdentidadAbierta(true)
+          // Después de pintar: la sección de identidad no existe hasta abrirla.
+          requestAnimationFrame(() =>
+            document.getElementById(id)?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }),
+          )
+        }}
+        {...(onVerificar === undefined ? {} : { onVerificar })}
+        formaCorta={formaCorta}
+        version={version}
+      />
 
-      <RoleEditor {...paraRoles} roles={roles.data ?? []} cargando={roles.data === undefined} />
+      {identidadAbierta && (
+        <div id="ficha-identidad" className="flex flex-col gap-2">
+          <TenantIdentity tenant={tenant} estado={estado} version={version} format={format} />
+          <div className="self-start">
+            <Accion tamano="compacta" onClick={() => setIdentidadAbierta(false)}>
+              Ocultar identidad
+            </Accion>
+          </div>
+        </div>
+      )}
+
+      <div id="ficha-roles">
+        <RoleEditor {...paraRoles} roles={roles.data ?? []} cargando={roles.data === undefined} />
+      </div>
 
       {/* **Después de los roles**: primero qué ve cada rol, después quién lo
           tiene. Es el orden en que se decide. */}
-      {usuarios}
+      <div id="ficha-usuarios">{usuarios}</div>
 
       {/* **El agente se pinta aunque su petición falle, y con la razón.** Hoy
           esa ruta da 500 contra el servicio —las columnas del CRUD no están en
           la base compartida, B3.11— y un bloque que desaparece haría parecer
           que el cliente no tiene agente, que es una afirmación distinta. */}
+      <div id="ficha-acceso">
       {agentes.isError ? (
         <section className="flex flex-col gap-2">
           <Label as="div">Agente de datos</Label>
@@ -581,8 +703,13 @@ function Cliente({
           {...(onVerificar === undefined ? {} : { onVerificar })}
         />
       )}
+      </div>
 
-      <Subprocessors />
+      <div id="ficha-subprocesadores">
+        <Subprocessors />
+      </div>
     </div>
   )
 }
+
+

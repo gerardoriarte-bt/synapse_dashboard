@@ -59,6 +59,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/tenants/{tenantId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Editar la ficha del cliente · nombre, forma corta, locale, moneda y huso
+         * @description **Medida el 2026-10-20 contra el binario de `7324b26`**, con la base
+         *     local: `label` puesto y vuelto a vacío, un id que no es UUID (**400**) y
+         *     uno que no existe (**404** «tenant no encontrado»).
+         *
+         *     **Edición parcial**: lo que no viaja no cambia (`TenantSettingsInput`,
+         *     punteros `nil` = sin cambio). `label` **puede ir vacío** —vuelve a no
+         *     tener forma corta—; `name`, `locale`, `currency` y `timezone` no, y
+         *     `timezone` tiene que ser una zona IANA.
+         *
+         *     **La usa el campo «Forma corta» de la ficha** · F5.47. Las otras cuatro
+         *     claves se transcriben porque el servicio las acepta, no porque el front
+         *     las mande hoy.
+         *
+         *     **La respuesta NO se transcribe entera, a propósito.** Es
+         *     `TenantAdminDTO`, que trae la cuenta, el usuario, el rol y la URL de
+         *     Snowflake: vocabulario de infraestructura que administración no muestra
+         *     (§7.3). Se declaran las claves que el front lee; el resto existe y no se
+         *     usa. Lo que se refresca después de guardar es `GET /admin/tenants`.
+         */
+        put: operations["updateTenantSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/tenants/{tenantId}/layouts": {
         parameters: {
             query?: never;
@@ -131,6 +168,43 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/admin/tenants/{tenantId}/catalog/{metricId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Escribe la instrucción de una métrica de prosa
+         * @description **Llegó en `5af3b86`**, respuesta al
+         *     `MENSAJE-2026-10-14-backend-instruccion-de-prosa.md`. **Sólo la
+         *     instrucción**: el resto de los campos editoriales del catálogo sigue sin
+         *     ruta. Medido el 2026-10-19 contra `7324b26`, todos los casos de abajo.
+         *
+         *     **Cadena vacía o sólo espacios la borra** y vuelve al texto fijo de la
+         *     clave —el servicio hace `TrimSpace`—. **Un cuerpo sin el campo también
+         *     la borra**: el `struct` no distingue ausente de vacío, así que el front
+         *     manda siempre el campo, con lo que quiere que quede.
+         *
+         *     **Una métrica que no es `prose` acepta el vacío** (200) y rechaza el
+         *     texto (422): borrar algo que no hay no es un error.
+         *
+         *     **Pide la columna migrada.** Con `DB_AUTO_MIGRATE=false` sobre una base
+         *     anterior a `5af3b86`, contesta **500** con el SQL de Postgres en el
+         *     `error` —«column "prose_instruction" … does not exist»—, mientras
+         *     `/config/catalog` sigue en 200 porque lee con `SELECT *`. Es la forma en
+         *     que un despliegue sin migrar fallaría en QA.
+         */
+        patch: operations["adminUpdateProseInstruction"];
         trace?: never;
     };
     "/admin/layouts/{layoutId}": {
@@ -1120,7 +1194,7 @@ export interface components {
              *     detalles sin avisar. Ver el cable de consola para el juego completo.
              *
              *     Los de acá, declarados por ellos: `CONFLICT_NOT_DRAFT`,
-             *     `VALIDATION_LAYOUT`, `VALIDATION_CHAT_SUGGESTIONS`,
+             *     `VALIDATION_LAYOUT`, `VALIDATION_PROSE_INSTRUCTION`, `NOT_FOUND_METRIC`, `VALIDATION_CHAT_SUGGESTIONS`,
              *     `NOT_FOUND_LAYOUT`, `NOT_FOUND_ROLE`, `AUTH_DRAFT_PREVIEW`,
              *     `VALIDATION_THEME`, `VALIDATION_DASHBOARD_NOT_VISIBLE`,
              *     `CONFLICT_NO_PREVIOUS`, `CONFLICT_REVERT_SELF`,
@@ -1652,7 +1726,14 @@ export interface components {
             dashboard?: components["schemas"]["LayoutDashboard"];
             tabs: {
                 tab: components["schemas"]["LayoutTab"];
-                panels: components["schemas"]["LayoutPanel"][];
+                /**
+                 * @description **`null` cuando la pestaña no tiene paneles**, no `[]` · medido
+                 *     en QA el 2026-10-19 y en local contra `7324b26`. Lo arma
+                 *     `byTab[tab.ID]` en `dd_layout_builder_service.go:508`, y una
+                 *     clave ausente es un slice nil. Pedido `[]` en
+                 *     `docs/MENSAJE-2026-10-19-backend-lo-que-ya-tiene-qa.md`.
+                 */
+                panels: components["schemas"]["LayoutPanel"][] | null;
             }[];
         };
         /**
@@ -1690,6 +1771,9 @@ export interface components {
             /** @description Default si viene 0: el índice del arreglo + 1. */
             sort_order?: number;
             role_ids?: string[];
+            icon?: string;
+            /** @description Se recortan y se descartan las vacías. Hay un máximo por pestaña: 422 `VALIDATION_CHAT_SUGGESTIONS`. */
+            chat_suggestions?: string[];
             panels?: components["schemas"]["PanelInput"][];
         };
         PanelInput: {
@@ -2134,6 +2218,48 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
+    updateTenantSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    label?: string;
+                    locale?: string;
+                    currency?: string;
+                    timezone?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description El cliente como quedó · sólo las claves que el front lee */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            label: string;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listLayouts: {
         parameters: {
             query?: never;
@@ -2240,6 +2366,74 @@ export interface operations {
              *     alguien llega con un id de una sesión vieja.
              */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminUpdateProseInstruction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+                metricId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Hasta 2000 **caracteres**, no bytes · medido con 2000 «é». */
+                    prose_instruction?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description La métrica entera, con la instrucción ya recortada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["CatalogMetric"];
+                    };
+                };
+            };
+            /**
+             * @description `AUTH_FORBIDDEN` «no puedes administrar otro cliente» · el
+             *     `tenantId` de la ruta no es el del token, salvo operador.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /**
+             * @description `NOT_FOUND_METRIC` «métrica no encontrada» · también cuando la
+             *     métrica existe pero es de otro cliente: no se distingue.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /**
+             * @description `VALIDATION_PROSE_INSTRUCTION` · con texto sobre una métrica que no
+             *     es `prose`, o con más de 2000 caracteres.
+             */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

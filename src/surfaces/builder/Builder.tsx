@@ -82,7 +82,7 @@ import {
   adoptarIds,
   agregar,
   agregarPanel,
-  asignarRoles,
+  asignarRoles, fijarSugerencias,
   laVe,
   cambiarTipo,
   redimensionarPanel,
@@ -863,7 +863,17 @@ export function Builder() {
           <Ayuda>{`Se desbloquea con: ${pendiente.desbloqueaCon}`}</Ayuda>
         </div>
       ) : pantalla === 'canvas' ? (
-        semilla === null ? (
+        semilla === null && detalle.isError ? (
+          // **Un error es un error, no una instrucción** · 2026-10-19. Hasta acá
+          // un detalle que no se podía leer caía en «Elegí un dashboard», con el
+          // dashboard ya elegido en la cabecera: en QA el borrador de UA MX
+          // estuvo así desde el 8-oct y nadie lo vio como falla.
+          <SurfaceMessage
+            title="No se pudo abrir este borrador"
+            detail={detalle.error.message}
+            onRetry={() => void detalle.refetch()}
+          />
+        ) : semilla === null ? (
           <div className="flex flex-col items-start gap-3">
             <Ayuda>Elegí un dashboard para abrir su editor.</Ayuda>
             <Accion onClick={() => setPantalla('contexto')}>Ir a Dashboards</Accion>
@@ -1014,6 +1024,7 @@ export function Builder() {
                             .map((pr) => pr.mensaje)}
                           onEditar={(campo, valor) => cambiar(editar(tabs, ajustesDe, campo, valor))}
                           onRoles={(r) => cambiar(asignarRoles(tabs, ajustesDe, r))}
+                          onSugerencias={(l) => cambiar(fijarSugerencias(tabs, ajustesDe, l))}
                           onMover={(d) => {
                             cambiar(mover(tabs, ajustesDe, d))
                             setTabActiva(ajustesDe + d)

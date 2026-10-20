@@ -173,7 +173,15 @@ function montar() {
 async function abrirFicha() {
   await screen.findByRole('button', { name: /^Grupo Axo · / })
   await userEvent.click(screen.getByRole('button', { name: /^Grupo Axo · / }))
-  await screen.findByText('Identidad del tenant')
+  await verIdentidad()
+}
+
+/** **La identidad completa se abre desde su card** · auditoría del 2026-10-20:
+ *  mostrarla siempre repetía lo que la card ya resume. */
+async function verIdentidad() {
+  const card = await screen.findByRole('region', { name: 'Resumen · Identidad' })
+  await userEvent.click(within(card).getByRole('button', { name: 'Ver identidad' }))
+  await screen.findByText('Identidad del cliente')
 }
 
 /** El valor que está debajo de un rótulo de columna · las dos mitades de un
@@ -188,7 +196,7 @@ async function abrirFicha() {
  *  una coincidencia del escenario y no una propiedad de la pantalla. Un ayudante
  *  que falla por su propia resolución esconde lo que venía a medir. */
 function celda(rotulo: string): HTMLElement {
-  const identidad = screen.getByText('Identidad del tenant').closest('section') as HTMLElement
+  const identidad = screen.getByText('Identidad del cliente').closest('section') as HTMLElement
   const r = within(identidad).getByText(rotulo)
   return r.closest('div')?.parentElement as HTMLElement
 }
@@ -245,6 +253,8 @@ describe('la versión del catálogo · derivada, y atada a la pantalla', () => {
 
     await waitFor(() => {
       expect(celda('Catalog version').textContent).toContain('v4')
+    // Y la card del resumen la dice también · auditoría del 2026-10-20.
+    expect(screen.getByRole('region', { name: 'Resumen · Identidad' }).textContent).toContain('Catálogo v4')
     })
   })
 })
@@ -394,14 +404,16 @@ describe('subprocesadores · lo que el frame de alta OMITE', () => {
     montar()
     await abrirFicha()
 
-    expect(screen.getByText('Snowflake Inc.')).toBeInTheDocument()
-    expect(screen.getByText('Amazon Web Services')).toBeInTheDocument()
-    expect(screen.getByText('Anthropic')).toBeInTheDocument()
-    expect(screen.getAllByText('US-EAST-1')).toHaveLength(2)
-    expect(screen.getByText('US')).toBeInTheDocument()
-    expect(
-      screen.getByText(/Son de plataforma: aplican desde el alta/),
-    ).toBeInTheDocument()
+    // **Plegada desde el 2026-10-20, con los nombres a la vista**: son la
+    // obligación legal y se leen sin tocar nada.
+    const seccion = screen.getByRole('region', { name: 'Subprocesadores' })
+    expect(within(seccion).getByText('Snowflake Inc. · Amazon Web Services · Anthropic')).toBeInTheDocument()
+    expect(within(seccion).getByText(/De plataforma · aplican desde el alta/)).toBeInTheDocument()
+    expect(within(seccion).queryByText('US-EAST-1')).toBeNull()
+    // Y el detalle, al abrirlo: la región, que es lo que una revisión busca.
+    await userEvent.click(within(seccion).getByRole('button', { name: 'Ver detalle' }))
+    expect(within(seccion).getAllByText('US-EAST-1')).toHaveLength(2)
+    expect(within(seccion).getByText('US')).toBeInTheDocument()
   })
 
   it('NO trae la fecha de revisión ni el acuerdo, que este frame no dibuja', async () => {
@@ -539,7 +551,7 @@ describe('mientras una de las dos vueltas no llegó · no se afirma nada', () =>
     montar()
     await screen.findByRole('button', { name: /^Grupo Axo · / })
     await userEvent.click(screen.getByRole('button', { name: /^Grupo Axo · / }))
-    await screen.findByText('Identidad del tenant')
+    await verIdentidad()
 
     expect(celda('Estado').textContent).toContain('—')
     expect(screen.queryAllByText('En alta')).toHaveLength(0)

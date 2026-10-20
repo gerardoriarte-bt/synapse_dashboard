@@ -12,13 +12,13 @@ import { fireEvent, screen, within } from '@testing-library/react'
 
 export async function abrirGobierno(scope?: HTMLElement): Promise<HTMLElement> {
   const donde = scope === undefined ? screen : within(scope)
-  fireEvent.click(await donde.findByRole('button', { name: 'Base y procedencia' }))
+  fireEvent.click(await donde.findByRole('button', { name: /^Base y procedencia/ }))
   return donde.getByRole('tooltip')
 }
 
 /** Abre las de TODOS los paneles en pantalla, para las pruebas que leen la
  *  procedencia de la superficie entera. */
 export async function abrirTodas(): Promise<void> {
-  const botones = await screen.findAllByRole('button', { name: 'Base y procedencia' })
+  const botones = await screen.findAllByRole('button', { name: /^Base y procedencia/ })
   for (const b of botones) fireEvent.click(b)
 }

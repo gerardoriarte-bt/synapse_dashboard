@@ -512,7 +512,13 @@ def main() -> int:
 
     tabs = (ctx or {}).get("tabs") or []
     if tabs:
-        _, tab = pedir(f"/config/tabs/{tabs[0]['id']}", token)
+        # **Con `layoutId`, como el cliente** · 2026-10-19. Sin él el servicio
+        # resuelve el layout por su cuenta y, si la pestaña es de otro, da 404:
+        # el humo marcaba «no trae tab, panels» sobre un servicio que los trae.
+        # Es la trampa del 2026-10-05, ahora en la herramienta.
+        layout = (ctx or {}).get("active_layout_id")
+        sufijo = f"?layoutId={layout}" if layout else ""
+        _, tab = pedir(f"/config/tabs/{tabs[0]['id']}{sufijo}", token)
         datos = tab.get("data") if isinstance(tab, dict) else None
         revisar("/config/tabs/{id}", datos, "TabWithPanels")
         paneles = (datos or {}).get("panels") or []

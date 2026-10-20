@@ -149,7 +149,7 @@ describe('el selector de período respeta el granoMinimo · F1.7', () => {
     // Lo que se verifica sigue siendo lo mismo: no se ofrece, y se dice por qué.
     await waitFor(() => expect(screen.getByRole('group', { name: /semanas/i })).toBeDisabled())
     expect(screen.getByRole('group', { name: /^meses$/i })).toBeEnabled()
-    expect(screen.getByRole('option', { name: '2026-07' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'julio 2026' })).toBeInTheDocument()
     expect(screen.getByText(/Algún grano no aplica · alguna métrica se mide por mes/)).toBeVisible()
   })
 })

@@ -7,7 +7,7 @@
  *  operativa. Estas pruebas fijan las tres cosas que ese desglose puede decir
  *  mal **viéndose bien**.
  */
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { RoleCard } from '@/surfaces/admin/RoleCard'
 import type { PestanaDeRol } from '@/surfaces/admin/RoleCard'
@@ -47,6 +47,20 @@ const montar = (r: Rol, props: Partial<Parameters<typeof RoleCard>[0]> = {}) =>
     />,
   )
 
+/** **La tarjeta va plegada** · 2026-10-20: el detalle —pestañas y métricas
+ *  que no recibe— se abre. */
+const abrir = () => fireEvent.click(screen.getByRole('button', { expanded: false }))
+
+describe('plegada por defecto', () => {
+  it('la fila dice usuarios, alcance y paneles; el detalle se abre', () => {
+    montar(rol({ pestanas: [] }))
+    expect(screen.queryByText('eCommerce Overview')).toBeNull()
+    abrir()
+    expect(screen.getByRole('button', { expanded: true })).toBeInTheDocument()
+    expect(screen.getByText('eCommerce Overview')).toBeInTheDocument()
+  })
+})
+
 describe('vacío significa TODAS, y acá es aritmética', () => {
   it('un rol sin pestañas elegidas suma los paneles de TODAS', () => {
     // **Es la aserción que sostiene la regla.** `pestanas: []` es «ve todas», y
@@ -56,13 +70,15 @@ describe('vacío significa TODAS, y acá es aritmética', () => {
 
     expect(container.textContent).toContain('28')
     expect(screen.getByText('Paneles · 4 pestaña(s)')).toBeInTheDocument()
+    abrir()
     expect(screen.getByText('eCommerce Overview')).toBeInTheDocument()
     expect(screen.getByText('Inventory & Shopping')).toBeInTheDocument()
   })
 
-  it('y lo dice, además de contarlo', () => {
+  it('y lo marca, además de contarlo · la explicación va una vez, en el editor', () => {
     montar(rol({ pestanas: [] }))
-    expect(screen.getByText(/Ve TODAS las pestañas/)).toBeInTheDocument()
+    expect(screen.getByText('Todas las pestañas')).toBeInTheDocument()
+    expect(screen.queryByText(/ve TODAS las pestañas/i)).toBeNull()
   })
 
   it('un rol acotado suma SOLO las suyas', () => {
@@ -70,15 +86,18 @@ describe('vacío significa TODAS, y acá es aritmética', () => {
 
     expect(container.textContent).toContain('12')
     expect(screen.getByText('Paneles · 2 pestaña(s)')).toBeInTheDocument()
+    expect(screen.queryByText('Todas las pestañas')).toBeNull()
     // Y las que no le tocan no se listan: el desglose es de lo que VE.
+    abrir()
+    expect(screen.getByText('Product Sales')).toBeInTheDocument()
     expect(screen.queryByText('eCommerce Overview')).toBeNull()
-    expect(screen.queryByText(/Ve TODAS las pestañas/)).toBeNull()
   })
 })
 
 describe('la pregunta operativa, que es lo que vuelve legible el nombre', () => {
   it('cada pestaña va con la suya', () => {
     montar(rol({ pestanas: ['t1-key'] }))
+    abrir()
     expect(screen.getByText('eCommerce Overview')).toBeInTheDocument()
     expect(screen.getByText('¿Cómo va el negocio?')).toBeInTheDocument()
     expect(screen.getByText('12 paneles')).toBeInTheDocument()
@@ -92,6 +111,7 @@ describe('lo que el cable no manda no se inventa', () => {
     // atestigua la ausencia**: borrarla el día que alguien invente el número no
     // avisaría nada.
     const { container } = montar(rol({ pestanas: [] }))
+    abrir()
     expect(container.textContent).not.toMatch(/heredad|plantilla/i)
   })
 
@@ -104,14 +124,17 @@ describe('lo que el cable no manda no se inventa', () => {
 })
 
 describe('las métricas que un rol no recibe', () => {
-  it('se nombran, y la nota dura va con ellas', () => {
+  it('la fila las cuenta, y abierta las nombra', () => {
     montar(rol({ metricasOcultas: ['m1', 'm2'] }))
 
     expect(screen.getByText('No recibe · 2 métrica(s)')).toBeInTheDocument()
+    expect(screen.queryByText('Inversión')).toBeNull()
+    abrir()
     expect(screen.getByText('Inversión')).toBeInTheDocument()
     expect(screen.getByText('Retorno por plataforma')).toBeInTheDocument()
-    // §3.3, literal del `.pen`: es una regla, no un dato.
-    expect(screen.getByText(/ocultar no es permitir/i)).toBeInTheDocument()
+    // §3.3 es una regla, no un dato: desde el 2026-10-20 va UNA vez, en el
+    // editor, y no en cada tarjeta.
+    expect(screen.queryByText(/ocultar no es permitir/i)).toBeNull()
   })
 
   it('sin métricas ocultas el bloque no está', () => {
@@ -125,6 +148,7 @@ describe('las métricas que un rol no recibe', () => {
     // Un botón muerto se ve igual que uno que funciona.
     const ir = vi.fn()
     montar(rol({ metricasOcultas: ['m1'] }), { onVerCatalogo: ir })
+    abrir()
 
     screen.getByRole('button', { name: /ver en el catálogo/i }).click()
     expect(ir).toHaveBeenCalledTimes(1)
@@ -132,6 +156,7 @@ describe('las métricas que un rol no recibe', () => {
 
   it('sin manejador el enlace NO se pinta', () => {
     montar(rol({ metricasOcultas: ['m1'] }))
+    abrir()
     expect(screen.queryByRole('button', { name: /ver en el catálogo/i })).toBeNull()
   })
 })
@@ -148,18 +173,12 @@ describe('borrar sigue dependiendo de los usuarios', () => {
     expect(screen.getByRole('button', { name: 'Editar' }).className).not.toContain('text-peligro')
   })
 
-  it('la razón de no poder borrar es una FRASE, no un rótulo · 2026-10-06', () => {
-    // Mono en mayúsculas se lee como el nombre de algo; esto explica qué hacer.
-    montar(rol({ usuarios: 3 }))
-    const razon = screen.getByText(/reasignalos primero/)
-    expect(razon.className).toContain('font-body')
-    expect(razon.className).not.toContain('uppercase')
-  })
-
-  it('con usuarios asignados no hay botón, y se dice por qué', () => {
+  it('con usuarios asignados no hay botón · el porqué va una vez, en el editor', () => {
+    // La frase «reasignalos primero» se repetía en cada tarjeta con usuarios;
+    // desde el 2026-10-20 vive en la cabecera de la sección (`roles.test.tsx`).
     const { container } = montar(rol({ usuarios: 3 }))
     expect(screen.queryByRole('button', { name: /borrar/i })).toBeNull()
-    expect(container.textContent).toMatch(/reasignalos primero/)
+    expect(container.textContent).not.toMatch(/reasignalos primero/)
   })
 
   it('sin usuarios el botón DISPARA', () => {

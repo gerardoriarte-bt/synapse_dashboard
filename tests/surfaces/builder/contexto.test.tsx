@@ -25,6 +25,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { Builder } from '@/surfaces/builder/Builder'
 import { fail, ok } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
+import { elegirCliente } from '../elegirCliente'
 
 const API = '*/api/v1'
 
@@ -512,7 +513,7 @@ describe('cambiar de cliente', () => {
     await userEvent.click(await tarjeta(/Marca/))
     await screen.findByRole('region', { name: 'Paso 2 · Rol' })
 
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Cliente' }), 't-2')
+    await elegirCliente(/Keralty Colombia/)
 
     expect(await tarjeta(/Salud/)).toHaveAttribute('aria-pressed', 'false')
     expect(screen.queryByRole('button', { name: /Marca/ })).toBeNull()

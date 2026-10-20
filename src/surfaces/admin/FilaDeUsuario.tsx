@@ -16,7 +16,14 @@
  *
  *  **Suspender no es «peligro»**: el rojo es de lo que borra —decisión del
  *  2026-10-06— y suspender se deshace con un clic.
+ *
+ *  **Pero sí se confirma, igual que cambiar el rol** · F5.24, 2026-10-19. Las
+ *  dos se aplicaban en el acto: el `<select>` mandaba el cambio al elegir, y
+ *  una rueda de mouse sobre él le cambiaba el permiso a una persona. Ahora
+ *  quedan PENDIENTES y la fila dice qué va a pasar y a quién antes de mandar
+ *  nada. Reactivar no se confirma: devuelve un acceso, no lo quita.
  */
+import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
 import { Accion } from '../../render/primitives/Accion'
 import type { Formatter } from '../../render/format'
@@ -39,6 +46,14 @@ type Props = {
 
 export function FilaDeUsuario({ u, dePlataforma, format, roles, propia, enviando, onCambiar }: Props) {
   const conAcciones = onCambiar !== undefined && !propia
+  const [pendiente, setPendiente] = useState<CambioDeUsuario | null>(null)
+  const rolPendiente =
+    pendiente?.rolId === undefined ? null : (roles?.find((r) => r.id === pendiente.rolId)?.nombre ?? null)
+  const confirmar = () => {
+    if (pendiente === null || onCambiar === undefined) return
+    setPendiente(null)
+    onCambiar(u, pendiente)
+  }
 
   return (
     <tr className="border-b border-w3 align-top">
@@ -59,9 +74,9 @@ export function FilaDeUsuario({ u, dePlataforma, format, roles, propia, enviando
           <select
             aria-label={`Rol de ${u.nombre}`}
             className={SELECT}
-            value={u.rolId}
+            value={pendiente?.rolId ?? u.rolId}
             disabled={enviando}
-            onChange={(e) => onCambiar(u, { rolId: e.target.value })}
+            onChange={(e) => setPendiente(e.target.value === u.rolId ? null : { rolId: e.target.value })}
           >
             {/* El rol actual va siempre, aunque la lista no lo trajera: un
                 selector que no muestra el valor vigente lo cambia sin querer. */}
@@ -90,11 +105,27 @@ export function FilaDeUsuario({ u, dePlataforma, format, roles, propia, enviando
       <td className="py-3 text-right">
         {propia ? (
           <Label>Vos · sin acciones sobre tu cuenta</Label>
+        ) : conAcciones && pendiente !== null ? (
+          <div className="flex flex-col items-end gap-2" role="group" aria-label={`Confirmar el cambio de ${u.nombre}`}>
+            <Label as="span">
+              {pendiente.activo === false
+                ? `¿Suspender a ${u.nombre}? Deja de entrar hasta que lo reactiven`
+                : `¿Pasar a ${u.nombre} al rol ${rolPendiente ?? 'elegido'}?`}
+            </Label>
+            <div className="flex items-center gap-2">
+              <Accion tamano="compacta" variante="primaria" onClick={confirmar}>
+                {pendiente.activo === false ? 'Suspender' : 'Cambiar rol'}
+              </Accion>
+              <Accion tamano="compacta" onClick={() => setPendiente(null)}>
+                Cancelar
+              </Accion>
+            </div>
+          </div>
         ) : conAcciones ? (
           <Accion
             tamano="compacta"
             deshabilitada={enviando}
-            onClick={() => onCambiar(u, { activo: !u.activo })}
+            onClick={() => (u.activo ? setPendiente({ activo: false }) : onCambiar(u, { activo: true }))}
             etiqueta={`${u.activo ? 'Suspender' : 'Reactivar'} a ${u.nombre}`}
           >
             {enviando ? 'Guardando…' : u.activo ? 'Suspender' : 'Reactivar'}

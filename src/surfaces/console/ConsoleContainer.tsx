@@ -19,7 +19,9 @@ import {
   useSelectDashboard,
   useTab,
   useChatAgents,
+  useTenants,
 } from '../../api/hooks'
+import { useNavigate } from 'react-router-dom'
 import { conParams, problemaDeGrafico } from '../resolverPanel'
 import { blockTable } from '../../catalog/blocks'
 import { plotTable } from '../../catalog/plots'
@@ -30,9 +32,11 @@ import { createFormat, LOCALE_POR_DEFECTO } from '../../render/format'
 import { currentTheme } from '../../tokens/theme'
 import { markTabConfig } from '../../render/budget'
 import { Console } from './Console'
+import { marcarParcial } from './comparativoParcial'
 import { ChatSheet } from './ChatSheet'
 import { agentePorDefecto } from './agenteDeChat'
 import { esAdmin } from '../../api/rol'
+import { useClienteDeTrabajo } from '../useClienteDeTrabajo'
 import { DrillSheet } from './DrillSheet'
 import { SurfaceMessage } from './SurfaceMessage'
 import type { Metric, PanelType, Payload } from '../../api/types'
@@ -79,6 +83,16 @@ export function ConsoleContainer() {
    *  `undefined` es «eligió que lo resuelva el servicio». */
   const [agenteElegido, setAgenteElegido] = useState<string | undefined | null>(null)
   const admin = esAdmin(context.data?.role)
+  const navegar = useNavigate()
+  /** **La barra del cliente activo** · 2026-10-20. Los clientes salen de
+   *  `/admin/tenants`, así que sólo quien administra tiene a cuál cambiar; para
+   *  el resto la barra nombra el cliente de su sesión, sin selector. */
+  const tenants = useTenants(admin)
+  const clientes = admin ? (tenants.data ?? []) : []
+  const [clienteElegido, elegirCliente] = useClienteDeTrabajo(
+    clientes,
+    context.isPending ? undefined : (context.data?.tenant.id ?? null),
+  )
   const agentesDeChat = useChatAgents(admin)
   /** Lo que la hoja necesita para pintar el selector, o nada. **Vacío para quien
    *  no es admin**, y entonces la hoja no lo pinta: ver la regla del CTA sin
@@ -387,11 +401,18 @@ export function ConsoleContainer() {
   // Un fallo del batch NO baja acá: los shells siguen visibles y cada panel
   // muestra su estado de error · F1.26. Por eso el payload cae a CARGANDO y no
   // a una pantalla de error.
-  const payloadOf = (panelId: string): Payload =>
-    batch.data?.[panelId] ??
-    (batch.isError
+  //
+  // **Y en el mes abierto los comparativos se marcan parciales** · F5.22: el
+  // servicio los calcula contra el período anterior completo. Ver
+  // `comparativoParcial.ts`.
+  const enMesAbierto = mesEnCurso !== undefined && activePeriod?.id === mesEnCurso
+  const payloadOf = (panelId: string): Payload => {
+    const p = batch.data?.[panelId]
+    if (p !== undefined) return marcarParcial(p, enMesAbierto)
+    return batch.isError
       ? { estado: 'ERROR', mensaje: batch.error?.message ?? 'No se pudieron traer los datos' }
-      : { estado: 'CARGANDO' })
+      : { estado: 'CARGANDO' }
+  }
 
   /* ── F1.29 · los params se validan ACÁ, en el adaptador de api/ ─────────── */
 
@@ -451,6 +472,13 @@ export function ConsoleContainer() {
     <>
     <Console
       context={context.data}
+      clientes={clientes}
+      clienteActivo={clienteElegido ?? context.data.tenant.id}
+      onElegirCliente={elegirCliente}
+      // Sin `?cliente=` a mano: el cliente ya es el elegido, y el proveedor lo
+      // pone en la URL al entrar a administración. Escribirlo acá sería un
+      // segundo lugar donde vive esa regla.
+      onAbrirEnAdministracion={() => void navegar('/admin')}
       activeTab={activeTab}
       activePeriodId={activePeriod?.id}
       panels={panels}
@@ -567,6 +595,7 @@ export function ConsoleContainer() {
         bloques={blockTable(blocks.data?.blocks ?? [])}
         format={format}
         {...(mesEnCurso === undefined ? {} : { mesEnCurso })}
+        sugerenciasDePestana={layout.data?.tab.chatSugerencias ?? []}
         onClose={() => setAskingTab(false)}
         {...selectorDeAgente}
       />
