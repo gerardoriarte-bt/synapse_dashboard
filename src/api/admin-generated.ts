@@ -59,6 +59,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/tenants/{tenantId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Editar la ficha del cliente · nombre, forma corta, locale, moneda y huso
+         * @description **Medida el 2026-10-20 contra el binario de `7324b26`**, con la base
+         *     local: `label` puesto y vuelto a vacío, un id que no es UUID (**400**) y
+         *     uno que no existe (**404** «tenant no encontrado»).
+         *
+         *     **Edición parcial**: lo que no viaja no cambia (`TenantSettingsInput`,
+         *     punteros `nil` = sin cambio). `label` **puede ir vacío** —vuelve a no
+         *     tener forma corta—; `name`, `locale`, `currency` y `timezone` no, y
+         *     `timezone` tiene que ser una zona IANA.
+         *
+         *     **La usa el campo «Forma corta» de la ficha** · F5.47. Las otras cuatro
+         *     claves se transcriben porque el servicio las acepta, no porque el front
+         *     las mande hoy.
+         *
+         *     **La respuesta NO se transcribe entera, a propósito.** Es
+         *     `TenantAdminDTO`, que trae la cuenta, el usuario, el rol y la URL de
+         *     Snowflake: vocabulario de infraestructura que administración no muestra
+         *     (§7.3). Se declaran las claves que el front lee; el resto existe y no se
+         *     usa. Lo que se refresca después de guardar es `GET /admin/tenants`.
+         */
+        put: operations["updateTenantSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/tenants/{tenantId}/layouts": {
         parameters: {
             query?: never;
@@ -2179,6 +2216,48 @@ export interface operations {
                 };
             };
             403: components["responses"]["Forbidden"];
+        };
+    };
+    updateTenantSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    label?: string;
+                    locale?: string;
+                    currency?: string;
+                    timezone?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description El cliente como quedó · sólo las claves que el front lee */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            label: string;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     listLayouts: {

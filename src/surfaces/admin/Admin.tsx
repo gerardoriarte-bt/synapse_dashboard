@@ -47,6 +47,7 @@ import {
   useRoles,
   useSaveRole,
   useMe,
+  useEditTenantShortName,
   useTenants,
   useSaveTheme,
 } from '../../api/hooks'
@@ -208,6 +209,8 @@ export function Admin() {
   // **Los de la ficha** · P2 de la auditoría del 2026-10-08: quiénes son los
   // usuarios del cliente se ve en su ficha, no en otra pantalla.
   const usuariosDelCliente = useUsers(activo)
+  /** La forma corta del cliente activo · F5.47. */
+  const editarFormaCorta = useEditTenantShortName()
   /* ── LAS ACCIONES SOBRE USUARIOS Y LA COLA DE SOLICITUDES · 2026-10-09 ───
    *
    * **Roles y agentes de todos los clientes**: cambiar el rol de alguien ofrece
@@ -418,6 +421,11 @@ export function Admin() {
             </nav>
             <Cliente
               agentes={agentes}
+              formaCorta={{
+                onGuardar: (valor: string) => editarFormaCorta.mutate({ tenantId: activo, formaCorta: valor }),
+                guardando: editarFormaCorta.isPending,
+                error: editarFormaCorta.error === null ? null : `No se pudo guardar la forma corta: ${editarFormaCorta.error.message}`,
+              }}
               resumenDeUsuarios={
                 usuariosDelCliente.data === undefined
                   ? null
@@ -535,6 +543,7 @@ function mensajeDeRol(e: Error | null): string | null {
 function Cliente({
   agentes,
   resumenDeUsuarios,
+  formaCorta,
   roles,
   tenant,
   estado,
@@ -556,6 +565,9 @@ function Cliente({
   agentes: ReturnType<typeof useAgents>
   /** Los conteos de la card de usuarios · `null` mientras cargan. */
   resumenDeUsuarios: ResumenDeUsuarios | null
+  /** Editar la forma corta · F5.47. **Obligatoria** por la misma razón que las
+   *  de abajo: una opcional mal escrita compila y el botón no aparece. */
+  formaCorta: Parameters<typeof ResumenDeFicha>[0]['formaCorta']
   roles: ReturnType<typeof useRoles>
   /** Los cuatro de `TenantIdentity` · §PEN:A2. **Ninguno es opcional**, que es lo
    *  único que el compilador puede hacer contra el spread de arriba: una prop
@@ -610,6 +622,7 @@ function Cliente({
         acceso={acceso}
         onIr={(id) => document.getElementById(id)?.scrollIntoView?.({ block: 'start', behavior: 'smooth' })}
         {...(onVerificar === undefined ? {} : { onVerificar })}
+        formaCorta={formaCorta}
       />
 
       <div id="ficha-identidad">

@@ -492,6 +492,19 @@ export function useEditUser() {
   })
 }
 
+/** **Editar la forma corta** · F5.47. Se ve en la barra y en las cards
+ *  —`/admin/tenants`— y en la consola —`/config/me`—: se invalidan las dos. */
+export function useEditTenantShortName() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { tenantId: string; formaCorta: string }) => adminApi.editarFormaCorta(v.tenantId, v.formaCorta),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.tenants })
+      void qc.invalidateQueries({ queryKey: keys.me })
+    },
+  })
+}
+
 /** **La verificación del acceso, a pedido** · 2026-10-14.
  *
  *  `enabled: false`: no corre al abrir la ficha, corre con «Verificar ahora»

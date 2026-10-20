@@ -8111,6 +8111,27 @@ sección—. Pruebas en `tests/surfaces/admin/composicion.test.tsx`,
 selector. La medición de QA leyó las opciones del `<select>` como texto de la
 fila; está corregido en la propuesta.
 
+### ➕ F5.47 ✅ La forma corta se edita desde la ficha
+
+**Descripción.** La forma corta (`label`) es lo que distingue a dos clientes con
+el mismo nombre en la barra, el selector y las cards, y en QA está vacía o igual
+al nombre. El servicio la edita con `PUT /admin/tenants/{tenantId}` desde
+`6e521cc` —leído con `git log -S` sobre su handler—, y no estaba transcripto ni había dónde cargarla. §3 de
+`docs/PROPUESTA-2026-10-20-identidad-del-cliente-y-ficha.md`.
+
+**Criterio de aceptación.** La card de identidad de la ficha muestra la forma
+corta y ofrece «Editar forma corta»: un campo que guarda con `PUT` al cliente de
+la ficha, recortando espacios, y vacía la saca. Después de guardar, la barra y
+las cards la muestran sin recargar. Cancelar no manda nada.
+
+**Verificado el 2026-10-20** · la ruta medida contra `7324b26` —puesta, vuelta a
+vacía, 400 con un id que no es UUID y 404 con uno que no existe— y transcripta
+en `contracts/synapse-admin-wire.yaml` **sin** las claves de Snowflake que la
+respuesta trae. `adminApi.editarFormaCorta` y `useEditTenantShortName`, que
+invalida `/admin/tenants` y `/config/me`. Prueba en
+`tests/surfaces/admin/admin.test.tsx` que sigue la cadena hasta el `PUT`; cuatro
+mutaciones mueren.
+
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
 **Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio

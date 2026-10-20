@@ -776,3 +776,56 @@ describe('la ficha, con el proveedor del cliente de trabajo montado', () => {
     expect(await screen.findByRole('navigation', { name: 'Migaja' })).toBeInTheDocument()
   })
 })
+
+// ── LA FORMA CORTA SE EDITA DESDE LA FICHA · F5.47, 2026-10-20 ──────────────
+describe('la forma corta, editada desde la ficha', () => {
+  /** **Se sigue el CALLBACK hasta el cable**: `ResumenDeFicha` → `Cliente` →
+   *  `Admin` → `useEditTenantShortName` → `PUT`. Cada salto pasa una prop, y
+   *  una mal nombrada compila. Lo que se afirma es a quién y qué se manda, y
+   *  que la barra lo dice después. */
+  it('manda el PUT al cliente de la ficha, y la barra muestra la nueva', async () => {
+    const pedidos: { id: string; cuerpo: unknown }[] = []
+    let lista = tenants
+    server.use(
+      http.get(`${API}/admin/tenants`, () => ok(lista)),
+      http.put(`${API}/admin/tenants/:id`, async ({ params, request }) => {
+        const cuerpo = (await request.json()) as { label: string }
+        pedidos.push({ id: String(params['id']), cuerpo })
+        lista = lista.map((t) => (t.id === params['id'] ? { ...t, label: cuerpo.label } : t))
+        return ok({ id: params['id'], name: 'Keralty Colombia', label: cuerpo.label })
+      }),
+    )
+    montar()
+    await abrirFicha(/^Keralty Colombia · /)
+
+    const identidad = screen.getByRole('region', { name: 'Resumen · Identidad' })
+    await userEvent.click(within(identidad).getByRole('button', { name: 'Editar forma corta' }))
+    const campo = within(identidad).getByRole('textbox', { name: 'Forma corta' })
+    await userEvent.clear(campo)
+    await userEvent.type(campo, '  Keralty CO ')
+    await userEvent.click(within(identidad).getByRole('button', { name: 'Guardar' }))
+
+    await waitFor(() => expect(pedidos).toEqual([{ id: 't-2', cuerpo: { label: 'Keralty CO' } }]))
+    const barra = screen.getByRole('region', { name: 'Cliente activo' })
+    expect(await within(barra).findByText('KERALTY CO')).toBeInTheDocument()
+  })
+
+  it('cancelar no manda nada', async () => {
+    const pedidos: string[] = []
+    server.use(
+      http.get(`${API}/admin/tenants`, () => ok(tenants)),
+      http.put(`${API}/admin/tenants/:id`, ({ params }) => {
+        pedidos.push(String(params['id']))
+        return ok({})
+      }),
+    )
+    montar()
+    await abrirFicha(/^Keralty Colombia · /)
+    const identidad = screen.getByRole('region', { name: 'Resumen · Identidad' })
+    await userEvent.click(within(identidad).getByRole('button', { name: 'Editar forma corta' }))
+    await userEvent.type(within(identidad).getByRole('textbox', { name: 'Forma corta' }), 'X')
+    await userEvent.click(within(identidad).getByRole('button', { name: 'Cancelar' }))
+    expect(within(identidad).queryByRole('textbox')).toBeNull()
+    expect(pedidos).toEqual([])
+  })
+})

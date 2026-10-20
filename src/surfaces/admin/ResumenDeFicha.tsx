@@ -11,7 +11,10 @@
  *  **Ninguna cifra se calcula acá**: son conteos de lo que la ficha ya trajo. Lo
  *  que no llegó todavía se dice «cargando», no cero.
  */
+import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
+import { formaCortaVisible } from '../clienteVisible'
 import { Accion } from '../../render/primitives/Accion'
 import type { Formatter } from '../../render/format'
 import type { Tenant } from '../../api/admin'
@@ -29,6 +32,8 @@ type Props = {
   /** Lleva al bloque · el `id` de la sección. */
   onIr: (seccion: string) => void
   onVerificar?: (() => void) | undefined
+  /** **Editar la forma corta** · F5.47. Sin manejador no se ofrece. */
+  formaCorta?: { onGuardar: (valor: string) => void; guardando: boolean; error: string | null } | undefined
 }
 
 /** Lo que dice el acceso en una palabra · el mismo vocabulario que la fila de
@@ -60,16 +65,66 @@ function Card({ titulo, children, pie }: { titulo: string; children: React.React
 const CIFRA = 'font-display text-titulo-lg leading-titulo tracking-titulo text-ink'
 const VALOR = 'font-body text-cuerpo text-ink'
 
-export function ResumenDeFicha({ tenant, format, roles, usuarios, acceso, onIr, onVerificar }: Props) {
+export function ResumenDeFicha({ tenant, format, roles, usuarios, acceso, onIr, onVerificar, formaCorta }: Props) {
+  const [editando, setEditando] = useState<string | null>(null)
   return (
     <div className="grid grid-cols-4 gap-4">
-      <Card titulo="Identidad" pie={<Accion tamano="compacta" onClick={() => onIr('ficha-identidad')}>Ver identidad</Accion>}>
+      <Card
+        titulo="Identidad"
+        pie={
+          editando === null ? (
+            <>
+              {formaCorta !== undefined && tenant !== null && (
+                <Accion tamano="compacta" onClick={() => setEditando(tenant.formaCorta)}>
+                  Editar forma corta
+                </Accion>
+              )}
+              <Accion tamano="compacta" onClick={() => onIr('ficha-identidad')}>Ver identidad</Accion>
+            </>
+          ) : null
+        }
+      >
         {tenant === null ? (
           <Label as="span">Cargando identidad</Label>
+        ) : editando !== null && formaCorta !== undefined ? (
+          // **La forma corta es lo que distingue al cliente** en la barra, el
+          // selector y las cards · §3 de la propuesta del 2026-10-20. Vacía, se
+          // muestra el id corto.
+          <form
+            className="flex flex-col gap-2"
+            onSubmit={(e) => {
+              e.preventDefault()
+              formaCorta.onGuardar(editando)
+              setEditando(null)
+            }}
+          >
+            <label className="flex flex-col gap-1">
+              <Label as="span">Forma corta</Label>
+              <input
+                value={editando}
+                onChange={(e) => setEditando(e.target.value)}
+                maxLength={24}
+                placeholder="UA MX"
+                className="h-8 rounded-md border border-w4 bg-transparent px-2 font-body text-cuerpo text-ink"
+              />
+            </label>
+            <Ayuda>Va junto al nombre en la barra y el selector. Vacía, se muestra el id corto.</Ayuda>
+            <div className="flex justify-end gap-2">
+              <Accion tamano="compacta" onClick={() => setEditando(null)}>
+                Cancelar
+              </Accion>
+              <Accion tamano="compacta" variante="primaria" tipo="submit" deshabilitada={formaCorta.guardando}>
+                Guardar
+              </Accion>
+            </div>
+          </form>
         ) : (
           <>
             <span className={VALOR}>{`${tenant.moneda} · ${tenant.zonaHoraria}`}</span>
+            <Label as="span">{`Forma corta · ${formaCortaVisible(tenant)}`}</Label>
             <Label as="span">{`Alta ${format.calendar(tenant.creadoEn)}`}</Label>
+            {formaCorta?.guardando === true && <Label as="span">Guardando…</Label>}
+            {formaCorta?.error !== null && formaCorta?.error !== undefined && <Ayuda>{formaCorta.error}</Ayuda>}
           </>
         )}
       </Card>
