@@ -168,7 +168,11 @@ activo.
   eso saca al cliente de dos lugares donde hoy se elige: la columna «TENANT» del
   cuerpo de B1 y el chip «TENANT» del navbar de B2. B1 queda para el rol y las
   pestañas, y el navbar de B2 para el rol y la pestaña que se editan.
-- **El perfil queda como un ícono** a la derecha del navbar.
+- **El perfil queda como un ícono** a la derecha del navbar, y **a su derecha
+  el ≡ del menú de trabajo**, el mismo de hoy: lleva a consola, administración
+  (Clientes, Usuarios, Catálogo de métricas, Salud de feeds) y construcción de
+  dashboards (Dashboards, Editor, Historial de versiones). El ⋯ del builder son
+  acciones del lienzo, no navegación.
 - **A1 · Clientes no lleva barra**, porque es de plataforma: lista todos. Ahí la
   card del cliente activo se marca «EN USO», y «Abrir ficha» lo vuelve activo.
 
@@ -264,9 +268,9 @@ renombran a A1 y A2 y reemplazan a los actuales.
 
 | Id | Frame | Qué muestra |
 |---|---|---|
-| `c2sREV` | Propuesta · A1 · Clientes en cards | La grilla de cuatro clientes, con el activo marcado «EN USO». UA MX y UA CO comparten logo, y la forma corta los separa. Super-admins plegado |
-| `W5cYQV` | Propuesta · A2 · Ficha con resumen | La barra del cliente activo, la migaja, las cuatro cards de resumen, los roles plegados y un solo control de rol por usuario |
-| `bRY65` | Propuesta · Header · identidad del cliente | Cinco casos: administración, la consola después de cambiar de cliente, quien tiene un solo cliente, el selector abierto y la placa en los dos temas |
+| `JbSzo` | Propuesta · A1 · Clientes en cards | La grilla de cuatro clientes, con el activo marcado «EN USO». UA MX y UA CO comparten logo, y la forma corta los separa. Super-admins plegado |
+| `FNeJ3` | Propuesta · A2 · Ficha con resumen | La barra del cliente activo, la migaja, las cuatro cards de resumen, los roles plegados y un solo control de rol por usuario |
+| `tUG9S` | Propuesta · Header · identidad del cliente | Seis casos: administración, la consola después de cambiar de cliente, quien tiene un solo cliente, el selector abierto, la placa en los dos temas y el menú de trabajo abierto |
 | `nXCtM` | Propuesta · B1 · Contexto con la barra de cliente | Copia de B1 sin la columna «TENANT»: el cliente es el de la barra |
 | `d7qsX7` | Propuesta · B2 · Canvas con la barra de cliente | Copia de B2 sin el chip «TENANT» del navbar, con la barra sobre el lienzo |
 
