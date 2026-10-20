@@ -40,6 +40,7 @@ import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
 import { Accion } from '../../render/primitives/Accion'
 import { BarraDeCliente } from '../BarraDeCliente'
+import { NavDeSuperficie } from '../NavDeSuperficie'
 import type { ClienteVisible } from '../clienteVisible'
 import { Wordmark } from '../console/Wordmark'
 import { PANTALLAS } from './pantallas'
@@ -210,17 +211,45 @@ export function BuilderChrome({
         {sinChrome(forma) ? null : (
           // **Fija arriba**: el editor es largo, y el estado del guardado tiene
           // que verse mientras se baja por el lienzo.
-          <header ref={cabecera} className="sticky top-0 z-30 flex flex-col gap-4 px-6 pt-5 border-b border-w4 bg-bg">
-            <div className="flex items-center justify-between gap-6">
+          <header ref={cabecera} className="sticky top-0 z-30 flex flex-col border-b border-w4 bg-bg">
+            <div className="flex items-center justify-between gap-6 px-6 py-3">
               {/* **Era la palabra en `font-display`, y ésa es la invención que
                   el capítulo `Identidad` corrige**: el logotipo tiene su propia
                   tipografía, no la del producto. Ahora es el arte.
 
                   `marca` y no `mono`: decisión humana del 2026-10-06, escrita en
                   la §3 de `PROPUESTA-2026-09-22-divergencias-con-el-pen.md`. */}
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <Wordmark variante="marca" />
                 <Label>Builder</Label>
+                <span aria-hidden className="mx-2 h-5 w-px shrink-0 bg-w3" />
+                {/* **Las pantallas y el rol, en el navbar** · decisión humana
+                    del 2026-10-20. Sólo las que se navegan · D3. */}
+                <NavDeSuperficie
+                  pantallas={PANTALLAS.filter((p) => p.enNav)}
+                  activa={activa}
+                  onIr={onIr}
+                  etiqueta="Builder"
+                />
+                {/* El contexto de edición, **salvo en B1**: ahí son los
+                    controles del cuerpo, y repetirlos arriba como texto hacía
+                    que uno pareciera un control y el otro no. */}
+                {conContexto(forma) && activa !== 'contexto' && (
+                  <>
+                    <span aria-hidden className="mx-2 h-5 w-px shrink-0 bg-w3" />
+                    {contexto.dashboard !== null && (
+                      <div className="flex items-center gap-2">
+                        <Label>Dashboard</Label>
+                        <span className="font-body text-cuerpo font-medium text-ink">{contexto.dashboard}</span>
+                        {contexto.version !== null && <Label>{contexto.version}</Label>}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Label>Rol</Label>
+                      <span className="font-body text-cuerpo font-medium text-ink">{contexto.rol ?? 'Todos los roles'}</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* «Ancho 1600 · lienzo 1:1 a 1200 más 300 de biblioteca» vivía
@@ -247,41 +276,20 @@ export function BuilderChrome({
             {/* ── LA BARRA DEL CLIENTE ACTIVO · 2026-10-20 ─────────────────
                 La misma de consola y administración. Sangra hasta los bordes
                 de la cabecera, que tiene su propio padding. */}
-            <div className="-mx-6">
-              <BarraDeCliente
-                activo={clientes.find((c) => c.id === clienteActivo) ?? null}
-                clientes={clientes}
-                onElegir={onCliente}
-              />
-            </div>
+            <BarraDeCliente
+              activo={clientes.find((c) => c.id === clienteActivo) ?? null}
+              clientes={clientes}
+              onElegir={onCliente}
+            />
 
-            {conContexto(forma) && (
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-                {/* El contexto, **salvo en B1**: ahí son los controles del
-                    cuerpo, y repetirlos arriba como texto con el mismo rótulo
-                    hacía que uno pareciera un control y el otro no. La pestaña
-                    tampoco va: en el canvas es el selector del cuerpo. */}
-                {/* El cliente ya no se repite acá: está arriba, en el selector. */}
-                {activa !== 'contexto' && (
-                  <>
-                    {contexto.dashboard !== null && (
-                      <div className="flex items-center gap-2">
-                        <Label>Dashboard</Label>
-                        <span className="font-body text-cuerpo font-medium text-ink">{contexto.dashboard}</span>
-                        {contexto.version !== null && <Label>{contexto.version}</Label>}
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <Label>Rol</Label>
-                      <span className="font-body text-cuerpo font-medium text-ink">{contexto.rol ?? 'Todos los roles'}</span>
-                    </div>
-                  </>
-                )}
-
+            {/* **Las acciones de edición, en su fila** · el contexto subió al
+                navbar el 2026-10-20 y acá queda guardar, validar y publicar. */}
+            {conContexto(forma) && activa !== 'contexto' && (
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-6 py-3">
                 {/* **En «Dashboards» no hay acciones de edición**: todavía no se
                     eligió qué editar. Guardar, validar y publicar son del
                     editor · visto en pantalla el 2026-10-07. */}
-                {activa === 'contexto' ? null : soloContexto(forma) ? (
+                {soloContexto(forma) ? (
                   /* **La única acción de B6, y es la del dibujo.** Una pantalla
                      que se mira no ofrece guardar ni publicar: lo que ofrece es
                      la vuelta a la que sí compone. El literal es del `.pen`. */
@@ -348,26 +356,6 @@ export function BuilderChrome({
               </div>
             )}
 
-            {/* **Sólo las pantallas que se navegan** · D3. Las demás siguen
-                declaradas en `pantallas.ts`. */}
-            <nav className="flex gap-1 -mb-px" aria-label="Builder">
-              {PANTALLAS.filter((p) => p.enNav).map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => onIr(p.id)}
-                  aria-current={p.id === activa ? 'page' : undefined}
-                  className={
-                    'px-3 py-3 font-body text-cuerpo cursor-pointer border-b-2 ' +
-                    (p.id === activa
-                      ? 'border-acc text-ink font-semibold'
-                      : 'border-transparent text-dim font-medium hover:text-ink')
-                  }
-                >
-                  {p.nombre}
-                </button>
-              ))}
-            </nav>
           </header>
         )}
 

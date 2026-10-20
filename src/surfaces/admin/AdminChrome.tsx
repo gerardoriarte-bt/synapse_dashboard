@@ -32,6 +32,7 @@
 import { IdentityBlock } from '../IdentityBlock'
 import { MenuDeTrabajo } from '../MenuDeTrabajo'
 import { BarraDeCliente } from '../BarraDeCliente'
+import { NavDeSuperficie } from '../NavDeSuperficie'
 import type { ClienteVisible } from '../clienteVisible'
 import type { Theme } from '../../tokens/theme'
 import { Label } from '../../render/primitives/Label'
@@ -95,6 +96,9 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
             <div className="flex items-center gap-3">
               <Wordmark variante="marca" />
               <Label>Administración</Label>
+              <span aria-hidden className="mx-2 h-5 w-px shrink-0 bg-w3" />
+              {/* **Las pantallas, en el navbar** · decisión humana del 2026-10-20. */}
+              <NavDeSuperficie pantallas={PANTALLAS} activa={activa} onIr={onIr} etiqueta="Administración" />
             </div>
             {/* La persona como ícono y el menú de trabajo AL FINAL · decisiones
                 humanas del 2026-10-07 y del 2026-10-20. «Volver al dashboard» se
@@ -119,7 +123,7 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
               en uso es el punto de partida. */}
           <BarraDeCliente activo={activo} clientes={tenants} onElegir={onTenant} />
 
-          <div className="flex items-baseline justify-between gap-6 px-6 pt-6">
+          <div className="flex items-baseline justify-between gap-6 px-6 py-6">
             {/* **`titulo-lg`, no `titulo`** · 2026-09-28. El dibujo pone los
                 títulos de superficie de admin en el mismo tamaño que la pregunta
                 operativa de la consola, y el token que los sirve a los dos es
@@ -154,29 +158,6 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
             </div>
           </div>
 
-          {/* **La navegación en registro de acción, como la del builder** ·
-              2026-10-06. Vestía el traje del rótulo —mono, mayúsculas, gris— y
-              se leía como un encabezado más. Ahora es Inter, y la activa se
-              marca con el borde `acc` —«estado activo», uno de sus usos
-              permitidos— y el peso, no sólo con un fondo. */}
-          <nav className="flex gap-1 -mb-px px-6 pt-4" aria-label="Administración">
-            {PANTALLAS.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => onIr(p.id)}
-                aria-current={p.id === activa ? 'page' : undefined}
-                className={
-                  'px-3 py-3 font-body text-cuerpo cursor-pointer border-b-2 ' +
-                  (p.id === activa
-                    ? 'border-acc text-ink font-semibold'
-                    : 'border-transparent text-dim font-medium hover:text-ink')
-                }
-              >
-                {p.nombre}
-              </button>
-            ))}
-          </nav>
         </header>
 
         <main className="p-6">{children}</main>
