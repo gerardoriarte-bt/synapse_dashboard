@@ -173,6 +173,14 @@ function montar() {
 async function abrirFicha() {
   await screen.findByRole('button', { name: /^Grupo Axo · / })
   await userEvent.click(screen.getByRole('button', { name: /^Grupo Axo · / }))
+  await verIdentidad()
+}
+
+/** **La identidad completa se abre desde su card** · auditoría del 2026-10-20:
+ *  mostrarla siempre repetía lo que la card ya resume. */
+async function verIdentidad() {
+  const card = await screen.findByRole('region', { name: 'Resumen · Identidad' })
+  await userEvent.click(within(card).getByRole('button', { name: 'Ver identidad' }))
   await screen.findByText('Identidad del cliente')
 }
 
@@ -245,6 +253,8 @@ describe('la versión del catálogo · derivada, y atada a la pantalla', () => {
 
     await waitFor(() => {
       expect(celda('Catalog version').textContent).toContain('v4')
+    // Y la card del resumen la dice también · auditoría del 2026-10-20.
+    expect(screen.getByRole('region', { name: 'Resumen · Identidad' }).textContent).toContain('Catálogo v4')
     })
   })
 })
@@ -541,7 +551,7 @@ describe('mientras una de las dos vueltas no llegó · no se afirma nada', () =>
     montar()
     await screen.findByRole('button', { name: /^Grupo Axo · / })
     await userEvent.click(screen.getByRole('button', { name: /^Grupo Axo · / }))
-    await screen.findByText('Identidad del cliente')
+    await verIdentidad()
 
     expect(celda('Estado').textContent).toContain('—')
     expect(screen.queryAllByText('En alta')).toHaveLength(0)

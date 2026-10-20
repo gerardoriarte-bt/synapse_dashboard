@@ -34,6 +34,8 @@ type Props = {
   onVerificar?: (() => void) | undefined
   /** **Editar la forma corta** · F5.47. Sin manejador no se ofrece. */
   formaCorta?: { onGuardar: (valor: string) => void; guardando: boolean; error: string | null } | undefined
+  /** La versión del catálogo · `null` cuando no se puede derivar. */
+  version?: number | null | undefined
 }
 
 /** Lo que dice el acceso en una palabra · el mismo vocabulario que la fila de
@@ -65,7 +67,7 @@ function Card({ titulo, children, pie }: { titulo: string; children: React.React
 const CIFRA = 'font-display text-titulo-lg leading-titulo tracking-titulo text-ink'
 const VALOR = 'font-body text-cuerpo text-ink'
 
-export function ResumenDeFicha({ tenant, format, roles, usuarios, acceso, onIr, onVerificar, formaCorta }: Props) {
+export function ResumenDeFicha({ tenant, format, roles, usuarios, acceso, onIr, onVerificar, formaCorta, version = null }: Props) {
   const [editando, setEditando] = useState<string | null>(null)
   return (
     <div className="grid grid-cols-4 gap-4">
@@ -122,7 +124,9 @@ export function ResumenDeFicha({ tenant, format, roles, usuarios, acceso, onIr, 
           <>
             <span className={VALOR}>{`${tenant.moneda} · ${tenant.zonaHoraria}`}</span>
             <Label as="span">{`Forma corta · ${formaCortaVisible(tenant)}`}</Label>
-            <Label as="span">{`Alta ${format.calendar(tenant.creadoEn)}`}</Label>
+            <Label as="span">
+              {`Alta ${format.calendar(tenant.creadoEn)}${version === null ? '' : ` · Catálogo v${String(version)}`}`}
+            </Label>
             {formaCorta?.guardando === true && <Label as="span">Guardando…</Label>}
             {formaCorta?.error !== null && formaCorta?.error !== undefined && <Ayuda>{formaCorta.error}</Ayuda>}
           </>

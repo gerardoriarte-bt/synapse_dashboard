@@ -191,13 +191,19 @@ export function TenantList({ format, tenants, seleccionado, onElegir, cargando =
                   </span>
                 </span>
 
-                <span className="flex w-full items-center justify-end gap-1.5 font-mono text-nota leading-rotulo tracking-rotulo uppercase text-ink">
+                {/* **Con forma de acción** · auditoría del 2026-10-20: era un
+                    rótulo y no se leía como algo que se aprieta. Sigue sin ser
+                    un botón propio —la card entera lo es— y por eso es un
+                    `span` con el traje de `Accion`. */}
+                <span className="flex w-full justify-end">
+                <span className="flex h-7 items-center gap-1.5 rounded-md border border-w5 px-2.5 font-body text-celda font-semibold text-ink">
                   Abrir ficha
                   {/* `arrow-right` de línea · hereda el color. */}
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <path d="M5 12h14" />
                     <path d="m12 5 7 7-7 7" />
                   </svg>
+                </span>
                 </span>
               </button>
             </li>

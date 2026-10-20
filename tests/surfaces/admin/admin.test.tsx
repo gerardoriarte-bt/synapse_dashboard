@@ -7,7 +7,7 @@
  *  violaba §3.1 de tres formas, porque estaban escritas desde el código.
  */
 import { readFileSync } from 'node:fs'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -827,5 +827,39 @@ describe('la forma corta, editada desde la ficha', () => {
     await userEvent.click(within(identidad).getByRole('button', { name: 'Cancelar' }))
     expect(within(identidad).queryByRole('textbox')).toBeNull()
     expect(pedidos).toEqual([])
+  })
+})
+
+// ── LA AUDITORÍA DEL DISEÑO · 2026-10-20 ──────────────────────────────────
+describe('la ficha como la dibuja A2', () => {
+  it('lleva el cliente como título con su forma corta, y «Abrir en builder» navega', async () => {
+    server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={['/admin']}>
+          <Routes>
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/builder" element={<p>EL BUILDER</p>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    await abrirFicha(/^Keralty Colombia · /)
+    expect(screen.getByRole('heading', { level: 2, name: 'Keralty Colombia' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Abrir en builder' }))
+    expect(await screen.findByText('EL BUILDER')).toBeInTheDocument()
+  })
+
+  it('la identidad completa no se repite: la abre «Ver identidad»', async () => {
+    server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
+    montar()
+    await abrirFicha(/^Keralty Colombia · /)
+    expect(screen.queryByText('Identidad del cliente')).toBeNull()
+    const card = screen.getByRole('region', { name: 'Resumen · Identidad' })
+    await userEvent.click(within(card).getByRole('button', { name: 'Ver identidad' }))
+    expect(await screen.findByText('Identidad del cliente')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Ocultar identidad' }))
+    expect(screen.queryByText('Identidad del cliente')).toBeNull()
   })
 })

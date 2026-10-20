@@ -8177,6 +8177,26 @@ invalida `/admin/tenants` y `/config/me`. Prueba en
 `tests/surfaces/admin/admin.test.tsx` que sigue la cadena hasta el `PUT`; cuatro
 mutaciones mueren.
 
+### ➕ F5.48 ✅ Lo que la auditoría del diseño encontró en la ficha y en las cards
+
+**Descripción.** Los cinco puntos del front de §4 de
+`docs/AUDITORIA-2026-10-20-diseno-de-la-identidad-del-cliente.md`: la ficha sin
+título ni «Abrir en builder», la identidad repetida debajo de las cards, las
+reglas de los roles en tres párrafos, la versión del catálogo ausente de la card
+y «Abrir ficha» que no se leía como acción.
+
+**Criterio de aceptación.** La ficha lleva el nombre del cliente como título con
+su forma corta y «Abrir en builder», que navega. La identidad completa no se
+pinta hasta «Ver identidad», y se puede ocultar. Las reglas de los roles van en
+una línea. La card de identidad dice la versión del catálogo. «Abrir ficha» se
+ve como acción.
+
+**Verificado el 2026-10-20** · mirado en local con un operador contra `7324b26`.
+Pruebas en `tests/surfaces/admin/admin.test.tsx` y `enAlta.test.tsx`; cinco
+mutaciones mueren. Los puntos 6 y 7 de la auditoría —el chrome de
+administración y la fila de contexto del builder— son anteriores a la propuesta
+y quedan para decidir.
+
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
 **Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio
