@@ -239,7 +239,27 @@ su sección:
 3. **Clientes en cards y la ficha como página**, cuando diseño redibuje.
 4. **El logo**, cuando llegue la ruta. Reemplaza al monograma y nada más cambia.
 
-## 8 · Lo que no se miró
+## 8 · Dibujado en el `.pen`, para validar
+
+El 2026-10-20, a pedido del humano, en una banda nueva debajo de
+administración (`y` 15500). **Se llaman «Propuesta · …» a propósito**: así
+`pen-pantallas` no los toma como pantallas a construir. Cuando se aprueben se
+renombran a A1 y A2 y reemplazan a los actuales.
+
+| Id | Frame | Qué muestra |
+|---|---|---|
+| `DPL4f` | Propuesta · A1 · Clientes en cards | La grilla de cuatro clientes. UA MX y UA CO comparten logo, y la forma corta los separa. Super-admins plegado |
+| `OLeoU` | Propuesta · A2 · Ficha con resumen | La ficha de **otro** cliente, con la franja, la migaja, las cuatro cards de resumen, los roles plegados y un solo control de rol por usuario |
+| `Nynh7` | Propuesta · Header · identidad del cliente | Cinco casos: tu cliente, otro cliente con la franja, la consola, el selector abierto y la placa en los dos temas |
+
+**No agrega tokens.** La placa clara es `$panel` con el tema Light forzado sobre
+el nodo, así que se ve blanca también en el tema oscuro.
+
+**El logo es un marcador**, un ícono de imagen: no hay logos reales para probar.
+Los clientes, las personas y los conteos son datos de ejemplo, y las notas lo
+dicen.
+
+## 9 · Lo que no se miró
 
 - Cambiar de cliente en QA: se miró sin elegir otro, para no tocar nada.
 - El responsive, que sigue diferido.
