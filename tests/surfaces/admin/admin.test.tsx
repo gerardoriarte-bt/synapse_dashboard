@@ -121,11 +121,11 @@ describe('§7.3 · las cinco pantallas y su alcance', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
 
-    // **Desde el 2026-10-06 es el selector destacado y compartido con el
-    // builder** · `SelectorDeCliente`. Ya no lleva el rótulo «Alcance · cliente»:
-    // el rótulo es «Cliente», que es lo que se elige.
-    const selector = await screen.findByRole('combobox', { name: 'Cliente' })
-    expect(within(selector).getByText('Keralty Colombia')).toBeInTheDocument()
+    // **Desde el 2026-10-20 el cliente lo dice la barra**, la misma de la
+    // consola y del builder, y se cambia desde su selector.
+    const barra = await screen.findByRole('region', { name: 'Cliente activo' })
+    await userEvent.click(within(barra).getByRole('button', { name: /Cambiar de cliente/ }))
+    expect(screen.getByRole('menuitemradio', { name: /Keralty Colombia/ })).toBeInTheDocument()
     expect(screen.queryByText(/Alcance · /)).toBeNull()
   })
 })
@@ -438,10 +438,12 @@ describe('§PEN:A1 · el navbar de admin pinta la identidad', () => {
     montar()
     await screen.findByRole('button', { name: /^Under Armour México · / })
 
-    const cabecera = document.querySelector('header') as HTMLElement
-    // Los valores salen del contexto por defecto de los mocks, leídos de ahí.
-    expect(within(cabecera).getByText('Planner')).toBeVisible()
-    expect(within(cabecera).getByText('Prueba Uno')).toBeVisible()
+    // **Desde el 2026-10-20 es un ícono**: el rol y el nombre están en el panel
+    // que abre. Los valores salen del contexto por defecto de los mocks.
+    await userEvent.click(screen.getByRole('button', { name: 'Identidad · Prueba Uno' }))
+    const panel = screen.getByRole('menu', { name: 'Usuario · Prueba Uno' })
+    expect(within(panel).getByText('Planner')).toBeVisible()
+    expect(within(panel).getByText('Prueba Uno')).toBeVisible()
   })
 
   it('y sale del contexto, no de una constante', async () => {
@@ -464,9 +466,10 @@ describe('§PEN:A1 · el navbar de admin pinta la identidad', () => {
     montar()
     await screen.findByRole('button', { name: /^Under Armour México · / })
 
-    const cabecera = document.querySelector('header') as HTMLElement
-    expect(within(cabecera).getByText('planner')).toBeVisible()
-    expect(within(cabecera).getByText('Otra Persona')).toBeVisible()
+    await userEvent.click(screen.getByRole('button', { name: 'Identidad · Otra Persona' }))
+    const panel = screen.getByRole('menu', { name: 'Usuario · Otra Persona' })
+    expect(within(panel).getByText('planner')).toBeVisible()
+    expect(within(panel).getByText('Otra Persona')).toBeVisible()
   })
 })
 
@@ -728,19 +731,18 @@ describe('la verificación del acceso, desde la ficha', () => {
   })
 })
 
-// ── EL CAMBIO DE CLIENTE SE DICE · F5.39 y F5.40, 2026-10-19 ───────────────
+// ── EL CLIENTE ACTIVO LO DICE LA BARRA · 2026-10-20 ────────────────────────
 describe('trabajar sobre otro cliente', () => {
-  it('la lista marca el propio, y «Volver» nombra la consola a la que vuelve', async () => {
+  it('elegirlo cambia la barra, y no hay un cliente «de la sesión» aparte', async () => {
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     montar()
     await screen.findByRole('button', { name: /^Under Armour México · / })
-    // El propio —el de la sesión, `t-1`— lleva la marca; el otro no.
-    expect(screen.getByText(/· tu cliente/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Volver al dashboard' })).toBeInTheDocument()
+    const barra = screen.getByRole('region', { name: 'Cliente activo' })
+    expect(within(barra).getByText('Under Armour México')).toBeInTheDocument()
+    expect(screen.queryByText(/tu cliente/)).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Volver/ })).toBeNull()
 
     await userEvent.click(screen.getByRole('button', { name: /^Keralty Colombia · / }))
-    expect(
-      await screen.findByRole('button', { name: /^Volver a la consola de .*, el cliente de tu sesión$/ }),
-    ).toBeInTheDocument()
+    expect(await within(barra).findByText('Keralty Colombia')).toBeInTheDocument()
   })
 })

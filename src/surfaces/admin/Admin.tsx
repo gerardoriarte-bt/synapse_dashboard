@@ -281,7 +281,6 @@ export function Admin() {
       onIr={setPantalla}
       tenants={lista}
       tenantActivo={activo}
-      propio={contexto.data === undefined ? null : { id: contexto.data.tenant.id, nombre: contexto.data.tenant.nombre }}
       onTenant={setTenant}
       {...(contexto.data === undefined
         ? {}
@@ -380,7 +379,6 @@ export function Admin() {
             format={format}
             seleccionado={activo}
             onElegir={setTenant}
-            propio={contexto.data?.tenant.id ?? null}
             cargando={tenants.data === undefined}
           />
           {activo === null ? (

@@ -329,8 +329,11 @@ export function useSelectDashboard() {
  * al endpoint en vez de decidir acá.
  */
 
-export function useTenants() {
-  return useQuery({ queryKey: keys.tenants, queryFn: adminApi.tenants })
+/** `habilitado` apaga la consulta para quien no administra · 2026-10-20: la
+ *  consola la pide para la barra del cliente, y a un usuario sin rol admin
+ *  `/admin/tenants` le contesta 403. */
+export function useTenants(habilitado = true) {
+  return useQuery({ queryKey: keys.tenants, queryFn: adminApi.tenants, enabled: habilitado })
 }
 
 export function useAdminCatalog(tenantId: string | null) {

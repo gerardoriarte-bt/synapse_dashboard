@@ -41,7 +41,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Note } from '../render/primitives/Note'
 import { ThemeOptions } from './ThemeOptions'
-import { ChipDeUsuario } from './ChipDeUsuario'
+import { IconoDeUsuario } from './IconoDeUsuario'
 import { DISPARADOR_DE_USUARIO } from './usuario'
 import type { Theme } from '../tokens/theme'
 
@@ -93,9 +93,9 @@ export function IdentityBlock({ rol, nombre, correo, onChangeTheme, onCerrarSesi
         aria-label={`Identidad · ${nombre}`}
         className={DISPARADOR_DE_USUARIO}
       >
-        {/* **Con presencia** · decisión humana del 2026-10-07: el nombre en
-            nota de 9 se leía como un dato más de la barra. */}
-        <ChipDeUsuario nombre={nombre} rol={rol} />
+        {/* El ícono · decisión humana del 2026-10-20. El nombre va en el
+            panel y en el nombre accesible. */}
+        <IconoDeUsuario />
       </button>
 
       {/* **Siempre abre**: la identidad misma es contenido —nombre, correo,

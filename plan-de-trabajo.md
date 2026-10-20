@@ -7976,6 +7976,8 @@ Clientes y en el selector de la cabecera.
 
 **Verificado el 2026-10-19** · «tu cliente» en la lista de Clientes y en la opción del selector. Prueba en `tests/surfaces/cambioDeCliente.test.tsx` y `tests/surfaces/admin/admin.test.tsx`.
 
+**Reemplazada el 2026-10-20 por F5.43**, por decisión humana: «eso de mostrar Terpel pero tu sesión es Under Armour es confuso». Ya no hay un cliente «de la sesión» marcado aparte: hay uno, el activo, y lo dice la barra.
+
 ### ➕ F5.40 ✅ «Volver al dashboard» dice adónde va
 
 **Descripción.** Con otro cliente de trabajo, el botón lleva a la consola del
@@ -7985,6 +7987,8 @@ cliente propio sin decirlo: es el salto que más confunde. §1 y C.
 nombra el cliente al que vuelve, y su nombre accesible lo dice entero.
 
 **Verificado el 2026-10-19** · con otro cliente de trabajo dice «Volver a la consola de <propio>», y su nombre accesible agrega «el cliente de tu sesión». Mirado en local en administración y builder. Pruebas en `tests/surfaces/cambioDeCliente.test.tsx` y la cadena en `admin.test.tsx`; sin el dato en la cabecera, falla.
+
+**Reemplazada el 2026-10-20 por F5.44**: el botón se fue, y la consola es una entrada del menú de trabajo. El humano encontró raro «volver a UA México» estando en Terpel.
 
 ### ➕ F5.41 ✅ Usuarios arranca en el cliente de trabajo
 
@@ -8004,6 +8008,55 @@ nombra; al bajar, el selector queda fuera de la vista. §1 y E.
 **Criterio de aceptación.** El botón dice «Cargar meses de <cliente>».
 
 **Verificado el 2026-10-19** · el botón dice «Cargar 1 mes de <cliente>». Prueba en `tests/surfaces/admin/admin.test.tsx`; sin el nombre, falla.
+
+### ➕ F5.43 ✅ La barra del cliente activo, la misma en las tres superficies
+
+**Descripción.** El cliente vivía en tres lugares distintos —un rótulo junto al
+logotipo en la consola, un selector a la derecha del título en administración,
+una caja junto al logotipo en el builder— y se reconocía sólo por el nombre: en
+local los dos clientes se llaman «Under Armour México» y el selector decía lo
+mismo antes y después de cambiar. §3 y §4 de
+`docs/PROPUESTA-2026-10-20-identidad-del-cliente-y-ficha.md`, dibujada en el
+`.pen` y aprobada por el humano el 2026-10-20: «si cambia de cliente, todo el
+entorno es de uso exclusivo de ese cliente».
+
+**Criterio de aceptación.** Debajo del navbar de consola, administración y
+builder hay una barra con el cliente activo —placa con su monograma, nombre y
+forma corta (o el id corto si la forma corta no dice nada que el nombre no
+diga)— y «Cambiar de cliente» a la derecha cuando hay más de uno. Cada opción
+del selector lleva la misma identidad. En la consola, elegir un cliente que no es
+el de la sesión NO pinta los paneles de la sesión: declara el bloqueo con su
+razón y lleva a administración con ese cliente. Pruebas que lo sigan disparando.
+
+**Verificado el 2026-10-20** · `BarraDeCliente`, `SelectorDeCliente` y
+`PlacaDeCliente` en `src/surfaces/`, montadas por `AdminChrome`,
+`BuilderChrome` y `Topbar`. Mirado en local con un operador contra `7324b26`:
+en la consola, elegir el otro cliente declara «La consola de … todavía no se
+puede abrir» y esconde título, pestañas, selector de dashboard y «Preguntar»;
+«Abrir … en administración» llega con `?cliente=` puesto. Pruebas en
+`tests/surfaces/cambioDeCliente.test.tsx` y
+`tests/surfaces/console/barraDeCliente.test.tsx`; cinco mutaciones mueren, y una
+sexta sobrevivió porque el `?cliente=` escrito a mano era redundante con el
+proveedor —se sacó—.
+
+**Lo que espera al backend:** que la consola muestre otro cliente (un token por
+cliente) y el logo, que reemplaza al monograma.
+
+### ➕ F5.44 ✅ El perfil es un ícono, y la consola entra al menú de trabajo
+
+**Descripción.** Pedido humano del 2026-10-20: «reducir el botón del perfil a un
+ícono de usuario». Y «Volver al dashboard» nombraba dos clientes a la vez cuando
+se trabajaba sobre otro.
+
+**Criterio de aceptación.** El disparador del menú de la persona es un ícono, con
+el nombre en su nombre accesible y en el panel. El menú de trabajo (≡) ofrece
+«Consola · Dashboard» antes de administración y del builder, y «Volver al
+dashboard» no existe.
+
+**Verificado el 2026-10-20** · `IconoDeUsuario` reemplaza a `ChipDeUsuario` en
+`IdentityBlock` y `UserMenu`; `trabajo.ts` suma el grupo de la consola y
+`VolverAlDashboard.tsx` se borró. Pruebas en `tests/surfaces/identidad.test.tsx`,
+`menuDeTrabajo.test.tsx` y `navegacionDeTrabajo.test.tsx`.
 
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 

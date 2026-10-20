@@ -365,9 +365,9 @@ describe('B6 · el chrome de `contexto` · §PEN:B6 frame `Volver`', () => {
     montar()
     await abrirHistorial()
     const cabecera = within(screen.getByRole('banner'))
-    for (const rotulo of ['Cliente', 'Rol']) {
-      expect(cabecera.getByText(rotulo)).toBeInTheDocument()
-    }
+    // El cliente lo dice la barra del cliente activo · 2026-10-20.
+    expect(cabecera.getByRole('region', { name: 'Cliente activo' })).toBeInTheDocument()
+    expect(cabecera.getByText('Rol')).toBeInTheDocument()
     expect(cabecera.getByText('Under Armour México')).toBeInTheDocument()
     // Sin filtro de rol el chrome lo dice, en vez de un guion que parece un hueco.
     expect(cabecera.getByText('Todos los roles')).toBeInTheDocument()

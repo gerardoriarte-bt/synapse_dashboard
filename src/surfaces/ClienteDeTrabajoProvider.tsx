@@ -18,7 +18,9 @@ import { useLocation, useSearchParams } from 'react-router-dom'
 import { ContextoDeCliente } from './clienteDeTrabajo'
 
 const PARAMETRO = 'cliente'
-const LLEVA_CLIENTE = /^\/(admin|builder)(\/|$)/
+/** También la consola, desde el 2026-10-20: la barra del cliente es la misma en
+ *  las tres superficies, y el cliente elegido sobrevive a recargarla. */
+const LLEVA_CLIENTE = /^\/(admin|builder)(\/|$)|^\/$/
 
 export function ClienteDeTrabajoProvider({ children }: { children: ReactNode }) {
   const [params, setParams] = useSearchParams()
