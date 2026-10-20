@@ -92,10 +92,12 @@ describe('el menú de trabajo cruza superficies, directo a la pantalla', () => {
   })
 })
 
-describe('«Volver al dashboard» · el acceso rápido', () => {
+describe('la consola, desde el menú · reemplaza a «Volver al dashboard» desde el 2026-10-20', () => {
   it.each([['/admin'], ['/builder']])('desde %s lleva a la consola', async (inicio) => {
     montar(inicio)
-    await userEvent.click(await screen.findByRole('button', { name: 'Volver al dashboard' }))
+    expect(screen.queryByRole('button', { name: 'Volver al dashboard' })).toBeNull()
+    await menu()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Dashboard' }))
     expect(await screen.findByText('LA CONSOLA')).toBeInTheDocument()
   })
 })
@@ -112,14 +114,18 @@ describe('«Cerrar sesión» desde el nombre · llega hasta el contenedor', () =
   })
 })
 
-describe('el orden de la derecha · decisión humana del 2026-10-07', () => {
-  it.each([['/admin'], ['/builder']])('en %s: volver, usuario y el menú AL FINAL', async (inicio) => {
+describe('el orden · decisiones humanas del 2026-10-07 y del 2026-10-20', () => {
+  it.each([['/admin'], ['/builder']])('en %s: usuario y el menú AL FINAL, y la barra del cliente debajo', async (inicio) => {
     montar(inicio)
-    const volver = await screen.findByRole('button', { name: 'Volver al dashboard' })
     const usuario = await screen.findByRole('button', { name: /^Identidad · / })
     const menu = screen.getByRole('button', { name: 'Menú de trabajo' })
+    const barra = await screen.findByRole('region', { name: 'Cliente activo' })
     const sigue = (a: Element, b: Element) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
-    expect(sigue(volver, usuario)).toBe(true)
     expect(sigue(usuario, menu)).toBe(true)
+    expect(sigue(menu, barra)).toBe(true)
+    // **Las pantallas, en el navbar** · decisión humana del 2026-10-20: antes de
+    // la barra, no debajo del título.
+    const pantallas = screen.getByRole('navigation', { name: inicio === '/admin' ? 'Administración' : 'Builder' })
+    expect(sigue(pantallas, barra)).toBe(true)
   })
 })

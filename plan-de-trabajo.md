@@ -169,6 +169,7 @@ decir qué rol cumple**, porque ahí empieza la superposición.
 | `docs/F1.28-escala-tipografica.md` | La bitácora de una tarea que cambió el sistema |
 | `docs/FOLDER_STRUCTURE.md` | La estructura de `src/`, para quien llega |
 | `docs/RUNBOOK-*.md` | **Un procedimiento que se CORRE, y se mantiene.** Es el único rol sin fecha en el nombre, a propósito: los demás son cortes que vencen y éste se corrige en su lugar. Su lector es el equipo interno, así que **sí nombra bases, roles y grants** — lo que §7.3 prohíbe en pantalla vale para las pantallas, no para quien opera esa capa |
+| `docs/HITOS.md` | **El historial de hitos del proyecto**, de punta a punta: qué cambió en cada tramo y dónde está la evidencia. **Se mantiene**, como un `RUNBOOK-*`: cuando un tramo cierra se agrega al final, y lo anterior no se reescribe. No cuenta tareas —eso es `docs/ESTADO.md`— ni dice dónde retomar —eso es `CLAUDE.md`— |
 | `docs/REPERTORIO-*-*.md` | Una **transcripción** de una fuente normativa a forma implementable, con de dónde sale cada columna. La implementa OTRO equipo; el contrato declara su esquema y acá viven las filas |
 | `docs/INSTRUCCIONES-*-*.md` | Lo que **otra sesión** necesita saber para trabajar en paralelo sin pisarnos. Incluye las excepciones a `CLAUDE.md` que un humano autorizó, con fecha |
 | `docs/historico/*` | Documentos **vencidos**, con el aviso adentro. No se consultan para planificar |
@@ -809,6 +810,8 @@ que su commit anticipaba. **Es la primera vez que la anatomía completa de un KP
 se ve con dato del negocio.**
 **Pedido cumplido el 2026-09-28.** Era **solo la `nota` de panel**, y llegó. El pedido grande que había acá —«`presentation` para las siete formas que no son escalares»— **se retira: estaba mal**, y lo corrigió leer nuestro propio código el 2026-09-15.
 
+**Y el front la lee desde el 2026-10-14** · `06b0129`, PR #19. La servían desde el 2026-09-28 y nadie la consumía; al conectarla apareció que **guardar desde el builder la borraba**, porque el `PUT` no la mandaba y el backend guarda la que llega. Se ve bajo el título y entera en el ⓘ · `docs/BITACORA-2026-10-14.md` §4.
+
 **`presentation` la lee UN solo cuerpo: `KpiBody`.** Ningún otro la toca — verificado con un grep sobre `src/render/bodies/`. Y no es un olvido: los demás sacan sus rótulos **del propio valor**. `BarsBody` hace `value.items.map(i => i.etiqueta)`; cada ítem viaja con su etiqueta. **«Ningún número desnudo» lo cumple la estructura del dato, no `presentation`.**
 
 Así que `PresentationFromRows` devolviendo `nil` para las otras siete **es correcto**, y pedirlas habría sido pedir un campo que nadie lee — el mismo modo de falla de `BodyProps.presentation`, que existió meses sin un solo consumidor.
@@ -1286,6 +1289,8 @@ contestara 200 sin mirar nada se vería igual. Los tres objetos nombrados, con s
 acá cambia**, así que un 502 de Snowflake se mira contra `curl checkip.amazonaws.com`
 antes de escribirle a nadie.
 
+**Y la ficha la consume desde el 2026-10-14** · `a1702db`, PR #15. Medido en UA, la respuesta trae `ok: false` **con las tres tablas presentes**: el `false` lo ponen las seis claves de forecast y MMM que no tienen consulta. Leer `ok` habría dicho «sin acceso» del único cliente que anda, así que el estado sale de las tablas y del código HTTP, y las claves sin cálculo se dicen aparte · `docs/BITACORA-2026-10-14.md` §2.
+
 **Lo pedido, y ya entregado y medido.** Una ruta que compare el `db.schema` del tenant contra el contrato de esquema — pedido el 2026-09-28 en `docs/MENSAJE-2026-09-28-backend-tres-del-alta.md`.
 
 **Lo tuvo DATOS y ya está hecho** · la IP quedó habilitada el 2026-09-29. La ruta está entregada y ellos la midieron desde su red con `200`.
@@ -1673,6 +1678,8 @@ dibuja y lo que hace que una cifra se lea contra algo en vez de sola. · Bloquea
 
 **Medido contra `9dc481e` el 2026-10-09** · el flag sigue con default `false` (`dd_materializer_service.go:55-58`). Lo que queda es lo mismo: encenderlo, que es B2.15.
 
+**Medido contra `3651d70` el 2026-10-14** · la migración deja `BLOCKED` las 143 filas de semilla del cliente con Snowflake, **incluidos los dos paneles de prosa**, que eran la última maqueta que se servía `AVAILABLE`. Con el flag encendido en local, la prosa los llenó en 16 de 16 meses · `docs/AUDITORIA-2026-10-14-respuestas-graficos-y-semanas.md` y `docs/BITACORA-2026-10-14.md` §7. Lo que queda es el despliegue en QA, que es B2.15.
+
 Esto decía «los paneles de prosa los genera el AGENTE, y hoy no hay camino», y era
 cierto cuando se escribió. **Lo construyeron:** `internal/core/services/dd_prose_generator.go`
 implementa `DDProseGenerator`, `bootstrap/app.go:155` lo cablea al materializador
@@ -1844,7 +1851,11 @@ por el usuario, no un dashboard entero.
 - Con timeout y con tope de filas declarados.
 
 ### B3.7 ⬜ Formato de eventos SSE acordado con el front (T3)
-### B3.8 ⬜ La respuesta puede incluir `{ forma, datos, procedencia }`
+### B3.8 ✅ La respuesta puede incluir `{ forma, datos, procedencia }`
+**Verificado el 2026-10-13 contra `8272085`**, con el binario corriendo acá y `SYNAPSE_UA` real · `docs/AUDITORIA-2026-10-13-respuestas-del-backend.md`. La trama `data` trae forma, datos y procedencia completa desde `55e8419` —es lo que cerró F3.6 el 2026-09-22—, y lo que faltaba para que la procedencia **fuera de esa cifra** llegó en `8272085`: la métrica se cruza por su origen y no por nombre —las dos tablas de paid media declaran la misma, `platform_return`—, la base va vacía cuando la consulta filtra, y el `chart_spec` trae la misma procedencia que la tabla.
+
+**Lo que no cierra, y no es de este criterio:** cada tabla llega en **dos tramas idénticas**, sin explicación todavía, y nada de esto está en QA hasta que se despliegue un commit que contenga `8272085`.
+
 **Criterio de aceptación.**
 - Cuando el agente devuelve un dato estructurado, viene con la **misma unión
   `Valor` + `Gobierno`** que un panel, para que el front lo dibuje con el mismo
@@ -4817,17 +4828,19 @@ dijo que `executive_summary` no se había regenerado. Era falso: la ruta devuelv
 **202 y corre asíncrono**, y se consultó antes de que terminara. El `status` de la
 corrida —`/admin/materialize/runs`— es lo que dice cuándo mirar.
 
-**Espera del backend.** **Que se encienda en dev y nos avisen** — lo ofrecieron ellos en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
+**Espera del backend.** **Desplegar `7324b26` en QA, migrado y con `DD_MATERIALIZE_PROSE_ENABLED=true`, y decir qué commit quedó** · pedido el 2026-10-19 en `docs/MENSAJE-2026-10-19-backend-desplegar-y-fuente-de-la-prosa.md`, que reemplaza al del 2026-10-14 (`docs/MENSAJE-2026-10-14-backend-desplegar-en-qa.md`, que pedía `3651d70`). **No es `DD_MATERIALIZE_ENABLED`**: el backend contestó que ésa ya estaba, y son dos banderas independientes —ésa prende el programador—. El ofrecimiento original de encenderla y avisar está en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
 
-**Lo tiene: DESPLIEGUE** · prender el flag en dev después del próximo despliegue. **Fecha, no código.**
+**Lo tiene: DESPLIEGUE** · prender el flag en QA junto con el despliegue de `7324b26`. **Fecha, no código.**
 
 **Medido contra `de881e1` el 2026-09-29** · `ProseGeneratorEnabledFromEnv` lee el flag con default `false`.
 
 **Medido contra `9dc481e` el 2026-10-09** · `ProseGeneratorEnabledFromEnv` sigue leyendo el flag con default `false` (`dd_materializer_service.go:55-58`). **Si ya está encendido en dev no se ve desde el código**, y no lo medimos: sigue en pie el «avísennos».
 
-**Medido contra `7324b26` el 2026-10-19** · **SIGUE ⚠️.** El flag sigue con default `false`, y su respuesta del 14 lo dice: prenderlo es del entorno de QA, no de código (`RESPUESTA-2026-10-14-backend-instruccion-de-prosa.md`, punto 1). Con el flag, acá la prosa sale `AVAILABLE` con `agent:Synapse UA`, y desde `5af3b86` acepta una instrucción por métrica · `AUDITORIA-2026-10-19-prosa-por-metrica.md`. **Despliegue con el flag pedido de nuevo** en `MENSAJE-2026-10-19-backend-desplegar-y-fuente-de-la-prosa.md`, que reemplaza al del 14.
+**Medido contra `3651d70` el 2026-10-14** · con el flag en el `.env` del backend —fuera de git— el programador generó septiembre y octubre, y los catorce meses anteriores se cargaron a mano, que es lo mismo que «Cargar meses» de A5: `executive_summary` y `decisions` quedaron en 16 de 16 meses con `agent:Synapse UA` · `docs/BITACORA-2026-10-14.md` §7.
 
-Hasta entonces los dos paneles de prosa se sirven con el valor de la semilla, **en inglés**, y salen `DEGRADED`.
+Hasta entonces los dos paneles de prosa se servían con el valor de la semilla, **en inglés**, y salían `DEGRADED`. **Con `3651d70` eso cambia**: la migración bloquea la semilla, así que desplegado sin el flag los dos salen **`BLOCKED`**. Desplegar uno sin el otro empeora la consola de UA.
+
+**Medido contra `7324b26` el 2026-10-19** · **SIGUE ⚠️.** El flag sigue con default `false`, y su respuesta del 14 lo dice: prenderlo es del entorno de QA, no de código (`RESPUESTA-2026-10-14-backend-instruccion-de-prosa.md`, punto 1). Con el flag, acá la prosa sale `AVAILABLE` con `agent:Synapse UA`, y desde `5af3b86` acepta una instrucción por métrica · `AUDITORIA-2026-10-19-prosa-por-metrica.md`. **Despliegue con el flag pedido de nuevo** en `MENSAJE-2026-10-19-backend-desplegar-y-fuente-de-la-prosa.md`, que reemplaza al del 14.
 
 **Criterio de aceptación.**
 - Los dos paneles traen `governance.source = agent:<nombre>` y un `headline`, no el valor de la semilla.
@@ -5064,6 +5077,18 @@ Verificada rompiendo el código: cuatro mutaciones, las cuatro muertas. Y abiert
 en el navegador: la cifra con su `TOTAL`, su BASE y `GOLD · ERP · RECIÉN` —
 «recién» porque la frescura es la de la consulta.
 
+**Lo que vino después del cierre · 2026-10-07 a 2026-10-10.** Dibujar «con el cuerpo del panel de origen» resultó ser la excepción y no el caso común: el agente contesta con la forma que pide la pregunta, casi siempre `tabular`.
+
+| Fecha | Qué | Dónde |
+|---|---|---|
+| 2026-10-07 | El gráfico del agente llega al chat, y las tablas se leen como tabla | `8df21ad`, `3da8e90` |
+| 2026-10-08 | **§7 cerrada**: si el panel de origen no acepta la forma, se dibuja con el único tipo que la acepta. No se busca el panel por la `metric_key` de la procedencia | `920ec8d` · `docs/BITACORA-2026-10-08.md` |
+| 2026-10-09 | Una tabla sin rótulos se declara en vez de dibujarse, y la capa vacía ya no se firma `GOLD` | PR #4 · `1829449` |
+| 2026-10-09 | Un gráfico sin familia se dibuja en **neutro** —la rampa `consulta` de `decisiones.css`— y lo dice · decisión humana | PR #11 · `a823062` · §14 de `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` |
+| 2026-10-10 | El `chart_spec` se traduce **por papel** —medida, dimensión, serie— y **nada desaparece**: lo que no se dibuja va como tabla con su razón. Se dicen los ejes, de cuándo es la cifra de la leyenda y el mes en curso | PR #12 · `151d635` · `docs/AUDITORIA-2026-10-10-graficos-del-chat.md` |
+
+Lo que quedó abierto de esa auditoría y es nuestro va en **F3.16** y **F3.17**.
+
 ### F3.7 ✅ Historial de hilos
 **Descripción.** Listado de conversaciones previas del usuario, desde
 `GET /config/chat/hilos`.
@@ -5142,6 +5167,8 @@ Dos decisiones que el criterio no anticipaba:
 El riel **no reordena**: el backend manda por `actualizadoEn` y esa decisión es
 suya. Una lista que llegue desordenada deja dos bloques del mismo mes **a la
 vista**, en vez de fundirlos y esconder que el backend mandó algo raro.
+
+**Retomar ya trae la conversación · 2026-10-09.** Lo que arriba dice que no hace dejó de ser cierto: al elegir un hilo del riel se piden sus mensajes —la ruta se transcribió ese día— y la hoja muestra lo que se habló, con un guardia para que la respuesta lenta de otro hilo no pise la del elegido. El título se lee entero al pasar el puntero, y **una consulta se puede eliminar** con confirmación en la misma fila; a una decisión no se le ofrece · PR #6 `4a02d65` y PR #7 `892b377`.
 
 ### F3.8 ✅ `useChat(contextoPanel)` — envío y stream fuera de la UI
 **Descripción.** La lógica de envío, acumulación de fragmentos y cierre del
@@ -5488,6 +5515,22 @@ sería reconocer un encabezado por su texto, y el día que el agente lo escriba
 distinto la sección **desaparecería en silencio**. El lugar del contrato para eso
 es `auditoria.limiteDeclarado`, que el cable todavía no manda y ya está pedido.
 
+### ➕ F3.16 ⬜ El mes en curso se marca en el trazo, no sólo en un aviso
+**Descripción.** Desde el PR #12, un gráfico del agente que incluye el mes abierto lo dice con un aviso —«oct 26 es el mes en curso · su cifra está incompleta»—, pero el trazo lo dibuja igual que un mes cerrado, y la caída del último punto se lee como un desplome antes de llegar al aviso. Es el punto 2 de `docs/AUDITORIA-2026-10-10-graficos-del-chat.md`, resuelto a medias. Los múltiplos pequeños de la consola también lo dicen desde el PR #18, y tampoco lo marcan en el trazo.
+**Criterio de aceptación.**
+- El tramo que llega al mes abierto se distingue en el trazo de todo cuerpo de series, en el chat y en la consola.
+- El mes abierto sale de lo que el servicio declara —`open_period`, o `partial` por punto donde llegue—, **nunca de comparar contra la fecha del navegador**.
+- La marca no es un color: ámbar y el naranja de acción están prohibidos como dato. Si el `.pen` no dibuja el tramo parcial, primero se escribe la propuesta de spec y después se construye.
+- La prueba sale de la captura `tests/api/fixtures/chart-spec-linea-con-mes-en-curso-2026-10-07.json`, y se la ve fallar rompiendo el código.
+
+### ➕ F3.17 ⬜ Un dato que falta se dibuja como hueco
+**Descripción.** Una serie con un `null` —TikTok en abril y junio, en el `chart_spec` de paid media— hoy va como tabla y nombra lo que falta (PR #12). Es honesto, pero pierde el gráfico por un punto. El hueco no se puede dibujar porque `Punto.v` no admite `null` en el contrato interno, y todo el repertorio de series da por hecho que hay valor. Es el punto 6 de `docs/AUDITORIA-2026-10-10-graficos-del-chat.md`.
+**Criterio de aceptación.**
+- `Punto.v` admite `null` en `contracts/synapse-api.yaml`, regenerado con `npm run gen:api`.
+- Los cuerpos de series cortan la línea donde falta el dato: no lo dibujan en cero ni lo interpolan.
+- La lectura con el puntero y la leyenda dicen «sin dato» en ese punto, en vez de saltarlo o tomar el anterior.
+- El traductor de `chart_spec` deja de mandar a tabla una serie sólo por tener `null`, y la prueba usa la captura real `tests/api/fixtures/chart-spec-multilinea-con-nulos-2026-10-08.json`.
+
 ---
 
 ## Fase 4 — Admin y Builder
@@ -5614,6 +5657,8 @@ es que la decisión de tomarla no es del agente.
 **La mitad de roles ya se ve contra el servicio real**, verificado en pantalla el
 2026-09-25: A2 dibuja los tres roles con su composición y el aviso de las
 métricas que `planner` no recibe.
+
+**El alcance pasó a contarse · 2026-10-16** · `b883b50`, PR #24. Desde `8272085` un admin que no es operador de plataforma ve **un solo cliente**, y el rótulo seguía diciendo «todas las cuentas». El front no sabe quién es operador, así que el chrome **cuenta lo que llegó** —«Alcance · 1 cliente»— · `docs/AUDITORIA-2026-10-16-selector-de-clientes.md`.
 
 ### F4.3 parcial el 2026-09-15 · la mitad de roles, no la de usuarios
 
@@ -7976,6 +8021,8 @@ Clientes y en el selector de la cabecera.
 
 **Verificado el 2026-10-19** · «tu cliente» en la lista de Clientes y en la opción del selector. Prueba en `tests/surfaces/cambioDeCliente.test.tsx` y `tests/surfaces/admin/admin.test.tsx`.
 
+**Reemplazada el 2026-10-20 por F5.43**, por decisión humana: «eso de mostrar Terpel pero tu sesión es Under Armour es confuso». Ya no hay un cliente «de la sesión» marcado aparte: hay uno, el activo, y lo dice la barra.
+
 ### ➕ F5.40 ✅ «Volver al dashboard» dice adónde va
 
 **Descripción.** Con otro cliente de trabajo, el botón lleva a la consola del
@@ -7985,6 +8032,8 @@ cliente propio sin decirlo: es el salto que más confunde. §1 y C.
 nombra el cliente al que vuelve, y su nombre accesible lo dice entero.
 
 **Verificado el 2026-10-19** · con otro cliente de trabajo dice «Volver a la consola de <propio>», y su nombre accesible agrega «el cliente de tu sesión». Mirado en local en administración y builder. Pruebas en `tests/surfaces/cambioDeCliente.test.tsx` y la cadena en `admin.test.tsx`; sin el dato en la cabecera, falla.
+
+**Reemplazada el 2026-10-20 por F5.44**: el botón se fue, y la consola es una entrada del menú de trabajo. El humano encontró raro «volver a UA México» estando en Terpel.
 
 ### ➕ F5.41 ✅ Usuarios arranca en el cliente de trabajo
 
@@ -8004,6 +8053,168 @@ nombra; al bajar, el selector queda fuera de la vista. §1 y E.
 **Criterio de aceptación.** El botón dice «Cargar meses de <cliente>».
 
 **Verificado el 2026-10-19** · el botón dice «Cargar 1 mes de <cliente>». Prueba en `tests/surfaces/admin/admin.test.tsx`; sin el nombre, falla.
+
+### ➕ F5.43 ✅ La barra del cliente activo, la misma en las tres superficies
+
+**Descripción.** El cliente vivía en tres lugares distintos —un rótulo junto al
+logotipo en la consola, un selector a la derecha del título en administración,
+una caja junto al logotipo en el builder— y se reconocía sólo por el nombre: en
+local los dos clientes se llaman «Under Armour México» y el selector decía lo
+mismo antes y después de cambiar. §3 y §4 de
+`docs/PROPUESTA-2026-10-20-identidad-del-cliente-y-ficha.md`, dibujada en el
+`.pen` y aprobada por el humano el 2026-10-20: «si cambia de cliente, todo el
+entorno es de uso exclusivo de ese cliente».
+
+**Criterio de aceptación.** Debajo del navbar de consola, administración y
+builder hay una barra con el cliente activo —placa con su monograma, nombre y
+forma corta (o el id corto si la forma corta no dice nada que el nombre no
+diga)— y «Cambiar de cliente» a la derecha cuando hay más de uno. Cada opción
+del selector lleva la misma identidad. En la consola, elegir un cliente que no es
+el de la sesión NO pinta los paneles de la sesión: declara el bloqueo con su
+razón y lleva a administración con ese cliente. Pruebas que lo sigan disparando.
+
+**Verificado el 2026-10-20** · `BarraDeCliente`, `SelectorDeCliente` y
+`PlacaDeCliente` en `src/surfaces/`, montadas por `AdminChrome`,
+`BuilderChrome` y `Topbar`. Mirado en local con un operador contra `7324b26`:
+en la consola, elegir el otro cliente declara «La consola de … todavía no se
+puede abrir» y esconde título, pestañas, selector de dashboard y «Preguntar»;
+«Abrir … en administración» llega con `?cliente=` puesto. Pruebas en
+`tests/surfaces/cambioDeCliente.test.tsx` y
+`tests/surfaces/console/barraDeCliente.test.tsx`; cinco mutaciones mueren, y una
+sexta sobrevivió porque el `?cliente=` escrito a mano era redundante con el
+proveedor —se sacó—.
+
+**Lo que espera al backend:** que la consola muestre otro cliente (un token por
+cliente) y el logo, que reemplaza al monograma.
+
+### ➕ F5.44 ✅ El perfil es un ícono, y la consola entra al menú de trabajo
+
+**Descripción.** Pedido humano del 2026-10-20: «reducir el botón del perfil a un
+ícono de usuario». Y «Volver al dashboard» nombraba dos clientes a la vez cuando
+se trabajaba sobre otro.
+
+**Criterio de aceptación.** El disparador del menú de la persona es un ícono, con
+el nombre en su nombre accesible y en el panel. El menú de trabajo (≡) ofrece
+«Consola · Dashboard» antes de administración y del builder, y «Volver al
+dashboard» no existe.
+
+**Verificado el 2026-10-20** · `IconoDeUsuario` reemplaza a `ChipDeUsuario` en
+`IdentityBlock` y `UserMenu`; `trabajo.ts` suma el grupo de la consola y
+`VolverAlDashboard.tsx` se borró. Pruebas en `tests/surfaces/identidad.test.tsx`,
+`menuDeTrabajo.test.tsx` y `navegacionDeTrabajo.test.tsx`.
+
+### ➕ F5.45 ✅ Clientes en cards, y la ficha como página con su resumen
+
+**Descripción.** La lista de clientes iba al lado de la ficha (decisión del
+2026-10-09) y la ficha era una sola columna de seis pantallas, todo con el mismo
+peso. El humano la reabrió el 2026-10-20: «un scroll muy grande … organizar la
+mayoría de la info en cards». §5 de
+`docs/PROPUESTA-2026-10-20-identidad-del-cliente-y-ficha.md`.
+
+**Criterio de aceptación.** Clientes es una grilla de cards: placa, nombre,
+forma corta, usuarios, feed más atrasado y última publicación, y «En uso» en la
+del cliente activo. La card entera abre la ficha y vuelve activo a ese cliente.
+La ficha es una página con migaja de vuelta a la grilla y cuatro cards de
+resumen —identidad, roles, usuarios, acceso a datos— que llevan a su sección.
+Las cifras del resumen son conteos de lo que la ficha ya trajo, y mientras no
+llegan dicen «cargando».
+
+**Verificado el 2026-10-20** · `TenantList` pasó a grilla de cards,
+`ResumenDeFicha.tsx` reemplaza a la fila «Secciones de la ficha» de F5.34, y
+`distintivo` usa la misma regla que la barra (`formaCortaVisible`). Mirado en
+local con un operador contra `7324b26`, abriendo las dos cards y volviendo por
+la migaja. **Abrirla lo encontró roto**: con `?ficha=1` en la URL, la card del
+cliente en uso no abría la ficha —el proveedor del cliente de trabajo escribe la
+URL en el mismo clic y la pisaba—. La ficha abierta pasó a ser estado de la
+pantalla, y hay una prueba que monta el proveedor real y falla con la versión
+anterior. Pruebas en `tests/surfaces/admin/admin.test.tsx`,
+`listaDeClientes.test.tsx`, `carga.test.tsx` y `roles.test.tsx`.
+
+**Recargar vuelve a la grilla**: el cliente activo sí sobrevive, porque lo lleva
+la URL.
+
+### ➕ F5.46 ✅ La ficha se lee: roles plegados, cada regla una vez
+
+**Descripción.** Medido en QA el 2026-10-20: seis tarjetas de rol abiertas
+repetían la misma pestaña, «Ve TODAS las pestañas…» cuatro veces y «No se borra
+con usuarios asignados…» tres. §5 de
+`docs/PROPUESTA-2026-10-20-identidad-del-cliente-y-ficha.md`.
+
+**Criterio de aceptación.** Cada rol es una fila plegada —nombre, usuarios,
+«Todas las pestañas» o «No recibe · N» si corresponde, paneles, Editar y
+Borrar— y el detalle se abre. Las tres reglas de los roles se dicen una vez,
+arriba de la lista. Los subprocesadores van plegados con sus nombres a la vista.
+
+**Verificado el 2026-10-20** · `RoleCard` plegada, las reglas en `RoleEditor` y
+`Subprocessors` con los tres nombres en la fila. Mirado en local. Cinco
+mutaciones mueren —abierta por defecto, sin la marca de «todas», sin los nombres
+de los subprocesadores, Borrar con usuarios y la card de roles llevando a otra
+sección—. Pruebas en `tests/surfaces/admin/composicion.test.tsx`,
+`roles.test.tsx` y `enAlta.test.tsx`.
+
+**Lo que la propuesta pedía y no hizo falta**: el rol del usuario ya era un solo
+selector. La medición de QA leyó las opciones del `<select>` como texto de la
+fila; está corregido en la propuesta.
+
+### ➕ F5.47 ✅ La forma corta se edita desde la ficha
+
+**Descripción.** La forma corta (`label`) es lo que distingue a dos clientes con
+el mismo nombre en la barra, el selector y las cards, y en QA está vacía o igual
+al nombre. El servicio la edita con `PUT /admin/tenants/{tenantId}` desde
+`6e521cc` —leído con `git log -S` sobre su handler—, y no estaba transcripto ni había dónde cargarla. §3 de
+`docs/PROPUESTA-2026-10-20-identidad-del-cliente-y-ficha.md`.
+
+**Criterio de aceptación.** La card de identidad de la ficha muestra la forma
+corta y ofrece «Editar forma corta»: un campo que guarda con `PUT` al cliente de
+la ficha, recortando espacios, y vacía la saca. Después de guardar, la barra y
+las cards la muestran sin recargar. Cancelar no manda nada.
+
+**Verificado el 2026-10-20** · la ruta medida contra `7324b26` —puesta, vuelta a
+vacía, 400 con un id que no es UUID y 404 con uno que no existe— y transcripta
+en `contracts/synapse-admin-wire.yaml` **sin** las claves de Snowflake que la
+respuesta trae. `adminApi.editarFormaCorta` y `useEditTenantShortName`, que
+invalida `/admin/tenants` y `/config/me`. Prueba en
+`tests/surfaces/admin/admin.test.tsx` que sigue la cadena hasta el `PUT`; cuatro
+mutaciones mueren.
+
+### ➕ F5.48 ✅ Lo que la auditoría del diseño encontró en la ficha y en las cards
+
+**Descripción.** Los cinco puntos del front de §4 de
+`docs/AUDITORIA-2026-10-20-diseno-de-la-identidad-del-cliente.md`: la ficha sin
+título ni «Abrir en builder», la identidad repetida debajo de las cards, las
+reglas de los roles en tres párrafos, la versión del catálogo ausente de la card
+y «Abrir ficha» que no se leía como acción.
+
+**Criterio de aceptación.** La ficha lleva el nombre del cliente como título con
+su forma corta y «Abrir en builder», que navega. La identidad completa no se
+pinta hasta «Ver identidad», y se puede ocultar. Las reglas de los roles van en
+una línea. La card de identidad dice la versión del catálogo. «Abrir ficha» se
+ve como acción.
+
+**Verificado el 2026-10-20** · mirado en local con un operador contra `7324b26`.
+Pruebas en `tests/surfaces/admin/admin.test.tsx` y `enAlta.test.tsx`; cinco
+mutaciones mueren. Los puntos 6 y 7 de la auditoría —el chrome de
+administración y la fila de contexto del builder— son anteriores a la propuesta
+y quedan para decidir.
+
+### ➕ F5.49 ✅ Las pantallas y el rol, en el navbar
+
+**Descripción.** En administración y en el builder las pantallas iban como
+pestañas debajo del título, y el rol del builder en una fila bajo la barra del
+cliente. El `.pen` las pone en el navbar. Puntos 6 y 7 de
+`docs/AUDITORIA-2026-10-20-diseno-de-la-identidad-del-cliente.md`; decidido por
+el humano el 2026-10-20: «tiene más sentido para la navegación».
+
+**Criterio de aceptación.** El navbar de administración lleva sus cuatro
+pantallas, y el del builder sus tres, el dashboard y el rol que se editan. Las
+dos navegaciones usan el mismo componente y el registro de acción. Guardar,
+validar y publicar siguen en su fila.
+
+**Verificado el 2026-10-20** · `NavDeSuperficie.tsx`, montado por `AdminChrome` y
+`BuilderChrome`. Mirado en local en Catálogo y en el editor. Pruebas en
+`tests/surfaces/navegacionDeTrabajo.test.tsx` y `builder/builder.test.tsx` que
+afirman que la navegación y el rol van antes de la barra; fallan con los chromes
+anteriores.
 
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 

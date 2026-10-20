@@ -574,6 +574,33 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-10-20 · el cliente activo se reconoce en toda la plataforma
+
+**Lo que costó descubrir está en `docs/BITACORA-2026-10-20.md`.** La rama es
+`docs/propuesta-identidad-de-cliente`, PR #37, **sin mergear a `main`**, y está
+mergeada en `Gerardo` en local.
+
+**F5.43–F5.49 construidas** —F5.48 y F5.49 salieron de
+`docs/AUDITORIA-2026-10-20-diseno-de-la-identidad-del-cliente.md`, con las
+pantallas y el rol en el navbar—: una barra del cliente activo bajo el navbar de las
+tres superficies —monograma, nombre, forma corta y «Cambiar de cliente»—, el
+perfil como ícono, la consola en el menú ≡, Clientes en cards, la ficha como
+página con su resumen, roles plegados y la forma corta editable. Decisión humana
+que gobierna todo: **al cambiar de cliente, todo el entorno es de ese cliente**;
+no hay un cliente «de la sesión» marcado aparte.
+
+**Esperando al backend, y lo manda el humano**:
+`docs/MENSAJE-2026-10-20-backend-logo-y-consola-por-cliente.md` —el logo, y una
+sesión por cliente para que la consola muestre el elegido—. Hasta entonces la
+placa lleva el monograma y la consola declara el bloqueo.
+
+**El `.pen` que vale es `synapse_dashboard/design/Synapse_v2.pen`**; el de
+`synapse_v2/design/` se ignora. Pen.app guarda solo y migra a 2.21: hay un stash
+en `Gerardo` con eso, y está por decidir el formato.
+
+**Todo lo que se le escribe al humano va en español**, también los avisos de
+progreso.
+
 ### ⇩ ACÁ SE PARÓ · 2026-10-19 · el backend contestó las dos, y falta desplegar
 
 **`main` está en `0a90c25`** (#24, #25, #27, #28). Las mediciones están en

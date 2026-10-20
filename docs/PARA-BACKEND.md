@@ -66,6 +66,8 @@ tiempo buscando qué implementar.
 
 **Medido contra `9dc481e` el 2026-10-09** · el flag sigue con default `false` (`dd_materializer_service.go:55-58`). Lo que queda es lo mismo: encenderlo, que es B2.15.
 
+**Medido contra `3651d70` el 2026-10-14** · la migración deja `BLOCKED` las 143 filas de semilla del cliente con Snowflake, **incluidos los dos paneles de prosa**, que eran la última maqueta que se servía `AVAILABLE`. Con el flag encendido en local, la prosa los llenó en 16 de 16 meses · `docs/AUDITORIA-2026-10-14-respuestas-graficos-y-semanas.md` y `docs/BITACORA-2026-10-14.md` §7. Lo que queda es el despliegue en QA, que es B2.15.
+
 Esto decía «los paneles de prosa los genera el AGENTE, y hoy no hay camino», y era
 cierto cuando se escribió. **Lo construyeron:** `internal/core/services/dd_prose_generator.go`
 implementa `DDProseGenerator`, `bootstrap/app.go:155` lo cablea al materializador
@@ -149,17 +151,19 @@ nuestro lado. · Bloquea **B2.12**.
 *Estado de la tarea: parcial.* · **Lo tiene: DESPLIEGUE**
 
 
-**Que se encienda en dev y nos avisen** — lo ofrecieron ellos en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
+**Desplegar `7324b26` en QA, migrado y con `DD_MATERIALIZE_PROSE_ENABLED=true`, y decir qué commit quedó** · pedido el 2026-10-19 en `docs/MENSAJE-2026-10-19-backend-desplegar-y-fuente-de-la-prosa.md`, que reemplaza al del 2026-10-14 (`docs/MENSAJE-2026-10-14-backend-desplegar-en-qa.md`, que pedía `3651d70`). **No es `DD_MATERIALIZE_ENABLED`**: el backend contestó que ésa ya estaba, y son dos banderas independientes —ésa prende el programador—. El ofrecimiento original de encenderla y avisar está en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
 
-**Lo tiene: DESPLIEGUE** · prender el flag en dev después del próximo despliegue. **Fecha, no código.**
+**Lo tiene: DESPLIEGUE** · prender el flag en QA junto con el despliegue de `7324b26`. **Fecha, no código.**
 
 **Medido contra `de881e1` el 2026-09-29** · `ProseGeneratorEnabledFromEnv` lee el flag con default `false`.
 
 **Medido contra `9dc481e` el 2026-10-09** · `ProseGeneratorEnabledFromEnv` sigue leyendo el flag con default `false` (`dd_materializer_service.go:55-58`). **Si ya está encendido en dev no se ve desde el código**, y no lo medimos: sigue en pie el «avísennos».
 
-**Medido contra `7324b26` el 2026-10-19** · **SIGUE ⚠️.** El flag sigue con default `false`, y su respuesta del 14 lo dice: prenderlo es del entorno de QA, no de código (`RESPUESTA-2026-10-14-backend-instruccion-de-prosa.md`, punto 1). Con el flag, acá la prosa sale `AVAILABLE` con `agent:Synapse UA`, y desde `5af3b86` acepta una instrucción por métrica · `AUDITORIA-2026-10-19-prosa-por-metrica.md`. **Despliegue con el flag pedido de nuevo** en `MENSAJE-2026-10-19-backend-desplegar-y-fuente-de-la-prosa.md`, que reemplaza al del 14.
+**Medido contra `3651d70` el 2026-10-14** · con el flag en el `.env` del backend —fuera de git— el programador generó septiembre y octubre, y los catorce meses anteriores se cargaron a mano, que es lo mismo que «Cargar meses» de A5: `executive_summary` y `decisions` quedaron en 16 de 16 meses con `agent:Synapse UA` · `docs/BITACORA-2026-10-14.md` §7.
 
-Hasta entonces los dos paneles de prosa se sirven con el valor de la semilla, **en inglés**, y salen `DEGRADED`.
+Hasta entonces los dos paneles de prosa se servían con el valor de la semilla, **en inglés**, y salían `DEGRADED`. **Con `3651d70` eso cambia**: la migración bloquea la semilla, así que desplegado sin el flag los dos salen **`BLOCKED`**. Desplegar uno sin el otro empeora la consola de UA.
+
+**Medido contra `7324b26` el 2026-10-19** · **SIGUE ⚠️.** El flag sigue con default `false`, y su respuesta del 14 lo dice: prenderlo es del entorno de QA, no de código (`RESPUESTA-2026-10-14-backend-instruccion-de-prosa.md`, punto 1). Con el flag, acá la prosa sale `AVAILABLE` con `agent:Synapse UA`, y desde `5af3b86` acepta una instrucción por métrica · `AUDITORIA-2026-10-19-prosa-por-metrica.md`. **Despliegue con el flag pedido de nuevo** en `MENSAJE-2026-10-19-backend-desplegar-y-fuente-de-la-prosa.md`, que reemplaza al del 14.
 
 
 ---
@@ -178,7 +182,7 @@ sección existe.
 
 | Pedido | Medido contra | Cuándo |
 |---|---|---|
-| **B2.12** · Correr el materializador contra datos reales y verificar los seis estados | `9dc481e` | 2026-10-09 |
+| **B2.12** · Correr el materializador contra datos reales y verificar los seis estados | `3651d70` | 2026-10-14 |
 | **B2.14** · /config/solicitudes · pedir acceso a una métrica que no se ve | `9dc481e` | 2026-10-09 |
 
 

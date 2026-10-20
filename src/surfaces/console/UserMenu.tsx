@@ -42,7 +42,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Note } from '../../render/primitives/Note'
 import { ThemeOptions } from '../ThemeOptions'
-import { ChipDeUsuario } from '../ChipDeUsuario'
+import { IconoDeUsuario } from '../IconoDeUsuario'
 import { DISPARADOR_DE_USUARIO } from '../usuario'
 import { useCerrarSesion } from '../useCerrarSesion'
 import type { AppContext } from '../../api/types'
@@ -87,15 +87,13 @@ export function UserMenu({ context, onChangeTheme }: Props) {
         onClick={() => setAbierto((v) => !v)}
         aria-expanded={abierto}
         aria-haspopup="menu"
-        // **El nombre accesible es el nombre**, sin las iniciales del círculo,
-        // que van `aria-hidden`.
+        // **El nombre accesible es el nombre**: el ícono va `aria-hidden`.
         aria-label={context.user.nombre}
         className={DISPARADOR_DE_USUARIO}
       >
-        {/* **Con presencia** · decisión humana del 2026-10-07: era el nombre en
-            mono gris de 10 —el traje del rótulo— y no se distinguía del resto
-            de la barra. */}
-        <ChipDeUsuario nombre={context.user.nombre} />
+        {/* El ícono · decisión humana del 2026-10-20. El nombre va en el
+            panel y en el nombre accesible. */}
+        <IconoDeUsuario />
       </button>
 
       {abierto && (

@@ -31,8 +31,9 @@
  */
 import { IdentityBlock } from '../IdentityBlock'
 import { MenuDeTrabajo } from '../MenuDeTrabajo'
-import { VolverAlDashboard } from '../VolverAlDashboard'
-import { SelectorDeCliente } from '../SelectorDeCliente'
+import { BarraDeCliente } from '../BarraDeCliente'
+import { NavDeSuperficie } from '../NavDeSuperficie'
+import type { ClienteVisible } from '../clienteVisible'
 import type { Theme } from '../../tokens/theme'
 import { Label } from '../../render/primitives/Label'
 import { Wordmark } from '../console/Wordmark'
@@ -44,7 +45,7 @@ type Props = {
   activa: PantallaId
   /** Qué pantalla se pide. La navegación es del contenedor, no del chrome. */
   onIr: (id: PantallaId) => void
-  /** Ir a una RUTA · el menú de trabajo y «Volver al dashboard». Distinto de
+  /** Ir a una RUTA · el menú de trabajo. Distinto de
    *  `onIr`, que elige entre las pantallas de acá. La navegación es del
    *  contenedor y no del chrome. */
   onSalir: (ruta: string) => void
@@ -65,26 +66,24 @@ type Props = {
   identidad?: { rol: string; nombre: string; correo?: string }
   /** Cerrar sesión, desde el menú del nombre · sin manejador no se pinta. */
   onCerrarSesion?: () => void
-  /** El tenant en contexto, para las pantallas de alcance `tenant`. */
-  tenants: readonly { id: string; nombre: string }[]
+  /** Los clientes que este usuario ve, y el activo · la barra del cliente. */
+  tenants: readonly ClienteVisible[]
   tenantActivo: string | null
   onTenant: (id: string) => void
-  /** El cliente de la sesión · F5.39 y F5.40. */
-  propio?: { id: string; nombre: string } | null
   children: React.ReactNode
 }
 
-export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantActivo, onTenant, onChangeTheme, onCerrarSesion, propio = null, children }: Props) {
-  const otroCliente = propio !== null && tenantActivo !== null && tenantActivo !== propio.id
+export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantActivo, onTenant, onChangeTheme, onCerrarSesion, children }: Props) {
   const pantalla = PANTALLAS.find((p) => p.id === activa) ?? PANTALLAS[0]
   const porTenant = pantalla.alcance === 'tenant'
+  const activo = tenants.find((t) => t.id === tenantActivo) ?? null
 
   return (
     // `min-w-[1280px]` y no un colapso · §4 del `.pen`. Una tabla que se achica
     // pierde columnas sin decirlo; el scroll es visible.
     <div className="min-h-screen bg-bg">
       <div className="min-w-[1280px]">
-        <header className="flex flex-col gap-4 px-6 pt-6 border-b border-w4">
+        <header className="flex flex-col border-b border-w4">
           {/* §PEN:A1 y §PEN:A2 encabezan con «Synapse · ADMINISTRACIÓN», y
               recién debajo va la pantalla. Faltaban las dos cosas. */}
           {/* ── EL NAVBAR · decisión humana del 2026-10-07 ─────────────────
@@ -93,15 +92,18 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
               administración y del builder—, que empezó a la izquierda y se
               pidió moverlo el mismo día. La identidad subió a esta
               fila, que es donde el navbar de A1 la dibuja. */}
-          <div className="flex items-center justify-between gap-6">
+          <div className="flex items-center justify-between gap-6 px-6 py-4">
             <div className="flex items-center gap-3">
               <Wordmark variante="marca" />
               <Label>Administración</Label>
+              <span aria-hidden className="mx-2 h-5 w-px shrink-0 bg-w3" />
+              {/* **Las pantallas, en el navbar** · decisión humana del 2026-10-20. */}
+              <NavDeSuperficie pantallas={PANTALLAS} activa={activa} onIr={onIr} etiqueta="Administración" />
             </div>
-            {/* Con aire entre los tres, y el menú de trabajo AL FINAL · decisión
-                humana del 2026-10-07. */}
-            <div className="flex items-center gap-6">
-              <VolverAlDashboard onIr={onSalir} {...(otroCliente ? { alCliente: propio.nombre } : {})} />
+            {/* La persona como ícono y el menú de trabajo AL FINAL · decisiones
+                humanas del 2026-10-07 y del 2026-10-20. «Volver al dashboard» se
+                fue: la consola es una entrada más del menú. */}
+            <div className="flex items-center gap-3">
               {identidad !== undefined && (
                 <IdentityBlock
                   rol={identidad.rol}
@@ -115,7 +117,13 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
             </div>
           </div>
 
-          <div className="flex items-baseline justify-between gap-6">
+          {/* ── LA BARRA DEL CLIENTE ACTIVO · 2026-10-20 ───────────────────
+              En todas las pantallas, también en las de plataforma: lo que se
+              ve debajo es de ese cliente, y en Clientes y Usuarios el que está
+              en uso es el punto de partida. */}
+          <BarraDeCliente activo={activo} clientes={tenants} onElegir={onTenant} />
+
+          <div className="flex items-baseline justify-between gap-6 px-6 py-6">
             {/* **`titulo-lg`, no `titulo`** · 2026-09-28. El dibujo pone los
                 títulos de superficie de admin en el mismo tamaño que la pregunta
                 operativa de la consola, y el token que los sirve a los dos es
@@ -132,9 +140,6 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
                 eso tiene consecuencias —lo que se hace acá afecta a todos—, así
                 que no se deduce del contenido: se declara. */}
             <div className="flex items-center gap-4">
-              {/* **El cliente de trabajo, destacado y el mismo del builder** ·
-                  2026-10-06. Antes era un `<select>` de 12px junto a un rótulo de
-                  alcance. Las pantallas de plataforma dicen cuántos clientes cruzan. */}
               {/* **El alcance es lo que llegó, no «todas las cuentas»** ·
                   2026-10-16. Desde `8272085` el backend devuelve en
                   `GET /admin/tenants` sólo el cliente del token, salvo a los
@@ -143,9 +148,9 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
                   sabe quién es operador —`/config/me` no lo dice—, así que
                   cuenta lo que vino. Con la lista vacía —todavía cargando— no
                   se afirma nada. */}
-              {porTenant ? (
-                <SelectorDeCliente clientes={tenants} activo={tenantActivo} onElegir={onTenant} propio={propio?.id ?? null} />
-              ) : tenants.length > 0 ? (
+              {/* El cliente lo dice la barra; acá queda el alcance de las
+                  pantallas de plataforma. */}
+              {porTenant ? null : tenants.length > 0 ? (
                 <Label>
                   Alcance · {tenants.length} {tenants.length === 1 ? 'cliente' : 'clientes'}
                 </Label>
@@ -153,29 +158,6 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
             </div>
           </div>
 
-          {/* **La navegación en registro de acción, como la del builder** ·
-              2026-10-06. Vestía el traje del rótulo —mono, mayúsculas, gris— y
-              se leía como un encabezado más. Ahora es Inter, y la activa se
-              marca con el borde `acc` —«estado activo», uno de sus usos
-              permitidos— y el peso, no sólo con un fondo. */}
-          <nav className="flex gap-1 -mb-px" aria-label="Administración">
-            {PANTALLAS.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => onIr(p.id)}
-                aria-current={p.id === activa ? 'page' : undefined}
-                className={
-                  'px-3 py-3 font-body text-cuerpo cursor-pointer border-b-2 ' +
-                  (p.id === activa
-                    ? 'border-acc text-ink font-semibold'
-                    : 'border-transparent text-dim font-medium hover:text-ink')
-                }
-              >
-                {p.nombre}
-              </button>
-            ))}
-          </nav>
         </header>
 
         <main className="p-6">{children}</main>

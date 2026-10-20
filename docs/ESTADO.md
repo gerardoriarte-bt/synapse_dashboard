@@ -5,21 +5,21 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**201 de 247 tareas cerradas.** 15 parciales · 27 pendientes · 4 diferidas.
+**209 de 256 tareas cerradas.** 15 parciales · 28 pendientes · 4 diferidas.
 
 
-## Front · 141 de 149
+## Front · 148 de 158
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
 | 0 · Fundamentos | `██████████████████████` | 16/16 | 0 | 0 |
 | 1 · Consola y render/ | `█████████████████████·` | 44/46 | 2 | 0 |
 | 2 · Estados | `██████████████████████` | 6/6 | 0 | 0 |
-| 3 · Chat contextual | `███████████████████···` | 13/15 | 0 | 0 |
+| 3 · Chat contextual | `█████████████████·····` | 13/17 | 0 | 2 |
 | 4 · Admin y Builder | `██████████████████████` | 24/24 | 0 | 0 |
-| 5 · Pruebas y pulido | `████████████████████··` | 38/42 | 0 | 3 |
+| 5 · Pruebas y pulido | `████████████████████··` | 45/49 | 0 | 3 |
 
-## Backend · 60 de 98
+## Backend · 61 de 98
 
 > ⚠️ **Este número está bajo y no refleja al backend.** El plan de acá
 > es la fuente del FRONT; el estado de las tareas `B*` solo se mueve
@@ -48,14 +48,16 @@
 | 0 · Fundamentos | `█████████████·········` | 6/10 | 1 | 3 |
 | 1 · API de consola | `███████████████·······` | 23/34 | 5 | 6 |
 | 2 · Materialización | `███████████···········` | 8/16 | 3 | 5 |
-| 3 · Chat contextual | `██████················` | 3/11 | 2 | 6 |
+| 3 · Chat contextual | `████████··············` | 4/11 | 2 | 5 |
 | 4 · Admin y Builder | `████████████████████··` | 18/20 | 1 | 1 |
 | 5 · Multi-dashboard y pulido | `██████················` | 2/7 | 1 | 3 |
 
 ---
 
-## Se puede tomar hoy · 1 del front
+## Se puede tomar hoy · 3 del front
 
+- **F3.16** · El mes en curso se marca en el trazo, no sólo en un aviso
+- **F3.17** · Un dato que falta se dibuja como hueco
 - **F5.21** · Qué hace un gráfico cuando el dato excede lo legible
 
 ---
