@@ -986,6 +986,18 @@ export const adminApi = {
       ),
     ),
 
+  /** **La forma corta del cliente** · F5.47, 2026-10-20 · `PUT /admin/tenants/{tenantId}`.
+   *  Vacía la saca: el cliente vuelve a no tenerla y la pantalla muestra el id
+   *  corto. **No se devuelve nada**: la respuesta trae la infraestructura del
+   *  cliente y lo que se refresca es la lista, que es de donde leen la barra y
+   *  las cards. */
+  editarFormaCorta: async (tenantId: string, formaCorta: string): Promise<void> => {
+    await pedir<WireTenantSettings>(`/admin/tenants/${encodeURIComponent(tenantId)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ label: formaCorta.trim() }),
+    })
+  },
+
   /** Las solicitudes PENDIENTES · la cola de A3. Una página de 100: la cola
    *  pendiente es corta por naturaleza, y si algún día no entra, el total que
    *  manda el servicio lo va a decir. */
@@ -1300,6 +1312,8 @@ export type WireAgent = A['AgentAdmin']
 export type WireFeed = A['Feed']
 export type WireMaterializeRun = A['MaterializeRun']
 export type WireUser = A['User']
+/** Lo que `PUT /admin/tenants/{tenantId}` devuelve y el front lee · F5.47. */
+export type WireTenantSettings = { id: string; name: string; label: string }
 export type WireUsersPlatform = A['UsersPlatform']
 export type WireSchemaCheck = A['SchemaCheck']
 

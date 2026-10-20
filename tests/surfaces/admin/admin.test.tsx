@@ -14,6 +14,7 @@ import userEvent from '@testing-library/user-event'
 import { http } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
 import { Admin } from '@/surfaces/admin/Admin'
+import { ClienteDeTrabajoProvider } from '@/surfaces/ClienteDeTrabajoProvider'
 import { PANTALLAS } from '@/surfaces/admin/pantallas'
 import { context, ok } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
@@ -41,6 +42,13 @@ const tenants = [
     status: null, vertical: null, created_at: '2026-09-25T10:00:00Z',
   },
 ]
+
+/** Abrir la ficha desde su card · desde el 2026-10-20 Clientes es una grilla y
+ *  la ficha una página aparte. */
+async function abrirFicha(nombre: RegExp) {
+  await userEvent.click(await screen.findByRole('button', { name: nombre }))
+  await screen.findByRole('navigation', { name: 'Migaja' })
+}
 
 function montar() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -121,11 +129,11 @@ describe('§7.3 · las cinco pantallas y su alcance', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
 
-    // **Desde el 2026-10-06 es el selector destacado y compartido con el
-    // builder** · `SelectorDeCliente`. Ya no lleva el rótulo «Alcance · cliente»:
-    // el rótulo es «Cliente», que es lo que se elige.
-    const selector = await screen.findByRole('combobox', { name: 'Cliente' })
-    expect(within(selector).getByText('Keralty Colombia')).toBeInTheDocument()
+    // **Desde el 2026-10-20 el cliente lo dice la barra**, la misma de la
+    // consola y del builder, y se cambia desde su selector.
+    const barra = await screen.findByRole('region', { name: 'Cliente activo' })
+    await userEvent.click(within(barra).getByRole('button', { name: /Cambiar de cliente/ }))
+    expect(screen.getByRole('menuitemradio', { name: /Keralty Colombia/ })).toBeInTheDocument()
     expect(screen.queryByText(/Alcance · /)).toBeNull()
   })
 })
@@ -144,11 +152,10 @@ describe('§7.3 · la regla dura · el vocabulario de infraestructura no se mues
       ),
     )
     const { container } = montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await abrirFicha(/^Under Armour México · /)
 
     // **Menos los subprocesadores**, que es la única excepción de §7.3 —una
-    // obligación legal de nombrar a quién procesa el dato— y que desde el
-    // 2026-10-09 está a la vista: la ficha se abre al lado de la lista.
+    // obligación legal de nombrar a quién procesa el dato—: están en la ficha.
     const subprocesadores = screen.getByRole('region', { name: 'Subprocesadores' })
     const texto = (container.textContent ?? '').replace(subprocesadores.textContent ?? '', '')
     for (const prohibido of ['snowflake', 'warehouse', 'grant', 'private_key', 'SYNAPSE_ROLE']) {
@@ -170,14 +177,13 @@ describe('F4.2 · la lista de clientes', () => {
     const { container } = montar()
     await screen.findByRole('button', { name: /^Under Armour México · / })
 
-    // **Desde el 2026-10-09 son una línea de la fila y no tres columnas**: la
-    // lista va al lado de la ficha y no le entra una tabla. Los tres datos
-    // siguen, juntos, que es el estado operativo del cliente.
+    // **Desde el 2026-10-20 son los tres datos de la card**, cada uno con su
+    // rótulo: el estado operativo del cliente.
     void container
     const ua = screen.getByRole('button', { name: /^Under Armour México · / })
-    expect(ua.textContent).toContain('12 usuarios')
-    expect(ua.textContent).toContain('feed 4 h')
-    expect(ua.textContent).toContain('publicó 22 sep 2026')
+    expect(ua.textContent).toContain('Usuarios12')
+    expect(ua.textContent).toContain('Feed más atrasadoHace 4 h')
+    expect(ua.textContent).toContain('Última publicación22 sep 2026')
   })
 
   it('«nunca» NO se colapsa con cero ni con un guion', async () => {
@@ -189,10 +195,10 @@ describe('F4.2 · la lista de clientes', () => {
     await screen.findByRole('button', { name: /^Keralty Colombia · / })
 
     const keralty = screen.getByRole('button', { name: /^Keralty Colombia · / }).textContent ?? ''
-    expect(keralty).toContain('feed Nunca cargó')
-    expect(keralty).toContain('nunca publicó')
+    expect(keralty).toContain('Feed más atrasadoNunca cargó')
+    expect(keralty).toContain('Última publicaciónNunca')
     // Cero usuarios SÍ se pinta como cero: es un conteo, no una ausencia.
-    expect(keralty).toContain('0 usuarios')
+    expect(keralty).toContain('Usuarios0')
   })
 
   it('ya NO declara las dos columnas que faltan · tampoco sus razones vencidas', async () => {
@@ -283,10 +289,8 @@ describe('las cinco pantallas de §7.3 · ninguna queda pendiente', () => {
       http.get(`${API}/admin/tenants/:id/catalog`, () => ok([])),
     )
     montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
-
-    // **La ficha ya está abierta al lado** · 2026-10-09: no hay pestaña que
-    // apretar.
+    // **La ficha se abre desde su card** · 2026-10-20.
+    await abrirFicha(/^Under Armour México · /)
     // **El CTA del vacío de alta y no «Nuevo rol»** · §PEN:A2, 2026-09-30. Este
     // escenario sirve la ficha con CERO roles, y desde que el vacío tiene su
     // propio CTA la cabecera no repite el suyo: el dibujo pone uno solo. Lo que
@@ -345,16 +349,19 @@ describe('«Ver ficha» abre el cliente que se cliqueó · 2026-09-25', () => {
     )
     montar()
 
-    // **Desde el 2026-10-09 la fila ES la elección**: la ficha se abre al lado.
-    const fila = await screen.findByRole('button', { name: /^Keralty Colombia · / })
-    await userEvent.click(fila)
+    // **Desde el 2026-10-20 la card ES la elección**, y abre la ficha.
+    await abrirFicha(/^Keralty Colombia · /)
 
     // **La aserción es a quién se le piden los datos.**
     await waitFor(() => expect(pedidos).toContain('t-2'))
 
-    // Y la otra mitad: la fila queda **elegida** y la ficha que se ve es la
-    // suya. Sin esto, elegir sin marcar —o marcar otra— sobrevivía.
-    expect(fila).toHaveAttribute('aria-pressed', 'true')
+    // Y la otra mitad: la ficha que se ve es la suya —la migaja y la barra lo
+    // dicen— y al volver a la grilla, su card es la que está en uso. Sin esto,
+    // elegir sin marcar —o marcar otra— sobrevivía.
+    expect(within(screen.getByRole('navigation', { name: 'Migaja' })).getByText('Keralty Colombia')).toBeInTheDocument()
+    expect(within(screen.getByRole('region', { name: 'Cliente activo' })).getByText('Keralty Colombia')).toBeInTheDocument()
+    await userEvent.click(within(screen.getByRole('navigation', { name: 'Migaja' })).getByRole('button', { name: 'Clientes' }))
+    expect(await screen.findByRole('button', { name: /^Keralty Colombia · / })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: /^Under Armour México · / })).toHaveAttribute('aria-pressed', 'false')
   })
 })
@@ -438,10 +445,12 @@ describe('§PEN:A1 · el navbar de admin pinta la identidad', () => {
     montar()
     await screen.findByRole('button', { name: /^Under Armour México · / })
 
-    const cabecera = document.querySelector('header') as HTMLElement
-    // Los valores salen del contexto por defecto de los mocks, leídos de ahí.
-    expect(within(cabecera).getByText('Planner')).toBeVisible()
-    expect(within(cabecera).getByText('Prueba Uno')).toBeVisible()
+    // **Desde el 2026-10-20 es un ícono**: el rol y el nombre están en el panel
+    // que abre. Los valores salen del contexto por defecto de los mocks.
+    await userEvent.click(screen.getByRole('button', { name: 'Identidad · Prueba Uno' }))
+    const panel = screen.getByRole('menu', { name: 'Usuario · Prueba Uno' })
+    expect(within(panel).getByText('Planner')).toBeVisible()
+    expect(within(panel).getByText('Prueba Uno')).toBeVisible()
   })
 
   it('y sale del contexto, no de una constante', async () => {
@@ -464,9 +473,10 @@ describe('§PEN:A1 · el navbar de admin pinta la identidad', () => {
     montar()
     await screen.findByRole('button', { name: /^Under Armour México · / })
 
-    const cabecera = document.querySelector('header') as HTMLElement
-    expect(within(cabecera).getByText('planner')).toBeVisible()
-    expect(within(cabecera).getByText('Otra Persona')).toBeVisible()
+    await userEvent.click(screen.getByRole('button', { name: 'Identidad · Otra Persona' }))
+    const panel = screen.getByRole('menu', { name: 'Usuario · Otra Persona' })
+    expect(within(panel).getByText('planner')).toBeVisible()
+    expect(within(panel).getByText('Otra Persona')).toBeVisible()
   })
 })
 
@@ -728,19 +738,94 @@ describe('la verificación del acceso, desde la ficha', () => {
   })
 })
 
-// ── EL CAMBIO DE CLIENTE SE DICE · F5.39 y F5.40, 2026-10-19 ───────────────
+// ── EL CLIENTE ACTIVO LO DICE LA BARRA · 2026-10-20 ────────────────────────
 describe('trabajar sobre otro cliente', () => {
-  it('la lista marca el propio, y «Volver» nombra la consola a la que vuelve', async () => {
+  it('elegirlo cambia la barra, y no hay un cliente «de la sesión» aparte', async () => {
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     montar()
     await screen.findByRole('button', { name: /^Under Armour México · / })
-    // El propio —el de la sesión, `t-1`— lleva la marca; el otro no.
-    expect(screen.getByText(/· tu cliente/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Volver al dashboard' })).toBeInTheDocument()
+    const barra = screen.getByRole('region', { name: 'Cliente activo' })
+    expect(within(barra).getByText('Under Armour México')).toBeInTheDocument()
+    expect(screen.queryByText(/tu cliente/)).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Volver/ })).toBeNull()
 
     await userEvent.click(screen.getByRole('button', { name: /^Keralty Colombia · / }))
-    expect(
-      await screen.findByRole('button', { name: /^Volver a la consola de .*, el cliente de tu sesión$/ }),
-    ).toBeInTheDocument()
+    expect(await within(barra).findByText('Keralty Colombia')).toBeInTheDocument()
+  })
+})
+
+// ── LA FICHA ABRE CON EL PROVEEDOR REAL · 2026-10-20 ───────────────────────
+describe('la ficha, con el proveedor del cliente de trabajo montado', () => {
+  /** **El defecto lo encontró el navegador, no esta suite**: el resto de las
+   *  pruebas monta `Admin` sin el proveedor, y con él la card del cliente en uso
+   *  no abría la ficha —la URL del proveedor pisaba la de la ficha—. */
+  it('la card del cliente EN USO abre su ficha', async () => {
+    server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={['/admin']}>
+          <ClienteDeTrabajoProvider>
+            <Admin />
+          </ClienteDeTrabajoProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    const enUso = await screen.findByRole('button', { name: /^Under Armour México · /, pressed: true })
+    await userEvent.click(enUso)
+    expect(await screen.findByRole('navigation', { name: 'Migaja' })).toBeInTheDocument()
+  })
+})
+
+// ── LA FORMA CORTA SE EDITA DESDE LA FICHA · F5.47, 2026-10-20 ──────────────
+describe('la forma corta, editada desde la ficha', () => {
+  /** **Se sigue el CALLBACK hasta el cable**: `ResumenDeFicha` → `Cliente` →
+   *  `Admin` → `useEditTenantShortName` → `PUT`. Cada salto pasa una prop, y
+   *  una mal nombrada compila. Lo que se afirma es a quién y qué se manda, y
+   *  que la barra lo dice después. */
+  it('manda el PUT al cliente de la ficha, y la barra muestra la nueva', async () => {
+    const pedidos: { id: string; cuerpo: unknown }[] = []
+    let lista = tenants
+    server.use(
+      http.get(`${API}/admin/tenants`, () => ok(lista)),
+      http.put(`${API}/admin/tenants/:id`, async ({ params, request }) => {
+        const cuerpo = (await request.json()) as { label: string }
+        pedidos.push({ id: String(params['id']), cuerpo })
+        lista = lista.map((t) => (t.id === params['id'] ? { ...t, label: cuerpo.label } : t))
+        return ok({ id: params['id'], name: 'Keralty Colombia', label: cuerpo.label })
+      }),
+    )
+    montar()
+    await abrirFicha(/^Keralty Colombia · /)
+
+    const identidad = screen.getByRole('region', { name: 'Resumen · Identidad' })
+    await userEvent.click(within(identidad).getByRole('button', { name: 'Editar forma corta' }))
+    const campo = within(identidad).getByRole('textbox', { name: 'Forma corta' })
+    await userEvent.clear(campo)
+    await userEvent.type(campo, '  Keralty CO ')
+    await userEvent.click(within(identidad).getByRole('button', { name: 'Guardar' }))
+
+    await waitFor(() => expect(pedidos).toEqual([{ id: 't-2', cuerpo: { label: 'Keralty CO' } }]))
+    const barra = screen.getByRole('region', { name: 'Cliente activo' })
+    expect(await within(barra).findByText('KERALTY CO')).toBeInTheDocument()
+  })
+
+  it('cancelar no manda nada', async () => {
+    const pedidos: string[] = []
+    server.use(
+      http.get(`${API}/admin/tenants`, () => ok(tenants)),
+      http.put(`${API}/admin/tenants/:id`, ({ params }) => {
+        pedidos.push(String(params['id']))
+        return ok({})
+      }),
+    )
+    montar()
+    await abrirFicha(/^Keralty Colombia · /)
+    const identidad = screen.getByRole('region', { name: 'Resumen · Identidad' })
+    await userEvent.click(within(identidad).getByRole('button', { name: 'Editar forma corta' }))
+    await userEvent.type(within(identidad).getByRole('textbox', { name: 'Forma corta' }), 'X')
+    await userEvent.click(within(identidad).getByRole('button', { name: 'Cancelar' }))
+    expect(within(identidad).queryByRole('textbox')).toBeNull()
+    expect(pedidos).toEqual([])
   })
 })

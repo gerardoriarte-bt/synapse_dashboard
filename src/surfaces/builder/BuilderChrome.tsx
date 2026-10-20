@@ -35,12 +35,12 @@
 import { useLayoutEffect, useRef } from 'react'
 import { IdentityBlock } from '../IdentityBlock'
 import { MenuDeTrabajo } from '../MenuDeTrabajo'
-import { VolverAlDashboard } from '../VolverAlDashboard'
 import type { Theme } from '../../tokens/theme'
 import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
 import { Accion } from '../../render/primitives/Accion'
-import { SelectorDeCliente } from '../SelectorDeCliente'
+import { BarraDeCliente } from '../BarraDeCliente'
+import type { ClienteVisible } from '../clienteVisible'
 import { Wordmark } from '../console/Wordmark'
 import { PANTALLAS } from './pantallas'
 import type { FormaDeChrome, PantallaId } from './pantallas'
@@ -130,7 +130,7 @@ type Props = {
   /** Quién compone · el bloque de identidad de `B2`. Sin él no se pinta: el
    *  chrome no inventa un nombre. */
   identidad?: { rol: string; nombre: string; correo?: string } | undefined
-  /** Ir a una RUTA · el menú de trabajo y «Volver al dashboard». La navegación
+  /** Ir a una RUTA · el menú de trabajo. La navegación
    *  es del contenedor. */
   onSalir: (ruta: string) => void
   /** Cerrar sesión, desde el menú del nombre · sin manejador no se pinta. */
@@ -140,13 +140,11 @@ type Props = {
   onChangeTheme?: (theme: Theme) => void
 
   contexto: ContextoDeEdicion
-  /** **El cliente de trabajo, en la cabecera y destacado** · 2026-10-06. Es el
-   *  único lugar del builder donde se elige. */
-  clientes: readonly { id: string; nombre: string }[]
+  /** **El cliente activo, en la barra** · 2026-10-20. Es el único lugar del
+   *  builder donde se elige, y es la misma barra de consola y administración. */
+  clientes: readonly ClienteVisible[]
   clienteActivo: string | null
   onCliente: (id: string) => void
-  /** El cliente de la sesión · F5.39 y F5.40. */
-  propio?: { id: string; nombre: string } | null
   /** `null` sin versión: no hay nada que previsualizar. */
   onVistaPrevia: (() => void) | null
   /** `null` cuando no hay nada que publicar todavía · la razón la da la pantalla. */
@@ -176,7 +174,6 @@ export function BuilderChrome({
   clientes,
   clienteActivo,
   onCliente,
-  propio = null,
   onVistaPrevia,
   onPublicar,
   guardado,
@@ -221,27 +218,19 @@ export function BuilderChrome({
 
                   `marca` y no `mono`: decisión humana del 2026-10-06, escrita en
                   la §3 de `PROPUESTA-2026-09-22-divergencias-con-el-pen.md`. */}
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-3">
-                  <Wordmark variante="marca" />
-                  <Label>Builder</Label>
-                </div>
-                <span aria-hidden className="h-6 w-px shrink-0 bg-w3" />
-                <SelectorDeCliente clientes={clientes} activo={clienteActivo} onElegir={onCliente} propio={propio?.id ?? null} />
+              <div className="flex items-center gap-3">
+                <Wordmark variante="marca" />
+                <Label>Builder</Label>
               </div>
 
               {/* «Ancho 1600 · lienzo 1:1 a 1200 más 300 de biblioteca» vivía
                   acá, siempre a la vista. Es la regla de §4 para quien
                   implementa, no para quien compone · §3.4 de la auditoría del
                   2026-10-06. Sigue en `pantallas.ts`, que es donde sirve. */}
-              {/* A la derecha, con aire: el acceso rápido al dashboard, la
-                  persona y el menú de trabajo al final · decisión humana del
-                  2026-10-07. */}
-              <div className="flex items-center gap-6">
-                <VolverAlDashboard
-                  onIr={onSalir}
-                  {...(propio !== null && clienteActivo !== null && clienteActivo !== propio.id ? { alCliente: propio.nombre } : {})}
-                />
+              {/* La persona como ícono y el menú de trabajo al final · decisiones
+                  humanas del 2026-10-07 y del 2026-10-20. «Volver al dashboard»
+                  se fue: la consola es una entrada más del menú. */}
+              <div className="flex items-center gap-3">
                 {identidad !== undefined && (
                   <IdentityBlock
                     rol={identidad.rol}
@@ -253,6 +242,17 @@ export function BuilderChrome({
                 )}
                 <MenuDeTrabajo esAdmin rutaActual={pantalla.ruta} onIr={onSalir} />
               </div>
+            </div>
+
+            {/* ── LA BARRA DEL CLIENTE ACTIVO · 2026-10-20 ─────────────────
+                La misma de consola y administración. Sangra hasta los bordes
+                de la cabecera, que tiene su propio padding. */}
+            <div className="-mx-6">
+              <BarraDeCliente
+                activo={clientes.find((c) => c.id === clienteActivo) ?? null}
+                clientes={clientes}
+                onElegir={onCliente}
+              />
             </div>
 
             {conContexto(forma) && (

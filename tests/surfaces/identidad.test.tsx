@@ -34,11 +34,12 @@ const montar = ({ onChangeTheme, onCerrarSesion, correo }: Opciones = {}) =>
 const abrir = async () =>
   userEvent.click(screen.getByRole('button', { name: /Identidad · María Benítez/ }))
 
-describe('el bloque dice quién, con el rol primero', () => {
-  it('pinta rol y nombre, en el orden del dibujo', () => {
+describe('el bloque es un ícono, y dice quién en su nombre · 2026-10-20', () => {
+  it('cerrado no pinta el nombre ni el rol; el botón se llama con el nombre', () => {
     montar()
-    expect(screen.getByText('Super-admin')).toBeVisible()
-    expect(screen.getByText('María Benítez')).toBeVisible()
+    expect(screen.queryByText('Super-admin')).toBeNull()
+    expect(screen.queryByText('María Benítez')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Identidad · María Benítez' })).toBeInTheDocument()
   })
 
   it('los iconos no se anuncian · el botón ya tiene su nombre', () => {

@@ -17,6 +17,7 @@ import { Builder } from '@/surfaces/builder/Builder'
 import { PANTALLAS } from '@/surfaces/builder/pantallas'
 import { ok } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
+import { elegirCliente } from '../elegirCliente'
 
 const API = '*/api/v1'
 
@@ -312,7 +313,8 @@ describe('el chrome NO es uniforme · corregido contra el `.pen`', () => {
     for (const pantalla of ['Dashboards', 'Editor', 'Historial de versiones']) {
       await ir(pantalla)
       const cabecera = await cabeceraDelChrome()
-      expect(cabecera.getByText('Cliente')).toBeInTheDocument()
+      // Desde el 2026-10-20 lo dice la barra del cliente activo, dentro de la cabecera.
+      expect(cabecera.getByRole('region', { name: 'Cliente activo' })).toBeInTheDocument()
       expect(await cabecera.findByText('Under Armour México')).toBeInTheDocument()
       // Ningún segundo lugar lo dice.
       expect(screen.getAllByText('Under Armour México')).toHaveLength(1)
@@ -333,10 +335,10 @@ describe('el chrome NO es uniforme · corregido contra el `.pen`', () => {
         return ok([])
       }),
     ])
-    const selector = await (await cabeceraDelChrome()).findByRole('combobox', { name: 'Cliente' })
-    await userEvent.selectOptions(selector, 't-2')
+    const cabecera = await cabeceraDelChrome()
+    await elegirCliente(/Terpel Colombia/)
     await waitFor(() => expect(pedidos).toContain('t-2'))
-    expect(selector).toHaveValue('t-2')
+    expect(within(cabecera.getByRole('region', { name: 'Cliente activo' })).getByText('Terpel Colombia')).toBeInTheDocument()
   })
 
   it('«Dashboards» NO repite el rol en la cabecera · es el control del cuerpo', async () => {
@@ -389,7 +391,7 @@ describe('el chrome NO es uniforme · corregido contra el `.pen`', () => {
     for (const pantalla of ['Editor', 'Historial de versiones']) {
       await ir(pantalla)
       const cabecera = await cabeceraDelChrome()
-      expect(cabecera.getByText('Cliente')).toBeInTheDocument()
+      expect(cabecera.getByRole('region', { name: 'Cliente activo' })).toBeInTheDocument()
       expect(await cabecera.findByText('Dashboard')).toBeInTheDocument()
       expect(cabecera.getByText('Overview')).toBeInTheDocument()
       expect(cabecera.getByText('Borrador v1')).toBeInTheDocument()

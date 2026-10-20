@@ -75,12 +75,11 @@ describe('A1 · la lista de clientes mientras carga', () => {
     server.use(http.get(`${API}/admin/tenants`, colgada))
     const { container } = montar()
 
-    // **Desde el 2026-10-09 la lista es una columna elegible** —va al lado de la
-    // ficha—, así que el esqueleto son filas de lista y no de tabla.
+    // **Desde el 2026-10-20 la lista es una grilla de cards** de tres columnas,
+    // así que el esqueleto es una fila de la grilla: tres cards.
     const lista = await screen.findByRole('region', { name: 'Clientes' })
     expect(lista).toHaveAttribute('aria-busy', 'true')
-    // Cuatro, como el `.pen`.
-    expect(lista.querySelectorAll('li[aria-hidden="true"]')).toHaveLength(4)
+    expect(lista.querySelectorAll('li[aria-hidden="true"]')).toHaveLength(3)
     // Ni animación ni ruleta: la forma alcanza.
     expect(container.querySelector('[class*="animate"]')).toBeNull()
     expect(container.textContent).not.toMatch(/cargando…|espera/i)

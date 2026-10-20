@@ -22,6 +22,7 @@ import { describe, expect, it } from 'vitest'
 import { Builder } from '@/surfaces/builder/Builder'
 import { ok } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
+import { elegirCliente } from '../elegirCliente'
 
 const API = '*/api/v1'
 
@@ -499,7 +500,7 @@ describe('el borrador se ata a SU versión', () => {
     await userEvent.type((await ajustes('Resumen')).getByRole('textbox', { name: 'Nombre' }), ' editado')
     expect(screen.getByRole('tab', { name: 'Resumen editado' })).toBeInTheDocument()
 
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Cliente' }), 't-2')
+    await elegirCliente(/Keralty Colombia/)
     expect(await screen.findByRole('button', { name: /^Salud/ })).toBeInTheDocument()
     expect(screen.queryByRole('tab', { name: 'Resumen editado' })).toBeNull()
     expect(screen.queryByRole('textbox', { name: 'Nombre' })).toBeNull()

@@ -329,8 +329,11 @@ export function useSelectDashboard() {
  * al endpoint en vez de decidir acá.
  */
 
-export function useTenants() {
-  return useQuery({ queryKey: keys.tenants, queryFn: adminApi.tenants })
+/** `habilitado` apaga la consulta para quien no administra · 2026-10-20: la
+ *  consola la pide para la barra del cliente, y a un usuario sin rol admin
+ *  `/admin/tenants` le contesta 403. */
+export function useTenants(habilitado = true) {
+  return useQuery({ queryKey: keys.tenants, queryFn: adminApi.tenants, enabled: habilitado })
 }
 
 export function useAdminCatalog(tenantId: string | null) {
@@ -485,6 +488,19 @@ export function useEditUser() {
       void qc.invalidateQueries({ queryKey: ['admin', 'usuarios'] })
       void qc.invalidateQueries({ queryKey: keys.tenants })
       void qc.invalidateQueries({ queryKey: keys.roles(v.tenantId) })
+    },
+  })
+}
+
+/** **Editar la forma corta** · F5.47. Se ve en la barra y en las cards
+ *  —`/admin/tenants`— y en la consola —`/config/me`—: se invalidan las dos. */
+export function useEditTenantShortName() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { tenantId: string; formaCorta: string }) => adminApi.editarFormaCorta(v.tenantId, v.formaCorta),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.tenants })
+      void qc.invalidateQueries({ queryKey: keys.me })
     },
   })
 }

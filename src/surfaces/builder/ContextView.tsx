@@ -119,7 +119,7 @@ export function ContextView({
           ¿Sobre qué se va a componer?
         </h1>
         <Ayuda>
-          Elegí el dashboard del cliente de la cabecera, después para qué rol lo vas a editar, y abrí el
+          Elegí el dashboard del cliente de la barra, después para qué rol lo vas a editar, y abrí el
           editor.
         </Ayuda>
       </header>

@@ -59,6 +59,7 @@
  *  convergen en 26. **No hay que tocar nada acá**: la clase es la misma y el
  *  valor llega con el token. Es lo que `token-drift` garantiza.
  */
+import { useId, useState } from 'react'
 import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
 import { Accion } from '../../render/primitives/Accion'
@@ -101,6 +102,11 @@ export function RoleCard({
   onBorrar,
   onVerCatalogo,
 }: Props) {
+  /** **Plegada por defecto** · 2026-10-20. Medido en QA: seis tarjetas abiertas
+   *  repetían la misma pestaña y la misma explicación una debajo de la otra. La
+   *  fila dice lo que decide —usuarios, alcance, paneles— y el detalle se abre. */
+  const [abierta, setAbierta] = useState(false)
+  const detalle = useId()
   // **Acá vive la regla.** Vacío = todas.
   // **Se compara por CLAVE, no por id** · 2026-09-29. `rol.pestanas` pasó a
   // guardar `tab_keys`, que sobreviven a publicar; el `id` se recrea en cada
@@ -111,106 +117,102 @@ export function RoleCard({
   const paneles = suyas.reduce((n, t) => n + t.paneles, 0)
 
   return (
-    <li className="flex flex-col gap-4 rounded-xl border border-w3 bg-panel p-6 list-none">
-      <div className="flex items-start gap-3">
-        <div className="flex flex-col gap-1 min-w-0">
-          <span className="font-display text-titulo leading-titulo tracking-titulo text-ink">
-            {rol.nombre}
+    <li className="flex flex-col rounded-xl border border-w3 bg-panel list-none">
+      <div className="flex items-center gap-3 px-5 py-3.5">
+        <button
+          type="button"
+          onClick={() => setAbierta((v) => !v)}
+          aria-expanded={abierta}
+          aria-controls={detalle}
+          className="flex min-w-0 cursor-pointer items-center gap-3 border-0 bg-transparent p-0 text-left text-dim hover:text-ink"
+        >
+          {/* `chevron-right` de línea, que gira al abrir · hereda el color. */}
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={abierta ? 'rotate-90' : ''}
+            aria-hidden
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="font-display text-titulo leading-titulo tracking-titulo text-ink">{rol.nombre}</span>
+            {/* **El conteo antes del botón** · con un usuario o más, borrar da 409. */}
+            <Label as="span">{rol.usuarios === 0 ? 'Sin usuarios' : `${String(rol.usuarios)} usuario(s)`}</Label>
           </span>
-          {/* **El conteo antes del botón** · con un usuario o más, borrar da 409. */}
-          <Label as="div">
-            {rol.usuarios === 0 ? 'Sin usuarios' : `${String(rol.usuarios)} usuario(s)`}
-          </Label>
-        </div>
+        </button>
 
-        {/* La cifra y su rótulo, que es lo que impide que quede desnuda: el
-            «PANELES · N PESTAÑAS» de abajo es su label, igual que en el `.pen`. */}
-        <div className="flex flex-col items-end gap-1 ml-auto shrink-0">
-          <span className="font-display text-titulo-lg leading-titulo tracking-titulo text-ink">
-            {paneles}
-          </span>
-          <span className={`${NOTA} text-dim`}>
-            {`Paneles · ${String(suyas.length)} pestaña(s)`}
-          </span>
-        </div>
-      </div>
+        {/* La regla —vacío es TODAS— dicha una vez arriba, en el editor; acá
+            queda la marca. Es la mitad del dato que se lee al revés si falta: la
+            cifra de la derecha ya sumó todas. */}
+        {rol.pestanas.length === 0 && <span className={CHIP}>Todas las pestañas</span>}
+        {rol.metricasOcultas.length > 0 && (
+          <span className={CHIP}>{`No recibe · ${String(rol.metricasOcultas.length)} métrica(s)`}</span>
+        )}
 
-      {rol.pestanas.length === 0 && (
-        // La mitad del dato que se lee al revés si falta, y acá importa más que
-        // en una lista: la cifra de arriba ya sumó todas.
-        <Ayuda>Ve TODAS las pestañas: un rol sin pestañas elegidas las ve todas, no ninguna.</Ayuda>
-      )}
+        {/* La cifra y su rótulo, que es lo que impide que quede desnuda. */}
+        <span className="ml-auto flex shrink-0 items-baseline gap-2">
+          <span className="font-display text-titulo leading-titulo tracking-titulo text-ink">{paneles}</span>
+          <span className={`${NOTA} text-dim`}>{`Paneles · ${String(suyas.length)} pestaña(s)`}</span>
+        </span>
 
-      <div className="h-px bg-w2" />
-
-      {suyas.length === 0 ? (
-        <Ayuda>Este cliente todavía no tiene pestañas publicadas.</Ayuda>
-      ) : (
-        <ul className="flex flex-col m-0 p-0 list-none">
-          {suyas.map((t) => (
-            <li key={t.id} className="flex items-center gap-3 py-2.5">
-              <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="font-body text-celda leading-cuerpo text-ink truncate">
-                  {t.nombre}
-                </span>
-                <span className={`${NOTA} text-dim`}>{t.pregunta}</span>
-              </div>
-              <span className={`${NOTA} text-ink ml-auto shrink-0`}>
-                {`${String(t.paneles)} paneles`}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {rol.metricasOcultas.length > 0 && (
-        <div className="flex flex-col gap-2 rounded-md border border-w3 px-4 py-3.5">
-          <span className={`${NOTA} text-ink`}>
-            {`No recibe · ${String(rol.metricasOcultas.length)} métrica(s)`}
-          </span>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {rol.metricasOcultas.map((id) => (
-              <span key={id} className={CHIP}>
-                {nombreDeMetrica(id)}
-              </span>
-            ))}
-            {onVerCatalogo !== undefined && (
-              // **Una acción, no un chip más** · 2026-10-06. Vestía la misma
-              // clase que los nombres de métrica de al lado y no se distinguía
-              // de ellos.
-              <Accion tamano="compacta" onClick={onVerCatalogo}>
-                Ver en el catálogo
-              </Accion>
-            )}
-          </div>
-          {/* **La nota dura, literal del `.pen`.** No es un dato: es §3.3, y por
-              eso se escribe acá en vez de esperar a que el cable la mande. */}
-          {/* Decía «El backend no envía el payload · ocultar no es permitir
-              (§3.3)»: la regla en el idioma de quien la implementa. Al
-              super-admin le importa la consecuencia · 2026-10-06. */}
-          <Ayuda>
-            Estas cifras no le llegan al rol, no sólo se esconden: ocultar no es permitir.
-          </Ayuda>
-        </div>
-      )}
-
-      <div className="flex items-center gap-3">
         <Accion tamano="compacta" onClick={onEditar}>
           Editar
         </Accion>
-        {rol.usuarios === 0 ? (
-          // **`peligro` y no `acc`** · 2026-10-06. Iba en el naranja del CTA
-          // principal, que es el color de «adelante»: una acción que borra con
-          // esa señal la invierte.
+        {/* **Ausente con usuarios**: qué lo impide y qué lo desbloquea está dicho
+            una vez en la cabecera de la sección. **`peligro` y no `acc`** ·
+            2026-10-06: el naranja es «adelante» y esto borra. */}
+        {rol.usuarios === 0 && (
           <Accion tamano="compacta" variante="peligro" onClick={onBorrar} etiqueta={`Borrar ${rol.nombre}`}>
             Borrar
           </Accion>
-        ) : (
-          // **Ausente, no deshabilitado con silencio**: se dice qué lo impide y
-          // qué lo desbloquea.
-          <Ayuda as="span">No se borra con usuarios asignados: reasignalos primero.</Ayuda>
         )}
       </div>
+
+      {abierta && (
+        <div id={detalle} className="flex flex-col gap-4 border-t border-w2 px-5 py-4">
+          {suyas.length === 0 ? (
+            <Ayuda>Este cliente todavía no tiene pestañas publicadas.</Ayuda>
+          ) : (
+            <ul className="flex flex-col m-0 p-0 list-none">
+              {suyas.map((t) => (
+                <li key={t.id} className="flex items-center gap-3 py-2.5">
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="font-body text-celda leading-cuerpo text-ink truncate">{t.nombre}</span>
+                    <span className={`${NOTA} text-dim`}>{t.pregunta}</span>
+                  </div>
+                  <span className={`${NOTA} text-ink ml-auto shrink-0`}>{`${String(t.paneles)} paneles`}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {rol.metricasOcultas.length > 0 && (
+            <div className="flex flex-col gap-2 rounded-md border border-w3 px-4 py-3.5">
+              <span className={`${NOTA} text-ink`}>{`No recibe · ${String(rol.metricasOcultas.length)} métrica(s)`}</span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {rol.metricasOcultas.map((id) => (
+                  <span key={id} className={CHIP}>
+                    {nombreDeMetrica(id)}
+                  </span>
+                ))}
+                {onVerCatalogo !== undefined && (
+                  // **Una acción, no un chip más** · 2026-10-06.
+                  <Accion tamano="compacta" onClick={onVerCatalogo}>
+                    Ver en el catálogo
+                  </Accion>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </li>
   )
 }
