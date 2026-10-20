@@ -31,6 +31,21 @@ import type { AppContext } from './types'
 
 export const ROL_ADMIN = 'admin'
 
+/** **«superadmin» también administra** · 2026-10-20, medido en QA.
+ *
+ *  El backend creó el rol y se lo dio a `jose.rodriguez@lobueno.co`, y con él
+ *  `/admin/*` contesta 200 **y cruza clientes**: `GET /admin/tenants` le da los
+ *  cinco, y el catálogo, los roles, los usuarios, los layouts y los feeds de
+ *  Keralty contestan 200. Sólo con «admin» el front escondía el menú de trabajo
+ *  a quien el servidor sí habilita, que es el error simétrico que esta función
+ *  existe para evitar.
+ *
+ *  **Ese código no está en su repositorio**: en `31e97b1`, `AdminOnlyMiddleware`
+ *  sigue pidiendo «admin» a secas. Se transcribe lo que QA hace, y está
+ *  preguntado. Cuando `/config/me` diga qué se puede administrar —el pedido 4
+ *  del 2026-10-10—, esta lista se va. */
+export const ROLES_QUE_ADMINISTRAN: readonly string[] = [ROL_ADMIN, 'superadmin']
+
 export function esAdmin(role: AppContext['role'] | undefined): boolean {
-  return role !== undefined && role.nombre.trim().toLowerCase() === ROL_ADMIN
+  return role !== undefined && ROLES_QUE_ADMINISTRAN.includes(role.nombre.trim().toLowerCase())
 }
