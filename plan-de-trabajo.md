@@ -8216,6 +8216,43 @@ validar y publicar siguen en su fila.
 afirman que la navegación y el rol van antes de la barra; fallan con los chromes
 anteriores.
 
+### ➕ F5.50 ✅ La consola es la del cliente elegido
+
+**Descripción.** Un superadmin que elegía otro cliente veía la consola
+bloqueada: `/config/*` sirve el cliente del token y no había cómo pedir otro.
+`d794a3e` trae `POST /auth/switch-tenant`, que devuelve un token del cliente
+elegido. Ver `docs/RESPUESTA-2026-10-20-backend-consola-por-cliente.md` y
+`docs/AUDITORIA-2026-10-20-consola-por-cliente.md`.
+
+**Criterio de aceptación.** Con alcance de plataforma, elegir otro cliente —en la
+consola, o llegar a ella con otro elegido en administración o en el builder—
+pide el token de ese cliente, lo guarda, vacía lo del cliente anterior y vuelve
+a pedir el contexto: pestañas, períodos, catálogo y datos son del cliente nuevo.
+Ninguna consulta del cliente anterior sale con el token nuevo. Si el servicio no
+deja saltar, la consola lo dice con la razón del servicio, el token no cambia,
+no se reintenta solo y hay una salida de vuelta. Sin alcance de plataforma, el
+bloqueo de antes sigue.
+
+**Verificado el 2026-10-20** · contra `d794a3e` en local, en el navegador: el
+salto, la recarga con `?cliente=` de otro cliente y administración siguiendo al
+mismo. Pruebas en `tests/surfaces/console/saltoDeCliente.test.tsx`; cinco
+mutaciones mueren, y una de ellas —vaciar todo de una vez— encontró que la
+pestaña del cliente anterior se pedía con el token nuevo.
+
+### ➕ F5.51 ✅ «superadmin» no se ofrece en ninguna lista de roles
+
+**Descripción.** `d794a3e` crea un rol `superadmin` en cada cliente, y aparecía
+en el selector de rol de cada usuario, en la ficha y en el builder. Decidido por
+el humano el 2026-10-20: es de asignación interna, nunca de un cliente.
+
+**Criterio de aceptación.** Las listas de roles de un cliente no traen
+`superadmin`, en ninguna caja. El rol de quien ya lo tiene se sigue viendo en su
+fila.
+
+**Verificado el 2026-10-20** · `sinRolesInternos` en `src/api/rol.ts`, aplicado en
+`useRoles` y `useRolesOf`. Mirado en Usuarios en local. Pruebas en
+`tests/api/rolInterno.test.tsx`; tres mutaciones mueren.
+
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
 **Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio
