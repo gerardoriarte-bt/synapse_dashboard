@@ -169,6 +169,7 @@ decir qué rol cumple**, porque ahí empieza la superposición.
 | `docs/F1.28-escala-tipografica.md` | La bitácora de una tarea que cambió el sistema |
 | `docs/FOLDER_STRUCTURE.md` | La estructura de `src/`, para quien llega |
 | `docs/RUNBOOK-*.md` | **Un procedimiento que se CORRE, y se mantiene.** Es el único rol sin fecha en el nombre, a propósito: los demás son cortes que vencen y éste se corrige en su lugar. Su lector es el equipo interno, así que **sí nombra bases, roles y grants** — lo que §7.3 prohíbe en pantalla vale para las pantallas, no para quien opera esa capa |
+| `docs/HITOS.md` | **El historial de hitos del proyecto**, de punta a punta: qué cambió en cada tramo y dónde está la evidencia. **Se mantiene**, como un `RUNBOOK-*`: cuando un tramo cierra se agrega al final, y lo anterior no se reescribe. No cuenta tareas —eso es `docs/ESTADO.md`— ni dice dónde retomar —eso es `CLAUDE.md`— |
 | `docs/REPERTORIO-*-*.md` | Una **transcripción** de una fuente normativa a forma implementable, con de dónde sale cada columna. La implementa OTRO equipo; el contrato declara su esquema y acá viven las filas |
 | `docs/INSTRUCCIONES-*-*.md` | Lo que **otra sesión** necesita saber para trabajar en paralelo sin pisarnos. Incluye las excepciones a `CLAUDE.md` que un humano autorizó, con fecha |
 | `docs/historico/*` | Documentos **vencidos**, con el aviso adentro. No se consultan para planificar |
@@ -809,6 +810,8 @@ que su commit anticipaba. **Es la primera vez que la anatomía completa de un KP
 se ve con dato del negocio.**
 **Pedido cumplido el 2026-09-28.** Era **solo la `nota` de panel**, y llegó. El pedido grande que había acá —«`presentation` para las siete formas que no son escalares»— **se retira: estaba mal**, y lo corrigió leer nuestro propio código el 2026-09-15.
 
+**Y el front la lee desde el 2026-10-14** · `06b0129`, PR #19. La servían desde el 2026-09-28 y nadie la consumía; al conectarla apareció que **guardar desde el builder la borraba**, porque el `PUT` no la mandaba y el backend guarda la que llega. Se ve bajo el título y entera en el ⓘ · `docs/BITACORA-2026-10-14.md` §4.
+
 **`presentation` la lee UN solo cuerpo: `KpiBody`.** Ningún otro la toca — verificado con un grep sobre `src/render/bodies/`. Y no es un olvido: los demás sacan sus rótulos **del propio valor**. `BarsBody` hace `value.items.map(i => i.etiqueta)`; cada ítem viaja con su etiqueta. **«Ningún número desnudo» lo cumple la estructura del dato, no `presentation`.**
 
 Así que `PresentationFromRows` devolviendo `nil` para las otras siete **es correcto**, y pedirlas habría sido pedir un campo que nadie lee — el mismo modo de falla de `BodyProps.presentation`, que existió meses sin un solo consumidor.
@@ -1286,6 +1289,8 @@ contestara 200 sin mirar nada se vería igual. Los tres objetos nombrados, con s
 acá cambia**, así que un 502 de Snowflake se mira contra `curl checkip.amazonaws.com`
 antes de escribirle a nadie.
 
+**Y la ficha la consume desde el 2026-10-14** · `a1702db`, PR #15. Medido en UA, la respuesta trae `ok: false` **con las tres tablas presentes**: el `false` lo ponen las seis claves de forecast y MMM que no tienen consulta. Leer `ok` habría dicho «sin acceso» del único cliente que anda, así que el estado sale de las tablas y del código HTTP, y las claves sin cálculo se dicen aparte · `docs/BITACORA-2026-10-14.md` §2.
+
 **Lo pedido, y ya entregado y medido.** Una ruta que compare el `db.schema` del tenant contra el contrato de esquema — pedido el 2026-09-28 en `docs/MENSAJE-2026-09-28-backend-tres-del-alta.md`.
 
 **Lo tuvo DATOS y ya está hecho** · la IP quedó habilitada el 2026-09-29. La ruta está entregada y ellos la midieron desde su red con `200`.
@@ -1673,6 +1678,8 @@ dibuja y lo que hace que una cifra se lea contra algo en vez de sola. · Bloquea
 
 **Medido contra `9dc481e` el 2026-10-09** · el flag sigue con default `false` (`dd_materializer_service.go:55-58`). Lo que queda es lo mismo: encenderlo, que es B2.15.
 
+**Medido contra `3651d70` el 2026-10-14** · la migración deja `BLOCKED` las 143 filas de semilla del cliente con Snowflake, **incluidos los dos paneles de prosa**, que eran la última maqueta que se servía `AVAILABLE`. Con el flag encendido en local, la prosa los llenó en 16 de 16 meses · `docs/AUDITORIA-2026-10-14-respuestas-graficos-y-semanas.md` y `docs/BITACORA-2026-10-14.md` §7. Lo que queda es el despliegue en QA, que es B2.15.
+
 Esto decía «los paneles de prosa los genera el AGENTE, y hoy no hay camino», y era
 cierto cuando se escribió. **Lo construyeron:** `internal/core/services/dd_prose_generator.go`
 implementa `DDProseGenerator`, `bootstrap/app.go:155` lo cablea al materializador
@@ -1844,7 +1851,11 @@ por el usuario, no un dashboard entero.
 - Con timeout y con tope de filas declarados.
 
 ### B3.7 ⬜ Formato de eventos SSE acordado con el front (T3)
-### B3.8 ⬜ La respuesta puede incluir `{ forma, datos, procedencia }`
+### B3.8 ✅ La respuesta puede incluir `{ forma, datos, procedencia }`
+**Verificado el 2026-10-13 contra `8272085`**, con el binario corriendo acá y `SYNAPSE_UA` real · `docs/AUDITORIA-2026-10-13-respuestas-del-backend.md`. La trama `data` trae forma, datos y procedencia completa desde `55e8419` —es lo que cerró F3.6 el 2026-09-22—, y lo que faltaba para que la procedencia **fuera de esa cifra** llegó en `8272085`: la métrica se cruza por su origen y no por nombre —las dos tablas de paid media declaran la misma, `platform_return`—, la base va vacía cuando la consulta filtra, y el `chart_spec` trae la misma procedencia que la tabla.
+
+**Lo que no cierra, y no es de este criterio:** cada tabla llega en **dos tramas idénticas**, sin explicación todavía, y nada de esto está en QA hasta que se despliegue un commit que contenga `8272085`.
+
 **Criterio de aceptación.**
 - Cuando el agente devuelve un dato estructurado, viene con la **misma unión
   `Valor` + `Gobierno`** que un panel, para que el front lo dibuje con el mismo
@@ -4817,17 +4828,19 @@ dijo que `executive_summary` no se había regenerado. Era falso: la ruta devuelv
 **202 y corre asíncrono**, y se consultó antes de que terminara. El `status` de la
 corrida —`/admin/materialize/runs`— es lo que dice cuándo mirar.
 
-**Espera del backend.** **Que se encienda en dev y nos avisen** — lo ofrecieron ellos en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
+**Espera del backend.** **Desplegar `7324b26` en QA, migrado y con `DD_MATERIALIZE_PROSE_ENABLED=true`, y decir qué commit quedó** · pedido el 2026-10-19 en `docs/MENSAJE-2026-10-19-backend-desplegar-y-fuente-de-la-prosa.md`, que reemplaza al del 2026-10-14 (`docs/MENSAJE-2026-10-14-backend-desplegar-en-qa.md`, que pedía `3651d70`). **No es `DD_MATERIALIZE_ENABLED`**: el backend contestó que ésa ya estaba, y son dos banderas independientes —ésa prende el programador—. El ofrecimiento original de encenderla y avisar está en `docs/RESPUESTA-2026-09-28-cinco-que-quedan.md` §5: «lo prendemos en dev en la próxima corrida diaria… Les avisamos el día que se prenda para que puedan cerrar la tarea contra dato real».
 
-**Lo tiene: DESPLIEGUE** · prender el flag en dev después del próximo despliegue. **Fecha, no código.**
+**Lo tiene: DESPLIEGUE** · prender el flag en QA junto con el despliegue de `7324b26`. **Fecha, no código.**
 
 **Medido contra `de881e1` el 2026-09-29** · `ProseGeneratorEnabledFromEnv` lee el flag con default `false`.
 
 **Medido contra `9dc481e` el 2026-10-09** · `ProseGeneratorEnabledFromEnv` sigue leyendo el flag con default `false` (`dd_materializer_service.go:55-58`). **Si ya está encendido en dev no se ve desde el código**, y no lo medimos: sigue en pie el «avísennos».
 
-**Medido contra `7324b26` el 2026-10-19** · **SIGUE ⚠️.** El flag sigue con default `false`, y su respuesta del 14 lo dice: prenderlo es del entorno de QA, no de código (`RESPUESTA-2026-10-14-backend-instruccion-de-prosa.md`, punto 1). Con el flag, acá la prosa sale `AVAILABLE` con `agent:Synapse UA`, y desde `5af3b86` acepta una instrucción por métrica · `AUDITORIA-2026-10-19-prosa-por-metrica.md`. **Despliegue con el flag pedido de nuevo** en `MENSAJE-2026-10-19-backend-desplegar-y-fuente-de-la-prosa.md`, que reemplaza al del 14.
+**Medido contra `3651d70` el 2026-10-14** · con el flag en el `.env` del backend —fuera de git— el programador generó septiembre y octubre, y los catorce meses anteriores se cargaron a mano, que es lo mismo que «Cargar meses» de A5: `executive_summary` y `decisions` quedaron en 16 de 16 meses con `agent:Synapse UA` · `docs/BITACORA-2026-10-14.md` §7.
 
-Hasta entonces los dos paneles de prosa se sirven con el valor de la semilla, **en inglés**, y salen `DEGRADED`.
+Hasta entonces los dos paneles de prosa se servían con el valor de la semilla, **en inglés**, y salían `DEGRADED`. **Con `3651d70` eso cambia**: la migración bloquea la semilla, así que desplegado sin el flag los dos salen **`BLOCKED`**. Desplegar uno sin el otro empeora la consola de UA.
+
+**Medido contra `7324b26` el 2026-10-19** · **SIGUE ⚠️.** El flag sigue con default `false`, y su respuesta del 14 lo dice: prenderlo es del entorno de QA, no de código (`RESPUESTA-2026-10-14-backend-instruccion-de-prosa.md`, punto 1). Con el flag, acá la prosa sale `AVAILABLE` con `agent:Synapse UA`, y desde `5af3b86` acepta una instrucción por métrica · `AUDITORIA-2026-10-19-prosa-por-metrica.md`. **Despliegue con el flag pedido de nuevo** en `MENSAJE-2026-10-19-backend-desplegar-y-fuente-de-la-prosa.md`, que reemplaza al del 14.
 
 **Criterio de aceptación.**
 - Los dos paneles traen `governance.source = agent:<nombre>` y un `headline`, no el valor de la semilla.
@@ -5064,6 +5077,18 @@ Verificada rompiendo el código: cuatro mutaciones, las cuatro muertas. Y abiert
 en el navegador: la cifra con su `TOTAL`, su BASE y `GOLD · ERP · RECIÉN` —
 «recién» porque la frescura es la de la consulta.
 
+**Lo que vino después del cierre · 2026-10-07 a 2026-10-10.** Dibujar «con el cuerpo del panel de origen» resultó ser la excepción y no el caso común: el agente contesta con la forma que pide la pregunta, casi siempre `tabular`.
+
+| Fecha | Qué | Dónde |
+|---|---|---|
+| 2026-10-07 | El gráfico del agente llega al chat, y las tablas se leen como tabla | `8df21ad`, `3da8e90` |
+| 2026-10-08 | **§7 cerrada**: si el panel de origen no acepta la forma, se dibuja con el único tipo que la acepta. No se busca el panel por la `metric_key` de la procedencia | `920ec8d` · `docs/BITACORA-2026-10-08.md` |
+| 2026-10-09 | Una tabla sin rótulos se declara en vez de dibujarse, y la capa vacía ya no se firma `GOLD` | PR #4 · `1829449` |
+| 2026-10-09 | Un gráfico sin familia se dibuja en **neutro** —la rampa `consulta` de `decisiones.css`— y lo dice · decisión humana | PR #11 · `a823062` · §14 de `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md` |
+| 2026-10-10 | El `chart_spec` se traduce **por papel** —medida, dimensión, serie— y **nada desaparece**: lo que no se dibuja va como tabla con su razón. Se dicen los ejes, de cuándo es la cifra de la leyenda y el mes en curso | PR #12 · `151d635` · `docs/AUDITORIA-2026-10-10-graficos-del-chat.md` |
+
+Lo que quedó abierto de esa auditoría y es nuestro va en **F3.16** y **F3.17**.
+
 ### F3.7 ✅ Historial de hilos
 **Descripción.** Listado de conversaciones previas del usuario, desde
 `GET /config/chat/hilos`.
@@ -5142,6 +5167,8 @@ Dos decisiones que el criterio no anticipaba:
 El riel **no reordena**: el backend manda por `actualizadoEn` y esa decisión es
 suya. Una lista que llegue desordenada deja dos bloques del mismo mes **a la
 vista**, en vez de fundirlos y esconder que el backend mandó algo raro.
+
+**Retomar ya trae la conversación · 2026-10-09.** Lo que arriba dice que no hace dejó de ser cierto: al elegir un hilo del riel se piden sus mensajes —la ruta se transcribió ese día— y la hoja muestra lo que se habló, con un guardia para que la respuesta lenta de otro hilo no pise la del elegido. El título se lee entero al pasar el puntero, y **una consulta se puede eliminar** con confirmación en la misma fila; a una decisión no se le ofrece · PR #6 `4a02d65` y PR #7 `892b377`.
 
 ### F3.8 ✅ `useChat(contextoPanel)` — envío y stream fuera de la UI
 **Descripción.** La lógica de envío, acumulación de fragmentos y cierre del
@@ -5488,6 +5515,22 @@ sería reconocer un encabezado por su texto, y el día que el agente lo escriba
 distinto la sección **desaparecería en silencio**. El lugar del contrato para eso
 es `auditoria.limiteDeclarado`, que el cable todavía no manda y ya está pedido.
 
+### ➕ F3.16 ⬜ El mes en curso se marca en el trazo, no sólo en un aviso
+**Descripción.** Desde el PR #12, un gráfico del agente que incluye el mes abierto lo dice con un aviso —«oct 26 es el mes en curso · su cifra está incompleta»—, pero el trazo lo dibuja igual que un mes cerrado, y la caída del último punto se lee como un desplome antes de llegar al aviso. Es el punto 2 de `docs/AUDITORIA-2026-10-10-graficos-del-chat.md`, resuelto a medias. Los múltiplos pequeños de la consola también lo dicen desde el PR #18, y tampoco lo marcan en el trazo.
+**Criterio de aceptación.**
+- El tramo que llega al mes abierto se distingue en el trazo de todo cuerpo de series, en el chat y en la consola.
+- El mes abierto sale de lo que el servicio declara —`open_period`, o `partial` por punto donde llegue—, **nunca de comparar contra la fecha del navegador**.
+- La marca no es un color: ámbar y el naranja de acción están prohibidos como dato. Si el `.pen` no dibuja el tramo parcial, primero se escribe la propuesta de spec y después se construye.
+- La prueba sale de la captura `tests/api/fixtures/chart-spec-linea-con-mes-en-curso-2026-10-07.json`, y se la ve fallar rompiendo el código.
+
+### ➕ F3.17 ⬜ Un dato que falta se dibuja como hueco
+**Descripción.** Una serie con un `null` —TikTok en abril y junio, en el `chart_spec` de paid media— hoy va como tabla y nombra lo que falta (PR #12). Es honesto, pero pierde el gráfico por un punto. El hueco no se puede dibujar porque `Punto.v` no admite `null` en el contrato interno, y todo el repertorio de series da por hecho que hay valor. Es el punto 6 de `docs/AUDITORIA-2026-10-10-graficos-del-chat.md`.
+**Criterio de aceptación.**
+- `Punto.v` admite `null` en `contracts/synapse-api.yaml`, regenerado con `npm run gen:api`.
+- Los cuerpos de series cortan la línea donde falta el dato: no lo dibujan en cero ni lo interpolan.
+- La lectura con el puntero y la leyenda dicen «sin dato» en ese punto, en vez de saltarlo o tomar el anterior.
+- El traductor de `chart_spec` deja de mandar a tabla una serie sólo por tener `null`, y la prueba usa la captura real `tests/api/fixtures/chart-spec-multilinea-con-nulos-2026-10-08.json`.
+
 ---
 
 ## Fase 4 — Admin y Builder
@@ -5614,6 +5657,8 @@ es que la decisión de tomarla no es del agente.
 **La mitad de roles ya se ve contra el servicio real**, verificado en pantalla el
 2026-09-25: A2 dibuja los tres roles con su composición y el aviso de las
 métricas que `planner` no recibe.
+
+**El alcance pasó a contarse · 2026-10-16** · `b883b50`, PR #24. Desde `8272085` un admin que no es operador de plataforma ve **un solo cliente**, y el rótulo seguía diciendo «todas las cuentas». El front no sabe quién es operador, así que el chrome **cuenta lo que llegó** —«Alcance · 1 cliente»— · `docs/AUDITORIA-2026-10-16-selector-de-clientes.md`.
 
 ### F4.3 parcial el 2026-09-15 · la mitad de roles, no la de usuarios
 

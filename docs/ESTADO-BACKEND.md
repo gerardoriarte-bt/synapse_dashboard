@@ -15,10 +15,10 @@ falta para re-verificar. Para su avance real está
 | | |
 |---|---|
 | Tareas `B*` en el plan | **98** |
-| Verificadas por nosotros · ✅ o ⚠️ | **73** |
-| De ésas, **contra el último commit** | **1** |
+| Verificadas por nosotros · ✅ o ⚠️ | **74** |
+| De ésas, **contra el último commit** | **2** |
 | ⬜ Esperando algo de ellos | **1** |
-| ⬜ **Que NUNCA verificamos** | **23** |
+| ⬜ **Que NUNCA verificamos** | **22** |
 | El último commit que leímos | `7324b26` |
 
 
@@ -63,10 +63,10 @@ Re-verificar una es leer su criterio y medirlo de nuevo.
 | **B2.5** · Estado DEGRADADO | ✅ | `733c13c` | 2026-09-14 |
 | **B2.6** · Estado BLOQUEADO | ⚠️ | `de881e1` | 2026-09-29 |
 | **B2.11** · Filtrado por rol también en el batch | ✅ | `de881e1` | 2026-09-29 |
-| **B2.12** · Correr el materializador contra datos reales y verificar los seis estados | ⚠️ | `9dc481e` | 2026-10-09 |
+| **B2.12** · Correr el materializador contra datos reales y verificar los seis estados | ⚠️ | `3651d70` | 2026-10-14 |
 | **B2.13** · Salud de feeds por fuente | ✅ | `de881e1` | 2026-09-29 |
-| **B2.16** · El materializador emite presentation | ✅ | `f70cec2` | 2026-09-28 |
 | **B3.1** · POST /config/chat con SSE | ⚠️ | `8633b10` | 2026-09-26 |
+| **B3.8** · La respuesta puede incluir { forma, datos, procedencia } | ✅ | `8272085` | 2026-10-13 |
 | **B3.10** · Persistir hilos y mensajes en Postgres | ✅ | `de881e1` | 2026-09-29 |
 | **B4.1** · GET /admin/tenants | ✅ | `8633b10` | 2026-09-26 |
 | **B4.2** · GET /admin/tenants/{id}/layouts | ✅ | `5924bf2b` | 2026-09-28 |
@@ -84,7 +84,7 @@ Re-verificar una es leer su criterio y medirlo de nuevo.
 | **B5.5** · Auditoría de publicaciones de layout | ✅ | `de881e1` | 2026-09-29 |
 
 
-## ⬜ 23 que nunca verificamos · y NO quiere decir que falten
+## ⬜ 22 que nunca verificamos · y NO quiere decir que falten
 
 **Un `⬜` de backend dice «no lo miramos», no «no está hecho».** Nuestro
 plan sólo mueve una `B*` cuando el front la verifica contra el servicio
@@ -174,14 +174,14 @@ esperan algo de ellos: **1**, y salen en `PARA-BACKEND.md`.
 | ⬜ | **B2.9** · Invalidar cache al completar materialización | — | — |
 | ✅ | **B2.10** · frescura = instante de materialización, nunca «ahora» | — | — |
 | ✅ | **B2.11** · Filtrado por rol también en el batch | `de881e1` ⚠ | 2026-09-29 |
-| ⚠️ | **B2.12** ➕ · Correr el materializador contra datos reales y verificar los seis estados | `9dc481e` ⚠ | 2026-10-09 |
+| ⚠️ | **B2.12** ➕ · Correr el materializador contra datos reales y verificar los seis estados | `3651d70` ⚠ | 2026-10-14 |
 | ✅ | **B2.13** ➕ · Salud de feeds por fuente | `de881e1` ⚠ | 2026-09-29 |
 | ⬜ | **B2.14** ➕ · /config/solicitudes | `9dc481e` ⚠ | 2026-10-09 |
 | ⚠️ | **B2.15** ➕ · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | `7324b26` | 2026-10-19 |
-| ✅ | **B2.16** ➕ · El materializador emite presentation | `f70cec2` ⚠ | 2026-09-28 |
+| ✅ | **B2.16** ➕ · El materializador emite presentation | `7324b26` | 2026-10-20 |
 
 
-### Fase 3 · Chat — 3 de 11
+### Fase 3 · Chat — 4 de 11
 
 | | Tarea | Verificada contra | Cuándo |
 |---|---|---|---|
@@ -192,7 +192,7 @@ esperan algo de ellos: **1**, y salen en `PARA-BACKEND.md`.
 | ⬜ | **B3.5** · Inyectar ContextoDePanel en el system prompt | — | — |
 | ⬜ | **B3.6** · Consulta a Snowflake en vivo para el chat | — | — |
 | ⬜ | **B3.7** · Formato de eventos SSE acordado con el front (T3) | — | — |
-| ⬜ | **B3.8** · La respuesta puede incluir { forma, datos, procedencia } | — | — |
+| ✅ | **B3.8** · La respuesta puede incluir { forma, datos, procedencia } | `8272085` ⚠ | 2026-10-13 |
 | ⚠️ | **B3.9** · CRUD /admin/tenants/{id}/agents | — | — |
 | ✅ | **B3.10** · Persistir hilos y mensajes en Postgres | `de881e1` ⚠ | 2026-09-29 |
 | ⬜ | **B3.11** ➕ · Aplicar las migraciones de 82da946 sobre la base compartida | — | — |
