@@ -153,8 +153,10 @@ export function Admin() {
     // Si falla, `null`, y cae al primero en vez de quedarse sin cliente.
     contexto.isPending ? undefined : (contexto.data?.tenant.id ?? null),
   )
-  /** El nombre del cliente de trabajo, para las acciones que escriben sobre él. */
-  const nombreDeTrabajo = lista.find((t) => t.id === activo)?.nombre
+  /** El cliente de trabajo, para el título de la ficha y las acciones que
+   *  escriben sobre él. */
+  const tenantDeTrabajo = lista.find((t) => t.id === activo) ?? null
+  const nombreDeTrabajo = tenantDeTrabajo?.nombre
 
   // **El hook del catálogo se llama siempre y se apaga por `enabled`**, que es lo
   // que las reglas de hooks exigen: no puede colgar de `pantalla`. Mientras A4 no
@@ -419,6 +421,21 @@ export function Admin() {
                 {nombreDeTrabajo ?? ''}
               </span>
             </nav>
+
+            {/* **El cliente como título, y el viaje al builder** · A2 del `.pen`.
+                La barra ya lo nombra; acá es el título de la página, que es lo
+                que el dibujo pone arriba de las cards. Lo encontró la auditoría
+                del 2026-10-20. */}
+            <div className="flex items-center gap-4">
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <h2 className="m-0 truncate font-display text-titulo-lg leading-titulo tracking-titulo text-ink">
+                  {nombreDeTrabajo ?? ''}
+                </h2>
+                {tenantDeTrabajo !== null && <Label as="span">{distintivo(tenantDeTrabajo)}</Label>}
+              </div>
+              {/* Sin `?cliente=` a mano: el proveedor lo lleva al builder. */}
+              <Accion onClick={() => void navegar('/builder')}>Abrir en builder</Accion>
+            </div>
             <Cliente
               agentes={agentes}
               formaCorta={{
@@ -588,6 +605,10 @@ function Cliente({
   nombreDeMetrica: (clave: string) => string
   onVerificar?: () => void
 } & Omit<Parameters<typeof RoleEditor>[0], 'roles'>) {
+  /** **La identidad completa, a pedido** · auditoría del 2026-10-20. La card del
+   *  resumen la resume, y mostrarla entera debajo repetía lo mismo —la
+   *  repetición que la propuesta venía a sacar—. «Ver identidad» la abre. */
+  const [identidadAbierta, setIdentidadAbierta] = useState(false)
   if (roles.isError) {
     return (
       <div className="flex flex-col gap-2">
@@ -620,14 +641,28 @@ function Cliente({
         }
         usuarios={resumenDeUsuarios}
         acceso={acceso}
-        onIr={(id) => document.getElementById(id)?.scrollIntoView?.({ block: 'start', behavior: 'smooth' })}
+        onIr={(id) => {
+          if (id === 'ficha-identidad') setIdentidadAbierta(true)
+          // Después de pintar: la sección de identidad no existe hasta abrirla.
+          requestAnimationFrame(() =>
+            document.getElementById(id)?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }),
+          )
+        }}
         {...(onVerificar === undefined ? {} : { onVerificar })}
         formaCorta={formaCorta}
+        version={version}
       />
 
-      <div id="ficha-identidad">
-        <TenantIdentity tenant={tenant} estado={estado} version={version} format={format} />
-      </div>
+      {identidadAbierta && (
+        <div id="ficha-identidad" className="flex flex-col gap-2">
+          <TenantIdentity tenant={tenant} estado={estado} version={version} format={format} />
+          <div className="self-start">
+            <Accion tamano="compacta" onClick={() => setIdentidadAbierta(false)}>
+              Ocultar identidad
+            </Accion>
+          </div>
+        </div>
+      )}
 
       <div id="ficha-roles">
         <RoleEditor {...paraRoles} roles={roles.data ?? []} cargando={roles.data === undefined} />

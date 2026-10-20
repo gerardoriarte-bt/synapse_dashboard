@@ -649,10 +649,12 @@ describe('la ficha por secciones', () => {
     try {
       await userEvent.click(within(screen.getByRole('region', { name: 'Resumen · Roles' })).getByRole('button', { name: 'Ver roles' }))
       await userEvent.click(within(screen.getByRole('region', { name: 'Resumen · Usuarios' })).getByRole('button', { name: 'Ver usuarios' }))
+      // Un cuadro después: la sección de identidad no existe hasta abrirla, y se
+      // espera a pintar antes de ir a cualquiera.
+      await waitFor(() => expect(destinos).toEqual(['ficha-roles', 'ficha-usuarios']))
     } finally {
       Element.prototype.scrollIntoView = original
     }
-    expect(destinos).toEqual(['ficha-roles', 'ficha-usuarios'])
   })
 
   it('la card de roles cuenta lo que la ficha trajo', async () => {

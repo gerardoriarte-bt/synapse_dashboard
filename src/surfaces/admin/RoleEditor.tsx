@@ -288,14 +288,20 @@ export function RoleEditor({
           acá. **Y no con cero roles** · §PEN:A2, 2026-09-30: una advertencia
           sobre algo que no está presente. */}
       {roles.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <Ayuda>Un rol sin pestañas elegidas ve TODAS las pestañas, no ninguna.</Ayuda>
-          <Ayuda>
-            Ocultar una métrica NO es un permiso: al servir el dato se vuelve a verificar qué puede ver cada
-            rol. Lo que un rol no recibe, no le llega.
-          </Ayuda>
-          <Ayuda>Un rol con usuarios no se borra: reasignalos primero.</Ayuda>
-        </div>
+        // **Una línea, como el dibujo** · auditoría del 2026-10-20: en tres
+        // párrafos pesaba más que las tarjetas que explica.
+        <p className="m-0 flex items-start gap-2 font-mono text-nota leading-rotulo tracking-rotulo uppercase text-dim">
+          {/* `info` de línea · hereda el color. */}
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-px shrink-0" aria-hidden>
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 16v-4" />
+            <path d="M12 8h.01" />
+          </svg>
+          <span>
+            Un rol sin pestañas elegidas ve TODAS las pestañas · Ocultar una métrica NO es un permiso: lo que un
+            rol no recibe, no le llega · Un rol con usuarios no se borra: reasignalos primero
+          </span>
+        </p>
       )}
 
       <ul className="flex flex-col gap-2 m-0 p-0 list-none">
