@@ -6,8 +6,9 @@
  *  administración y builder llevan `?cliente=<id>`, y una URL con el parámetro
  *  arranca en ese cliente.
  *
- *  **La consola no lo lleva**: su cliente es el del token y ninguna ruta de
- *  `/config/*` acepta otro. Poner el parámetro ahí prometería algo que no hace.
+ *  **La consola también lo lleva** desde el 2026-10-20: con alcance de
+ *  plataforma, llegar a ella con otro cliente en la URL cambia el token a ese
+ *  cliente —`console/useSaltoDeCliente.ts`—.
  *
  *  **Un id que no está en la lista se ignora**, igual que antes: lo resuelve
  *  `useClienteDeTrabajo`, que sólo acepta los que `GET /admin/tenants` devolvió.

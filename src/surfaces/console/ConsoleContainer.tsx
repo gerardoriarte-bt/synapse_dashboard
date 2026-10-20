@@ -38,6 +38,7 @@ import { agentePorDefecto } from './agenteDeChat'
 import { esAdmin } from '../../api/rol'
 import { useClienteDeTrabajo } from '../useClienteDeTrabajo'
 import { DrillSheet } from './DrillSheet'
+import { useSaltoDeCliente } from './useSaltoDeCliente'
 import { SurfaceMessage } from './SurfaceMessage'
 import type { Metric, PanelType, Payload } from '../../api/types'
 
@@ -321,7 +322,48 @@ export function ConsoleContainer() {
     if (types !== '') markTabConfig()
   }, [types])
 
+  /* ── EL SALTO DE CLIENTE · 2026-10-20 · `d794a3e` ──────────────────────────
+   *
+   *  **Elegir otro cliente cambia el token**, y con él la consola entera. Sólo
+   *  quien tiene alcance de plataforma —`scope.kind = multi_tenant`, que el
+   *  servicio da únicamente al rol `superadmin`— puede saltar; para cualquier
+   *  otro, un cliente elegido distinto del de la sesión sigue declarándose
+   *  bloqueado, como antes.
+   *
+   *  **El salto lo dispara la diferencia, no el clic**: el cliente elegido es
+   *  compartido con administración y builder, así que quien eligió otro allá y
+   *  vuelve a la consola también tiene que llegar a ese cliente. Un solo camino
+   *  para los dos casos —elegir acá o llegar con otro elegido—.
+   *
+   *  **Un salto que falló no se reintenta solo**, o la pantalla quedaría en un
+   *  lazo de 403. Se declara, con su razón y la salida de vuelta. */
+  const puedeSaltar = context.data?.alcance === 'plataforma'
+  const deLaSesion = context.data?.tenant.id
+  const { mutate: saltar, ...salto } = useSaltoDeCliente(() => {
+    setTabId(null)
+    setPeriodId(null)
+    setCaidoA(null)
+    setAskingPanelId(null)
+    setAskingTab(false)
+    setDrillingPanelId(null)
+    setAgenteElegido(null)
+  })
+  const saltoA =
+    puedeSaltar && clienteElegido !== null && deLaSesion !== undefined && clienteElegido !== deLaSesion
+      ? clienteElegido
+      : null
+  const falloElSalto = salto.isError && salto.variables === saltoA
+  useEffect(() => {
+    if (saltoA === null || salto.isPending || falloElSalto) return
+    saltar(saltoA)
+  }, [saltoA, salto.isPending, falloElSalto, saltar])
+
   /* ── F1.26 · la carga y el error viven ACÁ, no en los cuerpos ───────────── */
+
+  if (saltoA !== null && !falloElSalto) {
+    const destino = clientes.find((c) => c.id === saltoA)?.nombre ?? 'otro cliente'
+    return <SurfaceMessage title={`Abriendo la consola de ${destino}`} detail="Cambiando la sesión de cliente" />
+  }
 
   if (context.isLoading || catalog.isLoading) {
     return <SurfaceMessage title="Cargando la consola" detail="Contexto y catálogo" />
@@ -475,6 +517,7 @@ export function ConsoleContainer() {
       clientes={clientes}
       clienteActivo={clienteElegido ?? context.data.tenant.id}
       onElegirCliente={elegirCliente}
+      {...(falloElSalto ? { motivoDelBloqueo: salto.error?.message ?? 'El servicio no dijo por qué.' } : {})}
       // Sin `?cliente=` a mano: el cliente ya es el elegido, y el proveedor lo
       // pone en la URL al entrar a administración. Escribirlo acá sería un
       // segundo lugar donde vive esa regla.

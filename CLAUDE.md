@@ -352,13 +352,13 @@ hayan derivado.
   **Nuestra imagen no tiene el problema** —`nginx:alpine` sirviendo estáticos, y
   todo el `Intl` corre en el navegador— pero se comprobó en vez de suponerlo.
 
-- **El cliente de la consola es el del TOKEN, y el front no lo puede cambiar.**
-  `JWTMiddleware` pone `claims.TenantID` y ninguna ruta de `/config/*` acepta
-  otro — leído el 2026-10-06. Los botones de cliente del navbar de la consola
-  nunca hicieron nada (`onSelectTenant` no estaba conectado) y se quitaron.
-  Administración y builder sí comparten un **cliente de trabajo**
-  (`surfaces/useClienteDeTrabajo.ts`) que arranca en el propio; que la consola
-  lo siga es un pedido al backend.
+- **El cliente de la consola es el del TOKEN.** `JWTMiddleware` pone
+  `claims.TenantID` y ninguna ruta de `/config/*` acepta otro — leído el
+  2026-10-06. **Cambiarlo es cambiar el token**: desde `d794a3e` un
+  `superadmin` lo pide con `POST /auth/switch-tenant`, y la consola salta sola
+  cuando el cliente de trabajo (`surfaces/useClienteDeTrabajo.ts`) no es el de
+  la sesión · F5.50. **Al saltar, nada del cliente anterior se vuelve a pedir**:
+  vaciar todo de una vez pedía la pestaña vieja con el token nuevo.
 - **`params` de layout llega como `Record<string, unknown>`.** Un param mal
   escrito hoy se ignora en silencio; F1.29 lo resuelve validando en el adaptador
   de `api/`, no en `render/`.
@@ -573,6 +573,23 @@ mirando el código. Una prueba escrita desde la implementación no puede fallar
 nunca, ni cuando el código está mal.
 
 ## Dónde retomar
+
+### ⇩ ACÁ SE PARÓ · 2026-10-20 (tarde) · la consola salta de cliente
+
+**El backend contestó con `d794a3e`**: el rol `superadmin` reemplaza a
+`PLATFORM_OPERATOR_USER_IDS` y `POST /auth/switch-tenant` da el token de otro
+cliente. Medido en local y anotado en
+`docs/AUDITORIA-2026-10-20-consola-por-cliente.md`. La rama es
+`front/consola-por-cliente`, con F5.50 y F5.51.
+
+**Decisión humana del 2026-10-20: «superadmin» es de asignación interna, nunca
+de un cliente.** El front no lo ofrece; el servicio igual acepta asignarlo, y
+se les avisó sin pedido.
+
+**Esperando al backend, y lo manda el humano**:
+`docs/MENSAJE-2026-10-20-backend-consola-por-cliente-medida.md` —desplegar
+`d794a3e` con el front de `main`, y dos preguntas: el rol en clientes nuevos y
+el registro de entradas—. En QA José tiene que volver a iniciar sesión.
 
 ### ⇩ ACÁ SE PARÓ · 2026-10-20 · el cliente activo se reconoce en toda la plataforma
 

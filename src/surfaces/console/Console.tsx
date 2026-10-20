@@ -102,6 +102,9 @@ type Props = {
   onElegirCliente?: ((id: string) => void) | undefined
   /** La salida cuando el cliente elegido no es el de la sesión. */
   onAbrirEnAdministracion?: ((id: string) => void) | undefined
+  /** **El servicio no dejó saltar a ese cliente** · 2026-10-20. Con él, el
+   *  bloqueo dice la razón del servicio en vez de «todavía no se puede». */
+  motivoDelBloqueo?: string | undefined
 }
 
 export function Console({
@@ -129,6 +132,7 @@ export function Console({
   clienteActivo,
   onElegirCliente,
   onAbrirEnAdministracion,
+  motivoDelBloqueo,
 }: Props) {
   // El colapso · F1.30. No lo puede hacer solo el CSS: el `colSpan` viaja en un
   // estilo en línea y una media query no lo alcanza.
@@ -198,18 +202,34 @@ export function Console({
             <h2 id="consola-de-otro-cliente" className="m-0 font-display text-titulo leading-titulo tracking-titulo font-medium text-ink">
               La consola de {otroCliente.nombre} todavía no se puede abrir
             </h2>
-            <p className="m-0 font-body text-cuerpo text-dim">
-              La consola muestra los datos de la sesión, que es de {sesion.nombre}. El servicio todavía no entrega
-              los de otro cliente.
-            </p>
-            <Label as="div">Lo desbloquea · que el servicio abra una sesión por cliente</Label>
-            {onAbrirEnAdministracion !== undefined && (
-              <div>
-                <Accion variante="primaria" onClick={() => onAbrirEnAdministracion(otroCliente.id)}>
+            {motivoDelBloqueo === undefined ? (
+              <>
+                <p className="m-0 font-body text-cuerpo text-dim">
+                  La consola muestra los datos de la sesión, que es de {sesion.nombre}. Tu rol no puede abrir la
+                  consola de otro cliente.
+                </p>
+                <Label as="div">Lo desbloquea · un rol con alcance de plataforma</Label>
+              </>
+            ) : (
+              <>
+                <p className="m-0 font-body text-cuerpo text-dim">
+                  El servicio no abrió la sesión de {otroCliente.nombre}: {motivoDelBloqueo}
+                </p>
+                <Label as="div">La sesión sigue en {sesion.nombre}</Label>
+              </>
+            )}
+            <div className="flex flex-wrap gap-2">
+              {onElegirCliente !== undefined && (
+                <Accion variante="primaria" onClick={() => onElegirCliente(sesion.id)}>
+                  Volver a la consola de {sesion.nombre}
+                </Accion>
+              )}
+              {onAbrirEnAdministracion !== undefined && (
+                <Accion onClick={() => onAbrirEnAdministracion(otroCliente.id)}>
                   Abrir {otroCliente.nombre} en administración
                 </Accion>
-              </div>
-            )}
+              )}
+            </div>
           </section>
         </div>
       )}
