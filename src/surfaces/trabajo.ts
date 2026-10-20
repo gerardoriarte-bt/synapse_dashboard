@@ -24,7 +24,7 @@ import { PANTALLAS as DEL_BUILDER } from './builder/pantallas'
 export type EntradaDeTrabajo = { ruta: string; nombre: string }
 
 export type GrupoDeTrabajo = {
-  superficie: Exclude<Superficie['id'], 'consola'>
+  superficie: Superficie['id']
   titulo: string
   entradas: readonly EntradaDeTrabajo[]
 }
@@ -34,6 +34,16 @@ export type GrupoDeTrabajo = {
  *  panel) o se abren desde él (la vista previa), y entrar a ellas en frío las
  *  deja sin nada que mostrar. */
 const GRUPOS: readonly GrupoDeTrabajo[] = [
+  /** **La consola entra al menú** · 2026-10-20. Hasta acá se volvía con el
+   *  botón «Volver al dashboard», que con otro cliente de trabajo decía «Volver
+   *  a la consola de <tu cliente>»: dos clientes nombrados a la vez, que es lo
+   *  que el humano encontró confuso. Con la barra del cliente activo, la consola
+   *  es un lugar más del menú. */
+  {
+    superficie: 'consola',
+    titulo: SUPERFICIES.find((s) => s.id === 'consola')?.nombre ?? 'Consola',
+    entradas: [{ ruta: SUPERFICIES.find((s) => s.id === 'consola')?.ruta ?? '/', nombre: 'Dashboard' }],
+  },
   {
     superficie: 'admin',
     titulo: SUPERFICIES.find((s) => s.id === 'admin')?.nombre ?? 'Administración',
@@ -54,6 +64,6 @@ export function gruposDeTrabajo(esAdmin: boolean): readonly GrupoDeTrabajo[] {
   return esAdmin ? GRUPOS : []
 }
 
-/** La ruta del dashboard · el acceso rápido «Volver al dashboard». La consola
- *  abre el dashboard activo del usuario, que es el que resuelve el servicio. */
+/** La ruta del dashboard. La consola abre el dashboard activo del usuario, que
+ *  es el que resuelve el servicio. */
 export const RUTA_DEL_DASHBOARD = SUPERFICIES.find((s) => s.id === 'consola')?.ruta ?? '/'

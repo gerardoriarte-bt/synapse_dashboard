@@ -41,7 +41,8 @@ describe('dos clientes con el mismo nombre', () => {
   it('se distinguen por la forma corta, o por el comienzo del id', () => {
     render(<TenantList tenants={DOS} format={format} seleccionado={null} onElegir={() => {}} />)
     expect(screen.getByRole('button', { name: 'Under Armour México · 11111111' })).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Under Armour México · UA MX Lobueno' })).toBeVisible()
+    // En mayúsculas desde el 2026-10-20: la misma regla que la barra del cliente.
+    expect(screen.getByRole('button', { name: 'Under Armour México · UA MX LOBUENO' })).toBeVisible()
   })
 
   it('elegir uno pasa SU id, y queda marcado sólo ése', async () => {
@@ -49,13 +50,13 @@ describe('dos clientes con el mismo nombre', () => {
     const { rerender } = render(
       <TenantList tenants={DOS} format={format} seleccionado={null} onElegir={onElegir} />,
     )
-    await userEvent.click(screen.getByRole('button', { name: /UA MX Lobueno/ }))
+    await userEvent.click(screen.getByRole('button', { name: /UA MX LOBUENO/ }))
     expect(onElegir).toHaveBeenCalledWith('e65f81ae-50ba-4ceb-bb11-d4c0bb76d111')
 
     rerender(
       <TenantList tenants={DOS} format={format} seleccionado="e65f81ae-50ba-4ceb-bb11-d4c0bb76d111" onElegir={onElegir} />,
     )
-    expect(screen.getByRole('button', { name: /UA MX Lobueno/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /UA MX LOBUENO/ })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: /11111111/ })).toHaveAttribute('aria-pressed', 'false')
   })
 

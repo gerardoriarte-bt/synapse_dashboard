@@ -333,7 +333,7 @@ describe('los estados de A4 · §8', () => {
     await abrirCatalogo()
 
     await screen.findByText(/No se pudo cargar el catálogo/i)
-    expect(screen.getByLabelText('Cliente')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Cliente activo' })).toBeInTheDocument()
     // «Clientes» desde el 2026-10-09: la ficha se unió a la lista.
     expect(screen.getByRole('button', { name: 'Clientes' })).toBeInTheDocument()
   })

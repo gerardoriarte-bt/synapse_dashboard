@@ -7976,6 +7976,8 @@ Clientes y en el selector de la cabecera.
 
 **Verificado el 2026-10-19** · «tu cliente» en la lista de Clientes y en la opción del selector. Prueba en `tests/surfaces/cambioDeCliente.test.tsx` y `tests/surfaces/admin/admin.test.tsx`.
 
+**Reemplazada el 2026-10-20 por F5.43**, por decisión humana: «eso de mostrar Terpel pero tu sesión es Under Armour es confuso». Ya no hay un cliente «de la sesión» marcado aparte: hay uno, el activo, y lo dice la barra.
+
 ### ➕ F5.40 ✅ «Volver al dashboard» dice adónde va
 
 **Descripción.** Con otro cliente de trabajo, el botón lleva a la consola del
@@ -7985,6 +7987,8 @@ cliente propio sin decirlo: es el salto que más confunde. §1 y C.
 nombra el cliente al que vuelve, y su nombre accesible lo dice entero.
 
 **Verificado el 2026-10-19** · con otro cliente de trabajo dice «Volver a la consola de <propio>», y su nombre accesible agrega «el cliente de tu sesión». Mirado en local en administración y builder. Pruebas en `tests/surfaces/cambioDeCliente.test.tsx` y la cadena en `admin.test.tsx`; sin el dato en la cabecera, falla.
+
+**Reemplazada el 2026-10-20 por F5.44**: el botón se fue, y la consola es una entrada del menú de trabajo. El humano encontró raro «volver a UA México» estando en Terpel.
 
 ### ➕ F5.41 ✅ Usuarios arranca en el cliente de trabajo
 
@@ -8004,6 +8008,168 @@ nombra; al bajar, el selector queda fuera de la vista. §1 y E.
 **Criterio de aceptación.** El botón dice «Cargar meses de <cliente>».
 
 **Verificado el 2026-10-19** · el botón dice «Cargar 1 mes de <cliente>». Prueba en `tests/surfaces/admin/admin.test.tsx`; sin el nombre, falla.
+
+### ➕ F5.43 ✅ La barra del cliente activo, la misma en las tres superficies
+
+**Descripción.** El cliente vivía en tres lugares distintos —un rótulo junto al
+logotipo en la consola, un selector a la derecha del título en administración,
+una caja junto al logotipo en el builder— y se reconocía sólo por el nombre: en
+local los dos clientes se llaman «Under Armour México» y el selector decía lo
+mismo antes y después de cambiar. §3 y §4 de
+`docs/PROPUESTA-2026-10-20-identidad-del-cliente-y-ficha.md`, dibujada en el
+`.pen` y aprobada por el humano el 2026-10-20: «si cambia de cliente, todo el
+entorno es de uso exclusivo de ese cliente».
+
+**Criterio de aceptación.** Debajo del navbar de consola, administración y
+builder hay una barra con el cliente activo —placa con su monograma, nombre y
+forma corta (o el id corto si la forma corta no dice nada que el nombre no
+diga)— y «Cambiar de cliente» a la derecha cuando hay más de uno. Cada opción
+del selector lleva la misma identidad. En la consola, elegir un cliente que no es
+el de la sesión NO pinta los paneles de la sesión: declara el bloqueo con su
+razón y lleva a administración con ese cliente. Pruebas que lo sigan disparando.
+
+**Verificado el 2026-10-20** · `BarraDeCliente`, `SelectorDeCliente` y
+`PlacaDeCliente` en `src/surfaces/`, montadas por `AdminChrome`,
+`BuilderChrome` y `Topbar`. Mirado en local con un operador contra `7324b26`:
+en la consola, elegir el otro cliente declara «La consola de … todavía no se
+puede abrir» y esconde título, pestañas, selector de dashboard y «Preguntar»;
+«Abrir … en administración» llega con `?cliente=` puesto. Pruebas en
+`tests/surfaces/cambioDeCliente.test.tsx` y
+`tests/surfaces/console/barraDeCliente.test.tsx`; cinco mutaciones mueren, y una
+sexta sobrevivió porque el `?cliente=` escrito a mano era redundante con el
+proveedor —se sacó—.
+
+**Lo que espera al backend:** que la consola muestre otro cliente (un token por
+cliente) y el logo, que reemplaza al monograma.
+
+### ➕ F5.44 ✅ El perfil es un ícono, y la consola entra al menú de trabajo
+
+**Descripción.** Pedido humano del 2026-10-20: «reducir el botón del perfil a un
+ícono de usuario». Y «Volver al dashboard» nombraba dos clientes a la vez cuando
+se trabajaba sobre otro.
+
+**Criterio de aceptación.** El disparador del menú de la persona es un ícono, con
+el nombre en su nombre accesible y en el panel. El menú de trabajo (≡) ofrece
+«Consola · Dashboard» antes de administración y del builder, y «Volver al
+dashboard» no existe.
+
+**Verificado el 2026-10-20** · `IconoDeUsuario` reemplaza a `ChipDeUsuario` en
+`IdentityBlock` y `UserMenu`; `trabajo.ts` suma el grupo de la consola y
+`VolverAlDashboard.tsx` se borró. Pruebas en `tests/surfaces/identidad.test.tsx`,
+`menuDeTrabajo.test.tsx` y `navegacionDeTrabajo.test.tsx`.
+
+### ➕ F5.45 ✅ Clientes en cards, y la ficha como página con su resumen
+
+**Descripción.** La lista de clientes iba al lado de la ficha (decisión del
+2026-10-09) y la ficha era una sola columna de seis pantallas, todo con el mismo
+peso. El humano la reabrió el 2026-10-20: «un scroll muy grande … organizar la
+mayoría de la info en cards». §5 de
+`docs/PROPUESTA-2026-10-20-identidad-del-cliente-y-ficha.md`.
+
+**Criterio de aceptación.** Clientes es una grilla de cards: placa, nombre,
+forma corta, usuarios, feed más atrasado y última publicación, y «En uso» en la
+del cliente activo. La card entera abre la ficha y vuelve activo a ese cliente.
+La ficha es una página con migaja de vuelta a la grilla y cuatro cards de
+resumen —identidad, roles, usuarios, acceso a datos— que llevan a su sección.
+Las cifras del resumen son conteos de lo que la ficha ya trajo, y mientras no
+llegan dicen «cargando».
+
+**Verificado el 2026-10-20** · `TenantList` pasó a grilla de cards,
+`ResumenDeFicha.tsx` reemplaza a la fila «Secciones de la ficha» de F5.34, y
+`distintivo` usa la misma regla que la barra (`formaCortaVisible`). Mirado en
+local con un operador contra `7324b26`, abriendo las dos cards y volviendo por
+la migaja. **Abrirla lo encontró roto**: con `?ficha=1` en la URL, la card del
+cliente en uso no abría la ficha —el proveedor del cliente de trabajo escribe la
+URL en el mismo clic y la pisaba—. La ficha abierta pasó a ser estado de la
+pantalla, y hay una prueba que monta el proveedor real y falla con la versión
+anterior. Pruebas en `tests/surfaces/admin/admin.test.tsx`,
+`listaDeClientes.test.tsx`, `carga.test.tsx` y `roles.test.tsx`.
+
+**Recargar vuelve a la grilla**: el cliente activo sí sobrevive, porque lo lleva
+la URL.
+
+### ➕ F5.46 ✅ La ficha se lee: roles plegados, cada regla una vez
+
+**Descripción.** Medido en QA el 2026-10-20: seis tarjetas de rol abiertas
+repetían la misma pestaña, «Ve TODAS las pestañas…» cuatro veces y «No se borra
+con usuarios asignados…» tres. §5 de
+`docs/PROPUESTA-2026-10-20-identidad-del-cliente-y-ficha.md`.
+
+**Criterio de aceptación.** Cada rol es una fila plegada —nombre, usuarios,
+«Todas las pestañas» o «No recibe · N» si corresponde, paneles, Editar y
+Borrar— y el detalle se abre. Las tres reglas de los roles se dicen una vez,
+arriba de la lista. Los subprocesadores van plegados con sus nombres a la vista.
+
+**Verificado el 2026-10-20** · `RoleCard` plegada, las reglas en `RoleEditor` y
+`Subprocessors` con los tres nombres en la fila. Mirado en local. Cinco
+mutaciones mueren —abierta por defecto, sin la marca de «todas», sin los nombres
+de los subprocesadores, Borrar con usuarios y la card de roles llevando a otra
+sección—. Pruebas en `tests/surfaces/admin/composicion.test.tsx`,
+`roles.test.tsx` y `enAlta.test.tsx`.
+
+**Lo que la propuesta pedía y no hizo falta**: el rol del usuario ya era un solo
+selector. La medición de QA leyó las opciones del `<select>` como texto de la
+fila; está corregido en la propuesta.
+
+### ➕ F5.47 ✅ La forma corta se edita desde la ficha
+
+**Descripción.** La forma corta (`label`) es lo que distingue a dos clientes con
+el mismo nombre en la barra, el selector y las cards, y en QA está vacía o igual
+al nombre. El servicio la edita con `PUT /admin/tenants/{tenantId}` desde
+`6e521cc` —leído con `git log -S` sobre su handler—, y no estaba transcripto ni había dónde cargarla. §3 de
+`docs/PROPUESTA-2026-10-20-identidad-del-cliente-y-ficha.md`.
+
+**Criterio de aceptación.** La card de identidad de la ficha muestra la forma
+corta y ofrece «Editar forma corta»: un campo que guarda con `PUT` al cliente de
+la ficha, recortando espacios, y vacía la saca. Después de guardar, la barra y
+las cards la muestran sin recargar. Cancelar no manda nada.
+
+**Verificado el 2026-10-20** · la ruta medida contra `7324b26` —puesta, vuelta a
+vacía, 400 con un id que no es UUID y 404 con uno que no existe— y transcripta
+en `contracts/synapse-admin-wire.yaml` **sin** las claves de Snowflake que la
+respuesta trae. `adminApi.editarFormaCorta` y `useEditTenantShortName`, que
+invalida `/admin/tenants` y `/config/me`. Prueba en
+`tests/surfaces/admin/admin.test.tsx` que sigue la cadena hasta el `PUT`; cuatro
+mutaciones mueren.
+
+### ➕ F5.48 ✅ Lo que la auditoría del diseño encontró en la ficha y en las cards
+
+**Descripción.** Los cinco puntos del front de §4 de
+`docs/AUDITORIA-2026-10-20-diseno-de-la-identidad-del-cliente.md`: la ficha sin
+título ni «Abrir en builder», la identidad repetida debajo de las cards, las
+reglas de los roles en tres párrafos, la versión del catálogo ausente de la card
+y «Abrir ficha» que no se leía como acción.
+
+**Criterio de aceptación.** La ficha lleva el nombre del cliente como título con
+su forma corta y «Abrir en builder», que navega. La identidad completa no se
+pinta hasta «Ver identidad», y se puede ocultar. Las reglas de los roles van en
+una línea. La card de identidad dice la versión del catálogo. «Abrir ficha» se
+ve como acción.
+
+**Verificado el 2026-10-20** · mirado en local con un operador contra `7324b26`.
+Pruebas en `tests/surfaces/admin/admin.test.tsx` y `enAlta.test.tsx`; cinco
+mutaciones mueren. Los puntos 6 y 7 de la auditoría —el chrome de
+administración y la fila de contexto del builder— son anteriores a la propuesta
+y quedan para decidir.
+
+### ➕ F5.49 ✅ Las pantallas y el rol, en el navbar
+
+**Descripción.** En administración y en el builder las pantallas iban como
+pestañas debajo del título, y el rol del builder en una fila bajo la barra del
+cliente. El `.pen` las pone en el navbar. Puntos 6 y 7 de
+`docs/AUDITORIA-2026-10-20-diseno-de-la-identidad-del-cliente.md`; decidido por
+el humano el 2026-10-20: «tiene más sentido para la navegación».
+
+**Criterio de aceptación.** El navbar de administración lleva sus cuatro
+pantallas, y el del builder sus tres, el dashboard y el rol que se editan. Las
+dos navegaciones usan el mismo componente y el registro de acción. Guardar,
+validar y publicar siguen en su fila.
+
+**Verificado el 2026-10-20** · `NavDeSuperficie.tsx`, montado por `AdminChrome` y
+`BuilderChrome`. Mirado en local en Catálogo y en el editor. Pruebas en
+`tests/surfaces/navegacionDeTrabajo.test.tsx` y `builder/builder.test.tsx` que
+afirman que la navegación y el rol van antes de la barra; fallan con los chromes
+anteriores.
 
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 

@@ -31,6 +31,7 @@
  *  acuerdo de tratamiento antes de que esto lo vea un cliente. Está anotado en la
  *  tarea que construyó esta pantalla.
  */
+import { useId, useState } from 'react'
 import { Label } from '../../render/primitives/Label'
 import { Note } from '../../render/primitives/Note'
 
@@ -42,32 +43,52 @@ const SUBPROCESADORES = [
 ] as const
 
 export function Subprocessors() {
+  /** **Plegada, con los nombres a la vista** · 2026-10-20. Son de plataforma y
+   *  casi no cambian, así que el detalle —función y región— se abre. **Los
+   *  nombres no se esconden**: nombrar a quién procesa el dato es la obligación
+   *  legal por la que esta sección existe, y tiene que leerse sin tocar nada. */
+  const [abierta, setAbierta] = useState(false)
+  const detalle = useId()
   return (
     <section className="flex flex-col gap-3" aria-label="Subprocesadores">
       <Label as="div">Subprocesadores</Label>
 
-      <div className="rounded-xl border border-w3 bg-panel p-6 flex flex-col gap-3.5">
-        <ul className="flex flex-col gap-3.5 m-0 p-0 list-none">
-          {SUBPROCESADORES.map((s) => (
-            <li key={s.nombre} className="flex w-full items-start justify-between gap-3">
-              <div className="flex flex-col gap-0.75 text-dim">
-                <span className="font-body text-celda leading-cuerpo text-ink m-0">{s.nombre}</span>
-                <Note as="div">{s.funcion}</Note>
-              </div>
-              {/* La región es el dato duro de la fila, y va a la derecha: es lo
-                  que una revisión legal busca primero. */}
-              <div className="text-dim">
-                <Note as="div">{s.region}</Note>
-              </div>
-            </li>
-          ))}
-        </ul>
-
-        <div className="border-t border-w2 pt-3.5 text-dim">
-          <Note as="div">
-            Son de plataforma: aplican desde el alta, antes de que exista un solo rol
-          </Note>
+      <div className="rounded-xl border border-w3 bg-panel flex flex-col">
+        <div className="flex items-center gap-3 px-5 py-3.5">
+          <span className="font-body text-celda leading-cuerpo text-ink">
+            {SUBPROCESADORES.map((s) => s.nombre).join(' · ')}
+          </span>
+          <span className="ml-auto text-dim">
+            <Note as="span">De plataforma · aplican desde el alta</Note>
+          </span>
+          <button
+            type="button"
+            onClick={() => setAbierta((v) => !v)}
+            aria-expanded={abierta}
+            aria-controls={detalle}
+            className="cursor-pointer rounded-md border border-w5 bg-transparent px-2 h-7 font-body text-celda font-semibold text-ink hover:bg-w2"
+          >
+            {abierta ? 'Ocultar detalle' : 'Ver detalle'}
+          </button>
         </div>
+
+        {abierta && (
+          <ul id={detalle} className="flex flex-col gap-3.5 m-0 border-t border-w2 px-5 py-4 list-none">
+            {SUBPROCESADORES.map((s) => (
+              <li key={s.nombre} className="flex w-full items-start justify-between gap-3">
+                <div className="flex flex-col gap-0.75 text-dim">
+                  <span className="font-body text-celda leading-cuerpo text-ink m-0">{s.nombre}</span>
+                  <Note as="div">{s.funcion}</Note>
+                </div>
+                {/* La región es el dato duro de la fila, y va a la derecha: es lo
+                    que una revisión legal busca primero. */}
+                <div className="text-dim">
+                  <Note as="div">{s.region}</Note>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </section>
   )

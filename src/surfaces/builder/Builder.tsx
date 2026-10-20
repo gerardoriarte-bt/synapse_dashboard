@@ -765,7 +765,6 @@ export function Builder() {
       // no hay una fuente de identidad por superficie.
       onSalir={(ruta) => void navegar(ruta)}
       clientes={lista}
-      propio={yo.data === undefined ? null : { id: yo.data.tenant.id, nombre: yo.data.tenant.nombre }}
       clienteActivo={tenantActivo}
       onCliente={(id) => {
         setTenant(id)

@@ -123,8 +123,14 @@ describe('en la URL', () => {
     expect(result.current.q).toBe('?cliente=keralty')
   })
 
-  it('en la consola NO se pone · su cliente es el del token', () => {
+  it('en la consola TAMBIÉN se pone · la barra es la misma en las tres superficies, desde el 2026-10-20', () => {
     const { result } = renderHook(() => ({ c: useClienteDeTrabajo(LISTA, 'ua'), q: useBusqueda() }), { wrapper: enUrl('/') })
+    act(() => result.current.c[1]('keralty'))
+    expect(result.current.q).toBe('?cliente=keralty')
+  })
+
+  it('en otras rutas de la consola no se pone · sólo la raíz', () => {
+    const { result } = renderHook(() => ({ c: useClienteDeTrabajo(LISTA, 'ua'), q: useBusqueda() }), { wrapper: enUrl('/login') })
     act(() => result.current.c[1]('keralty'))
     expect(result.current.q).toBe('')
   })
