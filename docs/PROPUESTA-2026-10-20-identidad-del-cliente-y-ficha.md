@@ -147,24 +147,36 @@ transcribiendo antes `PUT /admin/tenants/{tenantId}` y corriendo el humo.
 Esto no es un mensaje al backend todavía. Se escribe como `MENSAJE-*` cuando el
 humano lo decida.
 
-## 4 · Propuesta B · un diferenciador visual en el header
+## 4 · Propuesta B · la barra del cliente activo
 
-**Un solo bloque de cliente, en el mismo lugar en las tres superficies**: a la
-derecha del logotipo de Synapse, con logo o monograma, forma corta y nombre.
+**Revisado con el humano el 2026-10-20, después de ver el primer dibujo.** La
+versión anterior ponía el cliente dentro del navbar y una franja que decía
+«Trabajando sobre Terpel · tu sesión es Under Armour México», con un botón para
+volver al propio. El humano la encontró confusa: dos clientes nombrados a la vez,
+y un «volver» que no tiene sentido si se está trabajando sobre otro.
 
-- **En administración y builder es el selector.** El desplegable muestra la
-  misma identidad en cada opción, «tu cliente» incluido.
-- **En la consola es la misma pieza sin desplegable**, porque su cliente es el
-  del token.
+**La regla nueva: al cambiar de cliente, todo el entorno es de uso exclusivo de
+ese cliente.** No hay un cliente «de la sesión» y otro «de trabajo»: hay uno, el
+activo.
 
-**Y cuando el cliente de trabajo no es el propio, el header lo dice con forma y
-no sólo con texto**: una franja bajo el navbar, «Trabajando sobre [logo]
-Keralty · tu sesión es Synapse UA HTML», que no se cierra mientras dure. Con el
-cliente propio la franja no está, y su ausencia es la señal de que todo está en
-casa.
+- **Una barra bajo el navbar es el cliente activo**: logo o monograma, nombre y
+  forma corta. Todo lo que se ve debajo es de ese cliente.
+- **El selector va a la derecha de la barra**: «Cambiar de cliente». El
+  desplegable muestra la misma identidad en cada opción.
+- **Quien tiene un solo cliente ve la misma barra sin selector.**
+- **La barra es la misma en consola, administración y builder.**
+- **El perfil queda como un ícono** a la derecha del navbar.
+- **A1 · Clientes no lleva barra**, porque es de plataforma: lista todos. Ahí la
+  card del cliente activo se marca «EN USO», y «Abrir ficha» lo vuelve activo.
 
-**Con los tokens que ya hay, no con el color del cliente.** La franja va en
-`w2` con borde `acc`, que es «estado activo», uno de sus usos permitidos. Pintar
+**Que la consola siga al cliente elegido no es del front.** Hoy el cliente de
+`/config/*` es el del token, y el backend dijo el 13 que eso será «un token nuevo
+por cliente» cuando exista el super-admin. Hasta entonces, cambiar de cliente
+cambia administración y builder, y la consola queda en el del token. El dibujo
+muestra el destino, no lo que se puede construir hoy.
+
+**Con los tokens que ya hay, no con el color del cliente.** La barra va en
+`panel` con una línea `w3` abajo. Pintar
 el header con el color de marca de cada cliente parece lo natural y choca con
 cuatro reglas de `design.md`:
 
@@ -186,7 +198,7 @@ el humano la reabra y que diseño redibuje A1.
 
 Cada card es un cliente:
 
-| Arriba | Logo o monograma, nombre y forma corta, y «tu cliente» si es el propio |
+| Arriba | Logo o monograma, nombre y forma corta, y «EN USO» si es el cliente activo |
 |---|---|
 | En el medio | Usuarios · feed más atrasado y hace cuánto · última publicación |
 | Abajo | «Abrir ficha» |
@@ -225,7 +237,8 @@ su sección:
 |---|---|---|
 | 1 | ¿El logo es el diferenciador principal y la forma corta el respaldo? | Humano |
 | 2 | ¿Placa clara fija detrás del logo, o dos variantes? | Diseño |
-| 3 | La franja «Trabajando sobre…» y el bloque de cliente en el header | Diseño |
+| 3 | La barra del cliente activo, con el selector a la derecha | Diseño |
+| 3b | **Que la consola siga al cliente elegido**: un token por cliente | Backend |
 | 4 | **Reabrir lado a lado**: Clientes en cards y la ficha como página | Humano |
 | 5 | Redibujar A1 como cards y A2 con su resumen | Diseño |
 | 6 | `logo_url`, la ruta para subirlo y quitarlo, y la URL pública | Backend |
@@ -234,7 +247,7 @@ su sección:
 
 1. **La forma corta en administración y builder**, con el campo para editarla.
    No espera a nadie.
-2. **El bloque de cliente y la franja en el header**, cuando diseño apruebe. Con
+2. **La barra del cliente activo**, cuando diseño apruebe. Con
    la forma corta y el monograma ya distingue.
 3. **Clientes en cards y la ficha como página**, cuando diseño redibuje.
 4. **El logo**, cuando llegue la ruta. Reemplaza al monograma y nada más cambia.
@@ -248,9 +261,9 @@ renombran a A1 y A2 y reemplazan a los actuales.
 
 | Id | Frame | Qué muestra |
 |---|---|---|
-| `DPL4f` | Propuesta · A1 · Clientes en cards | La grilla de cuatro clientes. UA MX y UA CO comparten logo, y la forma corta los separa. Super-admins plegado |
-| `OLeoU` | Propuesta · A2 · Ficha con resumen | La ficha de **otro** cliente, con la franja, la migaja, las cuatro cards de resumen, los roles plegados y un solo control de rol por usuario |
-| `Nynh7` | Propuesta · Header · identidad del cliente | Cinco casos: tu cliente, otro cliente con la franja, la consola, el selector abierto y la placa en los dos temas |
+| `c2sREV` | Propuesta · A1 · Clientes en cards | La grilla de cuatro clientes, con el activo marcado «EN USO». UA MX y UA CO comparten logo, y la forma corta los separa. Super-admins plegado |
+| `W5cYQV` | Propuesta · A2 · Ficha con resumen | La barra del cliente activo, la migaja, las cuatro cards de resumen, los roles plegados y un solo control de rol por usuario |
+| `bRY65` | Propuesta · Header · identidad del cliente | Cinco casos: administración, la consola después de cambiar de cliente, quien tiene un solo cliente, el selector abierto y la placa en los dos temas |
 
 **No agrega tokens.** La placa clara es `$panel` con el tema Light forzado sobre
 el nodo, así que se ve blanca también en el tema oscuro.
