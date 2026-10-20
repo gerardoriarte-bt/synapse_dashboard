@@ -119991,6 +119991,16 @@
       "width": 760,
       "height": 104,
       "content": "Propuesta · Header · identidad del cliente\n\nUn solo bloque de cliente —placa, nombre, forma corta— en el mismo lugar de las tres superficies. En administración y builder es el selector; en la consola, la misma pieza sin desplegable.\n\nLa franja usa $w2 y un borde $acc («estado activo»). El color del cliente NO entra: un hex de marca no es token, el naranja es de acción, ámbar y amarillo están prohibidos y la familia cromática es del catálogo.\n\nLa placa clara es $panel con el tema Light forzado: no hace falta un token nuevo.\n\nEl logo es un marcador (ícono): no hay logos reales que probar."
+    },
+    {
+      "type": "note",
+      "id": "xFkgE",
+      "x": 0,
+      "y": 640,
+      "name": "Indicador · Propuesta 2026-10-20",
+      "width": 1100,
+      "height": 150,
+      "content": "→ PROPUESTA 2026-10-20 · IDENTIDAD DEL CLIENTE, HEADER Y FICHA\n\nTres frames nuevos para validar, más abajo en este mismo lienzo, en la fila y = 16300 (debajo de la banda de administración):\n· x = 0 → Propuesta · A1 · Clientes en cards\n· x = 1750 → Propuesta · A2 · Ficha con resumen\n· x = 3500 → Propuesta · Header · identidad del cliente\n\nDocumento: docs/PROPUESTA-2026-10-20-identidad-del-cliente-y-ficha.md"
     }
   ],
   "themes": {
