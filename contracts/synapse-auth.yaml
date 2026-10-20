@@ -728,6 +728,62 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  # ── Transcripto de `d794a3e` el 2026-10-20 · `openapi.yaml` de su repo, tal
+  # cual. Medido en local contra ese binario: 200 con el token del cliente
+  # elegido, 403 para un `admin`, 400 sin `tenant_id` o con uno que no es UUID,
+  # 404 `NOT_FOUND_TENANT` con un cliente que no existe.
+  /auth/switch-tenant:
+    post:
+      tags: [auth]
+      summary: Cambiar el cliente que renderiza la consola
+      description: |
+        Solo un usuario con rol `superadmin`. Devuelve un JWT nuevo (24 h) cuyo `tenant_id`
+        es el cliente elegido y cuyo rol es el `superadmin` de ese cliente.
+
+        El front debe reemplazar el token guardado y volver a pedir `GET /config/me`, el catálogo
+        y el batch: tabs, períodos y payloads salen de ese cliente. El chat y el drill-down
+        siguen el mismo token. No cambia el tenant de origen del usuario; un login nuevo vuelve
+        a su cliente.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_id]
+              properties:
+                tenant_id: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Token del cliente elegido. Misma forma que el login.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          token: { type: string }
+                          user:
+                            $ref: '#/components/schemas/LoginUserInfo'
+        '403':
+          description: El rol del token no es superadmin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: El cliente no existe o no tiene rol superadmin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /auth/token-info:
     get:
       tags: [auth]

@@ -16,13 +16,13 @@ falta para re-verificar. Para su avance real está
 |---|---|
 | Tareas `B*` en el plan | **98** |
 | Verificadas por nosotros · ✅ o ⚠️ | **74** |
-| De ésas, **contra el último commit** | **2** |
+| De ésas, **contra el último commit** | **1** |
 | ⬜ Esperando algo de ellos | **1** |
 | ⬜ **Que NUNCA verificamos** | **22** |
 | El último commit que leímos | `7324b26` |
 
 
-## ⚠️ 51 verificadas contra un commit anterior
+## ⚠️ 52 verificadas contra un commit anterior
 
 **No quiere decir que estén mal: quiere decir que no lo sabemos.**
 Una tarea `B*` afirma algo del servicio, y el servicio cambia.
@@ -65,6 +65,7 @@ Re-verificar una es leer su criterio y medirlo de nuevo.
 | **B2.11** · Filtrado por rol también en el batch | ✅ | `de881e1` | 2026-09-29 |
 | **B2.12** · Correr el materializador contra datos reales y verificar los seis estados | ⚠️ | `3651d70` | 2026-10-14 |
 | **B2.13** · Salud de feeds por fuente | ✅ | `de881e1` | 2026-09-29 |
+| **B2.16** · El materializador emite presentation | ✅ | `d794a3e` | 2026-10-20 |
 | **B3.1** · POST /config/chat con SSE | ⚠️ | `8633b10` | 2026-09-26 |
 | **B3.8** · La respuesta puede incluir { forma, datos, procedencia } | ✅ | `8272085` | 2026-10-13 |
 | **B3.10** · Persistir hilos y mensajes en Postgres | ✅ | `de881e1` | 2026-09-29 |
@@ -178,7 +179,7 @@ esperan algo de ellos: **1**, y salen en `PARA-BACKEND.md`.
 | ✅ | **B2.13** ➕ · Salud de feeds por fuente | `de881e1` ⚠ | 2026-09-29 |
 | ⬜ | **B2.14** ➕ · /config/solicitudes | `9dc481e` ⚠ | 2026-10-09 |
 | ⚠️ | **B2.15** ➕ · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | `7324b26` | 2026-10-19 |
-| ✅ | **B2.16** ➕ · El materializador emite presentation | `7324b26` | 2026-10-20 |
+| ✅ | **B2.16** ➕ · El materializador emite presentation | `d794a3e` ⚠ | 2026-10-20 |
 
 
 ### Fase 3 · Chat — 4 de 11

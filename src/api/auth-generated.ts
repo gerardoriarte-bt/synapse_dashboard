@@ -65,6 +65,81 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/switch-tenant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cambiar el cliente que renderiza la consola
+         * @description Solo un usuario con rol `superadmin`. Devuelve un JWT nuevo (24 h) cuyo `tenant_id`
+         *     es el cliente elegido y cuyo rol es el `superadmin` de ese cliente.
+         *
+         *     El front debe reemplazar el token guardado y volver a pedir `GET /config/me`, el catálogo
+         *     y el batch: tabs, períodos y payloads salen de ese cliente. El chat y el drill-down
+         *     siguen el mismo token. No cambia el tenant de origen del usuario; un login nuevo vuelve
+         *     a su cliente.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        tenant_id: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Token del cliente elegido. Misma forma que el login. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: {
+                                token?: string;
+                                user?: components["schemas"]["LoginUserInfo"];
+                            };
+                        };
+                    };
+                };
+                /** @description El rol del token no es superadmin */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description El cliente no existe o no tiene rol superadmin */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/token-info": {
         parameters: {
             query?: never;

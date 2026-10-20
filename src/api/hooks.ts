@@ -12,6 +12,7 @@ import { api } from './client'
 import { esDePanel } from './chat'
 import type { ContextoDeChat } from './chat'
 import { adminApi } from './admin'
+import { sinRolesInternos } from './rol'
 import type { CambioDeUsuario, Corrida, RolParaGuardar, TabParaGuardar } from './admin'
 import type { Theme } from '../tokens/theme'
 import type { Payload } from './types'
@@ -437,7 +438,7 @@ export function useAgents(tenantId: string | null) {
 export function useRoles(tenantId: string | null) {
   return useQuery({
     queryKey: keys.roles(tenantId ?? ''),
-    queryFn: () => adminApi.roles(tenantId as string),
+    queryFn: () => adminApi.roles(tenantId as string).then(sinRolesInternos),
     enabled: tenantId !== null && tenantId !== '',
   })
 }
@@ -449,7 +450,7 @@ export function useRoles(tenantId: string | null) {
  *  así que la ficha y esta pantalla se sirven del mismo cache. */
 export function useRolesOf(tenantIds: readonly string[]) {
   return useQueries({
-    queries: tenantIds.map((id) => ({ queryKey: keys.roles(id), queryFn: () => adminApi.roles(id) })),
+    queries: tenantIds.map((id) => ({ queryKey: keys.roles(id), queryFn: () => adminApi.roles(id).then(sinRolesInternos) })),
     combine: (rs) => Object.fromEntries(tenantIds.map((id, i) => [id, rs[i]?.data])),
   })
 }

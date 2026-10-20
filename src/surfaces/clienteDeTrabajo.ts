@@ -10,11 +10,10 @@
  *  volver entre superficies —que es lo que se pidió— y cada montaje de prueba
  *  arranca limpio, sin heredar la elección de la prueba anterior.
  *
- *  **La consola no lo sigue, y no por elección.** Su cliente es el del token de
- *  sesión: `JWTMiddleware` pone `claims.TenantID` en el contexto y ninguna ruta
- *  de `/config/*` acepta otro —leído en `middleware.go` el 2026-10-06—. Que la
- *  consola cambie de cliente es un pedido al backend, no algo que el front
- *  pueda hacer solo.
+ *  **La consola lo sigue desde el 2026-10-20, cambiando el token.** Su cliente
+ *  es el del token de sesión —ninguna ruta de `/config/*` acepta otro—, y desde
+ *  `d794a3e` un `superadmin` puede pedir el token de otro cliente. El salto
+ *  vive en `console/useSaltoDeCliente.ts`.
  */
 import { createContext } from 'react'
 

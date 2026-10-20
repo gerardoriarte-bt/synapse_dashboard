@@ -128,6 +128,46 @@ export async function login(email: string, password: string): Promise<LoginResul
   return { token, user }
 }
 
+/** Cambiar de cliente · 2026-10-20 · `d794a3e`.
+ *
+ *  **Sólo un `superadmin`**, y el servicio lo decide: devuelve un token nuevo
+ *  cuyo cliente es el elegido. Con ese token `/config/*` sirve ese cliente
+ *  entero —pestañas, períodos, catálogo, chat—, porque ninguna de esas rutas
+ *  recibe el cliente: lo leen del token.
+ *
+ *  **No guarda el token**: eso lo hace quien llama, junto con vaciar lo del
+ *  cliente anterior. Si esto lo guardara, un error a mitad de camino dejaría
+ *  la sesión en un cliente y la pantalla en otro.
+ *
+ *  Medido en local contra `d794a3e` el 2026-10-20: 403 `AUTH_FORBIDDEN` para un
+ *  `admin`, 400 `VALIDATION_REQUEST` sin `tenant_id`, 404 `NOT_FOUND_TENANT`. */
+export async function switchTenant(tenantId: string): Promise<LoginResult> {
+  const token = currentToken()
+  const res = await fetch(`${BASE}/auth/switch-tenant`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token === null ? {} : { Authorization: `Bearer ${token}` }),
+    },
+    body: JSON.stringify({ tenant_id: tenantId }),
+  })
+  const body = await cuerpo<AuthOk<Partial<LoginResult>>>(res)
+
+  if (!res.ok) {
+    throw new ApiError(
+      res.status === 401 ? 'AUTH_CREDENCIALES' : res.status === 403 ? 'AUTH_FORBIDDEN' : 'AUTH_FALLO',
+      mensajeDe(body, res),
+      res.status,
+    )
+  }
+
+  const { token: nuevo, user } = body?.data ?? {}
+  if (nuevo === undefined || user === undefined) {
+    throw new ApiError('AUTH_FALLO', 'El servicio respondió sin sesión para ese cliente.', res.status)
+  }
+  return { token: nuevo, user }
+}
+
 /** La sesión, según el servidor · F0.13.
  *
  *  **De acá sale `password_updated`, y no de guardarlo al entrar.** El login lo

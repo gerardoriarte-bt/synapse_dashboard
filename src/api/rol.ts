@@ -31,6 +31,38 @@ import type { AppContext } from './types'
 
 export const ROL_ADMIN = 'admin'
 
+/** **«superadmin» también administra** · 2026-10-20, medido en QA.
+ *
+ *  El backend creó el rol y se lo dio a `jose.rodriguez@lobueno.co`, y con él
+ *  `/admin/*` contesta 200 **y cruza clientes**: `GET /admin/tenants` le da los
+ *  cinco, y el catálogo, los roles, los usuarios, los layouts y los feeds de
+ *  Keralty contestan 200. Sólo con «admin» el front escondía el menú de trabajo
+ *  a quien el servidor sí habilita, que es el error simétrico que esta función
+ *  existe para evitar.
+ *
+ *  **Ya está en su repositorio** · `d794a3e`, leído el 2026-10-20:
+ *  `AdminOnlyMiddleware` acepta los dos. Cuando `/config/me` diga qué se puede
+ *  administrar —el pedido 4 del 2026-10-10—, esta lista se va. */
+export const ROLES_QUE_ADMINISTRAN: readonly string[] = [ROL_ADMIN, 'superadmin']
+
 export function esAdmin(role: AppContext['role'] | undefined): boolean {
-  return role !== undefined && role.nombre.trim().toLowerCase() === ROL_ADMIN
+  return role !== undefined && ROLES_QUE_ADMINISTRAN.includes(role.nombre.trim().toLowerCase())
+}
+
+/** **«superadmin» no se asigna desde la plataforma** · decisión humana del
+ *  2026-10-20.
+ *
+ *  `d794a3e` crea un rol `superadmin` en CADA cliente —es lo que le permite al
+ *  operador saltar a cualquiera—, así que aparecía en las listas de roles de
+ *  todos: en el selector de rol de cada usuario, en la ficha, en el builder.
+ *  Es de asignación interna de Lo Bueno, nunca de un cliente, así que el front
+ *  no lo ofrece en ninguna parte.
+ *
+ *  **Esconderlo no es impedirlo**: el servicio acepta asignarlo igual —leído en
+ *  `UpdateAdmin`, que valida sólo que el rol sea del cliente y esté activo—.
+ *  Está avisado al backend. */
+export const ROL_INTERNO = 'superadmin'
+
+export function sinRolesInternos<T extends { nombre: string }>(roles: readonly T[]): T[] {
+  return roles.filter((r) => r.nombre.trim().toLowerCase() !== ROL_INTERNO)
 }
