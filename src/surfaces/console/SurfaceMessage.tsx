@@ -18,6 +18,7 @@
  *  el foco no tiene dónde más estar: lo que había se desmontó.
  */
 import { useEffect, useRef } from 'react'
+import type { ReactNode } from 'react'
 import { Label } from '../../render/primitives/Label'
 
 type Props = {
@@ -34,9 +35,14 @@ type Props = {
    *  Es el mismo precedente que B5 el 2026-09-25: «su vacío lleva salida
    *  propia». */
   accion?: { rotulo: string; onAccion: () => void } | undefined
+  /** **La barra del cliente arriba del mensaje** · 2026-10-20. Un superadmin
+   *  que salta a un cliente recién dado de alta llega a uno sin dashboard, y
+   *  ahí la única salida de `accion` —volver al default— no existe: no hay
+   *  ningún dashboard. Sin la barra quedaba encerrado en ese cliente. */
+  barra?: ReactNode
 }
 
-export function SurfaceMessage({ title, detail, onRetry, accion }: Props) {
+export function SurfaceMessage({ title, detail, onRetry, accion, barra }: Props) {
   const salida = useRef<HTMLButtonElement>(null)
 
   // **Al montar, no en cada render.** Con `[]` el foco se pone una vez: si se
@@ -50,7 +56,9 @@ export function SurfaceMessage({ title, detail, onRetry, accion }: Props) {
   }, [])
 
   return (
-    <main className="min-h-screen bg-bg p-6 flex items-center justify-center">
+    <main className="min-h-screen bg-bg flex flex-col">
+      {barra}
+      <div className="flex flex-1 items-center justify-center p-6">
       <div className="flex flex-col gap-3 max-w-md">
         <h1 className="font-display text-titulo-lg tracking-titulo text-ink m-0">{title}</h1>
         <Label>{detail}</Label>
@@ -74,6 +82,7 @@ export function SurfaceMessage({ title, detail, onRetry, accion }: Props) {
             {accion.rotulo}
           </button>
         )}
+      </div>
       </div>
     </main>
   )
