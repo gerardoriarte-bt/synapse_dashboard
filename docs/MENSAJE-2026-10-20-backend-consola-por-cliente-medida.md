@@ -12,7 +12,6 @@ miramos en el navegador contra ese binario. El detalle está en
 **Responde a `RESPUESTA-2026-10-20-backend-consola-por-cliente.md`**, que es su
 respuesta del 20.
 
-**Lo manda el humano.**
 
 ---
 
