@@ -14,6 +14,7 @@ import userEvent from '@testing-library/user-event'
 import { http } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
 import { Admin } from '@/surfaces/admin/Admin'
+import { ClienteDeTrabajoProvider } from '@/surfaces/ClienteDeTrabajoProvider'
 import { PANTALLAS } from '@/surfaces/admin/pantallas'
 import { context, ok } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
@@ -41,6 +42,13 @@ const tenants = [
     status: null, vertical: null, created_at: '2026-09-25T10:00:00Z',
   },
 ]
+
+/** Abrir la ficha desde su card · desde el 2026-10-20 Clientes es una grilla y
+ *  la ficha una página aparte. */
+async function abrirFicha(nombre: RegExp) {
+  await userEvent.click(await screen.findByRole('button', { name: nombre }))
+  await screen.findByRole('navigation', { name: 'Migaja' })
+}
 
 function montar() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -144,11 +152,10 @@ describe('§7.3 · la regla dura · el vocabulario de infraestructura no se mues
       ),
     )
     const { container } = montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await abrirFicha(/^Under Armour México · /)
 
     // **Menos los subprocesadores**, que es la única excepción de §7.3 —una
-    // obligación legal de nombrar a quién procesa el dato— y que desde el
-    // 2026-10-09 está a la vista: la ficha se abre al lado de la lista.
+    // obligación legal de nombrar a quién procesa el dato—: están en la ficha.
     const subprocesadores = screen.getByRole('region', { name: 'Subprocesadores' })
     const texto = (container.textContent ?? '').replace(subprocesadores.textContent ?? '', '')
     for (const prohibido of ['snowflake', 'warehouse', 'grant', 'private_key', 'SYNAPSE_ROLE']) {
@@ -170,14 +177,13 @@ describe('F4.2 · la lista de clientes', () => {
     const { container } = montar()
     await screen.findByRole('button', { name: /^Under Armour México · / })
 
-    // **Desde el 2026-10-09 son una línea de la fila y no tres columnas**: la
-    // lista va al lado de la ficha y no le entra una tabla. Los tres datos
-    // siguen, juntos, que es el estado operativo del cliente.
+    // **Desde el 2026-10-20 son los tres datos de la card**, cada uno con su
+    // rótulo: el estado operativo del cliente.
     void container
     const ua = screen.getByRole('button', { name: /^Under Armour México · / })
-    expect(ua.textContent).toContain('12 usuarios')
-    expect(ua.textContent).toContain('feed 4 h')
-    expect(ua.textContent).toContain('publicó 22 sep 2026')
+    expect(ua.textContent).toContain('Usuarios12')
+    expect(ua.textContent).toContain('Feed más atrasadoHace 4 h')
+    expect(ua.textContent).toContain('Última publicación22 sep 2026')
   })
 
   it('«nunca» NO se colapsa con cero ni con un guion', async () => {
@@ -189,10 +195,10 @@ describe('F4.2 · la lista de clientes', () => {
     await screen.findByRole('button', { name: /^Keralty Colombia · / })
 
     const keralty = screen.getByRole('button', { name: /^Keralty Colombia · / }).textContent ?? ''
-    expect(keralty).toContain('feed Nunca cargó')
-    expect(keralty).toContain('nunca publicó')
+    expect(keralty).toContain('Feed más atrasadoNunca cargó')
+    expect(keralty).toContain('Última publicaciónNunca')
     // Cero usuarios SÍ se pinta como cero: es un conteo, no una ausencia.
-    expect(keralty).toContain('0 usuarios')
+    expect(keralty).toContain('Usuarios0')
   })
 
   it('ya NO declara las dos columnas que faltan · tampoco sus razones vencidas', async () => {
@@ -283,10 +289,8 @@ describe('las cinco pantallas de §7.3 · ninguna queda pendiente', () => {
       http.get(`${API}/admin/tenants/:id/catalog`, () => ok([])),
     )
     montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
-
-    // **La ficha ya está abierta al lado** · 2026-10-09: no hay pestaña que
-    // apretar.
+    // **La ficha se abre desde su card** · 2026-10-20.
+    await abrirFicha(/^Under Armour México · /)
     // **El CTA del vacío de alta y no «Nuevo rol»** · §PEN:A2, 2026-09-30. Este
     // escenario sirve la ficha con CERO roles, y desde que el vacío tiene su
     // propio CTA la cabecera no repite el suyo: el dibujo pone uno solo. Lo que
@@ -345,16 +349,19 @@ describe('«Ver ficha» abre el cliente que se cliqueó · 2026-09-25', () => {
     )
     montar()
 
-    // **Desde el 2026-10-09 la fila ES la elección**: la ficha se abre al lado.
-    const fila = await screen.findByRole('button', { name: /^Keralty Colombia · / })
-    await userEvent.click(fila)
+    // **Desde el 2026-10-20 la card ES la elección**, y abre la ficha.
+    await abrirFicha(/^Keralty Colombia · /)
 
     // **La aserción es a quién se le piden los datos.**
     await waitFor(() => expect(pedidos).toContain('t-2'))
 
-    // Y la otra mitad: la fila queda **elegida** y la ficha que se ve es la
-    // suya. Sin esto, elegir sin marcar —o marcar otra— sobrevivía.
-    expect(fila).toHaveAttribute('aria-pressed', 'true')
+    // Y la otra mitad: la ficha que se ve es la suya —la migaja y la barra lo
+    // dicen— y al volver a la grilla, su card es la que está en uso. Sin esto,
+    // elegir sin marcar —o marcar otra— sobrevivía.
+    expect(within(screen.getByRole('navigation', { name: 'Migaja' })).getByText('Keralty Colombia')).toBeInTheDocument()
+    expect(within(screen.getByRole('region', { name: 'Cliente activo' })).getByText('Keralty Colombia')).toBeInTheDocument()
+    await userEvent.click(within(screen.getByRole('navigation', { name: 'Migaja' })).getByRole('button', { name: 'Clientes' }))
+    expect(await screen.findByRole('button', { name: /^Keralty Colombia · / })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: /^Under Armour México · / })).toHaveAttribute('aria-pressed', 'false')
   })
 })
@@ -744,5 +751,28 @@ describe('trabajar sobre otro cliente', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /^Keralty Colombia · / }))
     expect(await within(barra).findByText('Keralty Colombia')).toBeInTheDocument()
+  })
+})
+
+// ── LA FICHA ABRE CON EL PROVEEDOR REAL · 2026-10-20 ───────────────────────
+describe('la ficha, con el proveedor del cliente de trabajo montado', () => {
+  /** **El defecto lo encontró el navegador, no esta suite**: el resto de las
+   *  pruebas monta `Admin` sin el proveedor, y con él la card del cliente en uso
+   *  no abría la ficha —la URL del proveedor pisaba la de la ficha—. */
+  it('la card del cliente EN USO abre su ficha', async () => {
+    server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={['/admin']}>
+          <ClienteDeTrabajoProvider>
+            <Admin />
+          </ClienteDeTrabajoProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    const enUso = await screen.findByRole('button', { name: /^Under Armour México · /, pressed: true })
+    await userEvent.click(enUso)
+    expect(await screen.findByRole('navigation', { name: 'Migaja' })).toBeInTheDocument()
   })
 })

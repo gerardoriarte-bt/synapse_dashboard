@@ -8058,6 +8058,36 @@ dashboard» no existe.
 `VolverAlDashboard.tsx` se borró. Pruebas en `tests/surfaces/identidad.test.tsx`,
 `menuDeTrabajo.test.tsx` y `navegacionDeTrabajo.test.tsx`.
 
+### ➕ F5.45 ✅ Clientes en cards, y la ficha como página con su resumen
+
+**Descripción.** La lista de clientes iba al lado de la ficha (decisión del
+2026-10-09) y la ficha era una sola columna de seis pantallas, todo con el mismo
+peso. El humano la reabrió el 2026-10-20: «un scroll muy grande … organizar la
+mayoría de la info en cards». §5 de
+`docs/PROPUESTA-2026-10-20-identidad-del-cliente-y-ficha.md`.
+
+**Criterio de aceptación.** Clientes es una grilla de cards: placa, nombre,
+forma corta, usuarios, feed más atrasado y última publicación, y «En uso» en la
+del cliente activo. La card entera abre la ficha y vuelve activo a ese cliente.
+La ficha es una página con migaja de vuelta a la grilla y cuatro cards de
+resumen —identidad, roles, usuarios, acceso a datos— que llevan a su sección.
+Las cifras del resumen son conteos de lo que la ficha ya trajo, y mientras no
+llegan dicen «cargando».
+
+**Verificado el 2026-10-20** · `TenantList` pasó a grilla de cards,
+`ResumenDeFicha.tsx` reemplaza a la fila «Secciones de la ficha» de F5.34, y
+`distintivo` usa la misma regla que la barra (`formaCortaVisible`). Mirado en
+local con un operador contra `7324b26`, abriendo las dos cards y volviendo por
+la migaja. **Abrirla lo encontró roto**: con `?ficha=1` en la URL, la card del
+cliente en uso no abría la ficha —el proveedor del cliente de trabajo escribe la
+URL en el mismo clic y la pisaba—. La ficha abierta pasó a ser estado de la
+pantalla, y hay una prueba que monta el proveedor real y falla con la versión
+anterior. Pruebas en `tests/surfaces/admin/admin.test.tsx`,
+`listaDeClientes.test.tsx`, `carga.test.tsx` y `roles.test.tsx`.
+
+**Recargar vuelve a la grilla**: el cliente activo sí sobrevive, porque lo lleva
+la URL.
+
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
 **Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio

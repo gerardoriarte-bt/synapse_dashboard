@@ -622,25 +622,34 @@ describe('el desglose de §9, desde la superficie · A2 §9', () => {
   })
 })
 
-// ── LA FICHA SE RECORRE POR SECCIONES · F5.34, 2026-10-19 ──────────────────
+// ── LA FICHA, CON SU RESUMEN ARRIBA · 2026-10-20 ───────────────────────────
+// Reemplaza a la fila «Secciones de la ficha» de F5.34: cada card dice lo que
+// importa de su bloque y lleva a él.
 describe('la ficha por secciones', () => {
-  it('cada botón lleva a su sección', async () => {
+  it('cada card del resumen lleva a su sección', async () => {
     base()
     montar()
     await abrirFicha()
-    const nav = screen.getByRole('navigation', { name: 'Secciones de la ficha' })
     const destinos: string[] = []
     const original = Element.prototype.scrollIntoView
     Element.prototype.scrollIntoView = function (this: Element) {
       destinos.push(this.id)
     }
     try {
-      await userEvent.click(within(nav).getByRole('button', { name: 'Ir a Usuarios' }))
-      await userEvent.click(within(nav).getByRole('button', { name: 'Ir a Acceso a datos' }))
+      await userEvent.click(within(screen.getByRole('region', { name: 'Resumen · Roles' })).getByRole('button', { name: 'Ver roles' }))
+      await userEvent.click(within(screen.getByRole('region', { name: 'Resumen · Usuarios' })).getByRole('button', { name: 'Ver usuarios' }))
     } finally {
       Element.prototype.scrollIntoView = original
     }
-    expect(destinos).toEqual(['ficha-usuarios', 'ficha-acceso'])
+    expect(destinos).toEqual(['ficha-roles', 'ficha-usuarios'])
+  })
+
+  it('la card de roles cuenta lo que la ficha trajo', async () => {
+    base()
+    montar()
+    await abrirFicha()
+    const card = await screen.findByRole('region', { name: 'Resumen · Roles' })
+    expect(await within(card).findByText(String(roles.length))).toBeInTheDocument()
   })
 
   it('el aviso de roles duplicados va ANTES de las tarjetas', async () => {
