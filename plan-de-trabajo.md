@@ -8268,6 +8268,36 @@ cliente. Quien administra ve «Componer un dashboard en el builder», que navega
 cliente creado para la prueba. Pruebas en
 `tests/surfaces/console/saltoDeCliente.test.tsx`; tres mutaciones mueren.
 
+### ➕ F5.53 ✅ Una falla repetida se dice una vez
+
+**Descripción.** En QA, Keralty mostraba los doce paneles con el mismo error
+crudo de Snowflake —base, esquema y rol a la vista de cualquiera— y debajo de
+cada uno «El resto de los paneles cargó normalmente», que era falso. Ver
+`docs/AUDITORIA-2026-10-21-keralty-sin-datos.md`.
+
+**Criterio de aceptación.** Con dos o más paneles en `ERROR` con el mismo
+mensaje, un aviso sobre la grilla dice cuántos son y ofrece reintentarlos en
+una sola vuelta. Cada uno de esos paneles apunta al aviso y no repite el texto.
+El texto del servicio sólo lo ve quien administra. Un solo panel con error
+sigue diciendo lo suyo.
+
+**Verificado el 2026-10-21** · mirado en local con los paneles de un cliente en
+`ERROR` con el texto de Keralty. Pruebas en
+`tests/surfaces/console/fallaComun.test.tsx`; ocho mutaciones mueren, entre ellas
+cortar la cadena en cada uno de sus tres saltos.
+
+### ➕ F5.54 ✅ Un mes que falló no cae al anterior
+
+**Descripción.** Con todos los paneles del mes abierto en `ERROR`, la consola
+caía al mes anterior y decía «todavía no tiene datos calculados». La caída es
+para un mes sin calcular, no para uno que falló.
+
+**Criterio de aceptación.** Si algún panel del mes abierto está en `ERROR`, la
+consola se queda en ese mes. Sin cifra y sin error, cae como antes.
+
+**Verificado el 2026-10-21** · `tests/surfaces/console/mesNuevoSinDato.test.tsx`;
+la mutación que vuelve a la regla anterior muere.
+
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
 **Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio

@@ -255,10 +255,15 @@ export function ConsoleContainer() {
     if (!batch.isSuccess) return
     if (siguiente === undefined) return
 
-    const conValor = Object.values(batch.data ?? {}).some(
-      (pl) => pl.estado === 'DISPONIBLE' || pl.estado === 'DEGRADADO',
-    )
-    if (!conValor) setCaidoA(siguiente.id)
+    const lote = Object.values(batch.data ?? {})
+    const conValor = lote.some((pl) => pl.estado === 'DISPONIBLE' || pl.estado === 'DEGRADADO')
+    // **Un mes que FALLÓ no está vacío** · 2026-10-21, visto en QA con Keralty:
+    // los doce paneles en `ERROR`, la consola caía a septiembre —que fallaba
+    // igual— y decía «2026-10 todavía no tiene datos calculados», que es falso.
+    // La caída es para el mes que todavía no se calculó; si algo falló, se
+    // muestra el mes abierto con su falla.
+    const conFalla = lote.some((pl) => pl.estado === 'ERROR')
+    if (!conValor && !conFalla) setCaidoA(siguiente.id)
   }, [periodId, caidoA, batch.isSuccess, batch.data, siguiente])
 
   /** Qué contarle a quien mira, cuando se cayó. Ausente si no se cayó: el aviso
@@ -570,6 +575,7 @@ export function ConsoleContainer() {
         })
       }}
       onRetryPanel={(panelId) => retryPanel.mutate(panelId)}
+      onRetryPanels={(panelIds) => retryPanel.mutate(panelIds)}
       onAskPanel={(panelId) => {
         // **Abrir el chat cierra el detalle**, y al revés también. Es la
         // exclusión que hace que no haya dos hojas abiertas, escrita en los
