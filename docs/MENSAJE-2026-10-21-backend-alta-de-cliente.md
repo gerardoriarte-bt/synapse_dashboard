@@ -57,16 +57,63 @@ rol, como mínimo. Hoy un error en el alta no tiene arreglo sin tocar la base.
 «`exists: false`» no distingue «no existe» de «no lo veo», y es la respuesta que
 se ve en pantalla.
 
-**4 · Decidir cómo se consulta un cliente que no es UA.** Las tablas salen de
-`DD_SNOWFLAKE_ECOMM_TABLE` y `DD_SNOWFLAKE_PAID_MEDIA_TABLE`, iguales para todos
-los clientes, y el SQL de cada métrica pide las columnas de UA. Keralty y Terpel
-no son e-commerce. Es B1.26 del plan: «decidir cómo escala el registro antes del
-segundo tenant». Las dos salidas que vemos:
-- una vista por cliente que traduzca sus datos a la forma de UA;
-- consultas configurables por cliente.
+**4 · Decidir cómo se consulta un cliente que no es UA.** Es B1.26 del plan,
+«decidir cómo escala el registro antes del segundo tenant». Está abierta en
+nuestro plan desde septiembre y no sabemos si la tienen en su seguimiento, así
+que va entera. Keralty y Terpel son ese segundo cliente. El
+detalle va abajo.
 
-Ustedes deciden; nos sirve saber cuál, porque de eso depende qué pantallas de
-alta construimos.
+## B1.26 · el detalle
+
+**El problema.** Lo que una métrica ES vive en dos lugares que nadie mantiene
+juntos:
+
+- **El catálogo**, en Snowflake: la vista `SYNAPSE_METRIC_CATALOG` de cada
+  cliente dice qué métricas tiene, con su gobierno.
+- **El registro de consultas**, en Go: `MetricRegistry`, en
+  `internal/core/dashboard/snowflake/queries.go`, tiene **17 métricas** con su
+  forma y su SQL, escrito para el modelo de UA.
+
+**El puente entre los dos es un mapa a mano**, `catalogKeyAliases` en `keys.go`,
+con **8 entradas** (`sales → revenue`, `investment → spend`…). Una métrica del
+catálogo cuya clave no esté en el registro ni en el mapa no encuentra consulta y
+sale bloqueada. Con un cliente se sostiene; con el segundo deja de sostenerse.
+
+**Y las tablas son las mismas para todos.** El registro lee cinco tablas
+—`GLD_ECOMM_DAILY_PERFORMANCE`, `GLD_PAID_MEDIA`, `GLD_PRODUCTO_ANALYTICS` y las
+dos de redes sociales—. Sus nombres salen de variables `DD_SNOWFLAKE_*_TABLE`
+que valen para todos los clientes, y las columnas están escritas dentro del SQL.
+Sólo cambian la base y el esquema, que salen del agente de cada cliente.
+
+Medido leyendo `30c5c50` el 2026-10-21.
+
+**Las dos salidas**, con su costo, como están en
+`docs/snowflake/CONTRATO-DE-TENANT.md` §7:
+
+| | A · contrato de forma | B · el registro pasa a ser dato |
+|---|---|---|
+| Qué es | Cada cliente expone en Snowflake vistas con los nombres y las columnas de UA, que traducen lo que tenga | `MetricRegistry` sale de Go a una tabla por cliente: cada métrica con su SQL |
+| Costo | Barato: no cambia el código | Caro: cambia el materializador |
+| Límite | Rígido: un cliente sin presupuesto no tiene `goal_attainment`, y un cliente que no es e-commerce tiene que fingir que lo es | Flexible: la clave del catálogo **es** la del registro, y el mapa de alias desaparece |
+| Quién escribe la consulta | Datos, en la vista | Quien da de alta el cliente |
+
+**Lo que pedimos que quede decidido**, que es el criterio de B1.26:
+
+1. **Cuál de las dos, con su razón.** No elegida por omisión al dar de alta el
+   segundo cliente, que es lo que está pasando ahora.
+2. **Si es A, B queda como destino y con fecha.** A sin fecha para B es como el
+   mapa de alias llega a cuarenta entradas.
+3. **Si es A, qué pasa con un cliente al que le falta una columna.** Hoy el
+   panel sale en error con el SQL de Snowflake. Tiene que decir qué falta y qué
+   lo desbloquea.
+4. **Quién es dueño de la vista de cada cliente.** Hoy la sincronización del
+   catálogo asume que existe, y en Keralty y Terpel no existe.
+
+**Para Keralty y Terpel, A no alcanza.** No son e-commerce: «ventas», «pedidos»
+y «ROAS» no son sus métricas, y una vista que los traduzca a eso no les dice
+nada. Nos parece que el alta de un cliente que no es UA necesita B, o algo
+cercano. La decisión es de ustedes; de ella depende qué pantallas de alta
+construimos.
 
 ## Lo que hace el front cuando esto esté
 
