@@ -601,6 +601,14 @@ en `docs/AUDITORIA-2026-10-21-conexion-por-cliente.md`:
 2026-10-21**, igual que `MENSAJE-2026-10-21-datos-keralty-y-terpel.md`. **Lo que
 sigue es esperar, no volver a pedirlo**: el despliegue del backend y el rol de
 cada cliente de datos. Con los dos, se carga el rol desde la ficha y se verifica.
+
+**Desplegado en QA la tarde del 21, y el rol NO era el problema** ·
+`docs/AUDITORIA-2026-10-21-keralty-con-su-rol.md`. Keralty ya tenía su rol
+(`RL_HNO_KY_BI`) y con él no ve ninguna de las tres tablas; Terpel tampoco, con
+`SYSADMIN`. Lo que falta son las tablas y la vista del catálogo, de datos. Y
+apareció otra cosa: los dos clientes se conectan con un **usuario personal**,
+el mismo, y Terpel con `SYSADMIN`. Pedido en
+`docs/MENSAJE-2026-10-21-datos-usuario-y-rol-de-servicio.md`, lo manda el humano.
 **La conexión en la ficha ya está construida** · F5.55, rama
 `front/conexion-del-cliente`. Es «Conexión · equipo interno», dentro de «Acceso
 a datos», y **sólo con alcance de plataforma**: un admin de cliente sigue sin
