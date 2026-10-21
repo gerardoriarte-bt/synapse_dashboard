@@ -1,4 +1,4 @@
-# Auditoría · por qué Keralty no muestra datos en QA · 2026-10-21
+# Auditoría · por qué Keralty y Terpel no muestran datos en QA · 2026-10-21
 
 > **Histórico.** Un cruce puntual, con fecha. No se actualiza.
 
@@ -22,6 +22,17 @@
 | Catálogo | Las 12 métricas de la semilla, `catalog_version: 1`: nunca se sincronizó desde Snowflake |
 | Fuentes | Cuatro, las cuatro `unknown`: `erp → ecomm`, `ads_api → paid_media`, y dos sin tabla |
 | Agente del chat | «Keralty», sólo para el rol `Planner` |
+
+**Terpel es el mismo caso**, medido igual el mismo día: «Lobueno Analytics
+Terpel» tiene los 12 paneles en `ERROR`, el mismo rol `RL_BT_UA_BI` y las mismas
+dos tablas de UA dentro de `DB_BT_TERPEL_COMBS.BT_TERPEL_COMBS_MART_ANALYTICS`.
+Catálogo de la semilla y «Overview», igual que Keralty. «Lobueno Analytics», el
+de UA, tiene los 12 `AVAILABLE`.
+
+**`GET /admin/tenants/{tenantId}/schema-check`** —una lectura— da `ok: false` en
+los dos: `GLD_ECOMM_DAILY_PERFORMANCE`, `GLD_PAID_MEDIA` y
+`SYNAPSE_METRIC_CATALOG` con `exists: false`. **Corre con el mismo rol**, así que
+eso no distingue «no existe» de «no lo ve».
 
 ## 2 · Por qué, leído en su código
 
@@ -49,7 +60,12 @@ Ver `docs/snowflake/CONTRATO-DE-TENANT.md`. **Es B1.26** —«decidir cómo esca
 el registro, antes del segundo tenant»—, que sigue abierta. Keralty es ese
 segundo cliente.
 
-**2.3 · No sabemos si las tablas existen.** El mensaje de Snowflake dice
+**2.3 · La conexión no se puede corregir desde la plataforma.**
+`PUT /admin/tenants/{tenantId}` edita nombre, forma corta, locale, moneda y zona;
+su comentario dice que las credenciales de Snowflake no se tocan por ahí. Un rol
+mal cargado en el alta no tiene arreglo desde la pantalla.
+
+**2.4 · No sabemos si las tablas existen.** El mensaje de Snowflake dice
 «does not exist **or** not authorized» y no distingue. Lo sabe quien pueda
 consultar esa base con un rol que la vea.
 
@@ -58,14 +74,17 @@ consultar esa base con un rol que la vea.
 | # | Qué | De quién |
 |---|---|---|
 | 1 | Que la conexión use el rol de Snowflake de cada cliente | Backend · §2.1 |
-| 2 | Que el rol de Keralty pueda leer `DB_HNO_KERALTY.HNO_KY_MART_ANALYTICS` | Datos |
-| 3 | Saber si ahí existen tablas con esa forma, o cuáles hay | Datos · §2.3 |
+| 1b | Que la conexión se pueda corregir desde la plataforma, y que `schema-check` diga con qué rol miró | Backend · §2.3 |
+| 2 | Que los roles de Keralty y de Terpel puedan leer sus bases | Datos |
+| 3 | Saber si ahí existen tablas con esa forma, o cuáles hay | Datos · §2.4 |
 | 4 | Decidir cómo consulta Synapse a un cliente que no tiene el modelo de UA: una vista que lo traduzca, o consultas por cliente | Backend y datos · B1.26 |
 | 5 | La vista `SYNAPSE_METRIC_CATALOG` de Keralty, y sincronizar el catálogo | Datos |
 | 6 | Qué métricas y qué dashboard tiene Keralty: hoy ve el de e-commerce de UA | Producto |
 
-**El 1 y el 2 destraban la conexión. Del 3 al 6 es el alta de un cliente que no
-es e-commerce**, y no tienen arreglo rápido. La receta de alta escrita para UA
+**El objetivo es el alta de un cliente**: que un `superadmin` lo conecte y lo
+vea funcionar desde la plataforma. El 1 y el 2 destraban la conexión; del 3 al 6
+es el alta de un cliente que no es e-commerce, y no tienen arreglo rápido. Los
+pedidos al backend están en `MENSAJE-2026-10-21-backend-alta-de-cliente.md`. La receta de alta escrita para UA
 está en `docs/snowflake/INSTRUCCION-ALTA-TENANT.md`, y el inventario que hace
 falta antes de definir métricas en `docs/snowflake/COMO-ENTREGAR-UNA-METRICA.md`.
 
