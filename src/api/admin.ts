@@ -998,6 +998,29 @@ export const adminApi = {
     })
   },
 
+  /** **La conexión de Snowflake del cliente** · F5.55, 2026-10-21 · el mismo
+   *  `PUT` de la forma corta, desde `26eae4b`.
+   *
+   *  **Viaja sólo lo que se escribió.** Para el servicio, ausente es «sin
+   *  cambio» y la cadena vacía es un 400, así que un campo que se deja en
+   *  blanco no se manda: mandarlo vacío no borraría nada y daría error.
+   *
+   *  **Devuelve cómo quedó**, que es la única forma de leer la cuenta y la URL:
+   *  `GET /admin/tenants` no trae la conexión. */
+  editarConexion: async (tenantId: string, cambio: CambioDeConexion): Promise<ConexionGuardada> => {
+    const cuerpo: Record<string, string> = {}
+    for (const [campo, clave] of CAMPOS_DE_CONEXION) {
+      const valor = cambio[campo]?.trim() ?? ''
+      if (valor !== '') cuerpo[clave] = valor
+    }
+    return adaptarConexion(
+      await pedir<WireTenantSettings>(`/admin/tenants/${encodeURIComponent(tenantId)}`, {
+        method: 'PUT',
+        body: JSON.stringify(cuerpo),
+      }),
+    )
+  },
+
   /** Las solicitudes PENDIENTES · la cola de A3. Una página de 100: la cola
    *  pendiente es corta por naturaleza, y si algún día no entra, el total que
    *  manda el servicio lo va a decir. */
@@ -1312,8 +1335,55 @@ export type WireAgent = A['AgentAdmin']
 export type WireFeed = A['Feed']
 export type WireMaterializeRun = A['MaterializeRun']
 export type WireUser = A['User']
-/** Lo que `PUT /admin/tenants/{tenantId}` devuelve y el front lee · F5.47. */
-export type WireTenantSettings = { id: string; name: string; label: string }
+/** Lo que `PUT /admin/tenants/{tenantId}` devuelve y el front lee · F5.47 y,
+ *  la conexión, F5.55. Opcionales porque un servicio anterior a `26eae4b`
+ *  igual las manda, pero el yaml no las exige. */
+export type WireTenantSettings = {
+  id: string
+  name: string
+  label: string
+  snowflake_url?: string
+  snowflake_account?: string
+  snowflake_user?: string
+  snowflake_role?: string
+  has_private_key?: boolean
+}
+
+/** **La conexión de Snowflake del cliente** · F5.55, 2026-10-21.
+ *
+ *  **Es vocabulario de infraestructura, y por eso tiene tipo propio**: §7.3
+ *  la saca de administración, y la única pantalla que la lee es la sección
+ *  del equipo interno, que se pinta sólo con alcance de plataforma. */
+export type ConexionGuardada = {
+  cuenta: string
+  usuario: string
+  rol: string
+  url: string
+  /** Si hay clave privada cargada. La clave no viaja nunca. */
+  tieneClave: boolean
+}
+
+/** Lo que se quiere cambiar · un campo ausente o en blanco no se manda. */
+export type CambioDeConexion = Partial<Record<'cuenta' | 'usuario' | 'rol' | 'url', string>>
+
+/** Las claves del cuerpo del `PUT` · se mandan, no se muestran. */
+const CAMPOS_DE_CONEXION = [
+  ['cuenta', 'snowflake_account'],
+  ['usuario', 'snowflake_user'],
+  // design-lint-ok: L11 · clave del cuerpo del `PUT`, no texto en pantalla
+  ['rol', 'snowflake_role'],
+  ['url', 'snowflake_url'],
+] as const
+
+export function adaptarConexion(w: WireTenantSettings): ConexionGuardada {
+  return {
+    cuenta: w.snowflake_account ?? '',
+    usuario: w.snowflake_user ?? '',
+    rol: w.snowflake_role ?? '',
+    url: w.snowflake_url ?? '',
+    tieneClave: w.has_private_key ?? false,
+  }
+}
 export type WireUsersPlatform = A['UsersPlatform']
 export type WireSchemaCheck = A['SchemaCheck']
 
@@ -1331,6 +1401,18 @@ export type VerificacionDeAcceso = {
   /** Claves del catálogo sin cálculo · no es un problema de acceso. */
   sinCalculo: string[]
   verificadoEn: string
+  /** **Lo que sólo ve el equipo interno** · F5.55, 2026-10-21.
+   *
+   *  Va aparte y con este nombre para que leerlo sea una decisión visible: lo
+   *  lee sólo la sección «Conexión · equipo interno», que se pinta con alcance
+   *  de plataforma. La base y el esquema siguen sin pasar — el rol y los
+   *  objetos alcanzan para saber qué falta. */
+  infraestructura: {
+    /** `null` con un servicio anterior a `26eae4b`, que no lo dice. */
+    usuario: string | null
+    rol: string | null
+    objetos: { nombre: string; tipo: 'tabla' | 'vista'; existe: boolean; faltan: string[] }[]
+  }
 }
 
 export function adaptarVerificacion(w: WireSchemaCheck): VerificacionDeAcceso {
@@ -1339,6 +1421,18 @@ export function adaptarVerificacion(w: WireSchemaCheck): VerificacionDeAcceso {
     afectadas: w.affected_metrics,
     sinCalculo: w.keys_without_query,
     verificadoEn: w.checked_at,
+    infraestructura: {
+      // **Vacío es «no lo dijo»**, igual que ausente: el servicio recorta el
+      // rol, y un rol vacío es el por defecto del usuario, que no se nombra.
+      usuario: w.snowflake_user === undefined || w.snowflake_user === '' ? null : w.snowflake_user,
+      rol: w.snowflake_role === undefined || w.snowflake_role === '' ? null : w.snowflake_role,
+      objetos: w.objects.map((o) => ({
+        nombre: o.name,
+        tipo: o.kind === 'view' ? 'vista' : 'tabla',
+        existe: o.exists,
+        faltan: o.missing,
+      })),
+    },
   }
 }
 

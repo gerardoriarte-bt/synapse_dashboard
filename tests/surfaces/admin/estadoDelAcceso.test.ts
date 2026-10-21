@@ -32,9 +32,18 @@ const medidaEnUA: WireSchemaCheck = {
 
 describe('el adaptador recorta la plomería', () => {
   it('ni base, ni esquema, ni nombres de tabla llegan a la pantalla', () => {
-    const v = JSON.stringify(adaptarVerificacion(medidaEnUA))
+    // **Desde F5.55 los nombres de objeto viajan, pero SÓLO en
+    // `infraestructura`**, que lee la sección del equipo interno y nadie más.
+    // Lo que el admin del cliente ve —la consecuencia— sigue sin ninguno, y la
+    // base y el esquema no pasan a ningún lado.
+    const { infraestructura, ...consecuencia } = adaptarVerificacion(medidaEnUA)
+    const v = JSON.stringify(consecuencia)
     for (const plomeria of ['DB_BT_UA', 'BT_UA_MART_ANALYTICS', 'GLD_PAID_MEDIA', 'SYNAPSE_METRIC_CATALOG']) {
       expect(v).not.toContain(plomeria)
+    }
+    const interna = JSON.stringify(infraestructura)
+    for (const plomeria of ['DB_BT_UA', 'BT_UA_MART_ANALYTICS']) {
+      expect(interna).not.toContain(plomeria)
     }
   })
 
