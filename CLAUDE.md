@@ -598,8 +598,12 @@ en `docs/AUDITORIA-2026-10-21-conexion-por-cliente.md`:
 
 **Falta desplegarlo**, y el pedido es
 `docs/MENSAJE-2026-10-21-backend-desplegar-la-conexion.md`. Lo manda el humano.
-**Lo nuestro que se destrabó, sin tomar:** la conexión en la ficha, dibujada en
-`A2 · Ficha · tenant en alta`.
+**La conexión en la ficha ya está construida** · F5.55, rama
+`front/conexion-del-cliente`. Es «Conexión · equipo interno», dentro de «Acceso
+a datos», y **sólo con alcance de plataforma**: un admin de cliente sigue sin
+ver plomería (§7.3). El `.pen` dice «esta pantalla no la modifica», y la
+divergencia está en `docs/PROPUESTA-2026-10-21-conexion-del-equipo-interno.md`.
+Mirada en local contra `26eae4b`; en QA espera el despliegue.
 
 ### ⇩ ACÁ SE PARÓ · 2026-10-20 (tarde) · la consola salta de cliente
 

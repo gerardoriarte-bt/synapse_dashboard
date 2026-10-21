@@ -68,8 +68,19 @@ export interface paths {
         };
         get?: never;
         /**
-         * Editar la ficha del cliente · nombre, forma corta, locale, moneda y huso
-         * @description **Medida el 2026-10-20 contra el binario de `7324b26`**, con la base
+         * Editar la ficha del cliente y su conexión de Snowflake
+         * @description **La conexión se edita desde `26eae4b`** · medido el 2026-10-21 contra
+         *     su binario, con la base local. Cuenta, usuario, rol y URL viajan cada
+         *     uno si se quiere cambiar: **ausente = sin cambio, cadena vacía = 400** y
+         *     no borra lo anterior —medido con `snowflake_role`, `snowflake_account` y
+         *     `snowflake_user`—. Una URL que no es de `snowflakecomputing.com` da
+         *     **400**, medido con una de Snowsight. Los espacios se recortan. **La
+         *     clave privada no entra por acá**: es `POST /admin/tenants/{tenantId}/service-key`.
+         *
+         *     **La usa «Conexión · equipo interno» de la ficha** · F5.55, que sólo se
+         *     pinta con alcance de plataforma. Ver §7.3 en la propuesta del 2026-10-21.
+         *
+         *     **Medida el 2026-10-20 contra el binario de `7324b26`**, con la base
          *     local: `label` puesto y vuelto a vacío, un id que no es UUID (**400**) y
          *     uno que no existe (**404** «tenant no encontrado»).
          *
@@ -742,6 +753,11 @@ export interface paths {
          *
          *     **`database`, `schema` y `objects[].name` no se muestran** · §7.3: son
          *     vocabulario de infraestructura. El adaptador los recorta.
+         *
+         *     **Salvo al equipo interno, desde `26eae4b`** · medido el 2026-10-21:
+         *     trae `snowflake_user` y `snowflake_role`, la identidad con la que miró.
+         *     `exists: false` sigue sin separar «no existe» de «este rol no lo ve».
+         *     Los dos son opcionales acá porque un servicio anterior no los manda.
          */
         get: operations["checkTenantSchema"];
         put?: never;
@@ -1114,6 +1130,10 @@ export interface components {
             catalog_source: "view" | "postgres";
             /** Format: date-time */
             checked_at: string;
+            /** @description Con quién se miró · desde `26eae4b` */
+            snowflake_user?: string;
+            /** @description Con qué rol se miró · desde `26eae4b` */
+            snowflake_role?: string;
         };
         AccessRequestPage: {
             items: components["schemas"]["AccessRequest"][];
@@ -2235,6 +2255,11 @@ export interface operations {
                     locale?: string;
                     currency?: string;
                     timezone?: string;
+                    /** @description Host de `snowflakecomputing.com` · otro da 400 */
+                    snowflake_url?: string;
+                    snowflake_account?: string;
+                    snowflake_user?: string;
+                    snowflake_role?: string;
                 };
             };
         };
@@ -2251,6 +2276,11 @@ export interface operations {
                             id: string;
                             name: string;
                             label: string;
+                            snowflake_url?: string;
+                            snowflake_account?: string;
+                            snowflake_user?: string;
+                            snowflake_role?: string;
+                            has_private_key?: boolean;
                         };
                     };
                 };

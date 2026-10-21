@@ -8298,6 +8298,26 @@ consola se queda en ese mes. Sin cifra y sin error, cae como antes.
 **Verificado el 2026-10-21** · `tests/surfaces/console/mesNuevoSinDato.test.tsx`;
 la mutación que vuelve a la regla anterior muere.
 
+### ➕ F5.55 ✅ El equipo interno corrige la conexión del cliente
+
+**Descripción.** Keralty y Terpel consultaban con el rol de UA y corregirlo
+era un `curl`. Con `26eae4b` el `PUT /admin/tenants/{tenantId}` acepta cuenta,
+usuario, rol y URL, y `schema-check` dice con qué rol miró. La ficha suma
+«Conexión · equipo interno», dentro de «Acceso a datos», **sólo con alcance de
+plataforma**: §7.3 deja esa capa al equipo interno, y `superadmin` es de
+asignación interna —decisión humana del 2026-10-20—.
+
+**Criterio de aceptación.** Un admin de un cliente no ve la sección. Con alcance
+de plataforma se ve con qué usuario y rol se verificó y qué objetos no
+aparecen, sin decir «no existe». Guardar manda sólo los campos escritos y
+vuelve a verificar.
+
+**Verificado el 2026-10-21** · `tests/surfaces/admin/conexion.test.tsx`; cinco
+mutaciones —mostrarla a todos, mandar los vacíos, no verificar al guardar,
+«no existe», no vaciar el formulario— mueren. Mirada contra `26eae4b` en local.
+La divergencia con el `.pen` está en
+`docs/PROPUESTA-2026-10-21-conexion-del-equipo-interno.md`.
+
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
 **Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio
