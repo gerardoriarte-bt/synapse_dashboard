@@ -574,6 +574,33 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-10-21 · el alta de un cliente, de punta a punta
+
+**Keralty y Terpel no muestran datos en QA**: los 12 paneles en `ERROR`, con el
+rol de Snowflake de UA (`RL_BT_UA_BI`) buscando las tablas de UA en sus bases.
+Medido y leído en `docs/AUDITORIA-2026-10-21-keralty-sin-datos.md`.
+
+**El objetivo, decidido por el humano: que un `superadmin` pueda dar de alta un
+cliente y verlo funcionar desde la plataforma.** Lo que falta es del backend
+—el rol del cliente no se manda, la conexión no se edita, B1.26— y de datos
+—permisos, inventario de tablas, catálogo—. **Lo mandan los dos mensajes del
+21, y lo manda el humano**: `MENSAJE-2026-10-21-backend-alta-de-cliente.md` y
+`MENSAJE-2026-10-21-datos-keralty-y-terpel.md`. Las pantallas del alta no se
+construyen hasta saber cómo se consulta un cliente que no es UA.
+
+**El backend contestó el mismo día con `26eae4b`**, medido en local y anotado
+en `docs/AUDITORIA-2026-10-21-conexion-por-cliente.md`:
+
+- La consulta manda el rol del cliente.
+- El `PUT /admin/tenants/{tenantId}` corrige cuenta, usuario, rol y URL.
+- `schema-check` dice con qué rol miró.
+- **B1.26: se queda A, B sin fecha.** No se construye un editor de consultas.
+
+**Falta desplegarlo**, y el pedido es
+`docs/MENSAJE-2026-10-21-backend-desplegar-la-conexion.md`. Lo manda el humano.
+**Lo nuestro que se destrabó, sin tomar:** la conexión en la ficha, dibujada en
+`A2 · Ficha · tenant en alta`.
+
 ### ⇩ ACÁ SE PARÓ · 2026-10-20 (tarde) · la consola salta de cliente
 
 **El backend contestó con `d794a3e`**: el rol `superadmin` reemplaza a
