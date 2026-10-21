@@ -588,6 +588,19 @@ cliente y verlo funcionar desde la plataforma.** Lo que falta es del backend
 `MENSAJE-2026-10-21-datos-keralty-y-terpel.md`. Las pantallas del alta no se
 construyen hasta saber cómo se consulta un cliente que no es UA.
 
+**El backend contestó el mismo día con `26eae4b`**, medido en local y anotado
+en `docs/AUDITORIA-2026-10-21-conexion-por-cliente.md`:
+
+- La consulta manda el rol del cliente.
+- El `PUT /admin/tenants/{tenantId}` corrige cuenta, usuario, rol y URL.
+- `schema-check` dice con qué rol miró.
+- **B1.26: se queda A, B sin fecha.** No se construye un editor de consultas.
+
+**Falta desplegarlo**, y el pedido es
+`docs/MENSAJE-2026-10-21-backend-desplegar-la-conexion.md`. Lo manda el humano.
+**Lo nuestro que se destrabó, sin tomar:** la conexión en la ficha, dibujada en
+`A2 · Ficha · tenant en alta`.
+
 ### ⇩ ACÁ SE PARÓ · 2026-10-20 (tarde) · la consola salta de cliente
 
 **El backend contestó con `d794a3e`**: el rol `superadmin` reemplaza a
