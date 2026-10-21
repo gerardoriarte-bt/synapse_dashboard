@@ -22,6 +22,9 @@ import { BarraDeCliente } from '../BarraDeCliente'
 import { Accion } from '../../render/primitives/Accion'
 import type { ClienteVisible } from '../clienteVisible'
 import { ConsoleDock } from './ConsoleDock'
+import { AvisoDeFalla } from './AvisoDeFalla'
+import { fallaComun } from './fallaComun'
+import { esAdmin } from '../../api/rol'
 import type { Formatter } from '../../render/format'
 import type { Theme } from '../../tokens/theme'
 import type { AppContext, Metric, PanelConfig, Payload, Tab } from '../../api/types'
@@ -59,6 +62,8 @@ type Props = {
   /** Reintento de UN panel · F2.4. Lleva el `panelId` porque el reintento es
    *  de ese panel y no del batch: los otros ya cargaron bien. */
   onRetryPanel?: (panelId: string) => void
+  /** Reintento de VARIOS paneles en una vuelta · el aviso de una falla común. */
+  onRetryPanels?: ((panelIds: string[]) => void) | undefined
   /** «Preguntar» · F3.3. Lleva el `panelId` porque el contexto del chat es el
    *  panel desde el que se preguntó: `panel_context: {panel_id, period}`.
    *
@@ -123,6 +128,7 @@ export function Console({
   onSelectPeriod,
   onChangeTheme,
   onRetryPanel,
+  onRetryPanels,
   onAskPanel,
   onDrillPanel,
   canDrill,
@@ -149,6 +155,10 @@ export function Console({
   const activoId = clienteActivo ?? sesion.id
   const activo = clientes.find((c) => c.id === activoId) ?? sesion
   const otroCliente = activo.id !== sesion.id ? activo : null
+
+  /** **Una falla repetida se dice una vez** · 2026-10-21 · `fallaComun.ts`. */
+  const falla = fallaComun(panels.map((p) => ({ id: p.id, payload: payloadOf(p.id) })))
+  const agrupados = new Set(falla?.paneles ?? [])
 
   // Un solo `now` para toda la pantalla. Si cada panel llamara a `new Date()`,
   // dos paneles del mismo lote podrían escribir frescuras distintas para la
@@ -237,6 +247,12 @@ export function Console({
       {otroCliente === null && (
       <>
 
+      {falla !== null && (
+        <div className="px-6 pt-6">
+          <AvisoDeFalla falla={falla} conDetalle={esAdmin(context.role)} onReintentar={onRetryPanels} />
+        </div>
+      )}
+
       {/* El cuerpo sí lleva el padding de la grilla · §4. */}
       <div className="p-6" style={gridStyle(columns)}>
         {/* **Se reordena SOLO con la grilla colapsada** · §ANCLA:RESP-3, que lo
@@ -312,6 +328,7 @@ export function Console({
               format={format}
               now={now}
               {...(onRetryPanel === undefined ? {} : { onRetry: () => onRetryPanel(panel.id) })}
+              errorAgrupado={agrupados.has(panel.id)}
               {...(onAskPanel === undefined ? {} : { onChat: () => onAskPanel(panel.id) })}
               {...(verDetalle === undefined ? {} : { onDrill: verDetalle })}
               {...(plotProblemOf?.(panel.id) === undefined ? {} : { plotProblem: plotProblemOf(panel.id) as PlotProblem })}

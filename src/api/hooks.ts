@@ -284,7 +284,9 @@ export function useChatAgents(enabled: boolean) {
 export function useRetryPanel(tabId: string | null, period: string) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (panelId: string) => api.panelsBatch([panelId], period),
+    // Uno o varios: el aviso de una falla común reintenta los suyos en una vuelta.
+    mutationFn: (panelIds: string | readonly string[]) =>
+      api.panelsBatch(typeof panelIds === 'string' ? [panelIds] : [...panelIds], period),
     onSuccess: (fresco) => {
       client.setQueryData(
         keys.panels(tabId ?? '', period),

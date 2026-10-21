@@ -166,6 +166,20 @@ describe('las dos cosas que NO son «un mes sin dato»', () => {
     expect(screen.queryByText(/todavía no tiene datos calculados/i)).toBeNull()
   })
 
+  it('un mes que FALLÓ no es un mes sin dato · se queda, con su falla', async () => {
+    // **Visto en QA con Keralty el 2026-10-21**: todo en `ERROR`, caía a
+    // septiembre y decía «todavía no tiene datos calculados», que era falso.
+    const pedidos = servir({
+      '2026-10': { status: 'ERROR', message: 'El almacén no respondió.' },
+      '2026-09': CON_CIFRA,
+    })
+    montar()
+
+    expect(await screen.findByText('El almacén no respondió.')).toBeInTheDocument()
+    expect(screen.queryByText(/todavía no tiene datos calculados/i)).toBeNull()
+    expect(pedidos).not.toContain('2026-09')
+  })
+
   it('una pestaña SIN paneles no es un mes sin dato', async () => {
     // **La otra mutación que sobrevivió.** Sin la guarda de `panels.length`, un
     // batch vacío se lee como «ningún panel con valor» y la consola cae al mes

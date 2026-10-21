@@ -42,6 +42,8 @@ type Props = {
   onDrill?: () => void
   onChat?: () => void
   onRetry?: () => void
+  /** Su error ya se dijo en el aviso de arriba · `fallaComun.ts`. */
+  errorAgrupado?: boolean
 }
 
 export function PanelInGrid({
@@ -56,6 +58,7 @@ export function PanelInGrid({
   onChat,
   onRetry,
   plotProblem,
+  errorAgrupado = false,
 }: Props) {
   return (
     <Panel
@@ -68,6 +71,7 @@ export function PanelInGrid({
       {...(onDrill === undefined ? {} : { onDrill })}
       {...(onChat === undefined ? {} : { onChat })}
       {...(onRetry === undefined ? {} : { onRetry })}
+      errorAgrupado={errorAgrupado}
       {...(panel.nota === undefined ? {} : { nota: panel.nota })}
     >
       {body()}

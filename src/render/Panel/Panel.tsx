@@ -35,6 +35,9 @@ type Props = {
   onRetry?: () => void
   onUnblock?: () => void
   onRequestAccess?: () => void
+  /** **Su error es el mismo que el de otros paneles** y ya se dijo arriba · ver
+   *  `ErrorState`. */
+  errorAgrupado?: boolean
   /** La nota de lectura del panel · va al shell. */
   nota?: string
   /** El cuerpo ya resuelto. Solo se pinta en DISPONIBLE y DEGRADADO — los dos
@@ -55,6 +58,7 @@ export function Panel({
   onRetry,
   onUnblock,
   onRequestAccess,
+  errorAgrupado = false,
   nota,
   children,
 }: Props) {
@@ -122,6 +126,7 @@ export function Panel({
         return (
           <ErrorState
             message={payload.mensaje}
+            agrupado={errorAgrupado}
             {...(onRetry === undefined ? {} : { onRetry })}
           />
         )
