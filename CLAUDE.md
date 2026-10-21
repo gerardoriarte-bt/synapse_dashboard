@@ -597,9 +597,16 @@ en `docs/AUDITORIA-2026-10-21-conexion-por-cliente.md`:
 - **B1.26: se queda A, B sin fecha.** No se construye un editor de consultas.
 
 **Falta desplegarlo**, y el pedido es
-`docs/MENSAJE-2026-10-21-backend-desplegar-la-conexion.md`. Lo manda el humano.
-**Lo nuestro que se destrabó, sin tomar:** la conexión en la ficha, dibujada en
-`A2 · Ficha · tenant en alta`.
+`docs/MENSAJE-2026-10-21-backend-desplegar-la-conexion.md`, **enviado el
+2026-10-21**, igual que `MENSAJE-2026-10-21-datos-keralty-y-terpel.md`. **Lo que
+sigue es esperar, no volver a pedirlo**: el despliegue del backend y el rol de
+cada cliente de datos. Con los dos, se carga el rol desde la ficha y se verifica.
+**La conexión en la ficha ya está construida** · F5.55, rama
+`front/conexion-del-cliente`. Es «Conexión · equipo interno», dentro de «Acceso
+a datos», y **sólo con alcance de plataforma**: un admin de cliente sigue sin
+ver plomería (§7.3). El `.pen` dice «esta pantalla no la modifica», y la
+divergencia está en `docs/PROPUESTA-2026-10-21-conexion-del-equipo-interno.md`.
+Mirada en local contra `26eae4b`; en QA espera el despliegue.
 
 ### ⇩ ACÁ SE PARÓ · 2026-10-20 (tarde) · la consola salta de cliente
 

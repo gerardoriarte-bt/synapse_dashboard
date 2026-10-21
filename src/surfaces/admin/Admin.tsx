@@ -48,6 +48,7 @@ import {
   useSaveRole,
   useMe,
   useEditTenantShortName,
+  useEditTenantConnection,
   useTenants,
   useSaveTheme,
 } from '../../api/hooks'
@@ -55,6 +56,7 @@ import { AdminChrome } from './AdminChrome'
 import { CatalogView } from './CatalogView'
 import { FeedHealth } from './FeedHealth'
 import { RunHistory } from './RunHistory'
+import { ConexionDeDatos } from './ConexionDeDatos'
 import { CargarPeriodos } from './CargarPeriodos'
 import { ESPERA_MAXIMA_MS, faltanPorTerminar, hayQueEsperar, mesEnCurso, mesesCargados, mesesEnCurso } from './cargaDePeriodos'
 import type { Pedido } from './cargaDePeriodos'
@@ -213,6 +215,13 @@ export function Admin() {
   const usuariosDelCliente = useUsers(activo)
   /** La forma corta del cliente activo · F5.47. */
   const editarFormaCorta = useEditTenantShortName()
+  /** **La conexión, sólo para el equipo interno** · F5.55. `superadmin` es de
+   *  asignación interna —decisión humana del 2026-10-20— y es el único con
+   *  alcance de plataforma, así que es la condición de §7.3 escrita en código. */
+  const editarConexion = useEditTenantConnection()
+  const delEquipoInterno = contexto.data?.alcance === 'plataforma'
+  /** **Lo guardado es de UN cliente**: cambiar de cliente no lo arrastra. */
+  const conexionDelActivo = editarConexion.variables?.tenantId === activo
   /* ── LAS ACCIONES SOBRE USUARIOS Y LA COLA DE SOLICITUDES · 2026-10-09 ───
    *
    * **Roles y agentes de todos los clientes**: cambiar el rol de alguien ofrece
@@ -463,6 +472,28 @@ export function Admin() {
               ahora={ahora}
               nombreDeMetrica={(clave) => metricas.find((m) => m.key === clave)?.nombre ?? clave}
               onVerificar={() => void verificacion.refetch()}
+              conexion={
+                delEquipoInterno ? (
+                  <ConexionDeDatos
+                    guardada={conexionDelActivo ? (editarConexion.data ?? null) : null}
+                    verificada={verificacion.data?.infraestructura ?? null}
+                    guardando={conexionDelActivo && editarConexion.isPending}
+                    error={
+                      conexionDelActivo && editarConexion.error !== null
+                        ? `No se pudo guardar la conexión: ${editarConexion.error.message}`
+                        : null
+                    }
+                    // **Guardar y verificar son un paso**: lo que confirma que la
+                    // conexión anda es la verificación, no el 200 del `PUT`.
+                    onGuardar={(cambio) =>
+                      editarConexion.mutate(
+                        { tenantId: activo, cambio },
+                        { onSuccess: () => void verificacion.refetch() },
+                      )
+                    }
+                  />
+                ) : null
+              }
               usuarios={
                 <UserList
                   alcance="cliente"
@@ -571,6 +602,7 @@ function Cliente({
   ahora,
   nombreDeMetrica,
   onVerificar,
+  conexion,
   // **`...paraRoles` y no una prop más en la lista** · 2026-09-22. Estaba
   // escrito prop por prop, y al sumar `onVerCatalogo` —opcional— el compilador
   // no dijo nada: la prop llegaba a `Cliente`, se perdía acá, y el enlace del
@@ -596,6 +628,9 @@ function Cliente({
   /** **Los usuarios del cliente** · P2, 2026-10-09. Obligatoria por la misma
    *  razón que las cuatro de arriba. */
   usuarios: React.ReactNode
+  /** **La conexión del equipo interno** · F5.55. `null` para quien no opera la
+   *  plataforma. Obligatoria: quién la ve se decide arriba, no por omisión. */
+  conexion: React.ReactNode
   /** **La verificación del acceso** · 2026-10-14. Las dos primeras
    *  obligatorias, por la misma razón; el manejador no, porque sin él el CTA
    *  no se pinta. */
@@ -703,6 +738,7 @@ function Cliente({
           {...(onVerificar === undefined ? {} : { onVerificar })}
         />
       )}
+      {conexion !== null && <div className="mt-4">{conexion}</div>}
       </div>
 
       <div id="ficha-subprocesadores">

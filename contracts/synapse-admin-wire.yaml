@@ -171,12 +171,23 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
 
   /admin/tenants/{tenantId}:
-    x-verificado-en: 7324b26
+    x-verificado-en: 26eae4b
     put:
       tags: [admin]
       operationId: updateTenantSettings
-      summary: Editar la ficha del cliente · nombre, forma corta, locale, moneda y huso
+      summary: Editar la ficha del cliente y su conexión de Snowflake
       description: |
+        **La conexión se edita desde `26eae4b`** · medido el 2026-10-21 contra
+        su binario, con la base local. Cuenta, usuario, rol y URL viajan cada
+        uno si se quiere cambiar: **ausente = sin cambio, cadena vacía = 400** y
+        no borra lo anterior —medido con `snowflake_role`, `snowflake_account` y
+        `snowflake_user`—. Una URL que no es de `snowflakecomputing.com` da
+        **400**, medido con una de Snowsight. Los espacios se recortan. **La
+        clave privada no entra por acá**: es `POST /admin/tenants/{tenantId}/service-key`.
+
+        **La usa «Conexión · equipo interno» de la ficha** · F5.55, que sólo se
+        pinta con alcance de plataforma. Ver §7.3 en la propuesta del 2026-10-21.
+
         **Medida el 2026-10-20 contra el binario de `7324b26`**, con la base
         local: `label` puesto y vuelto a vacío, un id que no es UUID (**400**) y
         uno que no existe (**404** «tenant no encontrado»).
@@ -209,6 +220,10 @@ paths:
                 locale: { type: string }
                 currency: { type: string }
                 timezone: { type: string }
+                snowflake_url: { type: string, description: 'Host de `snowflakecomputing.com` · otro da 400' }
+                snowflake_account: { type: string }
+                snowflake_user: { type: string }
+                snowflake_role: { type: string }
       responses:
         '200':
           description: El cliente como quedó · sólo las claves que el front lee
@@ -226,6 +241,14 @@ paths:
                           id: { type: string, format: uuid }
                           name: { type: string }
                           label: { type: string }
+                          # **Desde `26eae4b` el front los lee**, y sólo la
+                          # sección del equipo interno · F5.55. Medidos ese día:
+                          # vienen descifrados, y la clave nunca —sólo si hay.
+                          snowflake_url: { type: string }
+                          snowflake_account: { type: string }
+                          snowflake_user: { type: string }
+                          snowflake_role: { type: string }
+                          has_private_key: { type: boolean }
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -1231,7 +1254,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   /admin/tenants/{tenantId}/schema-check:
-    x-verificado-en: 8272085
+    x-verificado-en: 26eae4b
     get:
       tags: [admin]
       operationId: checkTenantSchema
@@ -1264,6 +1287,11 @@ paths:
 
         **`database`, `schema` y `objects[].name` no se muestran** · §7.3: son
         vocabulario de infraestructura. El adaptador los recorta.
+
+        **Salvo al equipo interno, desde `26eae4b`** · medido el 2026-10-21:
+        trae `snowflake_user` y `snowflake_role`, la identidad con la que miró.
+        `exists: false` sigue sin separar «no existe» de «este rol no lo ve».
+        Los dos son opcionales acá porque un servicio anterior no los manda.
       parameters: [{ $ref: '#/components/parameters/tenantId' }]
       responses:
         '200':
@@ -1789,6 +1817,8 @@ components:
         keys_without_query: { type: array, items: { type: string }, description: Claves del catálogo sin cálculo }
         catalog_source: { type: string, enum: [view, postgres] }
         checked_at: { type: string, format: date-time }
+        snowflake_user: { type: string, description: 'Con quién se miró · desde `26eae4b`' }
+        snowflake_role: { type: string, description: 'Con qué rol se miró · desde `26eae4b`' }
 
     AccessRequestPage:
       type: object

@@ -13,7 +13,7 @@ import { esDePanel } from './chat'
 import type { ContextoDeChat } from './chat'
 import { adminApi } from './admin'
 import { sinRolesInternos } from './rol'
-import type { CambioDeUsuario, Corrida, RolParaGuardar, TabParaGuardar } from './admin'
+import type { CambioDeConexion, CambioDeUsuario, Corrida, RolParaGuardar, TabParaGuardar } from './admin'
 import type { Theme } from '../tokens/theme'
 import type { Payload } from './types'
 
@@ -505,6 +505,16 @@ export function useEditTenantShortName() {
       void qc.invalidateQueries({ queryKey: keys.tenants })
       void qc.invalidateQueries({ queryKey: keys.me })
     },
+  })
+}
+
+/** **Corregir la conexión del cliente** · F5.55, 2026-10-21. No invalida nada:
+ *  la conexión no está en ninguna lectura, y lo que la confirma es volver a
+ *  verificar, que el que llama pide al terminar. */
+export function useEditTenantConnection() {
+  return useMutation({
+    mutationFn: (v: { tenantId: string; cambio: CambioDeConexion }) =>
+      adminApi.editarConexion(v.tenantId, v.cambio),
   })
 }
 
