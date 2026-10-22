@@ -574,6 +574,19 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-10-22 · el catálogo de Keralty y Terpel llegó, y no se calcula
+
+**Datos entregó la vista `SYNAPSE_METRIC_CATALOG` de los dos clientes**, con sus
+métricas de medios, ATL y web: 15 en Keralty y 10 en Terpel. **Ninguna tiene
+cálculo**: la vista es gobierno y no consulta, y el cálculo vive sólo en
+`MetricRegistry`, que es de UA. Con B1.26 en A, estos clientes no muestran
+ninguna cifra. Medido en `docs/AUDITORIA-2026-10-22-catalogo-de-keralty-y-terpel.md`.
+
+**La decisión es del backend y de producto**, y la pide
+`docs/MENSAJE-2026-10-22-backend-b126-con-dos-clientes.md`, que lo manda el
+humano. Del front no falta nada. Sigue pendiente de datos el usuario de
+servicio y el rol de sólo lectura de Terpel.
+
 ### ⇩ ACÁ SE PARÓ · 2026-10-21 · el alta de un cliente, de punta a punta
 
 **Keralty y Terpel no muestran datos en QA**: los 12 paneles en `ERROR`, con el
