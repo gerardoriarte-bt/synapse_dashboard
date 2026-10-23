@@ -66,6 +66,11 @@ export const keys = {
   adminCatalog: (tenantId: string) => ['admin', 'catalog', tenantId] as const,
   roles: (tenantId: string) => ['admin', 'roles', tenantId] as const,
   agentes: (tenantId: string) => ['admin', 'agentes', tenantId] as const,
+  /** **Debajo de `agentes`**, para que invalidar los agentes también la
+   *  refresque: es la misma ruta con otro adaptador. */
+  // design-lint-ok: L11 · clave del cache, no texto en pantalla
+  warehouses: (tenantId: string) => ['admin', 'agentes', tenantId, 'warehouse'] as const,
+  llave: (tenantId: string) => ['admin', 'llave', tenantId] as const,
   fuentes: (tenantId: string) => ['admin', 'fuentes', tenantId] as const,
   corridas: (tenantId: string) => ['admin', 'corridas', tenantId] as const,
   usuarios: (tenantId: string) => ['admin', 'usuarios', tenantId] as const,
@@ -515,6 +520,50 @@ export function useEditTenantConnection() {
   return useMutation({
     mutationFn: (v: { tenantId: string; cambio: CambioDeConexion }) =>
       adminApi.editarConexion(v.tenantId, v.cambio),
+  })
+}
+
+/** **La llave del usuario de servicio** · F5.56 · sólo con alcance de
+ *  plataforma, que es quien la ve: `habilitada` lo decide quien llama. */
+export function useServiceKey(tenantId: string | null, habilitada: boolean) {
+  return useQuery({
+    queryKey: keys.llave(tenantId ?? ''),
+    queryFn: () => adminApi.llaveDeServicio(tenantId as string),
+    enabled: habilitada && tenantId !== null && tenantId !== '',
+    retry: false,
+  })
+}
+
+/** **Generar o reemplazar la llave** · F5.56. Lo que vuelve se escribe en el
+ *  cache en vez de releerlo: trae `generadaEn`, que la lectura no trae.
+ *
+ *  **El cliente viaja en las variables**, como en `useEditTenantConnection`:
+ *  es lo que deja a la ficha saber si el error a la vista es de este cliente. */
+export function useGenerateServiceKey() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { tenantId: string; reemplazar: boolean }) => adminApi.generarLlave(v.tenantId, v.reemplazar),
+    onSuccess: (llave, v) => client.setQueryData(keys.llave(v.tenantId), llave),
+  })
+}
+
+/** **Los agentes con su warehouse** · F5.56 · sólo con alcance de plataforma. */
+export function useAgentWarehouses(tenantId: string | null, habilitada: boolean) {
+  return useQuery({
+    queryKey: keys.warehouses(tenantId ?? ''),
+    queryFn: () => adminApi.warehousesDeAgentes(tenantId as string),
+    enabled: habilitada && tenantId !== null && tenantId !== '',
+  })
+}
+
+/** **Cambiar el warehouse de un agente** · F5.56. Invalida los agentes, y con
+ *  ellos esta lista, que cuelga de la misma clave. */
+export function useEditAgentWarehouse() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { tenantId: string; agentId: string; almacen: string }) =>
+      adminApi.editarWarehouse(v.tenantId, v.agentId, v.almacen),
+    onSuccess: (_agente, v) => client.invalidateQueries({ queryKey: keys.agentes(v.tenantId) }),
   })
 }
 

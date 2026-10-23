@@ -42,3 +42,16 @@ Un admin de un cliente sigue viendo la ficha del `.pen`, sin plomería.
 
 Hasta entonces, la sección usa los cuatro registros de texto del builder y la
 administración, sin tokens nuevos.
+
+## Agregado el 2026-10-23 · la llave y el warehouse · F5.56
+
+La misma sección suma dos partes, con la misma regla de quién las ve:
+
+- **«Llave de servicio»**: generar el par en el servicio, reemplazarlo con
+  confirmación, y copiar la pública para que datos la registre.
+- **«Almacén virtual de cada agente»**: una fila por agente, porque el warehouse vive
+  en el agente y no en el cliente.
+
+Van en el orden en que se cambia de usuario: llave, conexión, warehouse. El
+`.pen` no dibuja ninguna de las dos. **A diseño le pedimos lo mismo que arriba**:
+la variante de plataforma de «Acceso a datos», ahora con estas tres partes.

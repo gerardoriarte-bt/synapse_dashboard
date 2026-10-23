@@ -1021,6 +1021,60 @@ export const adminApi = {
     )
   },
 
+  /** **La llave del usuario de servicio** · F5.56, 2026-10-23 · `null` si el
+   *  cliente no tiene.
+   *
+   *  **Un 404 acá es «sin llave»**: el servicio contesta 404 también si el
+   *  cliente no existe, pero a esta lectura se llega desde la ficha de un
+   *  cliente que la lista acaba de traer. Cualquier otro error se propaga. */
+  llaveDeServicio: async (tenantId: string): Promise<LlaveDeServicio | null> => {
+    try {
+      return adaptarLlave(
+        await pedir<WireServiceKey>(`/admin/tenants/${encodeURIComponent(tenantId)}/service-key`),
+      )
+    } catch (e) {
+      if (e instanceof ApiError && e.httpStatus === 404) return null
+      throw e
+    }
+  },
+
+  /** **Generar el par de llaves del cliente** · F5.56.
+   *
+   *  El servicio genera el par, guarda la privada cifrada y devuelve la
+   *  pública: **la privada no sale nunca del servidor**. `reemplazar` manda
+   *  `rotate`, y es explícito porque reemplazar corta la conexión hasta que
+   *  datos registre la pública nueva. Sin él, con llave, el servicio da 409. */
+  generarLlave: async (tenantId: string, reemplazar: boolean): Promise<LlaveDeServicio> =>
+    adaptarLlave(
+      await pedir<WireServiceKey>(`/admin/tenants/${encodeURIComponent(tenantId)}/service-key`, {
+        method: 'POST',
+        body: JSON.stringify({ rotate: reemplazar }),
+      }),
+    ),
+
+  /** **Los agentes con su warehouse** · F5.56 · la misma ruta que `agentes`,
+   *  con otro adaptador. `agentes` recorta el warehouse por §7.3; éste lo
+   *  conserva y lo lee sólo la sección del equipo interno. */
+  warehousesDeAgentes: async (tenantId: string): Promise<WarehouseDeAgente[]> =>
+    (await pedir<WireAgent[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/agents`)).map(
+      adaptarWarehouse,
+    ),
+
+  /** **Cambiar el warehouse de un agente** · F5.56 · `PUT …/agents/{agentId}`.
+   *
+   *  **Se recorta y no viaja en blanco**, porque el servicio no lo hace:
+   *  medido el 2026-10-23, `""` da 200 y deja el agente sin warehouse. */
+  editarWarehouse: async (tenantId: string, agentId: string, warehouse: string): Promise<WarehouseDeAgente> => {
+    const valor = warehouse.trim()
+    if (valor === '') throw new ApiError(SIN_CODIGO, 'El almacén virtual no puede ir vacío.', 400)
+    return adaptarWarehouse(
+      await pedir<WireAgent>(
+        `/admin/tenants/${encodeURIComponent(tenantId)}/agents/${encodeURIComponent(agentId)}`,
+        { method: 'PUT', body: JSON.stringify({ warehouse: valor }) },
+      ),
+    )
+  },
+
   /** Las solicitudes PENDIENTES · la cola de A3. Una página de 100: la cola
    *  pendiente es corta por naturaleza, y si algún día no entra, el total que
    *  manda el servicio lo va a decir. */
@@ -1383,6 +1437,48 @@ export function adaptarConexion(w: WireTenantSettings): ConexionGuardada {
     url: w.snowflake_url ?? '',
     tieneClave: w.has_private_key ?? false,
   }
+}
+export type WireServiceKey = A['ServiceKey']
+
+/** **La llave del usuario de servicio** · F5.56, 2026-10-23. Sólo la pública:
+ *  la privada no viaja nunca. */
+export type LlaveDeServicio = {
+  /** En PEM, como la manda el servicio. */
+  publica: string
+  /** **La pública sin los delimitadores ni saltos**, que es como la pide
+   *  `ALTER USER … SET RSA_PUBLIC_KEY`. Se arma acá para que datos la pegue
+   *  tal cual y no haya que editarla a mano. */
+  paraRegistrar: string
+  /** `SHA256:…` · la que Snowflake muestra en `DESC USER` como
+   *  `RSA_PUBLIC_KEY_FP`. Es cómo se confirma que se registró la correcta. */
+  huella: string
+  /** Sólo al generarla · `null` al leerla. */
+  generadaEn: string | null
+}
+
+export function adaptarLlave(w: WireServiceKey): LlaveDeServicio {
+  return {
+    publica: w.public_key_pem,
+    paraRegistrar: w.public_key_pem.replace(/-----(BEGIN|END) PUBLIC KEY-----/g, '').replace(/\s+/g, ''),
+    huella: w.fingerprint,
+    generadaEn: w.generated_at ?? null,
+  }
+}
+
+/** **Un agente y el warehouse con el que consulta** · F5.56. Es vocabulario de
+ *  infraestructura y por eso no está en `Agente`: lo lee sólo la sección del
+ *  equipo interno, con alcance de plataforma. */
+export type WarehouseDeAgente = {
+  id: string
+  nombre: string
+  /** El rol de PRODUCTO que atiende, para distinguir dos agentes. */
+  rol: string
+  activo: boolean
+  warehouse: string
+}
+
+export function adaptarWarehouse(w: WireAgent): WarehouseDeAgente {
+  return { id: w.id, nombre: w.name, rol: w.target_role, activo: w.is_active, warehouse: w.warehouse }
 }
 export type WireUsersPlatform = A['UsersPlatform']
 export type WireSchemaCheck = A['SchemaCheck']
