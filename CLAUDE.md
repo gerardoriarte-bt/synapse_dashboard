@@ -574,6 +574,21 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-10-23 · los usuarios de servicio, y la llave desde la ficha
+
+**Datos entregó `SVC_SYNAPSE_KERALTY` y `SVC_SYNAPSE_TERPEL_COMBS`**, y un rol
+de sólo lectura para Terpel. Para pasar a ellos, la ficha suma «Llave de
+servicio» y «Almacén virtual de cada agente» · F5.56, sólo con alcance de plataforma.
+**La privada la genera el servicio y no sale de ahí**: no se usa openssl.
+
+**El orden importa**: llave, datos la registra, usuario y rol, warehouse en
+cada agente, verificar. Entre la llave y el usuario el cliente queda sin
+conexión. Está entero en `docs/AUDITORIA-2026-10-23-usuarios-de-servicio.md`.
+**Los dos mensajes los manda el humano**:
+`MENSAJE-2026-10-23-backend-usuarios-de-servicio.md` y
+`MENSAJE-2026-10-23-datos-registrar-las-llaves.md`. En QA lo hace un
+superadmin desde la ficha, cuando el front de `main` esté desplegado.
+
 ### ⇩ ACÁ SE PARÓ · 2026-10-22 · el catálogo de Keralty y Terpel llegó, y no se calcula
 
 **Datos entregó la vista `SYNAPSE_METRIC_CATALOG` de los dos clientes**, con sus

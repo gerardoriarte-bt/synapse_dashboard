@@ -49,6 +49,10 @@ import {
   useMe,
   useEditTenantShortName,
   useEditTenantConnection,
+  useGenerateServiceKey,
+  useServiceKey,
+  useAgentWarehouses,
+  useEditAgentWarehouse,
   useTenants,
   useSaveTheme,
 } from '../../api/hooks'
@@ -57,6 +61,9 @@ import { CatalogView } from './CatalogView'
 import { FeedHealth } from './FeedHealth'
 import { RunHistory } from './RunHistory'
 import { ConexionDeDatos } from './ConexionDeDatos'
+import { LlaveDeServicio } from './LlaveDeServicio'
+// design-lint-ok: L11 · ruta del módulo, no texto en pantalla
+import { WarehouseDeAgentes } from './WarehouseDeAgentes'
 import { CargarPeriodos } from './CargarPeriodos'
 import { ESPERA_MAXIMA_MS, faltanPorTerminar, hayQueEsperar, mesEnCurso, mesesCargados, mesesEnCurso } from './cargaDePeriodos'
 import type { Pedido } from './cargaDePeriodos'
@@ -222,6 +229,15 @@ export function Admin() {
   const delEquipoInterno = contexto.data?.alcance === 'plataforma'
   /** **Lo guardado es de UN cliente**: cambiar de cliente no lo arrastra. */
   const conexionDelActivo = editarConexion.variables?.tenantId === activo
+  /** **La llave y el warehouse, también sólo para el equipo interno** · F5.56.
+   *  Las dos lecturas ni se piden sin alcance de plataforma: no es sólo no
+   *  pintarlas. */
+  const llave = useServiceKey(activo, delEquipoInterno)
+  const generarLlave = useGenerateServiceKey()
+  const llaveDelActivo = generarLlave.variables?.tenantId === activo
+  const warehouses = useAgentWarehouses(activo, delEquipoInterno)
+  const cambioDeAgente = useEditAgentWarehouse()
+  const cambioDeAgenteDelActivo = cambioDeAgente.variables?.tenantId === activo
   /* ── LAS ACCIONES SOBRE USUARIOS Y LA COLA DE SOLICITUDES · 2026-10-09 ───
    *
    * **Roles y agentes de todos los clientes**: cambiar el rol de alguien ofrece
@@ -474,24 +490,59 @@ export function Admin() {
               onVerificar={() => void verificacion.refetch()}
               conexion={
                 delEquipoInterno ? (
-                  <ConexionDeDatos
-                    guardada={conexionDelActivo ? (editarConexion.data ?? null) : null}
-                    verificada={verificacion.data?.infraestructura ?? null}
-                    guardando={conexionDelActivo && editarConexion.isPending}
-                    error={
-                      conexionDelActivo && editarConexion.error !== null
-                        ? `No se pudo guardar la conexión: ${editarConexion.error.message}`
-                        : null
-                    }
-                    // **Guardar y verificar son un paso**: lo que confirma que la
-                    // conexión anda es la verificación, no el 200 del `PUT`.
-                    onGuardar={(cambio) =>
-                      editarConexion.mutate(
-                        { tenantId: activo, cambio },
-                        { onSuccess: () => void verificacion.refetch() },
-                      )
-                    }
-                  />
+                  // **En el orden en que se cambia de usuario**: la llave
+                  // primero, el usuario y el rol, el warehouse al final.
+                  <div className="flex flex-col gap-4">
+                    <LlaveDeServicio
+                      llave={llave.data}
+                      errorDeLectura={llave.error === null ? null : llave.error.message}
+                      generando={llaveDelActivo && generarLlave.isPending}
+                      error={
+                        llaveDelActivo && generarLlave.error !== null
+                          ? `No se pudo generar la llave: ${generarLlave.error.message}`
+                          : null
+                      }
+                      onGenerar={(reemplazar) => generarLlave.mutate({ tenantId: activo, reemplazar })}
+                    />
+                    <ConexionDeDatos
+                      guardada={conexionDelActivo ? (editarConexion.data ?? null) : null}
+                      verificada={verificacion.data?.infraestructura ?? null}
+                      guardando={conexionDelActivo && editarConexion.isPending}
+                      error={
+                        conexionDelActivo && editarConexion.error !== null
+                          ? `No se pudo guardar la conexión: ${editarConexion.error.message}`
+                          : null
+                      }
+                      // **Guardar y verificar son un paso**: lo que confirma que la
+                      // conexión anda es la verificación, no el 200 del `PUT`.
+                      onGuardar={(cambio) =>
+                        editarConexion.mutate(
+                          { tenantId: activo, cambio },
+                          { onSuccess: () => void verificacion.refetch() },
+                        )
+                      }
+                    />
+                    <WarehouseDeAgentes
+                      agentes={warehouses.data}
+                      errorDeLectura={warehouses.error === null ? null : warehouses.error.message}
+                      guardando={
+                        cambioDeAgenteDelActivo && cambioDeAgente.isPending
+                          ? (cambioDeAgente.variables?.agentId ?? null)
+                          : null
+                      }
+                      error={
+                        cambioDeAgenteDelActivo && cambioDeAgente.error !== null
+                          ? {
+                              agentId: cambioDeAgente.variables?.agentId ?? '',
+                              mensaje: `No se pudo guardar: ${cambioDeAgente.error.message}`,
+                            }
+                          : null
+                      }
+                      onGuardar={(agentId, almacen) =>
+                        cambioDeAgente.mutate({ tenantId: activo, agentId, almacen })
+                      }
+                    />
+                  </div>
                 ) : null
               }
               usuarios={

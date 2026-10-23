@@ -768,6 +768,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/tenants/{tenantId}/service-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * La llave pública del cliente, si tiene una
+         * @description **Medida el 2026-10-23 contra el binario de `26eae4b`**, con la base
+         *     local y un cliente de prueba. Sin llave → **404 `NOT_FOUND_KEY`**; con
+         *     llave → 200 con la pública y su huella. **Nunca devuelve la privada.**
+         *
+         *     La usa «Llave de servicio» de la ficha · F5.56, sólo con alcance de
+         *     plataforma. Un 404 en la ficha es «sin llave»: el cliente existe,
+         *     porque se llegó a él desde la lista.
+         */
+        get: operations["getTenantServiceKey"];
+        put?: never;
+        /**
+         * Generar el par RSA del cliente
+         * @description **Medida el 2026-10-23 contra el binario de `26eae4b`**: sin cuerpo y
+         *     sin llave → **201**; otra vez sin `rotate` → **409
+         *     `CONFLICT_KEY_EXISTS`**; con `rotate: true` → **201** y otra huella.
+         *
+         *     **El servicio genera el par y guarda la privada cifrada en el
+         *     cliente** (`tenant_key_service.go`): la privada no sale nunca del
+         *     servidor. Devuelve la pública para que datos la registre en el
+         *     usuario de servicio (`ALTER USER … SET RSA_PUBLIC_KEY`) y la huella,
+         *     que es la que Snowflake muestra como `RSA_PUBLIC_KEY_FP`.
+         *
+         *     **Reemplazar la llave corta la conexión** hasta que datos registre la
+         *     nueva: la consulta firma con la privada nueva y el usuario sigue con
+         *     la pública vieja. Por eso el front pide confirmación.
+         */
+        post: operations["generateTenantServiceKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tenants/{tenantId}/agents/{agentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Editar un agente del cliente
+         * @description **Medida el 2026-10-23 contra el binario de `26eae4b`**, sobre un
+         *     agente de prueba. Edición parcial (`updateAgentRequest`, punteros):
+         *     lo que no viaja no cambia. **El front manda sólo `warehouse`**, y el
+         *     resto de las claves se transcribe porque el servicio las acepta.
+         *
+         *     **El warehouse vive en el agente, no en el cliente**, y la consulta
+         *     usa el del agente que resuelve (`statementRequest` en
+         *     `snowflake_sql_client.go`). Un cliente con varios agentes tiene un
+         *     warehouse por agente.
+         *
+         *     **`warehouse` no se valida ni se recorta**: medido, `"  WH  "` queda
+         *     con los espacios y `""` da **200** y lo deja vacío. El front recorta y
+         *     no manda un valor en blanco.
+         */
+        put: operations["updateAgent"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/access-requests": {
         parameters: {
             query?: never;
@@ -2099,6 +2173,18 @@ export interface components {
             }[];
         };
         /**
+         * @description `ports.TenantServiceKey` · la pública en PEM (PKIX, bloque «PUBLIC
+         *     KEY») y su huella `SHA256:<base64>`, la misma que Snowflake muestra en
+         *     `DESC USER` como `RSA_PUBLIC_KEY_FP`. `generated_at` viene sólo al
+         *     generar.
+         */
+        ServiceKey: {
+            public_key_pem: string;
+            fingerprint: string;
+            /** Format: date-time */
+            generated_at?: string;
+        };
+        /**
          * @description `ports.AgentAdminDTO` · el agente visto desde administración.
          *
          *     **Tres de estos campos no se pintan nunca**, y no es un olvido:
@@ -2205,6 +2291,7 @@ export interface components {
     };
     parameters: {
         tenantId: string;
+        agentId: string;
         layoutId: string;
         roleId: string;
         dashboardId: string;
@@ -3118,6 +3205,108 @@ export interface operations {
                     };
                 };
             };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getTenantServiceKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La pública de la llave guardada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["ServiceKey"];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    generateTenantServiceKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** @description Reemplazar la que haya · sin esto, con llave da 409 */
+                    rotate?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description La pública del par nuevo */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["ServiceKey"];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+                agentId: components["parameters"]["agentId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    target_role?: string;
+                    snowflake_db?: string;
+                    snowflake_schema?: string;
+                    snowflake_cortex_agent_name?: string;
+                    warehouse?: string;
+                    semantic_views?: string[];
+                    system_prompt_base?: string;
+                    is_active?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description El agente como quedó */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["AgentAdmin"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
