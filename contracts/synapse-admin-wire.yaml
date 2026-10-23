@@ -1307,6 +1307,132 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  # ── La llave del usuario de servicio · F5.56 ──────────────────────────────
+  /admin/tenants/{tenantId}/service-key:
+    x-verificado-en: 26eae4b
+    get:
+      tags: [admin]
+      operationId: getTenantServiceKey
+      summary: La llave pública del cliente, si tiene una
+      description: |
+        **Medida el 2026-10-23 contra el binario de `26eae4b`**, con la base
+        local y un cliente de prueba. Sin llave → **404 `NOT_FOUND_KEY`**; con
+        llave → 200 con la pública y su huella. **Nunca devuelve la privada.**
+
+        La usa «Llave de servicio» de la ficha · F5.56, sólo con alcance de
+        plataforma. Un 404 en la ficha es «sin llave»: el cliente existe,
+        porque se llegó a él desde la lista.
+      parameters: [{ $ref: '#/components/parameters/tenantId' }]
+      responses:
+        '200':
+          description: La pública de la llave guardada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/ServiceKey' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [admin]
+      operationId: generateTenantServiceKey
+      summary: Generar el par RSA del cliente
+      description: |
+        **Medida el 2026-10-23 contra el binario de `26eae4b`**: sin cuerpo y
+        sin llave → **201**; otra vez sin `rotate` → **409
+        `CONFLICT_KEY_EXISTS`**; con `rotate: true` → **201** y otra huella.
+
+        **El servicio genera el par y guarda la privada cifrada en el
+        cliente** (`tenant_key_service.go`): la privada no sale nunca del
+        servidor. Devuelve la pública para que datos la registre en el
+        usuario de servicio (`ALTER USER … SET RSA_PUBLIC_KEY`) y la huella,
+        que es la que Snowflake muestra como `RSA_PUBLIC_KEY_FP`.
+
+        **Reemplazar la llave corta la conexión** hasta que datos registre la
+        nueva: la consulta firma con la privada nueva y el usuario sigue con
+        la pública vieja. Por eso el front pide confirmación.
+      parameters: [{ $ref: '#/components/parameters/tenantId' }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rotate: { type: boolean, description: 'Reemplazar la que haya · sin esto, con llave da 409' }
+      responses:
+        '201':
+          description: La pública del par nuevo
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/ServiceKey' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  # ── El warehouse de cada agente · F5.56 ────────────────────────────────────
+  /admin/tenants/{tenantId}/agents/{agentId}:
+    x-verificado-en: 26eae4b
+    put:
+      tags: [admin]
+      operationId: updateAgent
+      summary: Editar un agente del cliente
+      description: |
+        **Medida el 2026-10-23 contra el binario de `26eae4b`**, sobre un
+        agente de prueba. Edición parcial (`updateAgentRequest`, punteros):
+        lo que no viaja no cambia. **El front manda sólo `warehouse`**, y el
+        resto de las claves se transcribe porque el servicio las acepta.
+
+        **El warehouse vive en el agente, no en el cliente**, y la consulta
+        usa el del agente que resuelve (`statementRequest` en
+        `snowflake_sql_client.go`). Un cliente con varios agentes tiene un
+        warehouse por agente.
+
+        **`warehouse` no se valida ni se recorta**: medido, `"  WH  "` queda
+        con los espacios y `""` da **200** y lo deja vacío. El front recorta y
+        no manda un valor en blanco.
+      parameters:
+        - { $ref: '#/components/parameters/tenantId' }
+        - { $ref: '#/components/parameters/agentId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                target_role: { type: string }
+                snowflake_db: { type: string }
+                snowflake_schema: { type: string }
+                snowflake_cortex_agent_name: { type: string }
+                warehouse: { type: string }
+                semantic_views: { type: array, items: { type: string } }
+                system_prompt_base: { type: string }
+                is_active: { type: boolean }
+      responses:
+        '200':
+          description: El agente como quedó
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/AgentAdmin' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   # ── Las solicitudes de acceso · la cola que el login alimenta ────────────
   /admin/access-requests:
     x-verificado-en: 9dc481e
@@ -1592,6 +1718,11 @@ components:
   parameters:
     tenantId:
       name: tenantId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    agentId:
+      name: agentId
       in: path
       required: true
       schema: { type: string, format: uuid }
@@ -2883,6 +3014,18 @@ components:
                         una cascada como dona y nadie lo notaría.
                       examples: ['', waterfall]
 
+    ServiceKey:
+      type: object
+      description: |
+        `ports.TenantServiceKey` · la pública en PEM (PKIX, bloque «PUBLIC
+        KEY») y su huella `SHA256:<base64>`, la misma que Snowflake muestra en
+        `DESC USER` como `RSA_PUBLIC_KEY_FP`. `generated_at` viene sólo al
+        generar.
+      required: [public_key_pem, fingerprint]
+      properties:
+        public_key_pem: { type: string }
+        fingerprint: { type: string }
+        generated_at: { type: string, format: date-time }
     AgentAdmin:
       type: object
       description: |

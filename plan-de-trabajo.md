@@ -8318,6 +8318,26 @@ mutaciones —mostrarla a todos, mandar los vacíos, no verificar al guardar,
 La divergencia con el `.pen` está en
 `docs/PROPUESTA-2026-10-21-conexion-del-equipo-interno.md`.
 
+### ➕ F5.56 ✅ El equipo interno cambia de usuario de servicio sin pasar una privada
+
+**Descripción.** Datos creó un usuario de servicio por cliente y propuso que
+backend genere el par con openssl. El servicio ya lo genera —`POST
+/admin/tenants/{tenantId}/service-key`— y guarda la privada cifrada en el
+cliente. La ficha suma, **sólo con alcance de plataforma**, «Llave de servicio»
+—generar, reemplazar con confirmación, copiar la pública sin delimitadores— y
+«Almacén virtual de cada agente», porque el warehouse vive en el agente
+(`PUT /admin/tenants/{tenantId}/agents/{agentId}`).
+
+**Criterio de aceptación.** Un admin de un cliente no ve ninguna de las dos ni
+se pide la llave. Reemplazar pide confirmación y manda `rotate`; generar sin
+llave no. Lo que se copia es la pública sin delimitadores. El warehouse viaja
+recortado, al agente correcto, y no en blanco.
+
+**Verificado el 2026-10-23** · `tests/surfaces/admin/llaveYWarehouse.test.tsx`;
+once mutaciones mueren. Mirada en el navegador contra `26eae4b` en local, sobre
+un cliente de prueba. El procedimiento está en
+`docs/AUDITORIA-2026-10-23-usuarios-de-servicio.md`.
+
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
 **Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio
