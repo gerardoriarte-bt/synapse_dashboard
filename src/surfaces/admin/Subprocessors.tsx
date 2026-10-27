@@ -66,14 +66,16 @@ export function Subprocessors() {
             onClick={() => setAbierta((v) => !v)}
             aria-expanded={abierta}
             aria-controls={detalle}
-            className="cursor-pointer rounded-md border border-w5 bg-transparent px-2 h-7 font-body text-celda font-semibold text-ink hover:bg-w2"
+            className="cursor-pointer rounded-md border border-w5 bg-transparent px-2 h-7 font-body text-celda font-semibold text-ink hover:bg-w2 transition-colors duration-rapida ease-salida"
           >
             {abierta ? 'Ocultar detalle' : 'Ver detalle'}
           </button>
         </div>
 
+        {/* El detalle entra con un fundido; la altura, en seco · 2026-10-27,
+            como el de `RoleCard`. */}
         {abierta && (
-          <ul id={detalle} className="flex flex-col gap-3.5 m-0 border-t border-w2 px-5 py-4 list-none">
+          <ul id={detalle} className="flex flex-col gap-3.5 m-0 border-t border-w2 px-5 py-4 list-none transition-opacity duration-base ease-salida starting:opacity-0">
             {SUBPROCESADORES.map((s) => (
               <li key={s.nombre} className="flex w-full items-start justify-between gap-3">
                 <div className="flex flex-col gap-0.75 text-dim">

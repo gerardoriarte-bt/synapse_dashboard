@@ -29,7 +29,7 @@ export function NavDeSuperficie<Id extends string>({ pantallas, activa, onIr, et
           aria-current={p.id === activa ? 'page' : undefined}
           className={
             'h-8 cursor-pointer rounded-md border-0 px-3 font-body text-cuerpo ' +
-            (p.id === activa ? 'bg-elev font-semibold text-ink' : 'bg-transparent font-medium text-dim hover:text-ink')
+            (p.id === activa ? 'bg-elev font-semibold text-ink' : 'bg-transparent font-medium text-dim hover:text-ink transition-colors duration-rapida ease-salida')
           }
         >
           {p.nombre}

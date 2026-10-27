@@ -26,7 +26,9 @@ type Props = {
 
 const BASE =
   'inline-flex items-center gap-2 rounded-md border font-body text-cuerpo leading-titulo text-ink ' +
-  'cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed'
+  'cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ' +
+  // El hover responde, no salta · 2026-10-27, como `Accion`.
+  'transition-colors duration-rapida ease-salida'
 
 const FORMA = {
   fila: 'w-full text-left px-3 py-2',

@@ -620,6 +620,49 @@ def escala_tipografica(ruta, texto):
             yield n, f"`{m.group(0)}` es la escala de fábrica de Tailwind · no sale del `.pen`"
 
 
+@regla("movimiento", "el movimiento sale de dos duraciones y una curva · y nunca mueve el layout")
+def movimiento(ruta, texto):
+    """Ni `duration-300` ni `ease-[…]` ni `transition-all` ni `animate-*`.
+
+    Decidido el 2026-10-27 · `docs/PROPUESTA-2026-10-20-microinteracciones.md`.
+    **Dos duraciones —`rapida` y `base`— y una curva —`salida`—**, que viven en
+    `decisiones.css`. Una duración de fábrica o escrita a mano es el mismo
+    defecto que `text-sm`: nadie la decidió.
+
+    **`transition-all` anima también lo que mueve el layout** —alto, ancho,
+    márgenes—, que es justo lo que la propuesta excluye. Una lista de
+    propiedades vale sólo si es de `opacity` y de las de `transform`
+    —`translate`, `scale`, `rotate`—.
+
+    **`animate-*` no**, por dos razones: el pulso de los esqueletos se decidió
+    que no —el humano, el 2026-10-27— y un `@keyframes` propio sería una tercera
+    duración. La aparición va con `starting:`, que es una transición.
+    """
+    if ruta.suffix not in (".tsx", ".jsx", ".ts"):
+        return
+    for n, linea in lineas(texto):
+        for m in re.finditer(r"\bduration-([\w\[\]().-]+)", linea):
+            if m.group(1) not in ("rapida", "base"):
+                yield n, f"`{m.group(0)}` · las duraciones son `duration-rapida` y `duration-base`"
+        for m in re.finditer(r"\bease-([\w\[\]().,-]+)", linea):
+            if m.group(1) != "salida":
+                yield n, f"`{m.group(0)}` · la curva es `ease-salida`"
+        if re.search(r"\btransition-all\b", linea):
+            yield n, "`transition-all` anima también el layout · nombrá `opacity` o `transform`"
+        for m in re.finditer(r"\btransition-\[([^\]]*)\]", linea):
+            # `translate`, `scale` y `rotate` son propiedades aparte en Tailwind v4
+            # —`-translate-y-1` escribe `translate`, no `transform`—, y las tres
+            # son del compositor igual que `transform`: no mueven el layout.
+            fuera = [
+                p for p in m.group(1).split(",")
+                if p.strip() not in ("opacity", "transform", "translate", "scale", "rotate")
+            ]
+            if fuera:
+                yield n, f"`{m.group(0)}` anima {', '.join(fuera)} · sólo `opacity` y `transform`"
+        for m in re.finditer(r"\banimate-[\w\[\]-]+", linea):
+            yield n, f"`{m.group(0)}` · el movimiento es transición, no animación"
+
+
 def exenta(renglones, limpios, n, id_):
     """La marca vale en la línea del hallazgo o en el comentario que la precede.
 

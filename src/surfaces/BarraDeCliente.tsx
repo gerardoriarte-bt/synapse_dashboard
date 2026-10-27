@@ -36,7 +36,14 @@ export function BarraDeCliente({ activo, clientes, onElegir }: Props) {
       {activo === null ? (
         <span aria-hidden className="h-9 w-56 rounded-md bg-w2" />
       ) : (
-        <>
+        // **Al cambiar de cliente, el nombre entra con un fundido** · 2026-10-27,
+        // punto 3 de `docs/PROPUESTA-2026-10-20-microinteracciones.md`: en seco
+        // se puede no notar que el cliente cambió. La `key` es lo que lo vuelve
+        // a montar, y `starting:` es lo que hace que aparezca en vez de estar.
+        <div
+          key={activo.id}
+          className="flex min-w-0 items-center gap-3.5 transition-opacity duration-base ease-salida starting:opacity-0"
+        >
           <PlacaDeCliente nombre={activo.nombre} />
           <div className="flex min-w-0 flex-col gap-0.5">
             <span className="truncate font-display text-titulo leading-titulo tracking-titulo font-medium text-ink">
@@ -46,7 +53,7 @@ export function BarraDeCliente({ activo, clientes, onElegir }: Props) {
               {formaCortaVisible(activo)}
             </span>
           </div>
-        </>
+        </div>
       )}
       <div className="flex-1" />
       {conSelector && <SelectorDeCliente clientes={clientes} activo={activo?.id ?? null} onElegir={onElegir} />}

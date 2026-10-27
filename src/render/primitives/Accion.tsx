@@ -43,7 +43,10 @@ type Props = Comun & ({ tipo?: 'button'; onClick: () => void } | { tipo: 'submit
 
 const BASE =
   'inline-flex items-center justify-center gap-2 shrink-0 rounded-md border font-body font-semibold ' +
-  'leading-titulo whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed'
+  'leading-titulo whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ' +
+  // **El hover responde, no salta** · 2026-10-27. Ver
+  // `docs/PROPUESTA-2026-10-20-microinteracciones.md`, punto 1.
+  'transition-colors duration-rapida ease-salida'
 
 const VARIANTE = {
   primaria: 'bg-acc border-acc text-on-acc hover:bg-acc-hover hover:border-acc-hover',
