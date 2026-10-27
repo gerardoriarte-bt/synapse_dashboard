@@ -8378,7 +8378,7 @@ semanal del agente: `---` se veía como texto, `>` al principio de las notas,
 izquierda. El parser suma separador, cita y cursiva, y la cifra acepta `~`,
 `≈` y un `+` al final. Quince mutaciones, todas muertas.
 
-### ➕ F5.58 ⚠️ Microinteracciones: el movimiento explica un cambio de estado
+### ➕ F5.58 ✅ Microinteracciones: el movimiento explica un cambio de estado
 
 **Descripción.** La propuesta del 2026-10-20, decidida por el humano el
 2026-10-27: duraciones de 120 y 180 ms, el dato nunca se anima y los esqueletos
@@ -8395,8 +8395,10 @@ mergear.
 
 **Construida el 2026-10-27** · `tests/surfaces/microinteracciones.test.tsx`;
 diez mutaciones mueren y la regla de lint se verificó rompiéndola. Grabada en
-cámara lenta en `docs/DECISIONES-2026-10-27-microinteracciones.md`. **En ⚠️
-hasta que diseño la mire.**
+cámara lenta en `docs/DECISIONES-2026-10-27-microinteracciones.md`.
+**Aprobada el 2026-10-27** por el humano, mirando las grabaciones. Lo que
+queda de diseño es declarar los tres tokens en el `.pen`; hasta entonces viven
+en `decisiones.css`.
 
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
