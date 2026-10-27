@@ -68,8 +68,14 @@ export function Markdown({ texto }: { texto: string }) {
 
         if (bloque.tipo === 'lista') {
           const Lista = bloque.ordenada ? 'ol' : 'ul'
+          // **Con su marcador** · 2026-10-27. El preflight de Tailwind le saca
+          // el `list-style` a toda lista, así que «1. Reponer… 2. Pausar…»
+          // salía sin números: el orden que el agente escribió se perdía.
           return (
-            <Lista key={i} className="flex flex-col gap-1 pl-4 m-0">
+            <Lista
+              key={i}
+              className={`m-0 flex flex-col gap-1 pl-5 ${bloque.ordenada ? 'list-decimal' : 'list-disc'}`}
+            >
               {bloque.items.map((item, j) => (
                 <li key={j} className={PARRAFO}>
                   <Trozos trozos={item} />
