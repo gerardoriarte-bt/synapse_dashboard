@@ -133,7 +133,18 @@ export function Panel({
 
       case 'DISPONIBLE':
       case 'DEGRADADO':
-        return children
+        // **El dato llega con un fundido de opacidad, y nada más** · 2026-10-27,
+        // punto 5 de `docs/PROPUESTA-2026-10-20-microinteracciones.md`. Acá y no
+        // en cada cuerpo: es el único lugar donde el estado se reemplaza por la
+        // cifra. El shell —título, BASE, procedencia— no se mueve, y **la cifra
+        // no cuenta ni el trazo se dibuja**: aparece entera, ya con su valor.
+        // `starting:` sólo corre al montarse, así que un dato que se refresca
+        // sin pasar por la carga no parpadea.
+        return (
+          <div className="h-full transition-opacity duration-base ease-salida starting:opacity-0">
+            {children}
+          </div>
+        )
     }
   }
 }

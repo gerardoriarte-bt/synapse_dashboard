@@ -96,10 +96,13 @@ export function UserMenu({ context, onChangeTheme }: Props) {
         <IconoDeUsuario />
       </button>
 
+      {/* **Aparece con un fundido y 4 px desde el disparador, y se cierra sin
+          animación**: quien cierra ya decidió · 2026-10-27, punto 2 de
+          `docs/PROPUESTA-2026-10-20-microinteracciones.md`. */}
       {abierto && (
         <div
           role="menu"
-          className="absolute right-0 top-full mt-2 z-10 flex flex-col gap-3 rounded-xl bg-panel border border-w4 p-6 min-w-[260px]"
+          className="absolute right-0 top-full mt-2 z-10 flex flex-col gap-3 rounded-xl bg-panel border border-w4 p-6 min-w-[260px] transition-[opacity,translate] duration-base ease-salida starting:-translate-y-1 starting:opacity-0"
         >
           {/* **El nombre va en 13 y el correo en nota**, que es lo que el
               dibujo les da: la identidad es lo primero y lo más grande del
@@ -162,7 +165,7 @@ export function UserMenu({ context, onChangeTheme }: Props) {
               setAbierto(false)
               cerrarSesion()
             }}
-            className="-mx-1 cursor-pointer rounded-sm border-0 bg-transparent px-1 py-1 text-left font-body text-cuerpo font-medium text-ink hover:bg-elev"
+            className="-mx-1 cursor-pointer rounded-sm border-0 bg-transparent px-1 py-1 text-left font-body text-cuerpo font-medium text-ink hover:bg-elev transition-colors duration-rapida ease-salida"
           >
             Cerrar sesión
           </button>

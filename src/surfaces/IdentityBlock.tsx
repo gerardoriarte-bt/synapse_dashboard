@@ -100,11 +100,14 @@ export function IdentityBlock({ rol, nombre, correo, onChangeTheme, onCerrarSesi
 
       {/* **Siempre abre**: la identidad misma es contenido —nombre, correo,
           rol—, no sólo las preferencias. */}
+      {/* **Aparece con un fundido y 4 px desde el disparador, y se cierra sin
+          animación**: quien cierra ya decidió · 2026-10-27, punto 2 de
+          `docs/PROPUESTA-2026-10-20-microinteracciones.md`. */}
       {abierto && (
         <div
           role="menu"
           aria-label={`Usuario · ${nombre}`}
-          className="absolute top-full right-0 z-40 mt-2 flex w-64 flex-col gap-3 rounded-xl border border-w3 bg-panel p-4 shadow-[0_8px_24px_var(--color-shad)]"
+          className="absolute top-full right-0 z-40 mt-2 flex w-64 flex-col gap-3 rounded-xl border border-w3 bg-panel p-4 shadow-[0_8px_24px_var(--color-shad)] transition-[opacity,translate] duration-base ease-salida starting:-translate-y-1 starting:opacity-0"
         >
           <div className="flex flex-col gap-1">
             <span className="text-ink text-cuerpo">{nombre}</span>
@@ -135,7 +138,7 @@ export function IdentityBlock({ rol, nombre, correo, onChangeTheme, onCerrarSesi
                   setAbierto(false)
                   onCerrarSesion()
                 }}
-                className="-mx-1 cursor-pointer rounded-sm border-0 bg-transparent px-1 py-1 text-left font-body text-cuerpo font-medium text-ink hover:bg-elev"
+                className="-mx-1 cursor-pointer rounded-sm border-0 bg-transparent px-1 py-1 text-left font-body text-cuerpo font-medium text-ink hover:bg-elev transition-colors duration-rapida ease-salida"
               >
                 Cerrar sesión
               </button>

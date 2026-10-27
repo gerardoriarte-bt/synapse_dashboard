@@ -166,6 +166,7 @@ decir qué rol cumple**, porque ahí empieza la superposición.
 | `docs/B0.9-preguntas-abiertas.md` | Las preguntas del contrato, con su resolución |
 | `docs/PROPUESTA-*-*.md` | Una **propuesta de spec** abierta, con fecha. Lo que `design.md` no declara y el código no puede inventar |
 | `docs/DECISIONES-*-*.md` | Decisiones ya **tomadas** sobre una spec, con lo que se midió para tomarlas y lo que se descartó. Es el par de `PROPUESTA-*`: aquella pregunta, ésta contesta — y no se edita después, porque la decisión tiene fecha |
+| `docs/microinteracciones/*` | **Las grabaciones** de `DECISIONES-2026-10-27-microinteracciones.md`, en cámara lenta ×10, para que diseño mire el movimiento. Las cita esa decisión y no se editan: si el movimiento cambia, se graban otra vez |
 | `docs/F1.28-escala-tipografica.md` | La bitácora de una tarea que cambió el sistema |
 | `docs/FOLDER_STRUCTURE.md` | La estructura de `src/`, para quien llega |
 | `docs/RUNBOOK-*.md` | **Un procedimiento que se CORRE, y se mantiene.** Es el único rol sin fecha en el nombre, a propósito: los demás son cortes que vencen y éste se corrige en su lugar. Su lector es el equipo interno, así que **sí nombra bases, roles y grants** — lo que §7.3 prohíbe en pantalla vale para las pantallas, no para quien opera esa capa |
@@ -8376,6 +8377,26 @@ semanal del agente: `---` se veía como texto, `>` al principio de las notas,
 `*Armour Week*` con sus asteriscos y una columna de «~$52,567» alineada a la
 izquierda. El parser suma separador, cita y cursiva, y la cifra acepta `~`,
 `≈` y un `+` al final. Quince mutaciones, todas muertas.
+
+### ➕ F5.58 ⚠️ Microinteracciones: el movimiento explica un cambio de estado
+
+**Descripción.** La propuesta del 2026-10-20, decidida por el humano el
+2026-10-27: duraciones de 120 y 180 ms, el dato nunca se anima y los esqueletos
+siguen sin pulso. Dos duraciones y una curva en `decisiones.css`, la regla
+`movimiento` de `design-lint`, y cinco lugares: el hover, los menús, la barra
+del cliente, lo que se pliega y la llegada del dato. Con menos movimiento
+pedido en el sistema, nada se mueve.
+
+**Criterio de aceptación.** Ninguna otra duración ni curva, ni
+`transition-all` ni `animate-*`. El dato aparece entero con un fundido de
+opacidad y el shell no se mueve. Al cambiar de cliente el nombre vuelve a
+entrar, y el mismo cliente no parpadea. Diseño lo mira grabado antes de
+mergear.
+
+**Construida el 2026-10-27** · `tests/surfaces/microinteracciones.test.tsx`;
+diez mutaciones mueren y la regla de lint se verificó rompiéndola. Grabada en
+cámara lenta en `docs/DECISIONES-2026-10-27-microinteracciones.md`. **En ⚠️
+hasta que diseño la mire.**
 
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 

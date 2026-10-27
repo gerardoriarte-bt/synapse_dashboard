@@ -60,7 +60,7 @@ export function MenuDeTrabajo({ esAdmin, rutaActual, onIr }: Props) {
         aria-expanded={abierto}
         aria-haspopup="menu"
         aria-label="Menú de trabajo"
-        className="flex size-8 cursor-pointer items-center justify-center rounded-md border border-w4 bg-transparent text-ink hover:bg-w2"
+        className="flex size-8 cursor-pointer items-center justify-center rounded-md border border-w4 bg-transparent text-ink hover:bg-w2 transition-colors duration-rapida ease-salida"
       >
         {/* `menu` de línea · iconografía §1, hereda el color. */}
         <svg
@@ -80,11 +80,14 @@ export function MenuDeTrabajo({ esAdmin, rutaActual, onIr }: Props) {
         </svg>
       </button>
 
+      {/* **Aparece con un fundido y 4 px desde el disparador, y se cierra sin
+          animación**: quien cierra ya decidió · 2026-10-27, punto 2 de
+          `docs/PROPUESTA-2026-10-20-microinteracciones.md`. */}
       {abierto && (
         <div
           role="menu"
           aria-label="Menú de trabajo"
-          className="absolute top-full right-0 z-40 mt-2 flex w-72 flex-col gap-4 rounded-xl border border-w3 bg-panel p-4 shadow-[0_8px_24px_var(--color-shad)]"
+          className="absolute top-full right-0 z-40 mt-2 flex w-72 flex-col gap-4 rounded-xl border border-w3 bg-panel p-4 shadow-[0_8px_24px_var(--color-shad)] transition-[opacity,translate] duration-base ease-salida starting:-translate-y-1 starting:opacity-0"
         >
           {grupos.map((g) => (
             <div key={g.superficie} role="group" aria-label={g.titulo} className="flex flex-col gap-1">
@@ -102,7 +105,7 @@ export function MenuDeTrabajo({ esAdmin, rutaActual, onIr }: Props) {
                       onIr(e.ruta)
                     }}
                     className={
-                      'w-full cursor-pointer rounded-sm border-0 border-l-2 bg-transparent px-2 py-1.5 text-left font-body text-cuerpo hover:bg-elev ' +
+                      'w-full cursor-pointer rounded-sm border-0 border-l-2 bg-transparent px-2 py-1.5 text-left font-body text-cuerpo hover:bg-elev transition-colors duration-rapida ease-salida ' +
                       (actual ? 'border-acc font-semibold text-ink' : 'border-transparent font-medium text-dim hover:text-ink')
                     }
                   >

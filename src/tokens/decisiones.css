@@ -55,6 +55,28 @@
   --color-fam-consulta-2: color-mix(in oklab, var(--color-ink) 57%, var(--color-panel));
   --color-fam-consulta-3: color-mix(in oklab, var(--color-ink) 82%, var(--color-panel));
   --color-fam-consulta-4: color-mix(in oklab, var(--color-ink) 48%, var(--color-panel));
+
+  /* ── El movimiento · 2026-10-27, decisión humana ──────────────────────────
+     `docs/PROPUESTA-2026-10-20-microinteracciones.md`. **Dos duraciones y una
+     curva, y ninguna más**: con más, cada componente elige la suya y el sistema
+     deja de serlo. Los nombres son los que Tailwind lee —`--transition-duration-*`
+     da `duration-*` y `--ease-*` da `ease-*`—, por eso no son `--duracion-*`
+     como dice la propuesta. `design-lint` prohíbe cualquier otra. */
+  --transition-duration-rapida: 120ms; /* hover, foco y presión */
+  --transition-duration-base: 180ms; /* menús, plegar, el fundido de llegada */
+  --ease-salida: cubic-bezier(0.2, 0, 0, 1); /* lo que aparece frena al llegar */
+}
+
+/* **Con menos movimiento pedido, nada se mueve**, en un solo lugar y no clase
+   por clase: una transición que alguien olvide marcar con `motion-reduce:`
+   seguiría animando. Es accesibilidad, no un detalle. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+  }
 }
 
 /* Mismo selector y misma razón que el bloque claro de `tokens.css`: sin
