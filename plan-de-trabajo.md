@@ -8371,6 +8371,12 @@ saca el `list-style`— y una columna mezclaba cifras completas con abreviadas
 («182,340 · 6.42K»), porque la abreviatura exacta se decidía por celda. Ahora
 una columna abrevia entera o no abrevia. Cinco mutaciones más, todas muertas.
 
+**Y cuatro del markdown, vistos en QA el mismo día** sobre un análisis
+semanal del agente: `---` se veía como texto, `>` al principio de las notas,
+`*Armour Week*` con sus asteriscos y una columna de «~$52,567» alineada a la
+izquierda. El parser suma separador, cita y cursiva, y la cifra acepta `~`,
+`≈` y un `+` al final. Quince mutaciones, todas muertas.
+
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
 **Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio

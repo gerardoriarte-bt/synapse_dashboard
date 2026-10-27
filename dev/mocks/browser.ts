@@ -577,6 +577,10 @@ export const worker = setupWorker(
       'todos con cobertura menor a siete días.\n\n',
       // Una tabla y recomendaciones · 2026-10-07. Es lo que el agente escribe
       // en Snowflake Intelligence, y hasta hoy la tabla se unía en un párrafo.
+      // Separador, cita y cursiva · 2026-10-27, como los escribió el agente en
+      // QA ese día y se veían crudos.
+      '> ⚠️ **Nota clave:** la semana anterior tuvo el evento *Armour Week*.\n\n',
+      '---\n\n',
       '| Canal | Ventas | Variación |\n|---|---:|---:|\n',
       '| Web | $82,300 | **-14%** |\n| App | $46,100 | -8% |\n\n',
       '### Recomendaciones\n',

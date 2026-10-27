@@ -130,6 +130,23 @@ export function Markdown({ texto }: { texto: string }) {
           )
         }
 
+        if (bloque.tipo === 'separador') {
+          return <hr key={i} className="m-0 my-1 border-0 border-t border-w2" />
+        }
+
+        if (bloque.tipo === 'cita') {
+          // **Una nota del agente, no un dato**: filete `w4` a la izquierda y
+          // sin color. El naranja es de CTAs y cifras en prosa, y una cita
+          // entera en naranja sería un bloque de énfasis.
+          return (
+            <blockquote key={i} className="m-0 border-l-2 border-w4 pl-3">
+              <p className={PARRAFO}>
+                <Trozos trozos={bloque.trozos} />
+              </p>
+            </blockquote>
+          )
+        }
+
         return (
           <p key={i} className={PARRAFO}>
             <Trozos trozos={bloque.trozos} />
@@ -156,6 +173,13 @@ function Trozos({ trozos, enCelda = false }: { trozos: readonly Trozo[]; enCelda
             <strong key={i} className={enCelda ? 'font-bold' : 'font-bold text-acc'}>
               {t.texto}
             </strong>
+          )
+        }
+        if (t.cursiva) {
+          return (
+            <em key={i} className="italic">
+              {t.texto}
+            </em>
           )
         }
         if (t.codigo) {
