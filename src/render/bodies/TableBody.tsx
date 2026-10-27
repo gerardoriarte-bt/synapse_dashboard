@@ -98,13 +98,24 @@ export function TableBody({ value, params, family, grafico, format, lectura }: T
    *  Sin esto una columna de ROAS sale «4.2 · 4.5 · 3.5 · 3»: la última pierde
    *  su decimal, el punto deja de alinearse y la columna se lee mal aunque cada
    *  celda esté bien. `Columna` no declara decimales, así que se infieren de lo
-   *  que hay — **es propuesta de spec agregarlos al contrato.** */
+   *  que hay — **es propuesta de spec agregarlos al contrato.**
+   *
+   *  **Y la abreviatura también es de la columna** · 2026-10-27. `number`
+   *  abrevia sólo cuando no se pierde nada, y lo decide celda por celda: en una
+   *  columna de clics salían «182,340 · 96,120 · 6.42K», porque 6,420 abrevia
+   *  exacto y los otros no. Dos formatos en la misma columna no se comparan de
+   *  un vistazo, y fue lo que se vio al mirar el chat. Así que se abrevia la
+   *  columna entera **sólo si todas sus cifras abrevian exactas**; si no, van
+   *  todas completas. Lo que está por debajo de mil no abrevia nunca y no
+   *  cuenta. */
   const columnFormat = (key: string): NumberOptions => {
     const values = value.filas
       .map((f) => f[key])
       .filter((v): v is number => typeof v === 'number')
     const magnitude = Math.max(0, ...values.map(Math.abs))
-    if (magnitude >= ABBREVIATE_FROM) return { abbreviate: true }
+    const abreviaExacta = (v: number) =>
+      Math.abs(v) < ABBREVIATE_FROM || /[KM]$/.test(format.number(v, { abbreviate: true }))
+    if (magnitude >= ABBREVIATE_FROM && values.every(abreviaExacta)) return { abbreviate: true }
     return {
       decimals: Math.min(
         MAX_DECIMALS,

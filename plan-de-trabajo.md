@@ -8365,6 +8365,12 @@ mirar contra el agente real**: el orden de llegada sale de leer
 Divergencia con el `.pen` en §17 de
 `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md`.
 
+**Y dos defectos que aparecieron al mirarlo, corregidos el mismo día**: las
+listas numeradas del agente salían sin números —el preflight de Tailwind les
+saca el `list-style`— y una columna mezclaba cifras completas con abreviadas
+(«182,340 · 6.42K»), porque la abreviatura exacta se decidía por celda. Ahora
+una columna abrevia entera o no abrevia. Cinco mutaciones más, todas muertas.
+
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
 **Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio

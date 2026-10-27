@@ -234,3 +234,46 @@ describe('la hoja del chat ocupa el 80% de la pantalla', () => {
     expect(screen.getByRole('dialog').className).toContain('max-w-[max(80vw,940px)]')
   })
 })
+
+describe('lo que se vio al mirarlo · 2026-10-27', () => {
+  it('una lista numerada lleva sus números, y una suelta sus viñetas', () => {
+    const { container } = render(<Markdown texto={'1. Reponer\n2. Pausar\n\n- Uno\n- Otro'} />)
+    expect(container.querySelector('ol')?.className).toContain('list-decimal')
+    expect(container.querySelector('ul')?.className).toContain('list-disc')
+  })
+
+  const columna = (valores: number[]) => ({
+    forma: 'tabular',
+    columnas: [
+      { clave: 'label', titulo: 'Plataforma', numerica: false },
+      { clave: 'n', titulo: 'Clics', numerica: true },
+    ],
+    filas: valores.map((n, i) => ({ label: `p${i}`, n })),
+  })
+  const celdas = (valores: number[]) => {
+    const { container } = render(
+      <TableBody
+        value={columna(valores) as never}
+        params={{}}
+        span={{ colStart: 1, colSpan: 6, rowSpan: 4 }}
+        family={null}
+        format={format}
+        metric=""
+      />,
+    )
+    return Array.from(container.querySelectorAll('tbody tr')).map((f) => f.children[1]?.textContent)
+  }
+
+  it('una columna no mezcla cifras completas con abreviadas', () => {
+    // 6,420 abrevia exacto y los otros no: antes salía «6.42K» entre enteros.
+    expect(celdas([182340, 96120, 6420])).toEqual(['182,340', '96,120', '6,420'])
+  })
+
+  it('si todas abrevian exactas, se abrevia la columna entera', () => {
+    expect(celdas([412000, 318000, 148000])).toEqual(['412K', '318K', '148K'])
+  })
+
+  it('lo que está por debajo de mil no impide abreviar', () => {
+    expect(celdas([4280000, 950])).toEqual(['4.28M', '950'])
+  })
+})
