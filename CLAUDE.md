@@ -598,9 +598,10 @@ cálculo**: la vista es gobierno y no consulta, y el cálculo vive sólo en
 ninguna cifra. Medido en `docs/AUDITORIA-2026-10-22-catalogo-de-keralty-y-terpel.md`.
 
 **La decisión es del backend y de producto**, y la pide
-`docs/MENSAJE-2026-10-22-backend-b126-con-dos-clientes.md`, que lo manda el
-humano. Del front no falta nada. Sigue pendiente de datos el usuario de
-servicio y el rol de sólo lectura de Terpel.
+`docs/MENSAJE-2026-10-22-backend-b126-con-dos-clientes.md`, **enviado el
+2026-10-23**. Del front no falta nada, y **lo que sigue es esperar, no volver a
+pedirlo**. El usuario de servicio y el rol de Terpel ya llegaron: ver la
+entrada del 23.
 
 ### ⇩ ACÁ SE PARÓ · 2026-10-21 · el alta de un cliente, de punta a punta
 
