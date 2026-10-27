@@ -28,14 +28,25 @@ export type Trozo = {
   enfasis: boolean
   /** `` `así` `` · nombres de columna, claves, valores literales. */
   codigo: boolean
+  /** `*así*` · desde el 2026-10-27. El agente marca así un nombre propio
+   *  —«*Armour Week*»— y en pantalla se leían los dos asteriscos. */
+  cursiva: boolean
 }
 
 export type Bloque =
-  /** `### Lo que sea` · **todos los niveles caen acá a propósito**. La casa
-   *  tiene UN rótulo de sección —mono, mayúsculas, `0.12em`— y darle un tamaño
-   *  distinto a `##` que a `###` inventaría una escala que el `.pen` no dibuja. */
+  /** `### Lo que sea` · **todos los niveles caen acá a propósito**: darle un
+   *  tamaño distinto a `##` que a `###` inventaría una escala que el `.pen` no
+   *  dibuja. Cómo se pinta lo decide `Markdown.tsx`. */
   | { tipo: 'seccion'; texto: string }
   | { tipo: 'parrafo'; trozos: Trozo[] }
+  /** `> así` · desde el 2026-10-27. El agente abre así una nota —«> ⚠️ Nota
+   *  clave: …»— y el `>` se veía al principio del párrafo. Varias líneas
+   *  seguidas con `>` son UNA cita. */
+  | { tipo: 'cita'; trozos: Trozo[] }
+  /** `---` solo en su línea · desde el 2026-10-27. El agente separa así las
+   *  secciones de un análisis largo, y medido en QA ese día una sola
+   *  respuesta tenía diez `---` sueltos en pantalla. */
+  | { tipo: 'separador' }
   | { tipo: 'lista'; ordenada: boolean; items: Trozo[][] }
   /** `| a | b |` · desde el 2026-10-07. Hasta ese día una tabla del agente se
    *  unía en UN párrafo de pipes —`| Canal | ROAS | |---|---| | Meta | 4.2 |`—
@@ -61,12 +72,19 @@ const SIN_COMPETENCIA = '[SIN_COMPETENCIA]'
 const ENCABEZADO = /^#{1,6}(?:\s+(.*))?$/
 const VINETA = /^\s*[-*]\s+(.*)$/
 const NUMERADA = /^\s*\d+[.)]\s+(.*)$/
+// `---`, `***` o `___`, tres o más, y nada más en la línea. Va ANTES que la
+// viñeta: `* * *` también empieza como una.
+const REGLA = /^\s*([-*_])(?:\s*\1){2,}\s*$/
+const CITA = /^\s*>\s?(.*)$/
 const FILA_DE_TABLA = /^\s*\|/
 // `|---|:---:|` · y también `|--` a medio llegar, que durante el streaming no
 // tiene que verse como una fila.
 const SEPARADOR = /^\s*\|?[\s:|-]*-[\s:|-]*$/
 // Una celda que se lee como cifra: signo, moneda, miles, decimales, `%` o `x`.
-const CIFRA = /^[-+−]?\s*[$€]?\s*[\d.,]+\s*(%|x|[kKmM])?$/
+// **`~` y `≈` delante, y `+` detrás, desde el 2026-10-27**: el agente escribe
+// «~$52,567» y «$61+», y esa columna se alineaba a la izquierda entre otras
+// dos de cifras.
+const CIFRA = /^[~≈]?\s*[-+−]?\s*[$€]?\s*[\d.,]+\s*(%|x|[kKmM])?\+?$/
 
 export function parsear(markdown: string): Respuesta {
   const lineas = markdown.split('\n')
@@ -80,11 +98,19 @@ export function parsear(markdown: string): Respuesta {
   let parrafo: string[] = []
   let lista: { ordenada: boolean; items: string[] } | null = null
   let tabla: string[] | null = null
+  let cita: string[] | null = null
 
   const cerrarParrafo = () => {
     if (parrafo.length === 0) return
     bloques.push({ tipo: 'parrafo', trozos: inline(parrafo.join(' ')) })
     parrafo = []
+  }
+  const cerrarCita = () => {
+    if (cita === null) return
+    // Un `>` que todavía no trajo texto —recién llegado por el stream— no
+    // abre una cita vacía.
+    if (cita.length > 0) bloques.push({ tipo: 'cita', trozos: inline(cita.join(' ')) })
+    cita = null
   }
   const cerrarLista = () => {
     if (lista === null) return
@@ -103,7 +129,7 @@ export function parsear(markdown: string): Respuesta {
     const [cabeza = [], ...cuerpo] = tabla.filter((l) => !SEPARADOR.test(l)).map(celdas)
     const numericas = cabeza.map((_, j) => {
       const columna = cuerpo.map((f) => f[j] ?? '').filter((c) => c !== '')
-      return columna.length > 0 && columna.every((c) => CIFRA.test(c.replace(/\*\*/g, '')))
+      return columna.length > 0 && columna.every((c) => CIFRA.test(c.replace(/\*/g, '')))
     })
     bloques.push({
       tipo: 'tabla',
@@ -121,17 +147,39 @@ export function parsear(markdown: string): Respuesta {
       cerrarParrafo()
       cerrarLista()
       cerrarTabla()
+      cerrarCita()
       continue
     }
 
     if (FILA_DE_TABLA.test(linea)) {
       cerrarParrafo()
       cerrarLista()
+      cerrarCita()
       if (tabla === null) tabla = []
       tabla.push(linea)
       continue
     }
     cerrarTabla()
+
+    const enCita = CITA.exec(linea)
+    if (enCita !== null) {
+      cerrarParrafo()
+      cerrarLista()
+      if (cita === null) cita = []
+      // Una línea de `>` sola, sin texto, no agrega nada: es el renglón en
+      // blanco dentro de la cita.
+      const texto = (enCita[1] ?? '').trim()
+      if (texto !== '') cita.push(texto)
+      continue
+    }
+    cerrarCita()
+
+    if (REGLA.test(linea)) {
+      cerrarParrafo()
+      cerrarLista()
+      bloques.push({ tipo: 'separador' })
+      continue
+    }
 
     const enc = ENCABEZADO.exec(linea)
     if (enc !== null) {
@@ -164,6 +212,7 @@ export function parsear(markdown: string): Respuesta {
   cerrarParrafo()
   cerrarLista()
   cerrarTabla()
+  cerrarCita()
 
   return { sinCompetencia, bloques }
 }
@@ -174,7 +223,7 @@ function celdas(linea: string): string[] {
   return t.split('|').map((c) => c.trim())
 }
 
-/** `**énfasis**` y `` `código` ``, sin anidarse.
+/** `**énfasis**`, `*cursiva*` y `` `código` ``, sin anidarse.
  *
  *  **Un marcador sin cerrar se queda literal.** Es la decisión que hace que el
  *  streaming no parpadee: con `«cayó **12»` a medio llegar, tragarse el `**` y
@@ -186,7 +235,7 @@ function inline(texto: string): Trozo[] {
 
   const soltarPlano = () => {
     if (plano === '') return
-    trozos.push({ texto: plano, enfasis: false, codigo: false })
+    trozos.push({ texto: plano, enfasis: false, codigo: false, cursiva: false })
     plano = ''
   }
 
@@ -208,9 +257,29 @@ function inline(texto: string): Trozo[] {
       }
 
       soltarPlano()
-      trozos.push({ texto: contenido, enfasis: doble, codigo: tilde })
+      trozos.push({ texto: contenido, enfasis: doble, codigo: tilde, cursiva: false })
       i = cierre + marca.length
       continue
+    }
+
+    // **La cursiva, con las reglas que evitan leer un `*` suelto como marca**:
+    // el que abre no va seguido de espacio y el que cierra no va precedido de
+    // uno —«5 * 3 * 2» sigue literal—, y el que cierra no es la mitad de un
+    // `**`. Sin cierre, literal, como los otros dos.
+    if (texto[i] === '*') {
+      const cierre = texto.indexOf('*', i + 1)
+      const contenido = cierre === -1 ? '' : texto.slice(i + 1, cierre)
+      const valida =
+        cierre !== -1 &&
+        texto[cierre + 1] !== '*' &&
+        contenido !== '' &&
+        contenido.trim() === contenido
+      if (valida) {
+        soltarPlano()
+        trozos.push({ texto: contenido, enfasis: false, codigo: false, cursiva: true })
+        i = cierre + 1
+        continue
+      }
     }
 
     plano += texto[i]

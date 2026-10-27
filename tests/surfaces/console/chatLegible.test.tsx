@@ -277,3 +277,25 @@ describe('lo que se vio al mirarlo · 2026-10-27', () => {
     expect(celdas([4280000, 950])).toEqual(['4.28M', '950'])
   })
 })
+
+describe('el markdown que el agente escribió en QA · 2026-10-27', () => {
+  it('`---` se dibuja como línea, no como texto', () => {
+    const { container } = render(<Markdown texto={'Uno.\n\n---\n\nDos.'} />)
+    expect(container.querySelector('hr')).not.toBeNull()
+    expect(container.textContent).not.toContain('---')
+  })
+
+  it('`>` se dibuja como cita, sin el signo y sin color de acento', () => {
+    const { container } = render(<Markdown texto={'> Nota clave: hubo un evento.'} />)
+    const cita = container.querySelector('blockquote') as HTMLElement
+    expect(cita.textContent).toBe('Nota clave: hubo un evento.')
+    expect(cita.className).toContain('border-l-2')
+    expect(cita.className).not.toContain('acc')
+  })
+
+  it('`*Armour Week*` sale en cursiva y sin asteriscos', () => {
+    const { container } = render(<Markdown texto={'el evento *Armour Week* disparó la venta'} />)
+    expect(container.querySelector('em')?.textContent).toBe('Armour Week')
+    expect(container.textContent).not.toContain('*')
+  })
+})
