@@ -603,9 +603,50 @@ export const worker = setupWorker(
           // De a fragmentos y con pausa: sin esto el texto aparece entero y el
           // estado de streaming no se ve nunca, que es la mitad de lo que hay
           // que poder mirar.
-          for (const text of fragmentos) {
+          for (const [i, text] of fragmentos.entries()) {
             await delay(220)
             controller.enqueue(encoder.encode(trama('delta', { text })))
+            // **Una tabla ancha A MITAD de la respuesta** · 2026-10-27. Es como
+            // llega `response.table` de Cortex: en el lugar donde el agente la
+            // puso, entre dos párrafos. Sirve para mirar las dos cosas que se
+            // arreglaron ese día —que quede bajo su párrafo y que se lea fila
+            // por fila— y es ancha a propósito, para ver el scroll horizontal.
+            // La forma es la capturada en `tests/api/chat.test.ts`.
+            if (i === 2) {
+              controller.enqueue(
+                encoder.encode(
+                  trama('data', {
+                    shape: 'tabular',
+                    data: {
+                      shape: 'tabular',
+                      columns: [
+                        { key: 'label', title: 'Plataforma', numeric: false },
+                        { key: 'investment', title: 'Inversión', numeric: true },
+                        { key: 'revenue', title: 'Ingresos', numeric: true },
+                        { key: 'roas', title: 'ROAS', numeric: true },
+                        { key: 'clicks', title: 'Clics', numeric: true },
+                        { key: 'impressions', title: 'Impresiones', numeric: true },
+                        { key: 'ctr', title: 'CTR %', numeric: true },
+                        { key: 'cpc', title: 'CPC', numeric: true },
+                        { key: 'share_pct', title: 'Participación %', numeric: true },
+                      ],
+                      rows: [
+                        { label: 'Google', investment: 63777.61, revenue: 412300.4, roas: 6.46, clicks: 182340, impressions: 4120330, ctr: 4.43, cpc: 0.35, share_pct: 57.36 },
+                        { label: 'Meta', investment: 33562.86, revenue: 131562.74, roas: 3.92, clicks: 96120, impressions: 3820110, ctr: 2.52, cpc: 0.35, share_pct: 30.19 },
+                        { label: 'TikTok', investment: 9120.4, revenue: 21880.1, roas: 2.4, clicks: 40110, impressions: 2210400, ctr: 1.81, cpc: 0.23, share_pct: 8.2 },
+                        { label: 'Pinterest', investment: 2399.13, revenue: 5120.9, roas: 2.13, clicks: 8120, impressions: 610220, ctr: 1.33, cpc: 0.3, share_pct: 2.16 },
+                        { label: 'Bing', investment: 2320.5, revenue: 9020.3, roas: 3.89, clicks: 6420, impressions: 240110, ctr: 2.67, cpc: 0.36, share_pct: 2.09 },
+                      ],
+                    },
+                    provenance: {
+                      source: 'cortex_agent', metric_key: '', period: '2026-09', sql_available: true,
+                      base: '', base_source: '', family: '', layer: '', source_system: '',
+                      catalog_version: 0, freshness: '', queried_at: new Date().toISOString(),
+                    },
+                  }),
+                ),
+              )
+            }
           }
           // La cifra, con su procedencia completa · F3.6.
           controller.enqueue(

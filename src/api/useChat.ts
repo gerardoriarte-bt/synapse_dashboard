@@ -22,10 +22,10 @@ import type { ChatEvent } from './types'
  *
  *  La prosa se acumula en `texto`; las cifras van aparte en `datos` y no
  *  intercaladas en la prosa, porque cada una se pinta con el cuerpo de panel que
- *  le toca · F3.6. */
+ *  le toca · F3.6. **Dónde va cada una sí se guarda** · ver `DatoEnRespuesta`. */
 export type Answer = {
   texto: string
-  datos: Extract<ChatEvent, { tipo: 'dato' }>[]
+  datos: DatoEnRespuesta[]
   auditoria: Extract<ChatEvent, { tipo: 'auditoria' }> | null
   sugerencias: string[]
 }
@@ -38,6 +38,19 @@ export type ChatTurn = {
   /** El corte, si lo hubo. `parcial` decide si lo ya recibido se conserva. */
   error: { mensaje: string; parcial: boolean } | null
 }
+
+/** Una cifra del agente y **dónde cayó en la prosa** · 2026-10-27.
+ *
+ *  `enTexto` es cuánto texto había llegado cuando llegó la cifra. El servicio
+ *  reenvía cada `response.table` y `response.chart` de Cortex en el orden en que
+ *  el agente arma la respuesta (`cortex_sse.go`), así que ese largo dice debajo
+ *  de qué párrafo la puso el agente. Hasta este día se ignoraba y todas las
+ *  tablas se dibujaban al final, lejos del texto que las presenta: lo notó el
+ *  humano usándolo.
+ *
+ *  **Ausente en un turno reabierto**: el historial guarda las cifras sin su
+ *  lugar, y entonces van al final, como antes. */
+export type DatoEnRespuesta = Extract<ChatEvent, { tipo: 'dato' }> & { enTexto?: number }
 
 const VACIA: Answer = { texto: '', datos: [], auditoria: null, sugerencias: [] }
 
@@ -69,7 +82,7 @@ export function apply(previa: Answer, evento: ChatEvent): Answer {
     case 'texto':
       return { ...previa, texto: previa.texto + evento.delta }
     case 'dato':
-      return { ...previa, datos: [...previa.datos, evento] }
+      return { ...previa, datos: [...previa.datos, { ...evento, enTexto: previa.texto.length }] }
     case 'auditoria':
       return { ...previa, auditoria: evento }
     case 'sugerencias':

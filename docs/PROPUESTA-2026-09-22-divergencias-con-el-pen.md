@@ -700,6 +700,29 @@ se proponen acá:
 **Pregunta para diseño:** ¿se retipean en el dibujo? Si sí, el front los cambia
 el mismo día; si no, se quedan como están.
 
+## 17 · La hoja del chat al 80% y sus tablas con anatomía de lectura · 2026-10-27
+
+**De dónde sale:** el humano, usando el chat. Las tablas del agente pedían
+scroll horizontal en una hoja de 940 sobre una pantalla de 1440, y dentro de
+la tabla «se ve muy igual» todo: filas, columnas, encabezados, títulos y
+referencias.
+
+**Decidido por el humano y ya construido** · F5.57:
+
+| | El `.pen` | El front |
+|---|---|---|
+| Ancho de la hoja | 940 fijos · riel 220 + conversación 720 | `max(80vw, 940px)` · el riel sigue en 220 y la conversación toma el resto |
+| Tabla en el chat | No la dibuja · C3 no tiene ninguna | Encabezado sobre `elev` con línea `w4`, filas alternadas con `w1`, línea `w2` entre columnas, la primera columna en `font-medium` |
+| Título de una cifra y `###` del agente | Rótulo mono · `ROAS · MES`, `DE DÓNDE SALE EL +0.2X` | Cuerpo en `font-semibold` e `ink` |
+| BASE y procedencia | Debajo de la cifra, sin separación | Debajo, con una línea `w2` encima |
+
+**La tabla del panel de la consola no cambió**: sigue la anatomía de `§6 · Sec
+· table armado`. La de lectura es sólo para la conversación.
+
+**Pregunta para diseño:** ¿se dibuja C3 con una tabla? Si el dibujo trae otra
+anatomía, se cambia en `src/render/primitives/tablaDeLectura.ts`, que es un
+solo lugar.
+
 ## Dónde vive cada una de las demás
 
 Para que este documento no crezca hasta pisar a los otros:

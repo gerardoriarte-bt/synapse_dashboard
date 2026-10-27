@@ -8338,6 +8338,33 @@ once mutaciones mueren. Mirada en el navegador contra `26eae4b` en local, sobre
 un cliente de prueba. El procedimiento está en
 `docs/AUDITORIA-2026-10-23-usuarios-de-servicio.md`.
 
+### ➕ F5.57 ✅ El chat se lee: cada tabla bajo su párrafo, filas y columnas que se distinguen
+
+**Descripción.** Tres cosas que el humano encontró usándolo el 2026-10-27. Las
+tablas del agente se dibujaban al final de la respuesta, lejos del párrafo que
+las presenta: ahora cada cifra se guarda con cuánto texto había cuando llegó y
+se dibuja al final de ese párrafo (`intercalar.ts`). En una tabla «se ve muy
+igual» todo: las dos tablas del chat —la de markdown y la del dato— pasan a una
+anatomía de lectura con encabezado sobre `elev`, filas alternadas, línea entre
+columnas y la primera columna destacada (`tablaDeLectura.ts`); el título de la
+cifra y los `###` del agente dejan de ir en el rótulo gris, y la BASE y la
+procedencia van abajo, separadas. Y la hoja pasa de 940 fijos al 80% de la
+pantalla, nunca menos de 940.
+
+**Criterio de aceptación.** Una tabla que llega entre dos párrafos se dibuja
+entre esos dos párrafos, sin partir una frase ni una tabla de markdown; sin
+lugar —un turno reabierto, o antes de cualquier palabra— va al final. La tabla
+del panel de la consola sigue como la dibuja el `.pen`. La hoja mide
+`max(80vw, 940px)`.
+
+**Verificado el 2026-10-27** · `tests/surfaces/console/chatLegible.test.tsx`;
+veinte mutaciones mueren. Mirado en el navegador en modo mock, en los dos
+temas, con una tabla de nueve columnas que entra sin scroll horizontal. **Sin
+mirar contra el agente real**: el orden de llegada sale de leer
+`cortex_sse.go`, no de una captura, porque el local no tiene agente activo.
+Divergencia con el `.pen` en §17 de
+`docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md`.
+
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
 **Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio
