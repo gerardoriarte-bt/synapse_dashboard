@@ -17,7 +17,7 @@ en cada corrida de la puerta con `npm run plan:ancestro`.
 ## Lo que ya está de nuestro lado
 
 No hace falta que esperen nada de estas para probar: están en la rama
-`main` del repositorio del front, con prueba y con la puerta en
+`front/microinteracciones` del repositorio del front, con prueba y con la puerta en
 verde.
 
 - **F1.32** · Transcribir el cable de consola a un contrato versionado
