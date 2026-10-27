@@ -124,9 +124,11 @@ export function RoleCard({
           onClick={() => setAbierta((v) => !v)}
           aria-expanded={abierta}
           aria-controls={detalle}
-          className="flex min-w-0 cursor-pointer items-center gap-3 border-0 bg-transparent p-0 text-left text-dim hover:text-ink"
+          className="flex min-w-0 cursor-pointer items-center gap-3 border-0 bg-transparent p-0 text-left text-dim hover:text-ink transition-colors duration-rapida ease-salida"
         >
-          {/* `chevron-right` de línea, que gira al abrir · hereda el color. */}
+          {/* `chevron-right` de línea, que gira al abrir · hereda el color. Gira
+              en `duration-base` y no de golpe · 2026-10-27, punto 4 de la
+              propuesta de microinteracciones. */}
           <svg
             width="14"
             height="14"
@@ -136,7 +138,7 @@ export function RoleCard({
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className={abierta ? 'rotate-90' : ''}
+            className={`transition-transform duration-base ease-salida ${abierta ? 'rotate-90' : ''}`}
             aria-hidden
           >
             <path d="m9 18 6-6-6-6" />
@@ -175,8 +177,10 @@ export function RoleCard({
         )}
       </div>
 
+      {/* **El detalle entra con un fundido, y la altura cambia en seco**: animarla
+          movería todo lo que está debajo · 2026-10-27, punto 4. */}
       {abierta && (
-        <div id={detalle} className="flex flex-col gap-4 border-t border-w2 px-5 py-4">
+        <div id={detalle} className="flex flex-col gap-4 border-t border-w2 px-5 py-4 transition-opacity duration-base ease-salida starting:opacity-0">
           {suyas.length === 0 ? (
             <Ayuda>Este cliente todavía no tiene pestañas publicadas.</Ayuda>
           ) : (

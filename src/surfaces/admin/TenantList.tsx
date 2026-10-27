@@ -150,7 +150,7 @@ export function TenantList({ format, tenants, seleccionado, onElegir, cargando =
                 aria-pressed={enUso}
                 aria-label={`${t.nombre} · ${distintivo(t)}`}
                 className={
-                  'flex w-full cursor-pointer flex-col gap-4 rounded-xl border bg-panel p-5 text-left hover:bg-w1 ' +
+                  'flex w-full cursor-pointer flex-col gap-4 rounded-xl border bg-panel p-5 text-left hover:bg-w1 transition-colors duration-rapida ease-salida ' +
                   (enUso ? 'border-acc' : 'border-w3')
                 }
               >

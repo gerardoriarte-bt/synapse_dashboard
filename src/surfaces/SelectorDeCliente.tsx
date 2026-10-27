@@ -63,7 +63,7 @@ export function SelectorDeCliente({ clientes, activo, onElegir }: Props) {
         onClick={() => setAbierto((v) => !v)}
         aria-expanded={abierto}
         aria-haspopup="menu"
-        className="flex h-8 cursor-pointer items-center gap-2 rounded-md border border-w4 bg-transparent px-3 font-mono text-nota leading-rotulo tracking-rotulo uppercase text-ink hover:bg-w2"
+        className="flex h-8 cursor-pointer items-center gap-2 rounded-md border border-w4 bg-transparent px-3 font-mono text-nota leading-rotulo tracking-rotulo uppercase text-ink hover:bg-w2 transition-colors duration-rapida ease-salida"
       >
         {/* `arrow-left-right` de línea · hereda el color. */}
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-dim" aria-hidden>
@@ -78,8 +78,11 @@ export function SelectorDeCliente({ clientes, activo, onElegir }: Props) {
         </svg>
       </button>
 
+      {/* **Aparece con un fundido y 4 px desde el disparador, y se cierra sin
+          animación**: quien cierra ya decidió · 2026-10-27, punto 2 de
+          `docs/PROPUESTA-2026-10-20-microinteracciones.md`. */}
       {abierto && (
-        <div className="absolute top-full right-0 z-40 mt-2 flex w-96 flex-col gap-1 rounded-xl border border-w4 bg-panel p-2 shadow-[0_8px_24px_var(--color-shad)]">
+        <div className="absolute top-full right-0 z-40 mt-2 flex w-96 flex-col gap-1 rounded-xl border border-w4 bg-panel p-2 shadow-[0_8px_24px_var(--color-shad)] transition-[opacity,translate] duration-base ease-salida starting:-translate-y-1 starting:opacity-0">
           {clientes.length >= CON_BUSQUEDA && (
             <input
               type="search"
@@ -105,7 +108,7 @@ export function SelectorDeCliente({ clientes, activo, onElegir }: Props) {
                     if (!actual) onElegir(c.id)
                   }}
                   className={
-                    'flex w-full cursor-pointer items-center gap-2.5 rounded-md border-0 px-2.5 py-2 text-left hover:bg-elev ' +
+                    'flex w-full cursor-pointer items-center gap-2.5 rounded-md border-0 px-2.5 py-2 text-left hover:bg-elev transition-colors duration-rapida ease-salida ' +
                     (actual ? 'bg-elev' : 'bg-transparent')
                   }
                 >
