@@ -71,8 +71,13 @@ export function ChatOverlay({ open, title, contexto, onClose, children }: Props)
       title={title}
       {...(contexto === undefined ? {} : { contexto })}
       onClose={onClose}
-      // 940 del dibujo, pegada a la derecha.
-      ancho="w-full max-w-[940px]"
+      // **El 80% de la pantalla, y nunca menos que los 940 del dibujo** ·
+      // 2026-10-27, decisión humana. Con 940 fijos, las tablas del agente
+      // pedían scroll horizontal en una pantalla de 1440 que tenía 500 px
+      // libres al lado. Es divergencia con el `.pen` · §17 de
+      // `docs/PROPUESTA-2026-09-22-divergencias-con-el-pen.md`. Pegada a la
+      // derecha, y por debajo de 940 ocupa la pantalla entera.
+      ancho="w-full max-w-[max(80vw,940px)]"
       // `$dock`, y redondeada **solo a la izquierda** — el lado por el que entra.
       superficie="rounded-l-xl bg-dock shadow-[0_0_40px_var(--color-shad)]"
       // El `Filo`: 2px de `$acc` arriba de todo, a lo ancho de la hoja.

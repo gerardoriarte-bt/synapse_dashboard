@@ -24,14 +24,17 @@ describe('F3.13 · el markdown se dibuja, no se vuelca', () => {
     expect(screen.getByText('Límite declarado')).toBeInTheDocument()
   })
 
-  it('la sección lleva el rótulo de la casa · mono, mayúsculas, tracking', () => {
-    // No un encabezado grande: la escala tipográfica no tiene un tamaño para
-    // «subtítulo dentro de una respuesta de chat».
+  it('la sección es un título del agente, y no el rótulo de la casa · 2026-10-27', () => {
+    // Hasta ese día iba en el rótulo mono gris, el mismo traje que el
+    // encabezado de una tabla y la BASE: «se ve muy igual». Sigue sin ser un
+    // encabezado grande: la escala no tiene un tamaño de «subtítulo de chat».
     render(<Markdown texto="### Puntos de lectura" />)
     const clases = screen.getByText('Puntos de lectura').className
-    expect(clases).toContain('font-mono')
-    expect(clases).toContain('uppercase')
-    expect(clases).toContain('tracking-rotulo')
+    expect(clases).toContain('font-semibold')
+    expect(clases).toContain('text-ink')
+    expect(clases).toContain('text-cuerpo')
+    expect(clases).not.toContain('font-mono')
+    expect(clases).not.toContain('uppercase')
   })
 
   it('una lista se pinta como lista, con sus items', () => {

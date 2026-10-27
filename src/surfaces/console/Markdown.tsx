@@ -6,11 +6,15 @@
  *  cerrada —sección, párrafo, lista— y acá cada caso se pinta con un elemento
  *  escrito a mano. No hay rama por la que llegue HTML del agente.
  *
- *  **Los `###` se pintan como el rótulo de la casa**, no como un encabezado
- *  grande. La escala tipográfica tiene nueve tamaños y ninguno es «subtítulo
- *  dentro de una respuesta de chat»; el rótulo mono en mayúsculas ya es cómo
- *  esta aplicación nombra una sección, y es el mismo que llevan «Preguntaste» y
- *  «Cómo se calculó» en esta misma hoja.
+ *  **Los `###` se pintan en el tamaño del cuerpo, en `font-semibold` e `ink`**,
+ *  no como un encabezado grande: la escala tipográfica tiene nueve tamaños y
+ *  ninguno es «subtítulo dentro de una respuesta de chat».
+ *
+ *  **Hasta el 2026-10-27 iban como el rótulo de la casa**, mono, en mayúsculas
+ *  y en `dim`: el mismo traje que el encabezado de una tabla, «Preguntaste», la
+ *  BASE y la procedencia. Con tablas en la respuesta, el humano lo dijo así:
+ *  títulos, referencias y encabezados «se ven muy igual». El rótulo sigue
+ *  nombrando lo que es de la casa; el título es del agente.
  *
  *  **`[SIN_COMPETENCIA]` no se muestra crudo.** Es un marcador de protocolo: el
  *  backend lo pone en la primera línea cuando el agente no puede responder con
@@ -24,10 +28,14 @@
  *  compilado, que es la mitad peor de ese error.
  */
 import { Label } from '../../render/primitives/Label'
+import { TABLA_DE_LECTURA as T } from '../../render/primitives/tablaDeLectura'
 import { parsear } from './parseMarkdown'
 import type { Trozo } from './parseMarkdown'
 
 const PARRAFO = 'font-body text-cuerpo leading-cuerpo text-ink m-0'
+
+/** **Un `###` es un título, no un rótulo** · 2026-10-27. Ver la cabecera. */
+const SECCION = 'font-body text-cuerpo leading-cuerpo font-semibold text-ink m-0 pt-2'
 
 export function Markdown({ texto }: { texto: string }) {
   const { sinCompetencia, bloques } = parsear(texto)
@@ -52,9 +60,9 @@ export function Markdown({ texto }: { texto: string }) {
       {bloques.map((bloque, i) => {
         if (bloque.tipo === 'seccion') {
           return (
-            <Label as="div" key={i}>
+            <p key={i} className={SECCION}>
               {bloque.texto}
-            </Label>
+            </p>
           )
         }
 
@@ -72,20 +80,21 @@ export function Markdown({ texto }: { texto: string }) {
         }
 
         if (bloque.tipo === 'tabla') {
-          // **La misma anatomía que `TableBody`**: rótulo mono en el
-          // encabezado, línea `w2` debajo, `w1` entre filas y las cifras a la
-          // derecha en mono de celda. El scroll horizontal es de la tabla, no
-          // de la hoja: una tabla ancha no empuja el chat.
+          // **La anatomía de lectura** · 2026-10-27: encabezado sobre `elev`,
+          // filas alternadas, línea entre columnas y la primera columna en
+          // `font-medium`. Es la misma que la tabla que el agente manda como
+          // dato. Hasta ese día era la del panel, y en tablas de muchas filas
+          // «se ve muy igual». Ver `tablaDeLectura.ts`.
           return (
-            <div key={i} className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
+            <div key={i} className={T.marco}>
+              <table className={T.tabla}>
+                <thead className={T.encabezado}>
                   <tr>
                     {bloque.encabezado.map((c, j) => (
                       <th
                         key={j}
                         scope="col"
-                        className={`text-left pb-2 pr-3 border-b border-w2 ${bloque.numericas[j] === true ? 'text-right' : ''}`}
+                        className={`${T.th} ${j === 0 ? '' : T.entreColumnas} ${bloque.numericas[j] === true ? 'text-right' : ''}`}
                       >
                         <Label>{c.map((t) => t.texto).join('')}</Label>
                       </th>
@@ -94,15 +103,15 @@ export function Markdown({ texto }: { texto: string }) {
                 </thead>
                 <tbody>
                   {bloque.filas.map((fila, k) => (
-                    <tr key={k} className="border-b border-w1">
+                    <tr key={k} className={T.fila}>
                       {fila.map((c, j) => (
                         <td
                           key={j}
-                          className={
+                          className={`${T.td} ${j === 0 ? T.rotuloDeFila : T.entreColumnas} ${
                             bloque.numericas[j] === true
-                              ? 'py-1 pr-3 text-right font-mono text-celda text-ink'
-                              : 'py-1 pr-3 font-body text-cuerpo text-ink'
-                          }
+                              ? 'text-right font-mono text-celda text-ink'
+                              : 'font-body text-cuerpo text-ink'
+                          }`}
                         >
                           <Trozos trozos={c} enCelda />
                         </td>

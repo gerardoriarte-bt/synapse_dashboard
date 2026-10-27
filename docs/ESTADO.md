@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**216 de 263 tareas cerradas.** 15 parciales · 28 pendientes · 4 diferidas.
+**217 de 264 tareas cerradas.** 15 parciales · 28 pendientes · 4 diferidas.
 
 
-## Front · 155 de 165
+## Front · 156 de 166
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -17,7 +17,7 @@
 | 2 · Estados | `██████████████████████` | 6/6 | 0 | 0 |
 | 3 · Chat contextual | `█████████████████·····` | 13/17 | 0 | 2 |
 | 4 · Admin y Builder | `██████████████████████` | 24/24 | 0 | 0 |
-| 5 · Pruebas y pulido | `████████████████████··` | 52/56 | 0 | 3 |
+| 5 · Pruebas y pulido | `████████████████████··` | 53/57 | 0 | 3 |
 
 ## Backend · 61 de 98
 
