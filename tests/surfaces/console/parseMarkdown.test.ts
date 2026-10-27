@@ -20,7 +20,8 @@ import type { Bloque, Trozo } from '@/surfaces/console/parseMarkdown'
 /** El texto plano de un bloque, para no repetir la estructura en cada aserción. */
 function plano(b: Bloque): string {
   if (b.tipo === 'seccion') return b.texto
-  if (b.tipo === 'parrafo') return b.trozos.map((t) => t.texto).join('')
+  if (b.tipo === 'parrafo' || b.tipo === 'cita') return b.trozos.map((t) => t.texto).join('')
+  if (b.tipo === 'separador') return '---'
   if (b.tipo === 'tabla') {
     const fila = (f: Trozo[][]) => f.map((c) => c.map((t) => t.texto).join('')).join(' | ')
     return [fila(b.encabezado), ...b.filas.map(fila)].join(' / ')
@@ -181,5 +182,71 @@ describe('las tablas del agente · 2026-10-07', () => {
       { tipo: 'tabla' }
     >
     expect(tabla.filas[0]?.length).toBe(2)
+  })
+})
+
+/** **Lo que el agente escribió en QA el 2026-10-27**, en el análisis semanal de
+ *  Lobueno Analytics: diez `---`, notas con `>`, `*Armour Week*` en cursiva y
+ *  una columna de «~$52,567». Las cuatro se veían crudas. */
+describe('separadores, citas, cursiva y cifras aproximadas · 2026-10-27', () => {
+  it('`---` solo en su línea es un separador, no un párrafo', () => {
+    const { bloques } = parsear('Uno.\n\n---\n\nDos.')
+    expect(bloques.map((b) => b.tipo)).toEqual(['parrafo', 'separador', 'parrafo'])
+    expect(parsear('***').bloques.map((b) => b.tipo)).toEqual(['separador'])
+  })
+
+  it('un guion o dos —a medio llegar, o una lista— no son separador', () => {
+    expect(parsear('--').bloques.map((b) => b.tipo)).toEqual(['parrafo'])
+    expect(parsear('- uno').bloques.map((b) => b.tipo)).toEqual(['lista'])
+    expect(parsear('---a').bloques.map((b) => b.tipo)).toEqual(['parrafo'])
+  })
+
+  it('`>` abre una cita, y varias líneas seguidas son UNA', () => {
+    const { bloques } = parsear('> ⚠️ **Nota clave:** la semana anterior\n> tenía un evento.\n\nSigue.')
+    expect(bloques.map((b) => b.tipo)).toEqual(['cita', 'parrafo'])
+    const cita = bloques[0] as Extract<Bloque, { tipo: 'cita' }>
+    expect(cita.trozos.map((t) => t.texto).join('')).toBe('⚠️ Nota clave: la semana anterior tenía un evento.')
+    expect(cita.trozos.some((t) => t.enfasis)).toBe(true)
+  })
+
+  it('una cita seguida de texto sin renglón en blanco se cierra EN ORDEN', () => {
+    expect(parsear('> nota\nSigue.').bloques.map((b) => b.tipo)).toEqual(['cita', 'parrafo'])
+  })
+
+  it('el `*` que cierra no puede ser la mitad de un `**`', () => {
+    const trozos = (parsear('*hola**').bloques[0] as Extract<Bloque, { tipo: 'parrafo' }>).trozos
+    expect(trozos.some((t) => t.cursiva)).toBe(false)
+    expect(trozos.map((t) => t.texto).join('')).toBe('*hola**')
+  })
+
+  it('un `>` recién llegado, sin texto, no deja una cita vacía', () => {
+    expect(parsear('>').bloques).toEqual([])
+  })
+
+  it('`*así*` es cursiva, y `**así**` sigue siendo énfasis', () => {
+    const { bloques } = parsear('el evento *Armour Week* y **$49K** ese día')
+    const trozos = (bloques[0] as Extract<Bloque, { tipo: 'parrafo' }>).trozos
+    expect(trozos.find((t) => t.texto === 'Armour Week')).toMatchObject({ cursiva: true, enfasis: false })
+    expect(trozos.find((t) => t.texto === '$49K')).toMatchObject({ enfasis: true, cursiva: false })
+  })
+
+  it('un asterisco suelto no es cursiva · «5 * 3 * 2» y uno sin cierre quedan literales', () => {
+    const texto = (md: string) =>
+      (parsear(md).bloques[0] as Extract<Bloque, { tipo: 'parrafo' }>).trozos
+    expect(texto('5 * 3 * 2').every((t) => !t.cursiva)).toBe(true)
+    expect(texto('5 * 3 * 2').map((t) => t.texto).join('')).toBe('5 * 3 * 2')
+    expect(texto('cayó *12').map((t) => t.texto).join('')).toBe('cayó *12')
+  })
+
+  it('una columna de «~$52,567» y «$61+» es de cifras', () => {
+    const md = '| División | Revenue | AUR |\n|---|---|---|\n| Footwear | ~$52,567 | $61+ |\n| Apparel | ~$44,365 | $36 |'
+    const tabla = parsear(md).bloques[0] as Extract<Bloque, { tipo: 'tabla' }>
+    expect(tabla.numericas).toEqual([false, true, true])
+  })
+
+  it('una celda en cursiva no deja de ser cifra', () => {
+    const md = '| a | b |\n|---|---|\n| x | *12%* |'
+    const tabla = parsear(md).bloques[0] as Extract<Bloque, { tipo: 'tabla' }>
+    expect(tabla.numericas).toEqual([false, true])
   })
 })
