@@ -28,6 +28,7 @@ import type { PanelType } from '../../catalog/types'
 import type { Formatter } from '../../render/format'
 import { Label } from '../../render/primitives/Label'
 import { Markdown } from './Markdown'
+import { intercalar } from './intercalar'
 import { useEffect, useState } from 'react'
 
 /** El hueco antes del primer fragmento · 2026-10-06.
@@ -109,7 +110,26 @@ export function ChatThread({ turns, panelTipo, bloques, format, now, mesEnCurso 
           <div aria-live="polite" aria-busy={turn.streaming} className="flex flex-col gap-2">
             {turn.streaming && turn.respuesta.texto === '' ? <Consultando /> : null}
 
-            {turn.respuesta.texto === '' ? null : <Markdown texto={turn.respuesta.texto} />}
+            {/* **Cada cifra debajo del párrafo que la presenta** · 2026-10-27.
+                Hasta este día iban todas al final, lejos de su texto. Ver
+                `intercalar.ts`. Las cifras se DIBUJAN desde el 2026-09-22 ·
+                F3.6; hasta el 21 sólo se declaraba cuántas traía la respuesta. */}
+            {intercalar(turn.respuesta.texto, turn.respuesta.datos).map((tramo, j) => (
+              <div key={j} className="flex flex-col gap-3">
+                {tramo.texto.trim() === '' ? null : <Markdown texto={tramo.texto} />}
+                {tramo.datos.map((dato, k) => (
+                  <ChatFigure
+                    key={k}
+                    dato={dato}
+                    panelTipo={panelTipo}
+                    bloques={bloques}
+                    format={format}
+                    now={now}
+                    {...(mesEnCurso === undefined ? {} : { mesEnCurso })}
+                  />
+                ))}
+              </div>
+            ))}
 
             {/* **Mientras escribe, también se dice** · 2026-10-06. Con el texto
                 ya empezado el agente todavía puede pararse a consultar —una
@@ -120,21 +140,6 @@ export function ChatThread({ turns, panelTipo, bloques, format, now, mesEnCurso 
                 Escribiendo
               </p>
             ) : null}
-
-            {/* **Las cifras se DIBUJAN desde el 2026-09-22** · F3.6. Hasta el
-                21 sólo se declaraba cuántas traía la respuesta, porque el cable
-                no mandaba con qué familia ni con qué BASE pintarlas. */}
-            {turn.respuesta.datos.map((dato, j) => (
-              <ChatFigure
-                key={j}
-                dato={dato}
-                panelTipo={panelTipo}
-                bloques={bloques}
-                format={format}
-                now={now}
-                {...(mesEnCurso === undefined ? {} : { mesEnCurso })}
-              />
-            ))}
 
             {turn.error === null ? null : (
               <p className="font-body text-cuerpo leading-cuerpo text-ink m-0">

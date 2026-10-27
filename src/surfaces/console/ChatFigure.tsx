@@ -60,8 +60,17 @@ type Dato = Extract<ChatEvent, { tipo: 'dato' }>
 const FILAS = 3
 
 /** Los cuerpos que miden su propio contenido. Los demás —los gráficos— ocupan
- *  el alto de su contenedor y sin uno no se ven. */
-const CON_ALTO_PROPIO: ReadonlySet<PanelType> = new Set(['kpi', 'prose'])
+ *  el alto de su contenedor y sin uno no se ven.
+ *
+ *  **`table` está desde el 2026-10-27**: en la conversación crece con sus
+ *  filas (`lectura="conversacion"`). Con 272 px fijos una tabla de veinte
+ *  filas abría un segundo scroll dentro de la hoja. */
+const CON_ALTO_PROPIO: ReadonlySet<PanelType> = new Set(['kpi', 'prose', 'table'])
+
+/** **El título de la cifra es un título**, no un rótulo · 2026-10-27. Hasta ese
+ *  día iba en el rótulo mono gris, igual que la BASE, la procedencia y los
+ *  encabezados de la tabla, y el humano lo dijo así: «se ve muy igual». */
+const TITULO = 'font-body text-cuerpo leading-cuerpo font-semibold text-ink m-0'
 
 /** ¿Cada fila dice de qué es? Hay una columna no numérica con texto en TODAS
  *  las filas. Una columna de texto vacía no cuenta: medido el 2026-10-09,
@@ -122,7 +131,7 @@ export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now
   if (dato.valor.forma === 'tabular' && !hasRowLabels(dato.valor)) {
     return (
       <div className="flex flex-col gap-1">
-        {dato.titulo == null ? null : <Label as="div">{dato.titulo}</Label>}
+        {dato.titulo == null ? null : <p className={TITULO}>{dato.titulo}</p>}
         <Label as="div">Una tabla que no se dibuja</Label>
         <Label as="div">Sus filas llegaron sin una columna que diga de qué es cada cifra</Label>
       </div>
@@ -196,12 +205,13 @@ export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now
     span: { colStart: 1, colSpan: 6, rowSpan: FILAS },
     metric: dato.titulo ?? '',
     format,
+    lectura: 'conversacion' as const,
     ...(dato.presentacion === undefined ? {} : { presentation: dato.presentacion }),
   }
 
   return (
     <figure className="flex flex-col gap-2 rounded-md border border-w3 p-3 m-0">
-      {dato.titulo == null ? null : <Label as="div">{dato.titulo}</Label>}
+      {dato.titulo == null ? null : <p className={TITULO}>{dato.titulo}</p>}
       {/* El neutro se DICE: sin esto, un gráfico gris se lee como una métrica
           más, y es una consulta que el catálogo no respalda. */}
       {familiaDeDibujo === 'consulta' ? (
@@ -241,40 +251,45 @@ export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now
         </Suspense>
       </div>
 
-      {/* **La BASE y la procedencia van PEGADAS a la cifra**, que es la mitad
-          del criterio: «una cifra en el chat también declara BASE y
-          procedencia».
+      {/* **Las referencias, abajo y separadas de la cifra** · 2026-10-27: una
+          línea `w2` encima, para que la BASE y la procedencia no se lean como
+          una fila más de la tabla. */}
+      <div className="flex flex-col gap-1 border-t border-w2 pt-2">
+        {/* **La BASE y la procedencia van PEGADAS a la cifra**, que es la mitad
+            del criterio: «una cifra en el chat también declara BASE y
+            procedencia».
 
-          La BASE va aparte porque `Provenance` no la lleva — en el shell la
-          escribe la cabecera del panel, junto al título. Acá la cifra no tiene
-          cabecera, así que la pone esta línea. */}
-      {/* **Una base vacía se dice, no se deja colgando** · 2026-10-08. Es lo
-          que le pedimos al backend cuando la consulta del agente no es la
-          métrica del catálogo —filtra por medio, o sale de otra tabla—: que no
-          copie la base del catálogo. «Base · » con nada detrás se lee como un
-          defecto de pantalla y no como una declaración. */}
-      <Label as="div">
-        {dato.base === '' ? 'Base · la consulta no la declara' : `Base · ${dato.base}`}
-      </Label>
-      {/* **Sin capa, la procedencia se declara entera** · 2026-10-09. Es la
-          consulta del agente fuera del catálogo: no trae capa ni fuente, y
-          `Provenance` las pintaría como «GOLD · » —antes el adaptador ponía
-          GOLD por defecto— o como un separador colgando. Lo que sí es un
-          hecho es cuándo corrió la consulta, y eso se conserva. El SQL que la
-          produjo está en el desplegable de auditoría de la misma respuesta. */}
-      {dato.capa === null ? (
+            La BASE va aparte porque `Provenance` no la lleva — en el shell la
+            escribe la cabecera del panel, junto al título. Acá la cifra no tiene
+            cabecera, así que la pone esta línea. */}
+        {/* **Una base vacía se dice, no se deja colgando** · 2026-10-08. Es lo
+            que le pedimos al backend cuando la consulta del agente no es la
+            métrica del catálogo —filtra por medio, o sale de otra tabla—: que no
+            copie la base del catálogo. «Base · » con nada detrás se lee como un
+            defecto de pantalla y no como una declaración. */}
         <Label as="div">
-          {`Procedencia · la consulta no la declara · ${format.freshness(dato.frescura, now)}`}
+          {dato.base === '' ? 'Base · la consulta no la declara' : `Base · ${dato.base}`}
         </Label>
-      ) : (
-        <Provenance
-          capa={dato.capa}
-          fuente={dato.fuente}
-          frescura={dato.frescura}
-          format={format}
-          now={now}
-        />
-      )}
+        {/* **Sin capa, la procedencia se declara entera** · 2026-10-09. Es la
+            consulta del agente fuera del catálogo: no trae capa ni fuente, y
+            `Provenance` las pintaría como «GOLD · » —antes el adaptador ponía
+            GOLD por defecto— o como un separador colgando. Lo que sí es un
+            hecho es cuándo corrió la consulta, y eso se conserva. El SQL que la
+            produjo está en el desplegable de auditoría de la misma respuesta. */}
+        {dato.capa === null ? (
+          <Label as="div">
+            {`Procedencia · la consulta no la declara · ${format.freshness(dato.frescura, now)}`}
+          </Label>
+        ) : (
+          <Provenance
+            capa={dato.capa}
+            fuente={dato.fuente}
+            frescura={dato.frescura}
+            format={format}
+            now={now}
+          />
+        )}
+      </div>
     </figure>
   )
 }

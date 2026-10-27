@@ -45,6 +45,12 @@ export type BodyProps<F extends Value['forma'], P = Record<string, never>> = {
    *  hacen los paneles publicados hoy. Y uno que el cuerpo no sepa dibujar
    *  **no cae al de por defecto**: se declara. Ver `UnknownPlotState`. */
   grafico?: ChartId
+  /** **Dónde se lee el cuerpo** · 2026-10-27. Ausente es el panel de la
+   *  grilla, que es lo que dibuja el `.pen`. `conversacion` es la hoja del
+   *  chat, donde una tabla se recorre fila por fila: **sólo la lee
+   *  `TableBody`**, que cambia a la anatomía de `tablaDeLectura.ts` y crece con
+   *  sus filas en vez de scrollear dentro de un alto fijo. */
+  lectura?: 'conversacion'
   /** Rótulos y cifras de apoyo, redactados por el backend. Viajan con el dato y
    *  no con el layout porque dependen del período. */
   presentation?: Presentation

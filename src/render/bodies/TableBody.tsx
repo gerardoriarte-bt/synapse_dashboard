@@ -33,6 +33,7 @@
  */
 import { Label } from '../primitives/Label'
 import { Value } from '../primitives/Value'
+import { TABLA_DE_LECTURA } from '../primitives/tablaDeLectura'
 import { hue } from '../plots/core/seriesColor'
 import { UnknownPlotState } from '../states/UnknownPlotState'
 import type { NumberOptions } from '../format'
@@ -70,7 +71,7 @@ export type TableBodyProps = Omit<BodyProps<'tabular', TableParams>, 'family'> &
   family: FamiliaDeDibujo | null
 }
 
-export function TableBody({ value, params, family, grafico, format }: TableBodyProps) {
+export function TableBody({ value, params, family, grafico, format, lectura }: TableBodyProps) {
   // La comprobación va ANTES de dibujar, no dentro de una rama · mismo idioma
   // que `SeriesBody` y `ForecastBody`: resuelta abajo, la rama que se olvide se
   // ve bien.
@@ -112,16 +113,23 @@ export function TableBody({ value, params, family, grafico, format }: TableBodyP
     }
   }
 
+  // **En la conversación, la anatomía de lectura** · 2026-10-27 · ver
+  // `tablaDeLectura.ts`. Y sin alto propio: la tabla crece con sus filas, porque
+  // dentro de una hoja que ya scrollea, un segundo scroll de 272 px escondía la
+  // mitad de la tabla. En el panel sigue la del `.pen`.
+  const L = lectura === 'conversacion' ? TABLA_DE_LECTURA : null
+  const entre = (j: number) => (L === null || j === 0 ? '' : L.entreColumnas)
+
   return (
-    <div className="h-full min-h-0 overflow-auto">
+    <div className={L === null ? 'h-full min-h-0 overflow-auto' : L.marco}>
       <table className="w-full border-collapse">
-        <thead>
+        <thead className={L === null ? '' : L.encabezado}>
           <tr>
-            {columns.map((c) => (
+            {columns.map((c, j) => (
               <th
                 key={c.clave}
                 scope="col"
-                className={`text-left pb-2 border-b border-w2 ${c.numerica ? 'text-right' : ''}`}
+                className={`${L === null ? 'text-left pb-2 border-b border-w2' : L.th} ${entre(j)} ${c.numerica ? 'text-right' : ''}`}
               >
                 <Label>{c.titulo}</Label>
               </th>
@@ -130,12 +138,12 @@ export function TableBody({ value, params, family, grafico, format }: TableBodyP
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={String(row[first?.clave ?? ''] ?? i)} className="border-b border-w1">
+            <tr key={String(row[first?.clave ?? ''] ?? i)} className={L === null ? 'border-b border-w1' : L.fila}>
               {columns.map((c, j) => {
                 const cell = row[c.clave]
                 if (c.numerica && typeof cell === 'number') {
                   return (
-                    <td key={c.clave} className="py-1 text-right">
+                    <td key={c.clave} className={`${L === null ? 'py-1' : L.td} ${entre(j)} text-right`}>
                       {/* `fromContext`: la celda hereda el nombre del encabezado
                           de columna, que tiene `scope`. Un label propio la haría
                           decir el nombre dos veces. */}
@@ -163,7 +171,10 @@ export function TableBody({ value, params, family, grafico, format }: TableBodyP
                 // no se emite. Compila, el DOM sale bien y se pinta sin alinear.
                 const alineacion = c.numerica ? 'text-right' : ''
                 return (
-                  <td key={c.clave} className={`py-1 font-body text-cuerpo text-ink ${alineacion}`}>
+                  <td
+                    key={c.clave}
+                    className={`${L === null ? 'py-1' : `${L.td} ${j === 0 ? L.rotuloDeFila : ''}`} ${entre(j)} font-body text-cuerpo text-ink ${alineacion}`}
+                  >
                     {j === 0 ? (
                       <span className="flex items-center gap-2 min-w-0">
                         {family === null ? null : (
