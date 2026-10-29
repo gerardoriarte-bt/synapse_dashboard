@@ -1,4 +1,4 @@
-# Auditoría · el inventario de métricas de Terpel, antes de medirlo · 2026-10-29
+# Auditoría · el inventario de métricas de Terpel, medido en Snowflake · 2026-10-29
 
 **Qué se revisó:** el notebook `TERPEL_COMBS_METRICS`, que datos exportó el
 2026-10-29 a las 16:54 (GMT-5) en HTML. Documenta lo que existe en
@@ -6,29 +6,180 @@
 hoy en Synapse. El archivo está en el `docs/` local sin commitear; este
 documento no lo copia.
 
-**SIN MEDICIÓN EN SNOWFLAKE.** Ninguno de los roles de quien escribe ve la base
-de Terpel. Cortex Code lo intentó el 2026-10-29 con `RL_BT_UA_TRANSFORM`,
-`SYSADMIN`, `DATA_TEAM_ADMIN` y `DATA_ENGINEER`, y siempre recibió el mismo
-error:
+**Medido el mismo 2026-10-29, en sólo lectura y con Cortex Code**, cuando
+llegó el acceso que pidió el humano. Las consultas son las de §4 y se usaron
+dos roles:
+
+- **`RL_BT_UA_TRANSFORM`**: es el rol de la conexión `ANALYTICS`, que ya ve la
+  base de Terpel.
+- **`RL_BT_TERPEL_COMBS_CLIENT_BI`**: es el rol con el que Synapse se conecta a
+  Terpel. Se usó para repetir lo que falló y para confirmar lo que la
+  plataforma puede leer.
+
+Sólo se pidieron agregados, ninguna fila de detalle. Los resultados están en
+§0. **§1 a §3 se escribieron antes de medir**, desde el notebook, y se dejan
+como estaban; donde la medición los corrige, lo dice §0.
+
+El notebook se basa sólo en metadatos: lo dice él mismo («solo metadatos, sin
+leer registros de negocio»). §0 es lo que aparece al leer los datos.
+
+## 0. Lo que dijo la medición
+
+### 0.1 · El ATL no lo lee nadie
+
+Las dos vistas de ATL fallan al consultarlas, **con los dos roles**:
 
 ```
-Database 'DB_BT_TERPEL_COMBS' does not exist or not authorized.
+Failure during expansion of view 'VW_TERPEL_ATL_26': SQL compilation error:
+Object 'DB_BT_TERPEL_COMBS.BT_TERPEL_COMBS_RAW_INGEST.GSCC2_RAW_TERPEL_ATL_26'
+does not exist or not authorized.
 ```
 
-**El notebook tampoco midió datos**: lo dice él mismo, «solo metadatos (sin
-leer registros de negocio)». Así que lo que sigue es una lectura del notebook
-contra cómo funciona Synapse, no una comprobación. **El humano pidió acceso de
-lectura el 2026-10-29.** Cuando llegue, se corren las consultas de §4 y este
-documento se completa. Mientras tanto, no se escribe ningún pedido a datos: la
-regla es medir antes de pedir.
+`VW_TERPEL_ATL_25` da el mismo error, sobre `GSCC2_RAW_TERPEL_ATL_25`.
+
+`RL_BT_TERPEL_COMBS_CLIENT_BI` **sí tiene `SELECT` sobre la vista**: el grant es
+del 2026-10-22. El que falla es el objeto de origen. En Snowflake, una vista
+normal se resuelve con los privilegios de su dueño (`RL_BT_TERPEL_COMBS_BI`),
+así que hay dos causas posibles: la tabla cruda ya no existe, o su dueño
+perdió el acceso. Cualquiera de las dos rompe la vista **para todos los
+lectores, no sólo para Synapse**. No lo comprobamos, porque ningún rol nuestro
+ve `BT_TERPEL_COMBS_RAW_INGEST`. El notebook ya marcaba las filas de estas
+vistas como «n/d».
+
+**Esto afecta a dos métricas del catálogo:** `atl_investment` y
+`atl_by_medium`. Las consultas de §4.4 y §4.5 quedan sin respuesta hasta que
+la vista funcione.
+
+### 0.2 · La plataforma sí puede leer lo demás
+
+Con `RL_BT_TERPEL_COMBS_CLIENT_BI`, la vista digital devuelve 3 322 filas.
+**Permisos** (`SHOW GRANTS`):
+
+- `RL_BT_TERPEL_COMBS_CLIENT_BI` y `SYNAPSE_APP_ROLE` tienen `SELECT` sobre la
+  vista digital, las dos de ATL, `SYNAPSE_METRIC_CATALOG` y
+  `COMPETENCIA_COMBS_STRUCTURED`.
+- Además, `RL_BT_TERPEL_COMBS_CLIENT_BI` tiene `SELECT` futuro sobre tablas,
+  vistas, tablas dinámicas y vistas semánticas del esquema.
+
+### 0.3 · El catálogo: 10 métricas, sin dirección
+
+`SYNAPSE_METRIC_CATALOG` devuelve 10 filas, todas de la familia `media` y con
+grano `month`. `DD_METRIC_CURATION` tiene 11 filas, de las cuales 10 están
+activas. **Las 10 tienen `SEMANTIC_DIRECTION` en NULL.**
+
+| Clave | Forma | Unidad | Fuente probable |
+|---|---|---|---|
+| `media_investment` | scalar | COP | digital · `GASTO_FINAL` |
+| `media_budget_execution` | scalar | % | digital · gasto sobre presupuesto |
+| `media_clicks` | scalar | clics | digital · `RESULTADO_CLICS` |
+| `media_impressions` | scalar | impresiones | digital · `RESULTADO_IMPRESIONES` |
+| `media_reach` | scalar | personas | digital · `RESULTADO_ALCANCE` |
+| `media_goal_attainment` | categorical | % | digital · `PCT_CUMPLIMIENTO_*` |
+| `media_by_campaign` | tabular | COP | digital |
+| `media_by_platform` | tabular | COP | digital |
+| `atl_investment` | scalar | COP | **ATL · roto (0.1)** |
+| `atl_by_medium` | categorical | COP | **ATL · roto (0.1)** |
+
+**Dos datos que da el catálogo y que el notebook no tenía:**
+
+- La unidad del ATL es **COP**. Eso responde a §2.5, si la vista vuelve a
+  funcionar y la unidad es correcta.
+- La forma de `atl_by_medium` es `categorical`, pero su BASE dice
+  «participación de cada medio». **Eso es una composición** (`composition`):
+  las partes suman 100 %.
+
+### 0.4 · `MES` no sirve como período, y `FECHA_INICIO` sí
+
+`MES` es texto libre, como «Marzo 2025», y además tiene valores sin año o sin
+mes:
+
+| Valor de `MES` | Campañas | Ejecución sobre sumas |
+|---|---|---|
+| `Enero` | 64 | 99,5 % |
+| `2024` | 61 | 49,3 % |
+| `NA` | 51 | **262,2 %** |
+| `NA 2024` | 32 | 51,1 % |
+| `None` | 3 | 51,4 % |
+
+**211 de las 3 322 filas no tienen un mes interpretable.** Además, ordenar por
+`MES` lo ordena alfabéticamente.
+
+`FECHA_INICIO` va de 2024-01-01 a 2026-12-24. Sólo 10 campañas cruzan de mes y
+7 tienen las fechas invertidas (`FECHA_FIN` anterior a `FECHA_INICIO`).
+**Pero `MES` y `FECHA_INICIO` no ponen las mismas campañas en el mismo mes.**
+En septiembre de 2026, las dos formas dan 90 campañas, pero el gasto difiere:
+
+| Septiembre de 2026 | Campañas | Gasto (COP) |
+|---|---|---|
+| Por `MES = 'Septiembre 2026'` | 90 | 585 906 230 |
+| Por `FECHA_INICIO` en septiembre | 90 | 601 901 636 |
+
+Así que **no son las mismas 90 campañas**. La regla que pide §2.1 es real, y
+tiene que escribirla datos.
+
+### 0.5 · Promediar cambia la cifra, y mucho
+
+Esto confirma §2.2 y §2.3 con números:
+
+| | Promediando campañas | Con sumas |
+|---|---|---|
+| CTR, todo el histórico | **3,436 %** (`AVG(CTR_BENCHMARK)`, lo que propone el notebook) | **1,407 %** (clics sobre impresiones, sólo filas OK) |
+| Ejecución, octubre de 2026 | **105,4 %** | **77,4 %** |
+
+La card de CTR que propone el notebook mostraría **más del doble** del CTR
+real. Y en octubre, promediar dice «sobreejecución» cuando con sumas queda un
+23 % sin ejecutar.
+
+**Lo que sí cierra:** `PCT_EJECUCION_PRESUPUESTO` coincide con su fórmula en
+todas las filas donde se puede calcular (`no_cierra = 0`). Hay 125 filas sin
+presupuesto y 32 sin gasto. Los valores atípicos son pocos: 1 fila de CTR y 8
+de VTR.
+
+### 0.6 · Las dimensiones están sucias
+
+Agrupar por cualquiera de estas columnas, tal como están, parte las sumas:
+
+- **`CUENTA`**: aparecen `Vive Terpel` y `VIve Terpel`; `Fundación Terpel`,
+  `Fundación` y `Fundacion`; además de `NA` (92) y nulos (29). `Lubricantes` (4) aparece como cuenta,
+  pero en el comentario de `FAMILIA` es el nombre de una familia.
+- **`FAMILIA`**: 155 filas son nulas.
+- **`PLATAFORMA`**: tiene 95 valores distintos, con duplicados por mayúsculas
+  o por ortografía. Por ejemplo, `Thanks To you`, `Thanks To You` y `Thanks to
+  you`; `Mathilde ADS`, `Mathilde Ads` y `Mailde Ads`; `Tap Tap` y `TapTap`;
+  `Facebook/Instagram`, `Facebook` e `Instagram`.
+- **`MODELO_COMPRA`**: tiene modelos que el comentario no declara, como `CPF`
+  (92), `CPCV` (10), `PF` (4), `CPEN` y «CPC optimizado a Ventas». Para esas
+  filas, `PCT_CUMPLIMIENTO_METRICA_PRINCIPAL` no tiene una métrica principal
+  definida.
+- **`OBJETIVO`**: aparecen `Envios` y `Envíos`, y `Seguidores` y `Followers`.
+
+### 0.7 · Competencia: buena cobertura, pero duplicada y sin fecha
+
+- 20 680 filas, 17 anunciantes y 5 ciudades. El ruido del OCR en los nombres
+  es casi nulo: sólo `GOLDEN`, con 1 fila, parece sospechoso.
+- **`MES` es un código** (`01Ene26` … `16Dic25`), con un prefijo de orden que
+  no es cronológico: el `01` es enero de 2026 y el `05` es enero de 2025. La
+  cobertura va de enero de 2025 a abril de 2026. **Desde mayo de 2026, la
+  sección queda vacía** para el período de la consola.
+- **Lubricantes y combustibles están duplicados.** Las dos categorías tienen
+  exactamente 4 806 filas, y 4 399 de las de lubricantes (91,5 %) tienen una
+  gemela en combustibles con el mismo anunciante, ciudad y mes. Comparamos
+  sólo esas tres columnas. Contar por categoría así da el doble para esas dos.
 
 ## En una frase
 
-El notebook es honesto y coincide en buena parte con el catálogo que Terpel ya
-tiene. Pero su grano es la campaña, y la consola cuenta por mes calendario.
-Además, sugiere promediar ratios, y deja tres cálculos sin dueño. Nada de eso
-se resuelve sin mirar los datos, y ninguna métrica va a mostrar una cifra
-hasta que el backend la programe.
+**Medido:** las dos vistas de ATL están rotas para cualquier rol. La vista
+digital se puede leer, pero `MES` no sirve como período, las dimensiones
+están sucias, y promediar más que duplica el CTR. Competencia tiene la mitad
+de sus filas duplicadas entre dos categorías. Nada de esto se ve en los
+metadatos, y todo es de datos.
+
+**Escrito antes de medir, y sigue en pie:** el notebook es honesto y coincide
+en buena parte con el catálogo que Terpel ya tiene. Pero su grano es la
+campaña, y la consola cuenta por mes calendario. Además, sugiere promediar
+ratios y deja tres cálculos sin dueño. Ninguna métrica va a mostrar una cifra
+hasta que el backend la programe, o hasta que se adopte
+`docs/PROPUESTA-2026-10-29-metricas-como-vistas.md`.
 
 ## 1. Lo que propone el notebook
 
@@ -313,11 +464,17 @@ período de la consola vacío desde mayo, y eso hay que declararlo.
 
 ## 5. Lo que sigue
 
-1. **Llega el acceso** y se corren las consultas de §4, con Cortex Code en
-   sólo lectura. Los resultados se anotan acá, con fecha.
-2. Con los números, se escribe el pedido a datos con lo mismo que el de UA:
-   las filas del catálogo, la regla de cálculo de cada métrica (numerador,
-   denominador y cómo se lleva al mes), las correcciones que aparezcan, y las
-   respuestas de §2.1 y §2.5.
+1. ~~Llega el acceso y se corren las consultas de §4.~~ **Hecho el
+   2026-10-29**, en §0. Las de ATL (§4.4 y §4.5) quedan pendientes hasta que
+   la vista funcione.
+2. **El pedido a datos**, con el formato del de UA:
+   - arreglar las vistas de ATL (§0.1);
+   - la regla para asignar una campaña a un mes (§0.4);
+   - la regla de cálculo de cada métrica, con numerador y denominador (§0.5);
+   - normalizar `CUENTA`, `PLATAFORMA`, `MODELO_COMPRA`, `OBJETIVO` y las
+     `FAMILIA` nulas (§0.6);
+   - la duplicación de competencia (§0.7);
+   - `SEMANTIC_DIRECTION` en las 10 filas, y la forma de `atl_by_medium`
+     (§0.3).
 3. **El pedido al backend espera la decisión de B1.26.** No se repite: ya
    está pedido desde el 22.
