@@ -3,8 +3,8 @@
 **Qué se revisó:** el notebook `TERPEL_COMBS_METRICS`, que datos exportó el
 2026-10-29 a las 16:54 (GMT-5) en HTML. Documenta lo que existe en
 `DB_BT_TERPEL_COMBS.BT_TERPEL_COMBS_MART_ANALYTICS` y lo que se podría mostrar
-hoy en Synapse. El archivo está en el `docs/` local sin commitear; este
-documento no lo copia.
+hoy en Synapse. La transcripción está en
+`docs/snowflake/NOTEBOOK-2026-10-29-terpel-combs-metrics.md` (PR #58).
 
 **Medido el mismo 2026-10-29, en sólo lectura y con Cortex Code**, cuando
 llegó el acceso que pidió el humano. Las consultas son las de §4 y se usaron
