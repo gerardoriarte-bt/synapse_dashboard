@@ -201,8 +201,13 @@ Ninguna planilla ni ningún competidor genérico guarda eso.
 | **Backend** | **El modelo de la decisión**: quién y cuándo; de dónde salió (el agente o una persona); la hipótesis («subir Meta 20% debería subir ventas»); la métrica que se espera mover y con qué banda; el plazo; qué se hizo y cuándo; el estado (propuesta, aprobada, rechazada, ejecutada, evaluada) y el resultado |
 | **Backend** | Las rutas para crear, responder y listar decisiones, y **un evaluador** que corre al vencer el plazo. Compara lo que pasó contra lo que se esperaba **sin** la acción, que es la banda del pronóstico (§2.5) |
 | **Backend** | **El agente lee el historial** como contexto: «la última vez que subiste Meta 20%, las ventas quedaron dentro de lo esperado». Con las reglas de §2.1 |
-| **Front** | Conectar «Aprobar» y «Rechazar»; la línea de tiempo de decisiones por cliente; la tarjeta del resultado; y marcar en las series la fecha de cada decisión |
-| **Diseño** | Todo lo anterior. Nada de esto está dibujado |
+| **Front** | Conectar «Aprobar» y «Rechazar»; la lista de decisiones por cliente; construir el resultado, que es F3.10 y ya está dibujado; y marcar en las series la fecha de cada decisión |
+| **Diseño** | **El resultado ya está dibujado**: `Consola · C4 · Detalle de hallazgo` y `C4 · Hallazgo fuera de banda`, con la hipótesis, lo estimado con su banda, lo observado y qué cambia. Falta lo que lo rodea —la lista de decisiones y la propuesta que espera aprobación—, dibujado como propuesta en §8 |
+
+**Corregido el 2026-10-29.** La primera versión decía «nada de esto está
+dibujado». C4 estaba en el `.pen` desde antes y no se abrió al escribir: es la
+falla que la regla del `.pen` existe para atajar, y la encontró abrirlo para
+dibujar.
 
 **La honestidad del resultado es una regla, no un detalle.** El evaluador dice
 «por encima de lo esperado» o «dentro de lo esperado», **nunca «la decisión
@@ -239,7 +244,10 @@ partes. Y «¿qué pasa si…?», contestado con un rango.
 | **Datos** | **Las relaciones entre métricas en el catálogo**: ventas = sesiones × conversión × ticket promedio. Con eso el backend calcula cuánto del cambio aportó cada factor, sin que lo improvise el agente |
 | **Datos** | **Que el desglose lea la misma tabla que el total**, para que cierre |
 | **Backend** | Exponer la descomposición y la línea base como formas del cable, con su procedencia |
-| **Front** | Un cuerpo para la descomposición del cambio (una cascada), que hoy no está en el repertorio; y la pantalla de escenarios, que mueve un supuesto y muestra el rango. **Las dos necesitan dibujo**, y la cascada entra al repertorio de gráficos |
+| **Front** | Un cuerpo para la descomposición del cambio. **La cascada ya existe** en la librería del `.pen` —`Plot/CASCADA · Descomposición del crecimiento`— y en el repertorio como `waterfall`, pero el código todavía no la dibuja. Y la pantalla de escenarios, que mueve un supuesto y muestra el rango. Las dos tienen dibujo de propuesta en §8 |
+
+**Corregido el 2026-10-29.** Decía que la cascada «no está en el repertorio»:
+está en el `.pen` y en el repertorio, y lo que falta es el cuerpo en el código.
 | **Alguien que hoy no está** | **Los escenarios necesitan un modelo de respuesta**: cuánto se mueven las ventas por cada peso invertido en cada canal, con su incertidumbre. Es trabajo de ciencia de datos, y hoy nadie en el equipo lo tiene asignado |
 
 **Más adelante: compararse con negocios parecidos.** Con muchos clientes, «tu
@@ -291,10 +299,8 @@ proporción que promete.
 Poco, y conviene decirlo: **casi todo este documento es backend, datos y
 producto.** Lo nuestro, sin bloqueo:
 
-- **Dibujar las pantallas nuevas en el `.pen`**, con la propuesta en mano: el
-  estado «difiere del panel», la línea de tiempo de decisiones, la tarjeta del
-  resultado, el correo del brief y la cascada. Sirve para validar con negocios
-  antes de construir.
+- **Dibujar las pantallas nuevas en el `.pen`** para validarlas con negocios
+  antes de construir. **Hecho el 2026-10-29**: §8.
 - **El cable de las decisiones**, escrito como propuesta de contrato para que
   backend lo discuta. Es lo mismo que se hizo con `/config/plots`.
 
@@ -305,7 +311,7 @@ producto.** Lo nuestro, sin bloqueo:
 | **Producto** | El primer segmento; dónde vive el registro de decisiones; construir o usar conectores; y validar con negocios (§7) |
 | **Backend** | B1.26 por la opción B; la procedencia y la reconciliación del agente; el brief; el registro de decisiones y su evaluador |
 | **Datos** | Una definición por métrica, versionada; el catálogo base de comercio; la línea base con banda; las relaciones entre métricas |
-| **Diseño** | Las pantallas de §5 |
+| **Diseño** | Revisar los dibujos de §8, y decidir el eje de la cascada |
 | **Front** | Dibujar con diseño, el cable de las decisiones, y construir cuando llegue cada parte |
 | **Hace falta sumar** | Alguien de ciencia de datos para los escenarios |
 
@@ -323,3 +329,34 @@ preguntarles:
 
 La respuesta puede reordenar §3, y es mucho más barato saberlo con dibujos que
 con código.
+
+## 8 · Los dibujos
+
+Seis frames en `design/Synapse_v2.pen`, en la fila y = 19100, debajo de las
+propuestas del 2026-10-20. Una nota fija arriba del lienzo, «Indicador ·
+Propuesta 2026-10-29», lleva a ellos, y cada frame tiene su nota encima.
+
+**Llevan el prefijo «Propuesta ·»**, así que `pen-pantallas` no los exige como
+pantallas construidas. Cuando se decidan, se renombran. **Los datos son de
+ejemplo**, salvo el ROAS de 7,28 contra 2,07, que es el caso real.
+
+| x | Frame | Punto | Qué se valida con él |
+|---|---|---|---|
+| 0 | `Propuesta · Crecimiento · 1 · La cifra del agente difiere del panel` | §2.1 | Que la respuesta muestre las dos cifras con su origen y diga cuál vale para decidir. Al costado, las tres reglas y el set de control |
+| 1600 | `Propuesta · Crecimiento · 2 · El brief semanal y sus preferencias` | §2.3 | El correo del lunes —qué cambió, por qué, qué se recomienda, qué se cierra— y las preferencias. Las alertas aparecen como «todavía no disponible» |
+| 3200 | `Propuesta · Crecimiento · 3 · Las decisiones del cliente` | §2.4 | La lista alrededor de C4: la propuesta que espera aprobación, cada decisión con su resultado en una banda chica, y lo aprendido por clase de decisión |
+| 4800 | `Propuesta · Crecimiento · 4 · Por qué cambió` | §2.5 | La cascada que cierra contra el total, los factores con dónde se concentran, y una lectura del agente que sólo cita la tabla |
+| 6400 | `Propuesta · Crecimiento · 5 · Un escenario` | §2.5 | Mover inversión entre canales y ver el resultado como rango, diciendo cuándo el rango incluye perder |
+| 8000 | `Propuesta · Crecimiento · 6 · El alta conectando fuentes` | §2.2 | Conectar las fuentes comunes y ver qué métrica del catálogo base habilita cada una |
+
+**Una decisión para diseño, escrita en la nota del frame 4:** el eje de la
+cascada empieza en USD 1,0M para que se vean los aportes, y el gráfico lo dice.
+Un eje que no empieza en cero es una decisión, no un detalle.
+
+**Lo que no se dibujó:** la versión en Slack del brief, los dibujos en móvil y
+el tema claro. Se dibujaron en oscuro, como las pantallas de la consola.
+
+**Cómo se dibujó:** con el CLI `pen` 0.3.2 en modo headless, que no migra el
+formato: el archivo sigue en 2.17. El `.pen` ganó catorce nodos y no se cambió
+ni se borró ninguno de los que había.
+
