@@ -574,6 +574,31 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-10-29 · las métricas de UA y Terpel, medidas y pedidas a datos
+
+**Lo que costó descubrir está en `docs/BITACORA-2026-10-29.md`.** Snowflake
+se mide desde acá con Cortex Code, en sólo lectura, y cada punto de un pedido
+lleva la consulta que lo comprueba.
+
+**Los dos pedidos a datos se enviaron el 2026-10-29**, y los mandó el humano:
+`docs/MENSAJE-2026-10-29-datos-metricas-de-ua.md` (PR #54) y
+`docs/MENSAJE-2026-10-29-datos-metricas-de-terpel.md` (PR #55). **Lo que
+sigue es esperar, no volver a pedirlo.** Los dos piden entregables con su
+comprobación, en dos tandas, y la A no depende de ninguna corrección.
+
+- **UA:** el nCAC devuelve el gasto del mes, el estado del presupuesto dice
+  «ON TRACK» en todas las filas, y hay dos inversiones: el MER da 5,18 y el
+  `roas` del catálogo 11,11. Las mediciones están en
+  `docs/AUDITORIA-2026-10-29-metricas-de-ua-tabla-resumen.md`.
+- **Terpel:** las vistas de ATL fallan para cualquier rol, `MES` no sirve como
+  período, y promediar más que duplica el CTR. Está en §0 de
+  `docs/AUDITORIA-2026-10-29-metricas-de-terpel-notebook.md`.
+
+**Pendiente, por decisión del humano:** presentarle al backend
+`docs/PROPUESTA-2026-10-29-metricas-como-vistas.md` (PR #56). Es la opción B de
+B1.26 hecha concreta: el backend ya transforma por forma, así que leer una
+vista por métrica cambia una sola rama del materializador.
+
 ### ⇩ ACÁ SE PARÓ · 2026-10-23 · los usuarios de servicio, y la llave desde la ficha
 
 **Datos entregó `SVC_SYNAPSE_KERALTY` y `SVC_SYNAPSE_TERPEL_COMBS`**, y un rol
