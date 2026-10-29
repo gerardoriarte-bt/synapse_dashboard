@@ -2,7 +2,8 @@
 
 **Qué se revisó:** `TABLA RESUMEN - MÉTRICAS SYNAPSE UA MX.xlsx`, versión 3.2,
 del 2026-10-29, con 11 métricas. Es la propuesta para ampliar el catálogo de UA.
-El archivo está en el `docs/` local sin commitear; este documento no lo copia.
+La transcripción está en
+`docs/snowflake/TABLA-RESUMEN-2026-10-29-metricas-ua-mx.md` (PR #58).
 
 **Cómo se midió:** en Snowflake, sólo lectura, con Cortex Code y la conexión
 `ANALYTICS` (rol `RL_BT_UA_TRANSFORM`), el 2026-10-29 a las 14:31 hora del
