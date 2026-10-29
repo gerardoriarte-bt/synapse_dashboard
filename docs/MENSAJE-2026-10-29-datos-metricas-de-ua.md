@@ -11,6 +11,43 @@ Gracias por las seis vistas del 28. Están todas en
 encontramos tres números que no cierran, y queremos resolverlos antes de que
 lleguen a la consola.
 
+## Lo que necesitamos que nos pasen
+
+Para mostrar estas métricas en Synapse necesitamos cuatro entregables. Sin
+ellos no podemos avanzar. Abajo de esta sección está el detalle y la
+evidencia de cada uno.
+
+| # | Entregable | Qué exactamente | Cómo comprobamos que llegó |
+|---|---|---|---|
+| **1** | **Una fila por métrica en `SYNAPSE_METRIC_CATALOG`** de UA | Las doce columnas que lee el sync: `METRIC_KEY`, `NAME`, `SHAPE`, `FAMILY`, `LAYER`, `SOURCE`, `BASE`, `UNIT`, `SEMANTIC_DIRECTION` (en texto: `HIGHER = BETTER`), `MIN_GRAIN`, `DIMENSIONS` y `MEASUREMENT_WINDOW`. La guía es `docs/snowflake/COMO-ENTREGAR-UNA-METRICA.md`, y hay una propuesta lista para corregir en §4 de la auditoría | `SELECT * FROM SYNAPSE_METRIC_CATALOG` devuelve las claves nuevas, y `SYNAPSE_METRIC_CATALOG_ISSUES` queda en cero filas |
+| **2** | **La regla de cálculo de cada métrica, por escrito** | Para cada una: la vista, **la columna del numerador y la del denominador**, y cómo se lleva al mes. Ejemplo: CVR = `SUM(ORDERS_TOTAL) / SUM(VISITS_TOTAL) × 100` sobre `GLD_ECOMM_METRICS_DAILY`. **El promedio de los ratios diarios no sirve:** en septiembre da 0,379 % contra el 0,338 % real | Una tabla con una fila por métrica. Nosotros la comparamos contra la vista con la misma consulta |
+| **3** | **Las tres vistas corregidas** | nCAC, `BUDGET_STATUS` y el ingreso atribuido sin estrategia (detalle abajo) | Las consultas de la sección siguiente devuelven: nCAC de 2026-09 ≈ 30,7; el estado coincide con `PCT_SPENT`; el ingreso sin `SCOPE_STRATEGY` queda resuelto o explicado |
+| **4** | **Cinco respuestas** | ① Cuál es la inversión de UA (254 788 o 118 807 en septiembre). ② Top 10 mensual: ¿lo dan ustedes o nos pasan la vista de producto? ③ El nivel de categoría para el mix. ④ Qué es «promoción». ⑤ La ventana del LTV | Respondidas en este mismo hilo |
+
+**No hace falta esperar a tenerlo todo.** Se puede entregar en dos tandas:
+
+| Tanda | Métricas | Necesita | Bloqueada por |
+|---|---|---|---|
+| **A · ya** | RPV, CVR, AOV, Promo Dependency y Category Mix | Entregables 1 y 2, y las respuestas ③ y ④ | Nada de §3: las vistas de estas cinco dan números correctos |
+| **B · después** | MER, ROAS last-click, concentración top 10, pacing, nCAC y LTV | Lo mismo, más el entregable 3 y las respuestas ①, ② y ⑤ | Las correcciones y la definición de inversión |
+
+**Las claves que proponemos**, para que la consola y el catálogo usen los
+mismos nombres desde el principio: `rpv`, `cvr`, `aov`, `promo_dependency`,
+`category_mix`, `mer`, `roas_last_click`, `top10_concentration`,
+`budget_pacing`, `ncac` y `ltv`. Si prefieren tres claves por alcance (por
+ejemplo `mer_total`, `mer_paid` y `mer_brand`) en lugar de una con la
+dimensión, díganlo en la fila. Cualquiera de las dos sirve, pero tiene que ser
+una sola.
+
+**Lo que hacemos nosotros cuando llegue cada tanda:**
+
+1. Verificamos las filas y las reglas contra las vistas.
+2. Le pedimos al backend que programe esas métricas.
+3. Armamos los paneles.
+
+Ustedes no tienen que escribir el código de la consola: alcanza con los
+cuatro entregables.
+
 ## Tres correcciones
 
 **1. El nCAC devuelve el gasto del mes, no el costo por cliente.**
@@ -91,6 +128,6 @@ Hay cuatro preguntas que no podemos contestar nosotros:
   (`GLD_PRODUCTO_METRICS_DAILY`, `GLD_PRODUCTO_METRICS_BY_CATEGORY` y
   `GLD_BUDGET_EXECUTION_MONTHLY`).
 
-Cuando estén las tres correcciones y la definición de inversión, le pedimos al
-backend que programe las métricas. Antes no, para no hacerles calcular números
+Al backend le pedimos programar cada tanda cuando llegue. La tanda B espera las
+correcciones y la definición de inversión, para no hacerles calcular números
 que van a cambiar.
