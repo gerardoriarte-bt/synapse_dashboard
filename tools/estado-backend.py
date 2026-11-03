@@ -31,6 +31,7 @@ evita que esta herramienta necesite red.
 Códigos: 0 siempre que el plan exista · 2 BLOQUEADO si falta.
 """
 import pathlib
+import plan_fuente  # el plan son dos archivos desde el 2026-11-03
 import re
 import sys
 from collections import Counter
@@ -56,7 +57,7 @@ FASES = {
     "3": "Chat",
     "4": "Admin y builder",
     "5": "Multi-dashboard",
-    "6": "Cierre",
+    "6": "Métricas y reporte",
 }
 
 
@@ -75,7 +76,7 @@ def referencia() -> "str | None":
 
 
 def leer():
-    texto = PLAN.read_text(encoding="utf-8")
+    texto = plan_fuente.leer()
     tareas, actual = [], None
     for linea in texto.split("\n"):
         m = ENCABEZADO.match(linea)

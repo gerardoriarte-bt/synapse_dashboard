@@ -17,7 +17,7 @@ en cada corrida de la puerta con `npm run plan:ancestro`.
 ## Lo que ya está de nuestro lado
 
 No hace falta que esperen nada de estas para probar: están en la rama
-`front/microinteracciones` del repositorio del front, con prueba y con la puerta en
+`main` del repositorio del front, con prueba y con la puerta en
 verde.
 
 - **F1.32** · Transcribir el cable de consola a un contrato versionado
@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Antes de leer: 0 de 3 son del backend
+## Antes de leer: 2 de 5 son del backend
 
 **El resto está acá porque nos frena a NOSOTROS, no porque haya que
 construirlo del lado del backend.** Se listan igual —una tarea trabada
@@ -43,14 +43,14 @@ tiempo buscando qué implementar.
 
 | Dueño | Pedidos |
 |---|---|
-| **BACKEND** · código | 0 |
+| **BACKEND** · código | 2 |
 | DESPLIEGUE | 2 |
 | PRODUCTO | 1 |
 
 
 ---
 
-## Lo que esperamos · 3 pedido(s)
+## Lo que esperamos · 5 pedido(s)
 
 
 ### B2.12 · Correr el materializador contra datos reales y verificar los seis estados
@@ -166,9 +166,33 @@ Hasta entonces los dos paneles de prosa se servían con el valor de la semilla, 
 **Medido contra `7324b26` el 2026-10-19** · **SIGUE ⚠️.** El flag sigue con default `false`, y su respuesta del 14 lo dice: prenderlo es del entorno de QA, no de código (`RESPUESTA-2026-10-14-backend-instruccion-de-prosa.md`, punto 1). Con el flag, acá la prosa sale `AVAILABLE` con `agent:Synapse UA`, y desde `5af3b86` acepta una instrucción por métrica · `AUDITORIA-2026-10-19-prosa-por-metrica.md`. **Despliegue con el flag pedido de nuevo** en `MENSAJE-2026-10-19-backend-desplegar-y-fuente-de-la-prosa.md`, que reemplaza al del 14.
 
 
+### F6.3 · Verificar en QA las métricas de Terpel y de UA
+
+*Estado de la tarea: pendiente.*
+
+
+Ninguna métrica de Terpel se calcula · sin una entrada en el registro, el cliente no muestra ninguna cifra aunque el dato esté en Snowflake.
+
+**Lo tiene: BACKEND** · B6.1, en `MetricRegistry` (D6.2). Lo pide F6.1.
+
+**Medido contra `db91b5d` el 2026-11-03** · ninguna clave `atl_*` ni `media_*` de la entrega está en `internal/core/dashboard/snowflake/queries.go`. Del lado de Snowflake, las vistas de ATL responden con 85 y 259 filas y el catálogo trae sus filas completas, medido con el rol de Synapse.
+
+
+### F6.4 · Transcribir las rutas de reportes al cable de administración
+
+*Estado de la tarea: pendiente.*
+
+
+Las rutas de reportes programados no existen · sin ellas no hay qué transcribir ni contra qué construir F6.6 y F6.7.
+
+**Lo tiene: BACKEND** · B6.3 y B6.4.
+
+**Medido contra `db91b5d` el 2026-11-03** · las plantillas de `internal/adapters/email/templates/` son sólo de acceso y de contraseña, y no hay ruta ni tabla de reportes.
+
+
 ---
 
-## ⚠️ 2 pedido(s) sin reverificar
+## ⚠️ 4 pedido(s) sin reverificar
 
 **Estos se midieron contra un commit suyo que ya no es el último.**
 No quiere decir que sigan faltando: quiere decir que **no lo
@@ -184,11 +208,13 @@ sección existe.
 |---|---|---|
 | **B2.12** · Correr el materializador contra datos reales y verificar los seis estados | `3651d70` | 2026-10-14 |
 | **B2.14** · /config/solicitudes · pedir acceso a una métrica que no se ve | `9dc481e` | 2026-10-09 |
+| **F6.3** · Verificar en QA las métricas de Terpel y de UA | `db91b5d` | 2026-11-03 |
+| **F6.4** · Transcribir las rutas de reportes al cable de administración | `db91b5d` | 2026-11-03 |
 
 
 ---
 
-## Y esto frena al front · 4 tarea(s)
+## Y esto frena al front · 10 tarea(s)
 
 **No todo lo de acá es suyo**, y por eso no está arriba: son los
 bloqueos que las tareas del front declaran en su título, tal cual
@@ -204,6 +230,12 @@ Lo de arriba son pedidos; esto es información.
 | **F1.44** · El orden de una tabla se anuncia, no se aplica | `cut` de `series` no lo lee nadie |
 | **F5.3** · Completar los plots que falten | espera a F4.17–F4.19 |
 | **F5.13** · Períodos libres en el selector | espera el patrón de `PeriodoId` |
+| **F6.2** · Pedirle al backend las de UA | depende de la respuesta de datos |
+| **F6.3** · Verificar en QA las métricas de Terpel y de UA | depende de B6.1 y B6.2 |
+| **F6.6** · Los reportes de un cliente, en administración | depende de F6.4 y del dibujo de F6.5 |
+| **F6.7** · Crear y editar un reporte | depende de F6.4 y del dibujo de F6.5 |
+| **F6.10** · Validar las respuestas antes de activar | depende de F6.4 y del dibujo de F6.5 |
+| **F6.9** · Mirar un correo real | depende de B6.5 y B6.6 |
 
 
 ---

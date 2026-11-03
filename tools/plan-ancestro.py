@@ -38,6 +38,7 @@ marcan: agregar tareas es normal, reasignar identificadores no.
 Códigos: 0 conforme · 1 hay IDs perdidos · 2 BLOQUEADO (falta el ancestro).
 """
 import pathlib
+import plan_fuente  # el plan son dos archivos desde el 2026-11-03
 import re
 import sys
 
@@ -60,7 +61,7 @@ def main() -> int:
         return 2
 
     texto_ancestro = ANCESTRO.read_text(encoding="utf-8")
-    texto_plan = PLAN.read_text(encoding="utf-8")
+    texto_plan = plan_fuente.leer()
 
     del_ancestro = [m.group(1) for l in texto_ancestro.split("\n") if (m := EN_ANCESTRO.match(l))]
     con_tarea = {m.group(1) for l in texto_plan.split("\n") if (m := ENCABEZADO.match(l))}

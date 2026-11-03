@@ -64,6 +64,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import plan_fuente  # el plan son dos archivos desde el 2026-11-03
+
 RAIZ = Path(__file__).resolve().parent.parent
 DOCS = RAIZ / "docs"
 CONTRATOS = RAIZ / "contracts"
@@ -153,7 +155,7 @@ def ids_conocidos() -> set[str]:
     spec = importlib.util.spec_from_file_location("plan_a_csv", RAIZ / "tools" / "plan-a-csv.py")
     plan = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(plan)
-    ids: set[str] = {t["id"] for t in plan.parsear(PLAN.read_text(encoding="utf-8"))}
+    ids: set[str] = {t["id"] for t in plan.parsear(plan_fuente.leer())}
     ancestro = RAIZ / "tareas-front-back.md"
     if ancestro.exists():
         ids |= set(re.findall(r"^- \[[ x]\] \*\*([BF]\d+\.\d+)\*\*",
