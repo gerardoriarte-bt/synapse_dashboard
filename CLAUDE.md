@@ -575,6 +575,27 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-11-03 · la Fase 6, y los dos pedidos enviados
+
+**La Fase 6 vive en `plan-fase-6.md`**, aparte del plan, por decisión humana:
+las métricas de cada cliente y un reporte por correo que programan el admin y
+el superadmin. Las cinco decisiones del día están en su §3; las cuatro que
+siguen abiertas (P6.1–P6.4) son de producto. `npm run plan` lee los dos
+archivos.
+
+**Los dos mensajes se enviaron el 2026-11-03, y los mandó el humano**:
+`docs/MENSAJE-2026-11-03-datos-entrega-de-ua-medida.md` —la entrega de UA no
+se puede cargar todavía: cifras que no se reproducen, columnas que no existen
+y 42 problemas en su vista de control— y
+`docs/MENSAJE-2026-11-03-backend-metricas-de-terpel.md` —las métricas de
+Terpel en `MetricRegistry`, con el SQL y la cifra de cada una—. **Lo que sigue
+es esperar, no volver a pedirlo.**
+
+**Lo tomable del front**: F6.5, el mapa de UX del reporte, que tiene que estar
+antes del dibujo; y F6.8, los colores del correo.
+
+**Pendiente con datos, sin pedir todavía**: el alcance de Terpel se suma entre
+campañas, y eso cuenta dos veces a quien vio dos.
 ### ⇩ ACÁ SE PARÓ · 2026-10-29 · las métricas de UA y Terpel, medidas y pedidas a datos
 
 **Lo que costó descubrir está en `docs/BITACORA-2026-10-29.md`.** Snowflake

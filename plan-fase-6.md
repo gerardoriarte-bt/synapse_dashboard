@@ -223,9 +223,9 @@ de SES que ya existe.
 
 # Frontend
 
-### ➕ F6.1 ⚠️ Pedirle al backend el cálculo de Terpel
+### ➕ F6.1 ✅ Pedirle al backend el cálculo de Terpel
 
-**Escrito el 2026-11-03**, sin enviar: `docs/MENSAJE-2026-11-03-backend-metricas-de-terpel.md`. Lo manda el humano; al enviarse, pasa a ✅.
+**Enviado el 2026-11-03**, por el humano: `docs/MENSAJE-2026-11-03-backend-metricas-de-terpel.md`. **Lo que sigue es esperar, no volver a pedirlo**: B6.1, y después F6.3.
 
 **Descripción.** El mensaje que pide B6.1 con la tanda A medida, en
 `MetricRegistry` (D6.2).
