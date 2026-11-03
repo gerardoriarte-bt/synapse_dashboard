@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**218 de 265 tareas cerradas.** 15 parciales · 28 pendientes · 4 diferidas.
+**218 de 281 tareas cerradas.** 16 parciales · 43 pendientes · 4 diferidas.
 
 
-## Front · 157 de 167
+## Front · 157 de 177
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -18,8 +18,9 @@
 | 3 · Chat contextual | `█████████████████·····` | 13/17 | 0 | 2 |
 | 4 · Admin y Builder | `██████████████████████` | 24/24 | 0 | 0 |
 | 5 · Pruebas y pulido | `████████████████████··` | 54/58 | 0 | 3 |
+| 6 · Métricas y reporte | `······················` | 0/10 | 1 | 9 |
 
-## Backend · 61 de 98
+## Backend · 61 de 104
 
 > ⚠️ **Este número está bajo y no refleja al backend.** El plan de acá
 > es la fuente del FRONT; el estado de las tareas `B*` solo se mueve
@@ -51,18 +52,22 @@
 | 3 · Chat contextual | `████████··············` | 4/11 | 2 | 5 |
 | 4 · Admin y Builder | `████████████████████··` | 18/20 | 1 | 1 |
 | 5 · Multi-dashboard y pulido | `██████················` | 2/7 | 1 | 3 |
+| 6 · Métricas y reporte | `······················` | 0/6 | 0 | 6 |
 
 ---
 
-## Se puede tomar hoy · 3 del front
+## Se puede tomar hoy · 6 del front
 
 - **F3.16** · El mes en curso se marca en el trazo, no sólo en un aviso
 - **F3.17** · Un dato que falta se dibuja como hueco
 - **F5.21** · Qué hace un gráfico cuando el dato excede lo legible
+- **F6.1** · Pedirle al backend el cálculo de Terpel
+- **F6.5** · El plan de diseño: el mapa de UX del reporte programado
+- **F6.8** · Los colores del producto en el correo
 
 ---
 
-## Bloqueadas · 7
+## Bloqueadas · 15
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -74,12 +79,20 @@ Lo que el front espera del backend está detallado en
 - **F1.44** · El orden de una tabla se anuncia, no se aplica
 - **F5.13** · Períodos libres en el selector
 - **F5.3** · Completar los plots que falten
+- **F6.10** · Validar las respuestas antes de activar
+- **F6.2** · Pedirle al backend las de UA
+- **F6.3** · Verificar en QA las métricas de Terpel y de UA
+- **F6.4** · Transcribir las rutas de reportes al cable de administración
+- **F6.6** · Los reportes de un cliente, en administración
+- **F6.7** · Crear y editar un reporte
+- **F6.9** · Mirar un correo real
 
 **Backend**
 
 - **B2.12** · Correr el materializador contra datos reales y verificar los seis estados
 - **B2.14** · /config/solicitudes · pedir acceso a una métrica que no se ve
 - **B2.15** · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar
+- **B6.2** · Calcular las métricas de UA que faltan
 
 ---
 

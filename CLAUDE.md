@@ -18,6 +18,7 @@ Fase 1 es portar el motor de panel desde el repositorio archivado.
 |---|---|---|
 | `nuevo-desarrollo.md` | Arquitectura del front dinámico | **Normativo** |
 | `plan-de-trabajo.md` | Las tareas con fase, estado y criterio · **el conteo sale de `docs/ESTADO.md`** | **Fuente del plan** |
+| `plan-fase-6.md` | **La Fase 6**: las métricas de cada cliente y el reporte programado · desde el 2026-11-03 | **Fuente del plan** · `npm run plan` lee los dos |
 | `contracts/synapse-api.yaml` | Forma de las respuestas del backend | **El contrato**, y su casa |
 | `.cursorrules` | Idioma, estructura, convenciones de componente | Normativo |
 | `tareas-front-back.md` | El desglose original del backend | Histórico · lo extiende `plan-de-trabajo.md` |

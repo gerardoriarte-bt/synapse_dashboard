@@ -12,6 +12,7 @@
 |---|---|
 | `tareas-front-back.md` | **ANCESTRO** · el espacio de identificadores, compartido con el backend |
 | `plan-de-trabajo.md` | **FUENTE.** Se edita a mano |
+| `plan-fase-6.md` | **FUENTE** de la Fase 6, desde el 2026-11-03. Se edita a mano, con las mismas reglas |
 | `plan-tareas.csv` | derivado · una fila por tarea, para importar |
 | `tools/plan-synapse.html` | derivado · la página navegable |
 | `docs/PARA-BACKEND.md` | derivado · **lo que se le manda al backend** |
@@ -445,7 +446,7 @@ la plataforma de seguimiento sin perder su lugar en el plan.
 B 1 . 6        F 1.13 a
 │ │   │        │ │    └── sub-tarea de un traslado partido
 │ │   └─ número dentro de la fase
-│ └───── FASE (0–5)
+│ └───── FASE (0–6)
 └─────── EQUIPO · B backend · F front
 ```
 
@@ -2519,6 +2520,14 @@ el `401` sin token y el filtrado por rol.
 - El job se prueba sin tocar Snowflake, contra respuestas fijas.
 - Se cubre el camino de fallo: una métrica que falla deja `BLOQUEADO` con razón y
   **no aborta el resto del job**.
+
+---
+
+## Fase 6 — Las métricas de cada cliente y el reporte programado
+
+**Vive en `plan-fase-6.md`**, desde el 2026-11-03: el objetivo, las decisiones,
+el orden y las tareas `B6.x`. Está aparte para que se lea sola; las reglas y
+los estados son los de este archivo, y `npm run plan` lee los dos.
 
 ---
 
@@ -9092,6 +9101,14 @@ el síntoma es que el chunk desaparece.**
 Verificado por mutación con un `import { KpiBody }` desde `Console.tsx`: el
 chequeo lo detecta y nombra el cuerpo. Sin `dist/` sale BLOQUEADO en vez de
 pasar. Corre **después** del build en la puerta, que ahora son diez chequeos.
+
+---
+
+## Fase 6 — Las métricas de cada cliente y el reporte programado
+
+**Vive en `plan-fase-6.md`**, desde el 2026-11-03: el objetivo, las decisiones,
+el orden y las tareas `F6.x`. Está aparte para que se lea sola; las reglas y
+los estados son los de este archivo, y `npm run plan` lee los dos.
 
 ---
 
