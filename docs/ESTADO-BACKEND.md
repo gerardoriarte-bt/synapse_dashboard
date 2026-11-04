@@ -14,11 +14,11 @@ falta para re-verificar. Para su avance real está
 
 | | |
 |---|---|
-| Tareas `B*` en el plan | **98** |
-| Verificadas por nosotros · ✅ o ⚠️ | **74** |
+| Tareas `B*` en el plan | **104** |
+| Verificadas por nosotros · ✅ o ⚠️ | **75** |
 | De ésas, **contra el último commit** | **1** |
-| ⬜ Esperando algo de ellos | **1** |
-| ⬜ **Que NUNCA verificamos** | **22** |
+| ⬜ Esperando algo de ellos | **2** |
+| ⬜ **Que NUNCA verificamos** | **26** |
 | El último commit que leímos | `7324b26` |
 
 
@@ -65,7 +65,7 @@ Re-verificar una es leer su criterio y medirlo de nuevo.
 | **B2.11** · Filtrado por rol también en el batch | ✅ | `de881e1` | 2026-09-29 |
 | **B2.12** · Correr el materializador contra datos reales y verificar los seis estados | ⚠️ | `3651d70` | 2026-10-14 |
 | **B2.13** · Salud de feeds por fuente | ✅ | `de881e1` | 2026-09-29 |
-| **B2.16** · El materializador emite presentation | ✅ | `d794a3e` | 2026-10-20 |
+| **B2.16** · El materializador emite presentation | ✅ | `db91b5d` | 2026-11-03 |
 | **B3.1** · POST /config/chat con SSE | ⚠️ | `8633b10` | 2026-09-26 |
 | **B3.8** · La respuesta puede incluir { forma, datos, procedencia } | ✅ | `8272085` | 2026-10-13 |
 | **B3.10** · Persistir hilos y mensajes en Postgres | ✅ | `de881e1` | 2026-09-29 |
@@ -85,7 +85,7 @@ Re-verificar una es leer su criterio y medirlo de nuevo.
 | **B5.5** · Auditoría de publicaciones de layout | ✅ | `de881e1` | 2026-09-29 |
 
 
-## ⬜ 22 que nunca verificamos · y NO quiere decir que falten
+## ⬜ 26 que nunca verificamos · y NO quiere decir que falten
 
 **Un `⬜` de backend dice «no lo miramos», no «no está hecho».** Nuestro
 plan sólo mueve una `B*` cuando el front la verifica contra el servicio
@@ -98,7 +98,7 @@ identificadores no coinciden, así que los números no se restan; pero
 la distancia dice de qué lado está el trabajo pendiente.
 
 **El número que sí es nuestro y sí es un compromiso** son las que
-esperan algo de ellos: **1**, y salen en `PARA-BACKEND.md`.
+esperan algo de ellos: **2**, y salen en `PARA-BACKEND.md`.
 
 
 ## Todas, por fase
@@ -179,7 +179,7 @@ esperan algo de ellos: **1**, y salen en `PARA-BACKEND.md`.
 | ✅ | **B2.13** ➕ · Salud de feeds por fuente | `de881e1` ⚠ | 2026-09-29 |
 | ⬜ | **B2.14** ➕ · /config/solicitudes | `9dc481e` ⚠ | 2026-10-09 |
 | ⚠️ | **B2.15** ➕ · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | `7324b26` | 2026-10-19 |
-| ✅ | **B2.16** ➕ · El materializador emite presentation | `d794a3e` ⚠ | 2026-10-20 |
+| ✅ | **B2.16** ➕ · El materializador emite presentation | `db91b5d` ⚠ | 2026-11-03 |
 
 
 ### Fase 3 · Chat — 4 de 11
@@ -236,6 +236,18 @@ esperan algo de ellos: **1**, y salen en `PARA-BACKEND.md`.
 | ✅ | **B5.5** · Auditoría de publicaciones de layout | `de881e1` ⚠ | 2026-09-29 |
 | ⬜ | **B5.6** · Tests de integración por endpoint de consola | — | — |
 | ⬜ | **B5.7** · Tests del job de materialización con fixtures de Snowflake | `de881e1` ⚠ | 2026-09-29 |
+
+
+### Fase 6 · Métricas y reporte — 0 de 6
+
+| | Tarea | Verificada contra | Cuándo |
+|---|---|---|---|
+| ⚠️ | **B6.1** ➕ · Calcular la tanda A de Terpel | — | — |
+| ⬜ | **B6.2** ➕ · Calcular las métricas de UA que faltan | — | — |
+| ⬜ | **B6.3** ➕ · El reporte programado como objeto | — | — |
+| ⬜ | **B6.4** ➕ · Rutas para administrar reportes | — | — |
+| ⬜ | **B6.5** ➕ · Contestar las preguntas | — | — |
+| ⬜ | **B6.6** ➕ · Programar y enviar | `dc58ef5` ⚠ | 2026-11-04 |
 
 
 ---
