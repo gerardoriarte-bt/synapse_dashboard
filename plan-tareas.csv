@@ -777,9 +777,12 @@ B6.2,Backend · Fase 6 — Métricas por cliente y reporte programado,Backend,6,
 • Igual que B6.1: AVAILABLE en QA y la cifra reproducible.",pendiente,si,datos,equipo:backend fase:6 estado:pendiente nueva bloqueada
 B6.3,Backend · Fase 6 — Métricas por cliente y reporte programado,Backend,6,Métricas por cliente y reporte programado,El reporte programado como objeto,"Un reporte pertenece a un cliente y lleva: nombre; de tres a cinco preguntas; destinatarios, usuarios del cliente o correos externos; frecuencia, día y hora; su estado; y quién lo creó y lo cambió por última vez. Los estados son cuatro: borrador, validado, activo y pausado (D6.4).","• Menos de tres o más de cinco preguntas, o una pregunta vacía, se rechaza con 400.
 • Un reporte no se activa sin estar validado: activar un borrador se rechaza. La validación queda registrada con quién la hizo y qué respuestas leyó.
-• Cambiar una pregunta lo devuelve a borrador, porque las respuestas validadas ya no son las que va a recibir nadie. Si cambiar los destinatarios o la hora también lo devuelve, lo resuelve el mapa de UX (F6.5).
+• Cambiar una pregunta lo devuelve a borrador, porque las respuestas validadas ya no son las que va a recibir nadie. Agregar un externo también; cambiar otros destinatarios o la hora, no (P6.1).
+• Frecuencia semanal o mensual; otra se rechaza con 400 (P6.2).
+• Más de 20 destinatarios entre usuarios y externos se rechaza con 400 (P6.5).
+• Externo es todo correo sin usuario en la plataforma, aunque sea del dominio del cliente (P6.6).
 • La hora es del cliente, en su zona horaria: la misma que usa la consola para cortar el día. Un reporte de las 08:00 sale a las 08:00 de America/Mexico_City para UA, sin importar dónde corra el servidor.
-• Un destinatario externo genera una advertencia a los superadmins (D6.3): quién lo agregó, a qué reporte y a qué correo. Queda registrada.
+• Un destinatario externo genera una advertencia a los superadmins (D6.3): quién lo agregó, a qué reporte y a qué correo. Queda registrada, le llega por correo y se lista en Clientes (P6.4).
 • Un usuario suspendido deja de recibir.",pendiente,si,,equipo:backend fase:6 estado:pendiente nueva
 B6.4,Backend · Fase 6 — Métricas por cliente y reporte programado,Backend,6,Métricas por cliente y reporte programado,Rutas para administrar reportes,"Listar, crear, editar, validar, activar, pausar y borrar los reportes de un cliente, y generar sus respuestas sin enviarlas, que es lo que se lee para validar. Las rutas las propone el backend, y el front las transcribe al cable de administración.","• Un admin sólo ve y toca los reportes de su cliente: pedir los de otro se rechaza, igual que en las dos rutas que cerró 7324b26.
 • Un superadmin opera sobre cualquier cliente.
@@ -789,7 +792,7 @@ B6.5,Backend · Fase 6 — Métricas por cliente y reporte programado,Backend,6,
 • Una pregunta que no se puede contestar con datos se declara: qué falta y qué la desbloquea. No se rellena (D6.4).
 • Si el feed de una fuente está vencido, la respuesta lo dice en vez de dar el número viejo. Es la regla que el .pen escribe al pie del brief.
 • El largo de la respuesta tiene un tope declarado.
-• Los enlaces del correo abren la consola del cliente en el período del reporte.",pendiente,si,,equipo:backend fase:6 estado:pendiente nueva
+• Los enlaces del correo abren la consola del cliente en el período del reporte. El correo de un externo no lleva enlaces a la consola (P6.7).",pendiente,si,,equipo:backend fase:6 estado:pendiente nueva
 B6.6,Backend · Fase 6 — Métricas por cliente y reporte programado,Backend,6,Métricas por cliente y reporte programado,Programar y enviar,"El envío por correo, a la hora de cada reporte, con el adaptador de SES que ya existe.","• Sólo salen los reportes activos.
 • Queda registrado cada envío: reporte, destinatario, hora y resultado (enviado, rebotado o fallido).
 • «Enviar una prueba ahora»: sólo a quien lo pide, sin esperar la hora, y marcado como prueba en el registro.
