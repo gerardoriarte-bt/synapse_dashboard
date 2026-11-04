@@ -575,7 +575,26 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-11-03 · la Fase 6, y los dos pedidos enviados
+### ⇩ ACÁ SE PARÓ · 2026-11-04 · el backend programó Terpel, y falta desplegar
+
+**El backend contestó con `f78d700`**, leído contra `dc58ef5`: las siete
+métricas de pauta con las consultas que mandamos, y las dos de ATL bloqueadas.
+Medido en `docs/AUDITORIA-2026-11-04-respuesta-del-backend-terpel.md`.
+
+**`media_by_campaign` no se registró, y el error fue nuestro**: la vista no
+trae una fila por campaña (30 `CAMPANA`, 86 `NOMBRE_CAMPANA` en 90 filas).
+
+**Dos mensajes escritos, y los manda el humano**:
+`docs/MENSAJE-2026-11-04-backend-desplegar-metricas-de-terpel.md` —desplegar
+`dc58ef5` en QA— y `docs/MENSAJE-2026-11-04-datos-campanas-de-terpel.md` —qué
+es una campaña, y las filas repetidas—. Después del despliegue, «Cargar meses»
+de julio a octubre en Terpel, y F6.3. **Producto decide** si la tabla por
+campaña muestra líneas de pauta o campañas agrupadas.
+
+**Cuando un commit citado no aparece, se vuelve a medir antes de escribirlo**:
+a la mañana el remoto daba `db91b5d` y horas después estaba publicado.
+
+### ⇩ el 2026-11-03 · la Fase 6, y los dos pedidos enviados
 
 **La Fase 6 vive en `plan-fase-6.md`**, aparte del plan, por decisión humana:
 las métricas de cada cliente y un reporte por correo que programan el admin y
