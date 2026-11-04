@@ -173,9 +173,9 @@ Hasta entonces los dos paneles de prosa se servían con el valor de la semilla, 
 
 Ninguna métrica de Terpel se calcula · sin una entrada en el registro, el cliente no muestra ninguna cifra aunque el dato esté en Snowflake.
 
-**Lo tiene: BACKEND** · B6.1, en `MetricRegistry` (D6.2). Lo pide F6.1.
+**Lo tiene: BACKEND** · B6.1: desplegar `dc58ef5` en QA. Lo pide F6.1.
 
-**Medido contra `db91b5d` el 2026-11-03** · ninguna clave `atl_*` ni `media_*` de la entrega está en `internal/core/dashboard/snowflake/queries.go`. Del lado de Snowflake, las vistas de ATL responden con 85 y 259 filas y el catálogo trae sus filas completas, medido con el rol de Synapse.
+**Medido contra `dc58ef5` el 2026-11-04** · las siete claves `media_*` y las dos `atl_*` están en `internal/core/dashboard/snowflake/queries.go`; en QA sigue `db91b5d`, que no las tiene.
 
 
 ### F6.4 · Transcribir las rutas de reportes al cable de administración
@@ -208,7 +208,7 @@ sección existe.
 |---|---|---|
 | **B2.12** · Correr el materializador contra datos reales y verificar los seis estados | `3651d70` | 2026-10-14 |
 | **B2.14** · /config/solicitudes · pedir acceso a una métrica que no se ve | `9dc481e` | 2026-10-09 |
-| **F6.3** · Verificar en QA las métricas de Terpel y de UA | `db91b5d` | 2026-11-03 |
+| **F6.3** · Verificar en QA las métricas de Terpel y de UA | `dc58ef5` | 2026-11-04 |
 | **F6.4** · Transcribir las rutas de reportes al cable de administración | `db91b5d` | 2026-11-03 |
 
 

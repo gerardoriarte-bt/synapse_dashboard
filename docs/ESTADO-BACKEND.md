@@ -15,10 +15,10 @@ falta para re-verificar. Para su avance real está
 | | |
 |---|---|
 | Tareas `B*` en el plan | **104** |
-| Verificadas por nosotros · ✅ o ⚠️ | **74** |
+| Verificadas por nosotros · ✅ o ⚠️ | **75** |
 | De ésas, **contra el último commit** | **1** |
 | ⬜ Esperando algo de ellos | **2** |
-| ⬜ **Que NUNCA verificamos** | **27** |
+| ⬜ **Que NUNCA verificamos** | **26** |
 | El último commit que leímos | `7324b26` |
 
 
@@ -85,7 +85,7 @@ Re-verificar una es leer su criterio y medirlo de nuevo.
 | **B5.5** · Auditoría de publicaciones de layout | ✅ | `de881e1` | 2026-09-29 |
 
 
-## ⬜ 27 que nunca verificamos · y NO quiere decir que falten
+## ⬜ 26 que nunca verificamos · y NO quiere decir que falten
 
 **Un `⬜` de backend dice «no lo miramos», no «no está hecho».** Nuestro
 plan sólo mueve una `B*` cuando el front la verifica contra el servicio
@@ -242,12 +242,12 @@ esperan algo de ellos: **2**, y salen en `PARA-BACKEND.md`.
 
 | | Tarea | Verificada contra | Cuándo |
 |---|---|---|---|
-| ⬜ | **B6.1** ➕ · Calcular la tanda A de Terpel | — | — |
+| ⚠️ | **B6.1** ➕ · Calcular la tanda A de Terpel | — | — |
 | ⬜ | **B6.2** ➕ · Calcular las métricas de UA que faltan | — | — |
 | ⬜ | **B6.3** ➕ · El reporte programado como objeto | — | — |
 | ⬜ | **B6.4** ➕ · Rutas para administrar reportes | — | — |
 | ⬜ | **B6.5** ➕ · Contestar las preguntas | — | — |
-| ⬜ | **B6.6** ➕ · Programar y enviar | `db91b5d` ⚠ | 2026-11-03 |
+| ⬜ | **B6.6** ➕ · Programar y enviar | `dc58ef5` ⚠ | 2026-11-04 |
 
 
 ---

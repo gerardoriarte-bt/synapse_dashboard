@@ -62,7 +62,7 @@ propuesta, qué cubre el riesgo.
 | **D6.4** | ¿Qué pasa con una pregunta sin dato, como «¿qué hago?»? | Se declara en el correo, igual que un panel bloqueado, y no se rellena. **Además, las respuestas se validan en el front antes de activar el reporte** | B6.3 suma el estado de borrador y B6.4 la ruta que genera las respuestas sin enviar. F6.10 es la pantalla |
 | **D6.5** | Las pantallas no están dibujadas | **Primero un plan de diseño que mapee la UX** de punta a punta; después el dibujo | F6.5 es ese mapa. F6.6, F6.7 y F6.10 esperan el dibujo |
 
-**Lo que sigue abierto**, con quién lo decide. Ninguna frena el arranque:
+**Lo que sigue abierto**, con quién lo decide. Ninguna frena el arranque. P6.5–P6.7 salieron del mapa de UX (F6.5), que trae la propuesta de cada una:
 
 | | Pregunta | Lo decide | Frena |
 |---|---|---|---|
@@ -70,6 +70,9 @@ propuesta, qué cubre el riesgo.
 | **P6.2** | ¿Qué frecuencias se ofrecen: diaria, semanal, mensual? | Producto | B6.3 y F6.7 |
 | **P6.3** | ¿Cuáles son las tres preguntas que se proponen al crear un reporte? | Producto | Nada: hasta entonces el editor arranca vacío |
 | **P6.4** | ¿Dónde ve el superadmin la advertencia por un externo: correo, administración o los dos? | Producto, en el mapa de UX | B6.3 y F6.5 |
+| **P6.5** | ¿Hay un tope de destinatarios por reporte? | Producto | B6.3 y F6.7 |
+| **P6.6** | ¿Un correo del dominio del cliente sin usuario cuenta como externo? | Producto | B6.3 |
+| **P6.7** | ¿Un externo ve enlaces a la consola? | Producto | B6.5 |
 
 ## 4 · Lo que ya existe
 
@@ -127,13 +130,14 @@ REPORTE
 | **Backend** | El registro de las métricas, el reporte como objeto, sus rutas, las respuestas, el programador y el envío |
 | **Datos** | Corregir la entrega de UA, y el período de ATL de Terpel |
 | **Diseño** | Dibujar las pantallas a partir del mapa de UX |
-| **Producto** | P6.1–P6.4 |
+| **Producto** | P6.1–P6.7 |
 
 ---
 
 # Backend
 
-### ➕ B6.1 ⬜ Calcular la tanda A de Terpel
+### ➕ B6.1 ⚠️ Calcular la tanda A de Terpel
+**Contestado el 2026-11-04** · `docs/RESPUESTA-2026-11-03-backend-metricas-de-terpel.md`, medido en `docs/AUDITORIA-2026-11-04-respuesta-del-backend-terpel.md`. Siete claves registradas y las dos `atl_*` bloqueadas en `f78d700`, leído contra `dc58ef5`: las consultas son las del mensaje, y compila con sus pruebas. **Falta desplegarlo en QA.** `media_by_campaign` falta, y el error es nuestro: el pedido no traía el `SELECT`, y la vista no tiene una fila por campaña (30 `CAMPANA`, 86 `NOMBRE_CAMPANA` en 90 filas). Espera a datos y a producto.
 **Descripción.** Las métricas del catálogo de Terpel que datos entregó el
 2026-10-29 · `docs/ENTREGA-2026-10-29-synapse-metricas-terpel.md`. Una entrada
 en `MetricRegistry` por clave (D6.2).
@@ -249,9 +253,9 @@ viernes el 2026-10-05.
 
 **Espera del backend.** Ninguna métrica de Terpel se calcula · sin una entrada en el registro, el cliente no muestra ninguna cifra aunque el dato esté en Snowflake.
 
-**Lo tiene: BACKEND** · B6.1, en `MetricRegistry` (D6.2). Lo pide F6.1.
+**Lo tiene: BACKEND** · B6.1: desplegar `dc58ef5` en QA. Lo pide F6.1.
 
-**Medido contra `db91b5d` el 2026-11-03** · ninguna clave `atl_*` ni `media_*` de la entrega está en `internal/core/dashboard/snowflake/queries.go`. Del lado de Snowflake, las vistas de ATL responden con 85 y 259 filas y el catálogo trae sus filas completas, medido con el rol de Synapse.
+**Medido contra `dc58ef5` el 2026-11-04** · las siete claves `media_*` y las dos `atl_*` están en `internal/core/dashboard/snowflake/queries.go`; en QA sigue `db91b5d`, que no las tiene.
 **Criterio de aceptación.**
 - Cada cifra del panel coincide con la consulta de agregados sobre la vista,
   en el mismo período. Las diferencias se escriben con su causa.
@@ -269,7 +273,10 @@ viernes el 2026-10-05.
 **Criterio de aceptación.** `npm run humo` pasa las rutas nuevas campo por
 campo, y cada una lleva `x-verificado-en`.
 
-### ➕ F6.5 ⬜ El plan de diseño: el mapa de UX del reporte programado
+### ➕ F6.5 ⚠️ El plan de diseño: el mapa de UX del reporte programado
+
+**Escrito el 2026-11-03**: `docs/PROPUESTA-2026-11-03-reporte-programado-mapa-de-ux.md`, con doce recorridos, siete pantallas (V1–V7) y los estados de §8 de cada una. **Falta que producto conteste P6.1–P6.7** y que diseño lo tome; con eso pasa a ✅.
+
 **Descripción.** Antes de dibujar, mapear la experiencia de punta a punta (D6.5).
 Lo que se entrega es una `PROPUESTA-*` para diseño, y con ella se pide el dibujo
 en el `.pen`.
