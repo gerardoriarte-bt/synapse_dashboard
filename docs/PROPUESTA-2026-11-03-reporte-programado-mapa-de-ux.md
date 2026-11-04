@@ -308,6 +308,8 @@ recorridos de arriba ya las llevan.
 
 1. ~~**Producto revisa este mapa** y contesta P6.1–P6.7.~~ **Hecho el
    2026-11-04**, salvo P6.3, que no frena el dibujo.
-2. **Diseño dibuja V1–V7** en el `.pen`, con estos recorridos y estos estados.
+2. ~~**Diseño dibuja V1–V7** en el `.pen`, con estos recorridos y estos estados.~~
+   **Dibujadas el 2026-11-04** como las ocho pantallas `A7 · …` (V1–V7 más el
+   vacío de la lista), cada una con su nota. Falta que diseño las revise.
 3. **Con el dibujo y las rutas del backend** (B6.3, B6.4) se construyen F6.6,
    F6.7 y F6.10, mirando el dibujo antes de la primera línea.
