@@ -584,11 +584,11 @@ Medido en `docs/AUDITORIA-2026-11-04-respuesta-del-backend-terpel.md`.
 **`media_by_campaign` no se registró, y el error fue nuestro**: la vista no
 trae una fila por campaña (30 `CAMPANA`, 86 `NOMBRE_CAMPANA` en 90 filas).
 
-**Dos mensajes escritos, y los manda el humano**:
+**Los dos mensajes se enviaron el 2026-11-04, y los mandó el humano**:
 `docs/MENSAJE-2026-11-04-backend-desplegar-metricas-de-terpel.md` —desplegar
 `dc58ef5` en QA— y `docs/MENSAJE-2026-11-04-datos-campanas-de-terpel.md` —qué
 es una campaña, y las filas repetidas—. Después del despliegue, «Cargar meses»
-de julio a octubre en Terpel, y F6.3. **Producto decide** si la tabla por
+de julio a octubre en Terpel, y F6.3. **Lo que sigue es esperar, no volver a pedirlo.** **Producto decide** si la tabla por
 campaña muestra líneas de pauta o campañas agrupadas.
 
 **Cuando un commit citado no aparece, se vuelve a medir antes de escribirlo**:
