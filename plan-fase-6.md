@@ -283,7 +283,7 @@ campo, y cada una lleva `x-verificado-en`.
 
 ### ➕ F6.5 ⚠️ El plan de diseño: el mapa de UX del reporte programado
 
-**Escrito el 2026-11-03**: `docs/PROPUESTA-2026-11-03-reporte-programado-mapa-de-ux.md`, con doce recorridos, siete pantallas (V1–V7) y los estados de §8 de cada una. **Producto contestó P6.1, P6.2 y P6.4–P6.7 el 2026-11-04**, y el mapa ya las lleva; P6.3 sigue abierta y no lo frena. **Falta que diseño lo tome**; con eso pasa a ✅.
+**Escrito el 2026-11-03**: `docs/PROPUESTA-2026-11-03-reporte-programado-mapa-de-ux.md`, con doce recorridos, siete pantallas (V1–V7) y los estados de §8 de cada una. **Producto contestó P6.1, P6.2 y P6.4–P6.7 el 2026-11-04**, y el mapa ya las lleva; P6.3 sigue abierta y no lo frena. **Dibujado el 2026-11-04** en `design/Synapse_v2.pen`: las ocho pantallas `A7 · …` (V1–V7 más el vacío de la lista), cada una con su nota, en la fila de administración desde x = 24250. Falta que diseño las revise.
 
 **Descripción.** Antes de dibujar, mapear la experiencia de punta a punta (D6.5).
 Lo que se entrega es una `PROPUESTA-*` para diseño, y con ella se pide el dibujo

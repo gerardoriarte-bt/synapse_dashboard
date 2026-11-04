@@ -128,6 +128,14 @@ que su resultado esté escrito.
 | `A5 · Salud de feeds` | `src/surfaces/admin/FeedHealth.tsx` · F4.24, construida el 2026-09-25 |
 | `A5 · Feeds · tenant sin fuentes` | La misma: el vacío de alta lo pinta `EmptyRow` con `clase="alta"` |
 | `A6 · Cola de accionables` | **No construida** · F3.10, diferida por D3 |
+| `A7 · Reportes del cliente` | **No construida** · F6.6, espera las rutas de reportes (F6.4). Dibujada el 2026-11-04 desde el mapa de UX (F6.5) |
+| `A7 · Reportes · sin reportes` | **No construida** · el vacío de F6.6 |
+| `A7 · Envíos de un reporte` | **No construida** · el historial de envíos de F6.6 |
+| `A7 · Editor de reporte` | **No construida** · F6.7, espera F6.4 |
+| `A7 · Validar respuestas` | **No construida** · F6.10, espera F6.4 |
+| `A7 · Advertencia por un externo` | **No construida** · el correo es del backend (B6.3) y la lista en Clientes, de F6.6 |
+| `A7 · El correo del reporte` | **No es del front**: la plantilla es del backend (B6.5), con los colores de F6.8. Se verifica en F6.9 |
+| `A7 · Página de baja` | **No construida** · fuera de la sesión; la ruta la define el backend (B6.6) |
 | `B1 · Selector de contexto` | `src/surfaces/builder/ContextView.tsx` |
 | `B2 · Canvas de composición` | `src/surfaces/builder/Canvas.tsx` |
 | `B3 · Selector de gráfico` | **`src/surfaces/builder/PanelConfigurator.tsx`** · §PEN:B3 · la columna «Cómo se ve» desde el 2026-10-07, cada opción dibujada con el dato real de la métrica · `docs/AUDITORIA-2026-10-07-editor-sin-previsualizacion.md`. Era `PlotPicker.tsx` (F4.21, 2026-09-29), borrado ese día |
