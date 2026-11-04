@@ -69,7 +69,8 @@ Clientes · Usuarios · Catálogo de métricas · Salud de feeds · Reportes
   desde la ficha que un cliente recibe correos, sin ir a buscarlo.
 
 **Las advertencias por externos** necesitan un lugar que vea el superadmin sin
-importar el cliente de trabajo, porque llegan de todos. Ver P6.4 en §8.
+importar el cliente de trabajo, porque llegan de todos. Es la lista en Clientes
+(A1) que decidió P6.4, junto con el correo.
 
 ## 4 · El ciclo de vida de un reporte
 
@@ -92,10 +93,9 @@ importar el cliente de trabajo, porque llegan de todos. Ver P6.4 en §8.
   confirmarlas. Queda registrado quién validó y qué leyó.
 - **Cambiar una pregunta vuelve a borrador**, esté validado, activo o pausado,
   porque las respuestas que se leyeron ya no son las que se van a mandar.
-- **Si cambiar los destinatarios o la hora también vuelve a borrador es P6.1.**
-  La propuesta es que **no**: no cambian lo que se responde. Con una excepción
-  que conviene discutir: **agregar un externo** cambia quién lee las cifras del
-  cliente, y podría pedir validar de nuevo.
+- **Cambiar los destinatarios o la hora no vuelve a borrador** (P6.1, decidido
+  el 2026-11-04): no cambian lo que se responde. **Salvo agregar un externo**,
+  que sí lo devuelve, porque cambia quién lee las cifras del cliente.
 - **Reanudar un pausado no pide validar otra vez**, salvo que se haya cambiado
   una pregunta mientras estaba pausado.
 - **Borrar es definitivo** y pide confirmación. El historial de envíos se
@@ -141,14 +141,20 @@ Dos fuentes, distinguibles a la vista:
   reporte y a qué correo (D6.3). No se esconde y no se pregunta dos veces.
 
 No puede pasar: un correo con formato inválido, el mismo destinatario dos veces,
-o un reporte sin ningún destinatario.
+o un reporte sin ningún destinatario. **Ni más de 20 destinatarios** entre
+usuarios y externos (P6.5): es lo que evita que un error de tipeo mande cifras
+a una lista entera. La pantalla muestra la cuenta, «12 de 20», antes de llegar.
+
+**Externo es quien no tiene usuario en la plataforma** (P6.6), aunque su correo
+sea del dominio del cliente. Lo que importa es que la plataforma no lo conoce.
 
 Un usuario suspendido **sigue figurando, marcado como suspendido**, y no recibe.
 Así quien mira la lista entiende por qué alguien dejó de recibir.
 
 ### R4 · Programar cuándo sale
 
-Frecuencia, día y hora. **Qué frecuencias se ofrecen es P6.2.**
+Frecuencia, día y hora. **Se ofrecen semanal y mensual** (P6.2). Diaria no, por
+ahora: multiplica los correos y las corridas contra Snowflake.
 
 - **La hora es del cliente y se escribe al lado**: «08:00 · hora de
   America/Mexico_City». No es la hora del navegador de quien lo programa, que
@@ -195,8 +201,9 @@ a cuántos destinatarios**, separando usuarios y externos.
 
 - **Cambiar una pregunta avisa antes de guardar** que el reporte vuelve a
   borrador y deja de enviarse hasta que se valide. No después.
-- Cambiar destinatarios u hora se guarda sin salir de activo, si P6.1 se
-  resuelve como se propone.
+- Cambiar destinatarios u hora se guarda sin salir de activo (P6.1).
+- **Agregar un externo avisa antes de guardar**, igual que cambiar una pregunta:
+  el reporte vuelve a borrador y deja de enviarse hasta que se valide.
 
 ### R8 · Pausar, reanudar y borrar
 
@@ -220,9 +227,8 @@ uno —enviado, rebotado o fallido—. Las pruebas, marcadas como tales.
 Cuando se guarda un reporte con un externo nuevo, cada superadmin recibe la
 advertencia: **quién lo agregó, a qué reporte, de qué cliente y qué correo**.
 
-- **Dónde la ve es P6.4.** La propuesta es **los dos**: un correo en el momento,
-  y una lista en Clientes (A1), que es la pantalla de alcance plataforma, para
-  verlas juntas.
+- **La ve en los dos lugares** (P6.4): un correo en el momento, y una lista en
+  Clientes (A1), que es la pantalla de alcance plataforma, para verlas juntas.
 - **La advertencia informa, no bloquea.** El externo recibe el reporte sin
   esperar al superadmin; así lo decidió D6.3.
 - Desde la advertencia se llega al reporte. **Quitar al externo** lo hace el
@@ -265,7 +271,7 @@ exige declararlas en el registro del plan.
 | **V2** | `A7 · Editor de reporte` | R1–R4, R7 | Las preguntas con su ayuda, usuarios y externos distinguidos, la hora con la zona del cliente, el próximo envío |
 | **V3** | `A7 · Validar respuestas` | R5, R6 | Cada respuesta como saldría en el correo, con su fuente; una pregunta sin dato; una respuesta que falló |
 | **V4** | `A7 · Envíos de un reporte` | R9 | Resultado por destinatario y qué se mandó ese día |
-| **V5** | La advertencia al superadmin | R10 | Quién, qué reporte, qué cliente, qué correo. Depende de P6.4 |
+| **V5** | La advertencia al superadmin | R10 | Quién, qué reporte, qué cliente, qué correo. En correo y en la lista de Clientes (P6.4) |
 | **V6** | El correo | todos | Adaptado del brief: las preguntas y sus respuestas, la procedencia de cada cifra, la baja, y una frase distinta para el externo: «Recibes este correo porque [quién] te agregó al reporte [nombre] de [cliente]» |
 | **V7** | La página de baja | R11 | Qué reporte, deshacer, y nada más |
 
@@ -282,24 +288,26 @@ tienen un caso propio:
 | **V4** envíos | Filas esqueleto | «Todavía no se envió» con la fecha del primero | Un rebote | — | Ídem | La lista no cargó |
 | **V6** correo | — | — | Una fuente vencida, dicha en la respuesta | Una pregunta sin dato | — | — |
 
-## 8 · Lo que este mapa no decide
+## 8 · Lo que decidió producto
 
-Son de producto, y las cuatro primeras ya están en `plan-fase-6.md`:
+**Decidido el 2026-11-04 (humano)**: se aceptaron las propuestas de este mapa,
+y las dos que quedaban a medias se cerraron en la misma respuesta. Los
+recorridos de arriba ya las llevan.
 
-| | Pregunta | Lo que propone este mapa |
+| | Pregunta | Decisión |
 |---|---|---|
-| **P6.1** | ¿Cambiar destinatarios u hora vuelve a borrador? | No, salvo quizás agregar un externo (§4) |
-| **P6.2** | ¿Qué frecuencias se ofrecen? | Semanal y mensual para empezar. Diaria multiplica los correos y las corridas contra Snowflake |
-| **P6.3** | ¿Cuáles son las tres preguntas que se proponen? | — |
+| **P6.1** | ¿Cambiar destinatarios u hora vuelve a borrador? | No, **salvo agregar un externo**, que sí |
+| **P6.2** | ¿Qué frecuencias se ofrecen? | Semanal y mensual |
+| **P6.3** | ¿Cuáles son las tres preguntas que se proponen? | **Abierta**: el editor arranca vacío |
 | **P6.4** | ¿Dónde ve el superadmin la advertencia? | Los dos: correo en el momento y lista en Clientes (R10) |
-| **P6.5** | ¿Hay un tope de destinatarios por reporte? | Sí, para que un error de tipeo no mande cifras a una lista entera. El número lo pone producto |
-| **P6.6** | ¿Un correo del dominio del cliente cuenta como externo si no tiene usuario? | Sí. Lo que importa es que la plataforma no lo conoce, no de qué empresa es |
-| **P6.7** | ¿Un externo ve enlaces a la consola? | No: le pedirían iniciar sesión con una cuenta que no tiene |
+| **P6.5** | ¿Hay un tope de destinatarios por reporte? | Sí, **20** |
+| **P6.6** | ¿Un correo del dominio del cliente cuenta como externo si no tiene usuario? | Sí |
+| **P6.7** | ¿Un externo ve enlaces a la consola? | No |
 
 ## 9 · Qué sigue
 
-1. **Producto revisa este mapa** y contesta P6.1–P6.7. Las que cambien un
-   recorrido se escriben acá antes del dibujo.
+1. ~~**Producto revisa este mapa** y contesta P6.1–P6.7.~~ **Hecho el
+   2026-11-04**, salvo P6.3, que no frena el dibujo.
 2. **Diseño dibuja V1–V7** en el `.pen`, con estos recorridos y estos estados.
 3. **Con el dibujo y las rutas del backend** (B6.3, B6.4) se construyen F6.6,
    F6.7 y F6.10, mirando el dibujo antes de la primera línea.

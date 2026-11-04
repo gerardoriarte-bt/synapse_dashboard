@@ -62,17 +62,19 @@ propuesta, qué cubre el riesgo.
 | **D6.4** | ¿Qué pasa con una pregunta sin dato, como «¿qué hago?»? | Se declara en el correo, igual que un panel bloqueado, y no se rellena. **Además, las respuestas se validan en el front antes de activar el reporte** | B6.3 suma el estado de borrador y B6.4 la ruta que genera las respuestas sin enviar. F6.10 es la pantalla |
 | **D6.5** | Las pantallas no están dibujadas | **Primero un plan de diseño que mapee la UX** de punta a punta; después el dibujo | F6.5 es ese mapa. F6.6, F6.7 y F6.10 esperan el dibujo |
 
-**Lo que sigue abierto**, con quién lo decide. Ninguna frena el arranque. P6.5–P6.7 salieron del mapa de UX (F6.5), que trae la propuesta de cada una:
+**Las preguntas de producto, decididas el 2026-11-04 (humano)**: se aceptaron
+las propuestas del mapa de UX (F6.5), con P6.1 y P6.5 cerradas en la misma
+respuesta. **Sólo P6.3 sigue abierta**, y no frena nada.
 
-| | Pregunta | Lo decide | Frena |
+| | Pregunta | Decisión | Frena |
 |---|---|---|---|
-| **P6.1** | ¿Cambiar destinatarios u hora también devuelve el reporte a borrador, o sólo cambiar una pregunta? | Producto, en el mapa de UX | B6.3 y F6.7 |
-| **P6.2** | ¿Qué frecuencias se ofrecen: diaria, semanal, mensual? | Producto | B6.3 y F6.7 |
-| **P6.3** | ¿Cuáles son las tres preguntas que se proponen al crear un reporte? | Producto | Nada: hasta entonces el editor arranca vacío |
-| **P6.4** | ¿Dónde ve el superadmin la advertencia por un externo: correo, administración o los dos? | Producto, en el mapa de UX | B6.3 y F6.5 |
-| **P6.5** | ¿Hay un tope de destinatarios por reporte? | Producto | B6.3 y F6.7 |
-| **P6.6** | ¿Un correo del dominio del cliente sin usuario cuenta como externo? | Producto | B6.3 |
-| **P6.7** | ¿Un externo ve enlaces a la consola? | Producto | B6.5 |
+| **P6.1** | ¿Cambiar destinatarios u hora devuelve el reporte a borrador? | **No, salvo agregar un externo**, que sí lo devuelve: cambia quién lee las cifras del cliente. Cambiar una pregunta lo devuelve siempre | B6.3 y F6.7 |
+| **P6.2** | ¿Qué frecuencias se ofrecen? | **Semanal y mensual.** Diaria no, por ahora: multiplica los correos y las corridas contra Snowflake | B6.3 y F6.7 |
+| **P6.3** | ¿Cuáles son las tres preguntas que se proponen al crear un reporte? | **Abierta.** Hasta que producto las defina, el editor arranca vacío | Nada |
+| **P6.4** | ¿Dónde ve el superadmin la advertencia por un externo? | **En los dos lugares**: un correo en el momento y una lista en Clientes (A1) | B6.3 y F6.5 |
+| **P6.5** | ¿Hay un tope de destinatarios por reporte? | **Sí, 20**, entre usuarios y externos | B6.3 y F6.7 |
+| **P6.6** | ¿Un correo del dominio del cliente sin usuario cuenta como externo? | **Sí.** Externo es quien no tiene usuario en la plataforma, sea de la empresa que sea | B6.3 |
+| **P6.7** | ¿Un externo ve enlaces a la consola? | **No**: le pedirían iniciar sesión con una cuenta que no tiene | B6.5 |
 
 ## 4 · Lo que ya existe
 
@@ -130,7 +132,7 @@ REPORTE
 | **Backend** | El registro de las métricas, el reporte como objeto, sus rutas, las respuestas, el programador y el envío |
 | **Datos** | Corregir la entrega de UA, y el período de ATL de Terpel |
 | **Diseño** | Dibujar las pantallas a partir del mapa de UX |
-| **Producto** | P6.1–P6.7 |
+| **Producto** | P6.3: las tres preguntas que se proponen |
 
 ---
 
@@ -176,13 +178,19 @@ frecuencia, día y hora; su estado; y quién lo creó y lo cambió por última v
   rechaza. La validación queda registrada con quién la hizo y qué respuestas
   leyó.
 - **Cambiar una pregunta lo devuelve a borrador**, porque las respuestas
-  validadas ya no son las que va a recibir nadie. Si cambiar los destinatarios
-  o la hora también lo devuelve, lo resuelve el mapa de UX (F6.5).
+  validadas ya no son las que va a recibir nadie. **Agregar un externo también**;
+  cambiar otros destinatarios o la hora, no (P6.1).
+- **Frecuencia semanal o mensual**; otra se rechaza con 400 (P6.2).
+- **Más de 20 destinatarios** entre usuarios y externos se rechaza con 400
+  (P6.5).
+- **Externo es todo correo sin usuario en la plataforma**, aunque sea del
+  dominio del cliente (P6.6).
 - **La hora es del cliente**, en su zona horaria: la misma que usa la consola
   para cortar el día. Un reporte de las 08:00 sale a las 08:00 de
   `America/Mexico_City` para UA, sin importar dónde corra el servidor.
 - **Un destinatario externo genera una advertencia a los superadmins** (D6.3):
-  quién lo agregó, a qué reporte y a qué correo. Queda registrada.
+  quién lo agregó, a qué reporte y a qué correo. Queda registrada, **le llega
+  por correo y se lista en Clientes** (P6.4).
 - Un usuario suspendido deja de recibir.
 
 ### ➕ B6.4 ⬜ Rutas para administrar reportes
@@ -209,7 +217,7 @@ Snowflake, en respuestas cortas y concisas (D6.1).
   número viejo. Es la regla que el `.pen` escribe al pie del brief.
 - El largo de la respuesta tiene un tope declarado.
 - Los enlaces del correo abren la consola del cliente en el período del
-  reporte.
+  reporte. **El correo de un externo no lleva enlaces a la consola** (P6.7).
 
 ### ➕ B6.6 ⬜ Programar y enviar
 **Descripción.** El envío por correo, a la hora de cada reporte, con el adaptador
@@ -275,7 +283,7 @@ campo, y cada una lleva `x-verificado-en`.
 
 ### ➕ F6.5 ⚠️ El plan de diseño: el mapa de UX del reporte programado
 
-**Escrito el 2026-11-03**: `docs/PROPUESTA-2026-11-03-reporte-programado-mapa-de-ux.md`, con doce recorridos, siete pantallas (V1–V7) y los estados de §8 de cada una. **Falta que producto conteste P6.1–P6.7** y que diseño lo tome; con eso pasa a ✅.
+**Escrito el 2026-11-03**: `docs/PROPUESTA-2026-11-03-reporte-programado-mapa-de-ux.md`, con doce recorridos, siete pantallas (V1–V7) y los estados de §8 de cada una. **Producto contestó P6.1, P6.2 y P6.4–P6.7 el 2026-11-04**, y el mapa ya las lleva; P6.3 sigue abierta y no lo frena. **Falta que diseño lo tome**; con eso pasa a ✅.
 
 **Descripción.** Antes de dibujar, mapear la experiencia de punta a punta (D6.5).
 Lo que se entrega es una `PROPUESTA-*` para diseño, y con ella se pide el dibujo
