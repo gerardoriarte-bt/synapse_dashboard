@@ -582,7 +582,8 @@ control de UA quedó en 10 filas, las 10 `CLAVE DESCONOCIDA`. Está en
 `docs/AUDITORIA-2026-11-09-respuesta-de-datos-ua.md`.
 
 **`docs/MENSAJE-2026-11-09-backend-metricas-de-ua.md` pide nueve claves**, y
-**lo manda el humano**. Cinco van a `KPISQL` para que traigan comparativos.
+**se envió el 2026-11-09, lo mandó el humano**. **Lo que sigue es esperar, no
+volver a pedirlo.** Cinco van a `KPISQL` para que traigan comparativos.
 `category_mix` espera a datos: el 9 % de la venta llega con la división nula.
 
 **Pendiente con datos, sin pedir todavía**: la división nula, de dónde sale

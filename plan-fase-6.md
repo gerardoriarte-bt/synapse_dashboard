@@ -112,7 +112,7 @@ REPORTE
 ```
 
 **Las dos columnas avanzan en paralelo.** Lo que se puede tomar hoy, del front:
-**F6.2**, hasta que se envíe, y **F6.8**. El resto espera algo con nombre.
+**F6.8**. El resto espera algo con nombre.
 
 **Los hitos**, en el orden en que se espera verlos:
 
@@ -252,11 +252,12 @@ de SES que ya existe.
 - Dice lo que el backend tiene que saber antes de programar: `atl_*` sin
   período, y que las cifras cambian entre corridas porque la carga sigue.
 
-### ➕ F6.2 ⚠️ Pedirle al backend las de UA
+### ➕ F6.2 ✅ Pedirle al backend las de UA
 
 **Redactado el 2026-11-09**: `docs/MENSAJE-2026-11-09-backend-metricas-de-ua.md`,
-con nueve claves, su SQL y la cifra de julio a octubre. **Falta que el humano
-lo envíe.** `category_mix` queda afuera hasta que datos decida la división nula.
+con nueve claves, su SQL y la cifra de julio a octubre. **Enviado el
+2026-11-09**, por el humano. **Lo que sigue es esperar, no volver a pedirlo**:
+B6.2, y después F6.3. `category_mix` queda afuera hasta que datos decida la división nula.
 
 **Descripción.** Lo mismo que F6.1 para B6.2, cuando datos conteste
 `docs/MENSAJE-2026-11-03-datos-entrega-de-ua-medida.md`.
