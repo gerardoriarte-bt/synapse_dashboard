@@ -8453,6 +8453,28 @@ desde el navegador, un cuerpo de 20 KB da 413, un GET da 403, y el intento 31
 seguido da 429. **El error de render se probó sólo en las pruebas**: provocarlo
 en el build de producción pide código que lo rompa.
 
+### ➕ F5.62 ✅ Dependencias e imágenes al día, y con quien las vigile
+
+**Descripción.** Brecha 6 de `docs/AUDITORIA-2026-11-04-hardening-iso-27001.md`
+(ISO 27001 A.8.8): 12 vulnerabilidades en dependencias de desarrollo,
+Dependabot apagado e imágenes base por etiqueta. Se actualizaron sólo las
+vulnerables, con versiones de al menos dos semanas; se sacó
+`eslint-config-prettier`, que nadie usaba y arrastraba eslint entero; las
+imágenes van por digest y nginx pasa de la 1.27 a la estable 1.30. Dependabot
+renueva npm, las acciones y las imágenes, y el CI escanea la imagen con Trivy.
+
+**Criterio de aceptación.** `npm audit` en cero. La imagen sin
+vulnerabilidades altas ni críticas con arreglo. Ninguna versión nueva del
+lockfile publicada en las dos semanas previas. La imagen nueva sirve igual: las
+cabeceras, la API y el registro de errores.
+
+**Construida el 2026-11-09.** **El escaneo encontró lo más grave antes de
+existir en el CI**: la imagen de `main`, sobre Alpine 3.21.3, tenía 67
+vulnerabilidades altas o críticas con arreglo, tres críticas y una de ellas en
+OpenSSL. Con la base nueva, cero. **`npm audit fix` no corre con npm 10.9.3**
+—falla al armar el árbol de peers— y se hizo con npm 11.21.1 y `--before`; el
+lockfile que sale lo instala igual `npm ci` con npm 10.
+
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
 **Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio
