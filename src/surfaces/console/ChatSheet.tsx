@@ -54,9 +54,27 @@ import { etiquetaDeAgente } from './agenteDeChat'
 
 const ROTULO = 'font-mono text-label tracking-rotulo leading-rotulo uppercase text-dim'
 
+/** **La caja es una, con el campo y el botón adentro** · §PEN:C3, 2026-11-09.
+ *  El frame `Entrada` de `C3 · historial colapsado` mide 44 de alto, `$panel`
+ *  con filete `$w3` y radio `$r-lg`, 14 de aire a los lados y 12 entre lo que
+ *  lleva. El borde se enciende con el foco del campo, que ya no tiene el suyo. */
+const CAJA =
+  'flex h-11 items-center gap-3 rounded-lg border border-w3 bg-panel px-3.5 focus-within:border-w5'
+
 const CAMPO =
-  'font-body text-cuerpo leading-cuerpo text-ink bg-elev border border-w3 rounded-md px-3 py-2 ' +
-  'outline-none focus:border-w5 flex-1 min-w-0'
+  'font-body text-cuerpo leading-cuerpo text-ink bg-transparent border-0 p-0 outline-none flex-1 min-w-0'
+
+/** **El envío es un botón relleno, como el «Preguntar» que abrió la hoja** ·
+ *  EV-022. El frame `Enviar` dibuja 28 de alto, `$acc`, radio `$r-md`, 12 de
+ *  aire y la nota mono en `$on-acc`. Hasta el 2026-11-09 era texto suelto, gris
+ *  mientras el campo estaba vacío — justo cuando se busca cómo enviar.
+ *
+ *  **Lo que el frame lleva y acá no**: el micrófono y su separador. No hay
+ *  dictado, y un control que no hace nada no se pinta. */
+const ENVIAR =
+  'flex h-7 shrink-0 items-center rounded-md border-0 bg-acc px-3 ' +
+  'font-mono text-nota tracking-rotulo uppercase font-medium text-on-acc ' +
+  'cursor-pointer hover:bg-acc-hover disabled:cursor-default disabled:opacity-60 disabled:hover:bg-acc'
 
 type Props = {
   /** **De panel o de pestaña, nunca las dos** · F3.15. El servicio exige
@@ -346,7 +364,7 @@ export function ChatSheet({
           />
 
           <form
-            className="flex items-end gap-2"
+            className={CAJA}
             onSubmit={(e) => {
               e.preventDefault()
               const pregunta = texto.trim()
@@ -377,7 +395,7 @@ export function ChatSheet({
             <button
               type="submit"
               disabled={texto.trim() === '' || enVuelo}
-              className={`${ROTULO} cursor-pointer border-0 bg-transparent p-0 pb-2 text-acc hover:text-acc-hover disabled:cursor-default disabled:text-dim`}
+              className={ENVIAR}
             >
               {enVuelo ? 'Esperando' : 'Preguntar'}
             </button>
