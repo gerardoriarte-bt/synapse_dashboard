@@ -108,7 +108,7 @@ describe('EV-027 · se ven TODAS las consultas de la respuesta', () => {
   it('en el orden en que corrieron, y el desplegable dice cuántas son', () => {
     const r = eventos.reduce(apply, VACIA)
     const { container } = render(<ChatThread turns={[turno(r, false)]} {...chrome} />)
-    const sqls = [...container.querySelectorAll('details pre')].map((p) => p.textContent)
+    const sqls = Array.from(container.querySelectorAll('details pre'), (p) => p.textContent)
     expect(sqls).toEqual([diaria, totales])
     expect(
       screen.getByText('Ver las 2 consultas que produjeron esta respuesta'),
