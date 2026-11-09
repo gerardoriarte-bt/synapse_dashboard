@@ -8417,6 +8417,59 @@ cámara lenta en `docs/DECISIONES-2026-10-27-microinteracciones.md`.
 queda de diseño es declarar los tres tokens en el `.pen`; hasta entonces viven
 en `decisiones.css`.
 
+### ➕ F5.59 ✅ Las cabeceras de seguridad, con una CSP estricta
+
+**Descripción.** Brecha 1 de `docs/AUDITORIA-2026-11-04-hardening-iso-27001.md`
+(ISO 27001 A.8.9 y A.8.26): nginx no mandaba ninguna. Van en
+`deploy/seguridad.conf` —CSP, HSTS, `X-Frame-Options`, `nosniff`,
+`Referrer-Policy`, `Permissions-Policy` y COOP— y se incluyen en el `server` y
+en cada `location` con `add_header` propio, porque en nginx esos no se heredan.
+
+**Criterio de aceptación.** Las cabeceras salen en la página, el fallback de la
+SPA, los assets, la API y un 404. La CSP no lleva `unsafe-inline` ni
+`unsafe-eval`, la consola, administración y el builder se ven enteros con ella,
+y una violación llega al registro de errores.
+
+**Construida el 2026-11-09** y medida con la imagen contra el backend local:
+las cabeceras en las cinco respuestas, las tres superficies enteras, y un
+`<style>` inyectado a propósito bloqueado y reportado en el log.
+`tests/deploy/nginx.test.ts` exige el `include` en cada `location`; cinco
+mutaciones mueren.
+
+### ➕ F5.60 ✅ La puerta corre en cada PR
+
+**Descripción.** Brecha 2 de la misma auditoría (A.8.25 y A.8.32): `npm run
+verify` corría sólo en la máquina de quien empujaba. `.github/workflows/verify.yml`
+la corre en cada PR y en cada push a `main`, con permisos de sólo lectura y las
+acciones fijadas por SHA. `afirmaciones` sale BLOQUEADO, y no en rojo, cuando no
+tiene los repositorios del backend donde buscar sus commits.
+
+**Criterio de aceptación.** El workflow corre verde en un PR. Para que sea
+obligatorio falta proteger `main`, que es configuración del repositorio y la
+hace quien lo administra.
+
+**Construida el 2026-11-09**: la puerta se corrió en un clone limpio, sin los
+repositorios del backend, igual que en el CI.
+
+### ➕ F5.61 ✅ Los errores del navegador se registran
+
+**Descripción.** Brecha 8 de la misma auditoría (A.8.15 y A.8.16): un error en
+el navegador de un cliente sólo se sabía si el cliente lo contaba. El front
+manda el tipo, el mensaje, la pila corta y la ruta sin query a `/_errores`, y
+nginx lo escribe en el log del contenedor como una línea JSON. Sin terceros,
+sin IP y sin nada del usuario. Una frontera de errores en la raíz cambia la
+pantalla en blanco por un mensaje con salida.
+
+**Criterio de aceptación.** Un error suelto, una promesa sin `catch` y un error
+de render llegan al log. Como mucho diez por carga de página, sin repetidos,
+sólo POST, 8 KB como máximo y un tope de ritmo en nginx.
+
+**Construida el 2026-11-09** · `tests/app/errores.test.tsx`; cuatro mutaciones
+mueren. Medida con la imagen: el error suelto y la promesa llegaron al log
+desde el navegador, un cuerpo de 20 KB da 413, un GET da 403, y el intento 31
+seguido da 429. **El error de render se probó sólo en las pruebas**: provocarlo
+en el build de producción pide código que lo rompa.
+
 ### ➕ F5.21 ⬜ Qué hace un gráfico cuando el dato excede lo legible
 
 **Descripción.** Hoy nada frena un payload que no se puede leer. El repertorio
