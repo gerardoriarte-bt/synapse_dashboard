@@ -157,6 +157,45 @@ describe('TableBody · la columna se formatea entera, no celda por celda', () =>
     expect(screen.getByText('3.0')).toBeInTheDocument()
   })
 
+  /** **Lo que la columna declara gana sobre lo que se infiere** · 2026-11-09.
+   *  La evaluación de UX vio «2,235,316.00» y «0.00» en la tabla de UA: el
+   *  backend declaraba 0 decimales para la inversión y el front los deducía de
+   *  la celda con más decimales. */
+  it('los decimales DECLARADOS mandan, también para menos de los que hay', () => {
+    const declarada = {
+      forma: 'tabular',
+      columnas: [
+        { clave: 'canal', titulo: 'Canal', numerica: false },
+        { clave: 'inversion', titulo: 'Inversión', numerica: true, decimales: 0 },
+        { clave: 'roas', titulo: 'ROAS', numerica: true, decimales: 2 },
+      ],
+      filas: [
+        { canal: 'Dailymotion', inversion: 2235316.4, roas: 4.2 },
+        { canal: 'Criteo', inversion: 0.25, roas: 3 },
+      ],
+    } as unknown as Extract<Value, { forma: 'tabular' }>
+    render(<TableBody {...base} value={declarada} params={{}} metric="Retorno" />)
+    // Completa y sin abreviar: el backend dijo cómo se lee la columna.
+    expect(screen.getByText('2,235,316')).toBeInTheDocument()
+    expect(screen.getByText('0')).toBeInTheDocument()
+    expect(screen.getByText('4.20')).toBeInTheDocument()
+    expect(screen.getByText('3.00')).toBeInTheDocument()
+  })
+
+  it('la unidad va al rótulo de la columna · «la unidad se va al label»', () => {
+    const conUnidad = {
+      forma: 'tabular',
+      columnas: [
+        { clave: 'canal', titulo: 'Canal', numerica: false },
+        { clave: 'share', titulo: 'Participación', numerica: true, decimales: 1, unidad: '%' },
+      ],
+      filas: [{ canal: 'Search', share: 41.25 }],
+    } as unknown as Extract<Value, { forma: 'tabular' }>
+    render(<TableBody {...base} value={conUnidad} params={{}} metric="Retorno" />)
+    expect(screen.getByRole('columnheader', { name: 'Participación · %' })).toBeInTheDocument()
+    expect(screen.getByText('41.3')).toBeInTheDocument()
+  })
+
   it('una celda numérica AUSENTE sigue alineada a la derecha', () => {
     // **Lo encontró mirar el dashboard de UA**, no una prueba: en el mes en
     // curso `platform_return` no trae `sales` ni `roas`, y el `—` se pintaba a

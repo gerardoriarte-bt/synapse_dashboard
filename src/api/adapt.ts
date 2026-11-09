@@ -1077,15 +1077,30 @@ export function adaptValue(raw: unknown): ValorOk | ValorMal {
         ok: true,
         valor: {
           forma: 'tabular',
-          // `decimales` y `unidad` por columna NO llegan. Sin `decimales` una
-          // columna de ROAS sale «4.2 · 4.5 · 3.5 · 3»: cada celda está bien y
-          // la columna se lee mal · §4 ask 14. No se deducen del dato.
+          // **`decimales` y `unidad` SÍ llegan, desde `6e521cc`** · corregido
+          // el 2026-11-09. Acá decía que no, y era cierto hasta el 2026-09-25:
+          // ese día el materializador empezó a mandarlos cuando la métrica los
+          // define, y este adaptador los siguió tirando. La tabla de UA salía
+          // con «2,235,316.00» y una Participación sin «%», y lo vio la
+          // evaluación de UX antes que nadie. **Ausentes quedan ausentes**: un
+          // cero inventado le quitaría los decimales a un ROAS no declarado.
           columnas: cols.flatMap((c) => {
             const clave = cadena(c, 'key')
             const titulo = cadena(c, 'title')
-            return clave === null || titulo === null
-              ? []
-              : [{ clave, titulo, numerica: c['numeric'] === true }]
+            if (clave === null || titulo === null) return []
+            const decimales = numero(c, 'decimals')
+            const unidad = cadena(c, 'unit')
+            return [
+              {
+                clave,
+                titulo,
+                numerica: c['numeric'] === true,
+                ...(decimales === null || !Number.isInteger(decimales) || decimales < 0
+                  ? {}
+                  : { decimales }),
+                ...(unidad === null || unidad.trim() === '' ? {} : { unidad }),
+              },
+            ]
           }),
           // Las celdas del cable son `any` de Go. El contrato admite cadena,
           // número o nulo — cualquier otra cosa (un objeto anidado, un booleano)
