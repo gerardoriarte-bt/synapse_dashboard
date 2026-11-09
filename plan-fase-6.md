@@ -112,7 +112,7 @@ REPORTE
 ```
 
 **Las dos columnas avanzan en paralelo.** Lo que se puede tomar hoy, del front:
-**F6.1**, **F6.5** y **F6.8**. El resto espera algo con nombre.
+**F6.8**. El resto espera algo con nombre.
 
 **Los hitos**, en el orden en que se espera verlos:
 
@@ -139,7 +139,7 @@ REPORTE
 # Backend
 
 ### ➕ B6.1 ⚠️ Calcular la tanda A de Terpel
-**Contestado el 2026-11-04** · `docs/RESPUESTA-2026-11-03-backend-metricas-de-terpel.md`, medido en `docs/AUDITORIA-2026-11-04-respuesta-del-backend-terpel.md`. Siete claves registradas y las dos `atl_*` bloqueadas en `f78d700`, leído contra `dc58ef5`: las consultas son las del mensaje, y compila con sus pruebas. **Falta desplegarlo en QA.** `media_by_campaign` falta, y el error es nuestro: el pedido no traía el `SELECT`, y la vista no tiene una fila por campaña (30 `CAMPANA`, 86 `NOMBRE_CAMPANA` en 90 filas). Espera a datos y a producto. **Enviado el 2026-11-04**, por el humano: `docs/MENSAJE-2026-11-04-backend-desplegar-metricas-de-terpel.md` y `docs/MENSAJE-2026-11-04-datos-campanas-de-terpel.md`. **Lo que sigue es esperar, no volver a pedirlo.**
+**Contestado el 2026-11-04** · `docs/RESPUESTA-2026-11-03-backend-metricas-de-terpel.md`, medido en `docs/AUDITORIA-2026-11-04-respuesta-del-backend-terpel.md`. Siete claves registradas y las dos `atl_*` bloqueadas en `f78d700`, leído contra `dc58ef5`: las consultas son las del mensaje, y compila con sus pruebas. **Falta desplegarlo en QA.** `media_by_campaign` falta, y el error es nuestro: el pedido no traía el `SELECT`, y la vista no tiene una fila por campaña (30 `CAMPANA`, 86 `NOMBRE_CAMPANA` en 90 filas). **Datos y producto contestaron el 2026-11-09**: la campaña es `CAMPANA`, con su familia y su cuenta (`docs/AUDITORIA-2026-11-09-campanas-de-terpel.md`). El `SELECT` va en `docs/MENSAJE-2026-11-09-backend-tabla-por-campana-de-terpel.md`, **enviado el 2026-11-09** por el humano. **Enviado el 2026-11-04**, por el humano: `docs/MENSAJE-2026-11-04-backend-desplegar-metricas-de-terpel.md` y `docs/MENSAJE-2026-11-04-datos-campanas-de-terpel.md`. **Lo que sigue es esperar, no volver a pedirlo.**
 **Descripción.** Las métricas del catálogo de Terpel que datos entregó el
 2026-10-29 · `docs/ENTREGA-2026-10-29-synapse-metricas-terpel.md`. Una entrada
 en `MetricRegistry` por clave (D6.2).
@@ -153,16 +153,20 @@ en `MetricRegistry` por clave (D6.2).
 - La cifra de cada métrica se puede reproducir con una consulta de agregados
   sobre la vista. La consulta va en el cierre de la tarea.
 
-### ➕ B6.2 ⬜ Calcular las métricas de UA que faltan · 🔒 depende de datos
+### ➕ B6.2 ⬜ Calcular las métricas de UA que faltan
 **Descripción.** Las once filas nuevas del catálogo de UA, con las claves que
 propuso datos, en `MetricRegistry` igual que B6.1.
-**Bloqueada por datos**, no por el backend: su entrega tiene columnas que no
-existen (`REV_ONSALE`, `CATEGORY_LVL1`), cifras de septiembre que no se
-reproducen y 42 problemas en su propia vista de control ·
-`docs/MENSAJE-2026-11-03-datos-entrega-de-ua-medida.md`, enviado el 2026-11-03.
+**Datos contestó el 2026-11-09** · `docs/RESPUESTA-2026-11-09-datos-metricas-de-ua.md`,
+medido en `docs/AUDITORIA-2026-11-09-respuesta-de-datos-ua.md`: las columnas
+existen, las cifras de septiembre se reproducen y la vista de control quedó en
+10 filas, todas `CLAVE DESCONOCIDA`. **Nueve se piden** en
+`docs/MENSAJE-2026-11-09-backend-metricas-de-ua.md` (F6.2); `category_mix`
+espera a que datos decida qué hacer con la división nula.
 **Criterio de aceptación.**
-- Se toma cuando `SYNAPSE_METRIC_CATALOG_ISSUES` de UA devuelva cero filas para
-  esas claves.
+- Se toma cuando `SYNAPSE_METRIC_CATALOG_ISSUES` de UA no devuelva para esas
+  claves nada más que `CLAVE DESCONOCIDA`, que sólo se va al registrarlas.
+  Decidido el 2026-11-09 (humano): el criterio decía «cero filas», y eso no
+  puede pasar antes de que el backend las registre.
 - `mer_total` no se calcula mientras sea la misma cuenta que `roas`.
 - Igual que B6.1: `AVAILABLE` en QA y la cifra reproducible.
 
@@ -248,11 +252,18 @@ de SES que ya existe.
 - Dice lo que el backend tiene que saber antes de programar: `atl_*` sin
   período, y que las cifras cambian entre corridas porque la carga sigue.
 
-### ➕ F6.2 ⬜ Pedirle al backend las de UA · 🔒 depende de la respuesta de datos
+### ➕ F6.2 ✅ Pedirle al backend las de UA
+
+**Redactado el 2026-11-09**: `docs/MENSAJE-2026-11-09-backend-metricas-de-ua.md`,
+con nueve claves, su SQL y la cifra de julio a octubre. **Enviado el
+2026-11-09**, por el humano. **Lo que sigue es esperar, no volver a pedirlo**:
+B6.2, y después F6.3. `category_mix` queda afuera hasta que datos decida la división nula.
+
 **Descripción.** Lo mismo que F6.1 para B6.2, cuando datos conteste
 `docs/MENSAJE-2026-11-03-datos-entrega-de-ua-medida.md`.
-**Criterio de aceptación.** Se escribe recién con la vista de control de UA en
-cero filas para esas claves, medido. **No antes**: pedirle al backend que
+**Criterio de aceptación.** Se escribe recién con la vista de control de UA
+sin problemas de datos para esas claves, medido: sólo `CLAVE DESCONOCIDA`, que
+desaparece cuando el backend las registra. **No antes**: pedirle al backend que
 programe sobre columnas que no existen es el pedido sin medir que costó un
 viernes el 2026-10-05.
 

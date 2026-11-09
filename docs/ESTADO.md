@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**223 de 285 tareas cerradas.** 17 parciales · 41 pendientes · 4 diferidas.
+**224 de 285 tareas cerradas.** 17 parciales · 40 pendientes · 4 diferidas.
 
 
-## Front · 162 de 181
+## Front · 163 de 181
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -18,7 +18,7 @@
 | 3 · Chat contextual | `█████████████████·····` | 13/17 | 0 | 2 |
 | 4 · Admin y Builder | `██████████████████████` | 24/24 | 0 | 0 |
 | 5 · Pruebas y pulido | `█████████████████████·` | 58/62 | 0 | 3 |
-| 6 · Métricas y reporte | `██····················` | 1/10 | 1 | 8 |
+| 6 · Métricas y reporte | `████··················` | 2/10 | 1 | 7 |
 
 ## Backend · 61 de 104
 
@@ -66,7 +66,7 @@
 
 ---
 
-## Bloqueadas · 15
+## Bloqueadas · 13
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -79,7 +79,6 @@ Lo que el front espera del backend está detallado en
 - **F5.13** · Períodos libres en el selector
 - **F5.3** · Completar los plots que falten
 - **F6.10** · Validar las respuestas antes de activar
-- **F6.2** · Pedirle al backend las de UA
 - **F6.3** · Verificar en QA las métricas de Terpel y de UA
 - **F6.4** · Transcribir las rutas de reportes al cable de administración
 - **F6.6** · Los reportes de un cliente, en administración
@@ -91,7 +90,6 @@ Lo que el front espera del backend está detallado en
 - **B2.12** · Correr el materializador contra datos reales y verificar los seis estados
 - **B2.14** · /config/solicitudes · pedir acceso a una métrica que no se ve
 - **B2.15** · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar
-- **B6.2** · Calcular las métricas de UA que faltan
 
 ---
 
