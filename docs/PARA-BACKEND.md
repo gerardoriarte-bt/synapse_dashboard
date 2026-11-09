@@ -214,7 +214,7 @@ sección existe.
 
 ---
 
-## Y esto frena al front · 10 tarea(s)
+## Y esto frena al front · 9 tarea(s)
 
 **No todo lo de acá es suyo**, y por eso no está arriba: son los
 bloqueos que las tareas del front declaran en su título, tal cual
@@ -230,7 +230,6 @@ Lo de arriba son pedidos; esto es información.
 | **F1.44** · El orden de una tabla se anuncia, no se aplica | `cut` de `series` no lo lee nadie |
 | **F5.3** · Completar los plots que falten | espera a F4.17–F4.19 |
 | **F5.13** · Períodos libres en el selector | espera el patrón de `PeriodoId` |
-| **F6.2** · Pedirle al backend las de UA | depende de la respuesta de datos |
 | **F6.3** · Verificar en QA las métricas de Terpel y de UA | depende de B6.1 y B6.2 |
 | **F6.6** · Los reportes de un cliente, en administración | depende de F6.4 y del dibujo de F6.5 |
 | **F6.7** · Crear y editar un reporte | depende de F6.4 y del dibujo de F6.5 |

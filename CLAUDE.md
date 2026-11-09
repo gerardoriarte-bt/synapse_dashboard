@@ -575,7 +575,24 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-11-04 · el backend programó Terpel, y falta desplegar
+### ⇩ ACÁ SE PARÓ · 2026-11-09 · datos cerró UA, y el pedido al backend está redactado
+
+**Datos contestó el H1–H10**, y medido en Snowflake está cerrado: la vista de
+control de UA quedó en 10 filas, las 10 `CLAVE DESCONOCIDA`. Está en
+`docs/AUDITORIA-2026-11-09-respuesta-de-datos-ua.md`.
+
+**`docs/MENSAJE-2026-11-09-backend-metricas-de-ua.md` pide nueve claves**, y
+**lo manda el humano**. Cinco van a `KPISQL` para que traigan comparativos.
+`category_mix` espera a datos: el 9 % de la venta llega con la división nula.
+
+**Pendiente con datos, sin pedir todavía**: la división nula, de dónde sale
+477 123 en el H8 y la firma de `roas`, que dice «Nombre Apellido».
+
+**`periodBindings` liga los `?` según el texto del SQL**: con
+`DATEADD(month, -12` van todos al fin del período. Una serie de doce meses
+escrita de otra forma pierde un punto sin dar error.
+
+### ⇩ el 2026-11-04 · el backend programó Terpel, y falta desplegar
 
 **El backend contestó con `f78d700`**, leído contra `dc58ef5`: las siete
 métricas de pauta con las consultas que mandamos, y las dos de ATL bloqueadas.

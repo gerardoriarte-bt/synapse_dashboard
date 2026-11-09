@@ -112,7 +112,7 @@ REPORTE
 ```
 
 **Las dos columnas avanzan en paralelo.** Lo que se puede tomar hoy, del front:
-**F6.1**, **F6.5** y **F6.8**. El resto espera algo con nombre.
+**F6.2**, hasta que se envíe, y **F6.8**. El resto espera algo con nombre.
 
 **Los hitos**, en el orden en que se espera verlos:
 
@@ -153,16 +153,20 @@ en `MetricRegistry` por clave (D6.2).
 - La cifra de cada métrica se puede reproducir con una consulta de agregados
   sobre la vista. La consulta va en el cierre de la tarea.
 
-### ➕ B6.2 ⬜ Calcular las métricas de UA que faltan · 🔒 depende de datos
+### ➕ B6.2 ⬜ Calcular las métricas de UA que faltan
 **Descripción.** Las once filas nuevas del catálogo de UA, con las claves que
 propuso datos, en `MetricRegistry` igual que B6.1.
-**Bloqueada por datos**, no por el backend: su entrega tiene columnas que no
-existen (`REV_ONSALE`, `CATEGORY_LVL1`), cifras de septiembre que no se
-reproducen y 42 problemas en su propia vista de control ·
-`docs/MENSAJE-2026-11-03-datos-entrega-de-ua-medida.md`, enviado el 2026-11-03.
+**Datos contestó el 2026-11-09** · `docs/RESPUESTA-2026-11-09-datos-metricas-de-ua.md`,
+medido en `docs/AUDITORIA-2026-11-09-respuesta-de-datos-ua.md`: las columnas
+existen, las cifras de septiembre se reproducen y la vista de control quedó en
+10 filas, todas `CLAVE DESCONOCIDA`. **Nueve se piden** en
+`docs/MENSAJE-2026-11-09-backend-metricas-de-ua.md` (F6.2); `category_mix`
+espera a que datos decida qué hacer con la división nula.
 **Criterio de aceptación.**
-- Se toma cuando `SYNAPSE_METRIC_CATALOG_ISSUES` de UA devuelva cero filas para
-  esas claves.
+- Se toma cuando `SYNAPSE_METRIC_CATALOG_ISSUES` de UA no devuelva para esas
+  claves nada más que `CLAVE DESCONOCIDA`, que sólo se va al registrarlas.
+  Decidido el 2026-11-09 (humano): el criterio decía «cero filas», y eso no
+  puede pasar antes de que el backend las registre.
 - `mer_total` no se calcula mientras sea la misma cuenta que `roas`.
 - Igual que B6.1: `AVAILABLE` en QA y la cifra reproducible.
 
@@ -248,11 +252,17 @@ de SES que ya existe.
 - Dice lo que el backend tiene que saber antes de programar: `atl_*` sin
   período, y que las cifras cambian entre corridas porque la carga sigue.
 
-### ➕ F6.2 ⬜ Pedirle al backend las de UA · 🔒 depende de la respuesta de datos
+### ➕ F6.2 ⚠️ Pedirle al backend las de UA
+
+**Redactado el 2026-11-09**: `docs/MENSAJE-2026-11-09-backend-metricas-de-ua.md`,
+con nueve claves, su SQL y la cifra de julio a octubre. **Falta que el humano
+lo envíe.** `category_mix` queda afuera hasta que datos decida la división nula.
+
 **Descripción.** Lo mismo que F6.1 para B6.2, cuando datos conteste
 `docs/MENSAJE-2026-11-03-datos-entrega-de-ua-medida.md`.
-**Criterio de aceptación.** Se escribe recién con la vista de control de UA en
-cero filas para esas claves, medido. **No antes**: pedirle al backend que
+**Criterio de aceptación.** Se escribe recién con la vista de control de UA
+sin problemas de datos para esas claves, medido: sólo `CLAVE DESCONOCIDA`, que
+desaparece cuando el backend las registra. **No antes**: pedirle al backend que
 programe sobre columnas que no existen es el pedido sin medir que costó un
 viernes el 2026-10-05.
 
