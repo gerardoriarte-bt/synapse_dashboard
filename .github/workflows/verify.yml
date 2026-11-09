@@ -59,3 +59,36 @@ jobs:
       - run: npm ci
 
       - run: npm run verify
+
+  # ── LA IMAGEN SE ESCANEA · ISO 27001 A.8.8 · 2026-11-09 ─────────────────────
+  #
+  # **Lo encontró la primera corrida, antes de existir este job**: la imagen de
+  # `main` —sobre `nginx:1.27-alpine`, Alpine 3.21.3— tenía 67 vulnerabilidades
+  # altas o críticas, tres críticas y una de ellas en OpenSSL, todas con
+  # arreglo. Ninguna era de nuestro código: la base había envejecido sin que
+  # nadie mirara. Con la base nueva, cero.
+  #
+  # **Falla sólo con lo que tiene arreglo** (`--ignore-unfixed`): una
+  # vulnerabilidad sin parche no se resuelve en un PR, y un rojo que no se
+  # puede poner en verde termina apagado. **No es obligatorio para mergear**:
+  # una CVE nueva en la base no es culpa del PR que la descubre. Avisa en rojo
+  # y el arreglo es el PR de Dependabot que renueva el digest.
+  #
+  # Trivy corre desde su imagen oficial, fijada por digest, y no desde una
+  # acción de terceros: es una dependencia menos con acceso al runner.
+  imagen:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - run: docker build -t synapse-front:ci .
+
+      - name: Trivy · altas y críticas con arreglo
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c \
+            image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
+            --exit-code 1 --no-progress synapse-front:ci

@@ -1,0 +1,62 @@
+# Dependabot · ISO 27001 A.8.8 · 2026-11-09
+#
+# Brecha 6 de `docs/AUDITORIA-2026-11-04-hardening-iso-27001.md`: estaba
+# apagado, y las dependencias y las imágenes envejecían sin aviso. La imagen
+# de `main` llegó a tener 67 vulnerabilidades altas o críticas en su base.
+#
+# **Cada PR que abre pasa por la puerta como cualquier otro**: `verify` es
+# obligatorio en `main`, así que una actualización que rompe algo no entra.
+#
+# **Dos semanas de espera** (`cooldown`) antes de proponer una versión nueva.
+# Una versión recién publicada es también el momento en que un paquete
+# comprometido todavía no fue detectado. **Las actualizaciones de SEGURIDAD
+# no esperan**: el cooldown no las frena.
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: America/Bogota
+    cooldown:
+      default-days: 14
+    open-pull-requests-limit: 5
+    groups:
+      # Lo menor de desarrollo en un solo PR por semana, en vez de quince.
+      desarrollo:
+        dependency-type: development
+        update-types: [minor, patch]
+    ignore:
+      # TypeScript queda en 5.9: `openapi-typescript@7` declara peer `^5.x` y
+      # con 6 `gen:api` no corre. Ver «Trampas verificadas» en `CLAUDE.md`.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: America/Bogota
+    cooldown:
+      default-days: 14
+
+  # Renueva los digests de `node` y `nginx` del `Dockerfile`. Es lo que
+  # mantiene el escaneo de la imagen en verde.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: America/Bogota
+    ignore:
+      # Node 22 es la que se usa para desarrollar · ver el `Dockerfile`. Pasar
+      # a otra mayor se decide, no llega en un PR automático.
+      - dependency-name: node
+        update-types: [version-update:semver-major]
+      # nginx: los menores impares son la rama «mainline». Se queda en la
+      # estable (1.30) y recibe sólo sus parches.
+      - dependency-name: nginx
+        update-types: [version-update:semver-major, version-update:semver-minor]
