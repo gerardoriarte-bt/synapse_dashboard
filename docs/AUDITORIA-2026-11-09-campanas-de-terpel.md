@@ -1,7 +1,7 @@
 # Auditoría · la respuesta de datos sobre las campañas de Terpel · 2026-11-09
 
 **Qué se mide:** `docs/RESPUESTA-2026-11-09-datos-campanas-de-terpel.md` y su
-`CREATE VIEW` (`docs/RESPUESTA-2026-11-09-datos-campanas-de-terpel.sql`). Son
+`CREATE VIEW` (`docs/snowflake/RESPUESTA-2026-11-09-datos-campanas-de-terpel.sql`). Son
 la respuesta a `docs/MENSAJE-2026-11-04-datos-campanas-de-terpel.md`. Llegaron
 el 2026-11-09 como `RESPUESTA_DESARROLLO_METRICAS_PAUTA.md` y
 `VW_SYNAPSE_MEDIA_BY_CAMPAIGN.sql`, y se renombraron sin tocar el contenido.
