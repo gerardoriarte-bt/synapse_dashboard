@@ -13,7 +13,12 @@
 # **Node 22 y no 20**: Vite 8 pide 20.19+ o 22.12+. Se fija la mayor porque es la
 # que se usa para desarrollar —medido: `v22.18.0`— y una diferencia de mayor entre
 # lo que se prueba y lo que se despliega es una clase de bug que nadie busca.
-FROM node:22-alpine AS build
+# **Por digest, no por etiqueta** · 2026-11-09 · ISO 27001 A.8.8. Una etiqueta
+# se mueve: `22-alpine` hoy y mañana pueden ser dos imágenes distintas, y una
+# imagen que no se puede reproducir no se puede auditar. La versión va al lado
+# para leerla, pero manda el digest. **Lo renueva Dependabot**, con un PR por
+# cambio · ver `.github/dependabot.yml`.
+FROM node:22.23.4-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 AS build
 
 WORKDIR /app
 
@@ -57,7 +62,9 @@ ENV VITE_API_URL=$VITE_API_URL \
 RUN npm run build
 
 # ── ETAPA 2 · servir ──────────────────────────────────────────────────────────
-FROM nginx:1.27-alpine AS serve
+# **La 1.30, que es la estable** · 2026-11-09. Estaba en la 1.27, una rama que
+# ya no recibe parches. Por digest, igual que la de arriba.
+FROM nginx:1.30.6-alpine@sha256:583b7f2fce1cdb8da5ad5c39ebd3c33b98b87d493190e548bdee1fa8c619c311 AS serve
 
 # La imagen oficial corre `envsubst` sobre `/etc/nginx/templates/*.template` al
 # arrancar y escribe el resultado en `/etc/nginx/conf.d/`. Por eso el destino es
