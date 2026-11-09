@@ -12,6 +12,7 @@
 |---|---|
 | `tareas-front-back.md` | **ANCESTRO** · el espacio de identificadores, compartido con el backend |
 | `plan-de-trabajo.md` | **FUENTE.** Se edita a mano |
+| `plan-fase-6.md` | **FUENTE** de la Fase 6, desde el 2026-11-03. Se edita a mano, con las mismas reglas |
 | `plan-tareas.csv` | derivado · una fila por tarea, para importar |
 | `tools/plan-synapse.html` | derivado · la página navegable |
 | `docs/PARA-BACKEND.md` | derivado · **lo que se le manda al backend** |
@@ -127,6 +128,14 @@ que su resultado esté escrito.
 | `A5 · Salud de feeds` | `src/surfaces/admin/FeedHealth.tsx` · F4.24, construida el 2026-09-25 |
 | `A5 · Feeds · tenant sin fuentes` | La misma: el vacío de alta lo pinta `EmptyRow` con `clase="alta"` |
 | `A6 · Cola de accionables` | **No construida** · F3.10, diferida por D3 |
+| `A7 · Reportes del cliente` | **No construida** · F6.6, espera las rutas de reportes (F6.4). Dibujada el 2026-11-04 desde el mapa de UX (F6.5) |
+| `A7 · Reportes · sin reportes` | **No construida** · el vacío de F6.6 |
+| `A7 · Envíos de un reporte` | **No construida** · el historial de envíos de F6.6 |
+| `A7 · Editor de reporte` | **No construida** · F6.7, espera F6.4 |
+| `A7 · Validar respuestas` | **No construida** · F6.10, espera F6.4 |
+| `A7 · Advertencia por un externo` | **No construida** · el correo es del backend (B6.3) y la lista en Clientes, de F6.6 |
+| `A7 · El correo del reporte` | **No es del front**: la plantilla es del backend (B6.5), con los colores de F6.8. Se verifica en F6.9 |
+| `A7 · Página de baja` | **No construida** · fuera de la sesión; la ruta la define el backend (B6.6) |
 | `B1 · Selector de contexto` | `src/surfaces/builder/ContextView.tsx` |
 | `B2 · Canvas de composición` | `src/surfaces/builder/Canvas.tsx` |
 | `B3 · Selector de gráfico` | **`src/surfaces/builder/PanelConfigurator.tsx`** · §PEN:B3 · la columna «Cómo se ve» desde el 2026-10-07, cada opción dibujada con el dato real de la métrica · `docs/AUDITORIA-2026-10-07-editor-sin-previsualizacion.md`. Era `PlotPicker.tsx` (F4.21, 2026-09-29), borrado ese día |
@@ -445,7 +454,7 @@ la plataforma de seguimiento sin perder su lugar en el plan.
 B 1 . 6        F 1.13 a
 │ │   │        │ │    └── sub-tarea de un traslado partido
 │ │   └─ número dentro de la fase
-│ └───── FASE (0–5)
+│ └───── FASE (0–6)
 └─────── EQUIPO · B backend · F front
 ```
 
@@ -2519,6 +2528,14 @@ el `401` sin token y el filtrado por rol.
 - El job se prueba sin tocar Snowflake, contra respuestas fijas.
 - Se cubre el camino de fallo: una métrica que falla deja `BLOQUEADO` con razón y
   **no aborta el resto del job**.
+
+---
+
+## Fase 6 — Las métricas de cada cliente y el reporte programado
+
+**Vive en `plan-fase-6.md`**, desde el 2026-11-03: el objetivo, las decisiones,
+el orden y las tareas `B6.x`. Está aparte para que se lea sola; las reglas y
+los estados son los de este archivo, y `npm run plan` lee los dos.
 
 ---
 
@@ -9092,6 +9109,14 @@ el síntoma es que el chunk desaparece.**
 Verificado por mutación con un `import { KpiBody }` desde `Console.tsx`: el
 chequeo lo detecta y nombra el cuerpo. Sin `dist/` sale BLOQUEADO en vez de
 pasar. Corre **después** del build en la puerta, que ahora son diez chequeos.
+
+---
+
+## Fase 6 — Las métricas de cada cliente y el reporte programado
+
+**Vive en `plan-fase-6.md`**, desde el 2026-11-03: el objetivo, las decisiones,
+el orden y las tareas `F6.x`. Está aparte para que se lea sola; las reglas y
+los estados son los de este archivo, y `npm run plan` lee los dos.
 
 ---
 

@@ -18,6 +18,7 @@ Fase 1 es portar el motor de panel desde el repositorio archivado.
 |---|---|---|
 | `nuevo-desarrollo.md` | Arquitectura del front dinámico | **Normativo** |
 | `plan-de-trabajo.md` | Las tareas con fase, estado y criterio · **el conteo sale de `docs/ESTADO.md`** | **Fuente del plan** |
+| `plan-fase-6.md` | **La Fase 6**: las métricas de cada cliente y el reporte programado · desde el 2026-11-03 | **Fuente del plan** · `npm run plan` lee los dos |
 | `contracts/synapse-api.yaml` | Forma de las respuestas del backend | **El contrato**, y su casa |
 | `.cursorrules` | Idioma, estructura, convenciones de componente | Normativo |
 | `tareas-front-back.md` | El desglose original del backend | Histórico · lo extiende `plan-de-trabajo.md` |
@@ -573,6 +574,47 @@ mirando el código. Una prueba escrita desde la implementación no puede fallar
 nunca, ni cuando el código está mal.
 
 ## Dónde retomar
+
+### ⇩ ACÁ SE PARÓ · 2026-11-04 · el backend programó Terpel, y falta desplegar
+
+**El backend contestó con `f78d700`**, leído contra `dc58ef5`: las siete
+métricas de pauta con las consultas que mandamos, y las dos de ATL bloqueadas.
+Medido en `docs/AUDITORIA-2026-11-04-respuesta-del-backend-terpel.md`.
+
+**`media_by_campaign` no se registró, y el error fue nuestro**: la vista no
+trae una fila por campaña (30 `CAMPANA`, 86 `NOMBRE_CAMPANA` en 90 filas).
+
+**Los dos mensajes se enviaron el 2026-11-04, y los mandó el humano**:
+`docs/MENSAJE-2026-11-04-backend-desplegar-metricas-de-terpel.md` —desplegar
+`dc58ef5` en QA— y `docs/MENSAJE-2026-11-04-datos-campanas-de-terpel.md` —qué
+es una campaña, y las filas repetidas—. Después del despliegue, «Cargar meses»
+de julio a octubre en Terpel, y F6.3. **Lo que sigue es esperar, no volver a pedirlo.** **Producto decide** si la tabla por
+campaña muestra líneas de pauta o campañas agrupadas.
+
+**Cuando un commit citado no aparece, se vuelve a medir antes de escribirlo**:
+a la mañana el remoto daba `db91b5d` y horas después estaba publicado.
+
+### ⇩ el 2026-11-03 · la Fase 6, y los dos pedidos enviados
+
+**La Fase 6 vive en `plan-fase-6.md`**, aparte del plan, por decisión humana:
+las métricas de cada cliente y un reporte por correo que programan el admin y
+el superadmin. Las cinco decisiones del día están en su §3; las cuatro que
+siguen abiertas (P6.1–P6.4) son de producto. `npm run plan` lee los dos
+archivos.
+
+**Los dos mensajes se enviaron el 2026-11-03, y los mandó el humano**:
+`docs/MENSAJE-2026-11-03-datos-entrega-de-ua-medida.md` —la entrega de UA no
+se puede cargar todavía: cifras que no se reproducen, columnas que no existen
+y 42 problemas en su vista de control— y
+`docs/MENSAJE-2026-11-03-backend-metricas-de-terpel.md` —las métricas de
+Terpel en `MetricRegistry`, con el SQL y la cifra de cada una—. **Lo que sigue
+es esperar, no volver a pedirlo.**
+
+**Lo tomable del front**: F6.5, el mapa de UX del reporte, que tiene que estar
+antes del dibujo; y F6.8, los colores del correo.
+
+**Pendiente con datos, sin pedir todavía**: el alcance de Terpel se suma entre
+campañas, y eso cuenta dos veces a quien vio dos.
 
 ### ⇩ ACÁ SE PARÓ · 2026-10-23 · los usuarios de servicio, y la llave desde la ficha
 
