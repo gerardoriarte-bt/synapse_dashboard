@@ -26,7 +26,16 @@ import type { ChatEvent } from './types'
 export type Answer = {
   texto: string
   datos: DatoEnRespuesta[]
-  auditoria: Extract<ChatEvent, { tipo: 'auditoria' }> | null
+  /** **Todas las consultas, en el orden en que corrieron** · 2026-11-09.
+   *
+   *  Hasta ese día era UNA y cada trama `sql` pisaba a la anterior. Pero el
+   *  servicio emite una por cada resultado de herramienta del agente
+   *  —`translateToolResult` en `cortex_sse.go`— y el agente consulta más de una
+   *  vez: la tabla diaria salía de la primera y el desplegable mostraba la
+   *  segunda, que calculaba totales. §7.1 pide «el SQL generado», y mostrar
+   *  uno que no generó lo que se ve es peor que no mostrar ninguno. Lo
+   *  encontró la evaluación de UX (EV-027). */
+  consultas: Extract<ChatEvent, { tipo: 'auditoria' }>[]
   sugerencias: string[]
 }
 
@@ -52,7 +61,7 @@ export type ChatTurn = {
  *  lugar, y entonces van al final, como antes. */
 export type DatoEnRespuesta = Extract<ChatEvent, { tipo: 'dato' }> & { enTexto?: number }
 
-const VACIA: Answer = { texto: '', datos: [], auditoria: null, sugerencias: [] }
+const VACIA: Answer = { texto: '', datos: [], consultas: [], sugerencias: [] }
 
 /** El estado de un hilo reabierto. `null` es «no se reabrió nada»: una
  *  consulta nueva o una conversación que se está teniendo ahora. */
@@ -62,12 +71,12 @@ export type Historial = {
   hayAnteriores: boolean
 }
 
-/** Un turno guardado a la forma de los turnos en vivo. Sin `auditoria` ni
+/** Un turno guardado a la forma de los turnos en vivo. Sin `consultas` ni
  *  `sugerencias`: el servicio no los guarda, y la hoja lo declara. */
 function aTurno(t: TurnoGuardado): ChatTurn {
   return {
     pregunta: t.pregunta,
-    respuesta: { texto: t.texto ?? '', datos: t.datos, auditoria: null, sugerencias: [] },
+    respuesta: { texto: t.texto ?? '', datos: t.datos, consultas: [], sugerencias: [] },
     streaming: false,
     error: t.texto === null ? { mensaje: 'El turno se cortó antes de terminar.', parcial: false } : null,
   }
@@ -84,7 +93,7 @@ export function apply(previa: Answer, evento: ChatEvent): Answer {
     case 'dato':
       return { ...previa, datos: [...previa.datos, { ...evento, enTexto: previa.texto.length }] }
     case 'auditoria':
-      return { ...previa, auditoria: evento }
+      return { ...previa, consultas: [...previa.consultas, evento] }
     case 'sugerencias':
       return { ...previa, sugerencias: evento.sugerencias }
     case 'fin':
