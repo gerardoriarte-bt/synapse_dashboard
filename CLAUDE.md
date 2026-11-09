@@ -588,7 +588,8 @@ volver a pedirlo.** Cinco van a `KPISQL` para que traigan comparativos.
 
 **Terpel también**: datos definió la campaña (`CAMPANA`, con familia y
 cuenta) y producto lo aceptó. `docs/MENSAJE-2026-11-09-backend-tabla-por-campana-de-terpel.md`
-pide `media_by_campaign` con su `SELECT`, y **lo manda el humano**.
+pide `media_by_campaign` con su `SELECT`, y **se envió el 2026-11-09, lo mandó
+el humano**. **Lo que sigue es esperar, no volver a pedirlo.**
 
 **Pendiente con datos, sin pedir todavía**: la división nula, de dónde sale
 477 123 en el H8 y la firma de `roas`, que dice «Nombre Apellido».
