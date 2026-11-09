@@ -1,0 +1,61 @@
+# La puerta, en cada PR · ISO 27001 A.8.25 y A.8.32 · 2026-11-09
+#
+# Brecha 2 de `docs/AUDITORIA-2026-11-04-hardening-iso-27001.md`: `npm run
+# verify` existía y era buena, pero corría sólo en la máquina de quien empujaba
+# y se podía no correr. Esto la vuelve una condición del PR. **Para que sea
+# obligatoria falta proteger `main`** en la configuración del repositorio, que
+# es un paso de quien lo administra.
+#
+# ── LO QUE ACÁ SALE BLOQUEADO, Y POR QUÉ ESTÁ BIEN ──────────────────────────
+#
+# `afirmaciones` busca los commits citados en los repositorios del backend, y
+# acá no están. Sin ellos sale ⊘ BLOQUEADO con la cuenta de los que no pudo
+# buscar, y la puerta lo dice aparte: no los da por falsos ni por buenos. En la
+# máquina de quien escribe sí están, y ahí se verifican todos.
+
+name: verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Sólo leer: este workflow no publica, no comenta y no escribe nada.
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      # Las acciones van por SHA y no por etiqueta: una etiqueta se puede mover,
+      # y lo que corre acá tiene el código entero. La versión va al lado.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # **La historia entera**: `afirmaciones` exige que cada commit citado
+          # sea alcanzable desde una rama, y con la copia superficial por
+          # defecto no hay ramas ni historia donde buscarlo.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          # La misma mayor que la imagen · ver el `Dockerfile`.
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+
+      # La única dependencia de las herramientas fuera de la biblioteca estándar.
+      - run: pip install pyyaml==6.0.2
+
+      - run: npm ci
+
+      - run: npm run verify
