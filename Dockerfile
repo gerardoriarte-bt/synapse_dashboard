@@ -64,6 +64,10 @@ FROM nginx:1.27-alpine AS serve
 # ese y no `conf.d` directo.
 COPY deploy/nginx.conf.template /etc/nginx/templates/default.conf.template
 
+# Las cabeceras de seguridad, aparte porque se incluyen en cada `location` ·
+# ver `deploy/seguridad.conf`. No es template: no lleva variables.
+COPY deploy/seguridad.conf /etc/nginx/snippets/synapse-seguridad.conf
+
 COPY --from=build /app/dist /usr/share/nginx/html
 
 # **`DOLLAR` existe para protegerse de `envsubst`**, que reemplaza TODO lo que

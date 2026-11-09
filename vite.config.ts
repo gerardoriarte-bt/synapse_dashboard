@@ -84,5 +84,14 @@ export default defineConfig({
     globals: false,
 
     setupFiles: ['tests/setup.ts'],
+
+    /* **El huso de las pruebas es fijo** · 2026-11-09. Lo que se PRESENTA —la
+     * hora de una publicación, «HACE 3 H»— sale del huso del navegador, a
+     * propósito, y en las pruebas el navegador es la máquina. En un Mac en
+     * Bogotá todo pasaba; el primer CI, en UTC, encontró una prueba que
+     * esperaba «15:11» de un `-05:00` y leía 20:11. Fijarlo acá hace que la
+     * suite diga lo mismo en cualquier máquina. Bogotá porque es donde se
+     * escribieron todas las que ya existen. */
+    env: { TZ: 'America/Bogota' },
   },
 })

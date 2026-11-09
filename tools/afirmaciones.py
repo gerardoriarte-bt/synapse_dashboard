@@ -185,6 +185,17 @@ def existe_commit(sha: str) -> bool:
     return False
 
 
+def hay_repos_ajenos() -> bool:
+    """**En el CI no están los repositorios del backend** · 2026-11-09.
+
+    Sin ellos, un hash suyo bien citado no se puede encontrar, y marcarlo como
+    falso sería mentir al revés: decir «la fuente lo desmiente» cuando no hubo
+    fuente. Se cuenta aparte y el chequeo sale BLOQUEADO, que es la convención
+    de las herramientas nuestras. **En la máquina de quien escribe están, y
+    ahí se verifica todo.**"""
+    return any((r / ".git").exists() for r in REPOS if r != RAIZ)
+
+
 def main() -> int:
     if not DOCS.is_dir():
         print("afirmaciones ⊘ BLOQUEADO · falta docs/")
@@ -195,6 +206,8 @@ def main() -> int:
         return 2
 
     ids = ids_conocidos()
+    ajenos = hay_repos_ajenos()
+    sin_fuente: set[str] = set()
     fallas: list[str] = []
     mirados = {"rutas": 0, "commits": 0, "tareas": 0, "entregas": 0, "pedidos": 0}
 
@@ -273,6 +286,9 @@ def main() -> int:
             sha = m.group(1)
             mirados["commits"] += 1
             if not existe_commit(sha):
+                if not ajenos:
+                    sin_fuente.add(sha)
+                    continue
                 fallas.append(f"{rel} · commit `{sha}` no existe en ningún repositorio conocido")
 
         # ── 4 · UN MENSAJE NO ADJUNTA: PUBLICA ───────────────────────────────
@@ -378,6 +394,13 @@ def main() -> int:
         for f in distintas:
             print(f"  {f}")
         return 1
+
+    if sin_fuente:
+        print(
+            f"afirmaciones ⊘ BLOQUEADO · {len(sin_fuente)} commit(s) sin repositorio "
+            f"donde buscarlos · faltan los del backend · lo demás ✓"
+        )
+        return 2
 
     print(
         f"afirmaciones ✓ {mirados['rutas']} método+ruta · "
