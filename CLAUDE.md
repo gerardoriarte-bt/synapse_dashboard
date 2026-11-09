@@ -586,6 +586,10 @@ control de UA quedó en 10 filas, las 10 `CLAVE DESCONOCIDA`. Está en
 volver a pedirlo.** Cinco van a `KPISQL` para que traigan comparativos.
 `category_mix` espera a datos: el 9 % de la venta llega con la división nula.
 
+**Terpel también**: datos definió la campaña (`CAMPANA`, con familia y
+cuenta) y producto lo aceptó. `docs/MENSAJE-2026-11-09-backend-tabla-por-campana-de-terpel.md`
+pide `media_by_campaign` con su `SELECT`, y **lo manda el humano**.
+
 **Pendiente con datos, sin pedir todavía**: la división nula, de dónde sale
 477 123 en el H8 y la firma de `roas`, que dice «Nombre Apellido».
 
