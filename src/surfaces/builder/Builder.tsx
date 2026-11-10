@@ -72,6 +72,8 @@ import { PanelConfigurator } from './PanelConfigurator'
 import type { Profundidad } from './PanelConfigurator'
 import { tipoPara } from './tipoPara'
 import type { PanelDeBorrador } from './borrador'
+import { cambioDeTamano } from './disposicion'
+import { nombreDeTipo } from './rotulos'
 import { PublishBar } from './PublishBar'
 import { RolePreview } from './RolePreview'
 import { VersionHistory } from './VersionHistory'
@@ -87,7 +89,7 @@ import {
   asignarRoles, fijarSugerencias,
   laVe,
   cambiarTipo,
-  redimensionarPanel,
+  ajustarPanel,
   reubicarPanel,
   editar,
   editarOpcion,
@@ -166,6 +168,9 @@ const EN_OTRA_PANTALLA: Partial<Record<PantallaId, string>> = {
 
 /** Cuánto se espera sin editar antes de guardar solo. */
 const AUTOGUARDADO_MS = 3000
+/** Cuántos pasos se pueden deshacer · cada uno es una copia de las pestañas, y
+ *  escribir una nota de lectura deja uno por tecla. */
+const HISTORIAL_MAXIMO = 100
 
 export function Builder() {
   const navegar = useNavigate()
@@ -268,8 +273,11 @@ export function Builder() {
    *  otro panel empieza de cero; uno sin métrica abre en «Qué muestra», que es
    *  lo único que le falta. */
   const [profundidad, setProfundidad] = useState<Profundidad | null>(null)
+  /** Por qué no se aplicó el último tamaño escrito en el configurador. */
+  const [avisoDeTamano, setAvisoDeTamano] = useState<string | null>(null)
   const setSeleccion = (s: { tab: number; panel: number } | null) => {
     elegirPanel(s)
+    setAvisoDeTamano(null)
     if (s === null) return setProfundidad(null)
     // Un panel recién agregado todavía no está en `tabs` de este render: es
     // nuevo, y lo que le falta es la métrica.
@@ -435,11 +443,72 @@ export function Builder() {
   // identidad, porque su `layoutId` deja de coincidir.
   const cambiar = (siguiente: TabParaGuardar[]) => {
     if (version === null || publicada) return
+    // Lo de antes queda para deshacer, y lo deshecho deja de poder rehacerse:
+    // un cambio nuevo abre otra rama.
+    setHistorial({ layoutId: version, pasado: [...pasado, tabs].slice(-HISTORIAL_MAXIMO), futuro: [] })
+    aplicar(siguiente)
+  }
+  const aplicar = (siguiente: TabParaGuardar[]) => {
+    if (version === null || publicada) return
     // Un error de guardado se olvida al seguir editando: el próximo guardado
     // automático lo vuelve a intentar con lo nuevo.
     if (guardar.isError) guardar.reset()
     setBorrador({ layoutId: version, tabs: siguiente })
   }
+
+  /** ── DESHACER · 2026-11-10 ────────────────────────────────────────────────
+   *
+   *  **El borrador se guarda solo, así que un error quedaba guardado.** Medido
+   *  ese día: un «Ancho +» en una fila llena bajó dos paneles de fila, y el
+   *  guardado automático lo escribió a los pocos segundos. Sin deshacer, la
+   *  vuelta era recomponer a mano.
+   *
+   *  **Se guarda la pestaña entera de antes**, no la operación: cada edición
+   *  pasa por `cambiar` y ninguna tiene que saber cómo deshacerse. Lo que se
+   *  restaura se guarda como cualquier cambio, y un panel nuevo que el servidor
+   *  ya creó vuelve sin `id`: el `PUT` reemplaza el contenido entero
+   *  (`ReplaceContent`, leído en `4192041`), así que no se duplica.
+   *
+   *  **Es del borrador abierto**: cambiar de versión lo deja atrás. */
+  const [historial, setHistorial] = useState<{
+    layoutId: string
+    pasado: TabParaGuardar[][]
+    futuro: TabParaGuardar[][]
+  } | null>(null)
+  const pasado = historial !== null && historial.layoutId === version ? historial.pasado : []
+  const futuro = historial !== null && historial.layoutId === version ? historial.futuro : []
+  const restaurar = (destino: TabParaGuardar[]) => {
+    aplicar(destino)
+    // Un panel elegido que ya no existe se suelta; si existe, sigue elegido.
+    if (seleccion !== null && destino[seleccion.tab]?.panels[seleccion.panel] === undefined) setSeleccion(null)
+  }
+  const deshacer = () => {
+    const previo = pasado.at(-1)
+    if (previo === undefined || version === null || publicada) return
+    setHistorial({ layoutId: version, pasado: pasado.slice(0, -1), futuro: [...futuro, tabs] })
+    restaurar(previo)
+  }
+  const rehacer = () => {
+    const siguiente = futuro.at(-1)
+    if (siguiente === undefined || version === null || publicada) return
+    setHistorial({ layoutId: version, pasado: [...pasado, tabs], futuro: futuro.slice(0, -1) })
+    restaurar(siguiente)
+  }
+  // **Cmd o Ctrl + Z en el editor**, y con Shift rehace. No dentro de un campo
+  // de texto: ahí deshace lo escrito, que es lo que se espera.
+  useEffect(() => {
+    if (pantalla !== 'canvas') return
+    const tecla = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z') return
+      const destino = e.target instanceof Element ? e.target : null
+      if (destino?.closest('input, textarea, select, [contenteditable="true"]') != null) return
+      e.preventDefault()
+      if (e.shiftKey) rehacer()
+      else deshacer()
+    }
+    window.addEventListener('keydown', tecla)
+    return () => window.removeEventListener('keydown', tecla)
+  })
 
   /** ── GUARDAR · AUTOMÁTICO Y EXPLÍCITO · 2026-10-07 ────────────────────────
    *
@@ -737,7 +806,27 @@ export function Builder() {
           }
           cambiar(editarPanel(siguiente, seleccion.tab, seleccion.panel, { metricId }))
         }}
-        onSpan={(campo, valor) => cambiar(editarPanel(tabs, seleccion.tab, seleccion.panel, { [campo]: valor }))}
+        // **La misma regla que en el lienzo**: un tamaño que correría a otro
+        // panel no se aplica, y se dice. El rango del tipo, en cambio, se
+        // sigue marcando al validar: es un campo que se escribe, y exigirlo
+        // en cada tecla no dejaría pasar por un valor intermedio.
+        onSpan={(campo, valor) => {
+          const enTab = tabs[seleccion.tab]?.panels ?? []
+          const p = enTab[seleccion.panel]
+          if (p === undefined) return
+          const razon = cambioDeTamano(
+            enTab,
+            seleccion.panel,
+            { colStart: p.colStart, colSpan: p.colSpan, rowSpan: p.rowSpan, [campo]: valor },
+            {
+              tipo: nombreDeTipo(p.tipo),
+              nombre: (i) => metricasPorId.get(enTab[i]?.metricId ?? '')?.nombre ?? 'Sin métrica',
+            },
+          )
+          setAvisoDeTamano(razon)
+          if (razon === null) cambiar(editarPanel(tabs, seleccion.tab, seleccion.panel, { [campo]: valor }))
+        }}
+        avisoDeTamano={avisoDeTamano}
         onOpcion={(nombre, valor) => cambiar(editarOpcion(tabs, seleccion.tab, seleccion.panel, nombre, valor))}
         onNota={(texto) => cambiar(editarPanel(tabs, seleccion.tab, seleccion.panel, { nota: texto }))}
         onQuitar={() => {
@@ -1098,21 +1187,10 @@ export function Builder() {
                     onReubicar={(i, colStart, destino) =>
                       cambiar(reubicarPanel(tabs, tabEnLienzo, i, colStart, destino))
                     }
-                    onRedimensionar={(i, campo, delta) => {
-                      const p = tabs[tabEnLienzo]?.panels[i]
-                      const b = p === undefined ? undefined : tabla.get(p.tipo as PanelConfig['tipo'])
-                      if (b === undefined) return
-                      cambiar(
-                        redimensionarPanel(
-                          tabs,
-                          tabEnLienzo,
-                          i,
-                          campo,
-                          delta,
-                          campo === 'colSpan' ? b.colSpanMin : b.rowSpanMin,
-                          campo === 'colSpan' ? b.colSpanMax : b.rowSpanMax,
-                        ),
-                      )
+                    onAjustar={(i, medida) => cambiar(ajustarPanel(tabs, tabEnLienzo, i, medida))}
+                    deshacer={{
+                      onDeshacer: pasado.length === 0 || publicada ? null : deshacer,
+                      onRehacer: futuro.length === 0 || publicada ? null : rehacer,
                     }}
                     onSoltarTipo={(tipo, colStart, destino, eleccion) => {
                       const b = tabla.get(tipo as PanelConfig['tipo'])

@@ -38,13 +38,28 @@
  *  builder de layouts necesita. Y las reglas son las mismas que con el mouse —
  *  el teclado no es una puerta trasera a un estado que el arrastre no permite.
  *
- *  ── LO QUE NO SE IMPLEMENTÓ, CON LA RAZÓN ───────────────────────────────────
+ *  ── MOVER Y ESTIRAR CON EL MOUSE · 2026-11-10 ──────────────────────────────
  *
- *  **El arrastre continuo del handle.** Los handles redimensionan de a una celda
- *  por pulsación, y `shift` + flechas hace lo mismo. Un arrastre continuo que
- *  termina redondeando a la celda no agrega ninguna posición alcanzable: agrega
- *  la sensación del gesto. Queda anotado como lo que es — una mejora de
- *  interacción, no una capacidad que falte.
+ *  Acá decía que el arrastre continuo de los handles «no agrega ninguna
+ *  posición alcanzable, agrega la sensación del gesto». **Usado, no alcanzaba**:
+ *  pedido del humano ese día, «refinar la grilla … para mover y ajustar los
+ *  tamaños», y medido en local:
+ *
+ *  - **Correr un panel una columna con el mouse no se podía.** El cursor
+ *    terminaba encima del propio panel, que no aceptaba soltar. Ahora, mientras
+ *    algo vuela, los paneles dejan pasar el puntero a las celdas de abajo.
+ *  - **El panel caía con la esquina en la celda del cursor**, sin importar de
+ *    dónde se lo agarró · `celdaAgarrada`.
+ *  - **Mover no mostraba dónde iba a caer**: el rectángulo sólo salía para lo
+ *    que venía de la biblioteca.
+ *  - **Un «Ancho +» en una fila llena bajó a dos paneles de fila**, y con el
+ *    guardado automático quedó guardado. Decisión humana: **un tamaño que no
+ *    entra se bloquea y se avisa**, no empuja · `cambioDeTamano`.
+ *
+ *  **Las asas son cinco de las ocho del `.pen`**: derecha, izquierda, abajo y
+ *  las dos esquinas de abajo. Las tres de arriba no, y la razón es el modelo:
+ *  la fila no se guarda, así que el borde de arriba lo decide la colocación y
+ *  no hay qué estirar.
  *
  *  **§PEN:B2** · B2 · «Canvas de composición».
  */
@@ -54,7 +69,18 @@ import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
 import { nombreDeTipo } from './rotulos'
 import { COLUMNS, GAP, ROW } from '../../render/grid'
-import { choqueCon, disposicion, huecos, ordenPara } from './disposicion'
+import {
+  FORMATO_AGARRE,
+  cambioDeTamano,
+  celdaAgarrada,
+  choqueCon,
+  disposicion,
+  huecos,
+  leerAgarre,
+  ordenPara,
+} from './disposicion'
+import type { Medida } from './disposicion'
+import { Accion } from '../../render/primitives/Accion'
 import type { PanelDeBorrador } from './borrador'
 import { FORMATO_ELECCION, leerEleccion } from './eleccion'
 import type { Eleccion } from './eleccion'
@@ -69,7 +95,9 @@ type Props = {
   onSeleccionar: (indice: number | null) => void
   /** Mover un panel · `colStart` nuevo y posición nueva en el orden. */
   onReubicar: (indice: number, colStart: number, indiceDestino: number) => void
-  onRedimensionar: (indice: number, campo: 'colSpan' | 'rowSpan', delta: number) => void
+  /** **Una medida ya validada** · columna, ancho y alto juntos. El lienzo
+   *  aplica la regla —rango, borde, que nadie más se mueva— antes de llamar. */
+  onAjustar: (indice: number, medida: Medida) => void
   /** Soltar un tipo de la biblioteca en una celda. */
   /** `eleccion` trae el dato y el gráfico cuando el arrastre vino de la
    *  biblioteca · ver `eleccion.ts`. */
@@ -90,6 +118,35 @@ type Props = {
   /** Cambia cuando la configuración se abre más o menos: el lienzo se corrió y
    *  el panel elegido se vuelve a traer a la vista. */
   encuadre?: string
+  /** **Deshacer y rehacer** · 2026-11-10. `null` es «no hay nada»: el botón se
+   *  ve apagado, que dice que existe. */
+  deshacer?: { onDeshacer: (() => void) | null; onRehacer: (() => void) | null }
+}
+
+/** Desde qué borde se estira · las cinco asas. */
+type Borde = 'e' | 'o' | 's' | 'se' | 'so'
+
+const ASAS: readonly { borde: Borde; clase: string }[] = [
+  { borde: 'e', clase: '-right-1.5 top-1/2 -translate-y-1/2 cursor-ew-resize' },
+  { borde: 'o', clase: '-left-1.5 top-1/2 -translate-y-1/2 cursor-ew-resize' },
+  { borde: 's', clase: '-bottom-1.5 left-1/2 -translate-x-1/2 cursor-ns-resize' },
+  { borde: 'se', clase: '-bottom-1.5 -right-1.5 cursor-nwse-resize' },
+  { borde: 'so', clase: '-bottom-1.5 -left-1.5 cursor-nesw-resize' },
+]
+
+/** El paso de una columna cuando el lienzo no tiene medida —jsdom—: la columna
+ *  de 80 y la separación de 16 del `.pen`. */
+const PASO_POR_DEFECTO = 96
+
+type Estiramiento = {
+  indice: number
+  borde: Borde
+  x0: number
+  y0: number
+  inicial: Medida
+  propuesta: Medida
+  /** El rango del tipo, cuando la propuesta se topó con él. */
+  tope: string | null
 }
 
 export function Canvas({
@@ -99,13 +156,14 @@ export function Canvas({
   seleccionado,
   onSeleccionar,
   onReubicar,
-  onRedimensionar,
   onSoltarTipo,
   arrastrando,
   soloLectura = false,
   dibujar,
   nombreDeGrafico,
   encuadre,
+  onAjustar,
+  deshacer,
 }: Props) {
   /** **El panel elegido, a la vista** · D6 del 2026-10-07. Las columnas de la
    *  configuración corren el lienzo hacia la derecha, y el panel que se está
@@ -123,9 +181,20 @@ export function Canvas({
    *  del span** —«Span al soltar» en el `.pen`—: no decide nada, porque las
    *  decisiones salen del dato del soltado. */
   const [sobre, setSobre] = useState<{ col: number; fila: number } | null>(null)
+  /** El panel que se está moviendo y de qué celda se lo agarró. Sólo para
+   *  DIBUJAR —el rectángulo, el panel levantado, el puntero que pasa—: al
+   *  soltar manda lo que viaja en el arrastre. */
+  const [moviendo, setMoviendo] = useState<{ indice: number; dCol: number; dFila: number } | null>(null)
+  const [estirando, setEstirando] = useState<Estiramiento | null>(null)
+  /** Por qué no se aplicó el último cambio de tamaño · se dice junto a los
+   *  controles del panel, que es donde se miró. */
+  const [aviso, setAviso] = useState<{ indice: number; texto: string } | null>(null)
+  useEffect(() => setAviso(null), [seleccionado])
 
   const colocaciones = disposicion(panels)
-  const libres = huecos(colocaciones)
+  const libres = huecos(
+    moviendo === null ? colocaciones : colocaciones.filter((c) => c.indice !== moviendo.indice),
+  )
   const filas = Math.max(4, colocaciones.reduce((m, c) => Math.max(m, c.filaInicio + c.rowSpan - 1), 0) + 2)
   const nombre = (id: string) =>
     id === '' ? 'Sin métrica' : (metricas.find((m) => m.id === id)?.nombre ?? '—')
@@ -168,13 +237,34 @@ export function Canvas({
     return `Se solapa con «${nombre(conQuien?.metricId ?? '')}» · no se puede soltar aquí`
   }
 
-  const soltar = (col: number, fila: number, e: React.DragEvent) => {
+  /** Lo que está en el aire, con su medida y de dónde se lo agarró · `null`
+   *  si no vuela nada. Un panel que se mueve y un tipo de la biblioteca se
+   *  dibujan igual: el rectángulo, y la razón cuando no entra. */
+  const enVuelo = (() => {
+    if (moviendo !== null) {
+      const p = panels[moviendo.indice]
+      const c = colocaciones.find((x) => x.indice === moviendo.indice)
+      if (p === undefined || c === undefined) return null
+      return { ...moviendo, movido: moviendo.indice, tipo: p.tipo, colSpan: c.colSpan, rowSpan: c.rowSpan, rotulo: nombre(p.metricId) }
+    }
+    if (arrastrando === null) return null
+    const { colSpan, rowSpan } = spanDe(null, arrastrando)
+    return { dCol: 0, dFila: 0, movido: null, tipo: arrastrando, colSpan, rowSpan, rotulo: nombreDeTipo(arrastrando) }
+  })()
+
+  const soltar = (celdaCol: number, celdaFila: number, e: React.DragEvent) => {
     e.preventDefault()
+    setMoviendo(null)
     if (soloLectura) return
     const dato = e.dataTransfer.getData('text/plain')
     // Un índice numérico es un panel que ya existe; cualquier otra cosa es un
     // tipo que viene de la biblioteca.
     const movido = /^\d+$/.test(dato) ? Number(dato) : null
+    // **La celda del cursor no es la esquina** · se descuenta de dónde se lo
+    // agarró. Lo de la biblioteca no trae agarre: cae por la esquina.
+    const ag = movido === null ? { dCol: 0, dFila: 0 } : leerAgarre(e.dataTransfer.getData(FORMATO_AGARRE))
+    const col = Math.max(1, celdaCol - ag.dCol)
+    const fila = Math.max(1, celdaFila - ag.dFila)
     if (impedimento(col, fila, movido, dato) !== null) return
 
     const destino = ordenPara(colocaciones, fila, movido ?? -1)
@@ -183,6 +273,101 @@ export function Canvas({
     if (movido === null) onSoltarTipo(dato, col, destino, leerEleccion(e.dataTransfer.getData(FORMATO_ELECCION), dato))
     else onReubicar(movido, col, destino)
   }
+
+  /** **Toda medida nueva pasa por acá**: los botones, `shift` + flechas y las
+   *  asas. Si no entra, no se aplica y se dice por qué. */
+  const razonDeTamano = (indice: number, medida: Medida): string | null => {
+    const p = panels[indice]
+    if (p === undefined) return null
+    const b = tabla.get(p.tipo as never)
+    return cambioDeTamano(panels, indice, medida, {
+      ...(b === undefined ? {} : { rango: b }),
+      tipo: nombreDeTipo(p.tipo),
+      nombre: (i) => nombre(panels[i]?.metricId ?? ''),
+    })
+  }
+  const intentar = (indice: number, medida: Medida) => {
+    const razon = razonDeTamano(indice, medida)
+    if (razon !== null) {
+      setAviso({ indice, texto: razon })
+      return
+    }
+    setAviso(null)
+    onAjustar(indice, medida)
+  }
+  const medidaDe = (indice: number): Medida | null => {
+    const c = colocaciones.find((x) => x.indice === indice)
+    return c === undefined ? null : { colStart: c.colStart, colSpan: c.colSpan, rowSpan: c.rowSpan }
+  }
+
+  /** La medida que propone el asa a esta altura del gesto · acotada al rango
+   *  del tipo y a la grilla, y con el tope dicho si se llegó a él. Acotar y no
+   *  rechazar es lo que hace que estirar «de más» deje el panel en su máximo. */
+  const medirEstiramiento = (est: Estiramiento, x: number, y: number): Pick<Estiramiento, 'propuesta' | 'tope'> => {
+    const ancho = grilla.current?.getBoundingClientRect().width ?? 0
+    const pasoX = ancho > 0 ? (ancho + GAP) / COLUMNS : PASO_POR_DEFECTO
+    const dC = Math.round((x - est.x0) / pasoX)
+    const dF = Math.round((y - est.y0) / (ROW + GAP))
+    const p = panels[est.indice]
+    const b = p === undefined ? undefined : tabla.get(p.tipo as never)
+    const colMin = b?.colSpanMin ?? 1
+    const colMax = b?.colSpanMax ?? COLUMNS
+    const filaMin = b?.rowSpanMin ?? 1
+    const filaMax = b?.rowSpanMax ?? 99
+    const { inicial, borde } = est
+    const tipo = nombreDeTipo(p?.tipo ?? '')
+    let tope: string | null = null
+    const acotar = (v: number, min: number, max: number, deGrilla: number, unidad: 'columnas' | 'filas') => {
+      if (v < min || v > max) tope = `«${tipo}» ocupa entre ${String(min)} y ${String(max)} ${unidad}`
+      else if (v > deGrilla) tope = 'Llega al borde de la grilla'
+      return Math.max(min, Math.min(max, deGrilla, v))
+    }
+    let { colStart, colSpan, rowSpan } = inicial
+    if (borde === 'e' || borde === 'se') {
+      colSpan = acotar(inicial.colSpan + dC, colMin, colMax, COLUMNS - colStart + 1, 'columnas')
+    }
+    if (borde === 'o' || borde === 'so') {
+      // El borde derecho queda quieto: se mueven la columna y el ancho juntos.
+      const derecha = inicial.colStart + inicial.colSpan
+      colSpan = acotar(inicial.colSpan - dC, colMin, colMax, derecha - 1, 'columnas')
+      colStart = derecha - colSpan
+    }
+    if (borde === 's' || borde === 'se' || borde === 'so') {
+      rowSpan = acotar(inicial.rowSpan + dF, filaMin, filaMax, filaMax, 'filas')
+    }
+    return { propuesta: { colStart, colSpan, rowSpan }, tope }
+  }
+
+  // **El gesto se sigue en la ventana**, no en el asa: el cursor sale de ella
+  // en cuanto se estira una celda. Con el mouse y no con el arrastre de HTML,
+  // que es para llevar algo a un destino y acá no hay destino.
+  useEffect(() => {
+    if (estirando === null) return
+    const mover = (e: MouseEvent) => {
+      setEstirando((est) => (est === null ? null : { ...est, ...medirEstiramiento(est, e.clientX, e.clientY) }))
+    }
+    const terminar = (e: MouseEvent) => {
+      const { propuesta } = medirEstiramiento(estirando, e.clientX, e.clientY)
+      setEstirando(null)
+      const { inicial } = estirando
+      if (
+        propuesta.colStart === inicial.colStart &&
+        propuesta.colSpan === inicial.colSpan &&
+        propuesta.rowSpan === inicial.rowSpan
+      )
+        return
+      intentar(estirando.indice, propuesta)
+    }
+    window.addEventListener('mousemove', mover)
+    window.addEventListener('mouseup', terminar)
+    return () => {
+      window.removeEventListener('mousemove', mover)
+      window.removeEventListener('mouseup', terminar)
+    }
+    // Las funciones se rehacen en cada render; lo que cambia el gesto es
+    // `estirando`, y con él se vuelve a suscribir.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estirando])
 
   const teclas = (e: React.KeyboardEvent, indice: number) => {
     const p = panels[indice]
@@ -199,8 +384,12 @@ export function Canvas({
 
     // **Shift redimensiona, sin shift mueve** · y las dos en unidades de grilla.
     if (e.shiftKey) {
-      if (horizontal !== 0) onRedimensionar(indice, 'colSpan', horizontal)
-      else onRedimensionar(indice, 'rowSpan', vertical)
+      const m = medidaDe(indice)
+      if (m === null) return
+      intentar(
+        indice,
+        horizontal !== 0 ? { ...m, colSpan: m.colSpan + horizontal } : { ...m, rowSpan: m.rowSpan + vertical },
+      )
       return
     }
 
@@ -231,10 +420,37 @@ export function Canvas({
 
           El gesto de mover tiene historia: reportado el 2026-09-17, «no veo la
           capacidad de mover un bloque». Estaba, y nada lo anunciaba. */}
-      {!soloLectura && <Ayuda>
-        Arrastrá un dato de la biblioteca a un espacio libre. Elegí un panel para configurarlo:
-        arrastralo para moverlo, o usá las flechas; con Shift y las flechas cambiás su tamaño.
-      </Ayuda>}
+      {!soloLectura && (
+        <div className="flex items-start gap-4">
+          <Ayuda>
+            Arrastrá un dato de la biblioteca a un espacio libre. Elegí un panel para configurarlo:
+            arrastralo para moverlo, o usá las flechas. Para cambiar su tamaño, estiralo desde sus
+            bordes; con Shift y las flechas cambiás su tamaño de a una celda.
+          </Ayuda>
+          {/* **Deshacer, porque el borrador se guarda solo** · 2026-11-10. Un
+              cambio que desacomodó el lienzo quedaba guardado sin vuelta. */}
+          {deshacer !== undefined && (
+            <div className="ml-auto flex gap-2">
+              <Accion
+                tamano="compacta"
+                deshabilitada={deshacer.onDeshacer === null}
+                onClick={() => deshacer.onDeshacer?.()}
+                etiqueta="Deshacer · Cmd o Ctrl + Z"
+              >
+                Deshacer
+              </Accion>
+              <Accion
+                tamano="compacta"
+                deshabilitada={deshacer.onRehacer === null}
+                onClick={() => deshacer.onRehacer?.()}
+                etiqueta="Rehacer · Cmd o Ctrl + Shift + Z"
+              >
+                Rehacer
+              </Accion>
+            </div>
+          )}
+        </div>
+      )}
 
       <div
         ref={grilla}
@@ -280,23 +496,28 @@ export function Canvas({
         {/* **«Span al soltar»** · el rectángulo que va a ocupar, dibujado antes
             de soltar. Es la mitad de «fácil y clara»: sin él hay que soltar para
             saber si entraba. Y dice **por qué no**, cuando no. */}
-        {sobre !== null && arrastrando !== null && (() => {
-          const { colSpan, rowSpan } = spanDe(null, arrastrando)
-          const problema = impedimento(sobre.col, sobre.fila, null, arrastrando)
+        {/* **Desde el 2026-11-10 también al MOVER** un panel, y descontando de
+            dónde se lo agarró: el rectángulo cae donde va a caer el panel. Por
+            encima de los paneles (`z-10`), que si no lo tapaban. */}
+        {sobre !== null && enVuelo !== null && (() => {
+          const { colSpan, rowSpan } = enVuelo
+          const col = Math.max(1, sobre.col - enVuelo.dCol)
+          const fila = Math.max(1, sobre.fila - enVuelo.dFila)
+          const problema = impedimento(col, fila, enVuelo.movido, enVuelo.tipo)
           return (
             <div
               aria-live="polite"
               style={{
-                gridColumn: `${String(sobre.col)} / span ${String(Math.min(colSpan, COLUMNS - sobre.col + 1))}`,
-                gridRow: `${String(sobre.fila)} / span ${String(rowSpan)}`,
+                gridColumn: `${String(col)} / span ${String(Math.min(colSpan, COLUMNS - col + 1))}`,
+                gridRow: `${String(fila)} / span ${String(rowSpan)}`,
               }}
               className={
-                'pointer-events-none flex items-center justify-center rounded-sm border-2 ' +
+                'pointer-events-none relative z-10 flex items-center justify-center rounded-sm border-2 ' +
                 (problema === null ? 'border-acc' : 'border-w4 bg-w2')
               }
             >
               <Label>
-                {problema ?? `${nombreDeTipo(arrastrando)} · ${String(colSpan)} × ${String(rowSpan)}`}
+                {problema ?? `${enVuelo.rotulo} · ${String(colSpan)} × ${String(rowSpan)}`}
               </Label>
             </div>
           )
@@ -318,12 +539,7 @@ export function Canvas({
          *  comparar áreas: un hueco de 12 × 1 no admite un panel de 3 × 4 aunque
          *  tenga doce celdas libres. */}
         {libres.map((h) => {
-          const cabe =
-            arrastrando !== null &&
-            (() => {
-              const { colSpan, rowSpan } = spanDe(null, arrastrando)
-              return h.colSpan >= colSpan && h.rowSpan >= rowSpan
-            })()
+          const cabe = enVuelo !== null && h.colSpan >= enVuelo.colSpan && h.rowSpan >= enVuelo.rowSpan
           return (
             <div
               key={`hueco-${String(h.filaInicio)}-${String(h.colStart)}`}
@@ -353,15 +569,30 @@ export function Canvas({
           return (
             <div
               key={`panel-${String(c.indice)}`}
-              draggable={!soloLectura}
+              draggable={!soloLectura && estirando === null}
               tabIndex={0}
               role="gridcell"
               data-panel={c.indice}
               aria-label={`${nombreDeTipo(p.tipo)} · ${nombre(p.metricId)}`}
               aria-selected={elegido}
               onDragStart={(e) => {
+                const agarre = celdaAgarrada(
+                  e.currentTarget.getBoundingClientRect(),
+                  { x: e.clientX, y: e.clientY },
+                  c.colSpan,
+                  c.rowSpan,
+                )
                 e.dataTransfer.setData('text/plain', String(c.indice))
+                e.dataTransfer.setData(FORMATO_AGARRE, JSON.stringify(agarre))
                 onSeleccionar(c.indice)
+                // **Después del `dragstart`, no adentro**: cambiar el elemento
+                // que se arrastra mientras el navegador toma su imagen puede
+                // cancelar el arrastre.
+                window.setTimeout(() => setMoviendo({ indice: c.indice, ...agarre }), 0)
+              }}
+              onDragEnd={() => {
+                setMoviendo(null)
+                setSobre(null)
               }}
               onClick={() => onSeleccionar(c.indice)}
               onKeyDown={(e) => teclas(e, c.indice)}
@@ -371,6 +602,12 @@ export function Canvas({
               }}
               className={
                 'relative rounded-xl ' + (soloLectura ? 'cursor-default ' : 'cursor-grab ') +
+                // **Mientras algo vuela, los paneles dejan pasar el puntero** a
+                // las celdas de abajo, que son los destinos. Sin esto, correr un
+                // panel una columna terminaba con el cursor sobre él mismo, que
+                // no acepta soltar. El que se mueve, además, se ve levantado.
+                (enVuelo !== null ? 'pointer-events-none ' : '') +
+                (moviendo?.indice === c.indice ? 'opacity-40 ' : '') +
                 (dibujar === undefined
                   ? 'bg-panel p-6 flex flex-col gap-1 ' + (elegido ? 'border-2 border-acc' : 'border border-w3')
                   : // **Con dato, el borde es del panel**: la selección va como
@@ -434,6 +671,7 @@ export function Canvas({
                   }
                   onClick={(e) => e.stopPropagation()}
                 >
+                  <div className="flex flex-wrap gap-3">
                   {(
                     [
                       ['colSpan', 'Ancho', 'Angostar', 'Ensanchar'],
@@ -454,7 +692,12 @@ export function Canvas({
                           aria-label={accion}
                           onClick={(e) => {
                             e.stopPropagation()
-                            onRedimensionar(c.indice, campo, delta)
+                            intentar(c.indice, {
+                              colStart: c.colStart,
+                              colSpan: c.colSpan,
+                              rowSpan: c.rowSpan,
+                              [campo]: c[campo] + delta,
+                            })
                           }}
                           className="size-7 inline-flex items-center justify-center rounded-md border border-w5 font-body text-cuerpo font-semibold text-ink cursor-pointer hover:bg-w2"
                         >
@@ -463,11 +706,68 @@ export function Canvas({
                       ))}
                     </div>
                   ))}
+                  </div>
+                  {/* **Por qué no**, junto a lo que se apretó. Antes el botón
+                      no hacía nada al llegar al tope, y se leía como roto. */}
+                  {aviso?.indice === c.indice && (
+                    <p role="status" className="m-0 max-w-72 font-body text-celda leading-cuerpo text-ink">
+                      {aviso.texto}
+                    </p>
+                  )}
                 </div>
               )}
+
+              {/* **Las asas del `.pen`** · cinco de ocho, ver arriba. Se agarran
+                  con el mouse; el teclado tiene Shift y las flechas, y los
+                  botones. */}
+              {elegido && b !== undefined && !soloLectura &&
+                ASAS.map(({ borde, clase }) => (
+                  <span
+                    key={borde}
+                    aria-hidden
+                    data-asa={borde}
+                    draggable={false}
+                    onDragStart={(e) => e.preventDefault()}
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => {
+                      // Sin esto el `mousedown` arranca el arrastre del panel.
+                      e.preventDefault()
+                      e.stopPropagation()
+                      const inicial = { colStart: c.colStart, colSpan: c.colSpan, rowSpan: c.rowSpan }
+                      setAviso(null)
+                      setEstirando({ indice: c.indice, borde, x0: e.clientX, y0: e.clientY, inicial, propuesta: inicial, tope: null })
+                    }}
+                    className={`absolute z-20 size-3 rounded-sm border border-acc bg-bg ${clase}`}
+                  />
+                ))}
             </div>
           )
         })}
+
+        {/* **Lo que va a medir mientras se estira** · con la medida, o por qué
+            no entra. Encima de todo, en la fila del panel. */}
+        {estirando !== null && (() => {
+          const propio = colocaciones.find((x) => x.indice === estirando.indice)
+          if (propio === undefined) return null
+          const { propuesta, tope } = estirando
+          const razon = razonDeTamano(estirando.indice, propuesta)
+          return (
+            <div
+              aria-live="polite"
+              style={{
+                gridColumn: `${String(propuesta.colStart)} / span ${String(propuesta.colSpan)}`,
+                gridRow: `${String(propio.filaInicio)} / span ${String(propuesta.rowSpan)}`,
+              }}
+              className={
+                'pointer-events-none relative z-10 flex flex-col items-center justify-center gap-1 rounded-xl border-2 ' +
+                (razon === null ? 'border-acc bg-w2' : 'border-w4 bg-w2')
+              }
+            >
+              <Label>{razon ?? `${String(propuesta.colSpan)} × ${String(propuesta.rowSpan)}`}</Label>
+              {razon === null && tope !== null && <Label>{tope}</Label>}
+            </div>
+          )
+        })()}
       </div>
     </div>
   )

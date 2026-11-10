@@ -15,7 +15,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { fireEvent } from '@testing-library/dom'
+import { createEvent, fireEvent } from '@testing-library/dom'
 import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { Builder } from '@/surfaces/builder/Builder'
@@ -851,5 +851,270 @@ describe('el lienzo dibuja cada panel con su dato', () => {
       expect(lienzo.style.gridAutoRows).toBe('80px')
       expect(lienzo.style.gap).toBe('16px')
     })
+  })
+})
+
+/** ── MOVER Y ESTIRAR CON EL MOUSE · 2026-11-10 ──────────────────────────────
+ *
+ *  Pedido del humano: «refinar la grilla … para mover y ajustar los tamaños».
+ *  Medido en local ese día: correr un panel una columna no se podía, el panel
+ *  caía por la esquina sin importar de dónde se lo agarró, y un «Ancho +» en
+ *  una fila llena bajó dos paneles de fila. Decisión del mismo día: **lo que
+ *  no entra se bloquea y se avisa**. */
+
+/** Una pestaña con estos paneles · `[metricId, colStart, colSpan]`. */
+function conPaneles(...ps: [string, number, number][]) {
+  return http.get(`${API}/admin/layouts/:id`, () =>
+    ok({
+      layout: layouts[0],
+      tabs: [
+        {
+          tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+          panels: ps.map(([m, c, s], i) => panel(`p-${String(i + 1)}`, m, c, s)),
+        },
+      ],
+    }),
+  )
+}
+
+/** Un `dataTransfer` que guarda por formato, como el del navegador. */
+function transferencia() {
+  const datos = new Map<string, string>()
+  return {
+    getData: (f: string) => datos.get(f) ?? '',
+    setData: (f: string, v: string) => void datos.set(f, v),
+    effectAllowed: '',
+  }
+}
+
+const celda = (col: number, fila: number) =>
+  screen.getByRole('gridcell', { name: `Columna ${String(col)}, fila ${String(fila)}` })
+
+describe('mover un panel con el mouse · 2026-11-10', () => {
+  it('cae donde se lo soltó CONTANDO de dónde se lo agarró · no por la esquina', async () => {
+    base([conPaneles(['m-1', 1, 3])])
+    montar()
+    await abrirCanvas()
+
+    // Un indicador de 3 × 4 mide 272 × 368, y se lo agarra por su tercera
+    // columna. Soltado con el cursor en la 5, su esquina va a la 3.
+    const p = panelDe('Ventas')
+    p.getBoundingClientRect = () => ({ left: 0, top: 0, width: 272, height: 368, right: 272, bottom: 368, x: 0, y: 0, toJSON: () => ({}) })
+    const dt = transferencia()
+    // jsdom no tiene `DragEvent`: la posición del cursor se pone a mano.
+    const inicio = createEvent.dragStart(p, { dataTransfer: dt })
+    Object.defineProperty(inicio, 'clientX', { value: 2 * 96 + 10 })
+    Object.defineProperty(inicio, 'clientY', { value: 10 })
+    fireEvent(p, inicio)
+    fireEvent.dragOver(celda(5, 1), { dataTransfer: dt })
+    fireEvent.drop(celda(5, 1), { dataTransfer: dt })
+
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('3 / span 3'))
+  })
+
+  it('mientras vuela, los paneles dejan pasar el puntero y se ve dónde va a caer', async () => {
+    // Era lo que impedía correrlo una columna: el cursor quedaba sobre el
+    // propio panel, que no acepta soltar.
+    base([conPaneles(['m-1', 1, 3])])
+    montar()
+    await abrirCanvas()
+
+    const dt = transferencia()
+    fireEvent.dragStart(panelDe('Ventas'), { dataTransfer: dt })
+    await waitFor(() => expect(panelDe('Ventas').className).toMatch(/pointer-events-none/))
+
+    fireEvent.dragEnter(celda(2, 1), { dataTransfer: dt })
+    expect(await screen.findByText('Ventas · 3 × 4')).toBeInTheDocument()
+
+    fireEvent.dragEnd(panelDe('Ventas'), { dataTransfer: dt })
+    await waitFor(() => expect(panelDe('Ventas').className).not.toMatch(/pointer-events-none/))
+  })
+
+  it('al moverlo sobre otro, nombra con cuál choca · igual que lo que viene de la biblioteca', async () => {
+    base()
+    montar()
+    await abrirCanvas()
+
+    const dt = transferencia()
+    fireEvent.dragStart(panelDe('Ventas'), { dataTransfer: dt })
+    await waitFor(() => expect(panelDe('Ventas').className).toMatch(/pointer-events-none/))
+    fireEvent.dragEnter(celda(4, 1), { dataTransfer: dt })
+    expect(await screen.findByText(/Se solapa con «Doce meses»/)).toBeInTheDocument()
+  })
+})
+
+describe('estirar desde las asas · las del `.pen`', () => {
+  /** Las asas no son botones: se buscan por su borde. */
+  const asa = (borde: string) => {
+    const el = document.querySelector(`[data-asa="${borde}"]`)
+    if (el === null) throw new Error(`sin asa ${borde}`)
+    return el
+  }
+
+  it('aparecen solo con el panel elegido', async () => {
+    base([conPaneles(['m-1', 1, 3])])
+    montar()
+    await abrirCanvas()
+
+    expect(document.querySelector('[data-asa]')).toBeNull()
+    await userEvent.click(panelDe('Ventas'))
+    expect(document.querySelectorAll('[data-asa]')).toHaveLength(5)
+  })
+
+  it('el borde derecho ensancha, con la medida a la vista mientras se estira', async () => {
+    // Sin medida en jsdom, el paso es el del `.pen`: columna 80 más 16.
+    base([conPaneles(['m-1', 1, 3])])
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+
+    fireEvent.mouseDown(asa('e'), { clientX: 0, clientY: 0 })
+    fireEvent.mouseMove(window, { clientX: 2 * 96, clientY: 0 })
+    expect(await screen.findByText('5 × 4')).toBeInTheDocument()
+    fireEvent.mouseUp(window, { clientX: 2 * 96, clientY: 0 })
+
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 5'))
+  })
+
+  it('el izquierdo mueve la columna y el ancho juntos · el borde derecho queda quieto', async () => {
+    base([conPaneles(['m-1', 4, 3])])
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+
+    fireEvent.mouseDown(asa('o'), { clientX: 500, clientY: 0 })
+    fireEvent.mouseUp(window, { clientX: 500 - 2 * 96, clientY: 0 })
+
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('2 / span 5'))
+  })
+
+  it('el de abajo agranda en filas', async () => {
+    base([conPaneles(['m-1', 1, 3])])
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+
+    fireEvent.mouseDown(asa('s'), { clientX: 0, clientY: 0 })
+    fireEvent.mouseUp(window, { clientX: 0, clientY: 96 })
+
+    await waitFor(() => expect(panelDe('Ventas').style.gridRow).toBe('1 / span 5'))
+  })
+
+  it('estirar de más lo deja en el máximo del tipo, y lo dice', async () => {
+    // `kpi` va de 3 a 8 columnas en este fixture.
+    base([conPaneles(['m-1', 1, 3])])
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+
+    fireEvent.mouseDown(asa('e'), { clientX: 0, clientY: 0 })
+    fireEvent.mouseMove(window, { clientX: 20 * 96, clientY: 0 })
+    expect(await screen.findByText('«Indicador» ocupa entre 3 y 8 columnas')).toBeInTheDocument()
+    fireEvent.mouseUp(window, { clientX: 20 * 96, clientY: 0 })
+
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 8'))
+  })
+
+  it('sobre otro panel NO se aplica: se ve por qué y queda dicho', async () => {
+    base()
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+
+    fireEvent.mouseDown(asa('e'), { clientX: 0, clientY: 0 })
+    fireEvent.mouseMove(window, { clientX: 96, clientY: 0 })
+    expect(await screen.findByText('Se solapa con «Doce meses»')).toBeInTheDocument()
+    fireEvent.mouseUp(window, { clientX: 96, clientY: 0 })
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Se solapa con «Doce meses»')
+    expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 6')
+    expect(panelDe('Doce meses').style.gridColumn).toBe('7 / span 6')
+  })
+})
+
+describe('un tamaño que no entra se bloquea · decisión humana del 2026-11-10', () => {
+  it('«Ancho +» en una fila llena no empuja a nadie: dice con quién choca', async () => {
+    // El caso medido en local: el clic bajó dos paneles de fila.
+    base()
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ensanchar' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Se solapa con «Doce meses»')
+    expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 6')
+    expect(panelDe('Doce meses').style.gridRow).toBe('1 / span 4')
+  })
+
+  it('en el tope del tipo, el botón dice por qué no hace nada', async () => {
+    base([conPaneles(['m-1', 1, 8])])
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ensanchar' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('«Indicador» ocupa entre 3 y 8 columnas')
+    expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 8')
+  })
+
+  it('Shift y las flechas siguen la misma regla', async () => {
+    base()
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+
+    fireEvent.keyDown(panelDe('Ventas'), { key: 'ArrowRight', shiftKey: true })
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Se solapa con «Doce meses»')
+    expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 6')
+  })
+})
+
+describe('deshacer · el borrador se guarda solo', () => {
+  it('Deshacer y Rehacer vuelven el último cambio, ida y vuelta', async () => {
+    base([conPaneles(['m-1', 1, 3])])
+    montar()
+    await abrirCanvas()
+
+    expect(screen.getByRole('button', { name: /^Deshacer/ })).toBeDisabled()
+    await userEvent.click(panelDe('Ventas'))
+    await userEvent.click(screen.getByRole('button', { name: 'Ensanchar' }))
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 4'))
+
+    await userEvent.click(screen.getByRole('button', { name: /^Deshacer/ }))
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 3'))
+
+    await userEvent.click(screen.getByRole('button', { name: /^Rehacer/ }))
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 4'))
+  })
+
+  it('Cmd + Z deshace y Cmd + Shift + Z rehace', async () => {
+    base([conPaneles(['m-1', 1, 3])])
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+    fireEvent.keyDown(panelDe('Ventas'), { key: 'ArrowRight' })
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('2 / span 3'))
+
+    fireEvent.keyDown(panelDe('Ventas'), { key: 'z', metaKey: true })
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 3'))
+
+    fireEvent.keyDown(panelDe('Ventas'), { key: 'z', metaKey: true, shiftKey: true })
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('2 / span 3'))
+  })
+
+  it('un cambio nuevo después de deshacer descarta lo que se podía rehacer', async () => {
+    base([conPaneles(['m-1', 1, 3])])
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+    await userEvent.click(screen.getByRole('button', { name: 'Ensanchar' }))
+    await userEvent.click(screen.getByRole('button', { name: /^Deshacer/ }))
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Rehacer/ })).toBeEnabled())
+
+    await userEvent.click(screen.getByRole('button', { name: 'Agrandar' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Rehacer/ })).toBeDisabled())
   })
 })
