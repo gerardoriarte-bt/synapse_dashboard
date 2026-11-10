@@ -307,6 +307,110 @@ describe('la biblioteca es de DATOS · decisión humana del 2026-11-10', () => {
   })
 })
 
+/** ── EL DATO DE TODO EL CATÁLOGO · `a80c318`, 2026-11-10 ───────────────────
+ *
+ *  `GET /admin/tenants/{tenantId}/catalog/data?period=…` · forma de
+ *  `DatoDelCatalogo` en `synapse-admin-wire.yaml`, medida ese día contra
+ *  `4953411`: una entrada por métrica, con el payload del lote. */
+const datoDelCatalogo = (porMetrica: Record<string, unknown>) => [
+  // **Con roles**: el período sale del dato del lienzo, que se pide con el
+  // lente de un rol. Sin roles no hay dato del lienzo, y no se sabe el mes.
+  http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok(rolesConAdmin)),
+  http.get(`${API}/admin/tenants/:id/catalog/data`, ({ request }) => {
+    pedidosDelCatalogo.push(new URL(request.url))
+    return ok({
+      period: new URL(request.url).searchParams.get('period'),
+      metrics: Object.entries(porMetrica).map(([id, p]) => ({ metric_id: id, key: `clave-${id}`, ...(p as object) })),
+    })
+  }),
+]
+const pedidosDelCatalogo: URL[] = []
+const sinCifra = { status: 'BLOCKED', reason: 'No hay datos calculados para este período', unlocks_with: '' }
+
+describe('la biblioteca sabe qué dato tiene cada métrica · a80c318', () => {
+  /** El rótulo de un dato de la lista: nombre y forma. */
+  const itemDe = (nombre: string) =>
+    within(screen.getByRole('complementary', { name: 'Datos del cliente' })).getByRole('button', {
+      name: new RegExp(`^${nombre}`),
+    })
+
+  it('lo pide con el período del lienzo · la lista y los paneles hablan del mismo mes', async () => {
+    pedidosDelCatalogo.length = 0
+    base([...datoDelCatalogo({ 'm-1': disponible(48362), 'm-2': sinCifra, 'm-3': sinCifra })])
+    montar()
+    await abrirCanvas()
+
+    await waitFor(() => expect(pedidosDelCatalogo.length).toBeGreaterThan(0))
+    // El preview de este archivo contesta `period: '2026-10'`.
+    expect(pedidosDelCatalogo[0]?.searchParams.get('period')).toBe('2026-10')
+    expect(pedidosDelCatalogo[0]?.pathname).toMatch(/\/admin\/tenants\/t-1\/catalog\/data$/)
+  })
+
+  it('marca «Sin cifra» sólo en las que no tienen, y dice de qué mes es el estado', async () => {
+    base([...datoDelCatalogo({ 'm-1': disponible(48362), 'm-2': sinCifra, 'm-3': sinCifra })])
+    montar()
+    await abrirCanvas()
+
+    await waitFor(() => expect(itemDe('Doce meses')).toHaveTextContent('Sin cifra'))
+    expect(itemDe('Ventas')).not.toHaveTextContent('Sin cifra')
+    expect(screen.getByText(/El estado de cada dato es el de .*2026/)).toBeInTheDocument()
+  })
+
+  it('una métrica FUERA del lienzo ya se elige con su dato · no «por su forma»', async () => {
+    // «Tendencia» no está en ningún panel: hasta `a80c318` no había cómo saber
+    // su dato, y la biblioteca lo decía.
+    const serie = {
+      status: 'AVAILABLE',
+      value: { shape: 'time_series', points: [{ t: '2026-10-01', v: 1 }, { t: '2026-10-02', v: 2 }] },
+      governance: disponible(0).governance,
+    }
+    base([...datoDelCatalogo({ 'm-1': disponible(48362), 'm-2': disponible(1), 'm-3': serie })])
+    montar()
+    await abrirCanvas()
+
+    await waitFor(() => expect(screen.getByText(/El estado de cada dato/)).toBeInTheDocument())
+    const como = await abrirDato('Tendencia')
+    expect(como.queryByText(/Sin el dato a mano/)).toBeNull()
+  })
+
+  it('sin cifra, al abrirlo dice por qué con las palabras del servicio, y que se puede poner igual', async () => {
+    base([...datoDelCatalogo({ 'm-1': disponible(48362), 'm-2': sinCifra, 'm-3': sinCifra })])
+    montar()
+    await abrirCanvas()
+    await waitFor(() => expect(itemDe('Doce meses')).toHaveTextContent('Sin cifra'))
+
+    const como = await abrirDato('Tendencia')
+    expect(como.getByText(/^No hay datos calculados para este período\. Se puede poner igual/)).toBeInTheDocument()
+    // **Sin cifra no es desactivado**: la opción se sigue pudiendo agregar.
+    expect(como.getByRole('button', { name: /^Agregar Tendencia como/ })).toBeInTheDocument()
+  })
+
+  it('si NINGUNO tiene cifra, lo dice una vez arriba y no marca cada uno', async () => {
+    // Visto en local: el mes en curso sin dato marcaba los 33.
+    base([...datoDelCatalogo({ 'm-1': sinCifra, 'm-2': sinCifra, 'm-3': sinCifra })])
+    montar()
+    await abrirCanvas()
+
+    expect(await screen.findByText(/ningún dato tiene cifra todavía/)).toBeInTheDocument()
+    for (const n of ['Ventas', 'Doce meses', 'Tendencia']) expect(itemDe(n)).not.toHaveTextContent('Sin cifra')
+  })
+
+  it('contra un servicio SIN la ruta sigue como antes · el dato de lo que está en el lienzo', async () => {
+    // Es QA hasta que despliegue `a80c318`: la ruta da 404.
+    base([
+      http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok(rolesConAdmin)),
+      http.get(`${API}/admin/tenants/:id/catalog/data`, () => new Response(null, { status: 404 })),
+    ])
+    montar()
+    await abrirCanvas()
+
+    const como = await abrirDato('Tendencia')
+    expect(como.getByText(/Sin el dato a mano se elige por su forma/)).toBeInTheDocument()
+    expect(screen.queryByText(/El estado de cada dato/)).toBeNull()
+    expect(screen.queryByText(/Sin cifra/)).toBeNull()
+  })
+})
+
 describe('soltar un DATO · 2026-11-10', () => {
   /** El arrastre desde la biblioteca de datos lleva dos cosas: el tipo en
    *  `text/plain`, con el que el lienzo mide, y la elección aparte. Se suelta

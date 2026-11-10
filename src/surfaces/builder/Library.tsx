@@ -14,13 +14,21 @@
  *  no sirve para el dato se ve desactivado con su razón, no escondido; y se
  *  listan todas las métricas del catálogo del cliente.
  *
- *  ── LO QUE TODAVÍA NO PUEDE ───────────────────────────────────────────────
+ *  ── EL DATO DE CADA MÉTRICA · 2026-11-10 ──────────────────────────────────
  *
- *  **El estado del dato y el espécimen de una métrica que no está en el
- *  lienzo.** El dato se guarda por métrica y período (`dd_panel_data`), pero el
- *  servicio sólo lo sirve a través de un panel. Para las que ya están en el
- *  lienzo se usa su dato real; para las otras, la evaluación fina —topes como
- *  el de la dona— llega al ponerlas. Pedido al backend.
+ *  **Desde `a80c318` el servicio da el dato de todo el catálogo**, esté o no en
+ *  el lienzo —pedido ese mismo día—. Con él la lista dice qué datos no tienen
+ *  cifra en el período, y los topes de cada gráfico —la dona con más de cinco
+ *  partes— se revisan antes de soltar. Contra un servicio sin la ruta queda lo
+ *  de antes: el dato de lo que ya está en el lienzo.
+ *
+ *  **Sin cifra no es desactivado.** La decisión fue listar todas, con su
+ *  estado: un dato sin cifra este mes se puede poner igual, y el panel lo dice
+ *  hasta que la tenga.
+ *
+ *  **Lo que todavía no hace: el espécimen**, cada opción dibujada con la cifra
+ *  real, que B3 del `.pen` pide. Falta definir su tamaño en una columna de 300
+ *  · punto 3 de `docs/PROPUESTA-2026-11-10-biblioteca-de-datos.md`.
  *
  *  ── EL ARRASTRE ────────────────────────────────────────────────────────────
  *
@@ -59,8 +67,12 @@ type Props = {
   bloques: readonly Block[]
   plots: readonly Plot[]
   repertorio: PlotTable
-  /** El dato de una métrica, si ya está en el lienzo. */
+  /** El dato de una métrica en el período · de todo el catálogo cuando el
+   *  servicio lo da, o sólo de lo que ya está en el lienzo. */
   datoDe: (metricId: string) => Payload | undefined
+  /** El mes de ese dato, legible —«octubre de 2026»—. Ausente: no se tiene el
+   *  dato de todo el catálogo, y la lista no promete un estado que no sabe. */
+  periodo?: string
   /** Qué tipo se está arrastrando · el lienzo lo usa para medir. */
   arrastrando: string | null
   onArrastrar: (tipo: string | null) => void
@@ -74,12 +86,24 @@ export function Library({
   plots,
   repertorio,
   datoDe,
+  periodo,
   arrastrando,
   onArrastrar,
   onAgregar,
 }: Props) {
   const [abierta, setAbierta] = useState<string | null>(null)
   const [busqueda, setBusqueda] = useState('')
+
+  // **Ninguno con cifra se dice UNA vez**, arriba · visto en local el
+  // 2026-11-10: el editor pide el mes en curso, que todavía no tenía dato, y
+  // las 33 decían «sin cifra en noviembre 2026». Repetido en todas no
+  // distingue nada; marcar cada una sirve cuando unas tienen y otras no.
+  const conocidos = metricas.filter((m) => datoDe(m.id) !== undefined)
+  const ningunaConCifra =
+    conocidos.length > 0 && conocidos.every((m) => {
+      const d = datoDe(m.id)
+      return d === undefined || !hasValue(d)
+    })
 
   const q = busqueda.trim().toLowerCase()
   const visibles = q === '' ? metricas : metricas.filter((m) => m.nombre.toLowerCase().includes(q))
@@ -100,6 +124,13 @@ export function Library({
           Elegí qué querés mostrar, y después cómo. Arrastralo al lienzo, o tocá + para agregarlo al
           final.
         </Ayuda>
+        {ningunaConCifra ? (
+          <Ayuda>
+            {`${periodo === undefined ? 'En este período' : `En ${periodo}`} ningún dato tiene cifra todavía. Se pueden poner igual: cada panel lo dice hasta que la tenga.`}
+          </Ayuda>
+        ) : (
+          periodo !== undefined && <Ayuda>{`El estado de cada dato es el de ${periodo}.`}</Ayuda>
+        )}
       </div>
 
       <input
@@ -129,12 +160,9 @@ export function Library({
                   abierto={abierta === m.id}
                   onAbrir={() => setAbierta(abierta === m.id ? null : m.id)}
                   formas={comoMostrar(m, bloques, plots, repertorio, datoDe(m.id))}
-                  // **Con VALOR, no con payload**: un panel bloqueado también trae
-                  // payload, y sin cifra no hay tope que evaluar. Visto en local.
-                  conDato={(() => {
-                    const d = datoDe(m.id)
-                    return d !== undefined && hasValue(d)
-                  })()}
+                  dato={datoDe(m.id)}
+                  periodo={periodo}
+                  marcarSinCifra={!ningunaConCifra}
                   arrastrando={arrastrando}
                   onArrastrar={onArrastrar}
                   onAgregar={onAgregar}
@@ -153,7 +181,9 @@ function Dato({
   abierto,
   onAbrir,
   formas,
-  conDato,
+  dato,
+  periodo,
+  marcarSinCifra,
   arrastrando,
   onArrastrar,
   onAgregar,
@@ -162,13 +192,22 @@ function Dato({
   abierto: boolean
   onAbrir: () => void
   formas: ReturnType<typeof comoMostrar>
-  conDato: boolean
+  /** `undefined`: no se sabe. Con payload y sin cifra: se sabe que no hay. */
+  dato: Payload | undefined
+  periodo: string | undefined
+  /** Si se marca en la lista · no cuando ninguno tiene cifra: ver arriba. */
+  marcarSinCifra: boolean
   arrastrando: string | null
   onArrastrar: (tipo: string | null) => void
   onAgregar: (eleccion: Eleccion) => void
 }) {
   const disponibles = formas.filter((f) => f.razon === null)
   const otras = formas.filter((f) => f.razon !== null)
+  // **Con VALOR, no con payload**: un dato bloqueado también trae payload, y
+  // sin cifra no hay tope que evaluar. Visto en local.
+  const conDato = dato !== undefined && hasValue(dato)
+  const sinCifra = dato !== undefined && !conDato
+  const enElMes = periodo === undefined ? 'en el período' : `en ${periodo}`
 
   return (
     <li className="flex flex-col gap-2">
@@ -181,10 +220,15 @@ function Dato({
           (abierto ? 'border-acc bg-w2' : 'border-w4 bg-panel hover:bg-w2')
         }
       >
-        <span className="font-body text-cuerpo font-semibold text-ink">{metrica.nombre}</span>
+        <span className={'font-body text-cuerpo font-semibold ' + (sinCifra && marcarSinCifra ? 'text-dim' : 'text-ink')}>
+          {metrica.nombre}
+        </span>
         {/* La forma del dato, que es lo que decide cómo se puede mostrar. La
-            base va adentro, al abrirlo. */}
-        <Label as="span">{nombreDeForma(metrica.forma)}</Label>
+            base va adentro, al abrirlo. **Y si no tiene cifra este mes, se dice
+            acá**, sin abrirlo: es lo que se viene a buscar. */}
+        <Label as="span">
+          {sinCifra && marcarSinCifra ? `${nombreDeForma(metrica.forma)} · Sin cifra` : nombreDeForma(metrica.forma)}
+        </Label>
       </button>
 
       {abierto && (
@@ -198,10 +242,15 @@ function Dato({
               pantalla—. Con el dato abierto es lo que confirma que es ése. */}
           {metrica.base !== '' && <Note as="div">{metrica.base}</Note>}
           <Label as="div">Cómo se puede mostrar</Label>
-          {!conDato && (
+          {dato === undefined && (
             <Ayuda>
               Sin el dato a mano se elige por su forma. Los topes de cada gráfico se revisan al
               ponerlo en el lienzo.
+            </Ayuda>
+          )}
+          {sinCifra && (
+            <Ayuda>
+              {`${razonDe(dato) ?? `No tiene cifra ${enElMes}`}. Se puede poner igual: el panel lo dice hasta que la tenga, y los topes de cada gráfico se revisan cuando llegue.`}
             </Ayuda>
           )}
           {disponibles.length === 0 && (
@@ -290,4 +339,11 @@ function Dato({
       )}
     </li>
   )
+}
+
+/** Por qué un dato no tiene cifra, con las palabras del servicio. Sin punto
+ *  final: la frase sigue. */
+function razonDe(dato: Payload | undefined): string | null {
+  if (dato === undefined || !('razon' in dato) || typeof dato.razon !== 'string' || dato.razon === '') return null
+  return dato.razon.replace(/\.\s*$/, '')
 }
