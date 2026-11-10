@@ -109,14 +109,15 @@ export function validarBorrador(
       for (const problema of validado.invalid) {
         out.push({ tab: i, panel: j, campo: problema.param, mensaje: problema.reason })
       }
-      for (const nombre of validado.unknown) {
-        out.push({
-          tab: i,
-          panel: j,
-          campo: nombre,
-          mensaje: `La opción «${nombre}» no es de este tipo de panel · se descarta al guardar`,
-        })
-      }
+      // **Los desconocidos NO son un problema de composición** · 2026-11-10.
+      // Acá decía «no es de este tipo de panel · se descarta al guardar», y las
+      // dos mitades eran falsas: el builder leía las opciones sin traducir, así
+      // que TODA opción salía desconocida, y al guardar viajan enteras. Con la
+      // traducción, los que quedan son los que el servicio declara y ningún
+      // cuerpo nuestro lee —`cut` en la serie, `order` en la tabla—: no cambian
+      // cómo se ve el panel, quien compone no puede hacer nada con ellos, y se
+      // guardan tal como vinieron. Listarlos era ruido que parecía un error.
+      // `validado.unknown` sigue existiendo: la consola los avisa en desarrollo.
     })
   })
 

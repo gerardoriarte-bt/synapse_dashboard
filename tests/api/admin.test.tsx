@@ -147,7 +147,9 @@ describe('el PascalCase del dominio se absorbe acá', () => {
       colStart: 5,
       colSpan: 3,
       rowSpan: 4,
-      opciones: { comparative: true },
+      // **En los nombres del front, como en la consola** · 2026-11-10. Crudo
+      // —`comparative`— el validador del builder lo marcaba desconocido.
+      opciones: { comparativo: true },
     })
   })
 })
@@ -201,6 +203,35 @@ describe('guardar · el PUT reemplaza el layout entero', () => {
         },
       ],
     })
+  })
+
+  /** **Las opciones vuelven al idioma del cable** · 2026-11-10. El configurador
+   *  edita con los nombres de `PARAM_SCHEMAS` y el servicio guarda los suyos:
+   *  sin la vuelta se guardaba `medidor`, que el servicio no conoce, y el
+   *  `meter` que ya estaba quedaba al lado. Lo que no tiene traducción —un
+   *  param que ningún cuerpo nuestro lee— vuelve como vino. */
+  it('las opciones viajan con los nombres del servicio, y las que no leemos, intactas', async () => {
+    let cuerpo: { tabs: { panels: { options?: unknown }[] }[] } | null = null
+    server.use(
+      http.put(`${API}/admin/layouts/l-1`, async ({ request }) => {
+        cuerpo = (await request.json()) as typeof cuerpo
+        return ok(detalle)
+      }),
+    )
+    await adminApi.guardar('l-1', [
+      {
+        id: 'tab-1', nombre: 'Resumen', pregunta: '¿Qué movió?', orden: 1,
+        roles: [], icono: '', sugerencias: [],
+        panels: [
+          { metricId: 'm-1', tipo: 'kpi', colStart: 1, colSpan: 3, rowSpan: 4, opciones: { medidor: true, comparativo: false } },
+          { metricId: 'm-2', tipo: 'table', colStart: 4, colSpan: 6, rowSpan: 4, opciones: { order: 'investment' } },
+        ],
+      },
+    ])
+    expect(cuerpo!.tabs[0]?.panels.map((x) => x.options)).toEqual([
+      { meter: true, comparative: false },
+      { order: 'investment' },
+    ])
   })
 
   it('la clave, el ícono y las sugeridas VIAJAN · sin la clave, renombrar la cambiaba', async () => {

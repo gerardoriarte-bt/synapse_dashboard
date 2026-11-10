@@ -158,7 +158,7 @@ const metricas = [
 /** El panel que llega del servidor · por defecto `kpi` sobre `Ventas`, que es
  *  una composición cerrada. Con `tipo: 'series'` llega ROTO: es la única forma
  *  de tener un panel incompatible desde que elegir la métrica ajusta el tipo. */
-function detalleCon(panel: { tipo?: string; metricId?: string } = {}) {
+function detalleCon(panel: { tipo?: string; metricId?: string; options?: Record<string, unknown> } = {}) {
   return {
     ...detalle,
     tabs: [
@@ -168,6 +168,7 @@ function detalleCon(panel: { tipo?: string; metricId?: string } = {}) {
           {
             id: 'p-1', tab_id: 'tab-a', metric_id: panel.metricId ?? 'm-1', type: panel.tipo ?? 'kpi',
             col_start: 1, col_span: panel.tipo === 'series' ? 6 : 3, row_span: 4,
+            ...(panel.options === undefined ? {} : { options: panel.options }),
           },
         ],
       },
@@ -175,7 +176,7 @@ function detalleCon(panel: { tipo?: string; metricId?: string } = {}) {
   }
 }
 
-function servir(panel: { tipo?: string; metricId?: string } = {}) {
+function servir(panel: { tipo?: string; metricId?: string; options?: Record<string, unknown> } = {}) {
   server.use(
     http.get(`${API}/admin/tenants`, () => ok(tenants)),
     http.get(`${API}/admin/tenants/:id/layouts`, () => ok(versiones)),
@@ -857,6 +858,21 @@ describe('§7.2 · editar las opciones del panel', () => {
     await waitFor(() =>
       expect(screen.queryByText(/con cambios · se guarda solo/)).toBeNull(),
     )
+  })
+
+  /** **Lo guardado se ve elegido** · 2026-11-10. El cable trae `meter` y el
+   *  configurador pregunta por `medidor`: sin traducir al leer, un KPI con el
+   *  medidor prendido se mostraba en «por defecto», y el resumen listaba cada
+   *  opción como «no es de este tipo de panel». Lo vio el humano en Overview. */
+  it('una opción guardada en el idioma del cable se muestra elegida, sin problema', async () => {
+    // El fixture del KPI declara sólo `comparative`, como en `bloques`.
+    servir({ options: { comparative: false } })
+    montar()
+    await abrirPanel()
+    await abrir('Ajustes')
+    expect(columna('Ajustes').getByRole('button', { name: 'comparativo · no' })).toHaveAttribute('aria-pressed', 'true')
+    expect(columna('Ajustes').getByRole('button', { name: 'comparativo · por defecto' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByText(/no es de este tipo de panel/)).toBeNull()
   })
 
   it('escribir una opción ensucia el borrador · borrarla vuelve a «Por defecto»', async () => {
