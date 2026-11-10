@@ -20,6 +20,7 @@ import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { Builder } from '@/surfaces/builder/Builder'
 import { nombreDeTipo } from '@/surfaces/builder/rotulos'
+import { FORMATO_ELECCION } from '@/surfaces/builder/eleccion'
 import { ok } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
 
@@ -54,6 +55,10 @@ const detalle = {
 const metricas = [
   { id: 'm-1', tenant_id: 't-1', key: 'a', name: 'Ventas', shape: 'scalar', family: 'demand', layer: 'GOLD', source: 'ERP', base: 'x', min_grain: 'day', dimensions: [], catalog_version: 1 },
   { id: 'm-2', tenant_id: 't-1', key: 'b', name: 'Doce meses', shape: 'scalar', family: 'demand', layer: 'GOLD', source: 'ERP', base: 'x', min_grain: 'day', dimensions: [], catalog_version: 1 },
+  // **Una serie, que no está en el lienzo** · 2026-11-10: desde que la
+  // biblioteca es de datos, para arrastrar una «Serie temporal» hace falta un
+  // dato que se dibuje así.
+  { id: 'm-3', tenant_id: 't-1', key: 'c', name: 'Tendencia', shape: 'time_series', family: 'media', layer: 'GOLD', source: 'Ads', base: 'y', min_grain: 'day', dimensions: [], catalog_version: 1 },
 ]
 
 const bloques = [
@@ -143,6 +148,17 @@ function soltarEn(col: number, fila: number, dato: string) {
 
 const panelDe = (nombre: string) => screen.getByRole('gridcell', { name: new RegExp(nombre) })
 
+/** **La biblioteca es de datos** · 2026-11-10: se abre un dato y aparece cómo
+ *  se puede mostrar. Devuelve ese grupo. */
+async function abrirDato(nombre: string) {
+  const biblioteca = within(screen.getByRole('complementary', { name: 'Datos del cliente' }))
+  await userEvent.click(biblioteca.getByRole('button', { name: new RegExp(`^${nombre}`) }))
+  return within(biblioteca.getByRole('group', { name: `Cómo mostrar ${nombre}` }))
+}
+
+/** Un dato de cada tipo, para las pruebas que arrastran un tipo. */
+const DATO_DE: Record<string, string> = { kpi: 'Ventas', series: 'Tendencia' }
+
 describe('§7.2 · la grilla de 12 es visible, con guías', () => {
   it('pinta las doce columnas como celdas reales', async () => {
     // Las guías y los destinos de soltado son la misma cosa: así «en qué celda
@@ -199,7 +215,8 @@ describe('el lienzo anuncia sus gestos · 2026-09-17', () => {
 
     // **Una sola frase desde el 2026-10-06** (D7): las reglas de la grilla se
     // fueron y quedaron los gestos, que es lo que quien compone necesita.
-    const ayuda = screen.getByText(/Arrastrá un tipo de la biblioteca a un espacio libre/)
+    // «un dato» desde el 2026-11-10: la biblioteca es de datos.
+    const ayuda = screen.getByText(/Arrastrá un dato de la biblioteca a un espacio libre/)
     expect(ayuda.textContent).toMatch(/arrastralo para moverlo, o usá las flechas/)
     // La otra mitad del gesto, y son distintas: mover y cambiar el tamaño ·
     // propuesta del canvas, punto 1.
@@ -217,38 +234,51 @@ describe('el lienzo anuncia sus gestos · 2026-09-17', () => {
   })
 })
 
-describe('§7.2 · la biblioteca, agrupada', () => {
-  it('lista los cinco grupos con sus tipos y sus rangos', async () => {
+describe('la biblioteca es de DATOS · decisión humana del 2026-11-10', () => {
+  /** «Se centra en un gráfico y no en los datos que se quieren transmitir.» Lo
+   *  primero que se elige es qué se muestra; el cómo sale del dato. */
+  it('lista los datos del cliente agrupados por familia, con su forma', async () => {
     base()
     montar()
     await abrirCanvas()
 
-    const biblioteca = within(screen.getByRole('complementary', { name: 'Biblioteca de tipos' }))
-    for (const g of ['Comparación', 'Composición', 'Evolución', 'Distribución', 'Estado']) {
-      expect(biblioteca.getByText(g)).toBeInTheDocument()
-    }
-    // «bars · categorica · ranking · 4–8 ×4–5» en el `.pen`: el rango va con el
-    // tipo. Desde el 2026-10-06 dice en qué unidad (D7).
-    expect(biblioteca.getByText('3–8 col × 3–6 filas')).toBeInTheDocument()
-    expect(biblioteca.getByText('6–12 col × 4–8 filas')).toBeInTheDocument()
+    const biblioteca = within(screen.getByRole('complementary', { name: 'Datos del cliente' }))
+    expect(biblioteca.getByText('Demanda')).toBeInTheDocument()
+    expect(biblioteca.getByText('Medios')).toBeInTheDocument()
+    expect(biblioteca.getByRole('button', { name: /^Ventas/ })).toBeInTheDocument()
+    expect(biblioteca.getByRole('button', { name: /^Tendencia/ })).toBeInTheDocument()
+    // La forma, en producto y no por su id · D6.
+    expect(within(biblioteca.getByRole('button', { name: /^Ventas/ })).getByText('Cifra única')).toBeInTheDocument()
+    // Ya no es la biblioteca de tipos.
+    expect(screen.queryByRole('complementary', { name: 'Biblioteca de tipos' })).toBeNull()
   })
 
-  it('nombra los tipos y las formas como PRODUCTO, no por su id · D6', async () => {
-    // «Definirlo» · D6 de la auditoría del 2026-10-06. `kpi` y `escalar` son
-    // del contrato; quien compone lee «Indicador» y «Cifra única».
+  it('al abrir un dato muestra cómo se puede mostrar · y lo que no sirve, desactivado con su razón', async () => {
     base()
     montar()
     await abrirCanvas()
 
-    const biblioteca = within(screen.getByRole('complementary', { name: 'Biblioteca de tipos' }))
-    expect(biblioteca.getByText('Indicador')).toBeInTheDocument()
-    expect(biblioteca.getByText('Cifra única')).toBeInTheDocument()
-    for (const id of ['kpi', 'series', 'escalar', 'serieTemporal']) {
-      expect(biblioteca.queryByText(id)).toBeNull()
-    }
-    // Y el lienzo, igual.
-    expect(within(panelDe('Ventas')).getByText('Indicador')).toBeInTheDocument()
-    expect(within(panelDe('Ventas')).queryByText('kpi')).toBeNull()
+    const como = await abrirDato('Ventas')
+    // Lo que sirve, con su «+».
+    expect(como.getByText('Indicador')).toBeInTheDocument()
+    expect(como.getByRole('button', { name: 'Agregar Ventas como Indicador · el de por defecto' })).toBeInTheDocument()
+    // Lo que no, explicado y sin «+»: una cifra sola no es una serie.
+    expect(como.getByText('Dibuja Serie temporal · este dato es Cifra única')).toBeInTheDocument()
+    expect(como.queryByRole('button', { name: /como Serie temporal/ })).toBeNull()
+  })
+
+  it('el buscador filtra por nombre, y dice cuando no hay', async () => {
+    base()
+    montar()
+    await abrirCanvas()
+
+    const biblioteca = within(screen.getByRole('complementary', { name: 'Datos del cliente' }))
+    await userEvent.type(biblioteca.getByRole('searchbox', { name: 'Buscar un dato' }), 'tend')
+    expect(biblioteca.getByRole('button', { name: /^Tendencia/ })).toBeInTheDocument()
+    expect(biblioteca.queryByRole('button', { name: /^Ventas/ })).toBeNull()
+
+    await userEvent.type(biblioteca.getByRole('searchbox', { name: 'Buscar un dato' }), 'zzz')
+    expect(biblioteca.getByText('Ningún dato se llama «tendzzz».')).toBeInTheDocument()
   })
 
   it('queda PEGADA al scroll · y no se le esconden los últimos grupos', async () => {
@@ -264,7 +294,7 @@ describe('§7.2 · la biblioteca, agrupada', () => {
     montar()
     await abrirCanvas()
 
-    const aside = screen.getByRole('complementary', { name: 'Biblioteca de tipos' })
+    const aside = screen.getByRole('complementary', { name: 'Datos del cliente' })
     expect(aside.className).toContain('sticky')
     expect(aside.className).toContain('self-start')
     expect(aside.className).toContain('overflow-y-auto')
@@ -274,6 +304,47 @@ describe('§7.2 · la biblioteca, agrupada', () => {
     // principio del scroll izquierdo». El tope y el alto salen de su altura real.
     expect(aside.className).toMatch(/top-\[calc\(var\(--alto-cabecera-builder/)
     expect(aside.className).toMatch(/max-h-\[calc\(100vh-var\(--alto-cabecera-builder/)
+  })
+})
+
+describe('soltar un DATO · 2026-11-10', () => {
+  /** El arrastre desde la biblioteca de datos lleva dos cosas: el tipo en
+   *  `text/plain`, con el que el lienzo mide, y la elección aparte. Se suelta
+   *  como lo entrega el navegador, por formato. */
+  function soltarDato(col: number, fila: number, tipo: string, eleccion: Record<string, string>) {
+    const celda = screen.getByRole('gridcell', { name: `Columna ${String(col)}, fila ${String(fila)}` })
+    const dt = {
+      getData: (formato: string) => (formato === FORMATO_ELECCION ? JSON.stringify(eleccion) : tipo),
+      setData: () => undefined,
+      effectAllowed: '',
+    }
+    fireEvent.dragOver(celda, { dataTransfer: dt })
+    fireEvent.drop(celda, { dataTransfer: dt })
+  }
+
+  it('el panel nace con su métrica Y su gráfico, donde se soltó', async () => {
+    base()
+    montar()
+    await abrirCanvas()
+
+    soltarDato(1, 5, 'series', { metricId: 'm-3', tipo: 'series', grafico: 'area' })
+
+    const nuevo = await screen.findByRole('gridcell', { name: /Tendencia/ })
+    expect(nuevo.style.gridColumn).toBe('1 / span 6')
+    expect(screen.queryByRole('gridcell', { name: /Sin métrica/ })).toBeNull()
+    // El gráfico elegido viaja: la banda del panel lo nombra en vez del tipo.
+    expect(within(nuevo).queryByText('Serie temporal')).toBeNull()
+  })
+
+  it('una elección de OTRO tipo se descarta · el panel nace vacío, con el tamaño medido', async () => {
+    base()
+    montar()
+    await abrirCanvas()
+
+    soltarDato(1, 5, 'series', { metricId: 'm-1', tipo: 'kpi' })
+
+    const nuevo = await screen.findByRole('gridcell', { name: /Sin métrica/ })
+    expect(nuevo.style.gridColumn).toBe('1 / span 6')
   })
 })
 
@@ -510,17 +581,19 @@ describe('los handles del panel seleccionado', () => {
 })
 
 describe('el «+» de la biblioteca · agregar sin arrastrar', () => {
-  it('agrega el tipo AL FINAL de la pestaña y lo deja elegido', async () => {
+  it('agrega el dato AL FINAL de la pestaña, ya con su métrica, y lo deja elegido', async () => {
     // La salida para el teclado y para quien no descubre el gesto. Se verifica
-    // que el panel llegue al lienzo con el ancho de su tipo y que quede elegido,
-    // no que el botón exista.
+    // que el panel llegue al lienzo con el ancho de su tipo, **con su dato** —ya
+    // no nace «Sin métrica»— y que quede elegido, no que el botón exista.
     base()
     montar()
     await abrirCanvas()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Agregar Serie temporal' }))
+    const como = await abrirDato('Tendencia')
+    await userEvent.click(como.getByRole('button', { name: 'Agregar Tendencia como Serie temporal · el de por defecto' }))
 
-    const nuevo = await screen.findByRole('gridcell', { name: /Sin métrica/ })
+    const nuevo = await screen.findByRole('gridcell', { name: /Tendencia/ })
+    expect(screen.queryByRole('gridcell', { name: /Sin métrica/ })).toBeNull()
     // Al final: debajo de los dos que llenan la fila 1, con el mínimo del tipo.
     expect(nuevo.style.gridColumn).toBe('1 / span 6')
     expect(nuevo.style.gridRow).toBe('5 / span 4')
@@ -554,10 +627,12 @@ describe('el canvas compone UNA pestaña', () => {
 describe('«Span al soltar» · lo que va a ocupar, antes de soltar', () => {
   /** Arrastrar un tipo desde la biblioteca y entrar en una celda. */
   async function arrastrarTipoHasta(tipo: string, col: number, fila: number) {
-    // Por el «+» de su ítem, que lleva el nombre de producto: el texto suelto
-    // no alcanza, porque «Serie temporal» es a la vez un tipo y una forma.
-    const item = within(screen.getByRole('complementary', { name: 'Biblioteca de tipos' }))
-      .getByRole('button', { name: `Agregar ${nombreDeTipo(tipo)}` })
+    // **Desde un dato que se dibuja así** · 2026-11-10: la biblioteca es de
+    // datos. Por el «+» de su opción, que la nombra entera.
+    const dato = DATO_DE[tipo] ?? ''
+    const como = await abrirDato(dato)
+    const item = como
+      .getByRole('button', { name: `Agregar ${dato} como ${nombreDeTipo(tipo)} · el de por defecto` })
       .closest('li')
     const dt = { getData: () => tipo, setData: () => undefined, effectAllowed: '' }
     fireEvent.dragStart(item as HTMLElement, { dataTransfer: dt })
@@ -734,9 +809,9 @@ describe('el lienzo dibuja cada panel con su dato', () => {
     await abrirCanvas()
     await within(panelDe('Ventas')).findByText(/48[.,]362/)
 
-    await userEvent.click(screen.getByRole('button', { name: `Agregar ${nombreDeTipo('kpi')}` }))
-    const columna = await screen.findByRole('region', { name: 'Qué muestra' })
-    await userEvent.click(within(columna).getByRole('button', { name: /Ventas/ }))
+    // **Ya con su dato, desde la biblioteca** · 2026-11-10.
+    const como = await abrirDato('Ventas')
+    await userEvent.click(como.getByRole('button', { name: 'Agregar Ventas como Indicador · el de por defecto' }))
 
     // Dos cifras iguales: el panel de antes y el nuevo, que no tiene id todavía.
     // En el LIENZO: «Cómo se ve» se abre sola y dibuja su muestra con la misma
@@ -759,7 +834,8 @@ describe('el lienzo dibuja cada panel con su dato', () => {
     await within(panelDe('Ventas')).findByText(/48[.,]362/)
     const antes = pedidosDePreview.length
 
-    await userEvent.click(screen.getByRole('button', { name: `Agregar ${nombreDeTipo('kpi')}` }))
+    const como = await abrirDato('Ventas')
+    await userEvent.click(como.getByRole('button', { name: 'Agregar Ventas como Indicador · el de por defecto' }))
     await userEvent.click(await screen.findByRole('button', { name: 'Guardar' }))
     await waitFor(() => expect(pedidosDePreview.length).toBeGreaterThan(antes))
   })
