@@ -31,7 +31,7 @@
  */
 import { ApiError, SIN_CODIGO } from './types'
 import type { PanelConfig } from './types'
-import { adaptCatalog, adaptPayload } from './adapt'
+import { adaptCatalog, adaptPayload, paramsAlCable, traducirParams } from './adapt'
 import type { AdaptedCatalog, WireMetric, WirePayload } from './adapt'
 import type { NetworkPayload } from './types'
 import type { components as admin } from './admin-generated'
@@ -581,7 +581,11 @@ function adaptarPanel(p: A['LayoutPanel']): PanelConfig {
     // Se descubrió al construir el selector de F4.21: el borrador no tenía dónde
     // poner lo elegido.
     ...(p.chart === undefined || p.chart === '' ? {} : { grafico: p.chart as NonNullable<PanelConfig['grafico']> }),
-    ...(p.options === undefined ? {} : { opciones: p.options }),
+    // **En los nombres del front, como la consola** · 2026-11-10. Se leían
+    // crudos —`meter`, `cut`— y se validaban contra `PARAM_SCHEMAS`, que habla
+    // en español: el builder marcaba TODA opción de todo panel como «no es de
+    // este tipo». Lo vio el humano en Overview. La vuelta es `paramsAlCable`.
+    ...(p.options === undefined ? {} : { opciones: traducirParams(p.options) }),
     // **La nota de lectura se lee, por la misma razón que el gráfico** ·
     // 2026-10-14. No leerla hacía que guardar desde el builder la BORRARA:
     // `dd_layout_builder_service.go:587` guarda `Note: panelIn.Note`, y sin el
@@ -697,7 +701,7 @@ function aCuerpo(tabs: readonly TabParaGuardar[]): A['LayoutUpdateRequest'] {
         // explícita hace que el cuerpo diga qué se quiso: sin gráfico elegido,
         // el de por defecto del tipo.
         chart: p.grafico ?? '',
-        ...(p.opciones === undefined ? {} : { options: p.opciones }),
+        ...(p.opciones === undefined ? {} : { options: paramsAlCable(p.opciones) }),
         // **Explícita, aunque vacía** · igual que `chart`: el `PUT` reemplaza el
         // panel entero, y el cuerpo tiene que decir qué nota se quiso.
         note: p.nota ?? '',
@@ -851,7 +855,8 @@ function adaptarPreview(w: WirePreview): PreviewDeRol {
         colStart: x.col_start,
         colSpan: x.col_span,
         rowSpan: x.row_span,
-        ...(x.options === undefined ? {} : { opciones: x.options }),
+        // Se dibuja con los cuerpos de la consola: en sus nombres.
+        ...(x.options === undefined ? {} : { opciones: traducirParams(x.options) }),
         // La nota vacía se omite · misma regla que en el cable de consola.
         ...(x.note === '' ? {} : { nota: x.note }),
         // **El gráfico, que este adaptador tiraba** · 2026-10-07. El cable lo
