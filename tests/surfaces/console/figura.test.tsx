@@ -328,8 +328,19 @@ describe('la tabla del chat · ningún número desnudo, y la familia es una marc
     const { container } = render(
       <ChatFigure dato={dato({ valor: sinRotulos } as never)} bloques={conTabla} format={format} now={now} />,
     )
-    expect(container.textContent).toContain('sin una columna que diga de qué es cada cifra')
+    expect(container.textContent).toContain('Estos datos no se pueden mostrar')
     expect(container.querySelector('figure')).toBeNull()
+  })
+
+  it('EV-025 · lo dice para quien preguntó: qué pasó y qué puede hacer', () => {
+    // Decía «Una tabla que no se dibuja · Sus filas llegaron sin una columna
+    // que diga de qué es cada cifra»: la causa, escrita para nosotros.
+    const { container } = render(
+      <ChatFigure dato={dato({ valor: sinRotulos } as never)} bloques={conTabla} format={format} now={now} />,
+    )
+    expect(container.textContent).toContain('Llegaron cifras sin decir a qué corresponde cada una')
+    expect(container.textContent).toMatch(/Pedí lo mismo diciendo cómo agruparlo/)
+    expect(container.textContent).not.toMatch(/no se dibuja|columna/)
   })
 
   it('una columna de texto VACÍA no es un rótulo', () => {

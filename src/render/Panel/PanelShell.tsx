@@ -142,7 +142,11 @@ export function PanelShell({
             en las compuestas, y ponerla donde no aplica la vacía de sentido. */}
         {metric.direccionSemantica != null ? <Label>{metric.direccionSemantica}</Label> : <span />}
 
-        <div className="flex items-center gap-1">
+        {/* **Doce de separación, la del `.pen`** (`Acciones`, gap 12) · EV-011
+            de la evaluación de UX del 2026-11-09. Eran 4: la flecha de «Ver
+            detalle» quedaba pegada a «Preguntar» y el pie se leía «VER DETALLE
+            › PREGUNTAR», como una ruta y no como dos acciones. */}
+        <div className="flex items-center gap-3">
           {onDrill !== undefined && (
             <button
               type="button"
@@ -172,8 +176,23 @@ export function PanelShell({
               // `aria-label` del panel, y nombrarlo igual lo vuelve inequívoco
               // también fuera de ese grupo.
               aria-label={`Preguntar sobre ${metric.nombre}`}
-              className="font-mono text-label tracking-rotulo uppercase text-dim hover:text-ink cursor-pointer bg-transparent border-0 p-0"
+              // **En tinta y con su ícono, no en `dim`** · EV-011: en gris se
+              // leía inactiva. El `.pen` no la dibuja —el shell sólo tiene «Ver
+              // detalle»— y §4.1 la pone acá; el acento queda para la acción
+              // que el dibujo marca, y ésta se distingue sin competirle.
+              className="flex items-center gap-1 font-mono text-label tracking-rotulo uppercase text-ink hover:text-acc cursor-pointer bg-transparent border-0 p-0"
             >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden
+              >
+                <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" />
+              </svg>
               Preguntar
             </button>
           )}
