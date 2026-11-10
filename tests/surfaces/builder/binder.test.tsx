@@ -424,11 +424,12 @@ describe('las profundidades · D6 del 2026-10-07', () => {
   })
 
   it('«Cómo se ve» sin métrica lo dice, y ofrece ir a «Qué muestra», que DISPARA', async () => {
-    servir()
+    // **El panel sin métrica viene del borrador** · 2026-11-10: la biblioteca
+    // es de datos y ya no crea paneles vacíos, pero un borrador guardado puede
+    // tener uno.
+    servir({ metricId: '' })
     montar()
-    await componer()
-    await userEvent.click(screen.getByRole('button', { name: 'Agregar Indicador' }))
-    await screen.findByRole('complementary', { name: INSPECTOR })
+    await abrirPanel()
 
     const col = await abrir('Cómo se ve')
     expect(col.getByText('Cómo se ve depende de qué muestra: elegí primero la métrica.')).toBeInTheDocument()
@@ -599,29 +600,33 @@ describe('las opciones · dos autoridades distintas', () => {
 })
 
 describe('agregar y quitar paneles', () => {
-  it('el panel nuevo se agrega sin métrica, lo dice, y abre en «Qué muestra»', async () => {
+  it('el panel nuevo llega desde un DATO · nace con su métrica y queda elegido', async () => {
+    // **Reescrita el 2026-11-10**: decía «se agrega sin métrica y abre en Qué
+    // muestra». La biblioteca es de datos: se elige qué y cómo, y el panel nace
+    // completo.
     servir()
     montar()
     await componer()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Agregar Indicador' }))
+    const biblioteca = within(screen.getByRole('complementary', { name: 'Datos del cliente' }))
+    // `Ventas` exacto: en este catálogo hay otras que empiezan igual.
+    await userEvent.click(biblioteca.getByRole('button', { name: /^Ventas\s*Cifra única/ }))
+    await userEvent.click(biblioteca.getByRole('button', { name: 'Agregar Ventas como Indicador · el de por defecto' }))
 
-    // **Abre directo en «Qué muestra»**: es lo único que le falta.
-    expect(
-      await columna('Qué muestra').findByText('Elegí qué muestra este panel: sin métrica no se puede publicar.'),
-    ).toBeInTheDocument()
-    expect(inspector().getByRole('heading', { name: 'Panel sin métrica' })).toBeInTheDocument()
+    expect(await inspector().findByRole('heading', { name: 'Ventas' })).toBeInTheDocument()
     expect(panelesDelLienzo()).toHaveLength(2)
-    expect(within(panelesDelLienzo()[1] as HTMLElement).getByText('Sin métrica')).toBeInTheDocument()
+    expect(within(panelesDelLienzo()[1] as HTMLElement).getByText('Ventas')).toBeInTheDocument()
+    expect(within(panelesDelLienzo()[1] as HTMLElement).queryByText('Sin métrica')).toBeNull()
   })
 
   it('elegir una métrica la marca, pasa a «Cómo se ve» Y cambia el panel del lienzo', async () => {
     // **La cadena entera**: Opcion → PanelConfigurator → Builder → borrador →
     // Canvas. Un callback mal nombrado en cualquiera de los saltos compila.
-    servir()
+    // El panel sin métrica viene del borrador · ver arriba.
+    servir({ metricId: '' })
     montar()
-    await componer()
-    await userEvent.click(screen.getByRole('button', { name: 'Agregar Indicador' }))
+    await abrirPanel()
+    // Sin métrica, el configurador ya abre en «Qué muestra»: es lo que le falta.
     await screen.findByRole('region', { name: 'Qué muestra' })
 
     await userEvent.click(columna('Qué muestra').getByRole('button', { name: /^Ventas\s*GOLD/ }))
@@ -632,7 +637,7 @@ describe('agregar y quitar paneles', () => {
     expect(inspector().getByRole('heading', { name: 'Ventas' })).toBeInTheDocument()
     await abrir('Qué muestra')
     expect(columna('Qué muestra').getByRole('button', { name: /^Ventas\s*GOLD/ })).toHaveAttribute('aria-pressed', 'true')
-    const nuevo = panelesDelLienzo()[1] as HTMLElement
+    const nuevo = panelesDelLienzo()[0] as HTMLElement
     expect(within(nuevo).getByText('Ventas')).toBeInTheDocument()
     expect(within(nuevo).queryByText('Sin métrica')).toBeNull()
   })

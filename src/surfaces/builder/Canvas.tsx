@@ -56,6 +56,8 @@ import { nombreDeTipo } from './rotulos'
 import { COLUMNS, GAP, ROW } from '../../render/grid'
 import { choqueCon, disposicion, huecos, ordenPara } from './disposicion'
 import type { PanelDeBorrador } from './borrador'
+import { FORMATO_ELECCION, leerEleccion } from './eleccion'
+import type { Eleccion } from './eleccion'
 import type { Metric } from '../../api/types'
 import type { BlockTable } from '../../catalog/blocks'
 
@@ -69,7 +71,9 @@ type Props = {
   onReubicar: (indice: number, colStart: number, indiceDestino: number) => void
   onRedimensionar: (indice: number, campo: 'colSpan' | 'rowSpan', delta: number) => void
   /** Soltar un tipo de la biblioteca en una celda. */
-  onSoltarTipo: (tipo: string, colStart: number, indiceDestino: number) => void
+  /** `eleccion` trae el dato y el gráfico cuando el arrastre vino de la
+   *  biblioteca · ver `eleccion.ts`. */
+  onSoltarTipo: (tipo: string, colStart: number, indiceDestino: number, eleccion: Eleccion | null) => void
   /** Qué tipo viene en el aire, para saber su ancho antes de soltarlo. */
   arrastrando: string | null
   /** **La versión publicada no se edita en el lugar** · 2026-10-07. Sin
@@ -174,7 +178,9 @@ export function Canvas({
     if (impedimento(col, fila, movido, dato) !== null) return
 
     const destino = ordenPara(colocaciones, fila, movido ?? -1)
-    if (movido === null) onSoltarTipo(dato, col, destino)
+    // **El dato y el gráfico viajan aparte** · 2026-11-10, ver `Library.tsx`:
+    // el tipo sigue en `text/plain` porque es con lo que esta función mide.
+    if (movido === null) onSoltarTipo(dato, col, destino, leerEleccion(e.dataTransfer.getData(FORMATO_ELECCION), dato))
     else onReubicar(movido, col, destino)
   }
 
@@ -226,7 +232,7 @@ export function Canvas({
           El gesto de mover tiene historia: reportado el 2026-09-17, «no veo la
           capacidad de mover un bloque». Estaba, y nada lo anunciaba. */}
       {!soloLectura && <Ayuda>
-        Arrastrá un tipo de la biblioteca a un espacio libre. Elegí un panel para configurarlo:
+        Arrastrá un dato de la biblioteca a un espacio libre. Elegí un panel para configurarlo:
         arrastralo para moverlo, o usá las flechas; con Shift y las flechas cambiás su tamaño.
       </Ayuda>}
 

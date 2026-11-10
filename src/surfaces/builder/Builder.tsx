@@ -1040,13 +1040,20 @@ export function Builder() {
                     </aside>
                   ) : (
                     <Library
+                      metricas={catalogo.data?.metrics ?? []}
                       bloques={listaDeBloques}
+                      plots={plots.data ?? []}
+                      repertorio={repertorio}
+                      datoDe={(id) => datoPorMetrica.get(id)}
                       arrastrando={arrastrando}
                       onArrastrar={setArrastrando}
-                      onAgregar={(tipo) => {
+                      onAgregar={({ tipo, metricId, grafico }) => {
                         const b = tabla.get(tipo as PanelConfig['tipo'])
                         if (b === undefined) return
-                        const conNuevo = agregarPanel(tabs, tabEnLienzo, tipo, b.colSpanMin, b.rowSpanMin)
+                        const conNuevo = agregarPanel(tabs, tabEnLienzo, tipo, b.colSpanMin, b.rowSpanMin, {
+                          metricId,
+                          ...(grafico === undefined ? {} : { grafico }),
+                        })
                         cambiar(conNuevo)
                         setAjustesDe(null)
                         setSeleccion({ tab: tabEnLienzo, panel: (conNuevo[tabEnLienzo]?.panels.length ?? 1) - 1 })
@@ -1090,10 +1097,19 @@ export function Builder() {
                         ),
                       )
                     }}
-                    onSoltarTipo={(tipo, colStart, destino) => {
+                    onSoltarTipo={(tipo, colStart, destino, eleccion) => {
                       const b = tabla.get(tipo as PanelConfig['tipo'])
                       if (b === undefined) return
-                      const conNuevo = agregarPanel(tabs, tabEnLienzo, tipo, b.colSpanMin, b.rowSpanMin)
+                      const conNuevo = agregarPanel(
+                        tabs,
+                        tabEnLienzo,
+                        tipo,
+                        b.colSpanMin,
+                        b.rowSpanMin,
+                        eleccion === null
+                          ? {}
+                          : { metricId: eleccion.metricId, ...(eleccion.grafico === undefined ? {} : { grafico: eleccion.grafico }) },
+                      )
                       const ultimo = (conNuevo[tabEnLienzo]?.panels.length ?? 1) - 1
                       cambiar(reubicarPanel(conNuevo, tabEnLienzo, ultimo, colStart, destino))
                       setAjustesDe(null)
