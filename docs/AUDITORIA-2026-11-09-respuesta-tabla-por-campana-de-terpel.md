@@ -1,8 +1,37 @@
 # La respuesta del backend sobre la tabla por campaña de Terpel, medida · 2026-11-09
 
+## ⇩ Remedido el 2026-11-10 · ahora sí está publicado, y cierra
+
+**Medido contra `f7848dc` el 2026-11-10**, la nueva cabeza de
+`feature/dynamic-dashboard-backend`. La rama avanzó con `36d35f4`, `951669e`,
+`48425d9` y `f7848dc`, los cuatro del 2026-11-09 por la tarde: **el push llegó
+después de que midiéramos**, como el 2026-11-04 con `db91b5d`. El mensaje que
+preguntaba por el push no hace falta.
+
+| Qué | Medido |
+|---|---|
+| `media_by_campaign` en `MetricRegistry` | Sí, en `snowflake/queries.go`, forma `tabular`, contra la vista de pauta de Terpel |
+| La consulta | **Es la que mandamos, carácter por carácter**: `GROUP BY 1, 2, 3` sobre `CAMPANA`, `FAMILIA_NORM`, `CUENTA_NORM`, y la ejecución con la misma expresión que `media_budget_execution` |
+| Las diez columnas | Con sus decimales y unidades: `COP` en gasto y presupuesto, `%` con 2 en ejecución y CTR, 0 en impresiones, clics y líneas. **Desde #73 el front los dibuja** |
+| Nulos | `putNumber` deja `nil` donde la celda llega nula, y su prueba lo exige para una campaña sin presupuesto |
+| Las mayúsculas de Snowflake | `firstString` y `rawCell` no distinguen mayúsculas: `AS campana` llega como `CAMPANA` y se lee igual |
+| La prueba que ayer exigía lo contrario | `snowflake_queries_test.go` ahora exige la clave, su `GROUP BY` y que no lea la vista de datos |
+| Build, `vet` y `tests/dashboard` | Limpios en un worktree aparte sobre `f7848dc` |
+
+**Su respuesta ya está en el repositorio**, sin editar, como
+`docs/RESPUESTA-2026-11-09-backend-tabla-por-campana-de-terpel.md`. Es idéntica a
+la que publicaron en `docs/response/` de su repo.
+
+**Lo que sigue es del backend, y ya está pedido**: desplegar en QA. Ninguno de
+estos commits está ahí, y tampoco `f78d700`, pedido desde el 2026-11-04.
+Después, lo nuestro: «Cargar meses» de septiembre y octubre en Terpel, y que el
+gasto de septiembre de la tabla cierre contra `media_investment`.
+
+---
+
 **Qué llegó.** El backend contestó
 `docs/MENSAJE-2026-11-09-backend-tabla-por-campana-de-terpel.md` el mismo día,
-en un documento que trajo el humano: `docs/backend-respuesta-front-campanas-terpel-2026-11-09.md`.
+en un documento que trajo el humano, hoy en `docs/RESPUESTA-2026-11-09-backend-tabla-por-campana-de-terpel.md`.
 Dice que `media_by_campaign` entró a `MetricRegistry`, con el grano y las diez
 columnas que pedimos, y que **nada de esto está en QA**.
 
