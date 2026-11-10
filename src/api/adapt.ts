@@ -221,9 +221,24 @@ const PARAMS: Readonly<Record<string, string>> = {
  *  Ojo con `cut` y `cuts`: el primero es de `series` y `forecast` y sí se
  *  traduce; el segundo es de `composition` y no tiene contraparte. Un plural de
  *  diferencia. */
-function traducirParams(o: Record<string, unknown>): Record<string, unknown> {
+export function traducirParams(o: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(o)) out[PARAMS[k] ?? k] = v
+  return out
+}
+
+const AL_CABLE: Readonly<Record<string, string>> = Object.fromEntries(
+  Object.entries(PARAMS).map(([cable, nuestro]) => [nuestro, cable]),
+)
+
+/** **La vuelta, para guardar** · 2026-11-10. El builder lee el layout con
+ *  `traducirParams` y edita en los nombres de `PARAM_SCHEMAS`; al guardar, el
+ *  servicio espera los suyos. Sin esto el configurador mandaba `medidor` donde
+ *  el cable dice `meter`, y el `PUT` del layout es un reemplazo completo. Lo que
+ *  no tiene traducción —los params que no leemos— vuelve como vino. */
+export function paramsAlCable(o: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(o)) out[AL_CABLE[k] ?? k] = v
   return out
 }
 
