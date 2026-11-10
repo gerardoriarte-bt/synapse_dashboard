@@ -34,7 +34,8 @@
  *  Una pantalla que se declara pendiente no es lo mismo que una que no está: la
  *  primera dice qué la desbloquea, que es lo que §8 pide de cualquier estado.
  */
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { PARAMETRO_DASHBOARD } from '../dashboardEnUrl'
 import { useCerrarSesion } from '../useCerrarSesion'
 import { useTemaGuardado } from '../useTemaGuardado'
 import { useEffect, useMemo, useState } from 'react'
@@ -219,7 +220,11 @@ export function Builder() {
    *  comportamiento anterior en vez de mostrar un builder vacío. */
   const dashboards = useDashboards(tenantActivo)
   const crearDashboard = useCreateDashboard(tenantActivo)
-  const [dashboardElegido, setDashboardElegido] = useState<string | null>(null)
+  /** **Arranca en el de la URL** · 2026-11-10: la consola manda el dashboard
+   *  que se estaba mirando —ver `dashboardEnUrl.ts`—. Sólo al montar: después
+   *  manda lo que se elija acá. Uno que no esté en la lista se ignora abajo. */
+  const [params] = useSearchParams()
+  const [dashboardElegido, setDashboardElegido] = useState<string | null>(() => params.get(PARAMETRO_DASHBOARD))
   /** **Sin la ruta de dashboards, se arman desde las versiones** · cada una
    *  dice de qué dashboard es. El nombre sale de `/config/me` cuando es el
    *  cliente propio; si no, se numera. Mejor un builder que funciona con

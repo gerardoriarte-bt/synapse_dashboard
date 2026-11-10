@@ -22,7 +22,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { UserMenu } from '@/surfaces/console/UserMenu'
 import { Topbar } from '@/surfaces/console/Topbar'
@@ -149,6 +149,64 @@ describe('el nombre es de la PERSONA · decisión humana del 2026-10-07', () => 
     montar('Planner')
     await userEvent.click(screen.getByRole('button', { name: 'María Benítez' }))
     expect(screen.getByRole('menuitem', { name: 'Cerrar sesión' })).toBeInTheDocument()
+  })
+})
+
+/** **El builder abre el dashboard que se está mirando** · 2026-11-10.
+ *  El humano lo notó usándolo: desde el menú, «Editor» abría el editor del
+ *  dashboard POR DEFECTO, aunque la consola mostrara otro. La consola sabe cuál
+ *  mira —`dashboardActivoId`— y no lo decía. */
+describe('ir al builder lleva el dashboard que se mira', () => {
+  function Destino() {
+    const { pathname, search } = useLocation()
+    return <p>{`DESTINO ${pathname}${search}`}</p>
+  }
+
+  function montarCon(dashboardActivoId: string | null) {
+    return render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={['/']}>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <Topbar
+                  context={{ ...contexto('admin'), dashboardActivoId } as AppContext}
+                  activeTab={undefined}
+                  activePeriodId={undefined}
+                  tabMetrics={[]}
+                  format={createFormat('es-MX')}
+                  onSelectTab={vi.fn()}
+                  onSelectPeriod={vi.fn()}
+                />
+              }
+            />
+            <Route path="*" element={<Destino />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+  }
+
+  it('«Editor» lleva `?dashboard=` con el que la consola muestra', async () => {
+    montarCon('d-2')
+    await userEvent.click(screen.getByRole('button', { name: 'Menú de trabajo' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Editor' }))
+    expect(screen.getByText('DESTINO /builder/canvas?dashboard=d-2')).toBeInTheDocument()
+  })
+
+  it('a administración NO lo lleva · no es de ahí', async () => {
+    montarCon('d-2')
+    await userEvent.click(screen.getByRole('button', { name: 'Menú de trabajo' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Usuarios' }))
+    expect(screen.getByText('DESTINO /admin/usuarios')).toBeInTheDocument()
+  })
+
+  it('sin dashboard activo va sin parámetro · el builder elige el por defecto', async () => {
+    montarCon(null)
+    await userEvent.click(screen.getByRole('button', { name: 'Menú de trabajo' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Editor' }))
+    expect(screen.getByText('DESTINO /builder/canvas')).toBeInTheDocument()
   })
 })
 
