@@ -7,7 +7,15 @@
  *  canvas señala un panel y el usuario ve otro.
  */
 import { describe, expect, it } from 'vitest'
-import { choqueCon, disposicion, enCelda, huecos } from '@/surfaces/builder/disposicion'
+import {
+  cambioDeTamano,
+  celdaAgarrada,
+  choqueCon,
+  disposicion,
+  enCelda,
+  huecos,
+  leerAgarre,
+} from '@/surfaces/builder/disposicion'
 
 const p = (colStart: number, colSpan: number, rowSpan = 4) => ({ colStart, colSpan, rowSpan })
 
@@ -136,5 +144,76 @@ describe('los huecos son DERIVADOS · §7.2 «slot vacío»', () => {
     const d = disposicion([p(1, 6), p(1, 3)])
     const anchos = huecos(d).map((h) => `${String(h.colStart)}+${String(h.colSpan)}x${String(h.rowSpan)}`)
     expect(anchos).toEqual(['7+6x4', '4+9x4'])
+  })
+})
+
+/** ── MOVER Y ESTIRAR · 2026-11-10 ─────────────────────────────────────────── */
+
+describe('celdaAgarrada · de dónde se agarró el panel', () => {
+  // Un panel de 6 × 4 con la columna de 80 y la separación de 16: 560 × 368.
+  const rect = { left: 100, top: 50, width: 6 * 80 + 5 * 16, height: 4 * 80 + 3 * 16 }
+
+  it('cuenta celdas desde la esquina, con el paso de columna más separación', () => {
+    expect(celdaAgarrada(rect, { x: 100 + 3 * 96 + 10, y: 50 + 2 * 96 + 5 }, 6, 4)).toEqual({ dCol: 3, dFila: 2 })
+  })
+
+  it('la esquina es cero · y no se sale del panel', () => {
+    expect(celdaAgarrada(rect, { x: 101, y: 51 }, 6, 4)).toEqual({ dCol: 0, dFila: 0 })
+    expect(celdaAgarrada(rect, { x: 5000, y: 5000 }, 6, 4)).toEqual({ dCol: 5, dFila: 3 })
+  })
+
+  it('sin medida —jsdom, o sin pintar— agarra por la esquina', () => {
+    expect(celdaAgarrada({ left: 0, top: 0, width: 0, height: 0 }, { x: 300, y: 300 }, 6, 4)).toEqual({ dCol: 0, dFila: 0 })
+  })
+})
+
+describe('leerAgarre · lo que viajó en el arrastre', () => {
+  it('lee el par de enteros', () => {
+    expect(leerAgarre('{"dCol":2,"dFila":1}')).toEqual({ dCol: 2, dFila: 1 })
+  })
+
+  it('cualquier otra cosa es la esquina · nunca un salto inventado', () => {
+    for (const crudo of ['', '0', 'no-json', '{"dCol":-1,"dFila":0}', '{"dCol":1.5,"dFila":0}', 'null'])
+      expect(leerAgarre(crudo)).toEqual({ dCol: 0, dFila: 0 })
+  })
+})
+
+describe('cambioDeTamano · un tamaño que no entra se bloquea, no empuja', () => {
+  const nombres = ['Ingresos', 'Inversión', 'ROAS', 'Órdenes']
+  const opciones = { tipo: 'Indicador', nombre: (i: number) => nombres[i] ?? '?' }
+
+  it('en una fila llena, ensanchar nombra con quién se solapa · el caso medido en local', () => {
+    // Cuatro indicadores de 3 llenan las doce columnas.
+    const fila = [p(1, 3), p(4, 3), p(7, 3), p(10, 3)]
+    expect(cambioDeTamano(fila, 1, { colStart: 4, colSpan: 4, rowSpan: 4 }, opciones)).toBe('Se solapa con «ROAS»')
+  })
+
+  it('el que se correría SIN solaparse también se nombra · achicar puede subir a otro', () => {
+    // A ocupa 1–9 y C, en 7–9, espera abajo. Achicar A a 6 libera 7–9 en la
+    // fila 1 y la colocación subiría a C: no se solapa con nadie, y se mueve.
+    const panels = [p(1, 9), p(10, 3), p(7, 3)]
+    expect(cambioDeTamano(panels, 0, { colStart: 1, colSpan: 6, rowSpan: 4 }, opciones)).toBe(
+      'Correría a «ROAS» de su lugar',
+    )
+  })
+
+  it('el rango del tipo, cuando se pide, se dice con sus dos números', () => {
+    const rango = { colSpanMin: 3, colSpanMax: 4, rowSpanMin: 3, rowSpanMax: 4 }
+    expect(cambioDeTamano([p(1, 4)], 0, { colStart: 1, colSpan: 5, rowSpan: 4 }, { ...opciones, rango })).toBe(
+      '«Indicador» ocupa entre 3 y 4 columnas',
+    )
+    expect(cambioDeTamano([p(1, 4)], 0, { colStart: 1, colSpan: 4, rowSpan: 5 }, { ...opciones, rango })).toBe(
+      '«Indicador» ocupa entre 3 y 4 filas',
+    )
+  })
+
+  it('el borde de la grilla', () => {
+    expect(cambioDeTamano([p(10, 3)], 0, { colStart: 10, colSpan: 4, rowSpan: 4 }, opciones)).toBe(
+      'No entra · se pasa del borde de la grilla',
+    )
+  })
+
+  it('con lugar, se puede · y el que está abajo de otra columna no cuenta', () => {
+    expect(cambioDeTamano([p(1, 3), p(7, 3)], 0, { colStart: 1, colSpan: 6, rowSpan: 5 }, opciones)).toBeNull()
   })
 })

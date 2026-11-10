@@ -382,6 +382,25 @@ export function redimensionarPanel(
   )
 }
 
+/** **Una medida entera de una vez** · 2026-11-10, con las asas del lienzo.
+ *
+ *  Estirar desde el borde izquierdo cambia la columna Y el ancho: hacerlo en
+ *  dos pasos deja un estado intermedio que se pasa del borde o se solapa. **No
+ *  valida**: la regla —rango, borde y que nadie más se mueva— la aplica quien
+ *  propone, con `cambioDeTamano`, porque es quien tiene que decir por qué no. */
+export function ajustarPanel(
+  tabs: readonly TabParaGuardar[],
+  indiceTab: number,
+  indicePanel: number,
+  medida: { colStart: number; colSpan: number; rowSpan: number },
+): TabParaGuardar[] {
+  return tabs.map((t, i) =>
+    i === indiceTab
+      ? { ...t, panels: t.panels.map((p, j) => (j === indicePanel ? { ...p, ...medida } : p)) }
+      : t,
+  )
+}
+
 /** **Los ids que el servidor acaba de asignar, adoptados por el borrador local**
  *  · 2026-10-07, con el guardado automático.
  *

@@ -119,6 +119,9 @@ type Props = {
    *  defecto del tipo. */
   onComoSeVe: (tipo: string, grafico: ChartId | undefined) => void
   onSpan: (campo: 'colSpan' | 'rowSpan', valor: number) => void
+  /** Por qué no se aplicó el último tamaño · 2026-11-10: un tamaño que
+   *  correría a otro panel no se aplica, igual que en el lienzo. */
+  avisoDeTamano?: string | null
   /** `undefined` borra la opción · ver `editarOpcion`. */
   onOpcion: (nombre: string, valor: unknown) => void
   /** **La nota de lectura** · 2026-10-14. Obligatoria: con el spread
@@ -157,6 +160,7 @@ export function PanelConfigurator({
   onMetrica,
   onComoSeVe,
   onSpan,
+  avisoDeTamano = null,
   onOpcion,
   onNota,
   plots,
@@ -370,7 +374,15 @@ export function PanelConfigurator({
                       />
                     </div>
                   </div>
-                  <Ayuda>También se cambia en el lienzo, con los controles del panel elegido. La posición, arrastrándolo.</Ayuda>
+                  {avisoDeTamano !== null && (
+                    <p role="status" className="m-0 font-body text-celda leading-cuerpo text-ink">
+                      {avisoDeTamano}
+                    </p>
+                  )}
+                  <Ayuda>
+                    También se cambia en el lienzo, estirando el panel elegido desde sus bordes. La
+                    posición, arrastrándolo.
+                  </Ayuda>
                 </section>
               )}
 
