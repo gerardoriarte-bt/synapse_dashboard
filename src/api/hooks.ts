@@ -13,7 +13,7 @@ import { esDePanel } from './chat'
 import type { ContextoDeChat } from './chat'
 import { adminApi } from './admin'
 import { sinRolesInternos } from './rol'
-import type { CambioDeConexion, CambioDeUsuario, Corrida, RolParaGuardar, TabParaGuardar } from './admin'
+import type { CambioDeConexion, CambioDeIdentidad, CambioDeUsuario, Corrida, RolParaGuardar, TabParaGuardar } from './admin'
 import type { Theme } from '../tokens/theme'
 import type { Payload } from './types'
 
@@ -502,13 +502,26 @@ export function useEditUser() {
 
 /** **Editar la forma corta** · F5.47. Se ve en la barra y en las cards
  *  —`/admin/tenants`— y en la consola —`/config/me`—: se invalidan las dos. */
-export function useEditTenantShortName() {
+export function useEditTenantIdentity() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (v: { tenantId: string; formaCorta: string }) => adminApi.editarFormaCorta(v.tenantId, v.formaCorta),
+    mutationFn: (v: { tenantId: string; cambio: CambioDeIdentidad }) => adminApi.editarIdentidad(v.tenantId, v.cambio),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: keys.tenants })
       void qc.invalidateQueries({ queryKey: keys.me })
+    },
+  })
+}
+
+/** **Apagar el cliente** · 2026-11-10. Se refresca la lista, de la que el
+ *  cliente sale; el cliente de trabajo cae solo al de la sesión, o al primero
+ *  si era ése (`useClienteDeTrabajo`). */
+export function useDeactivateTenant() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (tenantId: string) => adminApi.apagarCliente(tenantId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.tenants })
     },
   })
 }
