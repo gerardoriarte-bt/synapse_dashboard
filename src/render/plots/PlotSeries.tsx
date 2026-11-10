@@ -25,6 +25,23 @@
  *  **El valor se lee completo, no abreviado.** El eje dice «40K» porque es un
  *  orden de magnitud; la lectura dice «43,520», que es la cifra. Abreviar las
  *  dos haría del hover un eje más.
+ *
+ *  ── EL PERÍODO EN CURSO NO ES UNA CAÍDA · EV-015, 2026-11-10 ────────────────
+ *
+ *  La evaluación de UX: en «Eficiencia de medios» octubre «se dibuja como un
+ *  punto más de la serie y aparece como una caída pronunciada». El servicio ya
+ *  lo marcaba —`partial` por punto, el mes en curso, desde `3651d70`— y sólo
+ *  los múltiplos lo decían.
+ *
+ *  **Tres señales, y no una**: el tramo que llega al punto en curso va
+ *  punteado y sin área debajo, el punto va hueco, y su fecha dice «· en curso»
+ *  en el eje y en la lectura. El punteado solo se confundiría con la proyección
+ *  del pronóstico, que usa el mismo trazo; la palabra es la que no deja dudas.
+ *  El `.pen` no lo dibuja: va en la PROPUESTA del 2026-11-10.
+ *
+ *  **Lo que no se marca no se adivina**: si el punto no trae `parcial`, se
+ *  dibuja cerrado. Calcular «hoy» del lado de acá sería decidir el corte del
+ *  día con el reloj del navegador.
  */
 import { useState } from 'react'
 import type { KeyboardEvent, PointerEvent } from 'react'
@@ -35,11 +52,13 @@ import { MARGIN, axisReserve, textWidth } from './core/axisGeometry'
 import { Grid } from './core/Grid'
 import { Area, Line } from './core/Series'
 import { Legend } from './core/Legend'
+import { partirEnCurso } from './core/enCurso'
+import { TramoEnCurso } from './core/TramoEnCurso'
 import { hue } from './core/seriesColor'
 import { Label } from '../primitives/Label'
 import type { FamiliaDeDibujo } from '../types'
 
-export type DrawableSeries = { etiqueta: string; puntos: { t: string; v: number }[] }
+export type DrawableSeries = { etiqueta: string; puntos: { t: string; v: number; parcial?: boolean }[] }
 
 /** Cuánto aire pide cada rótulo del eje del tiempo, además de su texto. */
 const AIRE_ENTRE_FECHAS = 24
@@ -86,12 +105,14 @@ export function PlotSeries({
   const x = linearScale([0, steps], [0, width])
 
   const pointsOf = (s: DrawableSeries) => s.puntos.map((p, i) => ({ x: i, y: p.v }))
+  /** Un instante está en curso si alguna serie lo marca así. */
+  const enCurso = (i: number) => series.some((s) => s.puntos[i]?.parcial === true)
   const single = series.length === 1
   const conLectura = leer !== undefined && tiempos.length > 0
 
   // **Cuántas fechas entran sin pisarse**, del rótulo más largo. Con 31 días en
   // un panel de seis columnas no entran todas, y apretarlas las superpone.
-  const rotulos = fechar === undefined ? [] : tiempos.map(fechar)
+  const rotulos = fechar === undefined ? [] : tiempos.map((t, i) => (enCurso(i) ? `${fechar(t)} · en curso` : fechar(t)))
   const largo = Math.max(1, ...rotulos.map((r) => r.length))
   const caben = Math.max(2, Math.floor(width / (textWidth(largo) + AIRE_ENTRE_FECHAS)))
   const salto = Math.max(1, Math.ceil(rotulos.length / caben))
@@ -158,20 +179,22 @@ export function PlotSeries({
           <svg width={w} height={h} role="img" aria-label={`${series.length} series`}>
             <g transform={`translate(${reserve},${MARGIN.t})`}>
               <Grid scale={y} orientation="horizontal" length={width} />
-              {series.map((s, i) => (
-                <g key={s.etiqueta}>
-                  {area && single && (
-                    <Area points={pointsOf(s)} x={x} y={y} base={height} family={family} />
-                  )}
-                  <Line
-                    points={pointsOf(s)}
-                    x={x}
-                    y={y}
-                    family={family}
-                    step={(i % 4) as 0 | 1 | 2 | 3}
-                  />
-                </g>
-              ))}
+              {series.map((s, i) => {
+                const step = (i % 4) as 0 | 1 | 2 | 3
+                const { cerrados, abiertos, enCurso: marcados } = partirEnCurso(
+                  pointsOf(s),
+                  s.puntos.map((p) => p.parcial),
+                )
+                return (
+                  <g key={s.etiqueta}>
+                    {area && single && (
+                      <Area points={cerrados} x={x} y={y} base={height} family={family} />
+                    )}
+                    <Line points={cerrados} x={x} y={y} family={family} step={step} />
+                    <TramoEnCurso abiertos={abiertos} enCurso={marcados} x={x} y={y} family={family} step={step} />
+                  </g>
+                )
+              })}
 
               {activo === null ? null : (
                 <g aria-hidden>

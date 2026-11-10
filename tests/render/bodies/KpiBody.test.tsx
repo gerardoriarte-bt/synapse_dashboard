@@ -103,18 +103,39 @@ describe('regla dura 3 · el signo comunica dirección, el color no', () => {
 })
 
 describe('el medidor', () => {
-  it('se llena hasta el porcentaje y por encima de 100 no se desborda', () => {
-    const { container } = montar({ medidor: { label: 'Avance', porcentaje: 137 } })
-    const relleno = container.querySelector('[style*="width"]') as HTMLElement | null
-    expect(relleno?.style.width).toBe('100%')
-    // El exceso lo dice la cifra, no la barra.
-    expect(screen.getByText('137%')).toBeInTheDocument()
+  const tramo = (c: HTMLElement, cual: string) => c.querySelector(`[data-tramo="${cual}"]`) as HTMLElement | null
+  const marca = (c: HTMLElement) => c.querySelector('[data-marca="meta"]') as HTMLElement | null
+
+  it('por debajo de la meta se llena hasta el porcentaje, con la marca del 100 al final', () => {
+    // El `Marker` de `Panel/Medidor` en el `.pen`: 2 × 11, en tinta, al final.
+    const { container } = montar({ medidor: { label: 'Avance', porcentaje: 61 } })
+    expect(tramo(container, 'hasta-la-meta')?.style.width).toBe('61%')
+    expect(tramo(container, 'excedente')).toBeNull()
+    expect(marca(container)?.style.left).toBe('100%')
+  })
+
+  it('EV-008 · por encima, el 100 se marca y el excedente es un tramo aparte', () => {
+    // «153 % de la meta con una barra simplemente llena, sin marcar el 100 %».
+    // Con 150 el riel va de 0 a 150: la meta queda a dos tercios.
+    const { container } = montar({ medidor: { label: 'Avance', porcentaje: 150 } })
+    const dosTercios = `${String((100 / 150) * 100)}%`
+    expect(marca(container)?.style.left).toBe(dosTercios)
+    expect(tramo(container, 'hasta-la-meta')?.style.width).toBe(dosTercios)
+    expect(tramo(container, 'excedente')?.style.left).toBe(dosTercios)
+    // **En otro escalón de la MISMA familia**: diferenciado, y del catálogo.
+    expect(tramo(container, 'excedente')?.style.background).toContain('--color-fam-inventario-3')
+    expect(screen.getByText('150%')).toBeInTheDocument()
+  })
+
+  it('muy por encima, la escala se topa en el doble · el riel sigue leyéndose', () => {
+    const { container } = montar({ medidor: { label: 'Avance', porcentaje: 480 } })
+    expect(marca(container)?.style.left).toBe('50%')
+    expect(tramo(container, 'excedente')?.style.width).toBe('50%')
   })
 
   it('un porcentaje negativo no dibuja una barra al revés', () => {
     const { container } = montar({ medidor: { label: 'Avance', porcentaje: -20 } })
-    const relleno = container.querySelector('[style*="width"]') as HTMLElement | null
-    expect(relleno?.style.width).toBe('0%')
+    expect(tramo(container, 'hasta-la-meta')?.style.width).toBe('0%')
   })
 
   it('el color sale de la FAMILIA del catálogo, no de una paleta del componente', () => {
