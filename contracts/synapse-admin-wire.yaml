@@ -171,7 +171,9 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
 
   /admin/tenants/{tenantId}:
-    x-verificado-en: 26eae4b
+    # **Reverificado entero contra `4192041` el 2026-11-10**: el `PUT` no cambió
+    # —`name` vacío sigue dando 400, medido— y llegó el `DELETE`.
+    x-verificado-en: 4192041
     put:
       tags: [admin]
       operationId: updateTenantSettings
@@ -250,6 +252,49 @@ paths:
                           snowflake_role: { type: string }
                           has_private_key: { type: boolean }
         '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [admin]
+      operationId: deactivateTenant
+      summary: Apagar el cliente · no lo borra
+      description: |
+        **Llegó en `b7c4534`**, respuesta al pedido de ordenar los clientes de
+        QA. Medido el 2026-11-10 contra el binario de `4192041` con la base
+        local: **200** con `{id, is_active: false}`, **200 otra vez** sobre uno
+        ya apagado, y **404** «tenant no encontrado» con un id que no existe.
+
+        **Apaga, no borra**: `SetActive(false)` y nada más. Quedan la fila, los
+        usuarios, el dashboard y el catálogo. El cliente sale de
+        `GET /admin/tenants` y de `GET /access-requests/tenants` —medido—, y el
+        programador deja de materializarlo.
+
+        **Sólo superadmin**: la ruta pasa por `RequirePlatformOperator()`. Leído
+        en `router.go`; no se midió con otro rol porque la base local no tiene
+        un admin que no sea de plataforma.
+
+        **Lo que NO hace, y la pantalla lo dice**: el login no mira si el
+        cliente está activo, así que sus usuarios pueden seguir entrando y ven
+        datos que dejan de actualizarse. Y **no hay ruta para volver a
+        encenderlo**.
+      parameters:
+        - { $ref: '#/components/parameters/tenantId' }
+      responses:
+        '200':
+          description: El cliente quedó apagado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [id, is_active]
+                        properties:
+                          id: { type: string, format: uuid }
+                          is_active: { type: boolean, const: false }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 

@@ -986,16 +986,31 @@ export const adminApi = {
       ),
     ),
 
-  /** **La forma corta del cliente** · F5.47, 2026-10-20 · `PUT /admin/tenants/{tenantId}`.
-   *  Vacía la saca: el cliente vuelve a no tenerla y la pantalla muestra el id
-   *  corto. **No se devuelve nada**: la respuesta trae la infraestructura del
-   *  cliente y lo que se refresca es la lista, que es de donde leen la barra y
-   *  las cards. */
-  editarFormaCorta: async (tenantId: string, formaCorta: string): Promise<void> => {
+  /** **El nombre y la forma corta del cliente** · F5.47, 2026-10-20 · y el
+   *  nombre desde el 2026-11-10 · `PUT /admin/tenants/{tenantId}`.
+   *
+   *  **Viaja sólo lo que cambió**: para el servicio, ausente es «sin cambio».
+   *  La forma corta vacía la saca —el cliente vuelve a no tenerla y la pantalla
+   *  muestra el id corto—; **el nombre vacío es 400**, medido contra `4192041`,
+   *  así que no se manda. **No se devuelve nada**: la respuesta trae la
+   *  infraestructura del cliente, y lo que se refresca es la lista, que es de
+   *  donde leen la barra, el selector y las cards. */
+  editarIdentidad: async (tenantId: string, cambio: CambioDeIdentidad): Promise<void> => {
+    const nombre = cambio.nombre?.trim()
     await pedir<WireTenantSettings>(`/admin/tenants/${encodeURIComponent(tenantId)}`, {
       method: 'PUT',
-      body: JSON.stringify({ label: formaCorta.trim() }),
+      body: JSON.stringify({
+        ...(nombre === undefined || nombre === '' ? {} : { name: nombre }),
+        ...(cambio.formaCorta === undefined ? {} : { label: cambio.formaCorta.trim() }),
+      }),
     })
+  },
+
+  /** **Apagar el cliente** · 2026-11-10 · el `DELETE` del cliente, desde
+   *  `b7c4534`. No lo borra: sale de las listas y del programador, y la fila,
+   *  los usuarios y el catálogo se quedan. Sólo superadmin. */
+  apagarCliente: async (tenantId: string): Promise<void> => {
+    await pedir<unknown>(`/admin/tenants/${encodeURIComponent(tenantId)}`, { method: 'DELETE' })
   },
 
   /** **La conexión de Snowflake del cliente** · F5.55, 2026-10-21 · el mismo
@@ -1389,6 +1404,9 @@ export type WireAgent = A['AgentAdmin']
 export type WireFeed = A['Feed']
 export type WireMaterializeRun = A['MaterializeRun']
 export type WireUser = A['User']
+/** Lo que la ficha cambia de la identidad del cliente. Ausente es «sin cambio». */
+export type CambioDeIdentidad = { nombre?: string; formaCorta?: string }
+
 /** Lo que `PUT /admin/tenants/{tenantId}` devuelve y el front lee · F5.47 y,
  *  la conexión, F5.55. Opcionales porque un servicio anterior a `26eae4b`
  *  igual las manda, pero el yaml no las exige. */
