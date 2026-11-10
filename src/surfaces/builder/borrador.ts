@@ -22,6 +22,7 @@
  *  significa «no sé»: significa «creá una», y solo `agregar` lo produce.
  */
 import type { LayoutDetalle, TabParaGuardar } from '../../api/admin'
+import type { ChartId } from '../../catalog/types'
 
 /** Del detalle al borrador, arrastrando lo que el editor no toca. */
 export function sembrar(detalle: LayoutDetalle): TabParaGuardar[] {
@@ -171,12 +172,17 @@ export type PanelDeBorrador = TabParaGuardar['panels'][number]
  *  `colStart` arranca en 1 y **no se edita acá**: colocarlo es del canvas ·
  *  F4.9. Uno al lado del otro en la columna 1 es una composición legible; una
  *  columna elegida a dedo desde un formulario es una que nadie eligió mirando. */
+/** **Con el dato y el gráfico, si vienen de la biblioteca** · 2026-11-10. La
+ *  biblioteca dejó de ser de tipos: se elige qué se muestra y cómo, así que el
+ *  panel nace completo en vez de «Sin métrica». Sin ellos sigue naciendo vacío,
+ *  que es lo que pide el slot del lienzo. */
 export function agregarPanel(
   tabs: readonly TabParaGuardar[],
   indiceTab: number,
   tipo: string,
   colSpanMin: number,
   rowSpanMin: number,
+  con: { metricId?: string; grafico?: ChartId } = {},
 ): TabParaGuardar[] {
   return tabs.map((t, i) =>
     i === indiceTab
@@ -184,7 +190,14 @@ export function agregarPanel(
           ...t,
           panels: [
             ...t.panels,
-            { metricId: '', tipo, colStart: 1, colSpan: colSpanMin, rowSpan: rowSpanMin },
+            {
+              metricId: con.metricId ?? '',
+              tipo,
+              colStart: 1,
+              colSpan: colSpanMin,
+              rowSpan: rowSpanMin,
+              ...(con.grafico === undefined ? {} : { grafico: con.grafico }),
+            },
           ],
         }
       : t,
