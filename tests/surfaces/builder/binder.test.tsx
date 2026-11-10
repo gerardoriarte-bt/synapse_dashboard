@@ -531,6 +531,20 @@ describe('§7.2 · los spans salen de la tabla del backend', () => {
     expect(columnas.max).toBe('4')
   })
 
+  it('un tamaño que no entra en la grilla no se aplica, y se dice · 2026-11-10', async () => {
+    // **La misma regla que en el lienzo**: el campo no es una puerta trasera a
+    // un panel que empuja a otros o se sale del borde.
+    servir()
+    montar()
+    await abrirPanel()
+    const col = await abrir('Ajustes')
+
+    fireEvent.change(col.getByLabelText<HTMLInputElement>(/Columnas/), { target: { value: '13' } })
+
+    expect(await col.findByRole('status')).toHaveTextContent('No entra · se pasa del borde de la grilla')
+    expect(col.getByLabelText<HTMLInputElement>(/Columnas/).value).toBe('3')
+  })
+
   it('la altura se pide en FILAS, no en píxeles', async () => {
     // D7 de la auditoría del 2026-10-06: `px = 96·N − 16` sigue siendo la
     // regla, pero la aplica la grilla; quien compone piensa en filas.
@@ -563,7 +577,9 @@ describe('§7.2 · los spans salen de la tabla del backend', () => {
     const col = await abrir('Ajustes')
 
     expect(
-      col.getByText('También se cambia en el lienzo, con los controles del panel elegido. La posición, arrastrándolo.'),
+      col.getByText(
+        'También se cambia en el lienzo, estirando el panel elegido desde sus bordes. La posición, arrastrándolo.',
+      ),
     ).toBeInTheDocument()
     expect(screen.queryByLabelText(/Columna de inicio/)).toBeNull()
   })
