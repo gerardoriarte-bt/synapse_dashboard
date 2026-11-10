@@ -57,20 +57,28 @@ sigue funcionando, y el configurador sigue ofreciendo «Qué muestra».
 fuentes: `/config/blocks` dice qué formas acepta cada tipo, y `/config/plots`
 qué gráficos dibujan cada forma. Está en `src/surfaces/builder/comoMostrar.ts`.
 
-## Lo que falta, y es del backend
+## El dato de cada métrica · resuelto el mismo día
 
-**El estado de cada dato y su espécimen**, para las métricas que todavía no
-están en el lienzo. El dato está guardado por métrica y período
-(`dd_panel_data`), pero el servicio sólo lo sirve a través de un panel. Sin él:
+Acá decía que faltaba del backend **el estado de cada dato y su espécimen**
+para las métricas que todavía no están en el lienzo. **El backend lo contestó
+con `a80c318`** —`GET /admin/tenants/{tenantId}/catalog/data`—, medido en
+`docs/AUDITORIA-2026-11-10-respuestas-dato-y-orden.md`, y la biblioteca ya lo
+usa:
 
-- No se puede marcar «sin datos en este período» en la lista, que era la mitad
-  de la tercera decisión.
-- Los topes de un gráfico se revisan recién al ponerlo en el lienzo. La
-  biblioteca lo dice: «Sin el dato a mano se elige por su forma».
-- No se dibuja el espécimen —B3 pide «preview real»—, que es lo que más ayuda
-  a elegir.
+- **«Sin cifra»** junto a la forma de cada dato que no tiene cifra en el mes
+  del lienzo, y su razón —la del servicio— al abrirlo. **No se desactiva**: se
+  puede poner igual, y el panel lo dice hasta que la tenga.
+- **Si ninguno tiene cifra, se dice una vez arriba** en vez de marcar todos.
+  Visto en local: el editor pide el mes en curso, que todavía no tenía dato, y
+  marcaba los 33.
+- **Los topes se revisan antes de soltar** también para las métricas que no
+  están en el lienzo.
 
-Pedido en `docs/MENSAJE-2026-11-10-backend-dato-por-metrica.md`.
+**En QA espera el despliegue de `a80c318`**; mientras tanto la biblioteca hace
+lo de antes —el dato de lo que ya está en el lienzo—, y lo cubre una prueba.
+
+**Lo que sigue faltando no es del backend: el espécimen**, cada opción dibujada
+con la cifra real. Es el punto 3 de abajo.
 
 ## Lo que diseño tiene que decidir
 
