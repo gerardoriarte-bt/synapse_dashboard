@@ -64,6 +64,7 @@ export const keys = {
   layouts: (tenantId: string) => ['admin', 'layouts', tenantId] as const,
   dashboards: (tenantId: string) => ['admin', 'dashboards', tenantId] as const,
   adminCatalog: (tenantId: string) => ['admin', 'catalog', tenantId] as const,
+  datoDelCatalogo: (tenantId: string, periodo: string) => ['admin', 'catalog', tenantId, 'dato', periodo] as const,
   roles: (tenantId: string) => ['admin', 'roles', tenantId] as const,
   agentes: (tenantId: string) => ['admin', 'agentes', tenantId] as const,
   /** **Debajo de `agentes`**, para que invalidar los agentes también la
@@ -349,6 +350,19 @@ export function useAdminCatalog(tenantId: string | null) {
     queryKey: keys.adminCatalog(tenantId ?? ''),
     queryFn: () => adminApi.catalogo(tenantId as string),
     enabled: tenantId !== null && tenantId !== '',
+  })
+}
+
+/** **El dato de cada métrica del catálogo en un período** · `a80c318`. Para la
+ *  biblioteca del editor: qué métricas tienen cifra y cuál, antes de ponerlas
+ *  en el lienzo. Sin período no se pide: la ruta lo exige, y el período es el
+ *  del dato del lienzo, para que la lista y los paneles hablen del mismo mes. */
+export function useDatoDelCatalogo(tenantId: string | null, periodo: string | null) {
+  return useQuery({
+    queryKey: keys.datoDelCatalogo(tenantId ?? '', periodo ?? ''),
+    queryFn: () => adminApi.datoDelCatalogo(tenantId as string, periodo as string),
+    staleTime: 60_000,
+    enabled: tenantId !== null && tenantId !== '' && periodo !== null && periodo !== '',
   })
 }
 

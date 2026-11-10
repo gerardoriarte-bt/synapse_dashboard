@@ -926,6 +926,22 @@ export const adminApi = {
   catalogo: async (tenantId: string): Promise<AdaptedCatalog> =>
     adaptCatalog(await pedir<WireMetric[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/catalog`)),
 
+  /** **El dato de cada métrica del catálogo, esté o no en un panel** ·
+   *  `a80c318`, 2026-11-10. Lo pidió la biblioteca de datos del editor: el
+   *  dato se guarda por métrica y período, y hasta ese commit sólo se servía a
+   *  través de un panel.
+   *
+   *  **Indexado por `metric_id`**, que es como la biblioteca lo busca. Cada
+   *  entrada es el payload del lote de la consola, así que va por el MISMO
+   *  `adaptPayload`: un `BLOCKED` sin fila trae su razón y se dibuja como
+   *  cualquier otro estado. */
+  datoDelCatalogo: async (tenantId: string, periodo: string): Promise<ReadonlyMap<string, NetworkPayload>> => {
+    const w = await pedir<A['DatoDelCatalogo']>(
+      `/admin/tenants/${encodeURIComponent(tenantId)}/catalog/data?period=${encodeURIComponent(periodo)}`,
+    )
+    return new Map(w.metrics.map((m) => [m.metric_id, adaptPayload(m as unknown as WirePayload)]))
+  },
+
   /* ── B4.8 y B4.9 · del FORK · el servicio desplegado devuelve 404 ──────── */
 
   /** Los agentes del cliente · B3.9, del commit `82da946` del upstream.

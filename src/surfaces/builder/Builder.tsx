@@ -42,6 +42,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
   useAdminCatalog,
+  useDatoDelCatalogo,
   useBlocks,
   usePlots,
   useCreateDraft,
@@ -357,6 +358,14 @@ export function Builder() {
       if (d !== undefined && !datoPorMetrica.has(x.metricId)) datoPorMetrica.set(x.metricId, d)
     }
   }
+  /** **El dato de TODO el catálogo**, esté o no en el lienzo · `a80c318`,
+   *  2026-11-10. Del mismo período que el dato del lienzo, para que la lista y
+   *  los paneles hablen del mismo mes. **Sin el lente del rol**: la biblioteca
+   *  es de quien compone, igual que el catálogo. Contra un servicio que todavía
+   *  no tiene la ruta da 404 y la biblioteca sigue como antes, con el dato de
+   *  lo que ya está en el lienzo. */
+  const periodoDelLienzo = datosDelLienzo.data?.datos?.periodo ?? null
+  const datoDelCatalogo = useDatoDelCatalogo(tenantActivo, periodoDelLienzo === '' ? null : periodoDelLienzo)
 
   const guardar = useSaveLayout(version)
   const validar = useValidateLayout(version)
@@ -1138,7 +1147,10 @@ export function Builder() {
                       bloques={listaDeBloques}
                       plots={plots.data ?? []}
                       repertorio={repertorio}
-                      datoDe={(id) => datoPorMetrica.get(id)}
+                      datoDe={(id) => datoDelCatalogo.data?.get(id) ?? datoPorMetrica.get(id)}
+                      {...(datoDelCatalogo.data === undefined || periodoDelLienzo === null
+                        ? {}
+                        : { periodo: formatDelCliente.periodName(periodoDelLienzo) })}
                       arrastrando={arrastrando}
                       onArrastrar={setArrastrando}
                       onAgregar={({ tipo, metricId, grafico }) => {

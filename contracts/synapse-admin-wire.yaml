@@ -432,6 +432,55 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
+  /admin/tenants/{tenantId}/catalog/data:
+    x-verificado-en: 4953411
+    get:
+      tags: [admin]
+      operationId: adminCatalogData
+      summary: El dato de cada métrica del catálogo en un período, esté o no en un panel
+      description: |
+        **Llegó en `a80c318`** (2026-11-10), pedido en
+        `docs/MENSAJE-2026-11-10-backend-dato-por-metrica.md` para que la
+        biblioteca del editor sepa qué dato tiene cada métrica antes de que
+        esté en el lienzo. Medido ese día levantado acá, contra `4953411`:
+
+          · UA, octubre: **33 entradas**, una por métrica del catálogo, 23 de
+            ellas en ningún panel
+          · las 10 que sí están en paneles: **mismo `status` y mismo `value`**
+            que `POST /config/panels:batch` del mismo período
+
+        **Sin fila en el período sale `BLOCKED`** con «No hay datos calculados
+        para este período»; un `AVAILABLE` viejo sale `DEGRADED` con la misma
+        regla del panel (`PanelDegradation`). **No filtra por rol**, igual que
+        el catálogo: es para quien compone.
+
+        Va en el grupo de admin con `RequireRouteTenant`: un admin sólo pide su
+        cliente, y un superadmin cualquiera. Con un `tenantId` que no existe
+        contesta 200 con `metrics: []`, no 404.
+      parameters:
+        - { $ref: '#/components/parameters/tenantId' }
+        - name: period
+          in: query
+          required: true
+          description: |
+            `YYYY-MM`. **Obligatorio**: sin él, o mal formado —`2026-13`—, 400
+            con `VALIDATION_PERIOD`, medido.
+          schema: { type: string, examples: ['2026-10'] }
+      responses:
+        '200':
+          description: El dato de cada métrica del catálogo
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/DatoDelCatalogo' }
+        '400':
+          description: '`VALIDATION_PERIOD` · el período falta o no es `YYYY-MM`'
+        '403': { $ref: '#/components/responses/Forbidden' }
+
   /admin/tenants/{tenantId}/catalog/{metricId}:
     x-verificado-en: 7324b26
     patch:
@@ -2908,6 +2957,29 @@ components:
           description: 'Ausente se escribe como `{}`: «sin overrides» es un estado, no una omisión.'
           additionalProperties: true
 
+    DatoDelCatalogo:
+      type: object
+      description: |
+        `DDMetricDataResponse` de `internal/core/ports/dd_config_service.go`
+        en `a80c318`. Cada entrada es el MISMO `Payload` de
+        `POST /config/panels:batch` —`synapse-console-wire.yaml`— más
+        `metric_id` y `key`, y se adapta con el mismo `adaptPayload`. Se declara
+        abierto por la misma razón que `payloads` del preview: copiar el
+        esquema del payload acá sería una segunda fuente del mismo hecho.
+      required: [period, metrics]
+      properties:
+        period: { type: string }
+        metrics:
+          type: array
+          description: Una por métrica del catálogo, en el orden del nombre.
+          items:
+            type: object
+            required: [metric_id, key, status]
+            properties:
+              metric_id: { type: string, format: uuid }
+              key: { type: string }
+              status: { type: string }
+            additionalProperties: true
     Preview:
       type: object
       description: |
