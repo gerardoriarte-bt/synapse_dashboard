@@ -61,6 +61,7 @@ import {
   useSaveTheme,
 } from '../../api/hooks'
 import { BuilderChrome } from './BuilderChrome'
+import { COLUMNA_FIJA } from './columnaFija'
 import { ContextView } from './ContextView'
 import { TabInspector } from './TabInspector'
 import type { DashboardEnLista } from './ContextView'
@@ -1000,7 +1001,7 @@ export function Builder() {
                   ) : ajustesDe !== null && tabs[ajustesDe] !== undefined ? (
                     <aside
                       aria-label="Ajustes de la pestaña"
-                      className="sticky top-[calc(var(--alto-cabecera-builder,0px)+16px)] flex w-75 shrink-0 flex-col gap-3 self-start"
+                      className={`flex w-75 shrink-0 flex-col gap-3 self-start ${COLUMNA_FIJA}`}
                       onKeyDown={(e) => {
                         if (e.key === 'Escape') setAjustesDe(null)
                       }}
