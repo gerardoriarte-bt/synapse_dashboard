@@ -1058,14 +1058,26 @@ export function Builder() {
                       }}
                     />
                   ))}
-                {/* **El lienzo a su ancho 1:1** —las 12 columnas de 80 con su
-                    separación, `CANVAS_WIDTH`—: las columnas lo corren, no lo
-                    achican. A otra escala las unidades de arrastre mentirían. */}
+                {/* **El lienzo usa el ancho que hay, hasta el de la consola** ·
+                    2026-11-10, decisión humana: «debería verse bien en cualquier
+                    resolución». Era fijo a `CANVAS_WIDTH` —1136, la grilla de la
+                    consola— dentro de este contenedor con scroll, y en una laptop
+                    la derecha quedaba cortada con la barra al pie del lienzo.
+                    **Achicarlo no rompe el arrastre**: las 12 columnas son `1fr`
+                    y cada celda es su propio destino (ver `Canvas.tsx`), así que
+                    un `colSpan` 4 sigue siendo un tercio. Lo que cambia es el
+                    ancho absoluto del panel, no su unidad. La divergencia con
+                    §4 está en `docs/PROPUESTA-2026-11-10-editor-a-cualquier-ancho.md`. */}
                 {/* **Con su propio scroll horizontal**: las columnas no se mueven
                     y el lienzo se recorre al lado, así ni el panel elegido ni la
                     configuración quedan fuera de la pantalla. */}
                 <div className="min-w-0 flex-1 overflow-x-auto pt-3">
-                <div className="flex flex-col gap-3" style={{ width: CANVAS_WIDTH }}>
+                {/* **Con piso, 720**: medido ese día, a 1280 con una columna del
+                    configurador abierta el lienzo bajaba a 528 y los paneles se
+                    rompían —rótulos encimados, texto desbordado—. A 720 un KPI de
+                    3 columnas mide unos 170 y se lee. Por debajo, este
+                    contenedor se corre de costado. */}
+                <div className="flex w-full min-w-[720px] flex-col gap-3" style={{ maxWidth: CANVAS_WIDTH }}>
                   <Canvas
                     panels={tabs[tabEnLienzo]?.panels ?? []}
                     tabla={tabla}
