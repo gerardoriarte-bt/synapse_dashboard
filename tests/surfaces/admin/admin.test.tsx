@@ -403,7 +403,10 @@ describe('§ANCLA:ANCHO-1 · admin declara ancho mínimo, no colapso', () => {
      */
     const fuentes: [string, string][] = [
       ['src/surfaces/admin/AdminChrome.tsx', 'min-w-[1280px]'],
-      ['src/surfaces/builder/BuilderChrome.tsx', 'min-w-[1600px]'],
+      // **1024 desde el 2026-11-10**, por decisión humana · ver
+      // `docs/PROPUESTA-2026-11-10-editor-a-cualquier-ancho.md`. La regla de
+      // esta prueba —escrito, no interpolado— sigue igual.
+      ['src/surfaces/builder/BuilderChrome.tsx', 'min-w-[1024px]'],
     ]
     for (const [ruta, clase] of fuentes) {
       const codigo = readFileSync(ruta, 'utf-8')
