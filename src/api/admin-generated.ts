@@ -101,7 +101,28 @@ export interface paths {
          */
         put: operations["updateTenantSettings"];
         post?: never;
-        delete?: never;
+        /**
+         * Apagar el cliente · no lo borra
+         * @description **Llegó en `b7c4534`**, respuesta al pedido de ordenar los clientes de
+         *     QA. Medido el 2026-11-10 contra el binario de `4192041` con la base
+         *     local: **200** con `{id, is_active: false}`, **200 otra vez** sobre uno
+         *     ya apagado, y **404** «tenant no encontrado» con un id que no existe.
+         *
+         *     **Apaga, no borra**: `SetActive(false)` y nada más. Quedan la fila, los
+         *     usuarios, el dashboard y el catálogo. El cliente sale de
+         *     `GET /admin/tenants` y de `GET /access-requests/tenants` —medido—, y el
+         *     programador deja de materializarlo.
+         *
+         *     **Sólo superadmin**: la ruta pasa por `RequirePlatformOperator()`. Leído
+         *     en `router.go`; no se midió con otro rol porque la base local no tiene
+         *     un admin que no sea de plataforma.
+         *
+         *     **Lo que NO hace, y la pantalla lo dice**: el login no mira si el
+         *     cliente está activo, así que sus usuarios pueden seguir entrando y ven
+         *     datos que dejan de actualizarse. Y **no hay ruta para volver a
+         *     encenderlo**.
+         */
+        delete: operations["deactivateTenant"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2373,6 +2394,37 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deactivateTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El cliente quedó apagado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: {
+                            /** Format: uuid */
+                            id: string;
+                            /** @constant */
+                            is_active: false;
+                        };
+                    };
+                };
+            };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };

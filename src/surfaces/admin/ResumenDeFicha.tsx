@@ -17,7 +17,7 @@ import { Ayuda } from '../../render/primitives/Ayuda'
 import { formaCortaVisible } from '../clienteVisible'
 import { Accion } from '../../render/primitives/Accion'
 import type { Formatter } from '../../render/format'
-import type { Tenant } from '../../api/admin'
+import type { CambioDeIdentidad, Tenant } from '../../api/admin'
 import type { EstadoDelAcceso } from './estadoDelAcceso'
 
 export type ResumenDeUsuarios = { total: number; activos: number; nuncaEntraron: number }
@@ -32,8 +32,11 @@ type Props = {
   /** Lleva al bloque · el `id` de la sección. */
   onIr: (seccion: string) => void
   onVerificar?: (() => void) | undefined
-  /** **Editar la forma corta** · F5.47. Sin manejador no se ofrece. */
-  formaCorta?: { onGuardar: (valor: string) => void; guardando: boolean; error: string | null } | undefined
+  /** **Editar el nombre y la forma corta** · F5.47, y el nombre desde el
+   *  2026-11-10. Sin manejador no se ofrece. Recibe sólo lo que cambió. */
+  identidad?:
+    | { onGuardar: (cambio: CambioDeIdentidad) => void; guardando: boolean; error: string | null }
+    | undefined
   /** La versión del catálogo · `null` cuando no se puede derivar. */
   version?: number | null | undefined
 }
@@ -67,8 +70,9 @@ function Card({ titulo, children, pie }: { titulo: string; children: React.React
 const CIFRA = 'font-display text-titulo-lg leading-titulo tracking-titulo text-ink'
 const VALOR = 'font-body text-cuerpo text-ink'
 
-export function ResumenDeFicha({ tenant, format, roles, usuarios, acceso, onIr, onVerificar, formaCorta, version = null }: Props) {
-  const [editando, setEditando] = useState<string | null>(null)
+export function ResumenDeFicha({ tenant, format, roles, usuarios, acceso, onIr, onVerificar, identidad, version = null }: Props) {
+  /** Lo que se está escribiendo · `null` cuando no se edita. */
+  const [editando, setEditando] = useState<{ nombre: string; formaCorta: string } | null>(null)
   return (
     <div className="grid grid-cols-4 gap-4">
       <Card
@@ -76,9 +80,15 @@ export function ResumenDeFicha({ tenant, format, roles, usuarios, acceso, onIr, 
         pie={
           editando === null ? (
             <>
-              {formaCorta !== undefined && tenant !== null && (
-                <Accion tamano="compacta" onClick={() => setEditando(tenant.formaCorta)}>
-                  Editar forma corta
+              {/* «EDITAR» en la card de identidad · `Propuesta · A2 · Ficha con
+                  resumen`. Edita lo que nombra al cliente: el nombre y la forma
+                  corta. */}
+              {identidad !== undefined && tenant !== null && (
+                <Accion
+                  tamano="compacta"
+                  onClick={() => setEditando({ nombre: tenant.nombre, formaCorta: tenant.formaCorta })}
+                >
+                  Editar
                 </Accion>
               )}
               <Accion tamano="compacta" onClick={() => onIr('ficha-identidad')}>Ver identidad</Accion>
@@ -88,34 +98,55 @@ export function ResumenDeFicha({ tenant, format, roles, usuarios, acceso, onIr, 
       >
         {tenant === null ? (
           <Label as="span">Cargando identidad</Label>
-        ) : editando !== null && formaCorta !== undefined ? (
-          // **La forma corta es lo que distingue al cliente** en la barra, el
-          // selector y las cards · §3 de la propuesta del 2026-10-20. Vacía, se
-          // muestra el id corto.
+        ) : editando !== null && identidad !== undefined ? (
+          // **El nombre es como el equipo reconoce al cliente** —EV-003 de la
+          // evaluación de UX encontró «Synapse UA HTML» en la barra— y la
+          // forma corta lo distingue en la barra, el selector y las cards · §3
+          // de la propuesta del 2026-10-20. **Viaja sólo lo que cambió.**
           <form
             className="flex flex-col gap-2"
             onSubmit={(e) => {
               e.preventDefault()
-              formaCorta.onGuardar(editando)
+              const nombre = editando.nombre.trim()
+              if (nombre === '') return
+              const cambio: CambioDeIdentidad = {
+                ...(nombre === tenant.nombre ? {} : { nombre }),
+                ...(editando.formaCorta.trim() === tenant.formaCorta ? {} : { formaCorta: editando.formaCorta }),
+              }
+              if (cambio.nombre !== undefined || cambio.formaCorta !== undefined) identidad.onGuardar(cambio)
               setEditando(null)
             }}
           >
             <label className="flex flex-col gap-1">
+              <Label as="span">Nombre</Label>
+              <input
+                value={editando.nombre}
+                onChange={(e) => setEditando({ ...editando, nombre: e.target.value })}
+                required
+                className="h-8 rounded-md border border-w4 bg-transparent px-2 font-body text-cuerpo text-ink"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
               <Label as="span">Forma corta</Label>
               <input
-                value={editando}
-                onChange={(e) => setEditando(e.target.value)}
+                value={editando.formaCorta}
+                onChange={(e) => setEditando({ ...editando, formaCorta: e.target.value })}
                 maxLength={24}
                 placeholder="UA MX"
                 className="h-8 rounded-md border border-w4 bg-transparent px-2 font-body text-cuerpo text-ink"
               />
             </label>
-            <Ayuda>Va junto al nombre en la barra y el selector. Vacía, se muestra el id corto.</Ayuda>
+            <Ayuda>El nombre no puede quedar vacío. La forma corta, sí: vacía, se muestra el id corto.</Ayuda>
             <div className="flex justify-end gap-2">
               <Accion tamano="compacta" onClick={() => setEditando(null)}>
                 Cancelar
               </Accion>
-              <Accion tamano="compacta" variante="primaria" tipo="submit" deshabilitada={formaCorta.guardando}>
+              <Accion
+                tamano="compacta"
+                variante="primaria"
+                tipo="submit"
+                deshabilitada={identidad.guardando || editando.nombre.trim() === ''}
+              >
                 Guardar
               </Accion>
             </div>
@@ -127,8 +158,8 @@ export function ResumenDeFicha({ tenant, format, roles, usuarios, acceso, onIr, 
             <Label as="span">
               {`Alta ${format.calendar(tenant.creadoEn)}${version === null ? '' : ` · Catálogo v${String(version)}`}`}
             </Label>
-            {formaCorta?.guardando === true && <Label as="span">Guardando…</Label>}
-            {formaCorta?.error !== null && formaCorta?.error !== undefined && <Ayuda>{formaCorta.error}</Ayuda>}
+            {identidad?.guardando === true && <Label as="span">Guardando…</Label>}
+            {identidad?.error !== null && identidad?.error !== undefined && <Ayuda>{identidad.error}</Ayuda>}
           </>
         )}
       </Card>

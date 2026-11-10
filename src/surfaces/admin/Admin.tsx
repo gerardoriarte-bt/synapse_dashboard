@@ -47,7 +47,8 @@ import {
   useRoles,
   useSaveRole,
   useMe,
-  useEditTenantShortName,
+  useDeactivateTenant,
+  useEditTenantIdentity,
   useEditTenantConnection,
   useGenerateServiceKey,
   useServiceKey,
@@ -60,6 +61,7 @@ import { AdminChrome } from './AdminChrome'
 import { CatalogView } from './CatalogView'
 import { FeedHealth } from './FeedHealth'
 import { RunHistory } from './RunHistory'
+import { ApagarCliente } from './ApagarCliente'
 import { ConexionDeDatos } from './ConexionDeDatos'
 import { LlaveDeServicio } from './LlaveDeServicio'
 // design-lint-ok: L11 · ruta del módulo, no texto en pantalla
@@ -221,7 +223,8 @@ export function Admin() {
   // usuarios del cliente se ve en su ficha, no en otra pantalla.
   const usuariosDelCliente = useUsers(activo)
   /** La forma corta del cliente activo · F5.47. */
-  const editarFormaCorta = useEditTenantShortName()
+  const editarIdentidad = useEditTenantIdentity()
+  const apagar = useDeactivateTenant()
   /** **La conexión, sólo para el equipo interno** · F5.55. `superadmin` es de
    *  asignación interna —decisión humana del 2026-10-20— y es el único con
    *  alcance de plataforma, así que es la condición de §7.3 escrita en código. */
@@ -463,10 +466,13 @@ export function Admin() {
             </div>
             <Cliente
               agentes={agentes}
-              formaCorta={{
-                onGuardar: (valor: string) => editarFormaCorta.mutate({ tenantId: activo, formaCorta: valor }),
-                guardando: editarFormaCorta.isPending,
-                error: editarFormaCorta.error === null ? null : `No se pudo guardar la forma corta: ${editarFormaCorta.error.message}`,
+              identidad={{
+                onGuardar: (cambio) => editarIdentidad.mutate({ tenantId: activo, cambio }),
+                guardando: editarIdentidad.isPending,
+                error:
+                  editarIdentidad.error === null
+                    ? null
+                    : `No se pudo guardar la identidad: ${editarIdentidad.error.message}`,
               }}
               resumenDeUsuarios={
                 usuariosDelCliente.data === undefined
@@ -541,6 +547,21 @@ export function Admin() {
                       onGuardar={(agentId, almacen) =>
                         cambioDeAgente.mutate({ tenantId: activo, agentId, almacen })
                       }
+                    />
+                    {/* **Al final, y sólo para el equipo interno** · la ruta es
+                        de superadmin. Al apagarlo sale de la lista, así que se
+                        vuelve a ella; el cliente de trabajo cae solo al de la
+                        sesión (`useClienteDeTrabajo`). */}
+                    <ApagarCliente
+                      nombre={nombreDeTrabajo ?? ''}
+                      usuarios={usuariosDelCliente.data === undefined ? null : usuariosDelCliente.data.length}
+                      apagando={apagar.isPending && apagar.variables === activo}
+                      error={
+                        apagar.error !== null && apagar.variables === activo
+                          ? `No se pudo apagar el cliente: ${apagar.error.message}`
+                          : null
+                      }
+                      onApagar={() => apagar.mutate(activo, { onSuccess: () => conFicha(false) })}
                     />
                   </div>
                 ) : null
@@ -642,7 +663,7 @@ function mensajeDeRol(e: Error | null): string | null {
 function Cliente({
   agentes,
   resumenDeUsuarios,
-  formaCorta,
+  identidad,
   roles,
   tenant,
   estado,
@@ -667,7 +688,7 @@ function Cliente({
   resumenDeUsuarios: ResumenDeUsuarios | null
   /** Editar la forma corta · F5.47. **Obligatoria** por la misma razón que las
    *  de abajo: una opcional mal escrita compila y el botón no aparece. */
-  formaCorta: Parameters<typeof ResumenDeFicha>[0]['formaCorta']
+  identidad: Parameters<typeof ResumenDeFicha>[0]['identidad']
   roles: ReturnType<typeof useRoles>
   /** Los cuatro de `TenantIdentity` · §PEN:A2. **Ninguno es opcional**, que es lo
    *  único que el compilador puede hacer contra el spread de arriba: una prop
@@ -735,7 +756,7 @@ function Cliente({
           )
         }}
         {...(onVerificar === undefined ? {} : { onVerificar })}
-        formaCorta={formaCorta}
+        identidad={identidad}
         version={version}
       />
 

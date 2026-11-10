@@ -780,7 +780,7 @@ describe('la ficha, con el proveedor del cliente de trabajo montado', () => {
 // ── LA FORMA CORTA SE EDITA DESDE LA FICHA · F5.47, 2026-10-20 ──────────────
 describe('la forma corta, editada desde la ficha', () => {
   /** **Se sigue el CALLBACK hasta el cable**: `ResumenDeFicha` → `Cliente` →
-   *  `Admin` → `useEditTenantShortName` → `PUT`. Cada salto pasa una prop, y
+   *  `Admin` → `useEditTenantIdentity` → `PUT`. Cada salto pasa una prop, y
    *  una mal nombrada compila. Lo que se afirma es a quién y qué se manda, y
    *  que la barra lo dice después. */
   it('manda el PUT al cliente de la ficha, y la barra muestra la nueva', async () => {
@@ -799,7 +799,7 @@ describe('la forma corta, editada desde la ficha', () => {
     await abrirFicha(/^Keralty Colombia · /)
 
     const identidad = screen.getByRole('region', { name: 'Resumen · Identidad' })
-    await userEvent.click(within(identidad).getByRole('button', { name: 'Editar forma corta' }))
+    await userEvent.click(within(identidad).getByRole('button', { name: 'Editar' }))
     const campo = within(identidad).getByRole('textbox', { name: 'Forma corta' })
     await userEvent.clear(campo)
     await userEvent.type(campo, '  Keralty CO ')
@@ -822,7 +822,7 @@ describe('la forma corta, editada desde la ficha', () => {
     montar()
     await abrirFicha(/^Keralty Colombia · /)
     const identidad = screen.getByRole('region', { name: 'Resumen · Identidad' })
-    await userEvent.click(within(identidad).getByRole('button', { name: 'Editar forma corta' }))
+    await userEvent.click(within(identidad).getByRole('button', { name: 'Editar' }))
     await userEvent.type(within(identidad).getByRole('textbox', { name: 'Forma corta' }), 'X')
     await userEvent.click(within(identidad).getByRole('button', { name: 'Cancelar' }))
     expect(within(identidad).queryByRole('textbox')).toBeNull()
