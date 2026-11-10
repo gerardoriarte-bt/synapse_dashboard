@@ -21,6 +21,7 @@ import { Accion } from '../../render/primitives/Accion'
 import { agrupar } from './grupos'
 import { nombreDeForma, nombreDeTipo } from './rotulos'
 import type { Block } from '../../api/types'
+import { COLUMNA_FIJA } from './columnaFija'
 
 type Props = {
   bloques: readonly Block[]
@@ -97,8 +98,11 @@ export function Library({ bloques, arrastrando, onArrastrar, onAgregar }: Props)
     // `max-h` + `overflow-y-auto` porque los cinco grupos con quince tipos son
     // más altos que la ventana: sin eso, pegarla esconde los últimos grupos, que
     // es cambiar un problema por otro.
+    //
+    // **Y bajo la cabecera, no a 24 px del borde** · 2026-11-10: la cabecera es
+    // `sticky` y tapaba el principio de la lista. Ver `columnaFija.ts`.
     <aside
-      className="w-[300px] shrink-0 flex flex-col gap-4 sticky top-6 self-start max-h-[calc(100vh-6rem)] overflow-y-auto"
+      className={`w-[300px] shrink-0 flex flex-col gap-4 self-start ${COLUMNA_FIJA}`}
       aria-label="Biblioteca de tipos"
     >
       <div className="flex flex-col gap-1">

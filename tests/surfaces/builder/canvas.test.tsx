@@ -269,6 +269,11 @@ describe('§7.2 · la biblioteca, agrupada', () => {
     expect(aside.className).toContain('self-start')
     expect(aside.className).toContain('overflow-y-auto')
     expect(aside.className).toMatch(/max-h-/)
+    // **Y debajo de la cabecera, que también es fija** · 2026-11-10. Se pegaba a
+    // `top-6` y la cabecera, de 177 px, le tapaba el principio: «no puedo ver el
+    // principio del scroll izquierdo». El tope y el alto salen de su altura real.
+    expect(aside.className).toMatch(/top-\[calc\(var\(--alto-cabecera-builder/)
+    expect(aside.className).toMatch(/max-h-\[calc\(100vh-var\(--alto-cabecera-builder/)
   })
 })
 
