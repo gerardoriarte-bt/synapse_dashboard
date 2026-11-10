@@ -93,6 +93,7 @@ import { invalidReason } from '../../catalog/blocks'
 import { invalidPlotReason, unidadesMezcladas, UN_SOLO_EJE } from '../../catalog/plots'
 import { hasValue } from '../../render/state'
 import { PARAM_SCHEMAS, describirParam } from '../../api/params'
+import { COLUMNA_FIJA } from './columnaFija'
 import { MuestraDeGrafico } from './MuestraDeGrafico'
 import { tipoPara } from './tipoPara'
 import { descripcionDeTipo, nombreDeForma, nombreDeTipo } from './rotulos'
@@ -144,9 +145,9 @@ type Props = {
 const CAMPO = 'h-8 bg-w1 text-ink text-cuerpo rounded-md px-3 border border-w5'
 
 /** **Las columnas quedan a la vista** mientras el lienzo se recorre: fijas bajo
- *  la cabecera, con su propio scroll si son más altas que la pantalla. */
-const FIJA =
-  'sticky top-[calc(var(--alto-cabecera-builder,0px)+16px)] max-h-[calc(100vh-var(--alto-cabecera-builder,0px)-32px)] overflow-y-auto'
+ *  la cabecera, con su propio scroll si son más altas que la pantalla · ver
+ *  `columnaFija.ts`, que es la misma regla para las tres. */
+const FIJA = COLUMNA_FIJA
 
 export function PanelConfigurator({
   panel,
