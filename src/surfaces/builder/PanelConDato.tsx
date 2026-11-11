@@ -35,10 +35,20 @@ type Props = {
   now: Date
 }
 
+/** **La ficha sin dato ocupa el panel entero** · 2026-11-11. El lienzo la pone
+ *  dentro de una grilla del ancho y el alto del panel —ver `Canvas.tsx`—, y un
+ *  hijo sin ubicación ocupa UNA celda: visto en local con un cliente sin roles,
+ *  cada panel se dibujaba de una columna de ancho con el texto desbordado,
+ *  aunque su rótulo dijera «4 × 4». `PanelInGrid` se ubica solo; esto no. */
+const ENTERA = (rowSpan: number) => ({ gridColumn: '1 / -1', gridRow: `span ${String(rowSpan)}` })
+
 export function PanelConDato({ panel, metrica, payload, sinDato, bloques, repertorio, format, now }: Props) {
   if (metrica === undefined) {
     return (
-      <div className="flex h-full flex-col justify-center gap-1 rounded-xl border border-dashed border-w4 p-6">
+      <div
+        style={ENTERA(panel.rowSpan)}
+        className="flex h-full flex-col justify-center gap-1 rounded-xl border border-dashed border-w4 bg-panel p-6"
+      >
         <Label as="div">Sin métrica</Label>
         <Ayuda>Elegí qué muestra este panel para verlo dibujado.</Ayuda>
       </div>
@@ -46,7 +56,10 @@ export function PanelConDato({ panel, metrica, payload, sinDato, bloques, repert
   }
   if (payload === undefined) {
     return (
-      <div className="flex h-full flex-col justify-center gap-1 rounded-xl border border-dashed border-w4 p-6">
+      <div
+        style={ENTERA(panel.rowSpan)}
+        className="flex h-full flex-col justify-center gap-1 rounded-xl border border-dashed border-w4 bg-panel p-6"
+      >
         <span className="font-body text-cuerpo font-medium text-ink">{metrica.nombre}</span>
         {/* **La nota también sin dato** · 2026-10-14: quien compone la escribe
             y la quiere ver en el lienzo aunque el dato todavía no llegue. Con
