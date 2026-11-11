@@ -1,0 +1,83 @@
+{
+  "tabs": [
+    {
+      "name": "Pauta digital",
+      "key": "pauta",
+      "operational_question": "¿Cuánto se invirtió en pauta digital este mes, cuánto del presupuesto se ejecutó y qué resultados trajo?",
+      "sort_order": 1,
+      "role_ids": [],
+      "panels": [
+        {
+          "type": "kpi",
+          "col_start": 1,
+          "col_span": 4,
+          "row_span": 4,
+          "metric_key": "media_investment"
+        },
+        {
+          "type": "kpi",
+          "col_start": 5,
+          "col_span": 4,
+          "row_span": 4,
+          "metric_key": "media_budget_execution",
+          "note": "Gasto sobre presupuesto. Las líneas sin presupuesto o sin gasto no entran en la cuenta."
+        },
+        {
+          "type": "kpi",
+          "col_start": 9,
+          "col_span": 4,
+          "row_span": 4,
+          "metric_key": "media_reach",
+          "note": "Se suma entre campañas: quien vio dos campañas cuenta dos veces."
+        },
+        {
+          "type": "table",
+          "col_start": 1,
+          "col_span": 8,
+          "row_span": 4,
+          "metric_key": "media_by_platform",
+          "note": "CPC y CPM salen vacíos donde la plataforma no reporta clics o impresiones."
+        },
+        {
+          "type": "kpi",
+          "col_start": 9,
+          "col_span": 4,
+          "row_span": 4,
+          "metric_key": "media_impressions"
+        },
+        {
+          "type": "bars",
+          "col_start": 1,
+          "col_span": 8,
+          "row_span": 4,
+          "metric_key": "media_goal_attainment",
+          "note": "Resultado sobre meta, por indicador. 100 es la meta; sólo entran los indicadores que tienen meta."
+        },
+        {
+          "type": "kpi",
+          "col_start": 9,
+          "col_span": 4,
+          "row_span": 4,
+          "metric_key": "media_clicks"
+        }
+      ]
+    },
+    {
+      "name": "Campañas",
+      "key": "campanas",
+      "operational_question": "¿Qué campañas se llevaron la inversión del mes y cómo ejecutaron su presupuesto?",
+      "sort_order": 2,
+      "role_ids": [],
+      "panels": [
+        {
+          "type": "table",
+          "col_start": 1,
+          "col_span": 8,
+          "row_span": 5,
+          "metric_key": "media_by_campaign",
+          "note": "Una fila por campaña, con su familia y su cuenta. La ejecución y el CTR son de la campaña."
+        }
+      ]
+    }
+  ]
+}
