@@ -10,6 +10,16 @@ herramienta existe para no cometer.
 Uso:
     SYNAPSE_EMAIL=… SYNAPSE_PASSWORD=… python3 tools/aplicar-dashboard.py \
         dev/dashboards/ua-mx.json --nombre "UA MX" --slug ua-mx
+
+**Sobre OTRO cliente** · 2026-11-11, para Terpel. Sin `--cliente` se compone
+el cliente del token, que para un superadmin es el suyo y no el que se quiere
+armar. Con `--cliente <tenantId>` todo va por las rutas de administración de
+ESE cliente —su catálogo completo, sus dashboards, sus roles—, que es lo que
+hace el builder:
+
+    SYNAPSE_EMAIL=… SYNAPSE_PASSWORD=… python3 tools/aplicar-dashboard.py \
+        dev/dashboards/terpel.json --cliente <tenantId> \
+        --nombre "Terpel" --slug terpel --por-defecto
 """
 import argparse, json, os, sys, urllib.error, urllib.request
 
@@ -36,6 +46,12 @@ def main():
     ap.add_argument('--nombre', required=True)
     ap.add_argument('--slug', required=True)
     ap.add_argument('--version', default='v1')
+    ap.add_argument('--cliente', help='tenantId del cliente a componer · sin esto, el del token')
+    # **No hay DELETE de dashboard** en el servicio: lo que se crea queda. Por
+    # eso «por defecto» se pide explícito —demota al anterior en la misma
+    # transacción— y por eso se rehúsa un slug que ya existe.
+    ap.add_argument('--por-defecto', action='store_true',
+                    help='lo deja como dashboard por defecto del cliente · demota al anterior')
     # **`--sin-graficos` y no un segundo JSON**, a propósito: una copia del
     # archivo con tres campos menos deriva del original en la primera edición, y
     # el día que el repertorio esté desplegado nadie se acuerda de cuál es cuál.
@@ -54,11 +70,28 @@ def main():
         sys.exit('faltan SYNAPSE_EMAIL y SYNAPSE_PASSWORD')
 
     token = pedir('POST', '/auth/login', cuerpo={'email': correo, 'password': clave})['token']
-    yo = pedir('GET', '/config/me', token)
-    tenant = yo['tenant']['id']
-    print(f'tenant {tenant} · {yo["tenant"]["name"]}')
+    if args.cliente:
+        # **El nombre se lee del servicio y se imprime antes de tocar nada**:
+        # un tenantId pegado mal no tiene que componer otro cliente en silencio.
+        clientes = {t['id']: t['name'] for t in pedir('GET', '/admin/tenants', token)}
+        if args.cliente not in clientes:
+            sys.exit(f'el cliente {args.cliente} no está entre los que este usuario administra')
+        tenant = args.cliente
+        print(f'tenant {tenant} · {clientes[tenant]}')
+        # El catálogo del CLIENTE, sin filtrar por rol: el de `/config/catalog`
+        # es el del token.
+        catalogo = {m['key']: m['id'] for m in pedir('GET', f'/admin/tenants/{tenant}/catalog', token)}
+    else:
+        yo = pedir('GET', '/config/me', token)
+        tenant = yo['tenant']['id']
+        print(f'tenant {tenant} · {yo["tenant"]["name"]}')
+        catalogo = {m['key']: m['id'] for m in pedir('GET', '/config/catalog', token)}
 
-    catalogo = {m['key']: m['id'] for m in pedir('GET', '/config/catalog', token)}
+    # **Un slug que ya existe no se vuelve a crear**: sin DELETE, aplicar dos
+    # veces deja dos dashboards iguales para siempre.
+    existentes = pedir('GET', f'/admin/tenants/{tenant}/dashboards', token) or []
+    if any(d.get('slug') == args.slug for d in existentes):
+        sys.exit(f'el cliente ya tiene un dashboard con slug «{args.slug}» · no se crea otro')
     comp = json.load(open(args.composicion))
 
     # **Se resuelven TODAS antes de crear nada.** Fallar a mitad deja un
@@ -81,7 +114,8 @@ def main():
         print(f'sin gráficos · {len(quitados)} quitado(s): {", ".join(quitados) or "ninguno"}')
 
     db = pedir('POST', f'/admin/tenants/{tenant}/dashboards', token,
-               {'name': args.nombre, 'slug': args.slug})
+               {'name': args.nombre, 'slug': args.slug,
+                **({'is_default': True} if args.por_defecto else {})})
     print(f'dashboard {db["id"]}')
 
     lay = pedir('POST', f'/admin/tenants/{tenant}/layouts', token,
