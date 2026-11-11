@@ -905,6 +905,19 @@ describe('el lienzo dibuja cada panel con su dato', () => {
     ).toBeInTheDocument()
   })
 
+  it('la ficha sin dato ocupa el panel ENTERO · no una celda de su grilla · 2026-11-11', async () => {
+    // Visto en local con un cliente sin roles: cada panel se dibujaba de una
+    // columna de ancho, con el texto desbordado, aunque dijera «6 × 4». La
+    // ficha va dentro de una grilla del ancho del panel y no se ubicaba.
+    base()
+    montar()
+    await abrirCanvas()
+    const texto = await within(panelDe('Ventas')).findByText(/todavía no tiene roles/)
+    const ficha = texto.closest('div.border-dashed') as HTMLElement | null
+    expect(ficha?.style.gridColumn).toBe('1 / -1')
+    expect(ficha?.style.gridRow).toBe('span 4')
+  })
+
   it('un panel NUEVO con una métrica que ya está en el lienzo se dibuja SIN esperar al guardado', async () => {
     // **El dato es por métrica y período**, no por panel —`dd_panel_data`—: el
     // de «Ventas» ya llegó con el preview, y sirve igual para el panel nuevo.
