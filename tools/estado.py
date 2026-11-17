@@ -24,6 +24,7 @@ discrepar del plan: no hay dónde ponerle otra cosa.
 Códigos: 0 siempre que el plan exista · 2 BLOQUEADO si falta.
 """
 import pathlib
+import plan_fuente  # el plan son dos archivos desde el 2026-11-03
 import re
 import sys
 from collections import Counter, defaultdict
@@ -38,14 +39,16 @@ ESTADOS = {"✅": "hecho", "⚠️": "parcial", "⬜": "pendiente", "🕓": "dif
 
 FASES = {
     "back": {0: "Fundamentos", 1: "API de consola", 2: "Materialización",
-             3: "Chat contextual", 4: "Admin y Builder", 5: "Multi-dashboard y pulido"},
+             3: "Chat contextual", 4: "Admin y Builder", 5: "Multi-dashboard y pulido",
+             6: "Métricas y reporte"},
     "front": {0: "Fundamentos", 1: "Consola y render/", 2: "Estados",
-              3: "Chat contextual", 4: "Admin y Builder", 5: "Pruebas y pulido"},
+              3: "Chat contextual", 4: "Admin y Builder", 5: "Pruebas y pulido",
+              6: "Métricas y reporte"},
 }
 
 
 def leer():
-    texto = PLAN.read_text(encoding="utf-8")
+    texto = plan_fuente.leer()
     tareas, actual = [], None
     for linea in texto.split("\n"):
         m = ENCABEZADO.match(linea)

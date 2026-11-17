@@ -28,6 +28,7 @@ marcador es una contradicción y el chequeo la reporta: si se cerró, ya no espe
 Códigos: 0 conforme · 1 hay marcadores en tareas cerradas · 2 BLOQUEADO.
 """
 import pathlib
+import plan_fuente  # el plan son dos archivos desde el 2026-11-03
 import os
 import re
 import subprocess
@@ -344,7 +345,7 @@ def main() -> int:
         print(f"para-backend ⊘ BLOQUEADO · falta {PLAN.name}")
         return 2
 
-    texto = PLAN.read_text(encoding="utf-8")
+    texto = plan_fuente.leer()
     todas = recolectar(texto)
     # **Dos listas y no una** · desde el 2026-09-28. `tareas` son las que piden
     # algo —las que el backend tiene que leer— y `todas` incluye las que sólo

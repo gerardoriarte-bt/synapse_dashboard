@@ -11,6 +11,7 @@ nueve transversales y las notas de estimación. Eso vive solo en el `.md`.
     python3 tools/plan-a-csv.py     ·     npm run plan
 """
 import csv, json, pathlib, re, sys
+import plan_fuente  # el plan son dos archivos desde el 2026-11-03
 
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
 FUENTE = RAIZ / 'plan-de-trabajo.md'
@@ -21,10 +22,12 @@ ESTADOS = {'✅': 'hecho', '⚠️': 'parcial', '⬜': 'pendiente', '🕓': 'dif
 FASES = {
     'back': {0: 'Fundamentos e infraestructura', 1: 'API de consola',
              2: 'Materialización y cache', 3: 'Chat contextual',
-             4: 'Admin y Builder', 5: 'Multi-dashboard y pulido'},
+             4: 'Admin y Builder', 5: 'Multi-dashboard y pulido',
+             6: 'Métricas por cliente y reporte programado'},
     'front': {0: 'Fundamentos', 1: 'Consola y el traslado de render/',
               2: 'Estados de materialización', 3: 'Chat contextual',
-              4: 'Admin y Builder', 5: 'Multi-dashboard, pruebas y pulido'},
+              4: 'Admin y Builder', 5: 'Multi-dashboard, pruebas y pulido',
+              6: 'Métricas por cliente y reporte programado'},
 }
 
 # Un encabezado de tarea: `### ➕ F1.13a ⬜ Título · 🔒 depende de X`
@@ -179,7 +182,7 @@ def main() -> int:
     # parsea y valida; escribir sigue siendo un acto explícito.
     solo_verificar = '--check' in sys.argv
 
-    tareas = parsear(FUENTE.read_text())
+    tareas = parsear(plan_fuente.leer())
 
     # Una tarea sin criterio verificable no entra al plan: es la regla que el
     # propio documento declara, así que el generador la hace cumplir.

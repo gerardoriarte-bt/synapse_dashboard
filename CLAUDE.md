@@ -18,6 +18,7 @@ Fase 1 es portar el motor de panel desde el repositorio archivado.
 |---|---|---|
 | `nuevo-desarrollo.md` | Arquitectura del front dinámico | **Normativo** |
 | `plan-de-trabajo.md` | Las tareas con fase, estado y criterio · **el conteo sale de `docs/ESTADO.md`** | **Fuente del plan** |
+| `plan-fase-6.md` | **La Fase 6**: las métricas de cada cliente y el reporte programado · desde el 2026-11-03 | **Fuente del plan** · `npm run plan` lee los dos |
 | `contracts/synapse-api.yaml` | Forma de las respuestas del backend | **El contrato**, y su casa |
 | `.cursorrules` | Idioma, estructura, convenciones de componente | Normativo |
 | `tareas-front-back.md` | El desglose original del backend | Histórico · lo extiende `plan-de-trabajo.md` |
@@ -573,6 +574,105 @@ mirando el código. Una prueba escrita desde la implementación no puede fallar
 nunca, ni cuando el código está mal.
 
 ## Dónde retomar
+
+### ⇩ ACÁ SE PARÓ · 2026-11-17 · el editor de QA no dibujaba, y el despliegue está pedido
+
+**En el editor de UA MX ningún panel mostraba su gráfico**, y no se podía
+cuadrar posición ni tamaño. Eran dos causas, medidas en QA:
+
+- **El dato se pide como lo ve un rol**, y sin rol elegido es `admin`. UA MX
+  tiene una sola pestaña, `pestana-nueva`, que `admin` no tenía: el preview
+  contestó `tabs: []`. Lo arregla el #92 (`4951558`): con «Todos los roles»
+  usa el dato del catálogo de `a80c318`.
+- **La ficha sin dato ocupaba una celda.** Lo arregla el #89 (`6381d3b`).
+
+**Mientras tanto se destrabó en QA**, decidido por el humano: `admin` y `user`
+de UA MX tienen `pestana-nueva`, con un `PUT` parcial de sólo `tab_keys`.
+**Esos dos roles tienen 0 usuarios**; los 13 están en `Admin`, `Planner` y
+`superadmin`, que ven todo. Antes de decir que la consola le esconde algo a
+alguien, se cuentan los usuarios del rol.
+
+**`docs/MENSAJE-2026-11-17-backend-desplegar-el-front.md` pide desplegar
+`main` (`8523981`) en QA**, y **se envió el 2026-11-17, lo mandó el humano**.
+**Lo que sigue es esperar, no volver a pedirlo.** Después: abrir el editor de
+UA MX y ver cada panel con su cifra.
+
+**Visto al abrirlo, sin tocar**: el resumen ejecutivo desborda su panel de
+12 × 4, y el borrador v9 tiene un problema de composición que impide publicar.
+
+**A datos, enviado, lo mandó el humano**:
+`docs/MENSAJE-2026-11-11-datos-ua-por-dia-y-por-mes.md` (PR #90), las series
+diarias y de doce meses de UA. Su §5 trae lo más serio: `GLD_PAID_MEDIA.COST_USD`
+suma 4,16 M en octubre contra 55 936 de `GROSS_SPEND`. **Lo que sigue es
+esperar, no volver a pedirlo.** Con su validación se le pide al backend.
+
+**También enviado**: `docs/MENSAJE-2026-11-09-backend-clientes-de-qa.md`
+(PR #68), y el backend ya contestó en
+`docs/RESPUESTA-2026-11-09-backend-clientes-de-qa.md`.
+
+### ⇩ el 2026-11-09 · datos cerró UA, y el pedido al backend está redactado
+
+**Datos contestó el H1–H10**, y medido en Snowflake está cerrado: la vista de
+control de UA quedó en 10 filas, las 10 `CLAVE DESCONOCIDA`. Está en
+`docs/AUDITORIA-2026-11-09-respuesta-de-datos-ua.md`.
+
+**`docs/MENSAJE-2026-11-09-backend-metricas-de-ua.md` pide nueve claves**, y
+**se envió el 2026-11-09, lo mandó el humano**. **Lo que sigue es esperar, no
+volver a pedirlo.** Cinco van a `KPISQL` para que traigan comparativos.
+`category_mix` espera a datos: el 9 % de la venta llega con la división nula.
+
+**Terpel también**: datos definió la campaña (`CAMPANA`, con familia y
+cuenta) y producto lo aceptó. `docs/MENSAJE-2026-11-09-backend-tabla-por-campana-de-terpel.md`
+pide `media_by_campaign` con su `SELECT`, y **se envió el 2026-11-09, lo mandó
+el humano**. **Lo que sigue es esperar, no volver a pedirlo.**
+
+**Pendiente con datos, sin pedir todavía**: la división nula, de dónde sale
+477 123 en el H8 y la firma de `roas`, que dice «Nombre Apellido».
+
+**`periodBindings` liga los `?` según el texto del SQL**: con
+`DATEADD(month, -12` van todos al fin del período. Una serie de doce meses
+escrita de otra forma pierde un punto sin dar error.
+
+### ⇩ el 2026-11-04 · el backend programó Terpel, y falta desplegar
+
+**El backend contestó con `f78d700`**, leído contra `dc58ef5`: las siete
+métricas de pauta con las consultas que mandamos, y las dos de ATL bloqueadas.
+Medido en `docs/AUDITORIA-2026-11-04-respuesta-del-backend-terpel.md`.
+
+**`media_by_campaign` no se registró, y el error fue nuestro**: la vista no
+trae una fila por campaña (30 `CAMPANA`, 86 `NOMBRE_CAMPANA` en 90 filas).
+
+**Los dos mensajes se enviaron el 2026-11-04, y los mandó el humano**:
+`docs/MENSAJE-2026-11-04-backend-desplegar-metricas-de-terpel.md` —desplegar
+`dc58ef5` en QA— y `docs/MENSAJE-2026-11-04-datos-campanas-de-terpel.md` —qué
+es una campaña, y las filas repetidas—. Después del despliegue, «Cargar meses»
+de julio a octubre en Terpel, y F6.3. **Lo que sigue es esperar, no volver a pedirlo.** **Producto decide** si la tabla por
+campaña muestra líneas de pauta o campañas agrupadas.
+
+**Cuando un commit citado no aparece, se vuelve a medir antes de escribirlo**:
+a la mañana el remoto daba `db91b5d` y horas después estaba publicado.
+
+### ⇩ el 2026-11-03 · la Fase 6, y los dos pedidos enviados
+
+**La Fase 6 vive en `plan-fase-6.md`**, aparte del plan, por decisión humana:
+las métricas de cada cliente y un reporte por correo que programan el admin y
+el superadmin. Las cinco decisiones del día están en su §3; las cuatro que
+siguen abiertas (P6.1–P6.4) son de producto. `npm run plan` lee los dos
+archivos.
+
+**Los dos mensajes se enviaron el 2026-11-03, y los mandó el humano**:
+`docs/MENSAJE-2026-11-03-datos-entrega-de-ua-medida.md` —la entrega de UA no
+se puede cargar todavía: cifras que no se reproducen, columnas que no existen
+y 42 problemas en su vista de control— y
+`docs/MENSAJE-2026-11-03-backend-metricas-de-terpel.md` —las métricas de
+Terpel en `MetricRegistry`, con el SQL y la cifra de cada una—. **Lo que sigue
+es esperar, no volver a pedirlo.**
+
+**Lo tomable del front**: F6.5, el mapa de UX del reporte, que tiene que estar
+antes del dibujo; y F6.8, los colores del correo.
+
+**Pendiente con datos, sin pedir todavía**: el alcance de Terpel se suma entre
+campañas, y eso cuenta dos veces a quien vio dos.
 
 ### ⇩ ACÁ SE PARÓ · 2026-10-23 · los usuarios de servicio, y la llave desde la ficha
 

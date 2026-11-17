@@ -67,8 +67,8 @@ TRANSVERSALES = [
 ]
 
 FASES = {
- 'back': {0:"Fundamentos e infraestructura",1:"API de consola",2:"Materialización y cache",3:"Chat contextual",4:"Admin y Builder",5:"Multi-dashboard y pulido"},
- 'front':{0:"Fundamentos",1:"Consola y el traslado de render/",2:"Estados de materialización",3:"Chat contextual",4:"Admin y Builder",5:"Multi-dashboard, pruebas y pulido"},
+ 'back': {0:"Fundamentos e infraestructura",1:"API de consola",2:"Materialización y cache",3:"Chat contextual",4:"Admin y Builder",5:"Multi-dashboard y pulido",6:"Métricas por cliente y reporte programado"},
+ 'front':{0:"Fundamentos",1:"Consola y el traslado de render/",2:"Estados de materialización",3:"Chat contextual",4:"Admin y Builder",5:"Multi-dashboard, pruebas y pulido",6:"Métricas por cliente y reporte programado"},
 }
 
 e = html.escape
@@ -80,7 +80,7 @@ def md(s):
 
 filas = []
 for eq in ('back','front'):
-    for fase in range(6):
+    for fase in range(7):
         grupo = [t for t in tasks if t['equipo']==eq and t['fase']==fase]
         if not grupo: continue
         sigla = ('B' if eq=='back' else 'F') + str(fase)
