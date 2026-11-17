@@ -600,10 +600,15 @@ UA MX y ver cada panel con su cifra.
 **Visto al abrirlo, sin tocar**: el resumen ejecutivo desborda su panel de
 12 × 4, y el borrador v9 tiene un problema de composición que impide publicar.
 
-**Escrito y sin confirmar si salió**:
+**A datos, enviado, lo mandó el humano**:
 `docs/MENSAJE-2026-11-11-datos-ua-por-dia-y-por-mes.md` (PR #90), las series
 diarias y de doce meses de UA. Su §5 trae lo más serio: `GLD_PAID_MEDIA.COST_USD`
-suma 4,16 M en octubre contra 55 936 de `GROSS_SPEND`.
+suma 4,16 M en octubre contra 55 936 de `GROSS_SPEND`. **Lo que sigue es
+esperar, no volver a pedirlo.** Con su validación se le pide al backend.
+
+**También enviado**: `docs/MENSAJE-2026-11-09-backend-clientes-de-qa.md`
+(PR #68), y el backend ya contestó en
+`docs/RESPUESTA-2026-11-09-backend-clientes-de-qa.md`.
 
 ### ⇩ el 2026-11-09 · datos cerró UA, y el pedido al backend está redactado
 
