@@ -46,7 +46,7 @@ const detalle = {
   layout: layouts[0],
   tabs: [
     {
-      tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+      tab: { id: 'tab-a', layout_version_id: 'l-2', key: 'resumen', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
       panels: [panel('p-1', 'm-1', 1, 6), panel('p-2', 'm-2', 7, 6)],
     },
   ],
@@ -521,7 +521,7 @@ describe('§7.2 · el slot vacío es DERIVADO', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', key: 'resumen', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [panel('p-1', 'm-1', 1, 6)],
             },
           ],
@@ -544,7 +544,7 @@ describe('el teclado no es un accesorio · y no es una puerta trasera', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', key: 'resumen', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [panel('p-1', 'm-1', 1, 3)],
             },
           ],
@@ -571,7 +571,7 @@ describe('el teclado no es un accesorio · y no es una puerta trasera', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', key: 'resumen', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [panel('p-1', 'm-1', 1, 3)],
             },
           ],
@@ -624,7 +624,7 @@ describe('los handles del panel seleccionado', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', key: 'resumen', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [panel('p-1', 'm-1', 1, 3)],
             },
           ],
@@ -653,7 +653,7 @@ describe('los handles del panel seleccionado', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', key: 'resumen', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [panel('p-1', 'm-1', 1, 4)],
             },
           ],
@@ -762,7 +762,7 @@ describe('«Span al soltar» · lo que va a ocupar, antes de soltar', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', key: 'resumen', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [panel('p-1', 'm-1', 1, 6)],
             },
           ],
@@ -794,7 +794,7 @@ describe('«Span al soltar» · lo que va a ocupar, antes de soltar', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', key: 'resumen', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [
                 panel('p-1', 'm-1', 1, 6),
                 { ...panel('p-2', 'm-2', 7, 6), row_span: 2 },
@@ -986,7 +986,7 @@ function conPaneles(...ps: [string, number, number][]) {
       layout: layouts[0],
       tabs: [
         {
-          tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+          tab: { id: 'tab-a', layout_version_id: 'l-2', key: 'resumen', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
           panels: ps.map(([m, c, s], i) => panel(`p-${String(i + 1)}`, m, c, s)),
         },
       ],
@@ -1233,5 +1233,57 @@ describe('deshacer · el borrador se guarda solo', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Agrandar' }))
     await waitFor(() => expect(screen.getByRole('button', { name: /^Rehacer/ })).toBeDisabled())
+  })
+})
+
+/** ── EL LENTE QUE NO VE LA PESTAÑA · 2026-11-17 ─────────────────────────────
+ *
+ *  Medido en QA ese día: UA MX con una sola pestaña, `pestana-nueva`, y el rol
+ *  `admin` —el lente por defecto— restringido a `overview` y `resumen`. El
+ *  preview contestó `tabs: []`, con `period` y SIN `payloads`, y el lienzo decía
+ *  «Se dibuja al guardar» con el borrador ya guardado. */
+const previewSinLaPestana = http.get(`${API}/admin/layouts/:id/preview`, () =>
+  ok({
+    layout_id: 'l-2', dashboard_id: 'd-1', status: 'draft',
+    role: { id: 'r-admin', name: 'admin' },
+    tabs: [],
+    period: '2026-10',
+  }),
+)
+
+describe('el lente no ve la pestaña · 2026-11-17', () => {
+  it('con «Todos los roles» dibuja el dato del CATÁLOGO, del mes del preview', async () => {
+    pedidosDelCatalogo.length = 0
+    base([...datoDelCatalogo({ 'm-1': disponible(48362), 'm-2': disponible(1234) }), previewSinLaPestana])
+    montar()
+    await abrirCanvas()
+
+    expect(await within(panelDe('Ventas')).findByText(/48[.,]362/)).toBeInTheDocument()
+    expect(within(panelDe('Doce meses')).getByText(/1[.,]234/)).toBeInTheDocument()
+    expect(pedidosDelCatalogo[0]?.searchParams.get('period')).toBe('2026-10')
+  })
+
+  it('lo que el catálogo no tiene dice POR QUÉ · no «se dibuja al guardar»', async () => {
+    base([...datoDelCatalogo({ 'm-1': disponible(48362) }), previewSinLaPestana])
+    montar()
+    await abrirCanvas()
+
+    await within(panelDe('Ventas')).findByText(/48[.,]362/)
+    expect(
+      within(panelDe('Doce meses')).getByText('admin no tiene esta pestaña, y el dato se pide como lo ve ese rol.'),
+    ).toBeInTheDocument()
+  })
+
+  it('con un rol ELEGIDO no completa con el catálogo · lo que ese rol no ve no se dibuja', async () => {
+    base([...datoDelCatalogo({ 'm-1': disponible(48362), 'm-2': disponible(1234) }), previewSinLaPestana])
+    montar()
+    await userEvent.click(await screen.findByRole('button', { name: /Overview/ }))
+    await userEvent.click(await screen.findByRole('button', { name: 'admin' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Abrir el editor de Overview' }))
+
+    expect(
+      await within(panelDe('Ventas')).findByText('admin no tiene esta pestaña, y el dato se pide como lo ve ese rol.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/48[.,]362/)).toBeNull()
   })
 })
