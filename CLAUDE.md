@@ -575,7 +575,37 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-11-09 · datos cerró UA, y el pedido al backend está redactado
+### ⇩ ACÁ SE PARÓ · 2026-11-17 · el editor de QA no dibujaba, y el despliegue está pedido
+
+**En el editor de UA MX ningún panel mostraba su gráfico**, y no se podía
+cuadrar posición ni tamaño. Eran dos causas, medidas en QA:
+
+- **El dato se pide como lo ve un rol**, y sin rol elegido es `admin`. UA MX
+  tiene una sola pestaña, `pestana-nueva`, que `admin` no tenía: el preview
+  contestó `tabs: []`. Lo arregla el #92 (`4951558`): con «Todos los roles»
+  usa el dato del catálogo de `a80c318`.
+- **La ficha sin dato ocupaba una celda.** Lo arregla el #89 (`6381d3b`).
+
+**Mientras tanto se destrabó en QA**, decidido por el humano: `admin` y `user`
+de UA MX tienen `pestana-nueva`, con un `PUT` parcial de sólo `tab_keys`.
+**Esos dos roles tienen 0 usuarios**; los 13 están en `Admin`, `Planner` y
+`superadmin`, que ven todo. Antes de decir que la consola le esconde algo a
+alguien, se cuentan los usuarios del rol.
+
+**`docs/MENSAJE-2026-11-17-backend-desplegar-el-front.md` pide desplegar
+`main` (`8523981`) en QA**, y **se envió el 2026-11-17, lo mandó el humano**.
+**Lo que sigue es esperar, no volver a pedirlo.** Después: abrir el editor de
+UA MX y ver cada panel con su cifra.
+
+**Visto al abrirlo, sin tocar**: el resumen ejecutivo desborda su panel de
+12 × 4, y el borrador v9 tiene un problema de composición que impide publicar.
+
+**Escrito y sin confirmar si salió**:
+`docs/MENSAJE-2026-11-11-datos-ua-por-dia-y-por-mes.md` (PR #90), las series
+diarias y de doce meses de UA. Su §5 trae lo más serio: `GLD_PAID_MEDIA.COST_USD`
+suma 4,16 M en octubre contra 55 936 de `GROSS_SPEND`.
+
+### ⇩ el 2026-11-09 · datos cerró UA, y el pedido al backend está redactado
 
 **Datos contestó el H1–H10**, y medido en Snowflake está cerrado: la vista de
 control de UA quedó en 10 filas, las 10 `CLAVE DESCONOCIDA`. Está en
