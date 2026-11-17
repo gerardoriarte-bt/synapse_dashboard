@@ -718,11 +718,21 @@ export function Builder() {
     rolActivo !== null && rolDelLente?.metricasOcultas.includes(p.metricId) === true
   /** El dato de un panel del borrador · por su id si ya se guardó, y si no por
    *  su métrica, que es como el servicio lo guarda. */
+  /** **Con «Todos los roles», el dato del catálogo completa lo que el lente no
+   *  trae** · 2026-11-17. El dato del lienzo se pide como lo ve un rol —`admin`
+   *  si no se eligió ninguno—, y el servicio no devuelve las pestañas que ese
+   *  rol no tiene. Medido en QA: UA MX con una sola pestaña, `pestana-nueva`, y
+   *  `admin` restringido a `overview` y `resumen`: el preview vino con
+   *  `tabs: []` y el lienzo decía «Se dibuja al guardar» con el borrador ya
+   *  guardado. El dato del catálogo es el mismo `value` guardado y no tiene
+   *  lente, así que sólo completa cuando no se está mirando como un rol: con un
+   *  rol elegido, lo que ese rol no ve no se dibuja. */
   const payloadDe = (p: PanelDeBorrador): Payload | undefined =>
     ocultaParaElLente(p)
       ? undefined
       : ((p.id === undefined ? undefined : datosDelLienzo.data?.datos?.porPanel.get(p.id)) ??
-        datoPorMetrica.get(p.metricId))
+        datoPorMetrica.get(p.metricId) ??
+        (rolActivo === null ? datoDelCatalogo.data?.get(p.metricId) : undefined))
   const dibujarPanel = (indice: number) => {
     const p = tabs[tabEnLienzo]?.panels[indice]
     if (p === undefined) return null
@@ -738,7 +748,12 @@ export function Builder() {
         ? `No se pudo traer el dato · ${datosDelLienzo.error.message === '' ? 'sin detalle del servidor' : datosDelLienzo.error.message}`
         : datosDelLienzo.data === undefined
           ? 'Trayendo el dato…'
-          : 'Se dibuja al guardar.'
+          : // **«Se dibuja al guardar» sólo si guardar lo arregla.** Si el rol
+            // del lente no tiene la pestaña, guardar no cambia nada.
+            p.id !== undefined &&
+              !datosDelLienzo.data.tabs.some((t) => t.tab.clave === tabs[tabEnLienzo]?.clave)
+            ? `${rolDelLente?.nombre ?? 'El rol'} no tiene esta pestaña, y el dato se pide como lo ve ese rol.`
+            : 'Se dibuja al guardar.'
     return (
       <PanelConDato
         // **`colStart` 1**: la celda del lienzo ya ubica el panel; adentro es
