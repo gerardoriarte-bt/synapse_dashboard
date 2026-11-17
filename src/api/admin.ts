@@ -866,13 +866,18 @@ function adaptarPreview(w: WirePreview): PreviewDeRol {
         ...(x.chart === undefined || x.chart === '' ? {} : { grafico: x.chart as NonNullable<PanelConfig['grafico']> }),
       })),
     })),
-    ...(w.payloads === undefined
+    // **Sin `payloads` pero con `period` también hay datos: vacíos** · 2026-11-17.
+    // Medido en QA: con un lente que no ve la pestaña del borrador, el servicio
+    // contesta `tabs: []`, manda `period` y omite `payloads`. Tirar el período
+    // dejaba al editor sin el mes, y sin el mes no se pide el dato del catálogo
+    // que podía dibujar esos paneles.
+    ...(w.payloads === undefined && w.period === undefined
       ? {}
       : {
           datos: {
             periodo: w.period ?? '',
             porPanel: new Map(
-              Object.entries(w.payloads).map(([id, x]) => [id, adaptPayload(x as unknown as WirePayload)]),
+              Object.entries(w.payloads ?? {}).map(([id, x]) => [id, adaptPayload(x as unknown as WirePayload)]),
             ),
           },
         }),
