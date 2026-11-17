@@ -11,6 +11,10 @@
  *  más 300 de biblioteca, «a otra escala las unidades de arrastre mentirían»— y
  *  **1440 en B5**, que muestra la consola del cliente a su ancho real.
  *
+ *  **Desde el 2026-11-10 las seis van a 1024**, por decisión humana y con la
+ *  divergencia escrita · ver `pantallas.ts` y
+ *  `docs/PROPUESTA-2026-11-10-editor-a-cualquier-ancho.md`.
+ *
  *  **La clase es estática y el número es dato.** Tailwind poda lo que su escáner
  *  no ve escrito, así que una utilidad armada por interpolación compilaría,
  *  dejaría el atributo `class` correcto en el DOM y **nunca llegaría al CSS**.
@@ -72,8 +76,7 @@ const soloContexto = (f: FormaDeChrome) => f === 'contexto'
 
 /** Una entrada por ancho de `pantallas.ts`. Escritas, no interpoladas. */
 const ANCHO: Readonly<Record<number, string>> = {
-  1600: 'min-w-[1600px]',
-  1440: 'min-w-[1440px]',
+  1024: 'min-w-[1024px]',
 }
 
 export type ContextoDeEdicion = {
@@ -207,7 +210,7 @@ export function BuilderChrome({
     <div className="min-h-screen bg-bg">
       {/* Sin colapso · §4: «no son grids y declaran ancho mínimo en vez de
           colapso». Abajo del mínimo hay scroll, que es visible. */}
-      <div className={ANCHO[pantalla.ancho] ?? ANCHO[1600]}>
+      <div className={ANCHO[pantalla.ancho] ?? ANCHO[1024]}>
         {sinChrome(forma) ? null : (
           // **Fija arriba**: el editor es largo, y el estado del guardado tiene
           // que verse mientras se baja por el lienzo.

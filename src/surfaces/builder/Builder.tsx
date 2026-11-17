@@ -34,13 +34,15 @@
  *  Una pantalla que se declara pendiente no es lo mismo que una que no está: la
  *  primera dice qué la desbloquea, que es lo que §8 pide de cualquier estado.
  */
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { PARAMETRO_DASHBOARD } from '../dashboardEnUrl'
 import { useCerrarSesion } from '../useCerrarSesion'
 import { useTemaGuardado } from '../useTemaGuardado'
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
   useAdminCatalog,
+  useDatoDelCatalogo,
   useBlocks,
   usePlots,
   useCreateDraft,
@@ -61,6 +63,7 @@ import {
   useSaveTheme,
 } from '../../api/hooks'
 import { BuilderChrome } from './BuilderChrome'
+import { COLUMNA_FIJA } from './columnaFija'
 import { ContextView } from './ContextView'
 import { TabInspector } from './TabInspector'
 import type { DashboardEnLista } from './ContextView'
@@ -70,6 +73,8 @@ import { PanelConfigurator } from './PanelConfigurator'
 import type { Profundidad } from './PanelConfigurator'
 import { tipoPara } from './tipoPara'
 import type { PanelDeBorrador } from './borrador'
+import { cambioDeTamano } from './disposicion'
+import { nombreDeTipo } from './rotulos'
 import { PublishBar } from './PublishBar'
 import { RolePreview } from './RolePreview'
 import { VersionHistory } from './VersionHistory'
@@ -85,7 +90,7 @@ import {
   asignarRoles, fijarSugerencias,
   laVe,
   cambiarTipo,
-  redimensionarPanel,
+  ajustarPanel,
   reubicarPanel,
   editar,
   editarOpcion,
@@ -164,6 +169,9 @@ const EN_OTRA_PANTALLA: Partial<Record<PantallaId, string>> = {
 
 /** Cuánto se espera sin editar antes de guardar solo. */
 const AUTOGUARDADO_MS = 3000
+/** Cuántos pasos se pueden deshacer · cada uno es una copia de las pestañas, y
+ *  escribir una nota de lectura deja uno por tecla. */
+const HISTORIAL_MAXIMO = 100
 
 export function Builder() {
   const navegar = useNavigate()
@@ -219,7 +227,11 @@ export function Builder() {
    *  comportamiento anterior en vez de mostrar un builder vacío. */
   const dashboards = useDashboards(tenantActivo)
   const crearDashboard = useCreateDashboard(tenantActivo)
-  const [dashboardElegido, setDashboardElegido] = useState<string | null>(null)
+  /** **Arranca en el de la URL** · 2026-11-10: la consola manda el dashboard
+   *  que se estaba mirando —ver `dashboardEnUrl.ts`—. Sólo al montar: después
+   *  manda lo que se elija acá. Uno que no esté en la lista se ignora abajo. */
+  const [params] = useSearchParams()
+  const [dashboardElegido, setDashboardElegido] = useState<string | null>(() => params.get(PARAMETRO_DASHBOARD))
   /** **Sin la ruta de dashboards, se arman desde las versiones** · cada una
    *  dice de qué dashboard es. El nombre sale de `/config/me` cuando es el
    *  cliente propio; si no, se numera. Mejor un builder que funciona con
@@ -262,8 +274,11 @@ export function Builder() {
    *  otro panel empieza de cero; uno sin métrica abre en «Qué muestra», que es
    *  lo único que le falta. */
   const [profundidad, setProfundidad] = useState<Profundidad | null>(null)
+  /** Por qué no se aplicó el último tamaño escrito en el configurador. */
+  const [avisoDeTamano, setAvisoDeTamano] = useState<string | null>(null)
   const setSeleccion = (s: { tab: number; panel: number } | null) => {
     elegirPanel(s)
+    setAvisoDeTamano(null)
     if (s === null) return setProfundidad(null)
     // Un panel recién agregado todavía no está en `tabs` de este render: es
     // nuevo, y lo que le falta es la métrica.
@@ -343,6 +358,14 @@ export function Builder() {
       if (d !== undefined && !datoPorMetrica.has(x.metricId)) datoPorMetrica.set(x.metricId, d)
     }
   }
+  /** **El dato de TODO el catálogo**, esté o no en el lienzo · `a80c318`,
+   *  2026-11-10. Del mismo período que el dato del lienzo, para que la lista y
+   *  los paneles hablen del mismo mes. **Sin el lente del rol**: la biblioteca
+   *  es de quien compone, igual que el catálogo. Contra un servicio que todavía
+   *  no tiene la ruta da 404 y la biblioteca sigue como antes, con el dato de
+   *  lo que ya está en el lienzo. */
+  const periodoDelLienzo = datosDelLienzo.data?.datos?.periodo ?? null
+  const datoDelCatalogo = useDatoDelCatalogo(tenantActivo, periodoDelLienzo === '' ? null : periodoDelLienzo)
 
   const guardar = useSaveLayout(version)
   const validar = useValidateLayout(version)
@@ -429,11 +452,72 @@ export function Builder() {
   // identidad, porque su `layoutId` deja de coincidir.
   const cambiar = (siguiente: TabParaGuardar[]) => {
     if (version === null || publicada) return
+    // Lo de antes queda para deshacer, y lo deshecho deja de poder rehacerse:
+    // un cambio nuevo abre otra rama.
+    setHistorial({ layoutId: version, pasado: [...pasado, tabs].slice(-HISTORIAL_MAXIMO), futuro: [] })
+    aplicar(siguiente)
+  }
+  const aplicar = (siguiente: TabParaGuardar[]) => {
+    if (version === null || publicada) return
     // Un error de guardado se olvida al seguir editando: el próximo guardado
     // automático lo vuelve a intentar con lo nuevo.
     if (guardar.isError) guardar.reset()
     setBorrador({ layoutId: version, tabs: siguiente })
   }
+
+  /** ── DESHACER · 2026-11-10 ────────────────────────────────────────────────
+   *
+   *  **El borrador se guarda solo, así que un error quedaba guardado.** Medido
+   *  ese día: un «Ancho +» en una fila llena bajó dos paneles de fila, y el
+   *  guardado automático lo escribió a los pocos segundos. Sin deshacer, la
+   *  vuelta era recomponer a mano.
+   *
+   *  **Se guarda la pestaña entera de antes**, no la operación: cada edición
+   *  pasa por `cambiar` y ninguna tiene que saber cómo deshacerse. Lo que se
+   *  restaura se guarda como cualquier cambio, y un panel nuevo que el servidor
+   *  ya creó vuelve sin `id`: el `PUT` reemplaza el contenido entero
+   *  (`ReplaceContent`, leído en `4192041`), así que no se duplica.
+   *
+   *  **Es del borrador abierto**: cambiar de versión lo deja atrás. */
+  const [historial, setHistorial] = useState<{
+    layoutId: string
+    pasado: TabParaGuardar[][]
+    futuro: TabParaGuardar[][]
+  } | null>(null)
+  const pasado = historial !== null && historial.layoutId === version ? historial.pasado : []
+  const futuro = historial !== null && historial.layoutId === version ? historial.futuro : []
+  const restaurar = (destino: TabParaGuardar[]) => {
+    aplicar(destino)
+    // Un panel elegido que ya no existe se suelta; si existe, sigue elegido.
+    if (seleccion !== null && destino[seleccion.tab]?.panels[seleccion.panel] === undefined) setSeleccion(null)
+  }
+  const deshacer = () => {
+    const previo = pasado.at(-1)
+    if (previo === undefined || version === null || publicada) return
+    setHistorial({ layoutId: version, pasado: pasado.slice(0, -1), futuro: [...futuro, tabs] })
+    restaurar(previo)
+  }
+  const rehacer = () => {
+    const siguiente = futuro.at(-1)
+    if (siguiente === undefined || version === null || publicada) return
+    setHistorial({ layoutId: version, pasado: [...pasado, tabs], futuro: futuro.slice(0, -1) })
+    restaurar(siguiente)
+  }
+  // **Cmd o Ctrl + Z en el editor**, y con Shift rehace. No dentro de un campo
+  // de texto: ahí deshace lo escrito, que es lo que se espera.
+  useEffect(() => {
+    if (pantalla !== 'canvas') return
+    const tecla = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z') return
+      const destino = e.target instanceof Element ? e.target : null
+      if (destino?.closest('input, textarea, select, [contenteditable="true"]') != null) return
+      e.preventDefault()
+      if (e.shiftKey) rehacer()
+      else deshacer()
+    }
+    window.addEventListener('keydown', tecla)
+    return () => window.removeEventListener('keydown', tecla)
+  })
 
   /** ── GUARDAR · AUTOMÁTICO Y EXPLÍCITO · 2026-10-07 ────────────────────────
    *
@@ -634,11 +718,21 @@ export function Builder() {
     rolActivo !== null && rolDelLente?.metricasOcultas.includes(p.metricId) === true
   /** El dato de un panel del borrador · por su id si ya se guardó, y si no por
    *  su métrica, que es como el servicio lo guarda. */
+  /** **Con «Todos los roles», el dato del catálogo completa lo que el lente no
+   *  trae** · 2026-11-17. El dato del lienzo se pide como lo ve un rol —`admin`
+   *  si no se eligió ninguno—, y el servicio no devuelve las pestañas que ese
+   *  rol no tiene. Medido en QA: UA MX con una sola pestaña, `pestana-nueva`, y
+   *  `admin` restringido a `overview` y `resumen`: el preview vino con
+   *  `tabs: []` y el lienzo decía «Se dibuja al guardar» con el borrador ya
+   *  guardado. El dato del catálogo es el mismo `value` guardado y no tiene
+   *  lente, así que sólo completa cuando no se está mirando como un rol: con un
+   *  rol elegido, lo que ese rol no ve no se dibuja. */
   const payloadDe = (p: PanelDeBorrador): Payload | undefined =>
     ocultaParaElLente(p)
       ? undefined
       : ((p.id === undefined ? undefined : datosDelLienzo.data?.datos?.porPanel.get(p.id)) ??
-        datoPorMetrica.get(p.metricId))
+        datoPorMetrica.get(p.metricId) ??
+        (rolActivo === null ? datoDelCatalogo.data?.get(p.metricId) : undefined))
   const dibujarPanel = (indice: number) => {
     const p = tabs[tabEnLienzo]?.panels[indice]
     if (p === undefined) return null
@@ -654,7 +748,12 @@ export function Builder() {
         ? `No se pudo traer el dato · ${datosDelLienzo.error.message === '' ? 'sin detalle del servidor' : datosDelLienzo.error.message}`
         : datosDelLienzo.data === undefined
           ? 'Trayendo el dato…'
-          : 'Se dibuja al guardar.'
+          : // **«Se dibuja al guardar» sólo si guardar lo arregla.** Si el rol
+            // del lente no tiene la pestaña, guardar no cambia nada.
+            p.id !== undefined &&
+              !datosDelLienzo.data.tabs.some((t) => t.tab.clave === tabs[tabEnLienzo]?.clave)
+            ? `${rolDelLente?.nombre ?? 'El rol'} no tiene esta pestaña, y el dato se pide como lo ve ese rol.`
+            : 'Se dibuja al guardar.'
     return (
       <PanelConDato
         // **`colStart` 1**: la celda del lienzo ya ubica el panel; adentro es
@@ -731,7 +830,27 @@ export function Builder() {
           }
           cambiar(editarPanel(siguiente, seleccion.tab, seleccion.panel, { metricId }))
         }}
-        onSpan={(campo, valor) => cambiar(editarPanel(tabs, seleccion.tab, seleccion.panel, { [campo]: valor }))}
+        // **La misma regla que en el lienzo**: un tamaño que correría a otro
+        // panel no se aplica, y se dice. El rango del tipo, en cambio, se
+        // sigue marcando al validar: es un campo que se escribe, y exigirlo
+        // en cada tecla no dejaría pasar por un valor intermedio.
+        onSpan={(campo, valor) => {
+          const enTab = tabs[seleccion.tab]?.panels ?? []
+          const p = enTab[seleccion.panel]
+          if (p === undefined) return
+          const razon = cambioDeTamano(
+            enTab,
+            seleccion.panel,
+            { colStart: p.colStart, colSpan: p.colSpan, rowSpan: p.rowSpan, [campo]: valor },
+            {
+              tipo: nombreDeTipo(p.tipo),
+              nombre: (i) => metricasPorId.get(enTab[i]?.metricId ?? '')?.nombre ?? 'Sin métrica',
+            },
+          )
+          setAvisoDeTamano(razon)
+          if (razon === null) cambiar(editarPanel(tabs, seleccion.tab, seleccion.panel, { [campo]: valor }))
+        }}
+        avisoDeTamano={avisoDeTamano}
         onOpcion={(nombre, valor) => cambiar(editarOpcion(tabs, seleccion.tab, seleccion.panel, nombre, valor))}
         onNota={(texto) => cambiar(editarPanel(tabs, seleccion.tab, seleccion.panel, { nota: texto }))}
         onQuitar={() => {
@@ -1000,7 +1119,7 @@ export function Builder() {
                   ) : ajustesDe !== null && tabs[ajustesDe] !== undefined ? (
                     <aside
                       aria-label="Ajustes de la pestaña"
-                      className="sticky top-[calc(var(--alto-cabecera-builder,0px)+16px)] flex w-75 shrink-0 flex-col gap-3 self-start"
+                      className={`flex w-75 shrink-0 flex-col gap-3 self-start ${COLUMNA_FIJA}`}
                       onKeyDown={(e) => {
                         if (e.key === 'Escape') setAjustesDe(null)
                       }}
@@ -1039,27 +1158,49 @@ export function Builder() {
                     </aside>
                   ) : (
                     <Library
+                      metricas={catalogo.data?.metrics ?? []}
                       bloques={listaDeBloques}
+                      plots={plots.data ?? []}
+                      repertorio={repertorio}
+                      datoDe={(id) => datoDelCatalogo.data?.get(id) ?? datoPorMetrica.get(id)}
+                      {...(datoDelCatalogo.data === undefined || periodoDelLienzo === null
+                        ? {}
+                        : { periodo: formatDelCliente.periodName(periodoDelLienzo) })}
                       arrastrando={arrastrando}
                       onArrastrar={setArrastrando}
-                      onAgregar={(tipo) => {
+                      onAgregar={({ tipo, metricId, grafico }) => {
                         const b = tabla.get(tipo as PanelConfig['tipo'])
                         if (b === undefined) return
-                        const conNuevo = agregarPanel(tabs, tabEnLienzo, tipo, b.colSpanMin, b.rowSpanMin)
+                        const conNuevo = agregarPanel(tabs, tabEnLienzo, tipo, b.colSpanMin, b.rowSpanMin, {
+                          metricId,
+                          ...(grafico === undefined ? {} : { grafico }),
+                        })
                         cambiar(conNuevo)
                         setAjustesDe(null)
                         setSeleccion({ tab: tabEnLienzo, panel: (conNuevo[tabEnLienzo]?.panels.length ?? 1) - 1 })
                       }}
                     />
                   ))}
-                {/* **El lienzo a su ancho 1:1** —las 12 columnas de 80 con su
-                    separación, `CANVAS_WIDTH`—: las columnas lo corren, no lo
-                    achican. A otra escala las unidades de arrastre mentirían. */}
+                {/* **El lienzo usa el ancho que hay, hasta el de la consola** ·
+                    2026-11-10, decisión humana: «debería verse bien en cualquier
+                    resolución». Era fijo a `CANVAS_WIDTH` —1136, la grilla de la
+                    consola— dentro de este contenedor con scroll, y en una laptop
+                    la derecha quedaba cortada con la barra al pie del lienzo.
+                    **Achicarlo no rompe el arrastre**: las 12 columnas son `1fr`
+                    y cada celda es su propio destino (ver `Canvas.tsx`), así que
+                    un `colSpan` 4 sigue siendo un tercio. Lo que cambia es el
+                    ancho absoluto del panel, no su unidad. La divergencia con
+                    §4 está en `docs/PROPUESTA-2026-11-10-editor-a-cualquier-ancho.md`. */}
                 {/* **Con su propio scroll horizontal**: las columnas no se mueven
                     y el lienzo se recorre al lado, así ni el panel elegido ni la
                     configuración quedan fuera de la pantalla. */}
                 <div className="min-w-0 flex-1 overflow-x-auto pt-3">
-                <div className="flex flex-col gap-3" style={{ width: CANVAS_WIDTH }}>
+                {/* **Con piso, 720**: medido ese día, a 1280 con una columna del
+                    configurador abierta el lienzo bajaba a 528 y los paneles se
+                    rompían —rótulos encimados, texto desbordado—. A 720 un KPI de
+                    3 columnas mide unos 170 y se lee. Por debajo, este
+                    contenedor se corre de costado. */}
+                <div className="flex w-full min-w-[720px] flex-col gap-3" style={{ maxWidth: CANVAS_WIDTH }}>
                   <Canvas
                     panels={tabs[tabEnLienzo]?.panels ?? []}
                     tabla={tabla}
@@ -1073,26 +1214,24 @@ export function Builder() {
                     onReubicar={(i, colStart, destino) =>
                       cambiar(reubicarPanel(tabs, tabEnLienzo, i, colStart, destino))
                     }
-                    onRedimensionar={(i, campo, delta) => {
-                      const p = tabs[tabEnLienzo]?.panels[i]
-                      const b = p === undefined ? undefined : tabla.get(p.tipo as PanelConfig['tipo'])
-                      if (b === undefined) return
-                      cambiar(
-                        redimensionarPanel(
-                          tabs,
-                          tabEnLienzo,
-                          i,
-                          campo,
-                          delta,
-                          campo === 'colSpan' ? b.colSpanMin : b.rowSpanMin,
-                          campo === 'colSpan' ? b.colSpanMax : b.rowSpanMax,
-                        ),
-                      )
+                    onAjustar={(i, medida) => cambiar(ajustarPanel(tabs, tabEnLienzo, i, medida))}
+                    deshacer={{
+                      onDeshacer: pasado.length === 0 || publicada ? null : deshacer,
+                      onRehacer: futuro.length === 0 || publicada ? null : rehacer,
                     }}
-                    onSoltarTipo={(tipo, colStart, destino) => {
+                    onSoltarTipo={(tipo, colStart, destino, eleccion) => {
                       const b = tabla.get(tipo as PanelConfig['tipo'])
                       if (b === undefined) return
-                      const conNuevo = agregarPanel(tabs, tabEnLienzo, tipo, b.colSpanMin, b.rowSpanMin)
+                      const conNuevo = agregarPanel(
+                        tabs,
+                        tabEnLienzo,
+                        tipo,
+                        b.colSpanMin,
+                        b.rowSpanMin,
+                        eleccion === null
+                          ? {}
+                          : { metricId: eleccion.metricId, ...(eleccion.grafico === undefined ? {} : { grafico: eleccion.grafico }) },
+                      )
                       const ultimo = (conNuevo[tabEnLienzo]?.panels.length ?? 1) - 1
                       cambiar(reubicarPanel(conNuevo, tabEnLienzo, ultimo, colStart, destino))
                       setAjustesDe(null)

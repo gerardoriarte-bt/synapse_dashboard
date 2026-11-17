@@ -29,7 +29,7 @@
  *  que quedó atrás no se rellena con un ítem posterior. Repetirlo así es lo que
  *  hace que lo dibujado y lo calculado coincidan.
  */
-import { COLUMNS } from '../../render/grid'
+import { COLUMNS, GAP } from '../../render/grid'
 
 export type Colocacion = {
   /** Índice en el arreglo de paneles de la pestaña. */
@@ -206,4 +206,111 @@ export function ordenPara(
   // Ninguno empieza tan abajo: va al final.
   if (i < 0) return otros.length
   return i
+}
+
+/** ── MOVER Y ESTIRAR CON EL MOUSE · 2026-11-10 ──────────────────────────────
+ *
+ *  Pedido del humano: «refinar la grilla … para mover y ajustar los tamaños».
+ *  Medido ese día en local, con el dashboard descartable: correr un panel una
+ *  columna con el mouse no se podía —el cursor terminaba encima del propio
+ *  panel, que no acepta soltar—, el panel caía con la ESQUINA en la celda del
+ *  cursor sin importar de dónde se lo agarró, y un «Ancho +» en una fila llena
+ *  bajó a dos paneles de fila. Decisión humana del mismo día: **un tamaño que
+ *  no entra se bloquea y se avisa; no empuja a nadie.** */
+
+
+/** De qué celda del panel se lo agarró, contando desde su esquina · `0, 0` es
+ *  la de arriba a la izquierda.
+ *
+ *  **Sin esto el panel salta.** Al soltar, la celda bajo el cursor se tomaba
+ *  como la esquina del panel: uno de 6 columnas agarrado por el medio caía tres
+ *  columnas a la derecha, o se rechazaba por pasarse del borde.
+ *
+ *  El paso sale del propio rectángulo —`(ancho + GAP) / colSpan`— y no de la
+ *  grilla, así que no depende de cuánto mida el lienzo. Sin medida (jsdom, o
+ *  un panel que todavía no se pintó) devuelve la esquina. */
+export function celdaAgarrada(
+  rect: { left: number; top: number; width: number; height: number },
+  punto: { x: number; y: number },
+  colSpan: number,
+  rowSpan: number,
+): { dCol: number; dFila: number } {
+  if (rect.width <= 0 || rect.height <= 0) return { dCol: 0, dFila: 0 }
+  const pasoX = (rect.width + GAP) / colSpan
+  const pasoY = (rect.height + GAP) / rowSpan
+  const acotar = (v: number, max: number) => Math.max(0, Math.min(max, v))
+  return {
+    dCol: acotar(Math.floor((punto.x - rect.left) / pasoX), colSpan - 1),
+    dFila: acotar(Math.floor((punto.y - rect.top) / pasoY), rowSpan - 1),
+  }
+}
+
+/** **El agarre viaja en el arrastre**, igual que la elección de la biblioteca
+ *  · ver `eleccion.ts`. Al soltar se lee de ahí y no del estado del lienzo,
+ *  que puede quedar desfasado con un `dragend` perdido. */
+export const FORMATO_AGARRE = 'application/x-synapse-agarre'
+
+export function leerAgarre(crudo: string): { dCol: number; dFila: number } {
+  try {
+    const a = JSON.parse(crudo) as unknown
+    if (typeof a === 'object' && a !== null && 'dCol' in a && 'dFila' in a) {
+      const { dCol, dFila } = a as { dCol: unknown; dFila: unknown }
+      if (Number.isInteger(dCol) && Number.isInteger(dFila) && (dCol as number) >= 0 && (dFila as number) >= 0)
+        return { dCol: dCol as number, dFila: dFila as number }
+    }
+  } catch {
+    // Sin agarre legible se suelta por la esquina, como antes.
+  }
+  return { dCol: 0, dFila: 0 }
+}
+
+export type Medida = { colStart: number; colSpan: number; rowSpan: number }
+export type Rango = { colSpanMin: number; colSpanMax: number; rowSpanMin: number; rowSpanMax: number }
+
+/** ¿Se puede dar esta medida a este panel? · `null` si se puede, o la razón.
+ *
+ *  **Tres condiciones, en el orden en que conviene leerlas:**
+ *
+ *  1. **El rango del tipo**, cuando se pide · `/config/blocks` dice que un
+ *     indicador va de 3 a 4 columnas. Llegar al tope sin que nada lo dijera
+ *     era el «el botón no hace nada» que se reportó.
+ *  2. **El borde de la grilla.**
+ *  3. **Que nadie más se mueva.** Se simula la disposición con la medida nueva
+ *     y se compara panel por panel: el que se solapa se nombra igual que al
+ *     soltar, y el que cambiaría de lugar sin solaparse —la colocación
+ *     automática lo correría— también. Comparar sólo solapes no alcanza:
+ *     achicar un panel puede subir a otro que estaba esperando lugar. */
+export function cambioDeTamano(
+  panels: readonly Entrada[],
+  indice: number,
+  propuesta: Medida,
+  opciones: { rango?: Rango; tipo: string; nombre: (indice: number) => string },
+): string | null {
+  const { rango, tipo, nombre } = opciones
+  if (rango !== undefined) {
+    if (propuesta.colSpan < rango.colSpanMin || propuesta.colSpan > rango.colSpanMax)
+      return `«${tipo}» ocupa entre ${String(rango.colSpanMin)} y ${String(rango.colSpanMax)} columnas`
+    if (propuesta.rowSpan < rango.rowSpanMin || propuesta.rowSpan > rango.rowSpanMax)
+      return `«${tipo}» ocupa entre ${String(rango.rowSpanMin)} y ${String(rango.rowSpanMax)} filas`
+  }
+  if (propuesta.colSpan < 1 || propuesta.rowSpan < 1) return 'No puede medir menos de una celda'
+  if (propuesta.colStart < 1 || propuesta.colStart + propuesta.colSpan - 1 > COLUMNS)
+    return 'No entra · se pasa del borde de la grilla'
+
+  const antes = disposicion(panels)
+  const propio = antes.find((c) => c.indice === indice)
+  if (propio === undefined) return null
+  const choque = choqueCon(antes, { ...propuesta, filaInicio: propio.filaInicio }, indice)
+  if (choque !== null) return `Se solapa con «${nombre(choque)}»`
+
+  const despues = disposicion(panels.map((p, i) => (i === indice ? { ...p, ...propuesta } : p)))
+  for (const d of despues) {
+    const a = antes[d.indice]
+    if (a === undefined) continue
+    if (d.indice === indice ? a.filaInicio !== d.filaInicio : a.filaInicio !== d.filaInicio || a.colStart !== d.colStart)
+      return d.indice === indice
+        ? 'No entra en esta fila'
+        : `Correría a «${nombre(d.indice)}» de su lugar`
+  }
+  return null
 }

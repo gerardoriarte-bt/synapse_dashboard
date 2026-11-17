@@ -13,7 +13,7 @@ import { esDePanel } from './chat'
 import type { ContextoDeChat } from './chat'
 import { adminApi } from './admin'
 import { sinRolesInternos } from './rol'
-import type { CambioDeConexion, CambioDeUsuario, Corrida, RolParaGuardar, TabParaGuardar } from './admin'
+import type { CambioDeConexion, CambioDeIdentidad, CambioDeUsuario, Corrida, RolParaGuardar, TabParaGuardar } from './admin'
 import type { Theme } from '../tokens/theme'
 import type { Payload } from './types'
 
@@ -64,6 +64,7 @@ export const keys = {
   layouts: (tenantId: string) => ['admin', 'layouts', tenantId] as const,
   dashboards: (tenantId: string) => ['admin', 'dashboards', tenantId] as const,
   adminCatalog: (tenantId: string) => ['admin', 'catalog', tenantId] as const,
+  datoDelCatalogo: (tenantId: string, periodo: string) => ['admin', 'catalog', tenantId, 'dato', periodo] as const,
   roles: (tenantId: string) => ['admin', 'roles', tenantId] as const,
   agentes: (tenantId: string) => ['admin', 'agentes', tenantId] as const,
   /** **Debajo de `agentes`**, para que invalidar los agentes también la
@@ -352,6 +353,19 @@ export function useAdminCatalog(tenantId: string | null) {
   })
 }
 
+/** **El dato de cada métrica del catálogo en un período** · `a80c318`. Para la
+ *  biblioteca del editor: qué métricas tienen cifra y cuál, antes de ponerlas
+ *  en el lienzo. Sin período no se pide: la ruta lo exige, y el período es el
+ *  del dato del lienzo, para que la lista y los paneles hablen del mismo mes. */
+export function useDatoDelCatalogo(tenantId: string | null, periodo: string | null) {
+  return useQuery({
+    queryKey: keys.datoDelCatalogo(tenantId ?? '', periodo ?? ''),
+    queryFn: () => adminApi.datoDelCatalogo(tenantId as string, periodo as string),
+    staleTime: 60_000,
+    enabled: tenantId !== null && tenantId !== '' && periodo !== null && periodo !== '',
+  })
+}
+
 /* ── B4.8 y B4.9 · del FORK ─────────────────────────────────────────────────
  *
  * **El servicio desplegado devuelve 404 en estas rutas.** Los hooks existen para
@@ -502,13 +516,26 @@ export function useEditUser() {
 
 /** **Editar la forma corta** · F5.47. Se ve en la barra y en las cards
  *  —`/admin/tenants`— y en la consola —`/config/me`—: se invalidan las dos. */
-export function useEditTenantShortName() {
+export function useEditTenantIdentity() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (v: { tenantId: string; formaCorta: string }) => adminApi.editarFormaCorta(v.tenantId, v.formaCorta),
+    mutationFn: (v: { tenantId: string; cambio: CambioDeIdentidad }) => adminApi.editarIdentidad(v.tenantId, v.cambio),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: keys.tenants })
       void qc.invalidateQueries({ queryKey: keys.me })
+    },
+  })
+}
+
+/** **Apagar el cliente** · 2026-11-10. Se refresca la lista, de la que el
+ *  cliente sale; el cliente de trabajo cae solo al de la sesión, o al primero
+ *  si era ése (`useClienteDeTrabajo`). */
+export function useDeactivateTenant() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (tenantId: string) => adminApi.apagarCliente(tenantId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.tenants })
     },
   })
 }

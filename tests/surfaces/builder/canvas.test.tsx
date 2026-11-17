@@ -15,11 +15,12 @@ import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { fireEvent } from '@testing-library/dom'
+import { createEvent, fireEvent } from '@testing-library/dom'
 import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { Builder } from '@/surfaces/builder/Builder'
 import { nombreDeTipo } from '@/surfaces/builder/rotulos'
+import { FORMATO_ELECCION } from '@/surfaces/builder/eleccion'
 import { ok } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
 
@@ -45,7 +46,7 @@ const detalle = {
   layout: layouts[0],
   tabs: [
     {
-      tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+      tab: { id: 'tab-a', layout_version_id: 'l-2', key: 'resumen', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
       panels: [panel('p-1', 'm-1', 1, 6), panel('p-2', 'm-2', 7, 6)],
     },
   ],
@@ -54,6 +55,10 @@ const detalle = {
 const metricas = [
   { id: 'm-1', tenant_id: 't-1', key: 'a', name: 'Ventas', shape: 'scalar', family: 'demand', layer: 'GOLD', source: 'ERP', base: 'x', min_grain: 'day', dimensions: [], catalog_version: 1 },
   { id: 'm-2', tenant_id: 't-1', key: 'b', name: 'Doce meses', shape: 'scalar', family: 'demand', layer: 'GOLD', source: 'ERP', base: 'x', min_grain: 'day', dimensions: [], catalog_version: 1 },
+  // **Una serie, que no está en el lienzo** · 2026-11-10: desde que la
+  // biblioteca es de datos, para arrastrar una «Serie temporal» hace falta un
+  // dato que se dibuje así.
+  { id: 'm-3', tenant_id: 't-1', key: 'c', name: 'Tendencia', shape: 'time_series', family: 'media', layer: 'GOLD', source: 'Ads', base: 'y', min_grain: 'day', dimensions: [], catalog_version: 1 },
 ]
 
 const bloques = [
@@ -143,6 +148,17 @@ function soltarEn(col: number, fila: number, dato: string) {
 
 const panelDe = (nombre: string) => screen.getByRole('gridcell', { name: new RegExp(nombre) })
 
+/** **La biblioteca es de datos** · 2026-11-10: se abre un dato y aparece cómo
+ *  se puede mostrar. Devuelve ese grupo. */
+async function abrirDato(nombre: string) {
+  const biblioteca = within(screen.getByRole('complementary', { name: 'Datos del cliente' }))
+  await userEvent.click(biblioteca.getByRole('button', { name: new RegExp(`^${nombre}`) }))
+  return within(biblioteca.getByRole('group', { name: `Cómo mostrar ${nombre}` }))
+}
+
+/** Un dato de cada tipo, para las pruebas que arrastran un tipo. */
+const DATO_DE: Record<string, string> = { kpi: 'Ventas', series: 'Tendencia' }
+
 describe('§7.2 · la grilla de 12 es visible, con guías', () => {
   it('pinta las doce columnas como celdas reales', async () => {
     // Las guías y los destinos de soltado son la misma cosa: así «en qué celda
@@ -199,7 +215,8 @@ describe('el lienzo anuncia sus gestos · 2026-09-17', () => {
 
     // **Una sola frase desde el 2026-10-06** (D7): las reglas de la grilla se
     // fueron y quedaron los gestos, que es lo que quien compone necesita.
-    const ayuda = screen.getByText(/Arrastrá un tipo de la biblioteca a un espacio libre/)
+    // «un dato» desde el 2026-11-10: la biblioteca es de datos.
+    const ayuda = screen.getByText(/Arrastrá un dato de la biblioteca a un espacio libre/)
     expect(ayuda.textContent).toMatch(/arrastralo para moverlo, o usá las flechas/)
     // La otra mitad del gesto, y son distintas: mover y cambiar el tamaño ·
     // propuesta del canvas, punto 1.
@@ -217,38 +234,51 @@ describe('el lienzo anuncia sus gestos · 2026-09-17', () => {
   })
 })
 
-describe('§7.2 · la biblioteca, agrupada', () => {
-  it('lista los cinco grupos con sus tipos y sus rangos', async () => {
+describe('la biblioteca es de DATOS · decisión humana del 2026-11-10', () => {
+  /** «Se centra en un gráfico y no en los datos que se quieren transmitir.» Lo
+   *  primero que se elige es qué se muestra; el cómo sale del dato. */
+  it('lista los datos del cliente agrupados por familia, con su forma', async () => {
     base()
     montar()
     await abrirCanvas()
 
-    const biblioteca = within(screen.getByRole('complementary', { name: 'Biblioteca de tipos' }))
-    for (const g of ['Comparación', 'Composición', 'Evolución', 'Distribución', 'Estado']) {
-      expect(biblioteca.getByText(g)).toBeInTheDocument()
-    }
-    // «bars · categorica · ranking · 4–8 ×4–5» en el `.pen`: el rango va con el
-    // tipo. Desde el 2026-10-06 dice en qué unidad (D7).
-    expect(biblioteca.getByText('3–8 col × 3–6 filas')).toBeInTheDocument()
-    expect(biblioteca.getByText('6–12 col × 4–8 filas')).toBeInTheDocument()
+    const biblioteca = within(screen.getByRole('complementary', { name: 'Datos del cliente' }))
+    expect(biblioteca.getByText('Demanda')).toBeInTheDocument()
+    expect(biblioteca.getByText('Medios')).toBeInTheDocument()
+    expect(biblioteca.getByRole('button', { name: /^Ventas/ })).toBeInTheDocument()
+    expect(biblioteca.getByRole('button', { name: /^Tendencia/ })).toBeInTheDocument()
+    // La forma, en producto y no por su id · D6.
+    expect(within(biblioteca.getByRole('button', { name: /^Ventas/ })).getByText('Cifra única')).toBeInTheDocument()
+    // Ya no es la biblioteca de tipos.
+    expect(screen.queryByRole('complementary', { name: 'Biblioteca de tipos' })).toBeNull()
   })
 
-  it('nombra los tipos y las formas como PRODUCTO, no por su id · D6', async () => {
-    // «Definirlo» · D6 de la auditoría del 2026-10-06. `kpi` y `escalar` son
-    // del contrato; quien compone lee «Indicador» y «Cifra única».
+  it('al abrir un dato muestra cómo se puede mostrar · y lo que no sirve, desactivado con su razón', async () => {
     base()
     montar()
     await abrirCanvas()
 
-    const biblioteca = within(screen.getByRole('complementary', { name: 'Biblioteca de tipos' }))
-    expect(biblioteca.getByText('Indicador')).toBeInTheDocument()
-    expect(biblioteca.getByText('Cifra única')).toBeInTheDocument()
-    for (const id of ['kpi', 'series', 'escalar', 'serieTemporal']) {
-      expect(biblioteca.queryByText(id)).toBeNull()
-    }
-    // Y el lienzo, igual.
-    expect(within(panelDe('Ventas')).getByText('Indicador')).toBeInTheDocument()
-    expect(within(panelDe('Ventas')).queryByText('kpi')).toBeNull()
+    const como = await abrirDato('Ventas')
+    // Lo que sirve, con su «+».
+    expect(como.getByText('Indicador')).toBeInTheDocument()
+    expect(como.getByRole('button', { name: 'Agregar Ventas como Indicador · el de por defecto' })).toBeInTheDocument()
+    // Lo que no, explicado y sin «+»: una cifra sola no es una serie.
+    expect(como.getByText('Dibuja Serie temporal · este dato es Cifra única')).toBeInTheDocument()
+    expect(como.queryByRole('button', { name: /como Serie temporal/ })).toBeNull()
+  })
+
+  it('el buscador filtra por nombre, y dice cuando no hay', async () => {
+    base()
+    montar()
+    await abrirCanvas()
+
+    const biblioteca = within(screen.getByRole('complementary', { name: 'Datos del cliente' }))
+    await userEvent.type(biblioteca.getByRole('searchbox', { name: 'Buscar un dato' }), 'tend')
+    expect(biblioteca.getByRole('button', { name: /^Tendencia/ })).toBeInTheDocument()
+    expect(biblioteca.queryByRole('button', { name: /^Ventas/ })).toBeNull()
+
+    await userEvent.type(biblioteca.getByRole('searchbox', { name: 'Buscar un dato' }), 'zzz')
+    expect(biblioteca.getByText('Ningún dato se llama «tendzzz».')).toBeInTheDocument()
   })
 
   it('queda PEGADA al scroll · y no se le esconden los últimos grupos', async () => {
@@ -264,11 +294,161 @@ describe('§7.2 · la biblioteca, agrupada', () => {
     montar()
     await abrirCanvas()
 
-    const aside = screen.getByRole('complementary', { name: 'Biblioteca de tipos' })
+    const aside = screen.getByRole('complementary', { name: 'Datos del cliente' })
     expect(aside.className).toContain('sticky')
     expect(aside.className).toContain('self-start')
     expect(aside.className).toContain('overflow-y-auto')
     expect(aside.className).toMatch(/max-h-/)
+    // **Y debajo de la cabecera, que también es fija** · 2026-11-10. Se pegaba a
+    // `top-6` y la cabecera, de 177 px, le tapaba el principio: «no puedo ver el
+    // principio del scroll izquierdo». El tope y el alto salen de su altura real.
+    expect(aside.className).toMatch(/top-\[calc\(var\(--alto-cabecera-builder/)
+    expect(aside.className).toMatch(/max-h-\[calc\(100vh-var\(--alto-cabecera-builder/)
+  })
+})
+
+/** ── EL DATO DE TODO EL CATÁLOGO · `a80c318`, 2026-11-10 ───────────────────
+ *
+ *  `GET /admin/tenants/{tenantId}/catalog/data?period=…` · forma de
+ *  `DatoDelCatalogo` en `synapse-admin-wire.yaml`, medida ese día contra
+ *  `4953411`: una entrada por métrica, con el payload del lote. */
+const datoDelCatalogo = (porMetrica: Record<string, unknown>) => [
+  // **Con roles**: el período sale del dato del lienzo, que se pide con el
+  // lente de un rol. Sin roles no hay dato del lienzo, y no se sabe el mes.
+  http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok(rolesConAdmin)),
+  http.get(`${API}/admin/tenants/:id/catalog/data`, ({ request }) => {
+    pedidosDelCatalogo.push(new URL(request.url))
+    return ok({
+      period: new URL(request.url).searchParams.get('period'),
+      metrics: Object.entries(porMetrica).map(([id, p]) => ({ metric_id: id, key: `clave-${id}`, ...(p as object) })),
+    })
+  }),
+]
+const pedidosDelCatalogo: URL[] = []
+const sinCifra = { status: 'BLOCKED', reason: 'No hay datos calculados para este período', unlocks_with: '' }
+
+describe('la biblioteca sabe qué dato tiene cada métrica · a80c318', () => {
+  /** El rótulo de un dato de la lista: nombre y forma. */
+  const itemDe = (nombre: string) =>
+    within(screen.getByRole('complementary', { name: 'Datos del cliente' })).getByRole('button', {
+      name: new RegExp(`^${nombre}`),
+    })
+
+  it('lo pide con el período del lienzo · la lista y los paneles hablan del mismo mes', async () => {
+    pedidosDelCatalogo.length = 0
+    base([...datoDelCatalogo({ 'm-1': disponible(48362), 'm-2': sinCifra, 'm-3': sinCifra })])
+    montar()
+    await abrirCanvas()
+
+    await waitFor(() => expect(pedidosDelCatalogo.length).toBeGreaterThan(0))
+    // El preview de este archivo contesta `period: '2026-10'`.
+    expect(pedidosDelCatalogo[0]?.searchParams.get('period')).toBe('2026-10')
+    expect(pedidosDelCatalogo[0]?.pathname).toMatch(/\/admin\/tenants\/t-1\/catalog\/data$/)
+  })
+
+  it('marca «Sin cifra» sólo en las que no tienen, y dice de qué mes es el estado', async () => {
+    base([...datoDelCatalogo({ 'm-1': disponible(48362), 'm-2': sinCifra, 'm-3': sinCifra })])
+    montar()
+    await abrirCanvas()
+
+    await waitFor(() => expect(itemDe('Doce meses')).toHaveTextContent('Sin cifra'))
+    expect(itemDe('Ventas')).not.toHaveTextContent('Sin cifra')
+    expect(screen.getByText(/El estado de cada dato es el de .*2026/)).toBeInTheDocument()
+  })
+
+  it('una métrica FUERA del lienzo ya se elige con su dato · no «por su forma»', async () => {
+    // «Tendencia» no está en ningún panel: hasta `a80c318` no había cómo saber
+    // su dato, y la biblioteca lo decía.
+    const serie = {
+      status: 'AVAILABLE',
+      value: { shape: 'time_series', points: [{ t: '2026-10-01', v: 1 }, { t: '2026-10-02', v: 2 }] },
+      governance: disponible(0).governance,
+    }
+    base([...datoDelCatalogo({ 'm-1': disponible(48362), 'm-2': disponible(1), 'm-3': serie })])
+    montar()
+    await abrirCanvas()
+
+    await waitFor(() => expect(screen.getByText(/El estado de cada dato/)).toBeInTheDocument())
+    const como = await abrirDato('Tendencia')
+    expect(como.queryByText(/Sin el dato a mano/)).toBeNull()
+  })
+
+  it('sin cifra, al abrirlo dice por qué con las palabras del servicio, y que se puede poner igual', async () => {
+    base([...datoDelCatalogo({ 'm-1': disponible(48362), 'm-2': sinCifra, 'm-3': sinCifra })])
+    montar()
+    await abrirCanvas()
+    await waitFor(() => expect(itemDe('Doce meses')).toHaveTextContent('Sin cifra'))
+
+    const como = await abrirDato('Tendencia')
+    expect(como.getByText(/^No hay datos calculados para este período\. Se puede poner igual/)).toBeInTheDocument()
+    // **Sin cifra no es desactivado**: la opción se sigue pudiendo agregar.
+    expect(como.getByRole('button', { name: /^Agregar Tendencia como/ })).toBeInTheDocument()
+  })
+
+  it('si NINGUNO tiene cifra, lo dice una vez arriba y no marca cada uno', async () => {
+    // Visto en local: el mes en curso sin dato marcaba los 33.
+    base([...datoDelCatalogo({ 'm-1': sinCifra, 'm-2': sinCifra, 'm-3': sinCifra })])
+    montar()
+    await abrirCanvas()
+
+    expect(await screen.findByText(/ningún dato tiene cifra todavía/)).toBeInTheDocument()
+    for (const n of ['Ventas', 'Doce meses', 'Tendencia']) expect(itemDe(n)).not.toHaveTextContent('Sin cifra')
+  })
+
+  it('contra un servicio SIN la ruta sigue como antes · el dato de lo que está en el lienzo', async () => {
+    // Es QA hasta que despliegue `a80c318`: la ruta da 404.
+    base([
+      http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok(rolesConAdmin)),
+      http.get(`${API}/admin/tenants/:id/catalog/data`, () => new Response(null, { status: 404 })),
+    ])
+    montar()
+    await abrirCanvas()
+
+    const como = await abrirDato('Tendencia')
+    expect(como.getByText(/Sin el dato a mano se elige por su forma/)).toBeInTheDocument()
+    expect(screen.queryByText(/El estado de cada dato/)).toBeNull()
+    expect(screen.queryByText(/Sin cifra/)).toBeNull()
+  })
+})
+
+describe('soltar un DATO · 2026-11-10', () => {
+  /** El arrastre desde la biblioteca de datos lleva dos cosas: el tipo en
+   *  `text/plain`, con el que el lienzo mide, y la elección aparte. Se suelta
+   *  como lo entrega el navegador, por formato. */
+  function soltarDato(col: number, fila: number, tipo: string, eleccion: Record<string, string>) {
+    const celda = screen.getByRole('gridcell', { name: `Columna ${String(col)}, fila ${String(fila)}` })
+    const dt = {
+      getData: (formato: string) => (formato === FORMATO_ELECCION ? JSON.stringify(eleccion) : tipo),
+      setData: () => undefined,
+      effectAllowed: '',
+    }
+    fireEvent.dragOver(celda, { dataTransfer: dt })
+    fireEvent.drop(celda, { dataTransfer: dt })
+  }
+
+  it('el panel nace con su métrica Y su gráfico, donde se soltó', async () => {
+    base()
+    montar()
+    await abrirCanvas()
+
+    soltarDato(1, 5, 'series', { metricId: 'm-3', tipo: 'series', grafico: 'area' })
+
+    const nuevo = await screen.findByRole('gridcell', { name: /Tendencia/ })
+    expect(nuevo.style.gridColumn).toBe('1 / span 6')
+    expect(screen.queryByRole('gridcell', { name: /Sin métrica/ })).toBeNull()
+    // El gráfico elegido viaja: la banda del panel lo nombra en vez del tipo.
+    expect(within(nuevo).queryByText('Serie temporal')).toBeNull()
+  })
+
+  it('una elección de OTRO tipo se descarta · el panel nace vacío, con el tamaño medido', async () => {
+    base()
+    montar()
+    await abrirCanvas()
+
+    soltarDato(1, 5, 'series', { metricId: 'm-1', tipo: 'kpi' })
+
+    const nuevo = await screen.findByRole('gridcell', { name: /Sin métrica/ })
+    expect(nuevo.style.gridColumn).toBe('1 / span 6')
   })
 })
 
@@ -341,7 +521,7 @@ describe('§7.2 · el slot vacío es DERIVADO', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', key: 'resumen', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [panel('p-1', 'm-1', 1, 6)],
             },
           ],
@@ -364,7 +544,7 @@ describe('el teclado no es un accesorio · y no es una puerta trasera', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', key: 'resumen', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [panel('p-1', 'm-1', 1, 3)],
             },
           ],
@@ -391,7 +571,7 @@ describe('el teclado no es un accesorio · y no es una puerta trasera', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', key: 'resumen', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [panel('p-1', 'm-1', 1, 3)],
             },
           ],
@@ -444,7 +624,7 @@ describe('los handles del panel seleccionado', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', key: 'resumen', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [panel('p-1', 'm-1', 1, 3)],
             },
           ],
@@ -473,7 +653,7 @@ describe('los handles del panel seleccionado', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', key: 'resumen', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [panel('p-1', 'm-1', 1, 4)],
             },
           ],
@@ -505,17 +685,19 @@ describe('los handles del panel seleccionado', () => {
 })
 
 describe('el «+» de la biblioteca · agregar sin arrastrar', () => {
-  it('agrega el tipo AL FINAL de la pestaña y lo deja elegido', async () => {
+  it('agrega el dato AL FINAL de la pestaña, ya con su métrica, y lo deja elegido', async () => {
     // La salida para el teclado y para quien no descubre el gesto. Se verifica
-    // que el panel llegue al lienzo con el ancho de su tipo y que quede elegido,
-    // no que el botón exista.
+    // que el panel llegue al lienzo con el ancho de su tipo, **con su dato** —ya
+    // no nace «Sin métrica»— y que quede elegido, no que el botón exista.
     base()
     montar()
     await abrirCanvas()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Agregar Serie temporal' }))
+    const como = await abrirDato('Tendencia')
+    await userEvent.click(como.getByRole('button', { name: 'Agregar Tendencia como Serie temporal · el de por defecto' }))
 
-    const nuevo = await screen.findByRole('gridcell', { name: /Sin métrica/ })
+    const nuevo = await screen.findByRole('gridcell', { name: /Tendencia/ })
+    expect(screen.queryByRole('gridcell', { name: /Sin métrica/ })).toBeNull()
     // Al final: debajo de los dos que llenan la fila 1, con el mínimo del tipo.
     expect(nuevo.style.gridColumn).toBe('1 / span 6')
     expect(nuevo.style.gridRow).toBe('5 / span 4')
@@ -549,10 +731,12 @@ describe('el canvas compone UNA pestaña', () => {
 describe('«Span al soltar» · lo que va a ocupar, antes de soltar', () => {
   /** Arrastrar un tipo desde la biblioteca y entrar en una celda. */
   async function arrastrarTipoHasta(tipo: string, col: number, fila: number) {
-    // Por el «+» de su ítem, que lleva el nombre de producto: el texto suelto
-    // no alcanza, porque «Serie temporal» es a la vez un tipo y una forma.
-    const item = within(screen.getByRole('complementary', { name: 'Biblioteca de tipos' }))
-      .getByRole('button', { name: `Agregar ${nombreDeTipo(tipo)}` })
+    // **Desde un dato que se dibuja así** · 2026-11-10: la biblioteca es de
+    // datos. Por el «+» de su opción, que la nombra entera.
+    const dato = DATO_DE[tipo] ?? ''
+    const como = await abrirDato(dato)
+    const item = como
+      .getByRole('button', { name: `Agregar ${dato} como ${nombreDeTipo(tipo)} · el de por defecto` })
       .closest('li')
     const dt = { getData: () => tipo, setData: () => undefined, effectAllowed: '' }
     fireEvent.dragStart(item as HTMLElement, { dataTransfer: dt })
@@ -578,7 +762,7 @@ describe('«Span al soltar» · lo que va a ocupar, antes de soltar', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', key: 'resumen', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [panel('p-1', 'm-1', 1, 6)],
             },
           ],
@@ -610,7 +794,7 @@ describe('«Span al soltar» · lo que va a ocupar, antes de soltar', () => {
           layout: layouts[0],
           tabs: [
             {
-              tab: { id: 'tab-a', layout_version_id: 'l-2', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+              tab: { id: 'tab-a', layout_version_id: 'l-2', key: 'resumen', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
               panels: [
                 panel('p-1', 'm-1', 1, 6),
                 { ...panel('p-2', 'm-2', 7, 6), row_span: 2 },
@@ -721,6 +905,19 @@ describe('el lienzo dibuja cada panel con su dato', () => {
     ).toBeInTheDocument()
   })
 
+  it('la ficha sin dato ocupa el panel ENTERO · no una celda de su grilla · 2026-11-11', async () => {
+    // Visto en local con un cliente sin roles: cada panel se dibujaba de una
+    // columna de ancho, con el texto desbordado, aunque dijera «6 × 4». La
+    // ficha va dentro de una grilla del ancho del panel y no se ubicaba.
+    base()
+    montar()
+    await abrirCanvas()
+    const texto = await within(panelDe('Ventas')).findByText(/todavía no tiene roles/)
+    const ficha = texto.closest('div.border-dashed') as HTMLElement | null
+    expect(ficha?.style.gridColumn).toBe('1 / -1')
+    expect(ficha?.style.gridRow).toBe('span 4')
+  })
+
   it('un panel NUEVO con una métrica que ya está en el lienzo se dibuja SIN esperar al guardado', async () => {
     // **El dato es por métrica y período**, no por panel —`dd_panel_data`—: el
     // de «Ventas» ya llegó con el preview, y sirve igual para el panel nuevo.
@@ -729,9 +926,9 @@ describe('el lienzo dibuja cada panel con su dato', () => {
     await abrirCanvas()
     await within(panelDe('Ventas')).findByText(/48[.,]362/)
 
-    await userEvent.click(screen.getByRole('button', { name: `Agregar ${nombreDeTipo('kpi')}` }))
-    const columna = await screen.findByRole('region', { name: 'Qué muestra' })
-    await userEvent.click(within(columna).getByRole('button', { name: /Ventas/ }))
+    // **Ya con su dato, desde la biblioteca** · 2026-11-10.
+    const como = await abrirDato('Ventas')
+    await userEvent.click(como.getByRole('button', { name: 'Agregar Ventas como Indicador · el de por defecto' }))
 
     // Dos cifras iguales: el panel de antes y el nuevo, que no tiene id todavía.
     // En el LIENZO: «Cómo se ve» se abre sola y dibuja su muestra con la misma
@@ -754,7 +951,8 @@ describe('el lienzo dibuja cada panel con su dato', () => {
     await within(panelDe('Ventas')).findByText(/48[.,]362/)
     const antes = pedidosDePreview.length
 
-    await userEvent.click(screen.getByRole('button', { name: `Agregar ${nombreDeTipo('kpi')}` }))
+    const como = await abrirDato('Ventas')
+    await userEvent.click(como.getByRole('button', { name: 'Agregar Ventas como Indicador · el de por defecto' }))
     await userEvent.click(await screen.findByRole('button', { name: 'Guardar' }))
     await waitFor(() => expect(pedidosDePreview.length).toBeGreaterThan(antes))
   })
@@ -770,5 +968,322 @@ describe('el lienzo dibuja cada panel con su dato', () => {
       expect(lienzo.style.gridAutoRows).toBe('80px')
       expect(lienzo.style.gap).toBe('16px')
     })
+  })
+})
+
+/** ── MOVER Y ESTIRAR CON EL MOUSE · 2026-11-10 ──────────────────────────────
+ *
+ *  Pedido del humano: «refinar la grilla … para mover y ajustar los tamaños».
+ *  Medido en local ese día: correr un panel una columna no se podía, el panel
+ *  caía por la esquina sin importar de dónde se lo agarró, y un «Ancho +» en
+ *  una fila llena bajó dos paneles de fila. Decisión del mismo día: **lo que
+ *  no entra se bloquea y se avisa**. */
+
+/** Una pestaña con estos paneles · `[metricId, colStart, colSpan]`. */
+function conPaneles(...ps: [string, number, number][]) {
+  return http.get(`${API}/admin/layouts/:id`, () =>
+    ok({
+      layout: layouts[0],
+      tabs: [
+        {
+          tab: { id: 'tab-a', layout_version_id: 'l-2', key: 'resumen', name: 'Resumen', operational_question: '¿?', sort_order: 1, role_ids: [] },
+          panels: ps.map(([m, c, s], i) => panel(`p-${String(i + 1)}`, m, c, s)),
+        },
+      ],
+    }),
+  )
+}
+
+/** Un `dataTransfer` que guarda por formato, como el del navegador. */
+function transferencia() {
+  const datos = new Map<string, string>()
+  return {
+    getData: (f: string) => datos.get(f) ?? '',
+    setData: (f: string, v: string) => void datos.set(f, v),
+    effectAllowed: '',
+  }
+}
+
+const celda = (col: number, fila: number) =>
+  screen.getByRole('gridcell', { name: `Columna ${String(col)}, fila ${String(fila)}` })
+
+describe('mover un panel con el mouse · 2026-11-10', () => {
+  it('cae donde se lo soltó CONTANDO de dónde se lo agarró · no por la esquina', async () => {
+    base([conPaneles(['m-1', 1, 3])])
+    montar()
+    await abrirCanvas()
+
+    // Un indicador de 3 × 4 mide 272 × 368, y se lo agarra por su tercera
+    // columna. Soltado con el cursor en la 5, su esquina va a la 3.
+    const p = panelDe('Ventas')
+    p.getBoundingClientRect = () => ({ left: 0, top: 0, width: 272, height: 368, right: 272, bottom: 368, x: 0, y: 0, toJSON: () => ({}) })
+    const dt = transferencia()
+    // jsdom no tiene `DragEvent`: la posición del cursor se pone a mano.
+    const inicio = createEvent.dragStart(p, { dataTransfer: dt })
+    Object.defineProperty(inicio, 'clientX', { value: 2 * 96 + 10 })
+    Object.defineProperty(inicio, 'clientY', { value: 10 })
+    fireEvent(p, inicio)
+    fireEvent.dragOver(celda(5, 1), { dataTransfer: dt })
+    fireEvent.drop(celda(5, 1), { dataTransfer: dt })
+
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('3 / span 3'))
+  })
+
+  it('mientras vuela, los paneles dejan pasar el puntero y se ve dónde va a caer', async () => {
+    // Era lo que impedía correrlo una columna: el cursor quedaba sobre el
+    // propio panel, que no acepta soltar.
+    base([conPaneles(['m-1', 1, 3])])
+    montar()
+    await abrirCanvas()
+
+    const dt = transferencia()
+    fireEvent.dragStart(panelDe('Ventas'), { dataTransfer: dt })
+    await waitFor(() => expect(panelDe('Ventas').className).toMatch(/pointer-events-none/))
+
+    fireEvent.dragEnter(celda(2, 1), { dataTransfer: dt })
+    expect(await screen.findByText('Ventas · 3 × 4')).toBeInTheDocument()
+
+    fireEvent.dragEnd(panelDe('Ventas'), { dataTransfer: dt })
+    await waitFor(() => expect(panelDe('Ventas').className).not.toMatch(/pointer-events-none/))
+  })
+
+  it('al moverlo sobre otro, nombra con cuál choca · igual que lo que viene de la biblioteca', async () => {
+    base()
+    montar()
+    await abrirCanvas()
+
+    const dt = transferencia()
+    fireEvent.dragStart(panelDe('Ventas'), { dataTransfer: dt })
+    await waitFor(() => expect(panelDe('Ventas').className).toMatch(/pointer-events-none/))
+    fireEvent.dragEnter(celda(4, 1), { dataTransfer: dt })
+    expect(await screen.findByText(/Se solapa con «Doce meses»/)).toBeInTheDocument()
+  })
+})
+
+describe('estirar desde las asas · las del `.pen`', () => {
+  /** Las asas no son botones: se buscan por su borde. */
+  const asa = (borde: string) => {
+    const el = document.querySelector(`[data-asa="${borde}"]`)
+    if (el === null) throw new Error(`sin asa ${borde}`)
+    return el
+  }
+
+  it('aparecen solo con el panel elegido', async () => {
+    base([conPaneles(['m-1', 1, 3])])
+    montar()
+    await abrirCanvas()
+
+    expect(document.querySelector('[data-asa]')).toBeNull()
+    await userEvent.click(panelDe('Ventas'))
+    expect(document.querySelectorAll('[data-asa]')).toHaveLength(5)
+  })
+
+  it('el borde derecho ensancha, con la medida a la vista mientras se estira', async () => {
+    // Sin medida en jsdom, el paso es el del `.pen`: columna 80 más 16.
+    base([conPaneles(['m-1', 1, 3])])
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+
+    fireEvent.mouseDown(asa('e'), { clientX: 0, clientY: 0 })
+    fireEvent.mouseMove(window, { clientX: 2 * 96, clientY: 0 })
+    expect(await screen.findByText('5 × 4')).toBeInTheDocument()
+    fireEvent.mouseUp(window, { clientX: 2 * 96, clientY: 0 })
+
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 5'))
+  })
+
+  it('el izquierdo mueve la columna y el ancho juntos · el borde derecho queda quieto', async () => {
+    base([conPaneles(['m-1', 4, 3])])
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+
+    fireEvent.mouseDown(asa('o'), { clientX: 500, clientY: 0 })
+    fireEvent.mouseUp(window, { clientX: 500 - 2 * 96, clientY: 0 })
+
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('2 / span 5'))
+  })
+
+  it('el de abajo agranda en filas', async () => {
+    base([conPaneles(['m-1', 1, 3])])
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+
+    fireEvent.mouseDown(asa('s'), { clientX: 0, clientY: 0 })
+    fireEvent.mouseUp(window, { clientX: 0, clientY: 96 })
+
+    await waitFor(() => expect(panelDe('Ventas').style.gridRow).toBe('1 / span 5'))
+  })
+
+  it('estirar de más lo deja en el máximo del tipo, y lo dice', async () => {
+    // `kpi` va de 3 a 8 columnas en este fixture.
+    base([conPaneles(['m-1', 1, 3])])
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+
+    fireEvent.mouseDown(asa('e'), { clientX: 0, clientY: 0 })
+    fireEvent.mouseMove(window, { clientX: 20 * 96, clientY: 0 })
+    expect(await screen.findByText('«Indicador» ocupa entre 3 y 8 columnas')).toBeInTheDocument()
+    fireEvent.mouseUp(window, { clientX: 20 * 96, clientY: 0 })
+
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 8'))
+  })
+
+  it('sobre otro panel NO se aplica: se ve por qué y queda dicho', async () => {
+    base()
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+
+    fireEvent.mouseDown(asa('e'), { clientX: 0, clientY: 0 })
+    fireEvent.mouseMove(window, { clientX: 96, clientY: 0 })
+    expect(await screen.findByText('Se solapa con «Doce meses»')).toBeInTheDocument()
+    fireEvent.mouseUp(window, { clientX: 96, clientY: 0 })
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Se solapa con «Doce meses»')
+    expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 6')
+    expect(panelDe('Doce meses').style.gridColumn).toBe('7 / span 6')
+  })
+})
+
+describe('un tamaño que no entra se bloquea · decisión humana del 2026-11-10', () => {
+  it('«Ancho +» en una fila llena no empuja a nadie: dice con quién choca', async () => {
+    // El caso medido en local: el clic bajó dos paneles de fila.
+    base()
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ensanchar' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Se solapa con «Doce meses»')
+    expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 6')
+    expect(panelDe('Doce meses').style.gridRow).toBe('1 / span 4')
+  })
+
+  it('en el tope del tipo, el botón dice por qué no hace nada', async () => {
+    base([conPaneles(['m-1', 1, 8])])
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ensanchar' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('«Indicador» ocupa entre 3 y 8 columnas')
+    expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 8')
+  })
+
+  it('Shift y las flechas siguen la misma regla', async () => {
+    base()
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+
+    fireEvent.keyDown(panelDe('Ventas'), { key: 'ArrowRight', shiftKey: true })
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Se solapa con «Doce meses»')
+    expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 6')
+  })
+})
+
+describe('deshacer · el borrador se guarda solo', () => {
+  it('Deshacer y Rehacer vuelven el último cambio, ida y vuelta', async () => {
+    base([conPaneles(['m-1', 1, 3])])
+    montar()
+    await abrirCanvas()
+
+    expect(screen.getByRole('button', { name: /^Deshacer/ })).toBeDisabled()
+    await userEvent.click(panelDe('Ventas'))
+    await userEvent.click(screen.getByRole('button', { name: 'Ensanchar' }))
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 4'))
+
+    await userEvent.click(screen.getByRole('button', { name: /^Deshacer/ }))
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 3'))
+
+    await userEvent.click(screen.getByRole('button', { name: /^Rehacer/ }))
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 4'))
+  })
+
+  it('Cmd + Z deshace y Cmd + Shift + Z rehace', async () => {
+    base([conPaneles(['m-1', 1, 3])])
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+    fireEvent.keyDown(panelDe('Ventas'), { key: 'ArrowRight' })
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('2 / span 3'))
+
+    fireEvent.keyDown(panelDe('Ventas'), { key: 'z', metaKey: true })
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 3'))
+
+    fireEvent.keyDown(panelDe('Ventas'), { key: 'z', metaKey: true, shiftKey: true })
+    await waitFor(() => expect(panelDe('Ventas').style.gridColumn).toBe('2 / span 3'))
+  })
+
+  it('un cambio nuevo después de deshacer descarta lo que se podía rehacer', async () => {
+    base([conPaneles(['m-1', 1, 3])])
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+    await userEvent.click(screen.getByRole('button', { name: 'Ensanchar' }))
+    await userEvent.click(screen.getByRole('button', { name: /^Deshacer/ }))
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Rehacer/ })).toBeEnabled())
+
+    await userEvent.click(screen.getByRole('button', { name: 'Agrandar' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Rehacer/ })).toBeDisabled())
+  })
+})
+
+/** ── EL LENTE QUE NO VE LA PESTAÑA · 2026-11-17 ─────────────────────────────
+ *
+ *  Medido en QA ese día: UA MX con una sola pestaña, `pestana-nueva`, y el rol
+ *  `admin` —el lente por defecto— restringido a `overview` y `resumen`. El
+ *  preview contestó `tabs: []`, con `period` y SIN `payloads`, y el lienzo decía
+ *  «Se dibuja al guardar» con el borrador ya guardado. */
+const previewSinLaPestana = http.get(`${API}/admin/layouts/:id/preview`, () =>
+  ok({
+    layout_id: 'l-2', dashboard_id: 'd-1', status: 'draft',
+    role: { id: 'r-admin', name: 'admin' },
+    tabs: [],
+    period: '2026-10',
+  }),
+)
+
+describe('el lente no ve la pestaña · 2026-11-17', () => {
+  it('con «Todos los roles» dibuja el dato del CATÁLOGO, del mes del preview', async () => {
+    pedidosDelCatalogo.length = 0
+    base([...datoDelCatalogo({ 'm-1': disponible(48362), 'm-2': disponible(1234) }), previewSinLaPestana])
+    montar()
+    await abrirCanvas()
+
+    expect(await within(panelDe('Ventas')).findByText(/48[.,]362/)).toBeInTheDocument()
+    expect(within(panelDe('Doce meses')).getByText(/1[.,]234/)).toBeInTheDocument()
+    expect(pedidosDelCatalogo[0]?.searchParams.get('period')).toBe('2026-10')
+  })
+
+  it('lo que el catálogo no tiene dice POR QUÉ · no «se dibuja al guardar»', async () => {
+    base([...datoDelCatalogo({ 'm-1': disponible(48362) }), previewSinLaPestana])
+    montar()
+    await abrirCanvas()
+
+    await within(panelDe('Ventas')).findByText(/48[.,]362/)
+    expect(
+      within(panelDe('Doce meses')).getByText('admin no tiene esta pestaña, y el dato se pide como lo ve ese rol.'),
+    ).toBeInTheDocument()
+  })
+
+  it('con un rol ELEGIDO no completa con el catálogo · lo que ese rol no ve no se dibuja', async () => {
+    base([...datoDelCatalogo({ 'm-1': disponible(48362), 'm-2': disponible(1234) }), previewSinLaPestana])
+    montar()
+    await userEvent.click(await screen.findByRole('button', { name: /Overview/ }))
+    await userEvent.click(await screen.findByRole('button', { name: 'admin' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Abrir el editor de Overview' }))
+
+    expect(
+      await within(panelDe('Ventas')).findByText('admin no tiene esta pestaña, y el dato se pide como lo ve ese rol.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/48[.,]362/)).toBeNull()
   })
 })

@@ -26,6 +26,20 @@
  *  vez de colapso». Abajo del mínimo hay scroll, que es visible; un colapso
  *  perdería la correspondencia 1:1 sin decirlo.
  *
+ *  ── 1024 DESDE EL 2026-11-10, POR DECISIÓN HUMANA ───────────────────────────
+ *
+ *  **«Debería verse bien en cualquier resolución».** Con 1600 de mínimo, en una
+ *  laptop la derecha del editor quedaba cortada y la barra horizontal, al pie
+ *  del lienzo. Y la razón de §4 ya no aplica a esta implementación: el lienzo
+ *  no mide en píxeles, sus 12 columnas son `1fr` y cada celda es su propio
+ *  destino de soltado (`Canvas.tsx`), así que achicarlo no cambia la unidad del
+ *  arrastre. En B5 el ancho «real» de la consola no es uno: colapsa sola.
+ *
+ *  **1024 es el piso, no el diseño**: biblioteca de 300 y un lienzo de unos 650,
+ *  donde un KPI de 3 columnas todavía mide 160. Abajo, scroll visible. La
+ *  divergencia con §4 está escrita para diseño en
+ *  `docs/PROPUESTA-2026-11-10-editor-a-cualquier-ancho.md`.
+ *
  *  ── Y EL CHROME TAMPOCO ES UNIFORME · corregido el 2026-09-15 ───────────────
  *
  *  **Sale del `.pen`, que tiene las seis pantallas dibujadas.** La primera
@@ -55,8 +69,8 @@ export const PANTALLAS = [
      *  primer nivel de Cliente → Dashboard → Editor
      *  (`docs/AUDITORIA-2026-10-07-flujo-de-edicion.md`, D1). */
     nombre: 'Dashboards',
-    /** §4: 1600 = 1200 de lienzo 1:1 + 300 de biblioteca. */
-    ancho: 1600,
+    /** §4 decía 1600 = 1200 de lienzo 1:1 + 300 de biblioteca · 1024 desde el 2026-11-10, ver arriba. */
+    ancho: 1024,
     /** **Debería ser `identidad` y es `composicion`, temporalmente.**
      *
      *  En el `.pen` B1 solo elige el contexto —«¿Sobre qué se va a componer?»— y
@@ -83,7 +97,7 @@ export const PANTALLAS = [
     /** **«Editor» desde el 2026-10-07** · D5: «Canvas» era una palabra nuestra,
      *  no del producto. */
     nombre: 'Editor',
-    ancho: 1600,
+    ancho: 1024,
     chrome: 'composicion',
     enNav: true,
   },
@@ -91,7 +105,7 @@ export const PANTALLAS = [
     id: 'grafico',
     ruta: '/builder/grafico',
     nombre: 'Selector de gráfico',
-    ancho: 1600,
+    ancho: 1024,
     chrome: 'composicion',
     /** **D3 de la auditoría del 2026-10-06: fuera de la navegación.** Llevaba a
      *  un texto que decía que la pantalla estaba en otra. Sigue declarada —
@@ -104,7 +118,7 @@ export const PANTALLAS = [
     id: 'metrica',
     ruta: '/builder/metrica',
     nombre: 'Binder de métrica',
-    ancho: 1600,
+    ancho: 1024,
     chrome: 'composicion',
     /** Igual que el selector de gráfico: vive en el inspector del canvas. */
     enNav: false,
@@ -113,8 +127,10 @@ export const PANTALLAS = [
     id: 'preview',
     ruta: '/builder/preview',
     nombre: 'Vista previa por rol',
-    /** La excepción de §4: la consola del cliente a su ancho real. */
-    ancho: 1440,
+    /** **Ya no es la excepción** · 2026-11-10: la consola colapsa sola a 1280 y
+     *  a 768, así que verla al ancho de esta pantalla es ver lo que vería un
+     *  usuario con ella. Ver la cabecera de este archivo. */
+    ancho: 1024,
     chrome: 'ninguno',
     /** Repetía el botón `Vista previa` del chrome, a 40px. Se llega por el botón. */
     enNav: false,
@@ -123,7 +139,7 @@ export const PANTALLAS = [
     id: 'historial',
     ruta: '/builder/historial',
     nombre: 'Historial de versiones',
-    ancho: 1600,
+    ancho: 1024,
     chrome: 'contexto',
     enNav: true,
   },
@@ -131,7 +147,7 @@ export const PANTALLAS = [
   id: string
   ruta: string
   nombre: string
-  ancho: 1600 | 1440
+  ancho: 1024
   chrome: FormaDeChrome
   /** Si lleva pestaña en la navegación · ver D3 arriba. */
   enNav: boolean

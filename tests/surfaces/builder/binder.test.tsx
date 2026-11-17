@@ -158,7 +158,7 @@ const metricas = [
 /** El panel que llega del servidor · por defecto `kpi` sobre `Ventas`, que es
  *  una composición cerrada. Con `tipo: 'series'` llega ROTO: es la única forma
  *  de tener un panel incompatible desde que elegir la métrica ajusta el tipo. */
-function detalleCon(panel: { tipo?: string; metricId?: string } = {}) {
+function detalleCon(panel: { tipo?: string; metricId?: string; options?: Record<string, unknown> } = {}) {
   return {
     ...detalle,
     tabs: [
@@ -168,6 +168,7 @@ function detalleCon(panel: { tipo?: string; metricId?: string } = {}) {
           {
             id: 'p-1', tab_id: 'tab-a', metric_id: panel.metricId ?? 'm-1', type: panel.tipo ?? 'kpi',
             col_start: 1, col_span: panel.tipo === 'series' ? 6 : 3, row_span: 4,
+            ...(panel.options === undefined ? {} : { options: panel.options }),
           },
         ],
       },
@@ -175,7 +176,7 @@ function detalleCon(panel: { tipo?: string; metricId?: string } = {}) {
   }
 }
 
-function servir(panel: { tipo?: string; metricId?: string } = {}) {
+function servir(panel: { tipo?: string; metricId?: string; options?: Record<string, unknown> } = {}) {
   server.use(
     http.get(`${API}/admin/tenants`, () => ok(tenants)),
     http.get(`${API}/admin/tenants/:id/layouts`, () => ok(versiones)),
@@ -424,11 +425,12 @@ describe('las profundidades · D6 del 2026-10-07', () => {
   })
 
   it('«Cómo se ve» sin métrica lo dice, y ofrece ir a «Qué muestra», que DISPARA', async () => {
-    servir()
+    // **El panel sin métrica viene del borrador** · 2026-11-10: la biblioteca
+    // es de datos y ya no crea paneles vacíos, pero un borrador guardado puede
+    // tener uno.
+    servir({ metricId: '' })
     montar()
-    await componer()
-    await userEvent.click(screen.getByRole('button', { name: 'Agregar Indicador' }))
-    await screen.findByRole('complementary', { name: INSPECTOR })
+    await abrirPanel()
 
     const col = await abrir('Cómo se ve')
     expect(col.getByText('Cómo se ve depende de qué muestra: elegí primero la métrica.')).toBeInTheDocument()
@@ -529,6 +531,20 @@ describe('§7.2 · los spans salen de la tabla del backend', () => {
     expect(columnas.max).toBe('4')
   })
 
+  it('un tamaño que no entra en la grilla no se aplica, y se dice · 2026-11-10', async () => {
+    // **La misma regla que en el lienzo**: el campo no es una puerta trasera a
+    // un panel que empuja a otros o se sale del borde.
+    servir()
+    montar()
+    await abrirPanel()
+    const col = await abrir('Ajustes')
+
+    fireEvent.change(col.getByLabelText<HTMLInputElement>(/Columnas/), { target: { value: '13' } })
+
+    expect(await col.findByRole('status')).toHaveTextContent('No entra · se pasa del borde de la grilla')
+    expect(col.getByLabelText<HTMLInputElement>(/Columnas/).value).toBe('3')
+  })
+
   it('la altura se pide en FILAS, no en píxeles', async () => {
     // D7 de la auditoría del 2026-10-06: `px = 96·N − 16` sigue siendo la
     // regla, pero la aplica la grilla; quien compone piensa en filas.
@@ -561,7 +577,9 @@ describe('§7.2 · los spans salen de la tabla del backend', () => {
     const col = await abrir('Ajustes')
 
     expect(
-      col.getByText('También se cambia en el lienzo, con los controles del panel elegido. La posición, arrastrándolo.'),
+      col.getByText(
+        'También se cambia en el lienzo, estirando el panel elegido desde sus bordes. La posición, arrastrándolo.',
+      ),
     ).toBeInTheDocument()
     expect(screen.queryByLabelText(/Columna de inicio/)).toBeNull()
   })
@@ -599,29 +617,33 @@ describe('las opciones · dos autoridades distintas', () => {
 })
 
 describe('agregar y quitar paneles', () => {
-  it('el panel nuevo se agrega sin métrica, lo dice, y abre en «Qué muestra»', async () => {
+  it('el panel nuevo llega desde un DATO · nace con su métrica y queda elegido', async () => {
+    // **Reescrita el 2026-11-10**: decía «se agrega sin métrica y abre en Qué
+    // muestra». La biblioteca es de datos: se elige qué y cómo, y el panel nace
+    // completo.
     servir()
     montar()
     await componer()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Agregar Indicador' }))
+    const biblioteca = within(screen.getByRole('complementary', { name: 'Datos del cliente' }))
+    // `Ventas` exacto: en este catálogo hay otras que empiezan igual.
+    await userEvent.click(biblioteca.getByRole('button', { name: /^Ventas\s*Cifra única/ }))
+    await userEvent.click(biblioteca.getByRole('button', { name: 'Agregar Ventas como Indicador · el de por defecto' }))
 
-    // **Abre directo en «Qué muestra»**: es lo único que le falta.
-    expect(
-      await columna('Qué muestra').findByText('Elegí qué muestra este panel: sin métrica no se puede publicar.'),
-    ).toBeInTheDocument()
-    expect(inspector().getByRole('heading', { name: 'Panel sin métrica' })).toBeInTheDocument()
+    expect(await inspector().findByRole('heading', { name: 'Ventas' })).toBeInTheDocument()
     expect(panelesDelLienzo()).toHaveLength(2)
-    expect(within(panelesDelLienzo()[1] as HTMLElement).getByText('Sin métrica')).toBeInTheDocument()
+    expect(within(panelesDelLienzo()[1] as HTMLElement).getByText('Ventas')).toBeInTheDocument()
+    expect(within(panelesDelLienzo()[1] as HTMLElement).queryByText('Sin métrica')).toBeNull()
   })
 
   it('elegir una métrica la marca, pasa a «Cómo se ve» Y cambia el panel del lienzo', async () => {
     // **La cadena entera**: Opcion → PanelConfigurator → Builder → borrador →
     // Canvas. Un callback mal nombrado en cualquiera de los saltos compila.
-    servir()
+    // El panel sin métrica viene del borrador · ver arriba.
+    servir({ metricId: '' })
     montar()
-    await componer()
-    await userEvent.click(screen.getByRole('button', { name: 'Agregar Indicador' }))
+    await abrirPanel()
+    // Sin métrica, el configurador ya abre en «Qué muestra»: es lo que le falta.
     await screen.findByRole('region', { name: 'Qué muestra' })
 
     await userEvent.click(columna('Qué muestra').getByRole('button', { name: /^Ventas\s*GOLD/ }))
@@ -632,7 +654,7 @@ describe('agregar y quitar paneles', () => {
     expect(inspector().getByRole('heading', { name: 'Ventas' })).toBeInTheDocument()
     await abrir('Qué muestra')
     expect(columna('Qué muestra').getByRole('button', { name: /^Ventas\s*GOLD/ })).toHaveAttribute('aria-pressed', 'true')
-    const nuevo = panelesDelLienzo()[1] as HTMLElement
+    const nuevo = panelesDelLienzo()[0] as HTMLElement
     expect(within(nuevo).getByText('Ventas')).toBeInTheDocument()
     expect(within(nuevo).queryByText('Sin métrica')).toBeNull()
   })
@@ -857,6 +879,21 @@ describe('§7.2 · editar las opciones del panel', () => {
     await waitFor(() =>
       expect(screen.queryByText(/con cambios · se guarda solo/)).toBeNull(),
     )
+  })
+
+  /** **Lo guardado se ve elegido** · 2026-11-10. El cable trae `meter` y el
+   *  configurador pregunta por `medidor`: sin traducir al leer, un KPI con el
+   *  medidor prendido se mostraba en «por defecto», y el resumen listaba cada
+   *  opción como «no es de este tipo de panel». Lo vio el humano en Overview. */
+  it('una opción guardada en el idioma del cable se muestra elegida, sin problema', async () => {
+    // El fixture del KPI declara sólo `comparative`, como en `bloques`.
+    servir({ options: { comparative: false } })
+    montar()
+    await abrirPanel()
+    await abrir('Ajustes')
+    expect(columna('Ajustes').getByRole('button', { name: 'comparativo · no' })).toHaveAttribute('aria-pressed', 'true')
+    expect(columna('Ajustes').getByRole('button', { name: 'comparativo · por defecto' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByText(/no es de este tipo de panel/)).toBeNull()
   })
 
   it('escribir una opción ensucia el borrador · borrarla vuelve a «Por defecto»', async () => {

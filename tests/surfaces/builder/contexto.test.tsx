@@ -16,7 +16,7 @@
  *  una versión en B1 y miraban sus pestañas acá se reescribieron contra eso:
  *  las pestañas viven en el editor, y las cubre `editor.test.tsx`.
  */
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -518,5 +518,38 @@ describe('cambiar de cliente', () => {
     expect(await tarjeta(/Salud/)).toHaveAttribute('aria-pressed', 'false')
     expect(screen.queryByRole('button', { name: /Marca/ })).toBeNull()
     expect(screen.queryByRole('region', { name: 'Paso 2 · Rol' })).toBeNull()
+  })
+})
+
+/** **Llegar con `?dashboard=` abre ESE dashboard** · 2026-11-10. Es lo que manda
+ *  la consola al ir al builder: el que se está mirando. Sin esto el editor
+ *  abría el POR DEFECTO —`d-1`, con su borrador—, que es lo que el humano vio. */
+describe('el dashboard que llega en la URL', () => {
+  function montarEn(ruta: string) {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    return render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[ruta]}>
+          <Routes>
+            <Route path="/builder/*" element={<Builder />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+  }
+
+  it('el editor abre el de la URL, no el por defecto', async () => {
+    montarEn('/builder/canvas?dashboard=d-2')
+    // `Portada` es la única pestaña de «Marca» (`d-2`, `l-5`); las del por
+    // defecto son `Resumen` e `Inventario`.
+    const pestanas = await screen.findByRole('tablist', { name: 'Pestañas del dashboard' })
+    expect(await within(pestanas).findByText('Portada')).toBeInTheDocument()
+    expect(within(pestanas).queryByText('Resumen')).toBeNull()
+  })
+
+  it('un id que no es de este cliente se ignora · cae al por defecto', async () => {
+    montarEn('/builder/canvas?dashboard=d-de-otro')
+    const pestanas = await screen.findByRole('tablist', { name: 'Pestañas del dashboard' })
+    expect(await within(pestanas).findByText('Resumen')).toBeInTheDocument()
   })
 })

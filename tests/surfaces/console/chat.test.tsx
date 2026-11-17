@@ -26,7 +26,7 @@ const ahora = new Date('2026-09-02T12:00:00Z')
  *  el tipo y la tabla van fijos y no afectan lo que miran. */
 const conChrome = { panelTipo: 'kpi' as const, bloques: new Map(), format, now: ahora }
 
-const VACIA = { texto: '', datos: [], auditoria: null, sugerencias: [] }
+const VACIA = { texto: '', datos: [], consultas: [], sugerencias: [] }
 
 const turno = (parche: Partial<ChatTurn> = {}): ChatTurn => ({
   pregunta: '¿Por qué cayeron las ventas?',
@@ -196,11 +196,13 @@ describe('F3.5 · §7.1 · toda respuesta muestra su SQL', () => {
     respuesta: {
       ...VACIA,
       texto: 'Cayeron 12%.',
-      auditoria: {
-        tipo: 'auditoria',
-        sql: 'select sum(v) from gold.ventas',
-        limiteDeclarado: 'No cubre tiendas sin feed.',
-      },
+      consultas: [
+        {
+          tipo: 'auditoria',
+          sql: 'select sum(v) from gold.ventas',
+          limiteDeclarado: 'No cubre tiendas sin feed.',
+        },
+      ],
     } as ChatTurn['respuesta'],
   })
 

@@ -113,6 +113,18 @@ describe('previewPorRol · con y sin datos', () => {
     expect(p.datos?.porPanel.get('p-2')?.estado).toBe('SIN_PERMISO')
   })
 
+  it('con `period` y SIN `payloads` hay datos VACÍOS · el mes no se pierde · 2026-11-17', async () => {
+    // Medido en QA: un lente que no ve la pestaña contesta `tabs: []`, manda
+    // `period` y omite `payloads`. Sin el mes, el editor no pide el dato del
+    // catálogo.
+    server.use(
+      http.get(`${API}/admin/layouts/:id/preview`, () => ok({ ...respuesta(false), tabs: [], period: '2026-11' })),
+    )
+    const p = await adminApi.previewPorRol(LAYOUT, ROL, true)
+    expect(p.datos?.periodo).toBe('2026-11')
+    expect(p.datos?.porPanel.size).toBe(0)
+  })
+
   it('el gráfico de cada panel LLEGA · este adaptador lo tiraba', async () => {
     // Sin dato no se notaba. Con dato, B5 habría dibujado el de por defecto
     // del bloque en vez del elegido —un anillo como barras—.

@@ -97,8 +97,10 @@ export function TableBody({ value, params, family, grafico, format, lectura }: T
    *
    *  Sin esto una columna de ROAS sale «4.2 · 4.5 · 3.5 · 3»: la última pierde
    *  su decimal, el punto deja de alinearse y la columna se lee mal aunque cada
-   *  celda esté bien. `Columna` no declara decimales, así que se infieren de lo
-   *  que hay — **es propuesta de spec agregarlos al contrato.**
+   *  celda esté bien. **Si la columna declara sus decimales, mandan esos** ·
+   *  2026-11-09: el backend los manda desde `6e521cc` y el adaptador los tiraba,
+   *  así que una inversión declarada con 0 salía «2,235,316.00». Sólo cuando
+   *  no los declara se infieren de lo que hay.
    *
    *  **Y la abreviatura también es de la columna** · 2026-10-27. `number`
    *  abrevia sólo cuando no se pierde nada, y lo decide celda por celda: en una
@@ -108,7 +110,9 @@ export function TableBody({ value, params, family, grafico, format, lectura }: T
    *  columna entera **sólo si todas sus cifras abrevian exactas**; si no, van
    *  todas completas. Lo que está por debajo de mil no abrevia nunca y no
    *  cuenta. */
-  const columnFormat = (key: string): NumberOptions => {
+  const columnFormat = (columna: (typeof value.columnas)[number]): NumberOptions => {
+    if (columna.decimales != null) return { decimals: columna.decimales }
+    const key = columna.clave
     const values = value.filas
       .map((f) => f[key])
       .filter((v): v is number => typeof v === 'number')
@@ -142,7 +146,9 @@ export function TableBody({ value, params, family, grafico, format, lectura }: T
                 scope="col"
                 className={`${L === null ? 'text-left pb-2 border-b border-w2' : L.th} ${entre(j)} ${c.numerica ? 'text-right' : ''}`}
               >
-                <Label>{c.titulo}</Label>
+                {/* **La unidad se va al label** · `design.md` §6.2. Al rótulo
+                    de la columna y no a cada celda: se dice una vez. */}
+                <Label>{c.unidad == null ? c.titulo : `${c.titulo} · ${c.unidad}`}</Label>
               </th>
             ))}
           </tr>
@@ -159,7 +165,7 @@ export function TableBody({ value, params, family, grafico, format, lectura }: T
                           de columna, que tiene `scope`. Un label propio la haría
                           decir el nombre dos veces. */}
                       <Value label={c.titulo} size="cell" labelVisibility="fromContext">
-                        {format.number(cell, columnFormat(c.clave))}
+                        {format.number(cell, columnFormat(c))}
                       </Value>
                     </td>
                   )

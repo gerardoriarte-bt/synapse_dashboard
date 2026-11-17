@@ -108,35 +108,37 @@ describe('§7.2 · las seis pantallas', () => {
   })
 })
 
-describe('§4 · el ancho mínimo, que no es uniforme', () => {
-  it('B5 va a 1440 y las otras cinco a 1600', () => {
-    // «Builder · 1600 mínimo 1600 (…) La excepción es B5, que va a 1440 porque
-    // muestra la consola del cliente a su ancho real.»
-    //
-    // Es la regla que un test escrito desde el código no vería: una tabla con
-    // 1600 en las seis se ve perfectamente coherente.
+describe('§4 · el ancho mínimo · 1024 desde el 2026-11-10', () => {
+  it('las seis pantallas van a 1024 · decisión humana, divergencia escrita', () => {
+    // §4 decía 1600, y 1440 en B5. **El humano pidió que el editor se vea bien
+    // en cualquier resolución** —en una laptop la derecha quedaba cortada— y la
+    // razón de §4 no aplica a este lienzo: sus columnas son `1fr`. Ver
+    // `docs/PROPUESTA-2026-11-10-editor-a-cualquier-ancho.md`.
     const anchos = Object.fromEntries(PANTALLAS.map((p) => [p.id, p.ancho]))
     expect(anchos).toEqual({
-      contexto: 1600,
-      canvas: 1600,
-      grafico: 1600,
-      metrica: 1600,
-      preview: 1440,
-      historial: 1600,
+      contexto: 1024,
+      canvas: 1024,
+      grafico: 1024,
+      metrica: 1024,
+      preview: 1024,
+      historial: 1024,
     })
   })
 
   it('el chrome PINTA el mínimo de la pantalla activa', async () => {
-    // Un `min-w-[1600px]` interpolado compilaría y no pintaría nada: Tailwind
+    // Un `min-w-[1024px]` interpolado compilaría y no pintaría nada: Tailwind
     // poda lo que su escáner no ve escrito. Es el silencio de `text-labell`.
     const { container } = montar(conVersion)
-    expect(container.querySelector('.min-w-\\[1600px\\]')).not.toBeNull()
+    expect(container.querySelector('.min-w-\\[1024px\\]')).not.toBeNull()
 
     // Desde el 2026-10-06 B5 se abre con el botón del chrome, no con una
     // pestaña; y desde el 2026-10-07 ese botón es del editor.
     await ir('Editor')
     await userEvent.click(await screen.findByRole('button', { name: 'Vista previa' }))
-    expect(container.querySelector('.min-w-\\[1440px\\]')).not.toBeNull()
+    // Y en B5 también: ya no es la excepción, y ninguno de los anchos viejos
+    // queda pintado.
+    expect(container.querySelector('.min-w-\\[1024px\\]')).not.toBeNull()
+    expect(container.querySelector('.min-w-\\[1440px\\]')).toBeNull()
     expect(container.querySelector('.min-w-\\[1600px\\]')).toBeNull()
   })
 
@@ -222,7 +224,7 @@ describe('las pantallas que todavía no se pueden construir · ninguna', () => {
     await ir('Editor')
     await userEvent.click(await screen.findByRole('button', { name: 'Vista previa' }))
     expect(screen.queryByRole('navigation', { name: 'Builder' })).toBeNull()
-    expect(container.querySelector('.min-w-\\[1440px\\]')).not.toBeNull()
+    expect(container.querySelector('.min-w-\\[1024px\\]')).not.toBeNull()
   })
 
   it('B1 NO se declara pendiente · está construida', async () => {

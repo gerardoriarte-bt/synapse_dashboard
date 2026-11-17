@@ -101,7 +101,28 @@ export interface paths {
          */
         put: operations["updateTenantSettings"];
         post?: never;
-        delete?: never;
+        /**
+         * Apagar el cliente · no lo borra
+         * @description **Llegó en `b7c4534`**, respuesta al pedido de ordenar los clientes de
+         *     QA. Medido el 2026-11-10 contra el binario de `4192041` con la base
+         *     local: **200** con `{id, is_active: false}`, **200 otra vez** sobre uno
+         *     ya apagado, y **404** «tenant no encontrado» con un id que no existe.
+         *
+         *     **Apaga, no borra**: `SetActive(false)` y nada más. Quedan la fila, los
+         *     usuarios, el dashboard y el catálogo. El cliente sale de
+         *     `GET /admin/tenants` y de `GET /access-requests/tenants` —medido—, y el
+         *     programador deja de materializarlo.
+         *
+         *     **Sólo superadmin**: la ruta pasa por `RequirePlatformOperator()`. Leído
+         *     en `router.go`; no se midió con otro rol porque la base local no tiene
+         *     un admin que no sea de plataforma.
+         *
+         *     **Lo que NO hace, y la pantalla lo dice**: el login no mira si el
+         *     cliente está activo, así que sus usuarios pueden seguir entrando y ven
+         *     datos que dejan de actualizarse. Y **no hay ruta para volver a
+         *     encenderlo**.
+         */
+        delete: operations["deactivateTenant"];
         options?: never;
         head?: never;
         patch?: never;
@@ -173,6 +194,43 @@ export interface paths {
          *     remite a `synapse-console-wire.yaml`, que los declara los cinco.
          */
         get: operations["adminCatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tenants/{tenantId}/catalog/data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * El dato de cada métrica del catálogo en un período, esté o no en un panel
+         * @description **Llegó en `a80c318`** (2026-11-10), pedido en
+         *     `docs/MENSAJE-2026-11-10-backend-dato-por-metrica.md` para que la
+         *     biblioteca del editor sepa qué dato tiene cada métrica antes de que
+         *     esté en el lienzo. Medido ese día levantado acá, contra `4953411`:
+         *
+         *       · UA, octubre: **33 entradas**, una por métrica del catálogo, 23 de
+         *         ellas en ningún panel
+         *       · las 10 que sí están en paneles: **mismo `status` y mismo `value`**
+         *         que `POST /config/panels:batch` del mismo período
+         *
+         *     **Sin fila en el período sale `BLOCKED`** con «No hay datos calculados
+         *     para este período»; un `AVAILABLE` viejo sale `DEGRADED` con la misma
+         *     regla del panel (`PanelDegradation`). **No filtra por rol**, igual que
+         *     el catálogo: es para quien compone.
+         *
+         *     Va en el grupo de admin con `RequireRouteTenant`: un admin sólo pide su
+         *     cliente, y un superadmin cualquiera. Con un `tenantId` que no existe
+         *     contesta 200 con `metrics: []`, no 404.
+         */
+        get: operations["adminCatalogData"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2011,6 +2069,26 @@ export interface components {
             };
         };
         /**
+         * @description `DDMetricDataResponse` de `internal/core/ports/dd_config_service.go`
+         *     en `a80c318`. Cada entrada es el MISMO `Payload` de
+         *     `POST /config/panels:batch` —`synapse-console-wire.yaml`— más
+         *     `metric_id` y `key`, y se adapta con el mismo `adaptPayload`. Se declara
+         *     abierto por la misma razón que `payloads` del preview: copiar el
+         *     esquema del payload acá sería una segunda fuente del mismo hecho.
+         */
+        DatoDelCatalogo: {
+            period: string;
+            /** @description Una por métrica del catálogo, en el orden del nombre. */
+            metrics: ({
+                /** Format: uuid */
+                metric_id: string;
+                key: string;
+                status: string;
+            } & {
+                [key: string]: unknown;
+            })[];
+        };
+        /**
          * @description `ports.DDPreviewResponse`.
          *
          *     ── **REESCRITO CONTRA EL SERVICIO** · 2026-09-26, `8633b10` ────────────
@@ -2377,6 +2455,37 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    deactivateTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El cliente quedó apagado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: {
+                            /** Format: uuid */
+                            id: string;
+                            /** @constant */
+                            is_active: false;
+                        };
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listLayouts: {
         parameters: {
             query?: never;
@@ -2490,6 +2599,44 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+        };
+    };
+    adminCatalogData: {
+        parameters: {
+            query: {
+                /**
+                 * @description `YYYY-MM`. **Obligatorio**: sin él, o mal formado —`2026-13`—, 400
+                 *     con `VALIDATION_PERIOD`, medido.
+                 */
+                period: string;
+            };
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El dato de cada métrica del catálogo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["DatoDelCatalogo"];
+                    };
+                };
+            };
+            /** @description `VALIDATION_PERIOD` · el período falta o no es `YYYY-MM` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
         };
     };
     adminUpdateProseInstruction: {

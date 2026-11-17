@@ -27,7 +27,7 @@ import type { ChatEvent } from '@/api/types'
 
 const format = createFormat('es-MX')
 const now = new Date('2026-10-27T12:00:00Z')
-const VACIA: Answer = { texto: '', datos: [], auditoria: null, sugerencias: [] }
+const VACIA: Answer = { texto: '', datos: [], consultas: [], sugerencias: [] }
 
 const conTabla = blockTable([
   {

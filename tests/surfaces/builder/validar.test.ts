@@ -144,16 +144,18 @@ describe('los params', () => {
     expect(p[0]?.mensaje).toMatch(/espera un número entero/)
   })
 
-  it('un param que el tipo no lee se declara descartado, no inválido', () => {
-    // «Desconocido y descartado ≠ conocido e inválido», y la diferencia es de
-    // consecuencia · F1.29.
+  /** **Un param que el tipo no lee NO es un problema de composición** ·
+   *  2026-11-10. Se listaba con «se descarta al guardar», que era falso —viaja
+   *  entero— y no se podía resolver desde el builder. Lo vio el humano en
+   *  Overview, con trece avisos que no decían qué hacer. Sigue siendo
+   *  `unknown` para la consola, que lo avisa en desarrollo. */
+  it('un param que el tipo no lee no se lista · no cambia cómo se ve', () => {
     const p = validarBorrador(
       [tab([panel({ tipo: 'bars', metricId: 'm-cat', colSpan: 6, opciones: { maximo: 9 } })])],
       tabla,
       metrics,
     )
-    expect(p[0]?.campo).toBe('maximo')
-    expect(p[0]?.mensaje).toBe('La opción «maximo» no es de este tipo de panel · se descarta al guardar')
+    expect(p).toEqual([])
   })
 })
 

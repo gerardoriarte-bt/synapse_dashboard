@@ -31,7 +31,7 @@
  */
 import { ApiError, SIN_CODIGO } from './types'
 import type { PanelConfig } from './types'
-import { adaptCatalog, adaptPayload } from './adapt'
+import { adaptCatalog, adaptPayload, paramsAlCable, traducirParams } from './adapt'
 import type { AdaptedCatalog, WireMetric, WirePayload } from './adapt'
 import type { NetworkPayload } from './types'
 import type { components as admin } from './admin-generated'
@@ -581,7 +581,11 @@ function adaptarPanel(p: A['LayoutPanel']): PanelConfig {
     // Se descubrió al construir el selector de F4.21: el borrador no tenía dónde
     // poner lo elegido.
     ...(p.chart === undefined || p.chart === '' ? {} : { grafico: p.chart as NonNullable<PanelConfig['grafico']> }),
-    ...(p.options === undefined ? {} : { opciones: p.options }),
+    // **En los nombres del front, como la consola** · 2026-11-10. Se leían
+    // crudos —`meter`, `cut`— y se validaban contra `PARAM_SCHEMAS`, que habla
+    // en español: el builder marcaba TODA opción de todo panel como «no es de
+    // este tipo». Lo vio el humano en Overview. La vuelta es `paramsAlCable`.
+    ...(p.options === undefined ? {} : { opciones: traducirParams(p.options) }),
     // **La nota de lectura se lee, por la misma razón que el gráfico** ·
     // 2026-10-14. No leerla hacía que guardar desde el builder la BORRARA:
     // `dd_layout_builder_service.go:587` guarda `Note: panelIn.Note`, y sin el
@@ -697,7 +701,7 @@ function aCuerpo(tabs: readonly TabParaGuardar[]): A['LayoutUpdateRequest'] {
         // explícita hace que el cuerpo diga qué se quiso: sin gráfico elegido,
         // el de por defecto del tipo.
         chart: p.grafico ?? '',
-        ...(p.opciones === undefined ? {} : { options: p.opciones }),
+        ...(p.opciones === undefined ? {} : { options: paramsAlCable(p.opciones) }),
         // **Explícita, aunque vacía** · igual que `chart`: el `PUT` reemplaza el
         // panel entero, y el cuerpo tiene que decir qué nota se quiso.
         note: p.nota ?? '',
@@ -851,7 +855,8 @@ function adaptarPreview(w: WirePreview): PreviewDeRol {
         colStart: x.col_start,
         colSpan: x.col_span,
         rowSpan: x.row_span,
-        ...(x.options === undefined ? {} : { opciones: x.options }),
+        // Se dibuja con los cuerpos de la consola: en sus nombres.
+        ...(x.options === undefined ? {} : { opciones: traducirParams(x.options) }),
         // La nota vacía se omite · misma regla que en el cable de consola.
         ...(x.note === '' ? {} : { nota: x.note }),
         // **El gráfico, que este adaptador tiraba** · 2026-10-07. El cable lo
@@ -861,13 +866,18 @@ function adaptarPreview(w: WirePreview): PreviewDeRol {
         ...(x.chart === undefined || x.chart === '' ? {} : { grafico: x.chart as NonNullable<PanelConfig['grafico']> }),
       })),
     })),
-    ...(w.payloads === undefined
+    // **Sin `payloads` pero con `period` también hay datos: vacíos** · 2026-11-17.
+    // Medido en QA: con un lente que no ve la pestaña del borrador, el servicio
+    // contesta `tabs: []`, manda `period` y omite `payloads`. Tirar el período
+    // dejaba al editor sin el mes, y sin el mes no se pide el dato del catálogo
+    // que podía dibujar esos paneles.
+    ...(w.payloads === undefined && w.period === undefined
       ? {}
       : {
           datos: {
             periodo: w.period ?? '',
             porPanel: new Map(
-              Object.entries(w.payloads).map(([id, x]) => [id, adaptPayload(x as unknown as WirePayload)]),
+              Object.entries(w.payloads ?? {}).map(([id, x]) => [id, adaptPayload(x as unknown as WirePayload)]),
             ),
           },
         }),
@@ -920,6 +930,22 @@ export const adminApi = {
    *  familia fuera del enumerado tampoco se puede dibujar en el builder. */
   catalogo: async (tenantId: string): Promise<AdaptedCatalog> =>
     adaptCatalog(await pedir<WireMetric[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/catalog`)),
+
+  /** **El dato de cada métrica del catálogo, esté o no en un panel** ·
+   *  `a80c318`, 2026-11-10. Lo pidió la biblioteca de datos del editor: el
+   *  dato se guarda por métrica y período, y hasta ese commit sólo se servía a
+   *  través de un panel.
+   *
+   *  **Indexado por `metric_id`**, que es como la biblioteca lo busca. Cada
+   *  entrada es el payload del lote de la consola, así que va por el MISMO
+   *  `adaptPayload`: un `BLOCKED` sin fila trae su razón y se dibuja como
+   *  cualquier otro estado. */
+  datoDelCatalogo: async (tenantId: string, periodo: string): Promise<ReadonlyMap<string, NetworkPayload>> => {
+    const w = await pedir<A['DatoDelCatalogo']>(
+      `/admin/tenants/${encodeURIComponent(tenantId)}/catalog/data?period=${encodeURIComponent(periodo)}`,
+    )
+    return new Map(w.metrics.map((m) => [m.metric_id, adaptPayload(m as unknown as WirePayload)]))
+  },
 
   /* ── B4.8 y B4.9 · del FORK · el servicio desplegado devuelve 404 ──────── */
 
@@ -986,16 +1012,31 @@ export const adminApi = {
       ),
     ),
 
-  /** **La forma corta del cliente** · F5.47, 2026-10-20 · `PUT /admin/tenants/{tenantId}`.
-   *  Vacía la saca: el cliente vuelve a no tenerla y la pantalla muestra el id
-   *  corto. **No se devuelve nada**: la respuesta trae la infraestructura del
-   *  cliente y lo que se refresca es la lista, que es de donde leen la barra y
-   *  las cards. */
-  editarFormaCorta: async (tenantId: string, formaCorta: string): Promise<void> => {
+  /** **El nombre y la forma corta del cliente** · F5.47, 2026-10-20 · y el
+   *  nombre desde el 2026-11-10 · `PUT /admin/tenants/{tenantId}`.
+   *
+   *  **Viaja sólo lo que cambió**: para el servicio, ausente es «sin cambio».
+   *  La forma corta vacía la saca —el cliente vuelve a no tenerla y la pantalla
+   *  muestra el id corto—; **el nombre vacío es 400**, medido contra `4192041`,
+   *  así que no se manda. **No se devuelve nada**: la respuesta trae la
+   *  infraestructura del cliente, y lo que se refresca es la lista, que es de
+   *  donde leen la barra, el selector y las cards. */
+  editarIdentidad: async (tenantId: string, cambio: CambioDeIdentidad): Promise<void> => {
+    const nombre = cambio.nombre?.trim()
     await pedir<WireTenantSettings>(`/admin/tenants/${encodeURIComponent(tenantId)}`, {
       method: 'PUT',
-      body: JSON.stringify({ label: formaCorta.trim() }),
+      body: JSON.stringify({
+        ...(nombre === undefined || nombre === '' ? {} : { name: nombre }),
+        ...(cambio.formaCorta === undefined ? {} : { label: cambio.formaCorta.trim() }),
+      }),
     })
+  },
+
+  /** **Apagar el cliente** · 2026-11-10 · el `DELETE` del cliente, desde
+   *  `b7c4534`. No lo borra: sale de las listas y del programador, y la fila,
+   *  los usuarios y el catálogo se quedan. Sólo superadmin. */
+  apagarCliente: async (tenantId: string): Promise<void> => {
+    await pedir<unknown>(`/admin/tenants/${encodeURIComponent(tenantId)}`, { method: 'DELETE' })
   },
 
   /** **La conexión de Snowflake del cliente** · F5.55, 2026-10-21 · el mismo
@@ -1389,6 +1430,9 @@ export type WireAgent = A['AgentAdmin']
 export type WireFeed = A['Feed']
 export type WireMaterializeRun = A['MaterializeRun']
 export type WireUser = A['User']
+/** Lo que la ficha cambia de la identidad del cliente. Ausente es «sin cambio». */
+export type CambioDeIdentidad = { nombre?: string; formaCorta?: string }
+
 /** Lo que `PUT /admin/tenants/{tenantId}` devuelve y el front lee · F5.47 y,
  *  la conexión, F5.55. Opcionales porque un servicio anterior a `26eae4b`
  *  igual las manda, pero el yaml no las exige. */

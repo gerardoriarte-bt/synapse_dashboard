@@ -193,6 +193,31 @@ describe('la altura sale del rowSpan y nunca del contenido', () => {
   })
 })
 
+describe('EV-011 · el pie son dos acciones, no una ruta · 2026-11-10', () => {
+  /** El pie con las dos acciones puestas. */
+  function conLasDos() {
+    render(
+      <Panel metric={metric} payload={conCifra} placement={placement} format={format} now={now} onDrill={() => undefined} onChat={() => undefined}>
+        <p>EL CUERPO</p>
+      </Panel>,
+    )
+    return screen.getByRole('button', { name: `Preguntar sobre ${metric.nombre}` })
+  }
+
+  it('las separa lo que el `.pen` dibuja · 12, no 4', () => {
+    // «VER DETALLE › PREGUNTAR»: con 4 la flecha quedaba pegada a la segunda.
+    const acciones = conLasDos().parentElement
+    expect(acciones?.className).toMatch(/\bgap-3\b/)
+    expect(acciones?.className).not.toMatch(/\bgap-1\b/)
+  })
+
+  it('«Preguntar» no se ve apagada · en tinta, no en `dim`', () => {
+    const preguntar = conLasDos()
+    expect(preguntar.className).toMatch(/\btext-ink\b/)
+    expect(preguntar.className).not.toMatch(/\btext-dim\b/)
+  })
+})
+
 describe('F3.3 · los CTA del shell son callbacks, y sin manejador no se pintan', () => {
   it('sin `onChat` NO hay botón «Preguntar»', () => {
     // La regla del CTA muerto, en el lado de `render/`. Es lo que permite que

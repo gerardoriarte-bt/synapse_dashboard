@@ -438,3 +438,22 @@ describe('§PEN:C3 · la hoja son dos columnas, y el riel colapsa', () => {
     expect(within(hoja).getByText('¿Por qué cayó la venta?')).toBeVisible()
   })
 })
+
+describe('EV-022 · el envío se ve como el botón que abrió el chat · §PEN:C3', () => {
+  /** **Divergíamos del dibujo** · 2026-11-09. `C3 · historial colapsado`
+   *  dibuja «PREGUNTAR» en un botón relleno `$acc` dentro de la caja del campo,
+   *  y acá era texto suelto: gris mientras el campo estaba vacío, que es cuando
+   *  se busca cómo enviar. Lo encontró la evaluación de UX. */
+  it('es un botón relleno con el acento, dentro de la caja del campo', async () => {
+    laConsola([])
+    montar()
+    const { hoja } = await abrirLaHoja()
+    const enviar = within(hoja).getByRole('button', { name: 'Preguntar' })
+    expect(enviar.className).toMatch(/\bbg-acc\b/)
+    expect(enviar.className).toMatch(/\btext-on-acc\b/)
+    // La caja es UNA: el campo y el botón comparten el borde del dibujo.
+    const caja = within(hoja).getByRole('textbox').parentElement
+    expect(caja?.contains(enviar)).toBe(true)
+    expect(caja?.className).toMatch(/\bborder-w3\b/)
+  })
+})

@@ -16,6 +16,34 @@
 # `$uri` y `$host` se sustituyen por vacío y nginx arranca sirviendo cualquier
 # cosa.
 
+# ── EL REGISTRO DE ERRORES DEL NAVEGADOR · ISO 27001 A.8.15 y A.8.16 ─────────
+#
+# Agregado el 2026-11-09 · brecha 8 de
+# `docs/AUDITORIA-2026-11-04-hardening-iso-27001.md`. Hasta ese día un error en
+# el navegador de un cliente sólo se sabía si el cliente lo contaba.
+#
+# **Va al log del contenedor, no a un servicio de terceros.** Mandar errores a
+# un SaaS es sacar datos de la casa y pide una decisión que no es del front; el
+# log del contenedor ya lo recoge quien opera el despliegue. Una línea JSON por
+# error, con `"synapse":"error-del-navegador"` para filtrarla.
+#
+# Estas dos directivas viven en el contexto `http`: `conf.d/*.conf` se incluye
+# ahí, así que van fuera del `server`.
+#
+# **Sin IP y sin la URL con su query** a propósito: no hacen falta para
+# encontrar el defecto y son datos de quien navega. Lo que el front manda está
+# en `src/app/errores.ts`.
+log_format synapse_errores escape=json
+    '{"synapse":"error-del-navegador","hora":"${DOLLAR}time_iso8601",'
+    '"via":"${DOLLAR}uri","navegador":"${DOLLAR}http_user_agent",'
+    '"cuerpo":"${DOLLAR}request_body"}';
+
+# Un tope para que nadie llene el log a propósito. **Detrás de un balanceador
+# todos llegan con la misma IP**, así que el tope es casi del servicio entero:
+# 30 por minuto es de sobra para errores reales —el front ya manda como mucho
+# diez por carga de página— y poco para inundar.
+limit_req_zone ${DOLLAR}binary_remote_addr zone=synapse_errores:1m rate=30r/m;
+
 server {
     listen       ${NGINX_PORT};
     server_name  _;
@@ -23,6 +51,10 @@ server {
 
     # Sin esto el header dice la versión exacta de nginx.
     server_tokens off;
+
+    # Las cabeceras de seguridad · ver `deploy/seguridad.conf`, que explica por
+    # qué se repite en cada `location` con `add_header` propio.
+    include /etc/nginx/snippets/synapse-seguridad.conf;
 
     gzip              on;
     gzip_vary         on;
@@ -39,6 +71,7 @@ server {
     location /assets/ {
         expires 1y;
         add_header Cache-Control "public, immutable";
+        include /etc/nginx/snippets/synapse-seguridad.conf;
         try_files ${DOLLAR}uri =404;
     }
 
@@ -127,6 +160,29 @@ server {
 
         # Sin esto, un proxy intermedio puede bufferear igual aunque nginx no.
         add_header X-Accel-Buffering no always;
+        include /etc/nginx/snippets/synapse-seguridad.conf;
+    }
+
+    # ── LOS ERRORES DEL NAVEGADOR · y las violaciones de la CSP ──────────────
+    #
+    # **nginx sólo lee el cuerpo si lo reenvía**, así que `${DOLLAR}request_body`
+    # queda vacío con un `return 204` a secas. Se reenvía al `server` de abajo,
+    # que contesta 204 y no registra nada: el cuerpo ya está leído y el log de
+    # ESTA `location` lo escribe.
+    #
+    # 8 KB por error: un mensaje y las primeras líneas de la pila entran de
+    # sobra, y más que eso es otra cosa.
+    # Prefijo y no regex: con regex nginx no acepta `proxy_pass` con URI.
+    location /_errores {
+        limit_except POST { deny all; }
+        limit_req zone=synapse_errores burst=30 nodelay;
+        limit_req_status 429;
+        client_max_body_size 8k;
+        client_body_buffer_size 8k;
+        client_body_in_single_buffer on;
+        access_log /var/log/nginx/access.log synapse_errores;
+        proxy_pass http://127.0.0.1:8099;
+        proxy_set_header Host ${DOLLAR}host;
     }
 
     # ── LA SPA · try_files, y ES LA LÍNEA QUE MÁS IMPORTA ─────────────────────
@@ -142,6 +198,20 @@ server {
         # uno viejo referencia archivos que el deploy nuevo ya borró — la pantalla
         # queda en blanco sin un solo error visible.
         add_header Cache-Control "no-cache, no-store, must-revalidate";
+        include /etc/nginx/snippets/synapse-seguridad.conf;
         try_files ${DOLLAR}uri ${DOLLAR}uri/ /index.html;
     }
+}
+
+# ── EL QUE CONTESTA 204 AL REGISTRO DE ERRORES · sólo desde adentro ──────────
+#
+# **Un `server` aparte en loopback, y no una `location` con `allow`/`deny`.**
+# Así estaba primero, y desde afuera contestaba 204 igual: `return` corre en
+# la fase de reescritura, ANTES que la de acceso, así que el `deny` nunca se
+# evaluaba. Medido el 2026-11-09. Escuchando en 127.0.0.1, y sin publicar el
+# puerto, no hay forma de llegar desde fuera del contenedor.
+server {
+    listen      127.0.0.1:8099;
+    access_log  off;
+    return      204;
 }

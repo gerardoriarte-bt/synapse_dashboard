@@ -569,6 +569,43 @@ describe('las nueve formas que el backend materializa', () => {
     })
   })
 
+  /** **Los decimales y la unidad de cada columna SÍ llegan** · 2026-11-09.
+   *  Desde `6e521cc` el materializador los agrega cuando la métrica los define,
+   *  y este adaptador los tiraba con un comentario que decía que no llegaban.
+   *  Los valores son los de `platform_return` en `snowflake/queries.go`. */
+  it('tabular · `decimals`/`unit` → `decimales`/`unidad`', () => {
+    expect(
+      conValor({
+        shape: 'tabular',
+        columns: [
+          { key: 'investment', title: 'Inversión', numeric: true, decimals: 0, unit: 'USD' },
+          { key: 'share', title: 'Participación', numeric: true, decimals: 1, unit: '%' },
+        ],
+        rows: [{ investment: 2235316, share: 41.2 }],
+      }),
+    ).toMatchObject({
+      valor: {
+        columnas: [
+          { clave: 'investment', decimales: 0, unidad: 'USD' },
+          { clave: 'share', decimales: 1, unidad: '%' },
+        ],
+      },
+    })
+  })
+
+  it('tabular · sin `decimals` ni `unit` los dos quedan AUSENTES, no en cero ni vacíos', () => {
+    // Un `decimales: 0` inventado le quitaría los decimales a un ROAS que el
+    // backend no declaró, y una unidad vacía dibujaría un «·» colgando.
+    const p = conValor({
+      shape: 'tabular',
+      columns: [{ key: 'roas', title: 'ROAS', numeric: true, unit: '' }],
+      rows: [{ roas: 4.2 }],
+    })
+    const columna = (p as { valor: { columnas: Record<string, unknown>[] } }).valor.columnas[0]
+    expect(columna).not.toHaveProperty('decimales')
+    expect(columna).not.toHaveProperty('unidad')
+  })
+
   it('prose · `headline`/`pillars`/`value` → `titular`/`pilares`/`valor`', () => {
     expect(
       conValor({

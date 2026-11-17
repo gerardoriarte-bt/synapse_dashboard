@@ -13,7 +13,12 @@
 # **Node 22 y no 20**: Vite 8 pide 20.19+ o 22.12+. Se fija la mayor porque es la
 # que se usa para desarrollar —medido: `v22.18.0`— y una diferencia de mayor entre
 # lo que se prueba y lo que se despliega es una clase de bug que nadie busca.
-FROM node:22-alpine AS build
+# **Por digest, no por etiqueta** · 2026-11-09 · ISO 27001 A.8.8. Una etiqueta
+# se mueve: `22-alpine` hoy y mañana pueden ser dos imágenes distintas, y una
+# imagen que no se puede reproducir no se puede auditar. La versión va al lado
+# para leerla, pero manda el digest. **Lo renueva Dependabot**, con un PR por
+# cambio · ver `.github/dependabot.yml`.
+FROM node:22.23.4-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 AS build
 
 WORKDIR /app
 
@@ -57,12 +62,27 @@ ENV VITE_API_URL=$VITE_API_URL \
 RUN npm run build
 
 # ── ETAPA 2 · servir ──────────────────────────────────────────────────────────
-FROM nginx:1.27-alpine AS serve
+# **La 1.30, que es la estable** · 2026-11-09. Estaba en la 1.27, una rama que
+# ya no recibe parches. Por digest, igual que la de arriba.
+FROM nginx:1.30.6-alpine@sha256:583b7f2fce1cdb8da5ad5c39ebd3c33b98b87d493190e548bdee1fa8c619c311 AS serve
+
+# **`libxslt` corregido antes de que la base lo traiga** · 2026-11-10. El
+# escaneo del CI marcó CVE-2026-87636 y CVE-2026-9947 (HIGH) en `1.1.43-r3`, la
+# que trae este digest; Alpine ya publica `1.1.43-r4` y la imagen oficial
+# todavía no se reconstruyó —medido ese día: el mismo digest, con `r3`—.
+# **Sólo ese paquete y no `apk upgrade` entero**: la base sigue fijada por
+# digest, y actualizar todo cambiaría la imagen en cada build sin que nadie lo
+# pida. Cuando el digest nuevo traiga `r4`, esta línea se borra.
+RUN apk upgrade --no-cache libxslt
 
 # La imagen oficial corre `envsubst` sobre `/etc/nginx/templates/*.template` al
 # arrancar y escribe el resultado en `/etc/nginx/conf.d/`. Por eso el destino es
 # ese y no `conf.d` directo.
 COPY deploy/nginx.conf.template /etc/nginx/templates/default.conf.template
+
+# Las cabeceras de seguridad, aparte porque se incluyen en cada `location` ·
+# ver `deploy/seguridad.conf`. No es template: no lleva variables.
+COPY deploy/seguridad.conf /etc/nginx/snippets/synapse-seguridad.conf
 
 COPY --from=build /app/dist /usr/share/nginx/html
 

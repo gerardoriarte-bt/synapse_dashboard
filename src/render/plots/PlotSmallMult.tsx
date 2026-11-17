@@ -92,6 +92,8 @@ import { AxisText } from './core/Axis'
 import { charsThatFit } from './core/axisGeometry'
 import { ceiling, linearScale } from './core/scale'
 import { Area, Line } from './core/Series'
+import { partirEnCurso } from './core/enCurso'
+import { TramoEnCurso } from './core/TramoEnCurso'
 import { useSize } from './core/useSize'
 import type { FamiliaDeDibujo } from '../types'
 
@@ -262,8 +264,19 @@ export function PlotSmallMult({
                   {rotulo}
                 </AxisText>
                 <g transform={`translate(0,${BANDA.rotulo})`}>
-                  <Area points={puntos} x={x} y={ys} base={base} family={family} step={step} />
-                  <Line points={puntos} x={x} y={ys} family={family} step={step} />
+                  {/* **El tramo en curso, como en toda serie** · EV-015: acá ya
+                      decía «· en curso» junto a la cifra y el trazo seguía
+                      dibujando la caída. Ver `core/enCurso.tsx`. */}
+                  {(() => {
+                    const t = partirEnCurso(puntos, s.puntos.map((p) => p.parcial))
+                    return (
+                      <>
+                        <Area points={t.cerrados} x={x} y={ys} base={base} family={family} step={step} />
+                        <Line points={t.cerrados} x={x} y={ys} family={family} step={step} />
+                        <TramoEnCurso abiertos={t.abiertos} enCurso={t.enCurso} x={x} y={ys} family={family} step={step} />
+                      </>
+                    )
+                  })()}
                   {/* El riel de cero. Es papel y no dato —el mismo trato que
                       `Grid` le da a la rejilla—, así que va en `c-grid` y no
                       lleva familia. `Grid` dibuja en los ticks de una escala y

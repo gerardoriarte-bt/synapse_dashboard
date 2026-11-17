@@ -25,7 +25,7 @@ function lienzo(nota?: string) {
       seleccionado={null}
       onSeleccionar={vi.fn()}
       onReubicar={vi.fn()}
-      onRedimensionar={vi.fn()}
+      onAjustar={vi.fn()}
       onSoltarTipo={vi.fn()}
       arrastrando={null}
     />,

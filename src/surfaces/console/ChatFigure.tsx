@@ -42,6 +42,7 @@
  */
 import { Suspense } from 'react'
 import { Label } from '../../render/primitives/Label'
+import { Ayuda } from '../../render/primitives/Ayuda'
 import { LoadingState } from '../../render/states/LoadingState'
 import { TableWithoutFamily, bodyFor } from '../../render/bodies/registry'
 import { acceptsShape, soleTypeFor } from '../../catalog/blocks'
@@ -128,12 +129,22 @@ export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now
 
   // **Ningún número desnudo, tampoco en el chat** · 2026-10-09. Va antes que
   // la familia porque vale con ella o sin ella.
+  //
+  // **Dicho para quien preguntó, no para nosotros** · EV-025 de la evaluación
+  // de UX, 2026-11-10. Decía «Una tabla que no se dibuja · Sus filas llegaron
+  // sin una columna que diga de qué es cada cifra», que es la causa técnica y
+  // no dice qué hacer. Ahora: qué pasó con la respuesta, en una línea, y el
+  // paso siguiente. La causa sigue siendo del backend —la columna `label` que
+  // se descarta, pedida el 2026-10-09—.
   if (dato.valor.forma === 'tabular' && !hasRowLabels(dato.valor)) {
     return (
       <div className="flex flex-col gap-1">
         {dato.titulo == null ? null : <p className={TITULO}>{dato.titulo}</p>}
-        <Label as="div">Una tabla que no se dibuja</Label>
-        <Label as="div">Sus filas llegaron sin una columna que diga de qué es cada cifra</Label>
+        <Label as="div">Estos datos no se pueden mostrar</Label>
+        <Ayuda>
+          Llegaron cifras sin decir a qué corresponde cada una. Pedí lo mismo diciendo cómo
+          agruparlo —por día, por canal o por campaña— o pedí que te lo explique en texto.
+        </Ayuda>
       </div>
     )
   }

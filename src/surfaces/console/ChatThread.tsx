@@ -71,6 +71,14 @@ function Consultando() {
   )
 }
 
+/** **Llegó algo = texto O cifras** · 2026-11-09, EV-024. El esqueleto miraba
+ *  sólo el texto, y el agente a veces manda la tabla antes que la primera
+ *  palabra: la tabla se dibujaba con «Consultando · 19 s» y las líneas grises
+ *  debajo, y no se sabía si había terminado. */
+function llegoAlgo(turn: ChatTurn): boolean {
+  return turn.respuesta.texto !== '' || turn.respuesta.datos.length > 0
+}
+
 type Props = {
   turns: readonly ChatTurn[]
   /** Con qué cuerpo se dibujan las cifras · F3.6. Es el tipo del panel desde
@@ -108,7 +116,7 @@ export function ChatThread({ turns, panelTipo, bloques, format, now, mesEnCurso 
               todo, un lector de pantalla releería la pregunta en cada
               fragmento que llega. */}
           <div aria-live="polite" aria-busy={turn.streaming} className="flex flex-col gap-2">
-            {turn.streaming && turn.respuesta.texto === '' ? <Consultando /> : null}
+            {turn.streaming && !llegoAlgo(turn) ? <Consultando /> : null}
 
             {/* **Cada cifra debajo del párrafo que la presenta** · 2026-10-27.
                 Hasta este día iban todas al final, lejos de su texto. Ver
@@ -135,7 +143,7 @@ export function ChatThread({ turns, panelTipo, bloques, format, now, mesEnCurso 
                 ya empezado el agente todavía puede pararse a consultar —una
                 llamada a una herramienta a mitad de respuesta— y sin esto la
                 hoja se ve terminada cuando no lo está. */}
-            {turn.streaming && turn.respuesta.texto !== '' ? (
+            {turn.streaming && llegoAlgo(turn) ? (
               <p className="font-mono text-label tracking-rotulo uppercase text-dim m-0">
                 Escribiendo
               </p>
@@ -153,20 +161,28 @@ export function ChatThread({ turns, panelTipo, bloques, format, now, mesEnCurso 
 
           {/* §7.1: «toda respuesta muestra el SQL generado en un desplegable».
               Cerrado por defecto — es auditabilidad, no lectura. */}
-          {turn.respuesta.auditoria === null ? null : (
+          {/* **Una o varias, en el orden en que corrieron** · EV-027. Cada una
+              con su límite: el límite es de la consulta, no de la respuesta. */}
+          {turn.respuesta.consultas.length === 0 ? null : (
             <details className="border-t border-w2 pt-2">
               <summary className="font-mono text-label tracking-rotulo uppercase text-dim cursor-pointer">
-                Ver la consulta que produjo esta respuesta
+                {turn.respuesta.consultas.length === 1
+                  ? 'Ver la consulta que produjo esta respuesta'
+                  : `Ver las ${String(turn.respuesta.consultas.length)} consultas que produjeron esta respuesta`}
               </summary>
-              <pre className="font-mono text-celda text-ink overflow-x-auto m-0 mt-2">
-                {turn.respuesta.auditoria.sql}
-              </pre>
-              {turn.respuesta.auditoria.limiteDeclarado == null ? null : (
-                <p className="font-body text-cuerpo leading-cuerpo text-dim m-0 mt-2">
-                  <Label as="span">No afirma</Label>{' '}
-                  {turn.respuesta.auditoria.limiteDeclarado}
-                </p>
-              )}
+              {turn.respuesta.consultas.map((c, k) => (
+                <div key={k} className="flex flex-col gap-2 mt-2">
+                  {turn.respuesta.consultas.length === 1 ? null : (
+                    <Label as="div">{`Consulta ${String(k + 1)}`}</Label>
+                  )}
+                  <pre className="font-mono text-celda text-ink overflow-x-auto m-0">{c.sql}</pre>
+                  {c.limiteDeclarado == null ? null : (
+                    <p className="font-body text-cuerpo leading-cuerpo text-dim m-0">
+                      <Label as="span">No afirma</Label> {c.limiteDeclarado}
+                    </p>
+                  )}
+                </div>
+              ))}
             </details>
           )}
 

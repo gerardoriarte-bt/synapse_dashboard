@@ -221,9 +221,24 @@ const PARAMS: Readonly<Record<string, string>> = {
  *  Ojo con `cut` y `cuts`: el primero es de `series` y `forecast` y sí se
  *  traduce; el segundo es de `composition` y no tiene contraparte. Un plural de
  *  diferencia. */
-function traducirParams(o: Record<string, unknown>): Record<string, unknown> {
+export function traducirParams(o: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(o)) out[PARAMS[k] ?? k] = v
+  return out
+}
+
+const AL_CABLE: Readonly<Record<string, string>> = Object.fromEntries(
+  Object.entries(PARAMS).map(([cable, nuestro]) => [nuestro, cable]),
+)
+
+/** **La vuelta, para guardar** · 2026-11-10. El builder lee el layout con
+ *  `traducirParams` y edita en los nombres de `PARAM_SCHEMAS`; al guardar, el
+ *  servicio espera los suyos. Sin esto el configurador mandaba `medidor` donde
+ *  el cable dice `meter`, y el `PUT` del layout es un reemplazo completo. Lo que
+ *  no tiene traducción —los params que no leemos— vuelve como vino. */
+export function paramsAlCable(o: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(o)) out[AL_CABLE[k] ?? k] = v
   return out
 }
 
@@ -1077,15 +1092,30 @@ export function adaptValue(raw: unknown): ValorOk | ValorMal {
         ok: true,
         valor: {
           forma: 'tabular',
-          // `decimales` y `unidad` por columna NO llegan. Sin `decimales` una
-          // columna de ROAS sale «4.2 · 4.5 · 3.5 · 3»: cada celda está bien y
-          // la columna se lee mal · §4 ask 14. No se deducen del dato.
+          // **`decimales` y `unidad` SÍ llegan, desde `6e521cc`** · corregido
+          // el 2026-11-09. Acá decía que no, y era cierto hasta el 2026-09-25:
+          // ese día el materializador empezó a mandarlos cuando la métrica los
+          // define, y este adaptador los siguió tirando. La tabla de UA salía
+          // con «2,235,316.00» y una Participación sin «%», y lo vio la
+          // evaluación de UX antes que nadie. **Ausentes quedan ausentes**: un
+          // cero inventado le quitaría los decimales a un ROAS no declarado.
           columnas: cols.flatMap((c) => {
             const clave = cadena(c, 'key')
             const titulo = cadena(c, 'title')
-            return clave === null || titulo === null
-              ? []
-              : [{ clave, titulo, numerica: c['numeric'] === true }]
+            if (clave === null || titulo === null) return []
+            const decimales = numero(c, 'decimals')
+            const unidad = cadena(c, 'unit')
+            return [
+              {
+                clave,
+                titulo,
+                numerica: c['numeric'] === true,
+                ...(decimales === null || !Number.isInteger(decimales) || decimales < 0
+                  ? {}
+                  : { decimales }),
+                ...(unidad === null || unidad.trim() === '' ? {} : { unidad }),
+              },
+            ]
           }),
           // Las celdas del cable son `any` de Go. El contrato admite cadena,
           // número o nulo — cualquier otra cosa (un objeto anidado, un booleano)

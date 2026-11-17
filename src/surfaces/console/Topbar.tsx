@@ -20,6 +20,7 @@ import { esAdmin } from '../../api/rol'
 import type { Formatter } from '../../render/format'
 import type { Theme } from '../../tokens/theme'
 import type { AppContext, Metric, Tab } from '../../api/types'
+import { rutaConDashboard } from '../dashboardEnUrl'
 
 type Props = {
   context: AppContext
@@ -203,7 +204,9 @@ export function Topbar({
           <MenuDeTrabajo
             esAdmin={esAdmin(context.role)}
             rutaActual={RUTA_DEL_DASHBOARD}
-            onIr={(ruta) => void navegar(ruta)}
+            // **Al builder, con el dashboard que se está mirando** · ver
+            // `dashboardEnUrl.ts`. Sin esto abría el por defecto.
+            onIr={(ruta) => void navegar(rutaConDashboard(ruta, context.dashboardActivoId))}
           />
         </div>
       </div>

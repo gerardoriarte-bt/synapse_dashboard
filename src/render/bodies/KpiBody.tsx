@@ -14,7 +14,7 @@ import type { BodyProps } from '../types'
  *
  *  Los otros cuatro de `escalar` —`gauge`, `bullet`, `rings`, `spark`— se
  *  declaran. **El medidor de `presentation` no es `gauge`**: es una barra de
- *  progreso de 1px que acompaña a la cifra, y el arco lo dibuja `GaugeBody`. */
+ *  progreso que acompaña a la cifra, y el arco lo dibuja `GaugeBody`. */
 const DIBUJA = ['kpi'] as const
 
 /** **Interruptores, no datos** · F1.40.
@@ -35,6 +35,10 @@ export type KpiParams = {
 }
 
 const FULL = 100
+/** Hasta dónde se reescala el riel cuando la cifra pasa la meta. Más allá, el
+ *  marcador quedaría tan a la izquierda que el riel dejaría de leerse como
+ *  «cuánto de la meta»: se llena entero y el número dice cuánto. */
+const TOPE_DE_ESCALA = 200
 
 export function KpiBody({
   value,
@@ -77,19 +81,7 @@ export function KpiBody({
             <Label>{medidor.label}</Label>
             <Label>{`${format.number(medidor.porcentaje, { decimals: 0 })}%`}</Label>
           </div>
-          <div className="h-1 rounded-xs bg-w2 overflow-hidden">
-            <div
-              className="h-full rounded-xs"
-              style={{
-                // Por encima de 100 la barra se llena, no se desborda: el exceso
-                // ya lo dice la cifra de arriba.
-                width: `${Math.min(FULL, Math.max(0, medidor.porcentaje))}%`,
-                // La familia llega del catálogo y el cuerpo no sabe cuál es
-                // · regla dura 1.
-                background: hue({ family }),
-              }}
-            />
-          </div>
+          <Medidor porcentaje={medidor.porcentaje} family={family} />
           {medidor.nota !== undefined && <Label>{medidor.nota}</Label>}
         </div>
       )}
@@ -109,6 +101,52 @@ export function KpiBody({
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+/** **El riel del medidor, con el 100 % marcado** · EV-008 de la evaluación de
+ *  UX, 2026-11-10: «153 % de la meta con una barra simplemente llena, sin
+ *  marcar el 100 %».
+ *
+ *  **El marcador es del `.pen`, no un agregado**: `Panel/Medidor` dibuja un
+ *  `Marker` de 2 × 11 en tinta al final del riel, y un riel de 7 de alto. Al
+ *  portarlo quedaron afuera los dos —el riel medía 4 y no había marcador—.
+ *
+ *  **Pasada la meta, el riel se reescala** hasta `TOPE_DE_ESCALA`, para que el
+ *  marcador quede a la vista y el excedente se vea como un tramo aparte, en
+ *  otro escalón de la misma familia: el color sigue saliendo del catálogo
+ *  (regla dura 1). El dibujo no dice qué hacer por encima de 100; va en la
+ *  PROPUESTA del 2026-11-10. */
+function Medidor({ porcentaje, family }: { porcentaje: number; family: string }) {
+  const p = Math.max(0, porcentaje)
+  const escala = Math.min(TOPE_DE_ESCALA, Math.max(FULL, p))
+  const meta = (FULL / escala) * FULL
+  const lleno = (Math.min(p, escala) / escala) * FULL
+  const enMeta = Math.min(lleno, meta)
+  return (
+    <div className="relative h-2.75 flex items-center">
+      <div className="relative w-full h-1.75 rounded-xs bg-w2 overflow-hidden">
+        <div
+          data-tramo="hasta-la-meta"
+          className="absolute inset-y-0 left-0"
+          // La familia llega del catálogo y el cuerpo no sabe cuál es · regla dura 1.
+          style={{ width: `${String(enMeta)}%`, background: hue({ family }) }}
+        />
+        {lleno > meta && (
+          <div
+            data-tramo="excedente"
+            className="absolute inset-y-0"
+            style={{ left: `${String(meta)}%`, width: `${String(lleno - meta)}%`, background: hue({ family, step: 3 }) }}
+          />
+        )}
+      </div>
+      <div
+        data-marca="meta"
+        aria-hidden
+        className="absolute inset-y-0 w-0.5 bg-ink -translate-x-1/2"
+        style={{ left: `${String(meta)}%` }}
+      />
     </div>
   )
 }

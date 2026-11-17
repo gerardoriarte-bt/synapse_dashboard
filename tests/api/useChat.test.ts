@@ -9,7 +9,7 @@ import { apply } from '@/api/useChat'
 import type { Answer } from '@/api/useChat'
 import type { ChatEvent } from '@/api/types'
 
-const VACIA: Answer = { texto: '', datos: [], auditoria: null, sugerencias: [] }
+const VACIA: Answer = { texto: '', datos: [], consultas: [], sugerencias: [] }
 
 const dato = {
   tipo: 'dato',
@@ -69,7 +69,7 @@ describe('las cifras van APARTE de la prosa', () => {
 describe('auditoría y sugerencias', () => {
   it('el SQL queda disponible · §7.1 lo hace obligatorio', () => {
     const evento = { tipo: 'auditoria', sql: 'select 1', fuentesConsultadas: ['GOLD.v'] } as ChatEvent
-    expect(apply(VACIA, evento).auditoria).toMatchObject({ sql: 'select 1' })
+    expect(apply(VACIA, evento).consultas).toMatchObject([{ sql: 'select 1' }])
   })
 
   it('las sugerencias REEMPLAZAN, no se acumulan', () => {
