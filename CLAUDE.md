@@ -58,8 +58,16 @@ que `design.md` — ahí está «SE SOLAPA CON "DOCE MESES"» donde la spec solo
 pantalla dibujada sin declarar que se miró el dibujo.
 
 **Donde el `.pen` y `design.md` difieran, gana el `.pen` para lo visual y el
-literal de la UI**; `design.md` sigue mandando en las reglas duras. Y el agente
-no modifica ninguno de los dos.
+literal de la UI**; `design.md` sigue mandando en las reglas duras.
+
+**El `.pen` se diseña acá** · decisión humana del 2026-11-18: «los diseños del
+`.pen` se hacen aquí». No hay un equipo de diseño aparte que revise, así que no
+se le pide revisión a nadie: el agente dibuja en el `.pen`, lo exporta a PNG y lo
+mira antes de commitear, y el humano decide. **`design.md` sigue intocable.**
+Con Pencil desconectado, el `.pen` se edita como JSON —se reescribe idéntico con
+`json.dumps(indent=2, ensure_ascii=False)`— y se exporta con
+`pen interactive --in <copia> --out <otra>` y `export_nodes`, siempre sobre una
+copia: guardar desde la CLI o Pen.app migra el formato.
 
 Los otros dos normativos siguen en el repositorio hermano
 `~/Documents/GitHub/synapse_v2` (`gerardoriarte-bt/Synapse-v2`), archivado:

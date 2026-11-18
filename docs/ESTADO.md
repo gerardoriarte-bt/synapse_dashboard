@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**224 de 285 tareas cerradas.** 24 parciales · 33 pendientes · 4 diferidas.
+**225 de 285 tareas cerradas.** 23 parciales · 33 pendientes · 4 diferidas.
 
 
-## Front · 163 de 181
+## Front · 164 de 181
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -18,7 +18,7 @@
 | 3 · Chat contextual | `█████████████████·····` | 13/17 | 0 | 2 |
 | 4 · Admin y Builder | `██████████████████████` | 24/24 | 0 | 0 |
 | 5 · Pruebas y pulido | `█████████████████████·` | 58/62 | 0 | 3 |
-| 6 · Métricas y reporte | `████··················` | 2/10 | 6 | 2 |
+| 6 · Métricas y reporte | `███████···············` | 3/10 | 5 | 2 |
 
 ## Backend · 61 de 104
 
@@ -56,13 +56,12 @@
 
 ---
 
-## Se puede tomar hoy · 6 del front
+## Se puede tomar hoy · 5 del front
 
 - **F3.16** · El mes en curso se marca en el trazo, no sólo en un aviso
 - **F3.17** · Un dato que falta se dibuja como hueco
 - **F5.21** · Qué hace un gráfico cuando el dato excede lo legible
 - **F6.4** · Transcribir las rutas de reportes al cable de administración
-- **F6.5** · El plan de diseño: el mapa de UX del reporte programado
 - **F6.8** · Los colores del producto en el correo
 
 ---
