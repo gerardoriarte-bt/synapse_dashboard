@@ -17,7 +17,7 @@ en cada corrida de la puerta con `npm run plan:ancestro`.
 ## Lo que ya está de nuestro lado
 
 No hace falta que esperen nada de estas para probar: están en la rama
-`plan/fase-6-metricas-y-reporte` del repositorio del front, con prueba y con la puerta en
+`main` del repositorio del front, con prueba y con la puerta en
 verde.
 
 - **F1.32** · Transcribir el cable de consola a un contrato versionado
@@ -168,7 +168,7 @@ Hasta entonces los dos paneles de prosa se servían con el valor de la semilla, 
 
 ### F6.3 · Verificar en QA las métricas de Terpel y de UA
 
-*Estado de la tarea: pendiente.*
+*Estado de la tarea: parcial.*
 
 
 Ninguna métrica de Terpel se calcula · sin una entrada en el registro, el cliente no muestra ninguna cifra aunque el dato esté en Snowflake.

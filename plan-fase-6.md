@@ -267,7 +267,8 @@ desaparece cuando el backend las registra. **No antes**: pedirle al backend que
 programe sobre columnas que no existen es el pedido sin medir que costó un
 viernes el 2026-10-05.
 
-### ➕ F6.3 ⬜ Verificar en QA las métricas de Terpel y de UA · 🔒 depende de B6.1 y B6.2
+### ➕ F6.3 ⚠️ Verificar en QA las métricas de Terpel y de UA · 🔒 depende de B6.1 y B6.2
+**UA, verificada el 2026-11-18** · `docs/AUDITORIA-2026-11-18-metricas-de-ua-y-terpel-en-qa.md`: las nueve de B6.2 coinciden con Snowflake de enero a octubre, y la consola las muestra con sus comparativos. **Dos diferencias, con su causa**: el LTV cambia cada día, y el nCAC llega sin decimales, porque el backend redondea toda `time_series` a entero. **Terpel no**: Snowflake rechaza su llave (`401 · JWT token is invalid`), y lo destraba datos registrándola.
 **Descripción.** Cuando B6.1 y B6.2 estén desplegadas, medir panel por panel.
 
 **Espera del backend.** Ninguna métrica de Terpel se calcula · sin una entrada en el registro, el cliente no muestra ninguna cifra aunque el dato esté en Snowflake.
