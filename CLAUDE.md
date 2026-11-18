@@ -606,6 +606,15 @@ los meses cerrados «ya no cambian», y el LTV y el nCAC por cohorte sí cambian
 Se le propuso al humano una aclaración; si no sale, se dice al leer la
 respuesta.
 
+**Los reportes por correo llegaron en `49ebb26`**, medidos en
+`docs/AUDITORIA-2026-11-18-respuesta-reportes-por-correo.md`. **Decisión
+humana del 2026-11-18: donde difieren del plan, se acepta lo construido**
+(P6.1, P6.2 y P6.5 revisadas; P6.8 y P6.9 nuevas en `plan-fase-6.md`). Los
+cinco ajustes que faltan van en
+`docs/MENSAJE-2026-11-18-backend-ajustes-de-reportes.md`, y **se envió el
+2026-11-18, lo mandó el humano**. **Lo que sigue es esperar, no volver a
+pedirlo.** Del front ya se puede tomar F6.4.
+
 ### ⇩ el 2026-11-17 · el editor de QA no dibujaba, y el despliegue está pedido
 
 **En el editor de UA MX ningún panel mostraba su gráfico**, y no se podía

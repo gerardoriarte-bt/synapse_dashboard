@@ -5,7 +5,7 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**224 de 285 tareas cerradas.** 17 parciales · 40 pendientes · 4 diferidas.
+**224 de 285 tareas cerradas.** 19 parciales · 38 pendientes · 4 diferidas.
 
 
 ## Front · 163 de 181
@@ -52,7 +52,7 @@
 | 3 · Chat contextual | `████████··············` | 4/11 | 2 | 5 |
 | 4 · Admin y Builder | `████████████████████··` | 18/20 | 1 | 1 |
 | 5 · Multi-dashboard y pulido | `██████················` | 2/7 | 1 | 3 |
-| 6 · Métricas y reporte | `······················` | 0/6 | 1 | 5 |
+| 6 · Métricas y reporte | `······················` | 0/6 | 3 | 3 |
 
 ---
 
