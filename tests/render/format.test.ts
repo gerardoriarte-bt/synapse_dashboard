@@ -166,3 +166,21 @@ describe('una fecha de calendario no se corre de día · 2026-10-01', () => {
     expect(fmt.calendar('2026-09-02T04:00:00Z')).toMatch(new RegExp(`\\b${String(local)}\\b`))
   })
 })
+
+describe('el huso del cliente · `zona` en `clock` y `calendar` · 2026-11-18', () => {
+  /** **Tokio y no Bogotá**, para que la prueba no pase por coincidir con el
+   *  huso de quien la corre: 13:00 UTC son las 22:00 allá, y ningún navegador
+   *  de este equipo está ahí. */
+  it('la hora se mira desde el huso que se le pasa', () => {
+    expect(fmt.clock('2026-11-03T13:00:05Z', 'Asia/Tokyo')).toBe('22:00')
+  })
+
+  it('y la fecha también: las 20:00 UTC del 3 ya son el 4 en Tokio', () => {
+    expect(fmt.calendar('2026-11-03T20:00:00Z', 'Asia/Tokyo')).toMatch(/\b4\b/)
+  })
+
+  it('un huso vacío o que `Intl` no reconoce no rompe: queda el del navegador', () => {
+    expect(fmt.clock('2026-11-03T13:00:05Z', '')).toBe(fmt.clock('2026-11-03T13:00:05Z'))
+    expect(fmt.clock('2026-11-03T13:00:05Z', 'Marte/Olimpo')).toBe(fmt.clock('2026-11-03T13:00:05Z'))
+  })
+})

@@ -345,3 +345,27 @@ describe('la auditoría de UX del 2026-11-18 · lo que se corrigió', () => {
     expect(screen.getByLabelText('Nombre')).toBeInTheDocument()
   })
 })
+
+describe('lo que se vio contra el servicio real · 2026-11-18', () => {
+  it('el último envío se lee en el huso del CLIENTE, como «cuándo sale»', async () => {
+    // Tokio para que no coincida con el huso de quien corre la prueba: el
+    // envío de las 13:00 UTC son las 22:00 allá.
+    servir([activo])
+    server.use(http.get(`${API}/admin/tenants`, () => ok(tenants.map((t) => ({ ...t, timezone: 'Asia/Tokyo' })))))
+    montar()
+    expect(within(await fila('Pauta digital · mensual')).getByText(/· 22:00$/)).toBeInTheDocument()
+  })
+
+  it('una validación no dice «Enviado»', async () => {
+    servir([activo])
+    server.use(
+      http.get(`${API}/admin/tenants/:t/reports/:r/runs`, () =>
+        ok([{ id: 'c-2', report_id: 'r-1', tenant_id: 't-1', kind: 'validation', status: 'ok', answers: [], sent_to: [], actor_user_id: 'u-9', created_at: '2026-10-28T15:00:00Z' }]),
+      ),
+    )
+    montar('/admin/reportes/r-1/envios')
+    const f = (await screen.findByText('Validación')).closest('tr') as HTMLElement
+    expect(within(f).getByText('Respondidas')).toBeInTheDocument()
+    expect(within(f).queryByText('Enviado')).toBeNull()
+  })
+})

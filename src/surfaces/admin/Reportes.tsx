@@ -59,7 +59,16 @@ type Props = {
 
 const mensaje = (e: Error | null, otro: string) => (e === null ? null : e.message === '' ? otro : e.message)
 
-export function Reportes({ tenantId, cliente, zonaHoraria, roles, usuarios, format }: Props) {
+export function Reportes({ tenantId, cliente, zonaHoraria, roles, usuarios, format: delNavegador }: Props) {
+  // **Toda fecha de un reporte se mira en el huso del CLIENTE** · 2026-11-18.
+  // El reporte sale a «las 14:24, hora del cliente», y su envío pintado en el
+  // huso del navegador decía 15:24. Se arma una vez acá para que ninguna de las
+  // cuatro vistas pueda olvidarlo.
+  const format: Formatter = {
+    ...delNavegador,
+    calendar: (iso) => delNavegador.calendar(iso, zonaHoraria),
+    clock: (iso) => delNavegador.clock(iso, zonaHoraria),
+  }
   const { pathname } = useLocation()
   const navegar = useNavigate()
   const vista = vistaDe(pathname)

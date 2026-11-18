@@ -94,7 +94,7 @@ export type Formatter = {
    *  publicación puede ser de cualquier año, y «14 sep» sin año no ubica nada.
    *  El riel de hilos es otra cosa — ahí la retención es de doce meses y el año
    *  sólo aparece cuando no es el corriente. */
-  calendar: (iso: string) => string
+  calendar: (iso: string, zona?: string) => string
   /** El rótulo de un punto en el eje del tiempo · «1 oct», «oct 25» · 2026-10-06.
    *
    *  **El grano lo dice el llamador**, que mira la serie entera: un punto solo
@@ -110,8 +110,14 @@ export type Formatter = {
    *  el formato no inventa cómo se llama. */
   periodName: (id: string) => string
   /** La hora de un instante · «06:00». 24 horas, igual que `threadStamp`: en el
-   *  producto el corte del día importa más que la costumbre local. */
-  clock: (iso: string) => string
+   *  producto el corte del día importa más que la costumbre local.
+   *
+   *  **`zona` mira el instante desde el huso del CLIENTE** · 2026-11-18, igual
+   *  en `calendar`. Un reporte se programa en la hora del cliente —«Diaria ·
+   *  14:24»—, y su envío pintado en el huso del navegador decía «15:24»: la
+   *  misma hora contada en dos husos sin decir cuál. Sin `zona`, o con una que
+   *  `Intl` no reconoce, queda el del navegador. */
+  clock: (iso: string, zona?: string) => string
 }
 
 /** **El único default del front** · F1.13b.
@@ -128,6 +134,18 @@ export const LOCALE_POR_DEFECTO = 'es-MX'
 /** `2026-09-01` a secas · una fecha de CALENDARIO. Con `T` o con huso ya es un
  *  instante, y se mira desde algún lado. Ver `calendar`. */
 const SOLO_FECHA = /^\d{4}-\d{2}-\d{2}$/
+
+/** El huso para `Intl`, o nada si no lo reconoce: un tenant sin zona cargada
+ *  manda cadena vacía, e `Intl` tira con eso. */
+function husoValido(zona: string | undefined): { timeZone?: string } {
+  if (zona === undefined || zona === '') return {}
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: zona })
+    return { timeZone: zona }
+  } catch {
+    return {}
+  }
+}
 
 export function createFormat(locale: string): Formatter {
   function number(value: number, options: NumberOptions = {}): string {
@@ -272,7 +290,7 @@ export function createFormat(locale: string): Formatter {
         .replace(' de ', ' ')
     },
 
-    calendar(iso) {
+    calendar(iso, zona) {
       return new Intl.DateTimeFormat(locale, {
         day: 'numeric',
         month: 'short',
@@ -298,15 +316,16 @@ export function createFormat(locale: string): Formatter {
         //
         // Forzar UTC a los dos habría corrido las marcas de tiempo; dejarlo como
         // estaba corre las fechas. Son dos tipos distintos con la misma pinta.
-        ...(SOLO_FECHA.test(iso) ? { timeZone: 'UTC' } : {}),
+        ...(SOLO_FECHA.test(iso) ? { timeZone: 'UTC' } : husoValido(zona)),
       }).format(new Date(iso))
     },
 
-    clock(iso) {
+    clock(iso, zona) {
       return new Intl.DateTimeFormat(locale, {
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
+        ...husoValido(zona),
       }).format(new Date(iso))
     },
   }
