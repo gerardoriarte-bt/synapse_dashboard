@@ -122,8 +122,10 @@ Por eso se ven títulos en inglés en la consola.
 
 ### Backend
 
-7. **Desplegar el front de `main` en QA.** Pedido el 2026-11-17 en
-   `docs/MENSAJE-2026-11-17-backend-desplegar-el-front.md`.
+7. **Desplegar el front con el PR #95.** El despliegue pedido el 2026-11-17
+   (`docs/MENSAJE-2026-11-17-backend-desplegar-el-front.md`) **ya está en QA**:
+   el bundle se sirve desde el 2026-11-17 a las 22:56 GMT y trae el #89 y el
+   #92. El #95 llegó después y necesita otro despliegue.
 8. **Las ocho repetidas en inglés y `mer_total`**: si se sacan del catálogo de
    QA. No es urgente, pero ensucian la biblioteca del editor: «Investment» y
    «Inversión» aparecen como dos datos distintos.
