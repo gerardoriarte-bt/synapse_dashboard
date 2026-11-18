@@ -204,11 +204,11 @@ export function ReportList({
           {/* Las tres reglas del pie, literales del dibujo con P6.1 y P6.5 revisadas. */}
           <div className="flex flex-wrap gap-x-6 gap-y-1 border-t border-w2 pt-3">
             {/* «Sólo un reporte activo envía» se leía «sólo puede haber uno» · M7. */}
-            <Label>Solo los reportes activos se envían · validar es leer las respuestas antes de activar</Label>
+            <Label>Solo los reportes activos se envían · validar es leer antes de activar</Label>
             <Label>Cambiar una pregunta o el rol lo vuelve a borrador</Label>
             <Label>{`Un externo avisa a los superadmins · máximo ${String(MAXIMO_DE_DESTINATARIOS)} destinatarios`}</Label>
             {/* **Quien busque «Borrar» no lo encuentra** · M8: se dice dónde está la baja. */}
-            <Label>Los reportes no se borran: pausar detiene los envíos y se puede reanudar</Label>
+            <Label>No se borran: pausar es la baja</Label>
           </div>
         </section>
       )}

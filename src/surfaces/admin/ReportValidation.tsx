@@ -105,7 +105,7 @@ export function ReportValidation({ reporte, respuestas, onValidar, onActivar, on
                 ? 'Antes de activar'
                 : momento === 'leer'
                   ? 'Respuestas generadas · léelas'
-                  : `${String(fallaron)} ${fallaron === 1 ? 'respuesta falló' : 'respuestas fallaron'} · vuelve a generarlas para poder validar`}
+                  : `${String(fallaron)} ${fallaron === 1 ? 'respuesta falló' : 'respuestas fallaron'} · vuelve a generarlas`}
             </Label>
             {respuestas !== null && (
               <dl className="m-0 flex flex-col gap-1">
