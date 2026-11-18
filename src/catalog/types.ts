@@ -18,4 +18,7 @@ export type Placement = {
   colStart: number
   colSpan: number
   rowSpan: number
+  /** La fila donde arranca, si quien pinta la calculó · `rowStarts` en
+   *  `render/grid.ts`. No viene del servidor. */
+  rowStart?: number
 }

@@ -12,7 +12,7 @@
  */
 import { useLayoutEffect } from 'react'
 import { Label } from '../../render/primitives/Label'
-import { COLUMNS, gridStyle, readingOrder } from '../../render/grid'
+import { COLUMNS, gridStyle, readingOrder, rowStarts } from '../../render/grid'
 import { useColumns } from '../../render/useColumns'
 import { measureLayoutCommit, measureLayoutPainted } from '../../render/budget'
 import { PanelInGrid } from './PanelInGrid'
@@ -143,6 +143,8 @@ export function Console({
   // El colapso · F1.30. No lo puede hacer solo el CSS: el `colSpan` viaja en un
   // estilo en línea y una media query no lo alcanza.
   const columns = useColumns()
+  /** La fila de cada panel a doce columnas · ver `rowStarts`. Colapsada no hay. */
+  const filas = columns === COLUMNS ? rowStarts(panels) : null
 
   /** El período activo, con su etiqueta · para la línea de contexto del dock. */
   const periodoActivo = context.periodos.find((p) => p.id === activePeriodId)
@@ -272,7 +274,9 @@ export function Console({
             **El orden del arreglo ES la fila**, porque `PanelConfigurado` no
             declara `rowStart`: ordenarlo por `colStart` borra la única
             información de fila que existe. */}
-        {(columns === COLUMNS ? panels : readingOrder(panels)).map((panel) => {
+        {/* **Y a doce columnas la fila se ESCRIBE** · 2026-11-18. Dejarla a CSS
+            colocaba distinto que el editor: ver `rowStarts`. */}
+        {(columns === COLUMNS ? panels : readingOrder(panels)).map((panel, i) => {
           const metric = metricsById.get(panel.metricId)
 
           // Un `metricId` que el catálogo no resuelve NO se pinta con un
@@ -321,6 +325,7 @@ export function Console({
             <PanelInGrid
               key={panel.id}
               panel={panel}
+              {...(filas === null ? {} : { rowStart: filas[i] as number })}
               metric={metric}
               payload={payloadOf(panel.id)}
               params={paramsOf(panel.id)}

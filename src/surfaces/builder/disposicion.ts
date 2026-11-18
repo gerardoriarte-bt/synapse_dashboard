@@ -16,20 +16,24 @@
  *     fila en curso, la colocación lo baja y el hueco queda; pero pedir «que
  *     quede vacío acá» no tiene dónde escribirse.
  *
- *  **Y por eso la fila se simula acá.** Para saber qué panel está bajo el cursor
- *  hay que saber en qué fila cayó cada uno, y eso lo decide el navegador. Este
- *  módulo repite el algoritmo —el mismo que `grid-auto-flow: row` aplica— para
- *  poder contestar sin leer el DOM.
+ *  **Y por eso la fila se calcula acá**, para saber qué panel está bajo el
+ *  cursor sin leer el DOM.
  *
- *  ── EL ALGORITMO, QUE ES EL DE CSS Y NO UNO NUESTRO ─────────────────────────
+ *  ── NO ERA EL ALGORITMO DE CSS, Y ACÁ DECÍA QUE SÍ · 2026-11-18 ─────────────
  *
- *  Con `grid-auto-flow: row` y columnas explícitas, los ítems se colocan **en el
- *  orden del documento**, cada uno en la primera fila donde su rango de columnas
- *  esté libre **desde el cursor**, que nunca retrocede. No es `dense`: un hueco
- *  que quedó atrás no se rellena con un ítem posterior. Repetirlo así es lo que
- *  hace que lo dibujado y lo calculado coincidan.
+ *  Este encabezado decía que repetía `grid-auto-flow: row` y que por eso lo
+ *  dibujado y lo calculado coincidían. **No coincidían.** CSS lleva un cursor de
+ *  fila Y de columna: un panel con columna fija que arranca a la izquierda del
+ *  anterior baja de fila aunque la fila tenga lugar. Este cálculo sólo lleva la
+ *  fila, así que lo pone al lado. Medido en QA ese día: UA MX con Órdenes en la
+ *  columna 10 y Visitas en la 7 — el editor las ponía en la misma fila y la
+ *  consola, que dejaba la fila a CSS, en escalera.
+ *
+ *  **Se quedó el del editor**, porque es lo que quien compone ve y aprueba. Vive
+ *  en `render/grid.ts` como `rowStarts`, y la consola escribe la fila que
+ *  devuelve en vez de dejársela a CSS.
  */
-import { COLUMNS, GAP } from '../../render/grid'
+import { COLUMNS, GAP, clampToGrid, rowStarts } from '../../render/grid'
 
 export type Colocacion = {
   /** Índice en el arreglo de paneles de la pestaña. */
@@ -43,64 +47,16 @@ export type Colocacion = {
 
 type Entrada = { colStart: number; colSpan: number; rowSpan: number }
 
-/** Recorta un panel al ancho de la grilla. Un `colStart` fuera de rango o un
- *  span que se pasa del borde no se descartan: se acomodan, porque el layout
- *  puede venir del servidor y una pantalla en blanco no explica nada. */
-function dentro(p: Entrada): { colStart: number; colSpan: number } {
-  const colSpan = Math.max(1, Math.min(p.colSpan, COLUMNS))
-  const colStart = Math.max(1, Math.min(p.colStart, COLUMNS - colSpan + 1))
-  return { colStart, colSpan }
-}
-
-/** La fila de cada panel, simulando `grid-auto-flow: row`. */
+/** La fila de cada panel · **la misma que pinta la consola** desde el
+ *  2026-11-18: el algoritmo vive en `render/grid.ts` (`rowStarts`) y lo usan los
+ *  dos. Antes estaba sólo acá, la consola dejaba la fila a CSS, y CSS coloca
+ *  distinto: el dashboard publicado se veía en escalera y el editor no. */
 export function disposicion(panels: readonly Entrada[]): Colocacion[] {
-  // `ocupadas[fila]` = conjunto de columnas tomadas. Crece a demanda.
-  const ocupadas: Set<number>[] = []
-  const libre = (fila: number, desde: number, ancho: number): boolean => {
-    const set = ocupadas[fila]
-    if (set === undefined) return true
-    for (let c = desde; c < desde + ancho; c++) if (set.has(c)) return false
-    return true
-  }
-  const marcar = (fila: number, alto: number, desde: number, ancho: number) => {
-    for (let f = fila; f < fila + alto; f++) {
-      const set = (ocupadas[f] ??= new Set<number>())
-      for (let c = desde; c < desde + ancho; c++) set.add(c)
-    }
-  }
-
-  // **El cursor no retrocede.** Es lo que distingue `row` de `row dense`, y lo
-  // que hace que un hueco quede donde quedó.
-  let cursor = 0
-  const out: Colocacion[] = []
-
-  panels.forEach((p, indice) => {
-    const { colStart, colSpan } = dentro(p)
-    const rowSpan = Math.max(1, p.rowSpan)
-
-    // **Alcanza con mirar la PRIMERA fila, y eso hay que demostrarlo.**
-    //
-    // La versión anterior verificaba las `rowSpan` filas. Parece necesario y no
-    // lo es: si la fila `f` está libre en las columnas de este panel, las de
-    // abajo también. Un panel `Q` que bloqueara una fila posterior sin bloquear
-    // `f` tendría que empezar en una fila mayor que `f`; pero `Q` se colocó
-    // antes, y **el cursor no retrocede**, así que `Q` empezó en una fila menor
-    // o igual al cursor, que es menor o igual a `f`. Y como cada panel marca un
-    // bloque contiguo desde donde empieza, si `Q` no cubre `f` es porque terminó
-    // antes — y entonces no cubre nada después de `f`.
-    //
-    // Comprobado además por fuerza bruta sobre 531.441 combinaciones de cuatro
-    // paneles: **cero diferencias.** Lo encontró una mutación que sobrevivía —
-    // no era una prueba débil, era código que no se podía alcanzar.
-    let fila = cursor
-    while (!libre(fila, colStart, colSpan)) fila += 1
-
-    marcar(fila, rowSpan, colStart, colSpan)
-    cursor = fila
-    out.push({ indice, colStart, colSpan, filaInicio: fila + 1, rowSpan })
+  const filas = rowStarts(panels)
+  return panels.map((p, indice) => {
+    const { colStart, colSpan } = clampToGrid(p)
+    return { indice, colStart, colSpan, filaInicio: filas[indice] ?? 1, rowSpan: Math.max(1, p.rowSpan) }
   })
-
-  return out
 }
 
 /** Qué panel ocupa una celda · `null` si está libre. Devuelve el ÍNDICE. */
