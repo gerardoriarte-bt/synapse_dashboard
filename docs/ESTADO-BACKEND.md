@@ -247,7 +247,7 @@ esperan algo de ellos: **2**, y salen en `PARA-BACKEND.md`.
 | ⬜ | **B6.3** ➕ · El reporte programado como objeto | — | — |
 | ⬜ | **B6.4** ➕ · Rutas para administrar reportes | — | — |
 | ⬜ | **B6.5** ➕ · Contestar las preguntas | — | — |
-| ⬜ | **B6.6** ➕ · Programar y enviar | `dc58ef5` ⚠ | 2026-11-04 |
+| ⬜ | **B6.6** ➕ · Programar y enviar | `fb3ca0c` ⚠ | 2026-11-18 |
 
 
 ---

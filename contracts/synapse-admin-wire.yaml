@@ -1805,6 +1805,288 @@ paths:
                         items: { $ref: '#/components/schemas/MaterializeRun' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+
+  # ── B6.3 y B6.4 · los reportes por correo · LEÍDOS DE `fb3ca0c` ─────────────
+  #
+  # **Transcritas el 2026-11-18 desde su código**, que trae `49ebb26`, y NO
+  # medidas: en QA todavía no existen. Por eso llevan `x-origen: fb3ca0c` por
+  # operación, como el agente de B3.9, y no `x-verificado-en`. Cuando estén en
+  # QA se miden con `npm run humo` y la marca cambia.
+  #
+  # Leídos: `internal/adapters/handler/dd_report_handler.go` —cuerpos y
+  # errores—, `internal/core/domain/dd_report.go` —con etiquetas `json:`, en
+  # snake_case—, `internal/core/ports/dd_report.go` y
+  # `internal/core/services/dd_report_service.go` —las reglas—. **Donde su
+  # OpenAPI difiere, gana el código**, y cada diferencia se dice en su lugar.
+  #
+  # Las ocho cuelgan de `AdminOnlyMiddleware` y `RequireRouteTenant`: un admin
+  # sólo con su cliente, un superadmin con cualquiera. Ninguna borra: pausar es
+  # la baja (P6.9 de `plan-fase-6.md`).
+  /admin/tenants/{tenantId}/reports:
+    get:
+      tags: [admin]
+      operationId: listReports
+      summary: Los reportes por correo del cliente
+      x-origen: fb3ca0c
+      description: |
+        Todos los reportes del cliente, en orden de creación, **con sus
+        destinatarios activos**: el repositorio precarga `is_active = true`. Un
+        destinatario quitado no aparece; su fila queda en la base.
+      parameters: [{ $ref: '#/components/parameters/tenantId' }]
+      responses:
+        '200':
+          description: Los reportes del cliente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Report' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [admin]
+      operationId: createReport
+      summary: Alta de un reporte · nace en borrador
+      x-origen: fb3ca0c
+      description: |
+        **Contesta 201** con el reporte en `draft`. Cada correo externo dispara un
+        aviso a los superadmins activos, y si sale queda `notified_at` en el
+        destinatario. Si el aviso falla, el alta no falla: queda en el log.
+      parameters: [{ $ref: '#/components/parameters/tenantId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReportInput' }
+      responses:
+        '201':
+          description: El reporte creado, en `draft`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Report' }
+        '400': { $ref: '#/components/responses/ReportInvalid' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /admin/tenants/{tenantId}/reports/{reportId}:
+    get:
+      tags: [admin]
+      operationId: getReport
+      summary: Un reporte, con sus destinatarios activos
+      x-origen: fb3ca0c
+      parameters:
+        - $ref: '#/components/parameters/tenantId'
+        - $ref: '#/components/parameters/reportId'
+      responses:
+        '200':
+          description: El reporte
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Report' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [admin]
+      operationId: updateReport
+      summary: Edición parcial
+      x-origen: fb3ca0c
+      description: |
+        **Campo ausente, sin cambio.** `user_ids` y `emails` reemplazan la lista
+        entera de su tipo: el que no viene se desactiva, el nuevo se agrega.
+
+        **Cambiar `questions` o `role_id` vuelve a `draft`** y borra
+        `validated_at`, `validated_by` y `next_run_at`. El nombre, el horario y
+        los destinatarios no cambian el estado —P6.1, revisada el 2026-11-18—.
+        Si está activo y cambia el horario, se recalcula `next_run_at`.
+      parameters:
+        - $ref: '#/components/parameters/tenantId'
+        - $ref: '#/components/parameters/reportId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReportUpdateInput' }
+      responses:
+        '200':
+          description: El reporte después del cambio
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Report' }
+        '400': { $ref: '#/components/responses/ReportInvalid' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /admin/tenants/{tenantId}/reports/{reportId}/validate:
+    post:
+      tags: [admin]
+      operationId: validateReport
+      summary: Contesta las preguntas en vivo y, si todas responden, valida
+      x-origen: fb3ca0c
+      description: |
+        **Le pregunta al agente Cortex del rol del reporte**, una pregunta por
+        hilo, con 90 s de tope cada una. Si todas traen texto, el reporte pasa a
+        `validated`, con `validated_at` y `validated_by`. **Si alguna falla, el
+        estado no cambia**, y la corrida queda igual en `runs` con
+        `kind: validation`.
+
+        **Una respuesta que dice «no hay datos» cuenta como contestada**: la
+        regla es que el texto no esté vacío, no lo que dice.
+
+        Sin cuerpo.
+      parameters:
+        - $ref: '#/components/parameters/tenantId'
+        - $ref: '#/components/parameters/reportId'
+      responses:
+        '200':
+          description: Si quedó validado y qué respuestas se leyeron
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/ReportValidation' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: |
+            Dos casos, leídos en `sendReportError`:
+
+            - **`CONFLICT_REPORT_AGENT`**: el rol del reporte no tiene un agente
+              activo. Nunca se cae a otro agente.
+            - **`CONFLICT_REPORT_STATE`**: el reporte está activo; hay que
+              pausarlo antes de volver a validarlo. **Su OpenAPI no lo nombra.**
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /admin/tenants/{tenantId}/reports/{reportId}/activate:
+    post:
+      tags: [admin]
+      operationId: activateReport
+      summary: Activa un reporte validado o pausado
+      x-origen: fb3ca0c
+      description: |
+        Desde `validated` o `paused`. Calcula `next_run_at` en UTC desde
+        `send_time` en la zona del cliente. **Activar uno ya activo no es error**:
+        devuelve el reporte como está. Sin cuerpo.
+      parameters:
+        - $ref: '#/components/parameters/tenantId'
+        - $ref: '#/components/parameters/reportId'
+      responses:
+        '200':
+          description: El reporte activo
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Report' }
+        '400':
+          description: |
+            **`VALIDATION_REPORT`**: no tiene ningún destinatario activo.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: |
+            **`CONFLICT_REPORT_NOT_VALIDATED`**: está en `draft`, o nunca se
+            validó.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /admin/tenants/{tenantId}/reports/{reportId}/pause:
+    post:
+      tags: [admin]
+      operationId: pauseReport
+      summary: Pausa un reporte activo · es la baja
+      x-origen: fb3ca0c
+      description: |
+        Sólo desde `active`. **No borra la validación**: reactivar no pide validar
+        otra vez. Pausar uno ya pausado devuelve el reporte como está. Sin
+        cuerpo.
+      parameters:
+        - $ref: '#/components/parameters/tenantId'
+        - $ref: '#/components/parameters/reportId'
+      responses:
+        '200':
+          description: El reporte pausado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Report' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: |
+            **`CONFLICT_REPORT_STATE`**: está en `draft` o `validated`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /admin/tenants/{tenantId}/reports/{reportId}/runs:
+    get:
+      tags: [admin]
+      operationId: listReportRuns
+      summary: Las últimas 20 validaciones y envíos
+      x-origen: fb3ca0c
+      description: |
+        De la más nueva a la más vieja, con tope fijo de 20 (`reportRunsLimit`).
+        **Una fila por corrida, no por destinatario**: un envío dice a quiénes
+        salió en `sent_to` y las fallas juntas en `error`.
+      parameters:
+        - $ref: '#/components/parameters/tenantId'
+        - $ref: '#/components/parameters/reportId'
+      responses:
+        '200':
+          description: Las corridas del reporte
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/ReportRun' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
 components:
   securitySchemes:
     bearer: { type: http, scheme: bearer, bearerFormat: JWT }
@@ -1835,6 +2117,11 @@ components:
       in: path
       required: true
       schema: { type: string, format: uuid }
+    reportId:
+      name: reportId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
 
   responses:
     BadRequest:
@@ -1861,6 +2148,18 @@ components:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
     Unprocessable:
       description: Composición inválida
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    ReportInvalid:
+      description: |
+        **`VALIDATION_REPORT`**, con el motivo en `error`: el nombre vacío o de
+        más de 120, menos de 3 o más de 5 preguntas, una vacía o de más de 500,
+        la frecuencia fuera de `daily`, `weekly` y `monthly`, el día que falta
+        para la frecuencia, `send_time` sin `HH:MM`, un correo inválido, más de
+        50 destinatarios, un usuario de otro cliente, suspendido o con otro rol,
+        y un rol de otro cliente o inactivo. Leído en `dd_report_service.go`.
+        Un cuerpo que no es JSON da 400 con el código por defecto.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -2162,6 +2461,10 @@ components:
             **Medidos acá**: `AUTH_FORBIDDEN` con token de planner,
             `CONFLICT_NO_PREVIOUS` y `CONFLICT_REVERT_SELF` en el revert, y
             `NOT_FOUND_TENANT` con un uuid inventado.
+
+            **Los de los reportes, leídos de `fb3ca0c` el 2026-11-18 y sin
+            medir**: `VALIDATION_REPORT`, `CONFLICT_REPORT_NOT_VALIDATED`,
+            `CONFLICT_REPORT_STATE` y `CONFLICT_REPORT_AGENT`.
           examples: [CONFLICT_NO_PREVIOUS, AUTH_FORBIDDEN, VALIDATION_LAYOUT]
 
     TenantOption:
@@ -3184,3 +3487,180 @@ components:
             tener la credencial vencida y este campo seguiría en `true`.
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+
+    # ── B6.3 · el reporte por correo · leído de `fb3ca0c` ─────────────────────
+    Report:
+      type: object
+      description: |
+        `domain.DDReport` · snake_case. **Leído de su código, no medido**: en QA
+        todavía no existe.
+      required: [id, tenant_id, name, role_id, questions, frequency, weekday, month_day, send_time, status, next_run_at, last_sent_at, validated_at, validated_by, created_by, updated_by, created_at, updated_at, recipients]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        name: { type: string, maxLength: 120 }
+        role_id:
+          type: string
+          format: uuid
+          description: El rol cuyo agente contesta. Los usuarios destinatarios tienen que tenerlo.
+        questions:
+          type: array
+          minItems: 3
+          maxItems: 5
+          items: { type: string, maxLength: 500 }
+        frequency: { type: string, enum: [daily, weekly, monthly] }
+        weekday:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 6
+          description: 0 es domingo. Sólo en `weekly`; en las otras queda nulo.
+        month_day:
+          type: [integer, 'null']
+          minimum: 1
+          maximum: 28
+          description: Sólo en `monthly`.
+        send_time:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+          description: '`HH:MM` en `tenants.timezone`, la misma zona con que la consola corta el día.'
+        status: { type: string, enum: [draft, validated, active, paused] }
+        next_run_at:
+          type: [string, 'null']
+          format: date-time
+          description: La próxima salida, en UTC. Sólo con `status` `active`.
+        last_sent_at: { type: [string, 'null'], format: date-time }
+        validated_at: { type: [string, 'null'], format: date-time }
+        validated_by: { type: [string, 'null'], format: uuid }
+        created_by: { type: [string, 'null'], format: uuid }
+        updated_by: { type: [string, 'null'], format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        recipients:
+          type: array
+          items: { $ref: '#/components/schemas/ReportRecipient' }
+          description: Sólo los activos.
+
+    ReportRecipient:
+      type: object
+      description: |
+        `domain.DDReportRecipient`. **`is_active` no viaja** —`json:"-"`—: el
+        servicio sólo manda los activos. `user_id`, `email` y `notified_at` son
+        `omitempty`, así que pueden faltar.
+      required: [id, report_id, kind, added_by, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        report_id: { type: string, format: uuid }
+        kind: { type: string, enum: [user, external] }
+        user_id: { type: string, format: uuid, description: Sólo en `user`. }
+        email:
+          type: string
+          description: |
+            Sólo en `external`. **Todo correo de `emails` es externo, aunque sea
+            el de un usuario**: pedido el 2026-11-18 que no se acepte.
+        added_by: { type: [string, 'null'], format: uuid }
+        notified_at:
+          type: string
+          format: date-time
+          description: Cuándo salió el aviso a los superadmins. Sólo externos; falta si el aviso no salió.
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    ReportInput:
+      type: object
+      description: |
+        El cuerpo del alta (`createReportRequest`). **El handler exige `name`,
+        `role_id`, `frequency` y `send_time`**; su OpenAPI suma `questions`, y el
+        servicio las rechaza igual si no son de 3 a 5.
+      required: [name, role_id, frequency, send_time]
+      properties:
+        name: { type: string, maxLength: 120 }
+        role_id: { type: string, format: uuid }
+        questions:
+          type: array
+          minItems: 3
+          maxItems: 5
+          items: { type: string, maxLength: 500 }
+        frequency: { type: string, enum: [daily, weekly, monthly] }
+        weekday: { type: integer, minimum: 0, maximum: 6, description: Obligatorio en `weekly`. }
+        month_day: { type: integer, minimum: 1, maximum: 28, description: Obligatorio en `monthly`. }
+        send_time: { type: string, pattern: '^\d{2}:\d{2}$' }
+        user_ids:
+          type: array
+          items: { type: string, format: uuid }
+          description: Usuarios activos del cliente y con el `role_id` del reporte.
+        emails:
+          type: array
+          items: { type: string, format: email }
+          description: Externos. Se pasan a minúscula y se quitan los repetidos.
+
+    ReportUpdateInput:
+      type: object
+      description: Edición parcial · campo ausente, sin cambio.
+      properties:
+        name: { type: string, maxLength: 120 }
+        role_id: { type: string, format: uuid }
+        questions:
+          type: array
+          minItems: 3
+          maxItems: 5
+          items: { type: string, maxLength: 500 }
+        frequency: { type: string, enum: [daily, weekly, monthly] }
+        weekday: { type: integer, minimum: 0, maximum: 6 }
+        month_day: { type: integer, minimum: 1, maximum: 28 }
+        send_time: { type: string, pattern: '^\d{2}:\d{2}$' }
+        user_ids:
+          type: array
+          items: { type: string, format: uuid }
+          description: Reemplaza la lista de usuarios.
+        emails:
+          type: array
+          items: { type: string, format: email }
+          description: Reemplaza la lista de externos.
+
+    ReportAnswer:
+      type: object
+      description: |
+        `ports.DDReportAnswer`. **Texto plano del agente y nada más**: no trae
+        fuente, período ni frescura. Pedido el 2026-11-18 (B6.5).
+      required: [question, answer]
+      properties:
+        question: { type: string }
+        answer: { type: string, description: Vacía cuando hay `error`. }
+        error: { type: string, description: 'Sólo si esa pregunta no tuvo respuesta · `omitempty`.' }
+
+    ReportValidation:
+      type: object
+      description: '`ports.DDReportValidation` · la respuesta de validar.'
+      required: [report, validated, answers]
+      properties:
+        report: { $ref: '#/components/schemas/Report' }
+        validated: { type: boolean }
+        answers:
+          type: array
+          items: { $ref: '#/components/schemas/ReportAnswer' }
+
+    ReportRun:
+      type: object
+      description: |
+        `domain.DDReportRun`. **Su OpenAPI no declara `tenant_id`, y el struct lo
+        manda**: se declara.
+      required: [id, report_id, tenant_id, kind, status, answers, sent_to, actor_user_id, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        report_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        kind: { type: string, enum: [validation, delivery] }
+        status: { type: string, enum: [ok, partial, error] }
+        answers:
+          type: [array, 'null']
+          items: { $ref: '#/components/schemas/ReportAnswer' }
+        sent_to:
+          type: array
+          items: { type: string }
+          description: Los correos a los que salió. Vacío en una validación.
+        actor_user_id:
+          type: [string, 'null']
+          format: uuid
+          description: Quién validó. Nulo en un envío programado.
+        error: { type: string, description: 'Las fallas, juntas · `omitempty`.' }
+        created_at: { type: string, format: date-time }
