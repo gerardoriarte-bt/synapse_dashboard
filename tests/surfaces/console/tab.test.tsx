@@ -199,7 +199,11 @@ describe('cinco paneles, cinco tipos, una pestaña', () => {
     // El alto NO es un `height`: es `gridRow: span N` sobre un contenedor con
     // `gridAutoRows`, que es lo que hace que `96·N − 16` quede aplicado y no
     // solo escrito. Buscar un `height` daba vacío y parecía un fallo.
-    expect(celdaDe('Venta diaria').style.gridRow).toBe('span 4')
+    //
+    // **Y desde el 2026-11-18 lleva la fila de arranque**: la consola la
+    // calcula como el editor, en vez de dejarla a CSS. Ver
+    // `tests/render/filaDelEditor.test.tsx`.
+    expect(celdaDe('Venta diaria').style.gridRow).toBe('1 / span 4')
   })
 })
 
