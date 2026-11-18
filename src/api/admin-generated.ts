@@ -1078,6 +1078,156 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/tenants/{tenantId}/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Los reportes por correo del cliente
+         * @description Todos los reportes del cliente, en orden de creación, **con sus
+         *     destinatarios activos**: el repositorio precarga `is_active = true`. Un
+         *     destinatario quitado no aparece; su fila queda en la base.
+         */
+        get: operations["listReports"];
+        put?: never;
+        /**
+         * Alta de un reporte · nace en borrador
+         * @description **Contesta 201** con el reporte en `draft`. Cada correo externo dispara un
+         *     aviso a los superadmins activos, y si sale queda `notified_at` en el
+         *     destinatario. Si el aviso falla, el alta no falla: queda en el log.
+         */
+        post: operations["createReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tenants/{tenantId}/reports/{reportId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Un reporte, con sus destinatarios activos */
+        get: operations["getReport"];
+        /**
+         * Edición parcial
+         * @description **Campo ausente, sin cambio.** `user_ids` y `emails` reemplazan la lista
+         *     entera de su tipo: el que no viene se desactiva, el nuevo se agrega.
+         *
+         *     **Cambiar `questions` o `role_id` vuelve a `draft`** y borra
+         *     `validated_at`, `validated_by` y `next_run_at`. El nombre, el horario y
+         *     los destinatarios no cambian el estado —P6.1, revisada el 2026-11-18—.
+         *     Si está activo y cambia el horario, se recalcula `next_run_at`.
+         */
+        put: operations["updateReport"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tenants/{tenantId}/reports/{reportId}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Contesta las preguntas en vivo y, si todas responden, valida
+         * @description **Le pregunta al agente Cortex del rol del reporte**, una pregunta por
+         *     hilo, con 90 s de tope cada una. Si todas traen texto, el reporte pasa a
+         *     `validated`, con `validated_at` y `validated_by`. **Si alguna falla, el
+         *     estado no cambia**, y la corrida queda igual en `runs` con
+         *     `kind: validation`.
+         *
+         *     **Una respuesta que dice «no hay datos» cuenta como contestada**: la
+         *     regla es que el texto no esté vacío, no lo que dice.
+         *
+         *     Sin cuerpo.
+         */
+        post: operations["validateReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tenants/{tenantId}/reports/{reportId}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Activa un reporte validado o pausado
+         * @description Desde `validated` o `paused`. Calcula `next_run_at` en UTC desde
+         *     `send_time` en la zona del cliente. **Activar uno ya activo no es error**:
+         *     devuelve el reporte como está. Sin cuerpo.
+         */
+        post: operations["activateReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tenants/{tenantId}/reports/{reportId}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pausa un reporte activo · es la baja
+         * @description Sólo desde `active`. **No borra la validación**: reactivar no pide validar
+         *     otra vez. Pausar uno ya pausado devuelve el reporte como está. Sin
+         *     cuerpo.
+         */
+        post: operations["pauseReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tenants/{tenantId}/reports/{reportId}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Las últimas 20 validaciones y envíos
+         * @description De la más nueva a la más vieja, con tope fijo de 20 (`reportRunsLimit`).
+         *     **Una fila por corrida, no por destinatario**: un envío dice a quiénes
+         *     salió en `sent_to` y las fallas juntas en `error`.
+         */
+        get: operations["listReportRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1364,6 +1514,10 @@ export interface components {
              *     **Medidos acá**: `AUTH_FORBIDDEN` con token de planner,
              *     `CONFLICT_NO_PREVIOUS` y `CONFLICT_REVERT_SELF` en el revert, y
              *     `NOT_FOUND_TENANT` con un uuid inventado.
+             *
+             *     **Los de los reportes, leídos de `fb3ca0c` el 2026-11-18 y sin
+             *     medir**: `VALIDATION_REPORT`, `CONFLICT_REPORT_NOT_VALIDATED`,
+             *     `CONFLICT_REPORT_STATE` y `CONFLICT_REPORT_AGENT`.
              * @example CONFLICT_NO_PREVIOUS
              * @example AUTH_FORBIDDEN
              * @example VALIDATION_LAYOUT
@@ -2308,6 +2462,171 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
+        /**
+         * @description `domain.DDReport` · snake_case. **Leído de su código, no medido**: en QA
+         *     todavía no existe.
+         */
+        Report: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            name: string;
+            /**
+             * Format: uuid
+             * @description El rol cuyo agente contesta. Los usuarios destinatarios tienen que tenerlo.
+             */
+            role_id: string;
+            questions: string[];
+            /** @enum {string} */
+            frequency: "daily" | "weekly" | "monthly";
+            /** @description 0 es domingo. Sólo en `weekly`; en las otras queda nulo. */
+            weekday: number | null;
+            /** @description Sólo en `monthly`. */
+            month_day: number | null;
+            /** @description `HH:MM` en `tenants.timezone`, la misma zona con que la consola corta el día. */
+            send_time: string;
+            /** @enum {string} */
+            status: "draft" | "validated" | "active" | "paused";
+            /**
+             * Format: date-time
+             * @description La próxima salida, en UTC. Sólo con `status` `active`.
+             */
+            next_run_at: string | null;
+            /** Format: date-time */
+            last_sent_at: string | null;
+            /** Format: date-time */
+            validated_at: string | null;
+            /** Format: uuid */
+            validated_by: string | null;
+            /** Format: uuid */
+            created_by: string | null;
+            /** Format: uuid */
+            updated_by: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** @description Sólo los activos. */
+            recipients: components["schemas"]["ReportRecipient"][];
+        };
+        /**
+         * @description `domain.DDReportRecipient`. **`is_active` no viaja** —`json:"-"`—: el
+         *     servicio sólo manda los activos. `user_id`, `email` y `notified_at` son
+         *     `omitempty`, así que pueden faltar.
+         */
+        ReportRecipient: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            report_id: string;
+            /** @enum {string} */
+            kind: "user" | "external";
+            /**
+             * Format: uuid
+             * @description Sólo en `user`.
+             */
+            user_id?: string;
+            /**
+             * @description Sólo en `external`. **Todo correo de `emails` es externo, aunque sea
+             *     el de un usuario**: pedido el 2026-11-18 que no se acepte.
+             */
+            email?: string;
+            /** Format: uuid */
+            added_by: string | null;
+            /**
+             * Format: date-time
+             * @description Cuándo salió el aviso a los superadmins. Sólo externos; falta si el aviso no salió.
+             */
+            notified_at?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /**
+         * @description El cuerpo del alta (`createReportRequest`). **El handler exige `name`,
+         *     `role_id`, `frequency` y `send_time`**; su OpenAPI suma `questions`, y el
+         *     servicio las rechaza igual si no son de 3 a 5.
+         */
+        ReportInput: {
+            name: string;
+            /** Format: uuid */
+            role_id: string;
+            questions?: string[];
+            /** @enum {string} */
+            frequency: "daily" | "weekly" | "monthly";
+            /** @description Obligatorio en `weekly`. */
+            weekday?: number;
+            /** @description Obligatorio en `monthly`. */
+            month_day?: number;
+            send_time: string;
+            /** @description Usuarios activos del cliente y con el `role_id` del reporte. */
+            user_ids?: string[];
+            /** @description Externos. Se pasan a minúscula y se quitan los repetidos. */
+            emails?: string[];
+        };
+        /** @description Edición parcial · campo ausente, sin cambio. */
+        ReportUpdateInput: {
+            name?: string;
+            /** Format: uuid */
+            role_id?: string;
+            questions?: string[];
+            /** @enum {string} */
+            frequency?: "daily" | "weekly" | "monthly";
+            weekday?: number;
+            month_day?: number;
+            send_time?: string;
+            /** @description Reemplaza la lista de usuarios. */
+            user_ids?: string[];
+            /** @description Reemplaza la lista de externos. */
+            emails?: string[];
+        };
+        /**
+         * @description `ports.DDReportAnswer`. **Texto plano del agente y nada más**: no trae
+         *     fuente, período ni frescura. Pedido el 2026-11-18 (B6.5).
+         */
+        ReportAnswer: {
+            question: string;
+            /** @description Vacía cuando hay `error`. */
+            answer: string;
+            /** @description Sólo si esa pregunta no tuvo respuesta · `omitempty`. */
+            error?: string;
+        };
+        /** @description `ports.DDReportValidation` · la respuesta de validar. */
+        ReportValidation: {
+            report: components["schemas"]["Report"];
+            validated: boolean;
+            answers: components["schemas"]["ReportAnswer"][];
+        };
+        /**
+         * @description `domain.DDReportRun`. **Su OpenAPI no declara `tenant_id`, y el struct lo
+         *     manda**: se declara.
+         */
+        ReportRun: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            report_id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            /** @enum {string} */
+            kind: "validation" | "delivery";
+            /** @enum {string} */
+            status: "ok" | "partial" | "error";
+            answers: components["schemas"]["ReportAnswer"][] | null;
+            /** @description Los correos a los que salió. Vacío en una validación. */
+            sent_to: string[];
+            /**
+             * Format: uuid
+             * @description Quién validó. Nulo en un envío programado.
+             */
+            actor_user_id: string | null;
+            /** @description Las fallas, juntas · `omitempty`. */
+            error?: string;
+            /** Format: date-time */
+            created_at: string;
+        };
     };
     responses: {
         /**
@@ -2355,6 +2674,23 @@ export interface components {
             };
         };
         /**
+         * @description **`VALIDATION_REPORT`**, con el motivo en `error`: el nombre vacío o de
+         *     más de 120, menos de 3 o más de 5 preguntas, una vacía o de más de 500,
+         *     la frecuencia fuera de `daily`, `weekly` y `monthly`, el día que falta
+         *     para la frecuencia, `send_time` sin `HH:MM`, un correo inválido, más de
+         *     50 destinatarios, un usuario de otro cliente, suspendido o con otro rol,
+         *     y un rol de otro cliente o inactivo. Leído en `dd_report_service.go`.
+         *     Un cuerpo que no es JSON da 400 con el código por defecto.
+         */
+        ReportInvalid: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /**
          * @description Choca con una regla · nombre de rol duplicado, o un rol con usuarios
          *     asignados. **El mensaje dice qué hacer**, no «conflicto».
          */
@@ -2373,6 +2709,7 @@ export interface components {
         layoutId: string;
         roleId: string;
         dashboardId: string;
+        reportId: string;
     };
     requestBodies: never;
     headers: never;
@@ -3652,6 +3989,280 @@ export interface operations {
                 };
             };
             403: components["responses"]["Forbidden"];
+        };
+    };
+    listReports: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los reportes del cliente */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["Report"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportInput"];
+            };
+        };
+        responses: {
+            /** @description El reporte creado, en `draft` */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["Report"];
+                    };
+                };
+            };
+            400: components["responses"]["ReportInvalid"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+                reportId: components["parameters"]["reportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El reporte */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["Report"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+                reportId: components["parameters"]["reportId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportUpdateInput"];
+            };
+        };
+        responses: {
+            /** @description El reporte después del cambio */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["Report"];
+                    };
+                };
+            };
+            400: components["responses"]["ReportInvalid"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    validateReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+                reportId: components["parameters"]["reportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Si quedó validado y qué respuestas se leyeron */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["ReportValidation"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description Dos casos, leídos en `sendReportError`:
+             *
+             *     - **`CONFLICT_REPORT_AGENT`**: el rol del reporte no tiene un agente
+             *       activo. Nunca se cae a otro agente.
+             *     - **`CONFLICT_REPORT_STATE`**: el reporte está activo; hay que
+             *       pausarlo antes de volver a validarlo. **Su OpenAPI no lo nombra.**
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    activateReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+                reportId: components["parameters"]["reportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El reporte activo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["Report"];
+                    };
+                };
+            };
+            /** @description **`VALIDATION_REPORT`**: no tiene ningún destinatario activo. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description **`CONFLICT_REPORT_NOT_VALIDATED`**: está en `draft`, o nunca se
+             *     validó.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    pauseReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+                reportId: components["parameters"]["reportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El reporte pausado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["Report"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description **`CONFLICT_REPORT_STATE`**: está en `draft` o `validated`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listReportRuns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: components["parameters"]["tenantId"];
+                reportId: components["parameters"]["reportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las corridas del reporte */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["ReportRun"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
 }

@@ -33,7 +33,7 @@ verde.
 
 ---
 
-## Antes de leer: 2 de 5 son del backend
+## Antes de leer: 1 de 4 son del backend
 
 **El resto está acá porque nos frena a NOSOTROS, no porque haya que
 construirlo del lado del backend.** Se listan igual —una tarea trabada
@@ -43,14 +43,14 @@ tiempo buscando qué implementar.
 
 | Dueño | Pedidos |
 |---|---|
-| **BACKEND** · código | 2 |
+| **BACKEND** · código | 1 |
 | DESPLIEGUE | 2 |
 | PRODUCTO | 1 |
 
 
 ---
 
-## Lo que esperamos · 5 pedido(s)
+## Lo que esperamos · 4 pedido(s)
 
 
 ### B2.12 · Correr el materializador contra datos reales y verificar los seis estados
@@ -168,7 +168,7 @@ Hasta entonces los dos paneles de prosa se servían con el valor de la semilla, 
 
 ### F6.3 · Verificar en QA las métricas de Terpel y de UA
 
-*Estado de la tarea: pendiente.*
+*Estado de la tarea: parcial.*
 
 
 Ninguna métrica de Terpel se calcula · sin una entrada en el registro, el cliente no muestra ninguna cifra aunque el dato esté en Snowflake.
@@ -178,21 +178,9 @@ Ninguna métrica de Terpel se calcula · sin una entrada en el registro, el clie
 **Medido contra `dc58ef5` el 2026-11-04** · las siete claves `media_*` y las dos `atl_*` están en `internal/core/dashboard/snowflake/queries.go`; en QA sigue `db91b5d`, que no las tiene.
 
 
-### F6.4 · Transcribir las rutas de reportes al cable de administración
-
-*Estado de la tarea: pendiente.*
-
-
-Las rutas de reportes programados no existen · sin ellas no hay qué transcribir ni contra qué construir F6.6 y F6.7.
-
-**Lo tiene: BACKEND** · B6.3 y B6.4.
-
-**Medido contra `db91b5d` el 2026-11-03** · las plantillas de `internal/adapters/email/templates/` son sólo de acceso y de contraseña, y no hay ruta ni tabla de reportes.
-
-
 ---
 
-## ⚠️ 4 pedido(s) sin reverificar
+## ⚠️ 3 pedido(s) sin reverificar
 
 **Estos se midieron contra un commit suyo que ya no es el último.**
 No quiere decir que sigan faltando: quiere decir que **no lo
@@ -209,7 +197,6 @@ sección existe.
 | **B2.12** · Correr el materializador contra datos reales y verificar los seis estados | `3651d70` | 2026-10-14 |
 | **B2.14** · /config/solicitudes · pedir acceso a una métrica que no se ve | `9dc481e` | 2026-10-09 |
 | **F6.3** · Verificar en QA las métricas de Terpel y de UA | `dc58ef5` | 2026-11-04 |
-| **F6.4** · Transcribir las rutas de reportes al cable de administración | `db91b5d` | 2026-11-03 |
 
 
 ---
