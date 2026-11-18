@@ -1,4 +1,5 @@
-/** Una lectura que falló, dicha · §8 · auditoría de UX del 2026-11-18 (A1)
+/** Una lectura que falló, dicha · §8 · auditoría de UX del 2026-11-18 (A1) ·
+ *  §PEN:A7 · «A7 · Reportes · no cargó»
  *
  *  La lista de reportes y los envíos quedaban cargando para siempre si el
  *  servicio fallaba: no se leía el error. **El 403 tiene causa concreta** y se

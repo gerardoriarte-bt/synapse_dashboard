@@ -132,6 +132,8 @@ que su resultado esté escrito.
 | `A7 · Reportes · sin reportes` | `src/surfaces/admin/ReportList.tsx` · el vacío de F6.6, con su salida «Nuevo reporte» |
 | `A7 · Envíos de un reporte` | `src/surfaces/admin/ReportRuns.tsx` · F6.6. **Diverge en lo que el servicio guarda**: sin resultado por destinatario ni rebotes, sin pruebas, y suma las validaciones |
 | `A7 · Editor de reporte` | `src/surfaces/admin/ReportEditor.tsx` · F6.7. **Suma «Rol»**, que el servicio exige; las preguntas no se reordenan arrastrando |
+| `A7 · Editor · salir sin guardar` | `src/surfaces/admin/Reportes.tsx` · la confirmación al salir con cambios (auditoría de UX, M3). Construida antes de dibujarse; dibujada el 2026-11-18 |
+| `A7 · Reportes · no cargó` | `src/surfaces/admin/FallaDeCarga.tsx` · el error de §8 de la lista y los envíos (auditoría de UX, A1). Construida antes de dibujarse; dibujada el 2026-11-18 |
 | `A7 · Validar respuestas` | `src/surfaces/admin/ReportValidation.tsx` · F6.10. **Diverge en lo que el servicio no manda**: la fuente de cada cifra, «sin dato», regenerar una sola y la prueba |
 | `A7 · Advertencia por un externo` | **No construida** · el correo es del backend (B6.3) y la lista en Clientes, de F6.6 |
 | `A7 · El correo del reporte` | **No es del front**: la plantilla es del backend (B6.5), con los colores de F6.8. Se verifica en F6.9 |
