@@ -27,8 +27,7 @@ cliente, es un error de hasta 2 %, y el panel muestra «28» donde es 27,86.
 ## Lo que pedimos
 
 **Que `time_series` y `composition` conserven los decimales**, como ya hace
-el escalar: entero sólo si el número es entero. El redondeo para mostrar lo
-hace el front, con los decimales de la métrica.
+el escalar: entero sólo si el número es entero.
 
 ## Cómo lo comprobamos
 

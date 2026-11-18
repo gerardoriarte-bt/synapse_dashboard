@@ -1,6 +1,8 @@
 # Para datos · Terpel no se conecta: la llave · 2026-11-18
 
-**Medido el 2026-11-18**, sólo leyendo. De QA: el estado de las métricas de
+**Medido contra `043cddc` el 2026-11-18**: el procedimiento de las llaves en
+`docs/INSTRUCCIONES-2026-10-27-llaves-de-keralty-y-terpel.md` y qué significa
+el error en `docs/AUDITORIA-2026-10-23-usuarios-de-servicio.md`. Sólo leyendo. De QA: el estado de las métricas de
 Terpel, su `schema-check` y la llave de servicio que muestra la ficha. De
 Snowflake, con `RL_BT_UA_TRANSFORM`: `DESC USER SVC_SYNAPSE_TERPEL_COMBS`, que
 no pudimos leer. El detalle está en
