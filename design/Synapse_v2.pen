@@ -137219,7 +137219,7 @@
                       "id": "wtfsn",
                       "name": "Texto",
                       "fill": "$dim",
-                      "content": "CAMBIAR UNA PREGUNTA O AGREGAR UN EXTERNO LO VUELVE A BORRADOR",
+                      "content": "CAMBIAR UNA PREGUNTA O EL ROL LO VUELVE A BORRADOR",
                       "fontFamily": "$font-mono",
                       "fontSize": 9,
                       "fontWeight": "normal",
@@ -137249,7 +137249,7 @@
                       "id": "o1RQod",
                       "name": "Texto",
                       "fill": "$dim",
-                      "content": "UN EXTERNO AVISA A LOS SUPERADMINS · MÁXIMO 20 DESTINATARIOS",
+                      "content": "UN EXTERNO AVISA A LOS SUPERADMINS · MÁXIMO 50 DESTINATARIOS",
                       "fontFamily": "$font-mono",
                       "fontSize": 9,
                       "fontWeight": "normal",
@@ -137942,7 +137942,7 @@
                       "id": "c52L0r",
                       "name": "Texto",
                       "fill": "$ink",
-                      "content": "Agregaste un destinatario externo. Al guardar, el reporte vuelve a borrador.",
+                      "content": "Agregaste un destinatario externo. Al guardar, se avisa a los superadmins.",
                       "fontFamily": "$font-body",
                       "fontSize": 13,
                       "fontWeight": "500"
@@ -137954,7 +137954,7 @@
                       "fill": "$dim",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
-                      "content": "Deja de enviarse hasta que alguien lea sus respuestas y lo valide de nuevo. Además, los superadmins van a recibir una advertencia con quién lo agregó, a qué reporte y a qué correo.",
+                      "content": "El reporte sigue saliendo como está, y el externo lo recibe desde el próximo envío. Los superadmins van a recibir una advertencia con quién lo agregó, a qué reporte y a qué correo.",
                       "lineHeight": 1.5,
                       "fontFamily": "$font-body",
                       "fontSize": 13,
@@ -138483,7 +138483,7 @@
                           "fill": "$dim",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
-                          "content": "Cambiar una pregunta o agregar un externo lo vuelve a borrador. Cambiar otros destinatarios, el día o la hora, no.",
+                          "content": "Cambiar una pregunta o el rol lo vuelve a borrador. Cambiar los destinatarios, el día o la hora, no.",
                           "lineHeight": 1.5,
                           "fontFamily": "$font-body",
                           "fontSize": 13,
@@ -138601,7 +138601,7 @@
                               "id": "M0IUd",
                               "name": "Texto",
                               "fill": "$ink",
-                              "content": "10 DE 20",
+                              "content": "10 DE 50",
                               "fontFamily": "$font-mono",
                               "fontSize": 9,
                               "fontWeight": "normal",
@@ -139356,6 +139356,34 @@
                               "fontSize": 9,
                               "fontWeight": "normal",
                               "letterSpacing": 1.08
+                            },
+                            {
+                              "type": "frame",
+                              "id": "Dia18c",
+                              "name": "Opción",
+                              "height": 28,
+                              "cornerRadius": "$r-md",
+                              "stroke": "$w3",
+                              "strokeWidth": 1,
+                              "strokeAlignment": "inner",
+                              "padding": [
+                                0,
+                                12
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "Dia18t",
+                                  "name": "Texto",
+                                  "fill": "$dim",
+                                  "content": "DIARIA",
+                                  "fontFamily": "$font-mono",
+                                  "fontSize": 9,
+                                  "fontWeight": "normal",
+                                  "letterSpacing": 1.08
+                                }
+                              ]
                             },
                             {
                               "type": "frame",
@@ -143608,7 +143636,7 @@
                               "fill": "$ink",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Volvió a borrador: no sale hasta que alguien lo valide de nuevo",
+                              "content": "Sigue activo: el externo lo recibe desde el próximo envío",
                               "fontFamily": "$font-body",
                               "fontSize": 13,
                               "fontWeight": "normal"
@@ -143624,7 +143652,7 @@
                       "fill": "$dim",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
-                      "content": "Es un aviso, no un pedido de aprobación: cuando el reporte se valide, el externo lo va a recibir. Si no corresponde, quítalo desde el reporte.",
+                      "content": "Es un aviso, no un pedido de aprobación: el externo lo recibe desde el próximo envío. Si no corresponde, quítalo desde el reporte.",
                       "lineHeight": 1.5,
                       "fontFamily": "$font-body",
                       "fontSize": 13,
@@ -146659,7 +146687,7 @@
       "name": "Nota · A7 lista",
       "width": 760,
       "height": 0,
-      "content": "A7 · REPORTES DEL CLIENTE\nV1 · la lista\n\nAlcance CLIENTE, como Catálogo y Feeds: la barra del cliente activo cambia la lista. «Reportes» se suma al navbar de administración.\n\nCada fila dice lo que hace falta para entender un reporte sin abrirlo: estado (borrador, validado, activo, pausado), cuándo sale con el próximo envío, cuántos destinatarios y cuántos externos, y el último envío con su resultado. Un último envío que falló se ve en la fila (estado degradado de §8), no sólo en V4.\n\nLas acciones cambian con el estado: un borrador se VALIDA, un validado se ACTIVA, un activo se PAUSA, un pausado se REANUDA. Borrar vive en el editor, con <Accion variante=\"peligro\">.\n\nCifras: las de pauta de Terpel medidas el 2026-11-03 (septiembre y octubre de 2026). Nombres, correos y fechas de envío son de ejemplo.\n\nDe dónde sale: docs/PROPUESTA-2026-11-03-reporte-programado-mapa-de-ux.md (F6.5) y las decisiones D6.1–D6.5 y P6.1–P6.7 de plan-fase-6.md. Dibujado el 2026-11-04."
+      "content": "A7 · REPORTES DEL CLIENTE\nV1 · la lista\n\nAlcance CLIENTE, como Catálogo y Feeds: la barra del cliente activo cambia la lista. «Reportes» se suma al navbar de administración.\n\nCada fila dice lo que hace falta para entender un reporte sin abrirlo: estado (borrador, validado, activo, pausado), cuándo sale con el próximo envío, cuántos destinatarios y cuántos externos, y el último envío con su resultado. Un último envío que falló se ve en la fila (estado degradado de §8), no sólo en V4.\n\nLas acciones cambian con el estado: un borrador se VALIDA, un validado se ACTIVA, un activo se PAUSA, un pausado se REANUDA. Borrar vive en el editor, con <Accion variante=\"peligro\">.\n\nCifras: las de pauta de Terpel medidas el 2026-11-03 (septiembre y octubre de 2026). Nombres, correos y fechas de envío son de ejemplo.\n\nDe dónde sale: docs/PROPUESTA-2026-11-03-reporte-programado-mapa-de-ux.md (F6.5) y las decisiones D6.1–D6.5 y P6.1–P6.7 de plan-fase-6.md. Dibujado el 2026-11-04. Ajustado el 2026-11-18 a P6.1, P6.2 y P6.5 revisadas."
     },
     {
       "type": "note",
@@ -146669,7 +146697,7 @@
       "name": "Nota · A7 editor",
       "width": 760,
       "height": 0,
-      "content": "A7 · EDITOR DE REPORTE\nV2 · crear y editar · R1–R4 y R7\n\nSe muestra en el momento más delicado: un reporte ACTIVO al que se le acaba de agregar un externo. El aviso sale ANTES de guardar (P6.1): vuelve a borrador y deja de enviarse hasta validarlo, y los superadmins reciben la advertencia (D6.3).\n\nPreguntas: texto libre, de 3 a 5, reordenables; el orden es el del correo. La ayuda dice qué se contesta con datos y qué no (D6.4). P6.3 sigue abierta: hasta que producto defina las tres sugeridas, el editor arranca vacío.\n\nDestinatarios: usuarios del cliente y externos, distinguibles; la cuenta «10 de 20» (P6.5). Externo es quien no tiene usuario, aunque su correo sea del cliente (P6.6). Suspendido y dado de baja siguen en la lista, marcados.\n\nCuándo sale: semanal o mensual (P6.2), en la hora del cliente, con el próximo envío escrito y el período que cubre.\n\nCifras: las de pauta de Terpel medidas el 2026-11-03 (septiembre y octubre de 2026). Nombres, correos y fechas de envío son de ejemplo.\n\nDe dónde sale: docs/PROPUESTA-2026-11-03-reporte-programado-mapa-de-ux.md (F6.5) y las decisiones D6.1–D6.5 y P6.1–P6.7 de plan-fase-6.md. Dibujado el 2026-11-04."
+      "content": "A7 · EDITOR DE REPORTE\nV2 · crear y editar · R1–R4 y R7\n\nSe muestra en el momento más delicado: un reporte ACTIVO al que se le acaba de agregar un externo. El aviso sale ANTES de guardar: los superadmins reciben la advertencia (D6.3). Desde el 2026-11-18 agregar un externo ya no vuelve a borrador; sólo las preguntas o el rol (P6.1 revisada).\n\nPreguntas: texto libre, de 3 a 5, reordenables; el orden es el del correo. La ayuda dice qué se contesta con datos y qué no (D6.4). P6.3 sigue abierta: hasta que producto defina las tres sugeridas, el editor arranca vacío.\n\nDestinatarios: usuarios del cliente y externos, distinguibles; la cuenta «10 de 50» (P6.5 revisada el 2026-11-18). Externo es quien no tiene usuario, aunque su correo sea del cliente (P6.6). Suspendido y dado de baja siguen en la lista, marcados.\n\nCuándo sale: diaria, semanal o mensual (P6.2 revisada el 2026-11-18), en la hora del cliente, con el próximo envío escrito y el período que cubre.\n\nCifras: las de pauta de Terpel medidas el 2026-11-03 (septiembre y octubre de 2026). Nombres, correos y fechas de envío son de ejemplo.\n\nDe dónde sale: docs/PROPUESTA-2026-11-03-reporte-programado-mapa-de-ux.md (F6.5) y las decisiones D6.1–D6.5 y P6.1–P6.7 de plan-fase-6.md. Dibujado el 2026-11-04. Ajustado el 2026-11-18 a P6.1, P6.2 y P6.5 revisadas."
     },
     {
       "type": "note",
@@ -146699,7 +146727,7 @@
       "name": "Nota · A7 advertencia",
       "width": 760,
       "height": 0,
-      "content": "A7 · ADVERTENCIA POR UN EXTERNO\nV5 · R10 · D6.3 y P6.4\n\nUn externo avisa en los dos lugares que decidió P6.4: un correo a cada superadmin en el momento, y una lista en Clientes (A1), que es la pantalla de alcance plataforma, para ver las de todos los clientes juntas.\n\nInforma, no bloquea. Quitar al externo se hace en el propio reporte. «Marcar como vista» la saca de pendientes sin borrarla.\n\nDe dónde sale: docs/PROPUESTA-2026-11-03-reporte-programado-mapa-de-ux.md (F6.5) y las decisiones D6.1–D6.5 y P6.1–P6.7 de plan-fase-6.md. Dibujado el 2026-11-04."
+      "content": "A7 · ADVERTENCIA POR UN EXTERNO\nV5 · R10 · D6.3 y P6.4\n\nUn externo avisa en los dos lugares que decidió P6.4: un correo a cada superadmin en el momento, y una lista en Clientes (A1), que es la pantalla de alcance plataforma, para ver las de todos los clientes juntas.\n\nInforma, no bloquea. Quitar al externo se hace en el propio reporte. «Marcar como vista» la saca de pendientes sin borrarla.\n\nDe dónde sale: docs/PROPUESTA-2026-11-03-reporte-programado-mapa-de-ux.md (F6.5) y las decisiones D6.1–D6.5 y P6.1–P6.7 de plan-fase-6.md. Dibujado el 2026-11-04. Ajustado el 2026-11-18 a P6.1, P6.2 y P6.5 revisadas."
     },
     {
       "type": "note",
