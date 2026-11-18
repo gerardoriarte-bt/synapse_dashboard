@@ -54,21 +54,22 @@ construir:
    léelas», y **activar es la confirmación de haberlas leído**.
 3. **No se borra.** Pausar es la baja, y el pie de la lista lo dice.
 
-**Lo que se construyó y no está dibujado**, para que lo dibujen o lo cambien:
+**Lo que se construyó antes de dibujarse, y ya está dibujado** (#106), para que lo revisen o lo cambien:
 
 4. **El aviso de lo que se hizo**: una franja arriba de la lista, por ejemplo
    «Activado. El primer envío sale el 3 dic a las 08:00, a 2 destinatarios: 1
    usuario y 1 externo.»
 5. **Salir con cambios sin guardar**: una franja con «¿Salir sin guardar? Se
    pierden los cambios de este reporte.», «Seguir editando» y «Salir sin
-   guardar».
+   guardar», en la pantalla nueva `A7 · Editor · salir sin guardar`.
 6. **Una lectura que falla**: «No se pudieron cargar los reportes de este
-   cliente.» con «Reintentar». La nota del vacío dice que se usan los `Estado/*`
-   del sistema, y no se los usó: se resolvió con una tarjeta propia.
+   cliente.» con «Reintentar», en la pantalla nueva `A7 · Reportes · no cargó`.
+   La nota del vacío dice que se usan los `Estado/*` del sistema, y no se los
+   usó: se resolvió con una tarjeta propia, como el vacío.
 7. **En la lista, el paso que sigue va destacado**: Validar, Activar y Reanudar
    en naranja, primero. En el dibujo todas las acciones pesan igual.
 8. **En las vistas internas no se repite el título «Reportes»**: la migaja y el
-   título del reporte ocupan ese lugar.
+   título del reporte ocupan ese lugar. Así ya estaba en el dibujo.
 
 **Lo que el dibujo tiene y la pantalla todavía no**, porque el servicio no lo
 manda. Está pedido al backend en
@@ -84,8 +85,8 @@ alcanzar cuando el servicio lo mande.
 
 ## 3 · Lo que nos devuelven
 
-- **Qué de §2 aprueban, qué cambian y qué dibujan.** Lo que cambien, lo
-  ajustamos en la pantalla.
+- **Qué de §2 aprueban y qué cambian.** Lo que cambien, lo ajustamos en la
+  pantalla.
 - **Si el `.pen` se ve bien abierto en Pen.app.**
 
 Gracias.
