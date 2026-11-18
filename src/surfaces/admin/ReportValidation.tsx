@@ -22,7 +22,7 @@ import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
 import { Accion } from '../../render/primitives/Accion'
 import { StatusChip } from './StatusChip'
-import { cuandoSale, NOMBRE_DE_ESTADO } from './reporte'
+import { aQuien, cadaCuanto, NOMBRE_DE_ESTADO } from './reporte'
 
 const NOTA = 'font-mono text-nota leading-rotulo tracking-rotulo uppercase text-dim m-0'
 const CARTA = 'flex flex-col gap-3 rounded-xl border border-w3 bg-panel p-5'
@@ -33,19 +33,23 @@ type Props = {
   respuestas: readonly RespuestaDeReporte[] | null
   onValidar: () => void
   onActivar: () => void
+  /** **Corregir una pregunta sin salir por la migaja** · M4. */
+  onEditar: () => void
   validando: boolean
   activando: boolean
   error: string | null
 }
 
-export function ReportValidation({ reporte, respuestas, onValidar, onActivar, validando, activando, error }: Props) {
+export function ReportValidation({ reporte, respuestas, onValidar, onActivar, onEditar, validando, activando, error }: Props) {
   const fallaron = respuestas?.filter((r) => r.error !== null).length ?? 0
   const respondidas = (respuestas?.length ?? 0) - fallaron
   // **Activar no está disponible hasta validar** · F6.10. Un pausado ya se
   // validó: reanudarlo no exige validar de nuevo.
   const activable = reporte.estado === 'validado' || reporte.estado === 'pausado'
-  const usuarios = reporte.destinatarios.filter((d) => d.tipo === 'usuario').length
-  const externos = reporte.destinatarios.length - usuarios
+  /** **El momento**, que decide qué dice la tarjeta · A2. Generar y validar
+   *  son un solo paso en el servicio: lo que confundía era decir «Validar ✓»
+   *  sobre algo que todavía nadie leyó. */
+  const momento = respuestas === null ? 'antes' : fallaron > 0 ? 'fallaron' : 'leer'
 
   return (
     <div className="flex flex-col gap-6">
@@ -86,7 +90,7 @@ export function ReportValidation({ reporte, respuestas, onValidar, onActivar, va
                 ) : (
                   <div className="flex flex-col gap-1">
                     <span className="font-body text-cuerpo font-medium text-ink">No se pudo generar esta respuesta.</span>
-                    <Ayuda>{`${r.error}. Mientras esta respuesta falle, el reporte no se puede validar.`}</Ayuda>
+                    <Ayuda>{`${r.error.replace(/\.$/, '')}. Mientras esta respuesta falle, el reporte no se puede validar.`}</Ayuda>
                   </div>
                 )}
               </section>
@@ -96,7 +100,13 @@ export function ReportValidation({ reporte, respuestas, onValidar, onActivar, va
 
         <div className="flex flex-col gap-4">
           <section className={CARTA}>
-            <Label as="div">Antes de validar</Label>
+            <Label as="div">
+              {momento === 'antes'
+                ? 'Antes de activar'
+                : momento === 'leer'
+                  ? 'Respuestas generadas · léelas'
+                  : `${String(fallaron)} ${fallaron === 1 ? 'respuesta falló' : 'respuestas fallaron'} · vuelve a generarlas para poder validar`}
+            </Label>
             {respuestas !== null && (
               <dl className="m-0 flex flex-col gap-1">
                 <div className="flex items-center justify-between">
@@ -110,22 +120,28 @@ export function ReportValidation({ reporte, respuestas, onValidar, onActivar, va
               </dl>
             )}
             <Ayuda>
-              Validar genera las respuestas con los datos de hoy. Una respuesta que falló bloquea validar: vuelve a
-              generarlas.
+              {momento === 'antes'
+                ? 'Generamos las respuestas con los datos de hoy. Si todas contestan, el reporte queda validado: léelas antes de activarlo.'
+                : momento === 'leer'
+                  ? 'Activar confirma que leíste estas respuestas. Desde ahí sale solo.'
+                  : 'Una respuesta que falló bloquea validar. Vuelve a generarlas, o cambia la pregunta.'}
             </Ayuda>
-            <Accion deshabilitada={validando || reporte.estado === 'activo'} onClick={onValidar}>
-              {validando ? 'Generando…' : respuestas === null ? 'Validar ✓' : 'Volver a generar todas'}
+            <Accion variante={respuestas === null ? 'primaria' : 'secundaria'} deshabilitada={validando || reporte.estado === 'activo'} onClick={onValidar}>
+              {validando ? 'Generando…' : respuestas === null ? 'Generar las respuestas' : 'Volver a generar todas'}
             </Accion>
-            <Accion variante="primaria" deshabilitada={!activable || activando} onClick={onActivar}>
+            <Accion variante={respuestas === null ? 'secundaria' : 'primaria'} deshabilitada={!activable || activando} onClick={onActivar}>
               {reporte.estado === 'pausado' ? 'Reanudar' : 'Activar'}
             </Accion>
             {!activable && reporte.estado !== 'activo' && <Label>Se activa después de validar</Label>}
+            <Accion tamano="compacta" onClick={onEditar}>
+              Editar el reporte
+            </Accion>
           </section>
 
           <section className={CARTA}>
             <Label as="div">Al activar</Label>
             <span className="font-body text-cuerpo leading-cuerpo text-ink">
-              {`Sale ${cuandoSale(reporte).toLowerCase()}, a ${String(reporte.destinatarios.length)} ${reporte.destinatarios.length === 1 ? 'destinatario' : 'destinatarios'}: ${String(usuarios)} ${usuarios === 1 ? 'usuario' : 'usuarios'} y ${String(externos)} ${externos === 1 ? 'externo' : 'externos'}. Un usuario suspendido o que ya no tiene el rol no recibe.`}
+              {`Sale ${cadaCuanto(reporte)} (hora del cliente), a ${aQuien(reporte)}. Un usuario suspendido o que ya no tiene el rol no recibe.`}
             </span>
           </section>
         </div>

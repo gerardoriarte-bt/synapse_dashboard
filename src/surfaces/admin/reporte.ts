@@ -59,6 +59,9 @@ export function problemaDelReporte(f: {
   if (f.frecuencia === 'semanal' && f.diaDeSemana === null) return 'Falta el día de la semana.'
   if (f.frecuencia === 'mensual' && f.diaDelMes === null) return 'Falta el día del mes.'
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(f.hora)) return 'La hora va como 08:00.'
+  // **Al menos uno** · auditoría de UX del 2026-11-18 (M5): un reporte sin
+  // destinatarios no tiene a quién llegar, y el servicio no deja activarlo.
+  if (f.destinatarios === 0) return 'Falta al menos un destinatario.'
   if (f.destinatarios > MAXIMO_DE_DESTINATARIOS)
     return `Un reporte admite como máximo ${String(MAXIMO_DE_DESTINATARIOS)} destinatarios.`
   return null
@@ -79,4 +82,22 @@ export function vuelveABorrador(
   const mismas =
     r.preguntas.length === cambio.preguntas.length && r.preguntas.every((p, i) => p === cambio.preguntas[i]?.trim())
   return !mismas || r.rolId !== cambio.rolId
+}
+
+/** **Cuándo sale, dicho como frase** · auditoría de UX del 2026-11-18 (M10).
+ *  «Sale mensual · día 3 · 08:00» es la forma corta de la lista; en una frase
+ *  se lee «cada mes el día 3 a las 08:00». */
+export function cadaCuanto(r: Pick<Reporte, 'frecuencia' | 'diaDeSemana' | 'diaDelMes' | 'hora'>): string {
+  if (r.frecuencia === 'diaria') return `todos los días a las ${r.hora}`
+  if (r.frecuencia === 'semanal')
+    return `cada ${r.diaDeSemana === null ? 'semana' : (DIAS_DE_SEMANA[r.diaDeSemana] ?? 'semana')} a las ${r.hora}`
+  return `cada mes el día ${r.diaDelMes === null ? '—' : String(r.diaDelMes)} a las ${r.hora}`
+}
+
+/** «1 usuario y 2 externos» · sin cuentas en clave. */
+export function aQuien(r: Pick<Reporte, 'destinatarios'>): string {
+  const usuarios = r.destinatarios.filter((d) => d.tipo === 'usuario').length
+  const externos = r.destinatarios.length - usuarios
+  const n = r.destinatarios.length
+  return `${String(n)} ${n === 1 ? 'destinatario' : 'destinatarios'}: ${String(usuarios)} ${usuarios === 1 ? 'usuario' : 'usuarios'} y ${String(externos)} ${externos === 1 ? 'externo' : 'externos'}`
 }

@@ -66,6 +66,9 @@ type Props = {
   identidad?: { rol: string; nombre: string; correo?: string }
   /** Cerrar sesión, desde el menú del nombre · sin manejador no se pinta. */
   onCerrarSesion?: () => void
+  /** **Sin el título de la pantalla** · las vistas internas de Reportes, donde
+   *  la migaja y el título del reporte lo reemplazan (auditoría de UX, M11). */
+  sinTitulo?: boolean
   /** Los clientes que este usuario ve, y el activo · la barra del cliente. */
   tenants: readonly ClienteVisible[]
   tenantActivo: string | null
@@ -73,7 +76,7 @@ type Props = {
   children: React.ReactNode
 }
 
-export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantActivo, onTenant, onChangeTheme, onCerrarSesion, children }: Props) {
+export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantActivo, onTenant, onChangeTheme, onCerrarSesion, sinTitulo = false, children }: Props) {
   const pantalla = PANTALLAS.find((p) => p.id === activa) ?? PANTALLAS[0]
   const porTenant = pantalla.alcance === 'tenant'
   const activo = tenants.find((t) => t.id === tenantActivo) ?? null
@@ -123,6 +126,10 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
               en uso es el punto de partida. */}
           <BarraDeCliente activo={activo} clientes={tenants} onElegir={onTenant} />
 
+          {/* **Sin la fila del título en las vistas internas de Reportes** · M11:
+              la migaja y el título del reporte la reemplazan. Vista el
+              2026-11-18: dejar la fila vacía pintaba una franja con borde. */}
+          {!sinTitulo && (
           <div className="flex items-baseline justify-between gap-6 px-6 py-6">
             {/* **`titulo-lg`, no `titulo`** · 2026-09-28. El dibujo pone los
                 títulos de superficie de admin en el mismo tamaño que la pregunta
@@ -157,6 +164,7 @@ export function AdminChrome({ activa, onIr, onSalir, identidad, tenants, tenantA
               ) : null}
             </div>
           </div>
+          )}
 
         </header>
 

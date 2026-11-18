@@ -26,7 +26,7 @@ const CARTA = 'flex flex-col gap-3 rounded-xl border border-w3 bg-panel p-5'
 const COLUMNAS = ['Fecha', 'Tipo', 'Destinatarios', 'Resultado'] as const
 
 const RESULTADO: Record<CorridaDeReporte['estado'], string> = {
-  ok: 'Bien',
+  ok: 'Enviado',
   parcial: 'Con fallas',
   error: 'Falló',
 }
@@ -86,10 +86,17 @@ export function ReportRuns({ reporte, corridas, format, cargando }: Props) {
                   className={`cursor-pointer border-b border-w3 align-top ${corrida?.id === c.id ? 'bg-w2' : ''}`}
                 >
                   <td className="py-3">
-                    <div className="flex flex-col gap-1">
+                    {/* **Un botón, para el teclado** · B3: la fila sola sólo se
+                        elegía con el mouse. */}
+                    <button
+                      type="button"
+                      aria-pressed={corrida?.id === c.id}
+                      onClick={() => setElegida(c.id)}
+                      className="flex cursor-pointer flex-col gap-1 border-0 bg-transparent p-0 text-left"
+                    >
                       <span className="text-ink text-celda">{format.calendar(c.creadaEn)}</span>
                       <span className={NOTA}>{format.clock(c.creadaEn)}</span>
-                    </div>
+                    </button>
                   </td>
                   <td className="py-3">
                     <StatusChip>{c.tipo === 'envio' ? 'Envío' : 'Validación'}</StatusChip>

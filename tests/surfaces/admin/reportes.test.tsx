@@ -95,11 +95,11 @@ function servir(reportes: unknown[]) {
   return pedidos
 }
 
-function montar() {
+function montar(ruta = '/admin/reportes') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={['/admin/reportes']}>
+      <MemoryRouter initialEntries={[ruta]}>
         <Admin />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -145,10 +145,14 @@ describe('F6.7 · el editor', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Nuevo reporte' }))
     await userEvent.type(screen.getByLabelText('Nombre'), 'Semanal')
     await userEvent.click(screen.getByRole('button', { name: 'Planner' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Agregar pregunta +' }))
+    // **Arranca con tres campos vacíos** (B1); se quitan dos.
     await userEvent.type(screen.getByLabelText('Pregunta 1'), '¿Cuánto vendimos?')
+    await userEvent.click(screen.getByRole('button', { name: 'Quitar la pregunta 3' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Quitar la pregunta 2' }))
     expect(screen.getByRole('button', { name: 'Guardar' })).toBeDisabled()
-    expect(screen.getByText('Lleva al menos 3 preguntas.')).toBeInTheDocument()
+    // **Como pista junto al botón**, no como error al abrir (M1).
+    expect(screen.getByText('Para guardar: lleva al menos 3 preguntas.')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('la hora lleva la zona del CLIENTE escrita al lado', async () => {
@@ -220,8 +224,10 @@ describe('F6.10 · validar antes de activar', () => {
     await userEvent.click(within(await fila('Resumen para gerencia')).getByRole('button', { name: 'Validar' }))
     expect(screen.getByRole('button', { name: 'Activar' })).toBeDisabled()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Validar ✓' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Generar las respuestas' }))
     expect(await screen.findByText('Respuesta a ¿Cuánto invertimos?')).toBeInTheDocument()
+    // **Dice que hay que leerlas** (A2): el sello solo no alcanza.
+    expect(screen.getByText('Respuestas generadas · léelas')).toBeInTheDocument()
     await waitFor(() => expect(screen.getByRole('button', { name: 'Activar' })).toBeEnabled())
 
     await userEvent.click(screen.getByRole('button', { name: 'Activar' }))
@@ -245,10 +251,97 @@ describe('F6.10 · validar antes de activar', () => {
     )
     montar()
     await userEvent.click(within(await fila('Resumen para gerencia')).getByRole('button', { name: 'Validar' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Validar ✓' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Generar las respuestas' }))
     const p2 = await screen.findByRole('region', { name: 'Pregunta 2' })
     expect(within(p2).getByText('No se pudo generar esta respuesta.')).toBeInTheDocument()
     expect(within(p2).getByText(/el agente no devolvió respuesta/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Activar' })).toBeDisabled()
+  })
+})
+
+describe('la auditoría de UX del 2026-11-18 · lo que se corrigió', () => {
+  it('A1 · si la lista falla lo DICE, con reintentar · no queda cargando', async () => {
+    servir([])
+    server.use(http.get(`${API}/admin/tenants/:t/reports`, () => HttpResponse.json({ success: false, error: 'se cayó' }, { status: 500 })))
+    montar()
+    expect(await screen.findByText('No se pudieron cargar los reportes de este cliente.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
+  })
+
+  it('A1 · un 403 dice que pide rol de administrador', async () => {
+    servir([])
+    server.use(http.get(`${API}/admin/tenants/:t/reports`, () => HttpResponse.json({ success: false, error: 'prohibido' }, { status: 403 })))
+    montar()
+    expect(await screen.findByText('Esta pantalla pide rol de administrador.')).toBeInTheDocument()
+  })
+
+  it('A3 · la vista vive en la URL: se entra directo a los envíos', async () => {
+    servir([activo])
+    server.use(http.get(`${API}/admin/tenants/:t/reports/:r/runs`, () => ok([])))
+    montar('/admin/reportes/r-1/envios')
+    expect(await screen.findByRole('heading', { name: 'Envíos' })).toBeInTheDocument()
+  })
+
+  it('A3 · «Reportes» en el menú vuelve a la lista desde el editor', async () => {
+    servir([activo])
+    montar('/admin/reportes/r-1')
+    await screen.findByRole('heading', { name: 'Pauta digital · mensual' })
+    const menu = screen.getByRole('navigation', { name: 'Administración' })
+    await userEvent.click(within(menu).getByRole('button', { name: 'Reportes' }))
+    expect(await screen.findByText('Reportes de este cliente · 1')).toBeInTheDocument()
+  })
+
+  it('A4 · pausar dice qué hizo', async () => {
+    servir([activo])
+    montar()
+    await userEvent.click(within(await fila('Pauta digital · mensual')).getByRole('button', { name: 'Pausar' }))
+    expect(await screen.findByRole('status')).toHaveTextContent('Pausado. No se envía hasta que lo reanudes.')
+  })
+
+  it('A5 · una edición que lo devuelve a borrador lleva directo a validar, y lo dice', async () => {
+    servir([activo])
+    server.use(http.put(`${API}/admin/tenants/:t/reports/:r`, () => ok({ ...activo, status: 'draft' })))
+    montar()
+    await userEvent.click(within(await fila('Pauta digital · mensual')).getByRole('button', { name: 'Editar' }))
+    await userEvent.type(screen.getByLabelText('Pregunta 1'), ' este mes')
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+    expect(await screen.findByRole('heading', { name: 'Validar las respuestas' })).toBeInTheDocument()
+    expect(screen.getByText('Volvió a borrador: no se envía hasta que lo valides de nuevo.')).toBeInTheDocument()
+  })
+
+  it('M3 · salir con cambios sin guardar pide confirmación', async () => {
+    servir([activo])
+    montar()
+    await userEvent.click(within(await fila('Pauta digital · mensual')).getByRole('button', { name: 'Editar' }))
+    await userEvent.type(screen.getByLabelText('Nombre'), ' 2')
+    expect(screen.getByText('Cambios sin guardar')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    const dialogo = screen.getByRole('alertdialog', { name: 'Salir sin guardar' })
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Seguir editando' }))
+    expect(screen.getByLabelText('Nombre')).toHaveValue('Pauta digital · mensual 2')
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Salir sin guardar' }))
+    expect(await screen.findByText('Reportes de este cliente · 1')).toBeInTheDocument()
+  })
+
+  it('M5 · sin destinatarios no se guarda, y lo dice', async () => {
+    servir([])
+    montar()
+    await screen.findByText('Terpel Colombia no tiene reportes')
+    await userEvent.click(screen.getByRole('button', { name: 'Nuevo reporte' }))
+    await userEvent.type(screen.getByLabelText('Nombre'), 'Semanal')
+    await userEvent.click(screen.getByRole('button', { name: 'Planner' }))
+    for (const i of [1, 2, 3]) await userEvent.type(screen.getByLabelText(`Pregunta ${String(i)}`), `¿Pregunta ${String(i)}?`)
+    expect(screen.getByText('Para guardar: falta al menos un destinatario.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Guardar' })).toBeDisabled()
+  })
+
+  it('M4 · desde la validación se puede editar el reporte', async () => {
+    servir([borrador])
+    montar()
+    await userEvent.click(within(await fila('Resumen para gerencia')).getByRole('button', { name: 'Validar' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Editar el reporte' }))
+    expect(await screen.findByRole('heading', { name: 'Resumen para gerencia' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Nombre')).toBeInTheDocument()
   })
 })

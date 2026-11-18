@@ -62,6 +62,7 @@ import { CatalogView } from './CatalogView'
 import { FeedHealth } from './FeedHealth'
 import { RunHistory } from './RunHistory'
 import { Reportes } from './Reportes'
+import { vistaDe } from './rutasDeReportes'
 import { sinRolesInternos } from '../../api/rol'
 import { ApagarCliente } from './ApagarCliente'
 import { ConexionDeDatos } from './ConexionDeDatos'
@@ -127,7 +128,10 @@ export function Admin() {
    *  grilla; el cliente activo sí sobrevive, porque lo lleva la URL. */
   const [enFicha, setEnFicha] = useState(false)
   const conFicha = (abierta: boolean) => setEnFicha(abierta)
-  const pantalla: PantallaId = PANTALLAS.find((p) => p.ruta === pathname)?.id ?? 'clientes'
+  // **Por prefijo, salvo `/admin`** · 2026-11-18: Reportes tiene vistas
+  // internas en la URL (`/admin/reportes/:id/validar`) y siguen siendo Reportes.
+  const pantalla: PantallaId =
+    PANTALLAS.find((p) => p.ruta === pathname || (p.ruta !== '/admin' && pathname.startsWith(`${p.ruta}/`)))?.id ?? 'clientes'
   const setPantalla = (id: PantallaId) => {
     const destino = PANTALLAS.find((p) => p.id === id)
     if (destino !== undefined) void navegar(destino.ruta)
@@ -339,6 +343,10 @@ export function Admin() {
             },
           })}
       onCerrarSesion={cerrarSesion}
+      // **Un título, no dos** · M11 de la auditoría de UX del 2026-11-18. En las
+      // vistas internas de Reportes la migaja y el título del reporte ocupan
+      // ese lugar, como en el dibujo.
+      sinTitulo={pantalla === 'reportes' && vistaDe(pathname).tipo !== 'lista'}
     >
       {pendiente !== undefined ? (
         <div className="flex flex-col gap-2">

@@ -154,27 +154,36 @@ export function ReportList({
                         <span className="font-body text-celda text-dim">Todavía no se envió</span>
                       ) : (
                         <div className="flex flex-col gap-1">
-                          <span className="text-ink text-celda">{format.calendar(r.ultimoEnvio)}</span>
-                          <span className={NOTA}>{format.clock(r.ultimoEnvio)}</span>
+                          <span className="text-ink text-celda">{`${format.calendar(r.ultimoEnvio)} · ${format.clock(r.ultimoEnvio)}`}</span>
+                          {/* **El resultado no está en la lista del servicio** · M6:
+                              no se muestra la fecha como si todo hubiera salido bien. */}
+                          <span className={NOTA}>El resultado, en Ver envíos</span>
                         </div>
                       )}
                     </td>
                     <td className="py-3">
                       <div className="flex justify-end gap-2">
-                        {/* Las acciones cambian con el estado · nota del dibujo. */}
-                        {(r.estado === 'activo' || r.ultimoEnvio !== null) && (
-                          <Accion tamano="compacta" onClick={() => onEnvios(r.id)}>
-                            Ver envíos
-                          </Accion>
-                        )}
+                        {/* **El paso que hace avanzar el estado va primero y destacado** ·
+                            B2 de la auditoría de UX: Validar, Activar o Reanudar no
+                            pueden pesar lo mismo que Editar. */}
                         {r.estado === 'borrador' && (
-                          <Accion tamano="compacta" onClick={() => onValidar(r.id)}>
+                          <Accion variante="primaria" tamano="compacta" onClick={() => onValidar(r.id)}>
                             Validar
                           </Accion>
                         )}
                         {r.estado === 'validado' && (
-                          <Accion tamano="compacta" deshabilitada={ocupado} onClick={() => onActivar(r.id)}>
+                          <Accion variante="primaria" tamano="compacta" deshabilitada={ocupado} onClick={() => onActivar(r.id)}>
                             Activar
+                          </Accion>
+                        )}
+                        {r.estado === 'pausado' && (
+                          <Accion variante="primaria" tamano="compacta" deshabilitada={ocupado} onClick={() => onActivar(r.id)}>
+                            Reanudar
+                          </Accion>
+                        )}
+                        {(r.estado === 'activo' || r.ultimoEnvio !== null) && (
+                          <Accion tamano="compacta" onClick={() => onEnvios(r.id)}>
+                            Ver envíos
                           </Accion>
                         )}
                         <Accion tamano="compacta" onClick={() => onEditar(r.id)}>
@@ -183,11 +192,6 @@ export function ReportList({
                         {r.estado === 'activo' && (
                           <Accion tamano="compacta" deshabilitada={ocupado} onClick={() => onPausar(r.id)}>
                             Pausar
-                          </Accion>
-                        )}
-                        {r.estado === 'pausado' && (
-                          <Accion tamano="compacta" deshabilitada={ocupado} onClick={() => onActivar(r.id)}>
-                            Reanudar
                           </Accion>
                         )}
                       </div>
@@ -199,9 +203,12 @@ export function ReportList({
           </table>
           {/* Las tres reglas del pie, literales del dibujo con P6.1 y P6.5 revisadas. */}
           <div className="flex flex-wrap gap-x-6 gap-y-1 border-t border-w2 pt-3">
-            <Label>Sólo un reporte activo envía · validar es leer las respuestas de hoy antes de activar</Label>
+            {/* «Sólo un reporte activo envía» se leía «sólo puede haber uno» · M7. */}
+            <Label>Solo los reportes activos se envían · validar es leer las respuestas antes de activar</Label>
             <Label>Cambiar una pregunta o el rol lo vuelve a borrador</Label>
             <Label>{`Un externo avisa a los superadmins · máximo ${String(MAXIMO_DE_DESTINATARIOS)} destinatarios`}</Label>
+            {/* **Quien busque «Borrar» no lo encuentra** · M8: se dice dónde está la baja. */}
+            <Label>Los reportes no se borran: pausar detiene los envíos y se puede reanudar</Label>
           </div>
         </section>
       )}

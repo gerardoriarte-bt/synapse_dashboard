@@ -15,7 +15,7 @@
  *  - **El próximo envío no se recalcula al editar**: lo calcula el servicio al
  *    guardar. Se muestra el que trae.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FrecuenciaDeReporte, Reporte, ReporteParaGuardar, Rol, Usuario } from '../../api/admin'
 import type { Formatter } from '../../render/format'
 import { Label } from '../../render/primitives/Label'
@@ -52,6 +52,9 @@ type Props = {
   onGuardar: (datos: ReporteParaGuardar | Partial<ReporteParaGuardar>) => void
   onCancelar: () => void
   onEnvios?: () => void
+  /** **Si hay cambios sin guardar** · el contenedor pide confirmación al salir
+   *  (auditoría de UX del 2026-11-18, M3). */
+  onCambios?: (sucio: boolean) => void
   guardando: boolean
   /** El mensaje del servicio, tal cual: la regla es suya. */
   error: string | null
@@ -66,12 +69,16 @@ export function ReportEditor({
   onGuardar,
   onCancelar,
   onEnvios,
+  onCambios,
   guardando,
   error,
 }: Props) {
   const [nombre, setNombre] = useState(reporte?.nombre ?? '')
   const [rolId, setRolId] = useState(reporte?.rolId ?? '')
-  const [preguntas, setPreguntas] = useState<string[]>(reporte?.preguntas ?? [])
+  // **Un alta arranca con tres campos vacíos** · B1: es el mínimo, y apretar
+  // «Agregar pregunta» tres veces era un paso de más. No son las sugeridas de
+  // P6.3, que siguen abiertas: están vacías.
+  const [preguntas, setPreguntas] = useState<string[]>(reporte?.preguntas ?? ['', '', ''])
   const [frecuencia, setFrecuencia] = useState<FrecuenciaDeReporte>(reporte?.frecuencia ?? 'semanal')
   const [diaDeSemana, setDiaDeSemana] = useState<number | null>(reporte?.diaDeSemana ?? 1)
   const [diaDelMes, setDiaDelMes] = useState<number | null>(reporte?.diaDelMes ?? 1)
@@ -85,12 +92,22 @@ export function ReportEditor({
   const [correoNuevo, setCorreoNuevo] = useState('')
   const [problemaDeCorreo, setProblemaDeCorreo] = useState<string | null>(null)
   const [eligiendo, setEligiendo] = useState(false)
+  /** Cuántos usuarios sacó el último cambio de rol · M2: se dice, no pasa en silencio. */
+  const [sacados, setSacados] = useState<{ cuantos: number; rol: string } | null>(null)
 
   const externosNuevos = correos.filter((c) => !originales.correos.includes(c))
   const aBorrador = reporte !== null && vuelveABorrador(reporte, { preguntas, rolId })
   const total = usuarioIds.length + correos.length
   const problema = problemaDelReporte({ nombre, rolId, preguntas, frecuencia, diaDeSemana, diaDelMes, hora, destinatarios: total })
   const delRol = usuarios.filter((u) => u.rolId === rolId)
+  const inicial = JSON.stringify([
+    reporte?.nombre ?? '', reporte?.rolId ?? '', reporte?.preguntas ?? ['', '', ''], reporte?.frecuencia ?? 'semanal',
+    reporte?.diaDeSemana ?? 1, reporte?.diaDelMes ?? 1, reporte?.hora ?? '08:00', originales.usuarios, originales.correos,
+  ])
+  const sucio =
+    JSON.stringify([nombre, rolId, preguntas, frecuencia, diaDeSemana, diaDelMes, hora, usuarioIds, correos]) !== inicial
+  // Se avisa al contenedor, que es quien decide salir.
+  useEffect(() => onCambios?.(sucio), [sucio, onCambios])
 
   const agregarCorreo = () => {
     const c = correoNuevo.trim().toLowerCase()
@@ -157,7 +174,11 @@ export function ReportEditor({
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {/* **La pista, junto al botón**, y no un error al abrir · M1: «Falta
+              el nombre» antes de escribir nada se leía como una falla. */}
+          {problema !== null && <Ayuda>{`Para guardar: ${problema.charAt(0).toLowerCase()}${problema.slice(1)}`}</Ayuda>}
+          {sucio && <Label>Cambios sin guardar</Label>}
           <Accion onClick={onCancelar}>Cancelar</Accion>
           <Accion variante="primaria" deshabilitada={problema !== null || guardando} onClick={guardar}>
             {guardando ? 'Guardando…' : 'Guardar'}
@@ -182,18 +203,20 @@ export function ReportEditor({
                 Agregaste un destinatario externo. Al guardar, se avisa a los superadmins.
               </span>
               <Ayuda>
-                {aBorrador
-                  ? 'Los superadmins van a recibir una advertencia con quién lo agregó, a qué reporte y a qué correo.'
-                  : 'El reporte sigue saliendo como está, y el externo lo recibe desde el próximo envío. Los superadmins van a recibir una advertencia con quién lo agregó, a qué reporte y a qué correo.'}
+                {/* **«Sigue saliendo» sólo es cierto de uno activo** · visto el
+                    2026-11-18: en un alta se leía como si ya saliera. */}
+                {!aBorrador && reporte?.estado === 'activo'
+                  ? 'El reporte sigue saliendo como está, y el externo lo recibe desde el próximo envío. Los superadmins van a recibir una advertencia con quién lo agregó, a qué reporte y a qué correo.'
+                  : 'Los superadmins van a recibir una advertencia con quién lo agregó, a qué reporte y a qué correo.'}
               </Ayuda>
             </>
           )}
         </div>
       )}
 
-      {(problema !== null || error !== null) && (
+      {error !== null && (
         <p role="alert" className="m-0 font-body text-cuerpo text-ink">
-          {error ?? problema}
+          {error}
         </p>
       )}
 
@@ -204,6 +227,35 @@ export function ReportEditor({
               <Label>Nombre</Label>
               <input value={nombre} onChange={(e) => setNombre(e.target.value)} className={CAMPO} />
             </label>
+          </section>
+
+          <section className={CARTA}>
+            <Label as="div">Rol</Label>
+            <Ayuda>
+              Las respuestas se contestan con los datos que ve este rol, y sólo sus usuarios pueden recibirlo.
+            </Ayuda>
+            <div className="flex flex-wrap gap-2">
+              {roles.map((r) => (
+                <Opcion
+                  key={r.id}
+                  forma="chip"
+                  elegida={rolId === r.id}
+                  onClick={() => {
+                    setRolId(r.id)
+                    // **Los usuarios de otro rol no pueden recibirlo**: el servicio
+                    // los rechaza. Se sacan al cambiar el rol, y se dice (M2).
+                    const quedan = usuarioIds.filter((id) => usuarios.find((u) => u.id === id)?.rolId === r.id)
+                    setSacados(quedan.length < usuarioIds.length ? { cuantos: usuarioIds.length - quedan.length, rol: r.nombre } : null)
+                    setUsuarioIds(quedan)
+                  }}
+                >
+                  {r.nombre}
+                </Opcion>
+              ))}
+            </div>
+            {sacados !== null && (
+              <Ayuda>{`Sacamos ${String(sacados.cuantos)} ${sacados.cuantos === 1 ? 'usuario que no tiene' : 'usuarios que no tienen'} el rol ${sacados.rol}.`}</Ayuda>
+            )}
           </section>
 
           <section className={CARTA}>
@@ -243,30 +295,6 @@ export function ReportEditor({
             </div>
           </section>
 
-          <section className={CARTA}>
-            <Label as="div">Rol</Label>
-            <Ayuda>
-              Las respuestas se contestan con los datos que ve este rol, y sólo sus usuarios pueden recibirlo.
-            </Ayuda>
-            <div className="flex flex-wrap gap-2">
-              {roles.map((r) => (
-                <Opcion
-                  key={r.id}
-                  forma="chip"
-                  elegida={rolId === r.id}
-                  onClick={() => {
-                    setRolId(r.id)
-                    // **Los usuarios de otro rol no pueden recibirlo**: el servicio
-                    // los rechaza. Se sacan al cambiar el rol, a la vista.
-                    setUsuarioIds(usuarioIds.filter((id) => usuarios.find((u) => u.id === id)?.rolId === r.id))
-                  }}
-                >
-                  {r.nombre}
-                </Opcion>
-              ))}
-            </div>
-          </section>
-
           {reporte !== null && reporte.validadoEn !== null && (
             <section className={CARTA}>
               <Label as="div">Validación</Label>
@@ -275,7 +303,7 @@ export function ReportEditor({
               {onEnvios !== undefined && (
                 <div className="flex justify-end">
                   <Accion tamano="compacta" onClick={onEnvios}>
-                    Ver las respuestas validadas →
+                    Ver envíos y validaciones →
                   </Accion>
                 </div>
               )}
@@ -310,7 +338,8 @@ export function ReportEditor({
                 </div>
               )
             })}
-            <div className="flex justify-end">
+            <div className="flex items-center justify-end gap-3">
+              {rolId === '' && <Ayuda>Elige primero el rol: decide qué datos ve el reporte y quién puede recibirlo.</Ayuda>}
               <Accion tamano="compacta" deshabilitada={rolId === ''} onClick={() => setEligiendo(!eligiendo)}>
                 {eligiendo ? 'Listo' : 'Elegir usuarios'}
               </Accion>
@@ -412,6 +441,9 @@ export function ReportEditor({
                 </select>
                 <Label>De cada mes</Label>
               </label>
+            )}
+            {frecuencia === 'mensual' && (
+              <Ayuda>Del 1 al 28, para que salga todos los meses, también en febrero.</Ayuda>
             )}
             <label className="flex items-center gap-3">
               <Label>Hora</Label>
