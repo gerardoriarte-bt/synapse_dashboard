@@ -128,11 +128,11 @@ que su resultado esté escrito.
 | `A5 · Salud de feeds` | `src/surfaces/admin/FeedHealth.tsx` · F4.24, construida el 2026-09-25 |
 | `A5 · Feeds · tenant sin fuentes` | La misma: el vacío de alta lo pinta `EmptyRow` con `clase="alta"` |
 | `A6 · Cola de accionables` | **No construida** · F3.10, diferida por D3 |
-| `A7 · Reportes del cliente` | **No construida** · F6.6, espera las rutas de reportes (F6.4). Dibujada el 2026-11-04 desde el mapa de UX (F6.5) |
-| `A7 · Reportes · sin reportes` | **No construida** · el vacío de F6.6 |
-| `A7 · Envíos de un reporte` | **No construida** · el historial de envíos de F6.6 |
-| `A7 · Editor de reporte` | **No construida** · F6.7, espera F6.4 |
-| `A7 · Validar respuestas` | **No construida** · F6.10, espera F6.4 |
+| `A7 · Reportes del cliente` | `src/surfaces/admin/ReportList.tsx` · F6.6, 2026-11-18, contra MSW: las rutas no están en QA. **Diverge en cuatro cosas, escritas en el archivo**: sin resultado del último envío en la fila, «Pausado» sin fecha, sin filtro por estado y sin borrar (P6.9) |
+| `A7 · Reportes · sin reportes` | `src/surfaces/admin/ReportList.tsx` · el vacío de F6.6, con su salida «Nuevo reporte» |
+| `A7 · Envíos de un reporte` | `src/surfaces/admin/ReportRuns.tsx` · F6.6. **Diverge en lo que el servicio guarda**: sin resultado por destinatario ni rebotes, sin pruebas, y suma las validaciones |
+| `A7 · Editor de reporte` | `src/surfaces/admin/ReportEditor.tsx` · F6.7. **Suma «Rol»**, que el servicio exige; las preguntas no se reordenan arrastrando |
+| `A7 · Validar respuestas` | `src/surfaces/admin/ReportValidation.tsx` · F6.10. **Diverge en lo que el servicio no manda**: la fuente de cada cifra, «sin dato», regenerar una sola y la prueba |
 | `A7 · Advertencia por un externo` | **No construida** · el correo es del backend (B6.3) y la lista en Clientes, de F6.6 |
 | `A7 · El correo del reporte` | **No es del front**: la plantilla es del backend (B6.5), con los colores de F6.8. Se verifica en F6.9 |
 | `A7 · Página de baja` | **No construida** · fuera de la sesión; la ruta la define el backend (B6.6) |

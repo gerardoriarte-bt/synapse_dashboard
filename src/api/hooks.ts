@@ -13,7 +13,7 @@ import { esDePanel } from './chat'
 import type { ContextoDeChat } from './chat'
 import { adminApi } from './admin'
 import { sinRolesInternos } from './rol'
-import type { CambioDeConexion, CambioDeIdentidad, CambioDeUsuario, Corrida, RolParaGuardar, TabParaGuardar } from './admin'
+import type { CambioDeConexion, CambioDeIdentidad, CambioDeUsuario, Corrida, ReporteParaGuardar, RolParaGuardar, TabParaGuardar } from './admin'
 import type { Theme } from '../tokens/theme'
 import type { Payload } from './types'
 
@@ -74,6 +74,9 @@ export const keys = {
   llave: (tenantId: string) => ['admin', 'llave', tenantId] as const,
   fuentes: (tenantId: string) => ['admin', 'fuentes', tenantId] as const,
   corridas: (tenantId: string) => ['admin', 'corridas', tenantId] as const,
+  reportes: (tenantId: string) => ['admin', 'reportes', tenantId] as const,
+  /** **Debajo de `reportes`**: invalidar la lista también refresca los envíos. */
+  corridasDeReporte: (tenantId: string, reporteId: string) => ['admin', 'reportes', tenantId, reporteId, 'corridas'] as const,
   usuarios: (tenantId: string) => ['admin', 'usuarios', tenantId] as const,
   // **Sin tenant en la clave, a propósito**: es de plataforma. Compartir la clave
   // con la de arriba serviría el listado de un cliente donde va el de todos, que
@@ -404,6 +407,64 @@ export function useFeeds(tenantId: string | null) {
     queryKey: keys.fuentes(tenantId ?? ''),
     queryFn: () => adminApi.fuentes(tenantId as string),
     enabled: tenantId !== null && tenantId !== '',
+  })
+}
+
+/* ── LOS REPORTES POR CORREO · F6.6, F6.7 y F6.10 ─────────────────────────── */
+
+/** Los reportes del cliente · F6.6. */
+export function useReports(tenantId: string | null) {
+  return useQuery({
+    queryKey: keys.reportes(tenantId ?? ''),
+    queryFn: () => adminApi.reportes(tenantId as string),
+    enabled: tenantId !== null && tenantId !== '',
+  })
+}
+
+/** Las validaciones y envíos de un reporte · V4. */
+export function useReportRuns(tenantId: string | null, reporteId: string | null) {
+  return useQuery({
+    queryKey: keys.corridasDeReporte(tenantId ?? '', reporteId ?? ''),
+    queryFn: () => adminApi.corridasDeReporte(tenantId as string, reporteId as string),
+    enabled: tenantId !== null && tenantId !== '' && reporteId !== null && reporteId !== '',
+  })
+}
+
+/** Crear o editar · F6.7. **Sin `id` es un alta**; con `id`, la edición parcial. */
+export function useSaveReport(tenantId: string | null) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { id?: string; reporte: ReporteParaGuardar | Partial<ReporteParaGuardar> }) =>
+      v.id === undefined
+        ? adminApi.crearReporte(tenantId as string, v.reporte as ReporteParaGuardar)
+        : adminApi.editarReporte(tenantId as string, v.id, v.reporte),
+    onSuccess: () => client.invalidateQueries({ queryKey: keys.reportes(tenantId ?? '') }),
+  })
+}
+
+/** Validar, activar y pausar · F6.10 y F6.6. Las tres cambian el estado, así
+ *  que las tres refrescan la lista. */
+export function useValidateReport(tenantId: string | null) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (reporteId: string) => adminApi.validarReporte(tenantId as string, reporteId),
+    onSuccess: () => client.invalidateQueries({ queryKey: keys.reportes(tenantId ?? '') }),
+  })
+}
+
+export function useActivateReport(tenantId: string | null) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (reporteId: string) => adminApi.activarReporte(tenantId as string, reporteId),
+    onSuccess: () => client.invalidateQueries({ queryKey: keys.reportes(tenantId ?? '') }),
+  })
+}
+
+export function usePauseReport(tenantId: string | null) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (reporteId: string) => adminApi.pausarReporte(tenantId as string, reporteId),
+    onSuccess: () => client.invalidateQueries({ queryKey: keys.reportes(tenantId ?? '') }),
   })
 }
 

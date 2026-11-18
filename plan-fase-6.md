@@ -336,7 +336,8 @@ en el `.pen`.
 - Dónde viven las pantallas dentro de la administración, y cómo se llega desde
   la ficha del cliente.
 
-### ➕ F6.6 ⬜ Los reportes de un cliente, en administración · 🔒 depende de F6.4 y del dibujo de F6.5
+### ➕ F6.6 ⚠️ Los reportes de un cliente, en administración · 🔒 depende de F6.4 y del dibujo de F6.5
+**Construida el 2026-11-18 contra MSW** —las rutas no están en QA—: `src/surfaces/admin/ReportList.tsx` y `ReportRuns.tsx`, con `§PEN:A7`, miradas en `dev:mock`. Pausar y reanudar disparan su llamada; **no hay borrar** (P6.9). El historial de envíos se abre, **sin rebotes ni resultado por destinatario**, que el servicio no guarda. Falta probarla en QA.
 **Descripción.** La lista de reportes del cliente activo: nombre, estado,
 destinatarios, cuándo sale, último envío y su resultado.
 **Criterio de aceptación.**
@@ -348,7 +349,8 @@ destinatarios, cuándo sale, último envío y su resultado.
 - El historial de envíos de un reporte se puede abrir, con rebotes y fallos.
 - Se construye mirando el dibujo, con su ancla `§PEN:`.
 
-### ➕ F6.7 ⬜ Crear y editar un reporte · 🔒 depende de F6.4 y del dibujo de F6.5
+### ➕ F6.7 ⚠️ Crear y editar un reporte · 🔒 depende de F6.4 y del dibujo de F6.5
+**Construida el 2026-11-18 contra MSW**: `src/surfaces/admin/ReportEditor.tsx`. Los cinco criterios tienen su prueba en `tests/surfaces/admin/reportes.test.tsx`, y el aviso del externo sigue P6.1 revisada: avisa a los superadmins sin volver a borrador. **Suma «Rol»**, que el servicio exige y el dibujo no tiene. Falta probarla en QA.
 **Descripción.** El editor: nombre, de tres a cinco preguntas, destinatarios
 —usuarios del cliente o correos externos—, frecuencia, día y hora.
 **Criterio de aceptación.**
@@ -363,7 +365,8 @@ destinatarios, cuándo sale, último envío y su resultado.
 - Las tres preguntas que se proponen al crear un reporte las define producto;
   hasta entonces el editor arranca vacío.
 
-### ➕ F6.10 ⬜ Validar las respuestas antes de activar · 🔒 depende de F6.4 y del dibujo de F6.5
+### ➕ F6.10 ⚠️ Validar las respuestas antes de activar · 🔒 depende de F6.4 y del dibujo de F6.5
+**Construida el 2026-11-18 contra MSW**: `src/surfaces/admin/ReportValidation.tsx`. Activar no está disponible hasta validar, y la prueba verifica que DISPARE. **Falta lo que el servicio no manda todavía**: la fuente, el período y la frescura de cada cifra, la pregunta sin dato y «Enviar una prueba», pedidos en `docs/MENSAJE-2026-11-18-backend-ajustes-de-reportes.md`. El botón de prueba no se pinta: no hay a qué llamar.
 **Descripción.** La pantalla donde el admin o el superadmin lee las respuestas
 que el reporte daría hoy, con datos reales, y recién entonces lo activa (D6.4).
 **Criterio de aceptación.**
