@@ -38,6 +38,62 @@ export type Placement = {
   colStart: number
   colSpan: number
   rowSpan: number
+  /** **La fila donde arranca, cuando quien pinta la sabe** · 2026-11-18. No
+   *  viene del servidor —`PanelConfigurado` no la declara—: la calcula
+   *  `rowStarts` desde el orden de la pestaña. Sin ella decide CSS, que coloca
+   *  distinto que el editor. */
+  rowStart?: number
+}
+
+/** Recorta un panel al ancho de la grilla. Un `colStart` fuera de rango o un
+ *  span que se pasa del borde no se descartan: se acomodan, porque el layout
+ *  puede venir del servidor y una pantalla en blanco no explica nada. */
+export function clampToGrid(p: Placement): { colStart: number; colSpan: number } {
+  const colSpan = Math.max(1, Math.min(p.colSpan, COLUMNS))
+  const colStart = Math.max(1, Math.min(p.colStart, COLUMNS - colSpan + 1))
+  return { colStart, colSpan }
+}
+
+/** **La fila de arranque de cada panel, la MISMA en la consola y en el editor**
+ *  · 2026-11-18. 1-based, en el orden de la pestaña.
+ *
+ *  Cada panel va en la primera fila, desde la del anterior, donde sus columnas
+ *  están libres. **El cursor no retrocede**: un hueco que quedó atrás no lo llena
+ *  un panel posterior, y por eso el orden de la lista sigue siendo lo que decide
+ *  arriba y abajo.
+ *
+ *  **No es lo que hace CSS**, y esa diferencia era el defecto: CSS también lleva
+ *  la columna, y un panel que arranca a la izquierda del anterior baja de fila
+ *  aunque haya lugar. Medido en QA en UA MX: Órdenes en la columna 10, Visitas
+ *  en la 7 e Ingresos en la 1 salían en tres filas en escalera, y el editor —que
+ *  ya calculaba así— las mostraba en una.
+ *
+ *  **Alcanza con mirar la primera fila del panel**: si la fila `f` está libre en
+ *  sus columnas, las de abajo también, porque todo panel anterior empezó en una
+ *  fila menor o igual y marca un bloque contiguo. Comprobado por fuerza bruta
+ *  sobre 531.441 combinaciones de cuatro paneles cuando vivía en
+ *  `surfaces/builder/disposicion.ts`. */
+export function rowStarts(panels: readonly Placement[]): number[] {
+  const ocupadas: Set<number>[] = []
+  const libre = (fila: number, desde: number, ancho: number): boolean => {
+    const set = ocupadas[fila]
+    if (set === undefined) return true
+    for (let c = desde; c < desde + ancho; c++) if (set.has(c)) return false
+    return true
+  }
+  let cursor = 0
+  return panels.map((p) => {
+    const { colStart, colSpan } = clampToGrid(p)
+    const rowSpan = Math.max(1, p.rowSpan)
+    let fila = cursor
+    while (!libre(fila, colStart, colSpan)) fila += 1
+    for (let f = fila; f < fila + rowSpan; f++) {
+      const set = (ocupadas[f] ??= new Set<number>())
+      for (let c = colStart; c < colStart + colSpan; c++) set.add(c)
+    }
+    cursor = fila
+    return fila + 1
+  })
 }
 
 /** Valida contra el borde del canvas. El rango por tipo de panel lo verifica el
@@ -144,7 +200,14 @@ export function panelStyle(c: Placement, columns: number = COLUMNS): React.CSSPr
     // consola a un ancho de teléfono con datos reales.
     ...(columns === 1
       ? { gridRow: 'auto', minHeight: span(c.rowSpan) }
-      : { gridRow: `span ${c.rowSpan}`, minHeight: 0 }),
+      : {
+          // **Con la fila calculada, se escribe** · 2026-11-18 · ver `rowStarts`.
+          // Sólo a doce columnas: colapsada, la grilla suelta el `colStart` y la
+          // fila del editor ya no describe nada.
+          gridRow:
+            full && c.rowStart !== undefined ? `${c.rowStart} / span ${c.rowSpan}` : `span ${c.rowSpan}`,
+          minHeight: 0,
+        }),
 
     minWidth: 0,
   }

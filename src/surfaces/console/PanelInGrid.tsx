@@ -34,6 +34,8 @@ type Props = {
    *  defecto que la tarea arregla. */
   params: Record<string, unknown>
   columns?: number
+  /** La fila donde arranca · la calcula la consola con `rowStarts` · 2026-11-18. */
+  rowStart?: number
   format: Formatter
   now: Date
   /** Los tres suben a la superficie. **El cuerpo no navega ni abre modales por
@@ -52,6 +54,7 @@ export function PanelInGrid({
   payload,
   params,
   columns,
+  rowStart,
   format,
   now,
   onDrill,
@@ -64,7 +67,7 @@ export function PanelInGrid({
     <Panel
       metric={metric}
       payload={payload}
-      placement={panel}
+      placement={rowStart === undefined ? panel : { ...panel, rowStart }}
       {...(columns === undefined ? {} : { columns })}
       format={format}
       now={now}
