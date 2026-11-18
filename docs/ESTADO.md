@@ -5,7 +5,7 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**224 de 285 tareas cerradas.** 19 parciales · 38 pendientes · 4 diferidas.
+**224 de 285 tareas cerradas.** 20 parciales · 37 pendientes · 4 diferidas.
 
 
 ## Front · 163 de 181
@@ -18,7 +18,7 @@
 | 3 · Chat contextual | `█████████████████·····` | 13/17 | 0 | 2 |
 | 4 · Admin y Builder | `██████████████████████` | 24/24 | 0 | 0 |
 | 5 · Pruebas y pulido | `█████████████████████·` | 58/62 | 0 | 3 |
-| 6 · Métricas y reporte | `████··················` | 2/10 | 1 | 7 |
+| 6 · Métricas y reporte | `████··················` | 2/10 | 2 | 6 |
 
 ## Backend · 61 de 104
 
@@ -56,17 +56,18 @@
 
 ---
 
-## Se puede tomar hoy · 5 del front
+## Se puede tomar hoy · 6 del front
 
 - **F3.16** · El mes en curso se marca en el trazo, no sólo en un aviso
 - **F3.17** · Un dato que falta se dibuja como hueco
 - **F5.21** · Qué hace un gráfico cuando el dato excede lo legible
+- **F6.4** · Transcribir las rutas de reportes al cable de administración
 - **F6.5** · El plan de diseño: el mapa de UX del reporte programado
 - **F6.8** · Los colores del producto en el correo
 
 ---
 
-## Bloqueadas · 13
+## Bloqueadas · 12
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -80,7 +81,6 @@ Lo que el front espera del backend está detallado en
 - **F5.3** · Completar los plots que falten
 - **F6.10** · Validar las respuestas antes de activar
 - **F6.3** · Verificar en QA las métricas de Terpel y de UA
-- **F6.4** · Transcribir las rutas de reportes al cable de administración
 - **F6.6** · Los reportes de un cliente, en administración
 - **F6.7** · Crear y editar un reporte
 - **F6.9** · Mirar un correo real

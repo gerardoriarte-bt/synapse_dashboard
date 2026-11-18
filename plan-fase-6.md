@@ -299,14 +299,13 @@ viernes el 2026-10-05.
 - La BASE, la procedencia y la frescura se leen en pantalla.
 - **Se mira la consola de Terpel abierta**, no sólo el cable.
 
-### ➕ F6.4 ⬜ Transcribir las rutas de reportes al cable de administración
+### ➕ F6.4 ⚠️ Transcribir las rutas de reportes al cable de administración
+**Transcripto el 2026-11-18 desde `fb3ca0c` (código y OpenAPI); el humo espera a QA.** Las ocho rutas de `/admin/tenants/{tenantId}/reports` y siete esquemas (`Report`, `ReportRecipient`, `ReportInput`, `ReportUpdateInput`, `ReportAnswer`, `ReportValidation`, `ReportRun`) en `contracts/synapse-admin-wire.yaml`, con `x-origen: fb3ca0c` por operación porque no están medidas. Donde su OpenAPI difiere del código ganó el código: `CONFLICT_REPORT_STATE` y `tenant_id` en la corrida, que el OpenAPI no declara.
 **Descripción.** Las rutas de B6.4 en `synapse-admin-wire.yaml`, con su humo.
 
-**Espera del backend.** Las rutas de reportes programados no existen · sin ellas no hay qué transcribir ni contra qué construir F6.6 y F6.7.
+**Lo tiene: BACKEND** · desplegar `49ebb26` en QA, con sus tablas y `DD_REPORTS_ENABLED`. Pedido en `docs/MENSAJE-2026-11-18-backend-ajustes-de-reportes.md`.
 
-**Lo tiene: BACKEND** · B6.3 y B6.4.
-
-**Medido contra `db91b5d` el 2026-11-03** · las plantillas de `internal/adapters/email/templates/` son sólo de acceso y de contraseña, y no hay ruta ni tabla de reportes.
+**Medido contra `fb3ca0c` el 2026-11-18** · las rutas existen en `router.go` y en su código; en QA todavía no.
 **Criterio de aceptación.** `npm run humo` pasa las rutas nuevas campo por
 campo, y cada una lleva `x-verificado-en`.
 
