@@ -1,4 +1,5 @@
 /** Los reportes por correo de un cliente · el contenedor · F6.6, F6.7 y F6.10
+ *  · §PEN:A7 · también «A7 · Editor · salir sin guardar»
  *
  *  **Trae los datos y decide qué vista va**, como `Admin` con sus pantallas:
  *  la lista, el editor, la validación o los envíos. Las cuatro son
