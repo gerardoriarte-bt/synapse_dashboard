@@ -78,6 +78,8 @@ describe('§7.3 · las cinco pantallas y su alcance', () => {
       'Usuarios',
       'Catálogo de métricas',
       'Salud de feeds',
+      // **Reportes por correo** · F6.6, 2026-11-18: el dibujo la suma al navbar.
+      'Reportes',
     ])
   })
 
@@ -91,6 +93,7 @@ describe('§7.3 · las cinco pantallas y su alcance', () => {
       usuarios: 'plataforma',
       catalogo: 'tenant',
       feeds: 'tenant',
+      reportes: 'tenant',
     })
   })
 

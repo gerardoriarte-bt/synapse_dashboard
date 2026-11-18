@@ -61,6 +61,8 @@ import { AdminChrome } from './AdminChrome'
 import { CatalogView } from './CatalogView'
 import { FeedHealth } from './FeedHealth'
 import { RunHistory } from './RunHistory'
+import { Reportes } from './Reportes'
+import { sinRolesInternos } from '../../api/rol'
 import { ApagarCliente } from './ApagarCliente'
 import { ConexionDeDatos } from './ConexionDeDatos'
 import { LlaveDeServicio } from './LlaveDeServicio'
@@ -407,6 +409,20 @@ export function Admin() {
             cargando={corridas.data === undefined}
           />
         </div>
+      ) : pantalla === 'reportes' ? (
+        /* **Reportes por correo** · F6.6, F6.7 y F6.10. Con `key` por cliente:
+           cambiar de cliente vuelve a la lista y no arrastra un formulario a
+           medio llenar de otro. Los roles internos no se ofrecen: un reporte
+           es de los roles del cliente. */
+        <Reportes
+          key={activo ?? ''}
+          tenantId={activo}
+          cliente={nombreDeTrabajo ?? null}
+          zonaHoraria={tenantDeTrabajo?.zonaHoraria ?? ''}
+          roles={sinRolesInternos(roles.data ?? [])}
+          usuarios={usuariosDelCliente.data ?? []}
+          format={format}
+        />
       ) : pantalla === 'catalogo' ? (
         // **El uso sale del layout publicado y de los roles, que A2 ya pide.**
         // No cuesta un viaje más, y contarlo sobre el publicado es lo correcto

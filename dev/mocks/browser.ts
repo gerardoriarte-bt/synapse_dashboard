@@ -75,6 +75,44 @@ const slug = (v: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
 
+/** Los reportes por correo de `dev:mock` · F6.6 · en memoria, como el resto. */
+type ReporteMock = {
+  id: string; tenant_id: string; name: string; role_id: string; questions: string[]; frequency: string
+  weekday: number | null; month_day: number | null; send_time: string; status: string
+  next_run_at: string | null; last_sent_at: string | null; validated_at: string | null; validated_by: string | null
+  created_by: string | null; updated_by: string | null; created_at: string; updated_at: string
+  recipients: { id: string; report_id: string; kind: string; user_id?: string; email?: string; added_by: string | null; notified_at?: string; created_at: string; updated_at: string }[]
+}
+const reporteMock = (r: Partial<ReporteMock> & Pick<ReporteMock, 'id' | 'name' | 'questions' | 'frequency' | 'send_time' | 'status' | 'recipients'>): ReporteMock => ({
+  tenant_id: '', role_id: '', weekday: null, month_day: null, next_run_at: null, last_sent_at: null,
+  validated_at: null, validated_by: null, created_by: null, updated_by: null,
+  created_at: '2026-10-01T00:00:00Z', updated_at: '2026-10-28T15:00:00Z', ...r,
+})
+const destinatariosMock = (usuarios: string[], correos: string[]): ReporteMock['recipients'] => [
+  ...usuarios.map((u) => ({ id: crypto.randomUUID(), report_id: '', kind: 'user', user_id: u, added_by: null, created_at: '2026-10-01T00:00:00Z', updated_at: '2026-10-01T00:00:00Z' })),
+  ...correos.map((c) => ({ id: crypto.randomUUID(), report_id: '', kind: 'external', email: c, added_by: null, notified_at: '2026-10-01T00:00:01Z', created_at: '2026-10-01T00:00:00Z', updated_at: '2026-10-01T00:00:00Z' })),
+]
+const reportes: { lista: ReporteMock[] } = {
+  lista: [
+    reporteMock({
+      id: 'rep-1', tenant_id: tenants[0]!.id, name: 'Pauta digital · mensual', role_id: roles[1]!.id,
+      questions: ['¿Cuánto invertimos?', '¿Cuántos clics?', '¿Qué plataforma?'], frequency: 'monthly', month_day: 3,
+      send_time: '08:00', status: 'active', next_run_at: '2026-12-03T13:00:00Z', last_sent_at: '2026-11-03T13:00:05Z',
+      validated_at: '2026-10-28T15:00:00Z', recipients: destinatariosMock(['u-1'], ['gerencia.mercadeo@terpel.com']),
+    }),
+    reporteMock({
+      id: 'rep-2', tenant_id: tenants[0]!.id, name: 'Resumen para gerencia', role_id: roles[1]!.id,
+      questions: ['¿Cuánto vendimos?', '¿Cuál fue el ROAS?', '¿Qué canal creció más?'], frequency: 'weekly', weekday: 5,
+      send_time: '17:00', status: 'draft', recipients: destinatariosMock(['u-1'], []),
+    }),
+    reporteMock({
+      id: 'rep-3', tenant_id: tenants[0]!.id, name: 'Cierre de campañas', role_id: roles[1]!.id,
+      questions: ['¿Qué campaña cerró?', '¿Cuánto gastó?', '¿Qué resultado tuvo?'], frequency: 'daily',
+      send_time: '07:00', status: 'validated', validated_at: '2026-11-17T15:00:00Z', recipients: destinatariosMock([], ['director@consultora.co', 'cuentas@agencia.mx']),
+    }),
+  ],
+}
+
 const estado = {
   layouts: structuredClone(layouts),
   detalles: new Map(layouts.map((l) => [l.id, structuredClone(detalle(l.id))])),
@@ -1145,4 +1183,116 @@ export const worker = setupWorker(
         : {}),
     })
   }),
+
+  /* ── DOS RUTAS DE ADMIN QUE EL MOCK NO ATENDÍA · 2026-11-18 ─────────────────
+   *
+   * **Se iban al servicio local y contestaban 401**, y un 401 cierra la sesión y
+   * manda a `/login` de la entrada REAL: administración no se podía abrir en
+   * `dev:mock`. Lo encontró abrir la pantalla de reportes. Sin solicitudes
+   * pendientes y sin llave de servicio, que son los estados de un cliente común. */
+  http.get(`${API}/admin/access-requests`, () => ok({ items: [], total: 0, page: 1, page_size: 100 })),
+  http.get(`${API}/admin/tenants/:id/service-key`, () => mal('sin llave', 404)),
+
+  /* ── LOS REPORTES POR CORREO · F6.6, F6.7 y F6.10 · 2026-11-18 ──────────────
+   *
+   * **Las rutas no están en QA**: este es el único lugar donde las pantallas se
+   * pueden mirar. La forma es la de `Report` en el cable de administración. */
+  http.get(`${API}/admin/tenants/:id/reports`, async () => {
+    await delay(200)
+    return ok(reportes.lista)
+  }),
+  http.post(`${API}/admin/tenants/:id/reports`, async ({ params, request }) => {
+    const r = (await request.json()) as Record<string, unknown>
+    const q = (r['questions'] as string[] | undefined) ?? []
+    if (q.length < 3 || q.length > 5) return mal('un reporte lleva de 3 a 5 preguntas', 400)
+    const nuevo = reporteMock({
+      id: crypto.randomUUID(), tenant_id: String(params['id']), name: String(r['name']), role_id: String(r['role_id']),
+      questions: q, frequency: String(r['frequency']), weekday: (r['weekday'] as number | undefined) ?? null,
+      month_day: (r['month_day'] as number | undefined) ?? null, send_time: String(r['send_time']), status: 'draft',
+      recipients: destinatariosMock((r['user_ids'] as string[] | undefined) ?? [], (r['emails'] as string[] | undefined) ?? []),
+    })
+    reportes.lista = [...reportes.lista, nuevo]
+    return HttpResponse.json({ success: true, data: nuevo }, { status: 201 })
+  }),
+  http.put(`${API}/admin/tenants/:id/reports/:rid`, async ({ params, request }) => {
+    const cambio = (await request.json()) as Record<string, unknown>
+    const viejo = reportes.lista.find((x) => x.id === params['rid'])
+    if (viejo === undefined) return mal('reporte no encontrado', 404)
+    const preguntas = (cambio['questions'] as string[] | undefined) ?? viejo.questions
+    const aBorrador = cambio['questions'] !== undefined || cambio['role_id'] !== undefined
+    const nuevo = {
+      ...viejo,
+      ...(cambio['name'] === undefined ? {} : { name: String(cambio['name']) }),
+      questions: preguntas,
+      ...(cambio['frequency'] === undefined ? {} : { frequency: String(cambio['frequency']) }),
+      ...(cambio['send_time'] === undefined ? {} : { send_time: String(cambio['send_time']) }),
+      ...(cambio['emails'] === undefined && cambio['user_ids'] === undefined
+        ? {}
+        : {
+            recipients: destinatariosMock(
+              (cambio['user_ids'] as string[] | undefined) ?? viejo.recipients.flatMap((d) => (d.kind === 'user' ? [d.user_id ?? ''] : [])),
+              (cambio['emails'] as string[] | undefined) ?? viejo.recipients.flatMap((d) => (d.kind === 'external' ? [d.email ?? ''] : [])),
+            ),
+          }),
+      ...(aBorrador ? { status: 'draft', validated_at: null, next_run_at: null } : {}),
+      updated_at: new Date().toISOString(),
+    }
+    reportes.lista = reportes.lista.map((x) => (x.id === nuevo.id ? nuevo : x))
+    return ok(nuevo)
+  }),
+  http.post(`${API}/admin/tenants/:id/reports/:rid/validate`, async ({ params }) => {
+    await delay(900)
+    const r = reportes.lista.find((x) => x.id === params['rid'])
+    if (r === undefined) return mal('reporte no encontrado', 404)
+    const validado = { ...r, status: 'validated', validated_at: new Date().toISOString() }
+    reportes.lista = reportes.lista.map((x) => (x.id === r.id ? validado : x))
+    return ok({
+      report: validado,
+      validated: true,
+      answers: r.questions.map((q, i) => ({
+        question: q,
+        answer:
+          i === 0
+            ? 'Se invirtieron COP 1.228 M en pauta digital en octubre, el 122,5 % del presupuesto: el gasto superó lo presupuestado.'
+            : 'La pauta trajo 207,3 M de impresiones y 10,95 M de clics en octubre: un CTR de 5,3 %.',
+      })),
+    })
+  }),
+  http.post(`${API}/admin/tenants/:id/reports/:rid/activate`, ({ params }) => {
+    const r = reportes.lista.find((x) => x.id === params['rid'])
+    if (r === undefined) return mal('reporte no encontrado', 404)
+    if (r.status === 'draft') return mal('el reporte no está validado', 409)
+    const activo = { ...r, status: 'active', next_run_at: '2026-12-03T13:00:00Z' }
+    reportes.lista = reportes.lista.map((x) => (x.id === r.id ? activo : x))
+    return ok(activo)
+  }),
+  http.post(`${API}/admin/tenants/:id/reports/:rid/pause`, ({ params }) => {
+    const r = reportes.lista.find((x) => x.id === params['rid'])
+    if (r === undefined) return mal('reporte no encontrado', 404)
+    const pausado = { ...r, status: 'paused', next_run_at: null }
+    reportes.lista = reportes.lista.map((x) => (x.id === r.id ? pausado : x))
+    return ok(pausado)
+  }),
+  http.get(`${API}/admin/tenants/:id/reports/:rid/runs`, ({ params }) =>
+    ok(
+      params['rid'] === 'rep-1'
+        ? [
+            {
+              id: 'run-1', report_id: 'rep-1', tenant_id: tenants[0]!.id, kind: 'delivery', status: 'ok',
+              answers: [
+                { question: '¿Cuánto invertimos?', answer: 'Se invirtieron COP 603,7 M en pauta digital en septiembre, el 97,3 % del presupuesto.' },
+                { question: '¿Cuántos clics?', answer: 'La pauta trajo 212,4 M de impresiones y 3,06 M de clics: un CTR de 1,4 %.' },
+                { question: '¿Qué plataforma?', answer: 'YouTube concentró la inversión, con el 21 % del gasto.' },
+              ],
+              sent_to: ['laura.mendez@ejemplo.co', 'gerencia.mercadeo@terpel.com'], actor_user_id: null, created_at: '2026-11-03T13:00:05Z',
+            },
+            {
+              id: 'run-2', report_id: 'rep-1', tenant_id: tenants[0]!.id, kind: 'delivery', status: 'error',
+              answers: [], sent_to: [], actor_user_id: null, error: 'el servicio de correo no respondió', created_at: '2026-09-03T13:00:05Z',
+            },
+          ]
+        : [],
+    ),
+  ),
+
 )
