@@ -100,7 +100,7 @@ verde, las siete muertas.
 | | Qué se hizo | Dónde |
 |---|---|---|
 | **A1** | La lista y los envíos dicen «No se pudieron cargar …» con «Reintentar»; un 403, «Esta pantalla pide rol de administrador.» | `FallaDeCarga.tsx`, `Reportes.tsx` |
-| **A2** | El botón dice «Generar las respuestas». La tarjeta cambia: «Antes de activar», «Respuestas generadas · léelas» con «Activar confirma que leíste estas respuestas. Desde ahí sale solo.», o «N respuestas fallaron · vuelve a generarlas para poder validar» | `ReportValidation.tsx` |
+| **A2** | El botón dice «Generar las respuestas». La tarjeta cambia: «Antes de activar», «Respuestas generadas · léelas» con «Activar confirma que leíste estas respuestas. Desde ahí sale solo.», o «N respuestas fallaron · vuelve a generarlas» | `ReportValidation.tsx` |
 | **A3** | Cada vista tiene su ruta: `/admin/reportes/nuevo`, `/:id`, `/:id/validar`, `/:id/envios`. «Reportes» en el menú y «atrás» vuelven a la lista | `Reportes.tsx`, `Admin.tsx` |
 | **A4** | Un aviso arriba de la vista a la que lleva: «Activado. El primer envío sale el …», «Reanudado. Próximo envío: …», «Pausado. No se envía hasta que lo reanudes.», «Cambios guardados.» | `Reportes.tsx` |
 | **A5** | Si guardar lo devolvió a borrador, va a validar con «Volvió a borrador: no se envía hasta que lo valides de nuevo.» Un alta también va a validar | `Reportes.tsx` |
@@ -110,8 +110,8 @@ verde, las siete muertas.
 | **M4** | «Editar el reporte» en la tarjeta de validación | `ReportValidation.tsx` |
 | **M5** | «Falta al menos un destinatario.» | `reporte.ts` |
 | **M6** | Debajo de la fecha del último envío: «El resultado, en Ver envíos». No se muestra como si hubiera salido bien | `ReportList.tsx` |
-| **M7** | «Solo los reportes activos se envían · validar es leer las respuestas antes de activar» | `ReportList.tsx` |
-| **M8** | Se suma al pie: «Los reportes no se borran: pausar detiene los envíos y se puede reanudar» | `ReportList.tsx` |
+| **M7** | «Solo los reportes activos se envían · validar es leer antes de activar» | `ReportList.tsx` |
+| **M8** | Se suma al pie: «No se borran: pausar es la baja» | `ReportList.tsx` |
 | **M9** | El botón se llama «Ver envíos y validaciones →» | `ReportEditor.tsx` |
 | **M10** | «Sale cada mes el día 3 a las 08:00 (hora del cliente), a 2 destinatarios: 1 usuario y 1 externo.» | `reporte.ts`, `ReportValidation.tsx` |
 | **M11** | En las vistas internas no se pinta el título de la pantalla: la migaja y el título del reporte ocupan ese lugar, como en el dibujo | `AdminChrome.tsx`, `Admin.tsx` |
