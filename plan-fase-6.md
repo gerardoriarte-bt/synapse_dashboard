@@ -76,6 +76,19 @@ respuesta. **Sólo P6.3 sigue abierta**, y no frena nada.
 | **P6.6** | ¿Un correo del dominio del cliente sin usuario cuenta como externo? | **Sí.** Externo es quien no tiene usuario en la plataforma, sea de la empresa que sea | B6.3 |
 | **P6.7** | ¿Un externo ve enlaces a la consola? | **No**: le pedirían iniciar sesión con una cuenta que no tiene | B6.5 |
 
+**Revisadas el 2026-11-18 (humano), al medir `49ebb26`**: donde el backend
+construyó distinto, **se acepta lo construido** porque son ajustes menores.
+Reemplazan a P6.1, P6.2 y P6.5, y suman dos. Medido en
+`docs/AUDITORIA-2026-11-18-respuesta-reportes-por-correo.md`.
+
+| | Decisión del 2026-11-18 | Reemplaza |
+|---|---|---|
+| **P6.1** | Sólo cambiar las preguntas o el rol vuelve a borrador. **Agregar un externo no** | La del 2026-11-04 |
+| **P6.2** | **Diaria, semanal y mensual** | Semanal y mensual |
+| **P6.5** | **Tope de 50** destinatarios | 20 |
+| **P6.8** | **Cada envío le vuelve a preguntar al agente.** Lo que llega no es lo que se validó; lo atenúa que cada respuesta diga de dónde sale su cifra (B6.5) | Nueva |
+| **P6.9** | **No se borra un reporte: pausar es la baja** | El «borrar» de B6.4 |
+
 ## 4 · Lo que ya existe
 
 **Medido contra `db91b5d` el 2026-11-03** en `AntPack-dev/synapse-api-go`, rama
@@ -170,7 +183,8 @@ espera a que datos decida qué hacer con la división nula.
 - `mer_total` no se calcula mientras sea la misma cuenta que `roas`.
 - Igual que B6.1: `AVAILABLE` en QA y la cifra reproducible.
 
-### ➕ B6.3 ⬜ El reporte programado como objeto
+### ➕ B6.3 ⚠️ El reporte programado como objeto
+**Hecho en `49ebb26`, no en QA** · `docs/RESPUESTA-2026-11-17-backend-reportes-por-correo.md`, medido en `docs/AUDITORIA-2026-11-18-respuesta-reportes-por-correo.md`. Con P6.1, P6.2 y P6.5 revisadas el 2026-11-18, falta que un correo de un usuario no entre como externo (P6.6) y la lista de avisos (P6.4): pedidos en `docs/MENSAJE-2026-11-18-backend-ajustes-de-reportes.md`.
 **Descripción.** Un reporte pertenece a un cliente y lleva: nombre; de tres a
 cinco preguntas; destinatarios, usuarios del cliente o correos externos;
 frecuencia, día y hora; su estado; y quién lo creó y lo cambió por última vez.
@@ -182,11 +196,12 @@ frecuencia, día y hora; su estado; y quién lo creó y lo cambió por última v
   rechaza. La validación queda registrada con quién la hizo y qué respuestas
   leyó.
 - **Cambiar una pregunta lo devuelve a borrador**, porque las respuestas
-  validadas ya no son las que va a recibir nadie. **Agregar un externo también**;
-  cambiar otros destinatarios o la hora, no (P6.1).
-- **Frecuencia semanal o mensual**; otra se rechaza con 400 (P6.2).
-- **Más de 20 destinatarios** entre usuarios y externos se rechaza con 400
-  (P6.5).
+  validadas ya no son las que va a recibir nadie. Cambiar el rol también;
+  los destinatarios y la hora, no (P6.1, revisada el 2026-11-18).
+- **Frecuencia diaria, semanal o mensual**; otra se rechaza con 400 (P6.2,
+  revisada el 2026-11-18).
+- **Más de 50 destinatarios** entre usuarios y externos se rechaza con 400
+  (P6.5, revisada el 2026-11-18).
 - **Externo es todo correo sin usuario en la plataforma**, aunque sea del
   dominio del cliente (P6.6).
 - **La hora es del cliente**, en su zona horaria: la misma que usa la consola
@@ -197,9 +212,10 @@ frecuencia, día y hora; su estado; y quién lo creó y lo cambió por última v
   por correo y se lista en Clientes** (P6.4).
 - Un usuario suspendido deja de recibir.
 
-### ➕ B6.4 ⬜ Rutas para administrar reportes
-**Descripción.** Listar, crear, editar, validar, activar, pausar y borrar los
-reportes de un cliente, y **generar sus respuestas sin enviarlas**, que es lo
+### ➕ B6.4 ⚠️ Rutas para administrar reportes
+**Hecho en `49ebb26`, no en QA**: ocho rutas bajo `/admin/tenants/{tenantId}/reports`, con el alcance por cliente de las demás rutas de admin. Falta desplegarlo.
+**Descripción.** Listar, crear, editar, validar, activar y pausar los
+reportes de un cliente —no se borran: pausar es la baja (P6.9)—, y **generar sus respuestas sin enviarlas**, que es lo
 que se lee para validar. Las rutas las propone el backend, y el front las
 transcribe al cable de administración.
 **Criterio de aceptación.**
@@ -210,6 +226,7 @@ transcribe al cable de administración.
 - Generar las respuestas no envía nada ni cambia el estado.
 
 ### ➕ B6.5 ⬜ Contestar las preguntas
+**En parte en `49ebb26`**: contesta el agente Cortex del rol, en cinco oraciones como máximo. **Falta lo central**: fuente, período y frescura en cada respuesta, y el aviso de dato vencido. Pedido en `docs/MENSAJE-2026-11-18-backend-ajustes-de-reportes.md`.
 **Descripción.** El generador de prosa contesta cada pregunta consultando
 Snowflake, en respuestas cortas y concisas (D6.1).
 **Criterio de aceptación.**
@@ -224,6 +241,7 @@ Snowflake, en respuestas cortas y concisas (D6.1).
   reporte. **El correo de un externo no lleva enlaces a la consola** (P6.7).
 
 ### ➕ B6.6 ⬜ Programar y enviar
+**En parte en `49ebb26`**: salen sólo los activos, a la hora del cliente, y cada envío queda en `runs`. **Faltan la prueba y la baja**, pedidas en `docs/MENSAJE-2026-11-18-backend-ajustes-de-reportes.md`.
 **Descripción.** El envío por correo, a la hora de cada reporte, con el adaptador
 de SES que ya existe.
 **Criterio de aceptación.**
@@ -282,14 +300,13 @@ viernes el 2026-10-05.
 - La BASE, la procedencia y la frescura se leen en pantalla.
 - **Se mira la consola de Terpel abierta**, no sólo el cable.
 
-### ➕ F6.4 ⬜ Transcribir las rutas de reportes al cable de administración
+### ➕ F6.4 ⚠️ Transcribir las rutas de reportes al cable de administración
+**Transcripto el 2026-11-18 desde `fb3ca0c` (código y OpenAPI); el humo espera a QA.** Las ocho rutas de `/admin/tenants/{tenantId}/reports` y siete esquemas (`Report`, `ReportRecipient`, `ReportInput`, `ReportUpdateInput`, `ReportAnswer`, `ReportValidation`, `ReportRun`) en `contracts/synapse-admin-wire.yaml`, con `x-origen: fb3ca0c` por operación porque no están medidas. Donde su OpenAPI difiere del código ganó el código: `CONFLICT_REPORT_STATE` y `tenant_id` en la corrida, que el OpenAPI no declara.
 **Descripción.** Las rutas de B6.4 en `synapse-admin-wire.yaml`, con su humo.
 
-**Espera del backend.** Las rutas de reportes programados no existen · sin ellas no hay qué transcribir ni contra qué construir F6.6 y F6.7.
+**Lo tiene: BACKEND** · desplegar `49ebb26` en QA, con sus tablas y `DD_REPORTS_ENABLED`. Pedido en `docs/MENSAJE-2026-11-18-backend-ajustes-de-reportes.md`.
 
-**Lo tiene: BACKEND** · B6.3 y B6.4.
-
-**Medido contra `db91b5d` el 2026-11-03** · las plantillas de `internal/adapters/email/templates/` son sólo de acceso y de contraseña, y no hay ruta ni tabla de reportes.
+**Medido contra `fb3ca0c` el 2026-11-18** · las rutas existen en `router.go` y en su código; en QA todavía no.
 **Criterio de aceptación.** `npm run humo` pasa las rutas nuevas campo por
 campo, y cada una lleva `x-verificado-en`.
 
