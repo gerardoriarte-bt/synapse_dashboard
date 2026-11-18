@@ -575,7 +575,33 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-11-17 · el editor de QA no dibujaba, y el despliegue está pedido
+### ⇩ ACÁ SE PARÓ · 2026-11-18 · las métricas de UA, mes por mes, y las cards en escalera
+
+**El front de QA se desplegó el 2026-11-17 a las 22:56 GMT**, con el #89 y el
+#92. Acá se dijo «pendiente» durante un día porque el bundle se miró antes de
+esa hora y no se volvió a mirar. **Antes de decir que algo no se desplegó, se
+vuelve a bajar el bundle y se busca el cambio.**
+
+**Las métricas de UA MX están en
+`docs/AUDITORIA-2026-11-18-metricas-disponibles-de-ua.md`** (#96): 41 en el
+catálogo de QA, 31 con cifra en octubre y noviembre, ocho repetidas en inglés
+por la semilla, y lo que falta por equipo.
+
+**«Cargar meses» de enero a septiembre en UA MX lo corrió el agente** el
+2026-11-18, autorizado por el humano. Se vio terminar de enero a junio: enero,
+febrero y marzo con 33 métricas al día, abril con 31, mayo con 29 y junio con 30.
+**Julio, agosto y septiembre no se llegaron a ver**: la extensión de Chrome se
+desconectó a mitad de la carga. Se comprueba en Salud de feeds → Historial de
+cargas antes de volver a lanzarlos.
+
+**Las cards en escalera de la consola eran nuestras**, y el #95 las arregla: la
+consola dejaba la fila a CSS, y CSS coloca distinto que el editor. **Está en
+`main` y no en QA: falta pedir su despliegue.**
+
+**Sin preguntar todavía al backend**: si un mes cerrado tiene que pasar a
+«dato viejo» a los tres días de calculado.
+
+### ⇩ el 2026-11-17 · el editor de QA no dibujaba, y el despliegue está pedido
 
 **En el editor de UA MX ningún panel mostraba su gráfico**, y no se podía
 cuadrar posición ni tamaño. Eran dos causas, medidas en QA:
