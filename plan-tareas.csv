@@ -813,7 +813,7 @@ F6.5,Front · Fase 6 — Métricas por cliente y reporte programado,Front,6,Mét
 • Qué devuelve un reporte a borrador y cómo se le avisa a quien lo edita (B6.3).
 • Los seis estados de §8 en cada pantalla: cargando, vacío, degradado, bloqueado, sin permiso y error. Entre ellos, una respuesta que no se pudo generar y una pregunta sin dato (D6.4).
 • La lista de pantallas a dibujar, con lo que se toma del brief de Propuesta · Crecimiento · 2 —el correo, «lo que el brief no hace», la hora del cliente— y lo que cambia: quién programa, quién escribe las preguntas y la validación antes de activar.
-• Dónde viven las pantallas dentro de la administración, y cómo se llega desde la ficha del cliente.",parcial,si,,equipo:front fase:6 estado:parcial nueva
+• Dónde viven las pantallas dentro de la administración, y cómo se llega desde la ficha del cliente.",hecho,si,,equipo:front fase:6 estado:hecho nueva
 F6.6,Front · Fase 6 — Métricas por cliente y reporte programado,Front,6,Métricas por cliente y reporte programado,"Los reportes de un cliente, en administración","La lista de reportes del cliente activo: nombre, estado, destinatarios, cuándo sale, último envío y su resultado.","• Un admin ve sólo su cliente. Un superadmin ve el cliente de trabajo, y cambiarlo cambia la lista, igual que el resto de la administración.
 • Un destinatario externo se distingue de un usuario.
 • Pausar y borrar disparan su llamada; borrar pide confirmación y va con <Accion variante=""peligro"">.
