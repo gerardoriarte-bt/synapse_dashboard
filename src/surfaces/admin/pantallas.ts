@@ -25,6 +25,10 @@ export const PANTALLAS = [
   { id: 'usuarios', ruta: '/admin/usuarios', nombre: 'Usuarios', alcance: 'plataforma' },
   { id: 'catalogo', ruta: '/admin/catalogo', nombre: 'Catálogo de métricas', alcance: 'tenant' },
   { id: 'feeds', ruta: '/admin/feeds', nombre: 'Salud de feeds', alcance: 'tenant' },
+  /** **Reportes por correo** · F6.6, 2026-11-18. De cliente, como Catálogo y
+   *  Feeds: la barra del cliente activo cambia la lista (§PEN:A7, la nota de la
+   *  lista). El dibujo la suma al navbar de administración. */
+  { id: 'reportes', ruta: '/admin/reportes', nombre: 'Reportes', alcance: 'tenant' },
 ] as const
 
 export type PantallaId = (typeof PANTALLAS)[number]['id']

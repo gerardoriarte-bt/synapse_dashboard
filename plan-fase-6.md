@@ -310,9 +310,9 @@ viernes el 2026-10-05.
 **Criterio de aceptación.** `npm run humo` pasa las rutas nuevas campo por
 campo, y cada una lleva `x-verificado-en`.
 
-### ➕ F6.5 ⚠️ El plan de diseño: el mapa de UX del reporte programado
+### ➕ F6.5 ✅ El plan de diseño: el mapa de UX del reporte programado
 
-**Escrito el 2026-11-03**: `docs/PROPUESTA-2026-11-03-reporte-programado-mapa-de-ux.md`, con doce recorridos, siete pantallas (V1–V7) y los estados de §8 de cada una. **Producto contestó P6.1, P6.2 y P6.4–P6.7 el 2026-11-04**, y el mapa ya las lleva; P6.3 sigue abierta y no lo frena. **Dibujado el 2026-11-04** en `design/Synapse_v2.pen`: las ocho pantallas `A7 · …` (V1–V7 más el vacío de la lista), cada una con su nota, en la fila de administración desde x = 24250. **Ajustado el 2026-11-18** a P6.1, P6.2 y P6.5 revisadas: «Diaria» en la frecuencia, tope de 50, y agregar un externo ya no vuelve a borrador (lista, editor y advertencia). Exportado a PNG y mirado antes de commitear. Falta que diseño las revise.
+**Escrito el 2026-11-03**: `docs/PROPUESTA-2026-11-03-reporte-programado-mapa-de-ux.md`, con doce recorridos, siete pantallas (V1–V7) y los estados de §8 de cada una. **Producto contestó P6.1, P6.2 y P6.4–P6.7 el 2026-11-04**, y el mapa ya las lleva; P6.3 sigue abierta y no lo frena. **Dibujado el 2026-11-04** en `design/Synapse_v2.pen`: las ocho pantallas `A7 · …` (V1–V7 más el vacío de la lista), cada una con su nota, en la fila de administración desde x = 24250. **Ajustado el 2026-11-18** a P6.1, P6.2 y P6.5 revisadas: «Diaria» en la frecuencia, tope de 50, y agregar un externo ya no vuelve a borrador (lista, editor y advertencia). Exportado a PNG y mirado antes de commitear. **Ajustado otra vez el 2026-11-18** a la auditoría de UX (`docs/AUDITORIA-2026-11-18-ux-de-reportes.md`): «Rol» en el editor, el camino a validar al guardar, «Activar» como la acción bloqueada en la validación, el pie de la lista y la nota sin «Borrar». **Y dibujado lo que se había construido sin dibujo**: el paso que sigue destacado y el aviso de lo hecho en la lista, más dos pantallas nuevas, «A7 · Editor · salir sin guardar» y «A7 · Reportes · no cargó». **Cerrada el 2026-11-18**: el diseño se hace en este repositorio (decisión humana de ese día), así que no queda una revisión aparte.
 
 **Descripción.** Antes de dibujar, mapear la experiencia de punta a punta (D6.5).
 Lo que se entrega es una `PROPUESTA-*` para diseño, y con ella se pide el dibujo
@@ -336,7 +336,8 @@ en el `.pen`.
 - Dónde viven las pantallas dentro de la administración, y cómo se llega desde
   la ficha del cliente.
 
-### ➕ F6.6 ⬜ Los reportes de un cliente, en administración · 🔒 depende de F6.4 y del dibujo de F6.5
+### ➕ F6.6 ⚠️ Los reportes de un cliente, en administración · 🔒 depende de F6.4 y del dibujo de F6.5
+**Construida el 2026-11-18 contra MSW** —las rutas no están en QA—: `src/surfaces/admin/ReportList.tsx` y `ReportRuns.tsx`, con `§PEN:A7`, miradas en `dev:mock`. Pausar y reanudar disparan su llamada; **no hay borrar** (P6.9). El historial de envíos se abre, **sin rebotes ni resultado por destinatario**, que el servicio no guarda. Falta probarla en QA.
 **Descripción.** La lista de reportes del cliente activo: nombre, estado,
 destinatarios, cuándo sale, último envío y su resultado.
 **Criterio de aceptación.**
@@ -348,7 +349,8 @@ destinatarios, cuándo sale, último envío y su resultado.
 - El historial de envíos de un reporte se puede abrir, con rebotes y fallos.
 - Se construye mirando el dibujo, con su ancla `§PEN:`.
 
-### ➕ F6.7 ⬜ Crear y editar un reporte · 🔒 depende de F6.4 y del dibujo de F6.5
+### ➕ F6.7 ⚠️ Crear y editar un reporte · 🔒 depende de F6.4 y del dibujo de F6.5
+**Construida el 2026-11-18 contra MSW**: `src/surfaces/admin/ReportEditor.tsx`. Los cinco criterios tienen su prueba en `tests/surfaces/admin/reportes.test.tsx`, y el aviso del externo sigue P6.1 revisada: avisa a los superadmins sin volver a borrador. **Suma «Rol»**, que el servicio exige y el dibujo no tiene. Falta probarla en QA.
 **Descripción.** El editor: nombre, de tres a cinco preguntas, destinatarios
 —usuarios del cliente o correos externos—, frecuencia, día y hora.
 **Criterio de aceptación.**
@@ -363,7 +365,8 @@ destinatarios, cuándo sale, último envío y su resultado.
 - Las tres preguntas que se proponen al crear un reporte las define producto;
   hasta entonces el editor arranca vacío.
 
-### ➕ F6.10 ⬜ Validar las respuestas antes de activar · 🔒 depende de F6.4 y del dibujo de F6.5
+### ➕ F6.10 ⚠️ Validar las respuestas antes de activar · 🔒 depende de F6.4 y del dibujo de F6.5
+**Construida el 2026-11-18 contra MSW**: `src/surfaces/admin/ReportValidation.tsx`. Activar no está disponible hasta validar, y la prueba verifica que DISPARE. **Falta lo que el servicio no manda todavía**: la fuente, el período y la frescura de cada cifra, la pregunta sin dato y «Enviar una prueba», pedidos en `docs/MENSAJE-2026-11-18-backend-ajustes-de-reportes.md`. El botón de prueba no se pinta: no hay a qué llamar.
 **Descripción.** La pantalla donde el admin o el superadmin lee las respuestas
 que el reporte daría hoy, con datos reales, y recién entonces lo activa (D6.4).
 **Criterio de aceptación.**

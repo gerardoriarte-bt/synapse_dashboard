@@ -813,22 +813,22 @@ F6.5,Front · Fase 6 — Métricas por cliente y reporte programado,Front,6,Mét
 • Qué devuelve un reporte a borrador y cómo se le avisa a quien lo edita (B6.3).
 • Los seis estados de §8 en cada pantalla: cargando, vacío, degradado, bloqueado, sin permiso y error. Entre ellos, una respuesta que no se pudo generar y una pregunta sin dato (D6.4).
 • La lista de pantallas a dibujar, con lo que se toma del brief de Propuesta · Crecimiento · 2 —el correo, «lo que el brief no hace», la hora del cliente— y lo que cambia: quién programa, quién escribe las preguntas y la validación antes de activar.
-• Dónde viven las pantallas dentro de la administración, y cómo se llega desde la ficha del cliente.",parcial,si,,equipo:front fase:6 estado:parcial nueva
+• Dónde viven las pantallas dentro de la administración, y cómo se llega desde la ficha del cliente.",hecho,si,,equipo:front fase:6 estado:hecho nueva
 F6.6,Front · Fase 6 — Métricas por cliente y reporte programado,Front,6,Métricas por cliente y reporte programado,"Los reportes de un cliente, en administración","La lista de reportes del cliente activo: nombre, estado, destinatarios, cuándo sale, último envío y su resultado.","• Un admin ve sólo su cliente. Un superadmin ve el cliente de trabajo, y cambiarlo cambia la lista, igual que el resto de la administración.
 • Un destinatario externo se distingue de un usuario.
 • Pausar y borrar disparan su llamada; borrar pide confirmación y va con <Accion variante=""peligro"">.
 • El historial de envíos de un reporte se puede abrir, con rebotes y fallos.
-• Se construye mirando el dibujo, con su ancla §PEN:.",pendiente,si,F6.4 y del dibujo de F6.5,equipo:front fase:6 estado:pendiente nueva bloqueada
+• Se construye mirando el dibujo, con su ancla §PEN:.",parcial,si,F6.4 y del dibujo de F6.5,equipo:front fase:6 estado:parcial nueva bloqueada
 F6.7,Front · Fase 6 — Métricas por cliente y reporte programado,Front,6,Métricas por cliente y reporte programado,Crear y editar un reporte,"El editor: nombre, de tres a cinco preguntas, destinatarios —usuarios del cliente o correos externos—, frecuencia, día y hora.","• No deja guardar con menos de tres preguntas, más de cinco o una vacía. Y el 400 del servicio también se muestra, porque la regla es suya.
 • Al agregar un correo externo, dice antes de guardar que los superadmins van a recibir una advertencia (D6.3).
 • La hora se muestra con la zona del cliente escrita al lado, no la del navegador. Es la distinción de las dos zonas de CLAUDE.md.
 • Editar una pregunta de un reporte activo avisa que vuelve a borrador antes de guardar, no después.
-• Las tres preguntas que se proponen al crear un reporte las define producto; hasta entonces el editor arranca vacío.",pendiente,si,F6.4 y del dibujo de F6.5,equipo:front fase:6 estado:pendiente nueva bloqueada
+• Las tres preguntas que se proponen al crear un reporte las define producto; hasta entonces el editor arranca vacío.",parcial,si,F6.4 y del dibujo de F6.5,equipo:front fase:6 estado:parcial nueva bloqueada
 F6.10,Front · Fase 6 — Métricas por cliente y reporte programado,Front,6,Métricas por cliente y reporte programado,Validar las respuestas antes de activar,"La pantalla donde el admin o el superadmin lee las respuestas que el reporte daría hoy, con datos reales, y recién entonces lo activa (D6.4).","• Pide las respuestas a la ruta que las genera sin enviar (B6.4) y las muestra como saldrían en el correo, con la fuente, el período y la frescura de cada cifra.
 • Activar no está disponible hasta validar, y validar registra quién y cuándo.
 • Una pregunta sin dato se ve declarada. El admin decide si activa igual o cambia la pregunta; la pantalla no la esconde.
 • Se puede volver a generar, y «Enviar una prueba» dispara su llamada y dice a quién se mandó.
-• La prueba verifica que activar DISPARE la llamada, no que el botón exista.",pendiente,si,F6.4 y del dibujo de F6.5,equipo:front fase:6 estado:pendiente nueva bloqueada
+• La prueba verifica que activar DISPARE la llamada, no que el botón exista.",parcial,si,F6.4 y del dibujo de F6.5,equipo:front fase:6 estado:parcial nueva bloqueada
 F6.8,Front · Fase 6 — Métricas por cliente y reporte programado,Front,6,Métricas por cliente y reporte programado,Los colores del producto en el correo,"Un correo no lee variables CSS, así que la plantilla necesita los colores escritos. Se generan desde el .pen, igual que tokens.css.","• Un archivo generado con los tokens que la plantilla usa, con su chequeo de deriva en la puerta.
 • Se respetan las mismas reglas que en pantalla: sin naranja en datos, deltas en neutro, sin ámbar.
 • Se entrega al backend, que es dueño de la plantilla en internal/adapters/email/templates/.",pendiente,si,,equipo:front fase:6 estado:pendiente nueva

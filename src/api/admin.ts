@@ -1169,6 +1169,67 @@ export const adminApi = {
   },
 
   /** Las fuentes del cliente y su salud · B2.13, servida desde `1e080ee`. */
+  /* ── LOS REPORTES POR CORREO · F6.6, F6.7 y F6.10 · desde `49ebb26` ──────
+   *
+   * Transcriptos al cable en F6.4 desde `fb3ca0c`; **todavía no están en QA**,
+   * así que estas llamadas se construyeron contra MSW. Nada se borra: pausar
+   * es la baja (P6.9). */
+  reportes: async (tenantId: string): Promise<Reporte[]> =>
+    (await pedir<A['Report'][]>(`/admin/tenants/${encodeURIComponent(tenantId)}/reports`)).map(adaptarReporte),
+
+  crearReporte: async (tenantId: string, r: ReporteParaGuardar): Promise<Reporte> =>
+    adaptarReporte(
+      await pedir<A['Report']>(`/admin/tenants/${encodeURIComponent(tenantId)}/reports`, {
+        method: 'POST',
+        body: JSON.stringify(reporteAlCable(r)),
+      }),
+    ),
+
+  /** **Parcial**, como el `PUT` de ellos: sólo viaja lo que cambió. Mandar las
+   *  preguntas sin tocarlas no lo devuelve a borrador —comparan—, pero mandar
+   *  menos es lo que el contrato describe. */
+  editarReporte: async (tenantId: string, reporteId: string, cambio: Partial<ReporteParaGuardar>): Promise<Reporte> =>
+    adaptarReporte(
+      await pedir<A['Report']>(
+        `/admin/tenants/${encodeURIComponent(tenantId)}/reports/${encodeURIComponent(reporteId)}`,
+        { method: 'PUT', body: JSON.stringify(reporteAlCable(cambio)) },
+      ),
+    ),
+
+  /** **Genera las respuestas y, si todas contestan, lo deja validado.** No hay
+   *  forma de ver las respuestas sin validar: la ruta hace las dos cosas. */
+  validarReporte: async (tenantId: string, reporteId: string): Promise<ValidacionDeReporte> => {
+    const w = await pedir<A['ReportValidation']>(
+      `/admin/tenants/${encodeURIComponent(tenantId)}/reports/${encodeURIComponent(reporteId)}/validate`,
+      { method: 'POST' },
+    )
+    return { reporte: adaptarReporte(w.report), validado: w.validated, respuestas: w.answers.map(adaptarRespuesta) }
+  },
+
+  activarReporte: async (tenantId: string, reporteId: string): Promise<Reporte> =>
+    adaptarReporte(
+      await pedir<A['Report']>(
+        `/admin/tenants/${encodeURIComponent(tenantId)}/reports/${encodeURIComponent(reporteId)}/activate`,
+        { method: 'POST' },
+      ),
+    ),
+
+  pausarReporte: async (tenantId: string, reporteId: string): Promise<Reporte> =>
+    adaptarReporte(
+      await pedir<A['Report']>(
+        `/admin/tenants/${encodeURIComponent(tenantId)}/reports/${encodeURIComponent(reporteId)}/pause`,
+        { method: 'POST' },
+      ),
+    ),
+
+  /** Las últimas 20 validaciones y envíos · el tope es del servicio. */
+  corridasDeReporte: async (tenantId: string, reporteId: string): Promise<CorridaDeReporte[]> =>
+    (
+      await pedir<A['ReportRun'][]>(
+        `/admin/tenants/${encodeURIComponent(tenantId)}/reports/${encodeURIComponent(reporteId)}/runs`,
+      )
+    ).map(adaptarCorridaDeReporte),
+
   fuentes: async (tenantId: string): Promise<Fuente[]> =>
     (await pedir<WireFeed[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/feeds`)).map(
       adaptarFuente,
@@ -1714,5 +1775,180 @@ export function adaptAgent(w: WireAgent): Agente {
     activo: w.is_active,
     vistas: w.semantic_views.length,
     editadoEn: w.updated_at,
+  }
+}
+
+/* ── LOS REPORTES POR CORREO · F6.6, F6.7 y F6.10 ─────────────────────────────
+ *
+ * Del cable de `49ebb26`, transcripto en F6.4. **Las claves del contrato no se
+ * traducen; los nombres de acá, sí**, como en el resto de la administración. */
+
+export type FrecuenciaDeReporte = 'diaria' | 'semanal' | 'mensual'
+export type EstadoDeReporte = 'borrador' | 'validado' | 'activo' | 'pausado'
+
+const FRECUENCIAS: Record<string, FrecuenciaDeReporte> = { daily: 'diaria', weekly: 'semanal', monthly: 'mensual' }
+const FRECUENCIAS_AL_CABLE: Record<FrecuenciaDeReporte, 'daily' | 'weekly' | 'monthly'> = {
+  diaria: 'daily',
+  semanal: 'weekly',
+  mensual: 'monthly',
+}
+const ESTADOS_DE_REPORTE: Record<string, EstadoDeReporte> = {
+  draft: 'borrador',
+  validated: 'validado',
+  active: 'activo',
+  paused: 'pausado',
+}
+
+/** Un destinatario **activo**: la lista ya viene filtrada por el servicio. Un
+ *  usuario suspendido sigue en la lista —deja de recibir al enviar—, y eso no
+ *  se ve acá: la ficha no trae el estado del usuario. */
+export type DestinatarioDeReporte = {
+  id: string
+  tipo: 'usuario' | 'externo'
+  /** Sólo en un usuario. */
+  usuarioId: string | null
+  /** Sólo en un externo · el de un usuario se resuelve con `usuarioId`. */
+  correo: string
+  /** **Cuándo se avisó a los superadmins** · sólo en un externo. `null` si el
+   *  aviso no salió, que el servicio deja en el log. */
+  avisadoEn: string | null
+  agregadoEn: string
+}
+
+export type Reporte = {
+  id: string
+  clienteId: string
+  nombre: string
+  /** **El rol decide qué datos ve el reporte**: las respuestas las da el agente
+   *  de este rol, y un usuario destinatario tiene que tenerlo. */
+  rolId: string
+  preguntas: string[]
+  frecuencia: FrecuenciaDeReporte
+  /** 0 es domingo · sólo en semanal. */
+  diaDeSemana: number | null
+  /** 1 a 28 · sólo en mensual. */
+  diaDelMes: number | null
+  /** `HH:MM` en la zona del **cliente**, no la del navegador. */
+  hora: string
+  estado: EstadoDeReporte
+  proximoEnvio: string | null
+  ultimoEnvio: string | null
+  validadoEn: string | null
+  validadoPor: string | null
+  creadoEn: string
+  actualizadoEn: string
+  destinatarios: DestinatarioDeReporte[]
+}
+
+/** Lo que el admin escribe · el alta lo pide entero y la edición, parcial. */
+export type ReporteParaGuardar = {
+  nombre: string
+  rolId: string
+  preguntas: string[]
+  frecuencia: FrecuenciaDeReporte
+  diaDeSemana?: number
+  diaDelMes?: number
+  hora: string
+  usuarioIds: string[]
+  correos: string[]
+}
+
+/** **Sin fuente, período ni frescura**: el servicio todavía no los manda. Está
+ *  pedido en `docs/MENSAJE-2026-11-18-backend-ajustes-de-reportes.md`, y la
+ *  pantalla lo declara en vez de inventarlos. */
+export type RespuestaDeReporte = {
+  pregunta: string
+  respuesta: string
+  /** `null` cuando contestó · el servicio omite el campo. */
+  error: string | null
+}
+
+export type ValidacionDeReporte = {
+  reporte: Reporte
+  validado: boolean
+  respuestas: RespuestaDeReporte[]
+}
+
+export type CorridaDeReporte = {
+  id: string
+  tipo: 'validacion' | 'envio'
+  estado: 'ok' | 'parcial' | 'error'
+  respuestas: RespuestaDeReporte[]
+  /** Los correos a los que salió · vacío en una validación. **No hay resultado
+   *  por destinatario ni rebotes**: el servicio guarda la lista y un error. */
+  enviadoA: string[]
+  /** Quién la disparó · `null` en un envío del programador. */
+  actorId: string | null
+  error: string
+  creadaEn: string
+}
+
+function adaptarDestinatario(w: A['ReportRecipient']): DestinatarioDeReporte {
+  return {
+    id: w.id,
+    tipo: w.kind === 'external' ? 'externo' : 'usuario',
+    usuarioId: w.user_id ?? null,
+    correo: w.email ?? '',
+    avisadoEn: w.notified_at ?? null,
+    agregadoEn: w.created_at,
+  }
+}
+
+export function adaptarReporte(w: A['Report']): Reporte {
+  return {
+    id: w.id,
+    clienteId: w.tenant_id,
+    nombre: w.name,
+    rolId: w.role_id,
+    preguntas: w.questions,
+    frecuencia: FRECUENCIAS[w.frequency] ?? 'semanal',
+    diaDeSemana: w.weekday ?? null,
+    diaDelMes: w.month_day ?? null,
+    hora: w.send_time,
+    estado: ESTADOS_DE_REPORTE[w.status] ?? 'borrador',
+    proximoEnvio: w.next_run_at ?? null,
+    ultimoEnvio: w.last_sent_at ?? null,
+    validadoEn: w.validated_at ?? null,
+    validadoPor: w.validated_by ?? null,
+    creadoEn: w.created_at,
+    actualizadoEn: w.updated_at,
+    destinatarios: w.recipients.map(adaptarDestinatario),
+  }
+}
+
+function adaptarRespuesta(w: A['ReportAnswer']): RespuestaDeReporte {
+  return {
+    pregunta: w.question,
+    respuesta: w.answer,
+    error: w.error === undefined || w.error === '' ? null : w.error,
+  }
+}
+
+function adaptarCorridaDeReporte(w: A['ReportRun']): CorridaDeReporte {
+  return {
+    id: w.id,
+    tipo: w.kind === 'validation' ? 'validacion' : 'envio',
+    estado: w.status === 'ok' ? 'ok' : w.status === 'partial' ? 'parcial' : 'error',
+    respuestas: (w.answers ?? []).map((a) => adaptarRespuesta(a as A['ReportAnswer'])),
+    enviadoA: w.sent_to,
+    actorId: w.actor_user_id ?? null,
+    error: w.error ?? '',
+    creadaEn: w.created_at,
+  }
+}
+
+/** **Sólo lo que llega**: una edición parcial no manda lo que no tocó. El día
+ *  que no corresponde a la frecuencia no viaja, y el servicio lo exige así. */
+function reporteAlCable(r: Partial<ReporteParaGuardar>): Record<string, unknown> {
+  return {
+    ...(r.nombre === undefined ? {} : { name: r.nombre }),
+    ...(r.rolId === undefined ? {} : { role_id: r.rolId }),
+    ...(r.preguntas === undefined ? {} : { questions: r.preguntas }),
+    ...(r.frecuencia === undefined ? {} : { frequency: FRECUENCIAS_AL_CABLE[r.frecuencia] }),
+    ...(r.diaDeSemana === undefined ? {} : { weekday: r.diaDeSemana }),
+    ...(r.diaDelMes === undefined ? {} : { month_day: r.diaDelMes }),
+    ...(r.hora === undefined ? {} : { send_time: r.hora }),
+    ...(r.usuarioIds === undefined ? {} : { user_ids: r.usuarioIds }),
+    ...(r.correos === undefined ? {} : { emails: r.correos }),
   }
 }
