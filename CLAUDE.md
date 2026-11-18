@@ -596,10 +596,15 @@ cargas antes de volver a lanzarlos.
 
 **Las cards en escalera de la consola eran nuestras**, y el #95 las arregla: la
 consola dejaba la fila a CSS, y CSS coloca distinto que el editor. **Está en
-`main` y no en QA: falta pedir su despliegue.**
+`main` y no en QA.**
 
-**Sin preguntar todavía al backend**: si un mes cerrado tiene que pasar a
-«dato viejo» a los tres días de calculado.
+**`docs/MENSAJE-2026-11-18-backend-desplegar-y-meses-cerrados.md` pide
+desplegar `main` (`043cddc`) y pregunta si un mes cerrado tiene que pasar a
+«dato viejo»**, y **se envió el 2026-11-18, lo mandó el humano**. **Lo que
+sigue es esperar, no volver a pedirlo.** Revisado después de enviado: dice que
+los meses cerrados «ya no cambian», y el LTV y el nCAC por cohorte sí cambian.
+Se le propuso al humano una aclaración; si no sale, se dice al leer la
+respuesta.
 
 ### ⇩ el 2026-11-17 · el editor de QA no dibujaba, y el despliegue está pedido
 
