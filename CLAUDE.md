@@ -583,23 +583,31 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-11-20 · Terpel conectado, con su dashboard
+### ⇩ ACÁ SE PARÓ · 2026-11-20 · Terpel en tres clientes
 
 **Terpel ya consulta como `SVC_SYNAPSE_TERPEL_COMBS`**: datos registró la
 llave y el agente cambió la conexión desde la ficha, autorizado por el humano.
-Almacén virtual: Combustibles en `WH_BT_TERPEL_COMBS_BI`, Lubricantes en
-`WH_BT_TERPEL_LUBS_BI`. De julio a noviembre, cada mes da 8 disponibles, 2
-bloqueadas (ATL) y 12 con error (métricas de UA en su catálogo).
+Cada mes de julio a noviembre da 8 disponibles, 2 bloqueadas (ATL) y 12 con
+error (la semilla de UA).
 
-**El dashboard de Terpel es «Terpel · Pauta digital»**, aplicado desde
-`dev/dashboards/terpel.json`, y los cinco roles ven solo ese. Overview no se
-puede borrar: un rol con la lista de dashboards vacía lo vuelve a ver.
+**Decisión humana del 2026-11-20: cada línea de Terpel es un cliente.** La
+pauta mezclaba Combustibles, Lubricantes y Lealtad en una vista. En QA:
 
-**La pauta mezcla Combustibles, Lubricantes y Lealtad**, así que nada se
-rotula «Combustibles». Lo que falta del backend —agente de datos explícito,
-el chat por rol, el filtro por familia y las 12 de UA— está en
-`docs/MENSAJE-2026-11-20-backend-terpel-agentes-y-lineas.md`, y **lo manda el
-humano**.
+| Cliente | Id | Estado |
+|---|---|---|
+| Terpel Combustibles | `68d48f6c…` | El de siempre, renombrado. Dashboard «Terpel · Pauta digital», con cifra, que todavía suma las tres líneas |
+| Terpel Lubricantes | `1f578650…` | Llave generada, 3 roles y 3 agentes. Espera a datos |
+| Terpel Lealtad | `95ac64ae…` | Llave generada, 3 roles. Sin agente: datos dice dónde vive |
+
+**Los dos nuevos están en `UTC`**: QA rechaza toda zona IANA (falta `tzdata`
+en la imagen). Cuando el backend lo corrija, se les pone `America/Bogota`.
+**Un agente por rol** porque el chat elige así; por eso son tres iguales.
+
+**Los dos mensajes los manda el humano**, y el de datos lleva las públicas,
+que se copian de cada ficha: `docs/MENSAJE-2026-11-20-datos-terpel-tres-clientes.md`
+y `docs/MENSAJE-2026-11-20-backend-terpel-tres-clientes.md`. Después:
+conectar, cargar meses, aplicar `dev/dashboards/terpel.json` en los dos
+nuevos y mover usuarios, que hoy no pueden estar en dos clientes.
 
 **Nuestro, sin hacer**: la tabla de campañas no entra en 8 columnas y las
 celdas se pisan, y el aviso agrupado de errores dice «el resto cargó
