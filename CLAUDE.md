@@ -583,6 +583,28 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-11-20 · Terpel conectado, con su dashboard
+
+**Terpel ya consulta como `SVC_SYNAPSE_TERPEL_COMBS`**: datos registró la
+llave y el agente cambió la conexión desde la ficha, autorizado por el humano.
+Almacén virtual: Combustibles en `WH_BT_TERPEL_COMBS_BI`, Lubricantes en
+`WH_BT_TERPEL_LUBS_BI`. De julio a noviembre, cada mes da 8 disponibles, 2
+bloqueadas (ATL) y 12 con error (métricas de UA en su catálogo).
+
+**El dashboard de Terpel es «Terpel · Pauta digital»**, aplicado desde
+`dev/dashboards/terpel.json`, y los cinco roles ven solo ese. Overview no se
+puede borrar: un rol con la lista de dashboards vacía lo vuelve a ver.
+
+**La pauta mezcla Combustibles, Lubricantes y Lealtad**, así que nada se
+rotula «Combustibles». Lo que falta del backend —agente de datos explícito,
+el chat por rol, el filtro por familia y las 12 de UA— está en
+`docs/MENSAJE-2026-11-20-backend-terpel-agentes-y-lineas.md`, y **lo manda el
+humano**.
+
+**Nuestro, sin hacer**: la tabla de campañas no entra en 8 columnas y las
+celdas se pisan, y el aviso agrupado de errores dice «el resto cargó
+normalmente» cuando fallaron todos.
+
 ### ⇩ ACÁ SE PARÓ · 2026-11-17 · el editor de QA no dibujaba, y el despliegue está pedido
 
 **En el editor de UA MX ningún panel mostraba su gráfico**, y no se podía
