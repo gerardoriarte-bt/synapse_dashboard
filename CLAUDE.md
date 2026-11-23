@@ -583,6 +583,28 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-11-23 · QA listo para desplegar, y alineado con el backend
+
+**El objetivo, decidido por el humano: dejar QA listo para ir a producción.**
+**El despliegue de las dos partes lo hace el backend.**
+
+**`main` está en `fd3d239`** (#118): junta #108 y #113 a #117, que salieron de
+la validación de UA MX en `docs/AUDITORIA-2026-11-23-ua-mx-funcional-y-ux.md`.
+
+**Alineado con `fb3ca0c`**: `npm run humo` contra su binario levantado en local
+dio verde en las rutas de consola y de administración. Las 12 rutas de consola
+medidas pasaron a `x-verificado-en: fb3ca0c`; quedan 3 que el humo saltea.
+
+**El pedido de despliegue** es
+`docs/MENSAJE-2026-11-23-backend-desplegar-qa.md`, y **lo manda el humano**.
+Lo bloqueante es `tzdata` en su imagen. **Lo que sigue es esperar**, y
+después recorrer QA con lo que dice su §3.
+
+**En QA ya quedó aplicado** (agente, autorizado por el humano):
+- UA MX: Overview fuera, Admin con agente, diciembre de 2025 cargado, y la
+  v17 con «Resumen del mes», las preguntas cortas y `smallmult` en las dos
+  multiseries.
+- Terpel: separado en tres clientes. Ver el PR #109.
 ### ⇩ ACÁ SE PARÓ · 2026-11-20 · Terpel en tres clientes
 
 **Terpel ya consulta como `SVC_SYNAPSE_TERPEL_COMBS`**: datos registró la
