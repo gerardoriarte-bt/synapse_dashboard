@@ -53,7 +53,7 @@ function montar() {
 }
 
 async function abrirCatalogo() {
-  await screen.findByRole('button', { name: /^Under Armour México · / })
+  await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
   await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
   await screen.findByRole('table')
 }
@@ -175,8 +175,8 @@ describe('vacío de ALTA · el cliente es nuevo', () => {
       http.get(`${API}/admin/tenants/:id/catalog`, () => ok([])),
     )
     montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
-    await userEvent.click(screen.getByRole('button', { name: /^Under Armour México · / }))
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
+    await userEvent.click(screen.getByRole('button', { name: /^Under Armour México( · |$)/ }))
 
     // **El literal del `.pen`, palabra por palabra** · corregido en la auditoría
     // del 2026-09-30. Acá se afirmaban dos labels nuestros —«Este cliente

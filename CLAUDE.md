@@ -583,7 +583,59 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
-### ⇩ ACÁ SE PARÓ · 2026-11-18 · las métricas de UA, mes por mes, y las cards en escalera
+### ⇩ ACÁ SE PARÓ · 2026-11-23 · QA listo para desplegar, y alineado con el backend
+
+**El objetivo, decidido por el humano: dejar QA listo para ir a producción.**
+**El despliegue de las dos partes lo hace el backend.**
+
+**`main` está en `fd3d239`** (#118): junta #108 y #113 a #117, que salieron de
+la validación de UA MX en `docs/AUDITORIA-2026-11-23-ua-mx-funcional-y-ux.md`.
+
+**Alineado con `fb3ca0c`**: `npm run humo` contra su binario levantado en local
+dio verde en las rutas de consola y de administración. Las 12 rutas de consola
+medidas pasaron a `x-verificado-en: fb3ca0c`; quedan 3 que el humo saltea.
+
+**El pedido de despliegue** es
+`docs/MENSAJE-2026-11-23-backend-desplegar-qa.md`, y **lo manda el humano**.
+Lo bloqueante es `tzdata` en su imagen. **Lo que sigue es esperar**, y
+después recorrer QA con lo que dice su §3.
+
+**En QA ya quedó aplicado** (agente, autorizado por el humano):
+- UA MX: Overview fuera, Admin con agente, diciembre de 2025 cargado, y la
+  v17 con «Resumen del mes», las preguntas cortas y `smallmult` en las dos
+  multiseries.
+- Terpel: separado en tres clientes. Ver el PR #109.
+### ⇩ ACÁ SE PARÓ · 2026-11-20 · Terpel en tres clientes
+
+**Terpel ya consulta como `SVC_SYNAPSE_TERPEL_COMBS`**: datos registró la
+llave y el agente cambió la conexión desde la ficha, autorizado por el humano.
+Cada mes de julio a noviembre da 8 disponibles, 2 bloqueadas (ATL) y 12 con
+error (la semilla de UA).
+
+**Decisión humana del 2026-11-20: cada línea de Terpel es un cliente.** La
+pauta mezclaba Combustibles, Lubricantes y Lealtad en una vista. En QA:
+
+| Cliente | Id | Estado |
+|---|---|---|
+| Terpel Combustibles | `68d48f6c…` | El de siempre, renombrado. Dashboard «Terpel · Pauta digital», con cifra, que todavía suma las tres líneas |
+| Terpel Lubricantes | `1f578650…` | Llave generada, 3 roles y 3 agentes. Espera a datos |
+| Terpel Lealtad | `95ac64ae…` | Llave generada, 3 roles. Sin agente: datos dice dónde vive |
+
+**Los dos nuevos están en `UTC`**: QA rechaza toda zona IANA (falta `tzdata`
+en la imagen). Cuando el backend lo corrija, se les pone `America/Bogota`.
+**Un agente por rol** porque el chat elige así; por eso son tres iguales.
+
+**Los dos mensajes los manda el humano**, y el de datos lleva las públicas,
+que se copian de cada ficha: `docs/MENSAJE-2026-11-20-datos-terpel-tres-clientes.md`
+y `docs/MENSAJE-2026-11-20-backend-terpel-tres-clientes.md`. Después:
+conectar, cargar meses, aplicar `dev/dashboards/terpel.json` en los dos
+nuevos y mover usuarios, que hoy no pueden estar en dos clientes.
+
+**Nuestro, sin hacer**: la tabla de campañas no entra en 8 columnas y las
+celdas se pisan, y el aviso agrupado de errores dice «el resto cargó
+normalmente» cuando fallaron todos.
+
+### ⇩ el 2026-11-18 · las métricas de UA, mes por mes, y las cards en escalera
 
 **El front de QA se desplegó el 2026-11-17 a las 22:56 GMT**, con el #89 y el
 #92. Acá se dijo «pendiente» durante un día porque el bundle se miró antes de

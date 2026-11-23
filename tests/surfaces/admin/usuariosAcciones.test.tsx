@@ -150,7 +150,7 @@ describe('las acciones DISPARAN, con el usuario y el cambio correctos', () => {
     const propia = fila('Ana')
     expect(within(propia).queryByRole('combobox')).toBeNull()
     expect(within(propia).queryByRole('button')).toBeNull()
-    expect(within(propia).getByText(/Vos · sin acciones sobre tu cuenta/)).toBeVisible()
+    expect(within(propia).getByText(/Tú · sin acciones sobre tu cuenta/)).toBeVisible()
   })
 
   it('sin manejador no se pinta ninguna acción', () => {

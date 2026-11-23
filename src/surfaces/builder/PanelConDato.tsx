@@ -50,7 +50,7 @@ export function PanelConDato({ panel, metrica, payload, sinDato, bloques, repert
         className="flex h-full flex-col justify-center gap-1 rounded-xl border border-dashed border-w4 bg-panel p-6"
       >
         <Label as="div">Sin métrica</Label>
-        <Ayuda>Elegí qué muestra este panel para verlo dibujado.</Ayuda>
+        <Ayuda>Elige qué muestra este panel para verlo dibujado.</Ayuda>
       </div>
     )
   }

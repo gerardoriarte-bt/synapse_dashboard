@@ -33,11 +33,17 @@ describe('la identidad del cliente', () => {
     expect(formaCortaVisible(TERPEL)).toBe('TERPEL CO')
   })
 
-  it('vacía o igual al nombre, el id corto: es lo único que separa dos clientes con el mismo nombre', () => {
-    expect(formaCortaVisible(UA)).toBe('E65F81AE')
-    expect(formaCortaVisible(SEMILLA)).toBe('11111111')
+  it('vacía o igual al nombre, NADA · el id es ruido para negocio · 2026-11-23', () => {
+    // Visto en QA: «2B5008F3» debajo de cada cliente sin forma corta.
+    expect(formaCortaVisible(UA)).toBe('')
+    expect(formaCortaVisible(UA, [UA, TERPEL])).toBe('')
     // `/config/me` cae al nombre cuando `label` está vacío.
-    expect(formaCortaVisible({ ...UA, formaCorta: 'under armour méxico' })).toBe('E65F81AE')
+    expect(formaCortaVisible({ ...UA, formaCorta: 'under armour méxico' })).toBe('')
+  })
+
+  it('el id corto vuelve sólo entre dos clientes con el mismo nombre: es lo único que los separa', () => {
+    expect(formaCortaVisible(UA, [UA, SEMILLA, TERPEL])).toBe('E65F81AE')
+    expect(formaCortaVisible(SEMILLA, [UA, SEMILLA])).toBe('11111111')
   })
 })
 
@@ -55,6 +61,12 @@ describe('la barra', () => {
     expect(screen.queryByRole('button', { name: /Cambiar de cliente/ })).toBeNull()
     rerender(<BarraDeCliente activo={UA} clientes={[UA, TERPEL]} />)
     expect(screen.queryByRole('button', { name: /Cambiar de cliente/ })).toBeNull()
+  })
+
+  it('sin forma corta no pinta nada debajo del nombre · 2026-11-23', () => {
+    render(<BarraDeCliente activo={UA} clientes={[UA, TERPEL]} />)
+    const barra = screen.getByRole('region', { name: 'Cliente activo' })
+    expect(barra.textContent).toBe('UAUnder Armour México')
   })
 
   it('mientras carga no afirma un cliente', () => {
@@ -91,7 +103,7 @@ describe('el selector', () => {
     const onElegir = vi.fn()
     render(<SelectorDeCliente clientes={[UA, TERPEL]} activo={UA.id} onElegir={onElegir} />)
     await userEvent.click(screen.getByRole('button', { name: /Cambiar de cliente/ }))
-    await userEvent.click(screen.getByRole('menuitemradio', { name: /E65F81AE/ }))
+    await userEvent.click(screen.getByRole('menuitemradio', { name: /Under Armour México/ }))
     expect(onElegir).not.toHaveBeenCalled()
   })
 

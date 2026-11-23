@@ -139,7 +139,7 @@ tags:
 
 paths:
   /config/me:
-    x-verificado-en: 7324b26
+    x-verificado-en: fb3ca0c
     get:
       tags: [config]
       operationId: getMe
@@ -162,7 +162,7 @@ paths:
         '500': { $ref: '#/components/responses/ServerError' }
 
   /config/catalog:
-    x-verificado-en: 7324b26
+    x-verificado-en: fb3ca0c
     get:
       tags: [config]
       operationId: getCatalog
@@ -186,7 +186,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/blocks:
-    x-verificado-en: 7324b26
+    x-verificado-en: fb3ca0c
     get:
       tags: [config]
       operationId: getBlocks
@@ -210,7 +210,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/plots:
-    x-verificado-en: 7324b26
+    x-verificado-en: fb3ca0c
     get:
       tags: [config]
       operationId: getPlots
@@ -261,7 +261,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/tabs/{tabId}:
-    x-verificado-en: 7324b26
+    x-verificado-en: fb3ca0c
     get:
       tags: [config]
       operationId: getTab
@@ -297,7 +297,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   /config/panels:batch:
-    x-verificado-en: 7324b26
+    x-verificado-en: fb3ca0c
     post:
       tags: [config]
       operationId: batchPanels
@@ -331,7 +331,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /config/me/preferences:
-    x-verificado-en: 7324b26
+    x-verificado-en: fb3ca0c
     put:
       tags: [config]
       operationId: updatePreferences
@@ -482,7 +482,7 @@ paths:
     # **Vive fuera de `/config`** pero va en este cable porque sólo la usa el
     # chat de la consola. No es el CRUD de `/admin/tenants/{id}/agents`, que
     # incluye inactivos y trae otro DTO.
-    x-verificado-en: 7324b26
+    x-verificado-en: fb3ca0c
     get:
       tags: [chat]
       operationId: listChatAgents
@@ -513,7 +513,7 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   /config/chat/threads:
-    x-verificado-en: 7324b26
+    x-verificado-en: fb3ca0c
     get:
       tags: [config]
       operationId: listChatThreads
@@ -576,7 +576,7 @@ paths:
 
   # ── B3.2 · las preguntas sugeridas · TRANSCRITO DE 82da946 ───────────────
   /config/chat/threads/{id}/messages:
-    x-verificado-en: 7324b26
+    x-verificado-en: fb3ca0c
     get:
       tags: [config]
       operationId: listChatMessages
@@ -668,7 +668,7 @@ paths:
           description: No existe, o no es de este usuario. `ErrUserThreadNotFound`.
 
   /config/panels/{panelId}/chat-suggestions:
-    x-verificado-en: 7324b26
+    x-verificado-en: fb3ca0c
     get:
       tags: [config]
       operationId: panelChatSuggestions
@@ -766,7 +766,7 @@ paths:
   # redactado, y `daily_trend` corrige su forma sembrada. Eso le toca a
   # `Payload.message` de `/config/panels:batch`, que sigue declarando `de881e1`.
   /config/panels/{panelId}/drilldown/dimensions:
-    x-verificado-en: 7324b26
+    x-verificado-en: fb3ca0c
     get:
       tags: [config]
       operationId: panelDrillDownDimensions

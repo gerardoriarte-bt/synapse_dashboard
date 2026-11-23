@@ -558,7 +558,7 @@ describe('B5 dibuja cada panel con su dato', () => {
     base([conDatos])
     montar()
     await abrirPreview()
-    expect(await screen.findByText(/48[.,]362/)).toBeInTheDocument()
+    expect(await screen.findByText(/48[.,]4K/)).toBeInTheDocument()
     expect(screen.getByText('Con el dato de 2026-10, como lo va a ver este rol.')).toBeInTheDocument()
   })
 
@@ -566,7 +566,7 @@ describe('B5 dibuja cada panel con su dato', () => {
     base([conDatos])
     montar()
     await abrirPreview()
-    await screen.findByText(/48[.,]362/)
+    await screen.findByText(/48[.,]4K/)
     expect(screen.getByText('El servidor no mandó dato para este panel.')).toBeInTheDocument()
   })
 })

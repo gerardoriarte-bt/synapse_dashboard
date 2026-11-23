@@ -163,8 +163,8 @@ const EN_OTRA_PANTALLA: Partial<Record<PantallaId, string>> = {
   // navegación (D3). F4.10 y F4.21 siguen siendo una desviación de §7.2, que las
   // describe como pantallas propias, y va dicha: configurar un panel exige
   // tenerlo elegido, y donde se lo elige es el lienzo.
-  metrica: 'La métrica de un panel se elige en el editor: tocá un panel y se abre su configuración a la derecha.',
-  grafico: 'El gráfico de un panel se elige en el editor: tocá un panel y se abre su configuración a la derecha.',
+  metrica: 'La métrica de un panel se elige en el editor: toca un panel y se abre su configuración a la derecha.',
+  grafico: 'El gráfico de un panel se elige en el editor: toca un panel y se abre su configuración a la derecha.',
 }
 
 /** Cuánto se espera sin editar antes de guardar solo. */
@@ -445,7 +445,7 @@ export function Builder() {
     guardar.error === null
       ? null
       : guardar.error instanceof ApiError && guardar.error.code === 'REGLA_LAYOUT_PUBLICADO'
-        ? 'Alguien publicó esta versión mientras la editabas · duplicala para conservar los cambios'
+        ? 'Alguien publicó esta versión mientras la editabas · duplícala para conservar los cambios'
         : (guardar.error.message === '' ? 'No se pudo guardar' : guardar.error.message)
 
   // Elegir otra versión no necesita limpiar el borrador: se descarta por
@@ -608,7 +608,7 @@ export function Builder() {
           setAvisoDelEditor(
             origen === 'publicada'
               ? `Se creó el borrador ${nuevo.versionId} a partir de la versión publicada ${versionDeTrabajo?.versionId ?? ''}. Lo publicado no cambia hasta que publiques.`
-              : `Se creó el borrador ${nuevo.versionId}, vacío. Empezá agregando una pestaña.`,
+              : `Se creó el borrador ${nuevo.versionId}, vacío. Empieza agregando una pestaña.`,
           )
           if (alAbrir) setPantalla('canvas')
         },
@@ -957,10 +957,10 @@ export function Builder() {
         semilla === null || publicada
           ? null
           : hayCambios
-            ? 'Para publicar, esperá a que se guarde y validá.'
+            ? 'Para publicar, espera a que se guarde y valida.'
             : validar.data?.valido === false
               ? 'El servidor encontró problemas.'
-              : 'Para publicar, validá.'
+              : 'Para publicar, valida.'
       }
       onPublicar={
         // El permiso es el mismo que usa `PublishBar`: el servidor dijo válido y
@@ -984,7 +984,7 @@ export function Builder() {
       ) : pantalla === 'canvas' ? (
         semilla === null && detalle.isError ? (
           // **Un error es un error, no una instrucción** · 2026-10-19. Hasta acá
-          // un detalle que no se podía leer caía en «Elegí un dashboard», con el
+          // un detalle que no se podía leer caía en «Elige un dashboard», con el
           // dashboard ya elegido en la cabecera: en QA el borrador de UA MX
           // estuvo así desde el 8-oct y nadie lo vio como falla.
           <SurfaceMessage
@@ -994,7 +994,7 @@ export function Builder() {
           />
         ) : semilla === null ? (
           <div className="flex flex-col items-start gap-3">
-            <Ayuda>Elegí un dashboard para abrir su editor.</Ayuda>
+            <Ayuda>Elige un dashboard para abrir su editor.</Ayuda>
             <Accion onClick={() => setPantalla('contexto')}>Ir a Dashboards</Accion>
           </div>
         ) : (
@@ -1020,7 +1020,7 @@ export function Builder() {
             {publicada && (
               <div className="flex items-center gap-3 rounded-xl border border-acc bg-panel p-4">
                 <Ayuda as="span">
-                  Estás viendo la versión publicada: no se edita. Para cambiarla, creá un borrador a partir
+                  Estás viendo la versión publicada: no se edita. Para cambiarla, crea un borrador a partir
                   de ella.
                 </Ayuda>
                 <div className="ml-auto">
@@ -1102,8 +1102,8 @@ export function Builder() {
             {visibles.length === 0 ? (
               <Ayuda>
                 {tabs.length === 0
-                  ? 'Este dashboard todavía no tiene pestañas. Agregá la primera con «+ Pestaña».'
-                  : 'Este rol no ve ninguna pestaña de este dashboard. Agregá una con «+ Pestaña».'}
+                  ? 'Este dashboard todavía no tiene pestañas. Agrega la primera con «+ Pestaña».'
+                  : 'Este rol no ve ninguna pestaña de este dashboard. Agrega una con «+ Pestaña».'}
               </Ayuda>
             ) : (
               <div className="flex items-start gap-6">
@@ -1292,7 +1292,7 @@ export function Builder() {
                 un dashboard» teniéndolo elegido. */}
             <Ayuda>
               {dashboardDeTrabajo === null
-                ? 'Elegí un dashboard en «Dashboards» para ver su historial.'
+                ? 'Elige un dashboard en «Dashboards» para ver su historial.'
                 : `${listaDeDashboards?.find((d) => d.id === dashboardDeTrabajo)?.nombre ?? 'Este dashboard'} todavía no tiene versiones: el historial empieza con la primera.`}
             </Ayuda>
             <Accion onClick={() => setPantalla('contexto')}>Ir a Dashboards</Accion>
@@ -1440,7 +1440,7 @@ function Preview({
   if (!hayVersion) {
     return (
       <div className="flex flex-col items-start gap-3">
-        <Ayuda>Elegí un dashboard en «Dashboards» para previsualizarlo.</Ayuda>
+        <Ayuda>Elige un dashboard en «Dashboards» para previsualizarlo.</Ayuda>
         <Accion onClick={onVolver}>Volver</Accion>
       </div>
     )

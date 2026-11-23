@@ -69,7 +69,7 @@ export function ThreadRail({
   if (groups.length === 0) {
     return (
       <p className="font-body text-cuerpo leading-cuerpo text-dim m-0">
-        Todavía no preguntaste nada.
+        Todavía no has preguntado nada.
       </p>
     )
   }

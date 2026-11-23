@@ -82,7 +82,7 @@ describe('F3.6 · un solo modelo de datos', () => {
       <ChatFigure dato={dato({ base: '' })} panelTipo="kpi" bloques={bloques} format={format} now={now} />,
     )
     await screen.findByText(/4\.28/)
-    expect(container.textContent).toContain('Base · la consulta no la declara')
+    expect(container.textContent).toContain('Base · consulta libre del agente · sin base declarada')
   })
 })
 
@@ -339,7 +339,7 @@ describe('la tabla del chat · ningún número desnudo, y la familia es una marc
       <ChatFigure dato={dato({ valor: sinRotulos } as never)} bloques={conTabla} format={format} now={now} />,
     )
     expect(container.textContent).toContain('Llegaron cifras sin decir a qué corresponde cada una')
-    expect(container.textContent).toMatch(/Pedí lo mismo diciendo cómo agruparlo/)
+    expect(container.textContent).toMatch(/Pide lo mismo diciendo cómo agruparlo/)
     expect(container.textContent).not.toMatch(/no se dibuja|columna/)
   })
 
@@ -379,7 +379,7 @@ describe('la tabla del chat · ningún número desnudo, y la familia es una marc
       />,
     )
     await screen.findByText('Google')
-    expect(container.textContent).toContain('Procedencia · la consulta no la declara')
+    expect(container.textContent).toContain('Procedencia · consulta libre del agente')
     expect(container.textContent).not.toContain('GOLD')
   })
 })
@@ -405,7 +405,7 @@ describe('lo que hace legible una cifra del agente · auditoría del 2026-10-10'
     const { container } = render(
       <ChatFigure dato={dato({ valor: ingresos, tipoDePanel: 'series', ejes } as never)} bloques={conTodo} format={format} now={now} />,
     )
-    await screen.findByRole('group', { name: /usá las flechas/ })
+    await screen.findByRole('group', { name: /usa las flechas/ })
     expect(container.textContent).toContain('Ingresos (USD) · por mes')
   })
 
@@ -419,7 +419,7 @@ describe('lo que hace legible una cifra del agente · auditoría del 2026-10-10'
         mesEnCurso="2026-10"
       />,
     )
-    await screen.findByRole('group', { name: /usá las flechas/ })
+    await screen.findByRole('group', { name: /usa las flechas/ })
     expect(container.textContent).toContain(`${format.axisDate('2026-10-01', 'mes')} es el mes en curso`)
   })
 
@@ -433,7 +433,7 @@ describe('lo que hace legible una cifra del agente · auditoría del 2026-10-10'
         mesEnCurso="2026-11"
       />,
     )
-    await screen.findByRole('group', { name: /usá las flechas/ })
+    await screen.findByRole('group', { name: /usa las flechas/ })
     expect(container.textContent).not.toContain('mes en curso')
   })
 

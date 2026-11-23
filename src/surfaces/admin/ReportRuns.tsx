@@ -25,10 +25,11 @@ const NOTA = 'font-mono text-nota leading-rotulo tracking-rotulo uppercase text-
 const CARTA = 'flex flex-col gap-3 rounded-xl border border-w3 bg-panel p-5'
 const COLUMNAS = ['Fecha', 'Tipo', 'Destinatarios', 'Resultado'] as const
 
-const RESULTADO: Record<CorridaDeReporte['estado'], string> = {
-  ok: 'Enviado',
-  parcial: 'Con fallas',
-  error: 'Falló',
+/** **Una validación no envía nada** · 2026-11-18: con una sola tabla, la fila
+ *  de la validación decía «Enviado». Se lee por tipo. */
+const RESULTADO: Record<CorridaDeReporte['tipo'], Record<CorridaDeReporte['estado'], string>> = {
+  envio: { ok: 'Enviado', parcial: 'Con fallas', error: 'Falló' },
+  validacion: { ok: 'Respondidas', parcial: 'Con fallas', error: 'Falló' },
 }
 
 type Props = {
@@ -106,7 +107,7 @@ export function ReportRuns({ reporte, corridas, format, cargando }: Props) {
                   </td>
                   <td className="py-3">
                     <div className="flex flex-col gap-1">
-                      <span className={NOTA}>{RESULTADO[c.estado]}</span>
+                      <span className={NOTA}>{RESULTADO[c.tipo][c.estado]}</span>
                       {c.error !== '' && <span className={NOTA}>{c.error}</span>}
                     </div>
                   </td>

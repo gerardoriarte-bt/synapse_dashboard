@@ -52,7 +52,7 @@ export function SelectorDeCliente({ clientes, activo, onElegir }: Props) {
     const q = busqueda.trim().toLowerCase()
     if (q === '') return clientes
     return clientes.filter(
-      (c) => c.nombre.toLowerCase().includes(q) || formaCortaVisible(c).toLowerCase().includes(q),
+      (c) => c.nombre.toLowerCase().includes(q) || formaCortaVisible(c, clientes).toLowerCase().includes(q),
     )
   }, [clientes, busqueda])
 
@@ -115,9 +115,11 @@ export function SelectorDeCliente({ clientes, activo, onElegir }: Props) {
                   <PlacaDeCliente nombre={c.nombre} tamano="chica" />
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate font-body text-cuerpo font-medium text-ink">{c.nombre}</span>
-                    <span className="font-mono text-nota leading-rotulo tracking-rotulo uppercase text-dim">
-                      {formaCortaVisible(c)}
-                    </span>
+                    {formaCortaVisible(c, clientes) !== '' && (
+                      <span className="font-mono text-nota leading-rotulo tracking-rotulo uppercase text-dim">
+                        {formaCortaVisible(c, clientes)}
+                      </span>
+                    )}
                   </span>
                   {actual && (
                     // `check` de línea en `acc` · «estado activo», uno de sus usos permitidos.

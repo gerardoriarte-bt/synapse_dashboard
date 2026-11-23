@@ -174,11 +174,11 @@ describe('borrar sigue dependiendo de los usuarios', () => {
   })
 
   it('con usuarios asignados no hay botón · el porqué va una vez, en el editor', () => {
-    // La frase «reasignalos primero» se repetía en cada tarjeta con usuarios;
+    // La frase «reasígnalos primero» se repetía en cada tarjeta con usuarios;
     // desde el 2026-10-20 vive en la cabecera de la sección (`roles.test.tsx`).
     const { container } = montar(rol({ usuarios: 3 }))
     expect(screen.queryByRole('button', { name: /borrar/i })).toBeNull()
-    expect(container.textContent).not.toMatch(/reasignalos primero/)
+    expect(container.textContent).not.toMatch(/reasígnalos primero/)
   })
 
   it('sin usuarios el botón DISPARA', () => {

@@ -92,9 +92,8 @@ export function MatrixBody({ value, family, grafico, format }: BodyProps<'matriz
   // **Es `ErrorState` y no `EmptyState`**, y la diferencia importa: «Sin datos»
   // le atribuiría al negocio un hueco que es del payload. Una fila corta no es
   // una hora sin ventas: es una matriz mal formada, y su dueño es quien la
-  // produjo. El detalle fijo de ese estado —«el resto de los paneles cargó
-  // normalmente»— es cierto acá, porque un valor mal formado no afecta a los
-  // demás.
+  // produjo. Desde el cuerpo no se ve la grilla, así que no se dice si el resto
+  // cargó · ver `ErrorState`.
   const filaCorta = value.celdas.findIndex((f) => f.length !== value.columnas.length)
   if (value.celdas.length !== value.filas.length) {
     return (

@@ -171,8 +171,8 @@ function montar() {
 /** Abrir la ficha es lo que hace un super-admin: elegir la pantalla en el navbar.
  *  Se espera el rótulo del bloque nuevo, que es lo primero que la ficha pinta. */
 async function abrirFicha() {
-  await screen.findByRole('button', { name: /^Grupo Axo · / })
-  await userEvent.click(screen.getByRole('button', { name: /^Grupo Axo · / }))
+  await screen.findByRole('button', { name: /^Grupo Axo( · |$)/ })
+  await userEvent.click(screen.getByRole('button', { name: /^Grupo Axo( · |$)/ }))
   await verIdentidad()
 }
 
@@ -549,8 +549,8 @@ describe('mientras una de las dos vueltas no llegó · no se afirma nada', () =>
     // llamada posterior gana · la trampa que este archivo ya documenta arriba.
     server.use(http.get(`${API}/admin/tenants/:id/roles/composition`, colgada))
     montar()
-    await screen.findByRole('button', { name: /^Grupo Axo · / })
-    await userEvent.click(screen.getByRole('button', { name: /^Grupo Axo · / }))
+    await screen.findByRole('button', { name: /^Grupo Axo( · |$)/ })
+    await userEvent.click(screen.getByRole('button', { name: /^Grupo Axo( · |$)/ }))
     await verIdentidad()
 
     expect(celda('Estado').textContent).toContain('—')

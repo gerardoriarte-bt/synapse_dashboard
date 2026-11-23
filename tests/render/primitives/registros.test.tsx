@@ -25,8 +25,8 @@ const DECISIONES = readFileSync(resolve(process.cwd(), 'src/tokens/decisiones.cs
 
 describe('Ayuda · una frase se escribe como frase', () => {
   it('no lleva el traje del rótulo', () => {
-    render(<Ayuda>Arrastrá un tipo al lienzo</Ayuda>)
-    const clases = screen.getByText('Arrastrá un tipo al lienzo').className
+    render(<Ayuda>Arrastra un tipo al lienzo</Ayuda>)
+    const clases = screen.getByText('Arrastra un tipo al lienzo').className
     expect(clases).not.toContain('uppercase')
     expect(clases).not.toContain('font-mono')
     expect(clases).not.toContain('tracking-rotulo')

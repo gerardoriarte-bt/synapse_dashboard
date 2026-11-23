@@ -104,7 +104,7 @@ export function FilaDeUsuario({ u, dePlataforma, format, roles, propia, enviando
       </td>
       <td className="py-3 text-right">
         {propia ? (
-          <Label>Vos · sin acciones sobre tu cuenta</Label>
+          <Label>Tú · sin acciones sobre tu cuenta</Label>
         ) : conAcciones && pendiente !== null ? (
           <div className="flex flex-col items-end gap-2" role="group" aria-label={`Confirmar el cambio de ${u.nombre}`}>
             <Label as="span">

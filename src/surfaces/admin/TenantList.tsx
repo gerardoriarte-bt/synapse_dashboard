@@ -63,7 +63,7 @@ import { Ayuda } from '../../render/primitives/Ayuda'
 import type { Formatter } from '../../render/format'
 import type { Tenant } from '../../api/admin'
 import { PlacaDeCliente } from '../PlacaDeCliente'
-import { distintivo } from './distintivo'
+import { distintivo, nombreConDistintivo } from './distintivo'
 
 /** La frescura del feed más atrasado, en palabras. **`null` es «nunca» y `0`
  *  es «recién»**: confundirlas pinta una fuente muerta como sana. */
@@ -92,7 +92,7 @@ export function TenantList({ format, tenants, seleccionado, onElegir, cargando =
     (t) =>
       q === '' ||
       t.nombre.toLowerCase().includes(q) ||
-      distintivo(t).toLowerCase().includes(q) ||
+      distintivo(t, tenants).toLowerCase().includes(q) ||
       t.id.toLowerCase().startsWith(q),
   )
 
@@ -148,7 +148,7 @@ export function TenantList({ format, tenants, seleccionado, onElegir, cargando =
                 type="button"
                 onClick={() => onElegir(t.id)}
                 aria-pressed={enUso}
-                aria-label={`${t.nombre} · ${distintivo(t)}`}
+                aria-label={nombreConDistintivo(t, tenants)}
                 className={
                   'flex w-full cursor-pointer flex-col gap-4 rounded-xl border bg-panel p-5 text-left hover:bg-w1 transition-colors duration-rapida ease-salida ' +
                   (enUso ? 'border-acc' : 'border-w3')
@@ -160,7 +160,7 @@ export function TenantList({ format, tenants, seleccionado, onElegir, cargando =
                     <span className="truncate font-display text-titulo leading-titulo tracking-titulo font-medium text-ink">
                       {t.nombre}
                     </span>
-                    <Label as="span">{distintivo(t)}</Label>
+                    {distintivo(t, tenants) !== '' && <Label as="span">{distintivo(t, tenants)}</Label>}
                   </span>
                   {enUso && (
                     <span className="shrink-0 rounded-sm border border-acc px-2 py-0.5 font-mono text-nota leading-rotulo tracking-rotulo uppercase text-ink">

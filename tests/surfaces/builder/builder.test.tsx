@@ -249,7 +249,7 @@ describe('las pantallas que todavía no se pueden construir · ninguna', () => {
     // frame `B2` del `.pen`, así que F4.9 se tomó.
     montar(conVersion)
     await ir('Editor')
-    await screen.findByText('Este dashboard todavía no tiene pestañas. Agregá la primera con «+ Pestaña».')
+    await screen.findByText('Este dashboard todavía no tiene pestañas. Agrega la primera con «+ Pestaña».')
     expect(screen.queryByText('Pendiente')).toBeNull()
     expect(screen.queryByText(/decisión de diseño/i)).toBeNull()
   })

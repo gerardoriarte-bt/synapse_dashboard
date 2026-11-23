@@ -180,22 +180,19 @@ Ninguna métrica de Terpel se calcula · sin una entrada en el registro, el clie
 
 ---
 
-## ⚠️ 3 pedido(s) sin reverificar
+## ⚠️ No sabemos cuáles de estos 4 siguen vigentes
 
-**Estos se midieron contra un commit suyo que ya no es el último.**
-No quiere decir que sigan faltando: quiere decir que **no lo
-sabemos**, y un pedido que no sabemos si sigue vigente no debería
-hacerles perder tiempo.
-
-El 2026-09-28 revalidamos los doce que había y **cinco ya estaban
-resueltos** — llevaban días acá diciendo que faltaban. Por eso esta
-sección existe.
+**Nuestro cable de consola está leído contra más de un commit suyo**:
+`7324b26` en 3 ruta(s), `fb3ca0c` en 12 ruta(s). Sin un commit único no hay contra qué decidir cuáles
+pedidos envejecieron, así que **ninguno se puede dar por vigente**
+hasta reverificar el cable entero.
 
 
 | Pedido | Medido contra | Cuándo |
 |---|---|---|
 | **B2.12** · Correr el materializador contra datos reales y verificar los seis estados | `3651d70` | 2026-10-14 |
 | **B2.14** · /config/solicitudes · pedir acceso a una métrica que no se ve | `9dc481e` | 2026-10-09 |
+| **B2.15** · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | `7324b26` | 2026-10-19 |
 | **F6.3** · Verificar en QA las métricas de Terpel y de UA | `dc58ef5` | 2026-11-04 |
 
 

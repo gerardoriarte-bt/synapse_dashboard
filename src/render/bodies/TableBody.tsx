@@ -36,6 +36,7 @@ import { Value } from '../primitives/Value'
 import { TABLA_DE_LECTURA } from '../primitives/tablaDeLectura'
 import { hue } from '../plots/core/seriesColor'
 import { UnknownPlotState } from '../states/UnknownPlotState'
+import { abreviaSinPerder } from '../format'
 import type { NumberOptions } from '../format'
 import type { BodyProps, FamiliaDeDibujo } from '../types'
 
@@ -52,6 +53,33 @@ export type TableParams = {
   /** Qué columnas mostrar, en orden. Sin esto se muestran todas. */
   columnas?: string[]
 }
+
+/** **La anatomía del panel, y por qué la tabla no se aprieta** · 2026-11-23.
+ *
+ *  Visto en QA con la tabla de campañas de Terpel —diez columnas en un panel de
+ *  ocho—: con `w-full` el navegador repartía el ancho del panel entre las diez,
+ *  las celdas de texto envolvían o se pisaban («CombustiblesCombustibles», sin
+ *  aire entre columnas) y la columna CTR quedaba cortada.
+ *
+ *  **Ahora la tabla mide lo que sus columnas piden y nunca menos que el panel**
+ *  (`w-max min-w-full`), ninguna celda envuelve, y lo que no entra se lee con
+ *  el scroll horizontal del contenedor, que es el del cuerpo. Las columnas se
+ *  separan con aire y no con una línea: la anatomía del `.pen` no dibuja líneas
+ *  entre columnas.
+ *
+ *  **La cabecera queda fija** al bajar: es lo que dice el `.pen` del tipo,
+ *  «CABECERA FIJA, NUMÉRICOS A LA DERECHA», y `design.md` §6 («Header sticky»).
+ *  Necesita el fondo del panel, o las filas se leen a través de ella. **La
+ *  primera columna NO se fija**: ni el `.pen` ni `design.md` lo dicen. */
+const EN_PANEL = {
+  tabla: 'w-max min-w-full border-collapse',
+  th: 'sticky top-0 z-10 bg-panel text-left pb-2 border-b border-w2 whitespace-nowrap',
+  td: 'py-1 whitespace-nowrap',
+  /** Se suma a cada celda que no es la primera de su fila. */
+  entreColumnas: 'pl-4',
+  /** El rótulo de la fila: hasta 240 px, la celda de «CLIENTE» del `.pen`. */
+  nombre: 'truncate max-w-60',
+} as const
 
 const ABBREVIATE_FROM = 1000
 const MAX_DECIMALS = 2
@@ -117,9 +145,10 @@ export function TableBody({ value, params, family, grafico, format, lectura }: T
       .map((f) => f[key])
       .filter((v): v is number => typeof v === 'number')
     const magnitude = Math.max(0, ...values.map(Math.abs))
-    const abreviaExacta = (v: number) =>
-      Math.abs(v) < ABBREVIATE_FROM || /[KM]$/.test(format.number(v, { abbreviate: true }))
-    if (magnitude >= ABBREVIATE_FROM && values.every(abreviaExacta)) return { abbreviate: true }
+    // `abreviaSinPerder` y no mirar si el texto sale con K · 2026-11-23: desde
+    // que `number` abrevia por magnitud, todo lo que pasa de mil sale con K y
+    // la columna se habría comido sus colas sin avisar.
+    if (magnitude >= ABBREVIATE_FROM && values.every(abreviaSinPerder)) return { abbreviate: true }
     return {
       decimals: Math.min(
         MAX_DECIMALS,
@@ -133,18 +162,18 @@ export function TableBody({ value, params, family, grafico, format, lectura }: T
   // dentro de una hoja que ya scrollea, un segundo scroll de 272 px escondía la
   // mitad de la tabla. En el panel sigue la del `.pen`.
   const L = lectura === 'conversacion' ? TABLA_DE_LECTURA : null
-  const entre = (j: number) => (L === null || j === 0 ? '' : L.entreColumnas)
+  const entre = (j: number) => (j === 0 ? '' : L === null ? EN_PANEL.entreColumnas : L.entreColumnas)
 
   return (
     <div className={L === null ? 'h-full min-h-0 overflow-auto' : L.marco}>
-      <table className="w-full border-collapse">
+      <table className={L === null ? EN_PANEL.tabla : L.tabla}>
         <thead className={L === null ? '' : L.encabezado}>
           <tr>
             {columns.map((c, j) => (
               <th
                 key={c.clave}
                 scope="col"
-                className={`${L === null ? 'text-left pb-2 border-b border-w2' : L.th} ${entre(j)} ${c.numerica ? 'text-right' : ''}`}
+                className={`${L === null ? EN_PANEL.th : L.th} ${entre(j)} ${c.numerica ? 'text-right' : ''}`}
               >
                 {/* **La unidad se va al label** · `design.md` §6.2. Al rótulo
                     de la columna y no a cada celda: se dice una vez. */}
@@ -160,7 +189,7 @@ export function TableBody({ value, params, family, grafico, format, lectura }: T
                 const cell = row[c.clave]
                 if (c.numerica && typeof cell === 'number') {
                   return (
-                    <td key={c.clave} className={`${L === null ? 'py-1' : L.td} ${entre(j)} text-right`}>
+                    <td key={c.clave} className={`${L === null ? EN_PANEL.td : L.td} ${entre(j)} text-right`}>
                       {/* `fromContext`: la celda hereda el nombre del encabezado
                           de columna, que tiene `scope`. Un label propio la haría
                           decir el nombre dos veces. */}
@@ -190,7 +219,7 @@ export function TableBody({ value, params, family, grafico, format, lectura }: T
                 return (
                   <td
                     key={c.clave}
-                    className={`${L === null ? 'py-1' : `${L.td} ${j === 0 ? L.rotuloDeFila : ''}`} ${entre(j)} font-body text-cuerpo text-ink ${alineacion}`}
+                    className={`${L === null ? EN_PANEL.td : `${L.td} ${j === 0 ? L.rotuloDeFila : ''}`} ${entre(j)} font-body text-cuerpo text-ink ${alineacion}`}
                   >
                     {j === 0 ? (
                       <span className="flex items-center gap-2 min-w-0">
@@ -201,7 +230,14 @@ export function TableBody({ value, params, family, grafico, format, lectura }: T
                             aria-hidden
                           />
                         )}
-                        <span className="truncate">{cell ?? '—'}</span>
+                        {/* **El nombre se trunca, con tope** · `Límites · texto largo en
+                            tabla` del `.pen`: «se TRUNCA con elipsis», porque el
+                            principio de un nombre identifica. Sin el tope, la
+                            columna se comía el ancho de las demás; entero en el
+                            `title`. */}
+                        <span className={L === null ? EN_PANEL.nombre : 'truncate'} title={cell == null ? undefined : String(cell)}>
+                          {cell ?? '—'}
+                        </span>
                       </span>
                     ) : (
                       (cell ?? '—')
