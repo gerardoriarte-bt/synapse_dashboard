@@ -97,3 +97,23 @@ de tamaño, y el editor desde el punto de vista de experiencia.
 3. Explicar o alinear las cifras (U4, U5, U17).
 4. Una pasada de idioma (U6, U7, U8).
 5. Gráficos legibles (U10, U11, U12).
+
+## 3 · Lo que se hizo el mismo día en QA
+
+Decidido por el humano: «resuelve todo».
+
+- **Overview sale de los seis roles** de UA MX con
+  `PUT /admin/roles/{roleId}/dashboards`. `/config/me` devuelve solo «UA MX».
+- **`admin` y `planner`, en minúscula y sin usuarios, quedaron inactivos.**
+  `Admin` y `Planner` siguen como estaban.
+- **Admin tiene agente**: «Under Armour México · Admin», igual al de Planner,
+  que pasó a llamarse «Under Armour México · Planner».
+- **Diciembre de 2025 cargado**: 31 disponibles, 10 bloqueadas, 0 errores.
+- **La v16 publicada desde la v12**, no desde el borrador:
+  - «General Overview UA MX» pasa a llamarse «Resumen del mes»;
+  - las tres preguntas de cabecera quedan cortas y sin erratas;
+  - el resto, igual, incluida «Performance Campaigns», que solo ve Planner.
+
+  El borrador v15 quedó igual a la v16.
+- **Lo del backend** está en
+  `docs/MENSAJE-2026-11-23-backend-ua-mx-y-produccion.md`.
