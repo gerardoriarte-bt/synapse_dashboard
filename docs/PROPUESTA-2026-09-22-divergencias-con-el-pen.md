@@ -723,6 +723,23 @@ referencias.
 anatomía, se cambia en `src/render/primitives/tablaDeLectura.ts`, que es un
 solo lugar.
 
+## 18 · La cifra del período en una serie sola, y la unidad de cada serie · 2026-11-23
+
+**Quién decide** · el humano · **Construido el 2026-11-23**, rama
+`front/series-legibles`. Lo encontró mirar QA con el dato de UA MX.
+
+| El dibujo | Lo construido |
+|---|---|
+| `ÁREA · Sesiones` no lleva leyenda (`qDvL2` apagado) y pone la unidad en la línea de BASE: «12 MESES · MILLONES» | **Una leyenda sin nombre**: el período y la cifra con su unidad —«OCT 26 · USD 25.26»—. La BASE de una métrica nuestra no trae la unidad, así que el eje del nCAC decía «0 · 20 · 40 · 60» sin decir de qué, y la cifra del mes sólo existía al pasar el puntero |
+| La leyenda de `LÍNEAS · Eficiencia de medios` y de `Tendencia diaria` escribe cada cifra con SU unidad: «USD 152K», «101K» | Igual, desde el cable: la unidad de cada serie (`3651d70`). **Si alguna serie declara la suya, la que no declara queda sin unidad**; completarla con la de la métrica le pondría «USD» a las sesiones |
+
+**Lo que NO se construyó del dibujo, y queda para decidir:** las dos consolas
+dibujan esas `multi_series` como líneas con **«ESCALAS INDEPENDIENTES»** —«CADA
+SERIE NORMALIZADA A SU PROPIO RANGO · LA FORMA ES COMPARABLE, EL NIVEL NO»— y
+«TRAZO DISTINTO POR SERIE: EL COLOR NO CARGA SOLO». El front no lo hace: F5.25
+(decisión humana del 2026-10-19) eligió avisar en el builder y ofrecer `combo` o
+`smallmult`, y el trazo punteado ya significa «período en curso» (EV-015).
+
 ## Dónde vive cada una de las demás
 
 Para que este documento no crezca hasta pisar a los otros:
