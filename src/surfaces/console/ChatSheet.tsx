@@ -165,6 +165,19 @@ export function ChatSheet({
   const ultimo = turns.at(-1)
   const enVuelo = ultimo?.streaming === true
 
+  /** El agente que contesta cuando es el único y está elegido · ver la
+   *  cabecera de la conversación. */
+  const primerAgente = agentes?.length === 1 ? agentes[0] : undefined
+  const agenteUnico = primerAgente !== undefined && primerAgente.id === agenteId ? primerAgente : null
+
+  /** **La consulta en curso, en el riel** · QA, 2026-11-23. El hilo se guarda
+   *  recién con el `fin`, unos treinta segundos después de preguntar, y hasta
+   *  entonces el riel decía «Todavía no preguntaste nada» con la pregunta a la
+   *  vista. Mientras la conversación abierta no sea una fila del riel, se
+   *  muestra su primera pregunta. Al llegar la lista con el hilo, `activo` lo encuentra y esto se
+   *  apaga solo. */
+  const enCurso = activo === undefined ? (turns[0]?.pregunta ?? null) : null
+
   return (
     <ChatOverlay
       open
@@ -219,10 +232,20 @@ export function ChatSheet({
           </button>
         ) : (
           <>
+            {enCurso === null ? null : (
+              <section aria-label="Consulta en curso" className="flex flex-col gap-1">
+                <Label as="div">{enVuelo ? 'En curso · respondiendo' : 'En curso'}</Label>
+                <p className="font-body text-cuerpo leading-cuerpo text-ink m-0 rounded-md bg-w2 px-2 py-1">
+                  {enCurso}
+                </p>
+              </section>
+            )}
             {grupos.length === 0 ? (
-              <p className="font-body text-cuerpo leading-cuerpo text-dim m-0">
-                Todavía no preguntaste nada.
-              </p>
+              enCurso === null ? (
+                <p className="font-body text-cuerpo leading-cuerpo text-dim m-0">
+                  Todavía no preguntaste nada.
+                </p>
+              ) : null
             ) : (
               <ThreadRail
                 groups={grupos}
@@ -280,7 +303,15 @@ export function ChatSheet({
             <Label as="div">
               Contexto · {titulo} · {periodo}
             </Label>
-            {onAgente !== undefined && agentes !== undefined && agentes.length > 0 ? (
+            {/* **Con un solo agente no se ofrece elegir** · QA, 2026-11-23.
+                El desplegable mostraba un único agente elegido, y un control con
+                una sola salida promete una elección que no hay. Se dice cuál
+                contesta, como texto. Si el elegido es «por rol» queda el
+                desplegable: ahí sí hay dos caminos —el que resuelva el servicio
+                y ese agente—. El `.pen` no dibuja el agente en C3. */}
+            {agenteUnico !== null ? (
+              <Label as="div">Agente · {etiquetaDeAgente(agenteUnico)}</Label>
+            ) : onAgente !== undefined && agentes !== undefined && agentes.length > 0 ? (
               <div className="flex items-center gap-2 pt-1">
                 <label htmlFor="chat-agente" className={ROTULO}>
                   Agente
