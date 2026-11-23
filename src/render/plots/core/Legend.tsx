@@ -44,13 +44,14 @@ export function Legend({
         </li>
       )}
       {entries.map((e) => (
-        <li key={e.nombre} className="flex items-center gap-2 min-w-0">
+        <li key={e.nombre === '' ? `#${e.step}` : e.nombre} className="flex items-center gap-2 min-w-0">
           <span
             aria-hidden
             className="block w-4.5 h-0.75 shrink-0"
             style={{ background: hue({ family, step: e.step }) }}
           />
-          <Label>{e.nombre}</Label>
+          {/* Sin nombre cuando la serie es una sola: lo dice el título. */}
+          {e.nombre === '' ? null : <Label>{e.nombre}</Label>}
           {e.valor === undefined ? null : (
             <span className="font-mono text-cifra text-ink tabular-nums">{e.valor}</span>
           )}
