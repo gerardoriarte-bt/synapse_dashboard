@@ -41,6 +41,8 @@ type Props = {
   /** **Si los demás paneles de la pestaña cargaron** · lo sabe la grilla, no el
    *  panel · ver `ErrorState`. */
   restoCargo?: boolean | undefined
+  /** Su degradación ya se dijo arriba de la grilla · ver `PanelShell`. */
+  degradacionAgrupada?: boolean
   /** La nota de lectura del panel · va al shell. */
   nota?: string
   /** El cuerpo ya resuelto. Solo se pinta en DISPONIBLE y DEGRADADO — los dos
@@ -63,6 +65,7 @@ export function Panel({
   onRequestAccess,
   errorAgrupado = false,
   restoCargo,
+  degradacionAgrupada = false,
   nota,
   children,
 }: Props) {
@@ -78,6 +81,7 @@ export function Panel({
       {...(onChat === undefined ? {} : { onChat })}
       {...(onCollapse === undefined ? {} : { onCollapse })}
       {...(nota === undefined ? {} : { nota })}
+      degradacionAgrupada={degradacionAgrupada}
     >
       {body()}
     </PanelShell>

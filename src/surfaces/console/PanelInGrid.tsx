@@ -48,6 +48,8 @@ type Props = {
   errorAgrupado?: boolean
   /** Si los demás paneles cargaron · ver `ErrorState`. */
   restoCargo?: boolean | undefined
+  /** Su degradación ya se dijo en el aviso de arriba · `degradacionComun.ts`. */
+  degradacionAgrupada?: boolean
 }
 
 export function PanelInGrid({
@@ -65,6 +67,7 @@ export function PanelInGrid({
   plotProblem,
   errorAgrupado = false,
   restoCargo,
+  degradacionAgrupada = false,
 }: Props) {
   return (
     <Panel
@@ -79,6 +82,7 @@ export function PanelInGrid({
       {...(onRetry === undefined ? {} : { onRetry })}
       errorAgrupado={errorAgrupado}
       restoCargo={restoCargo}
+      degradacionAgrupada={degradacionAgrupada}
       {...(panel.nota === undefined ? {} : { nota: panel.nota })}
     >
       {body()}
