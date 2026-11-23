@@ -216,11 +216,11 @@ describe('el lienzo anuncia sus gestos · 2026-09-17', () => {
     // **Una sola frase desde el 2026-10-06** (D7): las reglas de la grilla se
     // fueron y quedaron los gestos, que es lo que quien compone necesita.
     // «un dato» desde el 2026-11-10: la biblioteca es de datos.
-    const ayuda = screen.getByText(/Arrastrá un dato de la biblioteca a un espacio libre/)
-    expect(ayuda.textContent).toMatch(/arrastralo para moverlo, o usá las flechas/)
+    const ayuda = screen.getByText(/Arrastra un dato de la biblioteca a un espacio libre/)
+    expect(ayuda.textContent).toMatch(/arrástralo para moverlo, o usa las flechas/)
     // La otra mitad del gesto, y son distintas: mover y cambiar el tamaño ·
     // propuesta del canvas, punto 1.
-    expect(ayuda.textContent).toMatch(/con Shift y las flechas cambiás su tamaño/)
+    expect(ayuda.textContent).toMatch(/con Shift y las flechas cambias su tamaño/)
   })
 
   it('y el panel sigue siendo arrastrable · el rótulo no reemplaza al gesto', async () => {

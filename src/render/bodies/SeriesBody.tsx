@@ -165,7 +165,7 @@ export function SeriesBody({
       return (
         <EmptyState
           phrase="Un combinado necesita dos series y llegó una"
-          detail="Una sola serie se dibuja como línea · elegí otro gráfico o agregá la segunda"
+          detail="Una sola serie se dibuja como línea · elige otro gráfico o agrega la segunda"
         />
       )
     }

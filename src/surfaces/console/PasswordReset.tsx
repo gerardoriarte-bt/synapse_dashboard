@@ -59,7 +59,7 @@ export function PasswordReset({ onClose }: { onClose: () => void }) {
         {enviado === null ? (
           <form onSubmit={(e) => void enviar(e)} className="flex flex-col gap-4">
             <p className="font-body text-cuerpo leading-cuerpo text-dim m-0">
-              Dejá tu correo y el equipo revisa la solicitud. No se envía un enlace
+              Deja tu correo y el equipo revisa la solicitud. No se envía un enlace
               automático.
             </p>
 

@@ -299,7 +299,7 @@ export function RoleEditor({
           </svg>
           <span>
             Un rol sin pestañas elegidas ve TODAS las pestañas · Ocultar una métrica NO es un permiso: lo que un
-            rol no recibe, no le llega · Un rol con usuarios no se borra: reasignalos primero
+            rol no recibe, no le llega · Un rol con usuarios no se borra: reasígnalos primero
           </span>
         </p>
       )}

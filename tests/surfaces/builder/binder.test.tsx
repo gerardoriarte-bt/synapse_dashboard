@@ -433,7 +433,7 @@ describe('las profundidades · D6 del 2026-10-07', () => {
     await abrirPanel()
 
     const col = await abrir('Cómo se ve')
-    expect(col.getByText('Cómo se ve depende de qué muestra: elegí primero la métrica.')).toBeInTheDocument()
+    expect(col.getByText('Cómo se ve depende de qué muestra: elige primero la métrica.')).toBeInTheDocument()
     await userEvent.click(col.getByRole('button', { name: 'Elegir qué muestra' }))
     expect(screen.getByRole('region', { name: 'Qué muestra' })).toBeInTheDocument()
   })
@@ -937,7 +937,7 @@ describe('§F4.11 · el resumen dice dónde y que NO decide', () => {
     await abrirPanel()
 
     expect(screen.queryByText(/problemas? de composición/)).toBeNull()
-    expect(screen.getByText('Para publicar, validá.')).toBeInTheDocument()
+    expect(screen.getByText('Para publicar, valida.')).toBeInTheDocument()
   })
 
   it('con problemas, el resumen dice que se guarda igual y que publicar pide corregirlos', async () => {
@@ -954,13 +954,13 @@ describe('§F4.11 · el resumen dice dónde y que NO decide', () => {
     await abrirPanel()
 
     expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
-    expect(screen.getByText('Para publicar, validá.')).toBeInTheDocument()
+    expect(screen.getByText('Para publicar, valida.')).toBeInTheDocument()
 
     // Con cambios, primero tiene que guardarse · desde el 2026-10-07 se guarda
     // solo, y el chrome lo dice así.
     await abrir('Ajustes')
     await userEvent.click(columna('Ajustes').getByRole('button', { name: 'comparativo · sí' }))
-    expect(await screen.findByText('Para publicar, esperá a que se guarde y validá.')).toBeInTheDocument()
+    expect(await screen.findByText('Para publicar, espera a que se guarde y valida.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
   })
 
@@ -1151,7 +1151,7 @@ describe('la nota de lectura', () => {
 // ── UNA PESTAÑA SIN PANELES LLEGA CON `panels: null` · 2026-10-19 ─────────────
 //
 // Medido en QA: el borrador de UA MX tenía una pestaña vacía y el editor decía
-// «Elegí un dashboard» con el dashboard elegido arriba. El servicio arma la
+// «Elige un dashboard» con el dashboard elegido arriba. El servicio arma la
 // lista con un mapa, y una clave ausente es un slice nil de Go.
 describe('el borrador con una pestaña vacía', () => {
   it('abre el editor · `panels: null` es una pestaña sin paneles', async () => {
@@ -1163,17 +1163,17 @@ describe('el borrador con una pestaña vacía', () => {
     )
     montar()
     await componer()
-    expect(screen.queryByText('Elegí un dashboard para abrir su editor.')).toBeNull()
+    expect(screen.queryByText('Elige un dashboard para abrir su editor.')).toBeNull()
   })
 
-  it('un detalle que no se puede leer se dice como ERROR, no como «elegí un dashboard»', async () => {
+  it('un detalle que no se puede leer se dice como ERROR, no como «elige un dashboard»', async () => {
     servir()
     server.use(http.get(`${API}/admin/layouts/:id`, () => ok({ ...detalle, tabs: 'roto' })))
     montar()
     await userEvent.click(await screen.findByRole('button', { name: /Overview/ }))
     await userEvent.click(await screen.findByRole('button', { name: 'Abrir el editor de Overview' }))
     expect(await screen.findByText('No se pudo abrir este borrador')).toBeInTheDocument()
-    expect(screen.queryByText('Elegí un dashboard para abrir su editor.')).toBeNull()
+    expect(screen.queryByText('Elige un dashboard para abrir su editor.')).toBeNull()
   })
 })
 

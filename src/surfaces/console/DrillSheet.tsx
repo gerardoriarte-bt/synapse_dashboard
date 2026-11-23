@@ -458,7 +458,7 @@ export function DrillSheet({
       // del chat, así que un reintento automático sobre un límite excedido gasta
       // la cuota que acaba de agotarse.
       return e instanceof ApiError && e.httpStatus === SIN_FILAS ? (
-        <EmptyState phrase={mensaje} detail="Probá otro corte o otro período" />
+        <EmptyState phrase={mensaje} detail="Prueba otro corte o otro período" />
       ) : (
         <ErrorState message={mensaje} />
       )
