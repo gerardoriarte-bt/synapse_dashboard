@@ -82,7 +82,7 @@ describe('F3.6 · un solo modelo de datos', () => {
       <ChatFigure dato={dato({ base: '' })} panelTipo="kpi" bloques={bloques} format={format} now={now} />,
     )
     await screen.findByText(/4\.28/)
-    expect(container.textContent).toContain('Base · la consulta no la declara')
+    expect(container.textContent).toContain('Base · consulta libre del agente · sin base declarada')
   })
 })
 
@@ -379,7 +379,7 @@ describe('la tabla del chat · ningún número desnudo, y la familia es una marc
       />,
     )
     await screen.findByText('Google')
-    expect(container.textContent).toContain('Procedencia · la consulta no la declara')
+    expect(container.textContent).toContain('Procedencia · consulta libre del agente')
     expect(container.textContent).not.toContain('GOLD')
   })
 })

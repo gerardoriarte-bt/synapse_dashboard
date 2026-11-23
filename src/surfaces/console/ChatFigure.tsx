@@ -52,7 +52,7 @@ import type { BlockTable } from '../../catalog/blocks'
 import type { PanelType } from '../../catalog/types'
 import type { Formatter } from '../../render/format'
 import type { FamiliaDeDibujo } from '../../render/types'
-import { lineaDeEjes, mesEnCursoEn, rotularFechas, rotularFechasEnTexto } from './figuraDelAgente'
+import { lineaDeEjes, mesEnCursoEn, rotularFechas, rotularFechasEnTexto, tablaLegible } from './figuraDelAgente'
 import type { ChatEvent, Value } from '../../api/types'
 
 type Dato = Extract<ChatEvent, { tipo: 'dato' }>
@@ -72,6 +72,10 @@ const CON_ALTO_PROPIO: ReadonlySet<PanelType> = new Set(['kpi', 'prose', 'table'
  *  día iba en el rótulo mono gris, igual que la BASE, la procedencia y los
  *  encabezados de la tabla, y el humano lo dijo así: «se ve muy igual». */
 const TITULO = 'font-body text-cuerpo leading-cuerpo font-semibold text-ink m-0'
+
+/** Lo que es una cifra sin base ni capa: una consulta que el agente escribió
+ *  por su cuenta, fuera del catálogo. */
+const CONSULTA_LIBRE = 'consulta libre del agente'
 
 /** ¿Cada fila dice de qué es? Hay una columna no numérica con texto en TODAS
  *  las filas. Una columna de texto vacía no cuenta: medido el 2026-10-09,
@@ -104,7 +108,12 @@ type Props = {
   mesEnCurso?: string | undefined
 }
 
-export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now, mesEnCurso }: Props) {
+export function ChatFigure({ dato: llegado, panelTipo: tipoDelPanel, bloques, format, now, mesEnCurso }: Props) {
+  // **Una tabla del agente se lee con nombres, y un id no lleva miles** · QA,
+  // 2026-11-23. Ver `tablaLegible`. Va primero porque todo lo de abajo —los
+  // rótulos de fila, el cuerpo— tiene que ver la tabla ya legible.
+  const dato: Dato =
+    llegado.valor.forma === 'tabular' ? { ...llegado, valor: tablaLegible(llegado.valor) } : llegado
   const forma = dato.valor.forma
   // ── CON QUÉ CUERPO · §7 cerrada el 2026-10-08 (humano): por la FORMA ──────
   //
@@ -278,8 +287,13 @@ export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now
             métrica del catálogo —filtra por medio, o sale de otra tabla—: que no
             copie la base del catálogo. «Base · » con nada detrás se lee como un
             defecto de pantalla y no como una declaración. */}
+        {/* **Dicho como lo que es, no como una falla** · QA, 2026-11-23. Decía
+            «Base · la consulta no la declara», y leído al pie de cada tabla
+            sonaba a error. Lo que pasa es que el agente consultó por su cuenta,
+            fuera del catálogo: eso se dice, y la base sigue declarándose —que
+            no la hay—, no se oculta. */}
         <Label as="div">
-          {dato.base === '' ? 'Base · la consulta no la declara' : `Base · ${dato.base}`}
+          {dato.base === '' ? `Base · ${CONSULTA_LIBRE} · sin base declarada` : `Base · ${dato.base}`}
         </Label>
         {/* **Sin capa, la procedencia se declara entera** · 2026-10-09. Es la
             consulta del agente fuera del catálogo: no trae capa ni fuente, y
@@ -289,7 +303,7 @@ export function ChatFigure({ dato, panelTipo: tipoDelPanel, bloques, format, now
             produjo está en el desplegable de auditoría de la misma respuesta. */}
         {dato.capa === null ? (
           <Label as="div">
-            {`Procedencia · la consulta no la declara · ${format.freshness(dato.frescura, now)}`}
+            {`Procedencia · ${CONSULTA_LIBRE} · ${format.freshness(dato.frescura, now)}`}
           </Label>
         ) : (
           <Provenance
