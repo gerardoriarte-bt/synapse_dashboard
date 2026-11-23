@@ -14,9 +14,11 @@ import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { Admin } from '@/surfaces/admin/Admin'
+import { reintentar } from '@/app/providers/AppProviders'
+import { ApiError } from '@/api/types'
 import { ok } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
 
@@ -343,5 +345,48 @@ describe('la auditoría de UX del 2026-11-18 · lo que se corrigió', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Editar el reporte' }))
     expect(await screen.findByRole('heading', { name: 'Resumen para gerencia' })).toBeInTheDocument()
     expect(screen.getByLabelText('Nombre')).toBeInTheDocument()
+  })
+})
+
+describe('QA del 2026-11-23 · la ruta que no está desplegada', () => {
+  it('un 404 sin cuerpo dice que el servidor no ofrece la función · no queda en esqueleto', async () => {
+    // Lo que contesta QA de verdad: `text/plain`, «404 page not found».
+    servir([])
+    server.use(
+      http.get(`${API}/admin/tenants/:t/reports`, () =>
+        new HttpResponse('404 page not found', { status: 404, headers: { 'Content-Type': 'text/plain' } }),
+      ),
+    )
+    montar()
+    expect(await screen.findByText('No se pudieron cargar los reportes de este cliente.')).toBeInTheDocument()
+    expect(screen.getByText('Este servidor todavía no ofrece esta función.')).toBeInTheDocument()
+    expect(screen.queryByText(/sin cuerpo/)).not.toBeInTheDocument()
+    // El encabezado del dibujo «no cargó» sigue, con «Sin datos» y no «0 reportes».
+    expect(screen.getByText('Sin datos')).toBeInTheDocument()
+    expect(screen.queryByText('0 reportes')).not.toBeInTheDocument()
+  })
+
+  it('mientras carga NO dice «0 reportes»', async () => {
+    servir([])
+    server.use(
+      http.get(`${API}/admin/tenants/:t/reports`, async () => {
+        await delay('infinite')
+        return ok([])
+      }),
+    )
+    montar()
+    expect(await screen.findByText('Alcance · cliente')).toBeInTheDocument()
+    expect(screen.queryByText('0 reportes')).not.toBeInTheDocument()
+  })
+
+  it('un 4xx no se reintenta: TanStack pausa el reintento sin foco y la pantalla quedaba cargando', () => {
+    const e = (s: number) => new ApiError('X', '', s)
+    expect(reintentar(0, e(404))).toBe(false)
+    expect(reintentar(0, e(403))).toBe(false)
+    expect(reintentar(0, e(401))).toBe(false)
+    expect(reintentar(0, e(500))).toBe(true)
+    expect(reintentar(1, e(500))).toBe(false)
+    expect(reintentar(0, e(429))).toBe(true)
+    expect(reintentar(0, new Error('red'))).toBe(true)
   })
 })
