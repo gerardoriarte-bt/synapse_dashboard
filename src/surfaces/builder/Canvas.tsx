@@ -423,9 +423,9 @@ export function Canvas({
       {!soloLectura && (
         <div className="flex items-start gap-4">
           <Ayuda>
-            Arrastrá un dato de la biblioteca a un espacio libre. Elegí un panel para configurarlo:
-            arrastralo para moverlo, o usá las flechas. Para cambiar su tamaño, estiralo desde sus
-            bordes; con Shift y las flechas cambiás su tamaño de a una celda.
+            Arrastra un dato de la biblioteca a un espacio libre. Elige un panel para configurarlo:
+            arrástralo para moverlo, o usa las flechas. Para cambiar su tamaño, estíralo desde sus
+            bordes; con Shift y las flechas cambias su tamaño de a una celda.
           </Ayuda>
           {/* **Deshacer, porque el borrador se guarda solo** · 2026-11-10. Un
               cambio que desacomodó el lienzo quedaba guardado sin vuelta. */}

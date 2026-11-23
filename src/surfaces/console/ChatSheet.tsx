@@ -243,7 +243,7 @@ export function ChatSheet({
             {grupos.length === 0 ? (
               enCurso === null ? (
                 <p className="font-body text-cuerpo leading-cuerpo text-dim m-0">
-                  Todavía no preguntaste nada.
+                  Todavía no has preguntado nada.
                 </p>
               ) : null
             ) : (
@@ -358,7 +358,7 @@ export function ChatSheet({
               {historial.estado === 'cargando' ? (
                 <Label as="div">Abriendo la consulta</Label>
               ) : historial.estado === 'error' ? (
-                <Label as="div">No se pudo abrir la consulta · podés seguir preguntando en el mismo hilo</Label>
+                <Label as="div">No se pudo abrir la consulta · puedes seguir preguntando en el mismo hilo</Label>
               ) : (
                 <>
                   <Label as="div">
@@ -410,7 +410,7 @@ export function ChatSheet({
             <label htmlFor="panel-chat-pregunta" className="sr-only">
               Tu pregunta sobre {titulo}
             </label>
-            {/* §PEN:C3 dice «Preguntá sobre esta pestaña», y desde F3.15 ese
+            {/* §PEN:C3 dice «Pregunta sobre esta pestaña», y desde F3.15 ese
                 literal vuelve a ser el del dibujo cuando el contexto lo es. Con
                 contexto de panel se adapta, que es más específico. */}
             <input
@@ -420,7 +420,7 @@ export function ChatSheet({
               autoComplete="off"
               value={texto}
               onChange={(e) => setTexto(e.target.value)}
-              placeholder={dePanel ? 'Preguntá sobre este panel' : 'Preguntá sobre esta pestaña'}
+              placeholder={dePanel ? 'Pregunta sobre este panel' : 'Pregunta sobre esta pestaña'}
               className={CAMPO}
             />
             <button

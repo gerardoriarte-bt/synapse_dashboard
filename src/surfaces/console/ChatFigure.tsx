@@ -151,8 +151,8 @@ export function ChatFigure({ dato: llegado, panelTipo: tipoDelPanel, bloques, fo
         {dato.titulo == null ? null : <p className={TITULO}>{dato.titulo}</p>}
         <Label as="div">Estos datos no se pueden mostrar</Label>
         <Ayuda>
-          Llegaron cifras sin decir a qué corresponde cada una. Pedí lo mismo diciendo cómo
-          agruparlo —por día, por canal o por campaña— o pedí que te lo explique en texto.
+          Llegaron cifras sin decir a qué corresponde cada una. Pide lo mismo diciendo cómo
+          agruparlo —por día, por canal o por campaña— o pide que te lo explique en texto.
         </Ayuda>
       </div>
     )

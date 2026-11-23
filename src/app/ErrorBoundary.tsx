@@ -27,7 +27,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <SurfaceMessage
           title="Algo falló en esta pantalla"
-          detail="Quedó registrado. Recargá la página para seguir."
+          detail="Quedó registrado. Recarga la página para seguir."
           onRetry={() => window.location.reload()}
         />
       )

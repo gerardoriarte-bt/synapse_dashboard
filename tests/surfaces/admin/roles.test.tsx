@@ -200,7 +200,7 @@ describe('borrar · el conteo va ANTES del botón', () => {
     expect(within(ceo as HTMLElement).getByText(/2 usuario\(s\)/)).toBeInTheDocument()
     expect(within(ceo as HTMLElement).queryByRole('button', { name: 'Borrar CEO' })).toBeNull()
     // El porqué, una vez arriba de la lista y no en cada tarjeta · 2026-10-20.
-    expect(screen.getAllByText(/reasignalos primero/)).toHaveLength(1)
+    expect(screen.getAllByText(/reasígnalos primero/)).toHaveLength(1)
   })
 
   it('un rol sin usuarios sí lo ofrece, y el 204 se trata como ÉXITO', async () => {

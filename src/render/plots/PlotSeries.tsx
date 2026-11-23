@@ -170,7 +170,7 @@ export function PlotSeries({
           ? {
               tabIndex: 0,
               role: 'group',
-              'aria-label': 'Gráfico · usá las flechas para leer cada punto',
+              'aria-label': 'Gráfico · usa las flechas para leer cada punto',
               onPointerMove: (e: PointerEvent<HTMLDivElement>) => {
                 const caja = e.currentTarget.getBoundingClientRect()
                 setActivo(indiceEn(e.clientX - caja.left))

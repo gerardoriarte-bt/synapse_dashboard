@@ -70,7 +70,7 @@ export function validarBorrador(
           campo: 'metricId',
           // «Se ancla a un metricId» era la regla dicha en el idioma del código ·
           // 2026-10-06. Quien compone necesita saber qué hacer.
-          mensaje: 'Sin métrica · elegila en la configuración del panel',
+          mensaje: 'Sin métrica · elígela en la configuración del panel',
         })
         return
       }

@@ -120,7 +120,7 @@ export function ComparisonBody({
     return (
       <EmptyState
         phrase="Ninguna categoría trae contra qué compararse"
-        detail="Sin referencia esto es una categórica · elegí otro gráfico o pedí el objetivo a la métrica"
+        detail="Sin referencia esto es una categórica · elige otro gráfico o pide el objetivo a la métrica"
       />
     )
   }

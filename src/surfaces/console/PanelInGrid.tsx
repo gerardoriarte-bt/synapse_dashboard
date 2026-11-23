@@ -117,8 +117,8 @@ export function PanelInGrid({
           phrase={plotProblem.razon}
           detail={
             plotProblem.clase === 'tope'
-              ? 'Elegí otro gráfico o recortá la lista'
-              : 'Elegí otro gráfico o esperá a que haya más dato'
+              ? 'Elige otro gráfico o recorta la lista'
+              : 'Elige otro gráfico o espera a que haya más dato'
           }
         />
       )

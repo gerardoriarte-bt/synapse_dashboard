@@ -57,7 +57,7 @@ const DOCE_MESES: Multi = {
   series: [serie('Ventas', [1940000, 2740392, 1040000], MESES), serie('Inversión', [180580, 170000, 70000], MESES)],
 }
 
-const grafico = () => screen.getByRole('group', { name: /usá las flechas/ })
+const grafico = () => screen.getByRole('group', { name: /usa las flechas/ })
 
 describe('la leyenda · el `.pen` la dibuja y no estaba', () => {
   it('nombra cada serie con el valor del ÚLTIMO punto · y dice de cuándo es', () => {

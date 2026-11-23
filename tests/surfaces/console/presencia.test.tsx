@@ -252,7 +252,7 @@ describe('la hoja de pestaña declara lo que NO tiene', () => {
     montar()
 
     await userEvent.click(await screen.findByRole('button', { name: /Preguntar a Synapse/i }))
-    await screen.findByPlaceholderText(/Preguntá sobre esta pestaña/i)
+    await screen.findByPlaceholderText(/Pregunta sobre esta pestaña/i)
 
     expect(pedidas).toBe(0)
   })
@@ -269,7 +269,7 @@ describe('la hoja de pestaña declara lo que NO tiene', () => {
     montar()
 
     await userEvent.click(await screen.findByRole('button', { name: /Preguntar a Synapse/i }))
-    await screen.findByPlaceholderText(/Preguntá sobre esta pestaña/i)
+    await screen.findByPlaceholderText(/Pregunta sobre esta pestaña/i)
 
     await waitFor(() => expect(urls.length).toBeGreaterThan(0))
     const ultima = urls.at(-1) as string
