@@ -43,6 +43,21 @@ function decimalsOf(v: number): number {
   return (String(v).split('.')[1] ?? '').length
 }
 
+/** **¿Se abrevia sin perder dígitos?** · 2026-11-23.
+ *
+ *  Era la regla de `number` y dejó de serlo: ahora `number` abrevia por
+ *  magnitud. Queda para quien escribe cifras que se leen de a una y se
+ *  comparan entre filas —la tabla—, donde 108,229 no puede pasar a 108K sin
+ *  avisar. Se mide sobre el NÚMERO y nunca sobre el texto: `Number('4,28')` es
+ *  NaN en cuanto el locale usa coma. */
+export function abreviaSinPerder(value: number): boolean {
+  const magnitude = Math.abs(value)
+  const scale = SCALES.find((s) => magnitude >= s.threshold)
+  if (scale === undefined) return true
+  if (scale.suffix === 'M' && magnitude >= 1e9) return false
+  return significant(value / scale.divisor, SIGNIFICANT) * scale.divisor === value
+}
+
 export type NumberOptions = {
   /** K y M. **No hay escalón para mil millones a propósito**: «B» es *billion*
    *  en inglés y un billón en español son 10¹², así que 2.5e9 sale «2,500M» —
@@ -150,27 +165,40 @@ export function createFormat(locale: string): Formatter {
             return `${thousands}${scale.suffix}`
           }
 
-          // SOLO SE ABREVIA SI NO SE PIERDE NADA. `4.28M` y `38.4K` son
-          // exactos; `12.950` abreviado sería `12.9K` y se comería los 50 SKU.
-          // El `.pen` hace exactamente esta distinción —abrevia las dos
-          // primeras y escribe la tercera entera— y hasta 2026-08 la habíamos
-          // leído como una inconsistencia suya.
-          const rounded = significant(reduced, SIGNIFICANT)
-          if (rounded * scale.divisor !== value) break
+          // ── LA FORMA LA DECIDE LA MAGNITUD, NO LA EXACTITUD · 2026-11-23 ──
+          //
+          // Hasta hoy acá se abreviaba **sólo si no se perdía nada**: `38.4K`
+          // sí, pero `12,950` iba entero porque `12.9K` se comía los 50. Era
+          // una lectura del `.pen`, y en QA se vio lo que costaba: **la misma
+          // métrica cambiaba de forma entre meses** —las órdenes salían
+          // «6.41K» en octubre y «14,183» en noviembre— y en la desagregación
+          // convivían «USD 7.14K» y «USD 108,229» en la misma lista. Que una
+          // cifra se escriba de una forma u otra según sus últimos dígitos no
+          // se puede leer: parece que cambió la unidad.
+          //
+          // Ahora toda cifra desde mil se abrevia a tres significativas. Lo
+          // que se pierde es la cola —108,229 se lee 108K— y quien necesita
+          // el número entero lo tiene en la tabla, que sigue escribiendo
+          // completas las columnas que no abrevian exactas · ver
+          // `abreviaSinPerder` y `TableBody`.
+          let rounded = significant(reduced, SIGNIFICANT)
+          let suffix: string = scale.suffix
+          // 999,700 redondea a 1000K: eso es un millón, y se escribe así.
+          if (scale.suffix === 'K' && Math.abs(rounded) >= 1000) {
+            rounded = significant(rounded / 1000, SIGNIFICANT)
+            suffix = 'M'
+          }
 
           // La abreviatura TAMBIÉN pasa por `Intl`. Escribirla con `String()`
           // —que es lo que hacía v2— la deja siempre con punto decimal, así que
           // con un locale de coma la cifra abreviada mentía mientras la entera
           // salía bien. No se notaba porque el locale estaba fijo en `es-MX`.
-          //
-          // Y la comprobación de exactitud se hace sobre el NÚMERO, nunca sobre
-          // el texto: `Number('4,28')` es NaN en cuanto el locale usa coma.
           const decimals = decimalsOf(rounded)
           const body = new Intl.NumberFormat(locale, {
             minimumFractionDigits: decimals,
             maximumFractionDigits: decimals,
           }).format(rounded)
-          return `${body}${scale.suffix}`
+          return `${body}${suffix}`
         }
       }
     }

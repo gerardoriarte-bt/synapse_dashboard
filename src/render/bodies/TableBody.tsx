@@ -36,6 +36,7 @@ import { Value } from '../primitives/Value'
 import { TABLA_DE_LECTURA } from '../primitives/tablaDeLectura'
 import { hue } from '../plots/core/seriesColor'
 import { UnknownPlotState } from '../states/UnknownPlotState'
+import { abreviaSinPerder } from '../format'
 import type { NumberOptions } from '../format'
 import type { BodyProps, FamiliaDeDibujo } from '../types'
 
@@ -117,9 +118,10 @@ export function TableBody({ value, params, family, grafico, format, lectura }: T
       .map((f) => f[key])
       .filter((v): v is number => typeof v === 'number')
     const magnitude = Math.max(0, ...values.map(Math.abs))
-    const abreviaExacta = (v: number) =>
-      Math.abs(v) < ABBREVIATE_FROM || /[KM]$/.test(format.number(v, { abbreviate: true }))
-    if (magnitude >= ABBREVIATE_FROM && values.every(abreviaExacta)) return { abbreviate: true }
+    // `abreviaSinPerder` y no mirar si el texto sale con K · 2026-11-23: desde
+    // que `number` abrevia por magnitud, todo lo que pasa de mil sale con K y
+    // la columna se habría comido sus colas sin avisar.
+    if (magnitude >= ABBREVIATE_FROM && values.every(abreviaSinPerder)) return { abbreviate: true }
     return {
       decimals: Math.min(
         MAX_DECIMALS,
