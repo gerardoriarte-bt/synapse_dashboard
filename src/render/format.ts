@@ -58,6 +58,36 @@ export function abreviaSinPerder(value: number): boolean {
   return significant(value / scale.divisor, SIGNIFICANT) * scale.divisor === value
 }
 
+/** **Cuántos decimales lleva un CONJUNTO de cifras** · 2026-11-23.
+ *
+ *  Sin esto cada cifra elegía los suyos: en el top 10 de productos salían
+ *  «USD 21,136.6» junto a «USD 36,562.43», porque `number` deja hasta dos y
+ *  quita los ceros del final. Lo que se compara en un mismo panel se escribe
+ *  con los mismos decimales: los que tenga la cifra que más tenga, con tope de
+ *  dos. **Y una moneda con centavos lleva siempre dos**: «USD 12.5» se lee como
+ *  un precio mal escrito. */
+export function decimalesComunes(values: readonly number[], unit?: string): number {
+  const max = Math.max(0, ...values.map((v) => Math.min(2, decimalsOf(v))))
+  if (max > 0 && unit !== undefined && IS_CURRENCY.test(unit)) return 2
+  return max
+}
+
+/** **La cifra corta de un conjunto**: lo que pasa de mil se abrevia, lo que no
+ *  va con los decimales comunes de lo que no se abrevia. Es lo que escriben las
+ *  barras y la lista junto a cada ítem. */
+export function cifraDeConjunto(
+  format: Formatter,
+  values: readonly number[],
+  unit?: string,
+): (v: number) => string {
+  const decimals = decimalesComunes(
+    values.filter((v) => Math.abs(v) < 1000),
+    unit,
+  )
+  return (v) =>
+    Math.abs(v) >= 1000 ? format.number(v, { abbreviate: true }) : format.number(v, { decimals })
+}
+
 export type NumberOptions = {
   /** K y M. **No hay escalón para mil millones a propósito**: «B» es *billion*
    *  en inglés y un billón en español son 10¹², así que 2.5e9 sale «2,500M» —

@@ -7,6 +7,7 @@ import { PlotRadial } from '../plots/PlotRadial'
 import { PlotPareto } from '../plots/PlotPareto'
 import { PlotTreemap } from '../plots/PlotTreemap'
 import { UnknownPlotState } from '../states/UnknownPlotState'
+import { cifraDeConjunto, decimalesComunes } from '../format'
 import type { BodyProps } from '../types'
 
 /** Los gráficos que este cuerpo sabe dibujar HOY, POR FORMA.
@@ -109,7 +110,14 @@ export function BarsBody({
       : [...items].sort((a, b) => (orden === 'desc' ? b.v - a.v : a.v - b.v))
   const trimmed = tope === undefined ? sorted : sorted.slice(0, tope)
 
-  const figure = (v: number) => format.number(v, { abbreviate: true })
+  // **Los mismos decimales en todo el panel** · 2026-11-23 · ver
+  // `decimalesComunes`. Lo que pasa de mil se abrevia —y ahí manda la
+  // abreviatura—; lo que no, va con los decimales del conjunto. La lectura
+  // completa del `<title>` también, que es donde se veían «USD 21,136.6» y
+  // «USD 36,562.43» lado a lado.
+  const values = items.map((i) => i.v)
+  const figure = cifraDeConjunto(format, values, unit)
+  const decimalesLeidos = decimalesComunes(values, unit)
 
   // ── **DOS GRÁFICOS RECIBEN LA LISTA ENTERA, ANTES DE `tope`** ──────────────
   //
@@ -226,7 +234,7 @@ export function BarsBody({
         value={{ forma: 'categorica', items: trimmed }}
         family={family}
         format={(v) => format.withUnit(figure(v), unit)}
-        leer={(v) => format.withUnit(format.number(v), unit)}
+        leer={(v) => format.withUnit(format.number(v, { decimals: decimalesLeidos }), unit)}
       />
     </div>
   )

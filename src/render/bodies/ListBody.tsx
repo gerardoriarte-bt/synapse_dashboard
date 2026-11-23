@@ -8,6 +8,7 @@ import { Label } from '../primitives/Label'
 import { Value } from '../primitives/Value'
 import { hue } from '../plots/core/seriesColor'
 import { UnknownPlotState } from '../states/UnknownPlotState'
+import { cifraDeConjunto } from '../format'
 import type { BodyProps } from '../types'
 
 /** Los gráficos que este cuerpo sabe dibujar HOY.
@@ -62,6 +63,11 @@ export function ListBody({
     .slice(0, tope)
 
   const max = Math.max(1, ...items.map((i) => Math.abs(i.v)))
+  // Los mismos decimales en toda la lista · 2026-11-23 · ver `decimalesComunes`.
+  const figure = cifraDeConjunto(
+    format,
+    items.map((i) => i.v),
+  )
 
   return (
     <div className="h-full min-h-0 overflow-y-auto">
@@ -88,7 +94,7 @@ export function ListBody({
                   repetirla decía «Nike Air, Nike Air» y nunca el número. Con
                   esto dice «Nike Air, Unidades 4.2K». */}
               <Value label={metric} size="cell" labelVisibility="screenReader">
-                {format.number(item.v, { abbreviate: true })}
+                {figure(item.v)}
               </Value>
             </span>
           </li>

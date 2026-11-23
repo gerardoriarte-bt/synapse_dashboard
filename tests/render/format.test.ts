@@ -4,7 +4,7 @@
  *  de correr el código y copiar lo que dio.
  */
 import { describe, expect, it } from 'vitest'
-import { abreviaSinPerder, createFormat } from '@/render/format'
+import { abreviaSinPerder, createFormat, decimalesComunes } from '@/render/format'
 
 const fmt = createFormat('es-MX')
 
@@ -176,5 +176,20 @@ describe('una fecha de calendario no se corre de día · 2026-10-01', () => {
     // instante `…T04:00:00Z` del día siguiente es todavía el día anterior acá.
     const local = new Date('2026-09-02T04:00:00Z').getDate()
     expect(fmt.calendar('2026-09-02T04:00:00Z')).toMatch(new RegExp(`\\b${String(local)}\\b`))
+  })
+})
+
+describe('decimalesComunes · un conjunto, unos mismos decimales · 2026-11-23', () => {
+  it('los de la cifra que más tiene, con tope de dos', () => {
+    expect(decimalesComunes([21136.6, 36562.43])).toBe(2)
+    expect(decimalesComunes([4.5, 3])).toBe(1)
+    expect(decimalesComunes([1, 2, 3])).toBe(0)
+    expect(decimalesComunes([1.23456])).toBe(2)
+  })
+
+  it('una moneda con centavos lleva siempre dos', () => {
+    expect(decimalesComunes([12.5, 13], 'USD')).toBe(2)
+    expect(decimalesComunes([12, 13], 'USD')).toBe(0)
+    expect(decimalesComunes([12.5, 13], '%')).toBe(1)
   })
 })
