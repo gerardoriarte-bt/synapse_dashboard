@@ -116,7 +116,7 @@ async function editar() {
 
 /** El porqué de no publicar, con cambios sin guardar · desde el guardado
  *  automático no pide «guardá» sino esperar a que se guarde. */
-const ESPERAR_Y_VALIDAR = 'Para publicar, esperá a que se guarde y validá.'
+const ESPERAR_Y_VALIDAR = 'Para publicar, espera a que se guarde y valida.'
 
 /** El botón de validar vive en el chrome desde el 2026-10-06, al lado de
  *  guardar y publicar · §2.4 de `docs/AUDITORIA-2026-10-06-builder-contexto-y-canvas.md`.
@@ -250,7 +250,7 @@ describe('F4.15 · publicar', () => {
     await abrir()
 
     expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
-    expect(screen.getByText('Para publicar, validá.')).toBeInTheDocument()
+    expect(screen.getByText('Para publicar, valida.')).toBeInTheDocument()
     expect(screen.queryByText('Validación del servidor')).toBeNull()
   })
 
@@ -268,11 +268,11 @@ describe('F4.15 · publicar', () => {
     montar()
     await abrir()
 
-    expect(screen.getByText('Para publicar, validá.')).toBeInTheDocument()
+    expect(screen.getByText('Para publicar, valida.')).toBeInTheDocument()
 
     await userEvent.click(validarBtn())
     expect(await screen.findByText('El servidor encontró problemas.')).toBeInTheDocument()
-    expect(screen.queryByText('Para publicar, validá.')).toBeNull()
+    expect(screen.queryByText('Para publicar, valida.')).toBeNull()
 
     await editar()
     expect(screen.getByText(ESPERAR_Y_VALIDAR)).toBeInTheDocument()
@@ -354,7 +354,7 @@ describe('F4.15 · publicar', () => {
     expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull()
     // **Reemplaza «todavía no vio esta composición»** · 2026-10-06: ahora es
     // la ayuda del chrome, y la barra del veredicto desaparece.
-    expect(screen.getByText('Para publicar, validá.')).toBeInTheDocument()
+    expect(screen.getByText('Para publicar, valida.')).toBeInTheDocument()
     expect(screen.queryByText('Validación del servidor')).toBeNull()
     expect(validarBtn()).toBeInTheDocument()
   })

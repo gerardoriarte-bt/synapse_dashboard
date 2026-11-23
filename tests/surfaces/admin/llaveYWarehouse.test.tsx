@@ -120,7 +120,7 @@ function montar() {
 }
 
 async function abrirFicha() {
-  await userEvent.click(await screen.findByRole('button', { name: /^Keralty Colombia · / }))
+  await userEvent.click(await screen.findByRole('button', { name: /^Keralty Colombia( · |$)/ }))
   await screen.findByRole('navigation', { name: 'Migaja' })
   await screen.findByRole('button', { name: 'Verificar ahora' })
 }

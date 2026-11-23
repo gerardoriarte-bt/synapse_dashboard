@@ -57,7 +57,7 @@ const DOCE_MESES: Multi = {
   series: [serie('Ventas', [1940000, 2740392, 1040000], MESES), serie('Inversión', [180580, 170000, 70000], MESES)],
 }
 
-const grafico = () => screen.getByRole('group', { name: /usá las flechas/ })
+const grafico = () => screen.getByRole('group', { name: /usa las flechas/ })
 
 describe('la leyenda · el `.pen` la dibuja y no estaba', () => {
   it('nombra cada serie con el valor del ÚLTIMO punto · y dice de cuándo es', () => {
@@ -73,10 +73,62 @@ describe('la leyenda · el `.pen` la dibuja y no estaba', () => {
     ])
   })
 
-  it('con UNA serie no hay leyenda · repetiría el título del panel', () => {
+  it('con UNA serie la leyenda va SIN NOMBRE · repetiría el título del panel', () => {
     const una: Temporal = { forma: 'serieTemporal', puntos: serie('x', [1, 2, 3]).puntos }
     render(<SeriesBody {...base} value={una} params={{}} />)
-    expect(screen.queryByRole('list')).toBeNull()
+    const leyenda = screen.getByRole('list')
+    expect(leyenda).not.toHaveTextContent('x')
+    expect(leyenda).not.toHaveTextContent('serie')
+  })
+})
+
+/** **El nCAC de UA MX, visto en QA el 2026-11-23**: una serie sola con el eje
+ *  de 0 a 60 y ninguna cifra a la vista. La del período existía sólo al pasar
+ *  el puntero. Las cifras son las que `ncac_registrados` trae para septiembre y
+ *  octubre · `docs/MENSAJE-2026-11-18-backend-series-sin-decimales.md`. */
+describe('una serie sola · la cifra del período a la vista', () => {
+  const NCAC: Temporal = {
+    forma: 'serieTemporal',
+    puntos: [
+      { t: '2026-09-01', v: 27.86 },
+      { t: '2026-10-01', v: 25.26 },
+    ],
+  }
+
+  it('dice el período y la cifra con la unidad de la métrica, sin pasar el puntero', () => {
+    render(<SeriesBody {...base} metric="nCAC" value={NCAC} params={{}} unit="USD" />)
+    const items = within(screen.getByRole('list')).getAllByRole('listitem').map((li) => li.textContent)
+    expect(items).toEqual([format.axisDate('2026-10-01', 'mes'), 'USD 25.26'])
+  })
+})
+
+/** **La unidad de CADA serie** · 2026-11-23. «Tendencia diaria» trae Ventas e
+ *  Inversión en USD y Sesiones sin unidad —la forma medida en
+ *  `tests/api/unidadPorSerie.test.ts`—, y su métrica no declara ninguna. */
+describe('la leyenda y la lectura · la unidad es la de cada serie', () => {
+  const CON_UNIDAD: Multi = {
+    forma: 'seriesMultiples',
+    series: [
+      { ...serie('Ventas', [43520, 12470]), unidad: 'USD' },
+      serie('Sesiones', [57126, 38578]),
+      { ...serie('Inversión', [2963, 1276]), unidad: 'USD' },
+    ],
+  }
+
+  it('cada cifra con SU unidad · y la serie sin unidad no hereda la de la métrica', () => {
+    // `unit="USD"` a propósito: si la de la métrica completara a la que no
+    // declara, las sesiones dirían dólares.
+    render(<SeriesBody {...base} value={CON_UNIDAD} params={{}} unit="USD" />)
+    const items = within(screen.getByRole('list')).getAllByRole('listitem').map((li) => li.textContent)
+    expect(items.slice(1)).toEqual(['VentasUSD 12,470', 'Sesiones38,578', 'InversiónUSD 1,276'])
+  })
+
+  it('la lectura también', () => {
+    render(<SeriesBody {...base} value={CON_UNIDAD} params={{}} />)
+    fireEvent.keyDown(grafico(), { key: 'ArrowRight' })
+    const lectura = screen.getByRole('status')
+    expect(lectura).toHaveTextContent('VentasUSD 12,470')
+    expect(lectura).toHaveTextContent('Sesiones38,578')
   })
 })
 

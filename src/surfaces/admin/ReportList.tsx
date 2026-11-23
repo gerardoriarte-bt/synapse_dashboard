@@ -22,6 +22,7 @@ import { Ayuda } from '../../render/primitives/Ayuda'
 import { Accion } from '../../render/primitives/Accion'
 import { StatusChip } from './StatusChip'
 import { SkeletonRows } from './SkeletonRows'
+import { EncabezadoDeReportes } from './EncabezadoDeReportes'
 import { cuandoSale, MAXIMO_DE_DESTINATARIOS, NOMBRE_DE_ESTADO } from './reporte'
 
 const NOTA = 'font-mono text-nota leading-rotulo tracking-rotulo uppercase text-dim m-0'
@@ -64,19 +65,18 @@ export function ReportList({
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <Ayuda>¿Qué le llega por correo a quién, y cuándo?</Ayuda>
-        <div className="flex flex-col items-end gap-1">
-          <span className="rounded-xs bg-w3 px-1 py-0.5">
-            <Label>Alcance · cliente</Label>
-          </span>
-          <Label>
-            {reportes.length === 0
+      <EncabezadoDeReportes
+        conteo={
+          // **Cargando no es «0 reportes»** · 2026-11-23: en QA la lista
+          // decía «0 reportes» encima de las filas esqueleto mientras la
+          // lectura no volvía, y se leía como un cliente sin reportes.
+          cargando
+            ? null
+            : reportes.length === 0
               ? '0 reportes'
-              : `${String(reportes.length)} ${reportes.length === 1 ? 'reporte' : 'reportes'} · ${String(activos)} ${activos === 1 ? 'activo' : 'activos'} · ${String(externos)} ${externos === 1 ? 'destinatario externo' : 'destinatarios externos'}`}
-          </Label>
-        </div>
-      </header>
+              : `${String(reportes.length)} ${reportes.length === 1 ? 'reporte' : 'reportes'} · ${String(activos)} ${activos === 1 ? 'activo' : 'activos'} · ${String(externos)} ${externos === 1 ? 'destinatario externo' : 'destinatarios externos'}`
+        }
+      />
 
       {!cargando && reportes.length === 0 ? (
         /* ── EL VACÍO · «A7 · Reportes · sin reportes» ──────────────────────

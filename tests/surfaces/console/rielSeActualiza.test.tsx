@@ -3,7 +3,7 @@
 /** El riel se entera de la consulta recién hecha · F5.26, 2026-10-19
  *
  *  **Visto en la consola, con Cortex de verdad**: después de preguntar, el riel
- *  seguía en «Todavía no preguntaste nada», y al cerrar y reabrir la hoja la
+ *  seguía en «Todavía no has preguntado nada», y al cerrar y reabrir la hoja la
  *  conversación no estaba en ninguna parte. El hilo SÍ se había guardado
  *  —medido en `user_threads`—; la lista seguía en caché hasta recargar.
  *
@@ -83,14 +83,14 @@ describe('el riel después de preguntar', () => {
     montar()
     await userEvent.click(await screen.findByRole('button', { name: /Preguntar a Synapse/i }))
     const hoja = await screen.findByRole('dialog')
-    expect(await within(hoja).findByText('Todavía no preguntaste nada.')).toBeInTheDocument()
+    expect(await within(hoja).findByText('Todavía no has preguntado nada.')).toBeInTheDocument()
 
     await userEvent.type(within(hoja).getByRole('textbox'), PREGUNTA)
     await userEvent.click(within(hoja).getByRole('button', { name: 'Preguntar' }))
     await waitFor(() => expect(within(hoja).getAllByText('Google PMax.').length).toBeGreaterThan(0))
 
     // El riel deja de decir que no hay nada: la lista se volvió a pedir.
-    await waitFor(() => expect(within(hoja).queryByText('Todavía no preguntaste nada.')).toBeNull())
+    await waitFor(() => expect(within(hoja).queryByText('Todavía no has preguntado nada.')).toBeNull())
   })
 })
 

@@ -510,8 +510,8 @@ function QueMuestra({
     <>
       <Ayuda>
         {panel.metricId === ''
-          ? 'Elegí qué muestra este panel: sin métrica no se puede publicar.'
-          : 'Cambiá la métrica: el panel se vuelve a dibujar con su dato.'}
+          ? 'Elige qué muestra este panel: sin métrica no se puede publicar.'
+          : 'Cambia la métrica: el panel se vuelve a dibujar con su dato.'}
       </Ayuda>
 
       <div className="flex items-baseline gap-3">
@@ -600,7 +600,7 @@ function ComoSeVe({
   if (metrica === undefined) {
     return (
       <div className="flex flex-col items-start gap-3">
-        <Ayuda>Cómo se ve depende de qué muestra: elegí primero la métrica.</Ayuda>
+        <Ayuda>Cómo se ve depende de qué muestra: elige primero la métrica.</Ayuda>
         <Accion onClick={onIrAMetrica}>Elegir qué muestra</Accion>
       </div>
     )

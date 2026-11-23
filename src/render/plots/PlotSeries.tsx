@@ -58,7 +58,13 @@ import { hue } from './core/seriesColor'
 import { Label } from '../primitives/Label'
 import type { FamiliaDeDibujo } from '../types'
 
-export type DrawableSeries = { etiqueta: string; puntos: { t: string; v: number; parcial?: boolean }[] }
+export type DrawableSeries = {
+  etiqueta: string
+  /** La unidad de ESTA serie · desde `3651d70`. La lectura y la leyenda la
+   *  pasan a `leer`; el eje no, porque es uno solo para todas. */
+  unidad?: string
+  puntos: { t: string; v: number; parcial?: boolean }[]
+}
 
 /** Cuánto aire pide cada rótulo del eje del tiempo, además de su texto. */
 const AIRE_ENTRE_FECHAS = 24
@@ -82,8 +88,11 @@ export function PlotSeries({
    *  estaba este plot antes del 2026-10-06. */
   fechar?: ((t: string) => string) | undefined
   /** La cifra completa, con su unidad, para la lectura y la leyenda. Sin él no
-   *  hay lectura: un plot no inventa cómo se escribe un monto. */
-  leer?: ((v: number) => string) | undefined
+   *  hay lectura: un plot no inventa cómo se escribe un monto.
+   *
+   *  **Recibe la unidad de la serie** · 2026-11-23. Qué unidad vale —la de la
+   *  serie o la de la métrica— lo decide el cuerpo, que sabe cuál llegó. */
+  leer?: ((v: number, unidad?: string) => string) | undefined
 }) {
   const { ref, w, h } = useSize()
   const [activo, setActivo] = useState<number | null>(null)
@@ -127,7 +136,7 @@ export function PlotSeries({
     const v = s.puntos[indiceLeyenda]?.v
     return {
       nombre: s.etiqueta,
-      valor: v === undefined || leer === undefined ? undefined : leer(v),
+      valor: v === undefined || leer === undefined ? undefined : leer(v, s.unidad),
       step: (i % 4) as 0 | 1 | 2 | 3,
     }
   })
@@ -138,10 +147,14 @@ export function PlotSeries({
 
   return (
     <div className="w-full h-full min-h-0 flex flex-col gap-3">
-      {/* Con una sola serie la leyenda repetiría el título del panel. */}
-      {single ? null : (
+      {/* **Con una sola serie la leyenda va SIN NOMBRE** · 2026-11-23. El
+          nombre repetiría el título del panel, y por eso no había leyenda; pero
+          sin ella la cifra del período sólo existía al pasar el puntero, y el
+          eje decía «0 · 20 · 40 · 60» sin decir de qué. Visto en QA en el nCAC
+          de UA MX. La cifra con su unidad es lo que le da nombre al eje. */}
+      {single && !conLectura ? null : (
         <Legend
-          entries={leyenda}
+          entries={single ? leyenda.map((e) => ({ ...e, nombre: '' })) : leyenda}
           family={family}
           // El momento que la leyenda está leyendo: el punto activo o el último.
           {...(fechar === undefined || rotulos[indiceLeyenda] === undefined
@@ -157,7 +170,7 @@ export function PlotSeries({
           ? {
               tabIndex: 0,
               role: 'group',
-              'aria-label': 'Gráfico · usá las flechas para leer cada punto',
+              'aria-label': 'Gráfico · usa las flechas para leer cada punto',
               onPointerMove: (e: PointerEvent<HTMLDivElement>) => {
                 const caja = e.currentTarget.getBoundingClientRect()
                 setActivo(indiceEn(e.clientX - caja.left))
@@ -276,7 +289,7 @@ export function PlotSeries({
                   {single ? null : (
                     <Label>{s.etiqueta}</Label>
                   )}
-                  <span className="font-mono text-cifra text-ink tabular-nums">{leer(p.v)}</span>
+                  <span className="font-mono text-cifra text-ink tabular-nums">{leer(p.v, s.unidad)}</span>
                 </span>
               )
             })}

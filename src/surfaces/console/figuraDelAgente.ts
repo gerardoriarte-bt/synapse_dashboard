@@ -102,3 +102,68 @@ function minuscula(s: string): string {
 export function rotularFechasEnTexto(texto: string, format: Formatter): string {
   return texto.replace(/\b\d{4}-\d{2}-\d{2}\b/g, (t) => format.axisDate(t, t.endsWith('-01') ? 'mes' : 'dia'))
 }
+
+type Tabular = Extract<Value, { forma: 'tabular' }>
+
+/** Un nombre de columna tal como sale de SQL: letras, dígitos y guiones bajos,
+ *  sin espacios. */
+const NOMBRE_SQL = /^[A-Za-z0-9_]+$/
+
+/** **Una columna que es un identificador** · 2026-11-23: `ID`, `PRODUCT_ID`,
+ *  `ID_TIENDA`. Se decide por el nombre de la columna porque el cable no la
+ *  marca: la columna tabular trae `key`, `title`, `numeric`, `decimals` y
+ *  `unit`, y nada más. */
+const IDENTIFICADOR = /^(id|.+_id|id_.+)$/i
+
+export function esIdentificador(clave: string): boolean {
+  return IDENTIFICADOR.test(clave)
+}
+
+/** «PRODUCT_ID» → «Product id». **Es presentación, no copy**: saca los guiones
+ *  bajos y deja la frase en minúscula con la primera en mayúscula. No traduce
+ *  ni elige palabras: «GENERO» sigue siendo «Genero». */
+export function humanizarColumna(nombre: string): string {
+  const frase = nombre
+    .split('_')
+    .filter((p) => p !== '')
+    .join(' ')
+    .toLocaleLowerCase('es')
+  return frase === '' ? nombre : frase.charAt(0).toLocaleUpperCase('es') + frase.slice(1)
+}
+
+/** **Una tabla del agente, legible** · QA, 2026-11-23.
+ *
+ *  Dos cosas, las dos de presentación:
+ *
+ *  1. **El título se humaniza sólo cuando no hay título.** El backend infiere
+ *     las columnas de la consulta y pone el nombre de la columna como `title`
+ *     —visto en QA: «PRODUCT_ID», «TITULO_PRODUCTO»—, y el traductor de
+ *     Vega-Lite hace lo mismo cuando el agente no escribió uno. Si el título
+ *     es OTRO que la clave, alguien lo escribió, y se respeta tal cual.
+ *  2. **Un identificador no es una cantidad.** «3,026,175» se lee como tres
+ *     millones de algo. La columna deja de ser numérica —ni separador de
+ *     miles, ni alineada como cifra— y la celda pasa a texto con sus dígitos
+ *     intactos. `String(n)` no redondea ni agrupa: es el mismo número escrito.
+ */
+export function tablaLegible(valor: Tabular): Tabular {
+  const ids = new Set(valor.columnas.filter((c) => esIdentificador(c.clave)).map((c) => c.clave))
+  return {
+    ...valor,
+    columnas: valor.columnas.map((c) => {
+      const titulo =
+        c.titulo === c.clave && NOMBRE_SQL.test(c.titulo) ? humanizarColumna(c.titulo) : c.titulo
+      return ids.has(c.clave) ? { ...c, titulo, numerica: false } : { ...c, titulo }
+    }),
+    filas:
+      ids.size === 0
+        ? valor.filas
+        : valor.filas.map((f) => {
+            const out = { ...f }
+            for (const k of ids) {
+              const celda = out[k]
+              if (typeof celda === 'number') out[k] = String(celda)
+            }
+            return out
+          }),
+  }
+}

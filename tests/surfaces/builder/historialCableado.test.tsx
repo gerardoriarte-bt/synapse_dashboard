@@ -222,12 +222,12 @@ describe('B6 · el dashboard sale de la VERSIÓN abierta', () => {
     // cliente sin ninguna. Desde el 2026-10-07 se entra por dashboards, y el
     // cliente vacío es el que no tiene ni dashboards ni versiones.
     const { pedidas } = montar([publicacion({})], [], [])
-    await screen.findByText('Este cliente todavía no tiene dashboards. Creá el primero.')
+    await screen.findByText('Este cliente todavía no tiene dashboards. Crea el primero.')
     await userEvent.click(screen.getByRole('button', { name: 'Historial de versiones' }))
 
     expect(pedidas).toEqual([])
     expect(
-      screen.getByText('Elegí un dashboard en «Dashboards» para ver su historial.'),
+      screen.getByText('Elige un dashboard en «Dashboards» para ver su historial.'),
     ).toBeInTheDocument()
     // **Que el botón DISPARE, no que exista**: un estado sin salida es una queja.
     await userEvent.click(screen.getByRole('button', { name: 'Ir a Dashboards' }))
@@ -238,9 +238,9 @@ describe('B6 · el dashboard sale de la VERSIÓN abierta', () => {
 })
 
 describe('B6 · un dashboard elegido sin versiones', () => {
-  it('lo nombra y dice que no tiene versiones · no pide «elegí un dashboard»', async () => {
+  it('lo nombra y dice que no tiene versiones · no pide «elige un dashboard»', async () => {
     // **Visto en pantalla el 2026-10-07**: un dashboard recién creado, elegido,
-    // abría el historial con «Elegí un dashboard», que es falso — ya estaba
+    // abría el historial con «Elige un dashboard», que es falso — ya estaba
     // elegido. Lo que pasa es que todavía no tiene versiones.
     const { pedidas } = montar([publicacion({})], [], DASHBOARDS)
     await userEvent.click(await screen.findByRole('button', { name: /Marca/ }))
@@ -249,7 +249,7 @@ describe('B6 · un dashboard elegido sin versiones', () => {
     expect(
       screen.getByText('Marca todavía no tiene versiones: el historial empieza con la primera.'),
     ).toBeInTheDocument()
-    expect(screen.queryByText('Elegí un dashboard en «Dashboards» para ver su historial.')).toBeNull()
+    expect(screen.queryByText('Elige un dashboard en «Dashboards» para ver su historial.')).toBeNull()
     expect(pedidas).toEqual([])
     await userEvent.click(screen.getByRole('button', { name: 'Ir a Dashboards' }))
     expect(await screen.findByRole('heading', { name: '¿Sobre qué se va a componer?' })).toBeInTheDocument()
@@ -355,7 +355,7 @@ describe('B6 · el chrome de `contexto` · §PEN:B6 frame `Volver`', () => {
     ).toBeInTheDocument()
     // Y quedó en el editor de ese borrador, que se puede componer.
     expect(
-      await screen.findByText('Este dashboard todavía no tiene pestañas. Agregá la primera con «+ Pestaña».'),
+      await screen.findByText('Este dashboard todavía no tiene pestañas. Agrega la primera con «+ Pestaña».'),
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Agregar una pestaña' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: '¿Sobre qué se va a componer?' })).toBeNull()

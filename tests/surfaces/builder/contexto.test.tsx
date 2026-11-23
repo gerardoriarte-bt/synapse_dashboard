@@ -372,10 +372,10 @@ describe('paso 3 · abrir el editor dice qué va a pasar, y lo hace', () => {
 
     await waitFor(() => expect(cuerpos).toEqual([{ version_id: 'v5', dashboard_id: 'd-3' }]))
     expect(
-      await screen.findByText('Se creó el borrador v5, vacío. Empezá agregando una pestaña.'),
+      await screen.findByText('Se creó el borrador v5, vacío. Empieza agregando una pestaña.'),
     ).toBeInTheDocument()
     expect(
-      screen.getByText('Este dashboard todavía no tiene pestañas. Agregá la primera con «+ Pestaña».'),
+      screen.getByText('Este dashboard todavía no tiene pestañas. Agrega la primera con «+ Pestaña».'),
     ).toBeInTheDocument()
     // Vacío de verdad: nada que copiar, así que no hay `PUT`.
     expect(puts).toEqual([])
@@ -430,7 +430,7 @@ describe('«Nuevo dashboard» · D4', () => {
     )
     montar()
 
-    expect(await screen.findByText('Este cliente todavía no tiene dashboards. Creá el primero.')).toBeInTheDocument()
+    expect(await screen.findByText('Este cliente todavía no tiene dashboards. Crea el primero.')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Nuevo dashboard' }))
     await userEvent.type(screen.getByRole('textbox', { name: 'Nombre del dashboard nuevo' }), 'Overview')
     await userEvent.click(screen.getByRole('button', { name: 'Crear dashboard' }))

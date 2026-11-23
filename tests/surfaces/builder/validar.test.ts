@@ -114,7 +114,7 @@ describe('la métrica', () => {
     expect(p[0]?.campo).toBe('metricId')
     // «Se ancla a un metricId» era la regla dicha en el idioma del código; ahora
     // dice qué hacer · auditoría del 2026-10-06.
-    expect(p[0]?.mensaje).toBe('Sin métrica · elegila en la configuración del panel')
+    expect(p[0]?.mensaje).toBe('Sin métrica · elígela en la configuración del panel')
     expect(p[0]?.mensaje).not.toContain('metricId')
   })
 

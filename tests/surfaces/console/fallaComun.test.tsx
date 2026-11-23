@@ -97,6 +97,23 @@ describe('sólo algunos', () => {
     expect(screen.getByRole('button', { name: 'Reintentar los 2' })).toBeInTheDocument()
   })
 
+  it('QA 2026-11-23 · dos causas: el panel de la otra NO dice que el resto cargó', async () => {
+    // Nueve paneles fallaban por una causa y los demás por otra, y éstos decían
+    // «El resto de los paneles cargó normalmente» con la pestaña entera en error.
+    servir({ 'p-1': FALLA, 'p-2': FALLA, 'p-3': { status: 'ERROR', message: 'otra causa' } })
+    montar()
+    expect(await screen.findByText('otra causa')).toBeInTheDocument()
+    expect(screen.queryByText('El resto de los paneles cargó normalmente')).toBeNull()
+    expect(screen.getByText('Otros paneles de esta pestaña tampoco cargaron')).toBeInTheDocument()
+  })
+
+  it('un solo panel con error dice, con verdad, que el resto cargó', async () => {
+    servir({ 'p-1': FALLA, 'p-2': BIEN, 'p-3': BIEN })
+    montar()
+    expect(await screen.findByText(SNOWFLAKE)).toBeInTheDocument()
+    expect(screen.getByText('El resto de los paneles cargó normalmente')).toBeInTheDocument()
+  })
+
   it('un solo panel con error no arma aviso: lo dice el panel', async () => {
     servir({ 'p-1': FALLA, 'p-2': BIEN, 'p-3': BIEN })
     montar()

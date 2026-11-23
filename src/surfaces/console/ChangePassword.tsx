@@ -62,7 +62,7 @@ export function ChangePassword({ onDone }: { onDone: () => void }) {
           id="cambio-titulo"
           className="font-display text-titulo tracking-titulo leading-titulo text-ink m-0"
         >
-          Cambiá tu contraseña para entrar
+          Cambia tu contraseña para entrar
         </h1>
         <p className="font-body text-cuerpo leading-cuerpo text-dim m-0">
           La que estás usando te la asignaron. Mientras siga así, la consola no se

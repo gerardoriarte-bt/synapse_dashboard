@@ -4,7 +4,7 @@
  *  de correr el código y copiar lo que dio.
  */
 import { describe, expect, it } from 'vitest'
-import { createFormat } from '@/render/format'
+import { abreviaSinPerder, createFormat, decimalesComunes } from '@/render/format'
 
 const fmt = createFormat('es-MX')
 
@@ -34,8 +34,8 @@ describe('cifras · es-MX separa miles con coma y decimales con punto', () => {
   })
 })
 
-describe('abreviar no puede perder precisión', () => {
-  it('reproduce las abreviaturas del .pen cuando son exactas', () => {
+describe('abreviar · la forma la decide la magnitud · 2026-11-23', () => {
+  it('reproduce las abreviaturas del .pen', () => {
     expect(fmt.number(4280000, { abbreviate: true })).toBe('4.28M')
     expect(fmt.number(1620000, { abbreviate: true })).toBe('1.62M')
     expect(fmt.number(152000, { abbreviate: true })).toBe('152K')
@@ -43,11 +43,20 @@ describe('abreviar no puede perder precisión', () => {
     expect(fmt.number(740, { abbreviate: true })).toBe('740')
   })
 
-  it('escribe el número entero cuando abreviar se comería dígitos', () => {
-    // 12.950 SKU publicados abreviado sería 12.9K, y los 50 que faltan son SKU
-    // que existen. El `.pen` lo escribe entero, y ahora se sabe por qué.
-    expect(fmt.number(12950, { abbreviate: true })).toBe('12,950')
-    expect(fmt.number(1284500, { abbreviate: true })).toBe('1,284,500')
+  it('la misma métrica no cambia de forma entre meses', () => {
+    // Visto en QA el 2026-11-23: las órdenes salían «6.41K» en octubre y
+    // «14,183» en noviembre, porque sólo se abreviaba lo que abreviaba exacto.
+    // Y en la desagregación convivían «USD 7.14K» y «USD 108,229».
+    expect(fmt.number(6410, { abbreviate: true })).toBe('6.41K')
+    expect(fmt.number(14183, { abbreviate: true })).toBe('14.2K')
+    expect(fmt.number(7140, { abbreviate: true })).toBe('7.14K')
+    expect(fmt.number(108229, { abbreviate: true })).toBe('108K')
+    expect(fmt.number(1284500, { abbreviate: true })).toBe('1.28M')
+    expect(fmt.number(21136.6, { abbreviate: true })).toBe('21.1K')
+  })
+
+  it('lo que redondea a mil K se escribe en millones', () => {
+    expect(fmt.number(999700, { abbreviate: true })).toBe('1M')
   })
 
   it('no usa B para mil millones · un billón son 10¹² en español', () => {
@@ -61,13 +70,16 @@ describe('abreviar no puede perder precisión', () => {
     // `es-MX` las dos coincidían y el defecto era invisible.
     expect(createFormat('de-DE').number(4280000, { abbreviate: true })).toBe('4,28M')
     expect(createFormat('es-MX').number(4280000, { abbreviate: true })).toBe('4.28M')
+    expect(createFormat('de-DE').number(12950, { abbreviate: true })).toBe('12,9K')
   })
 
-  it('la comprobación de exactitud no depende del texto', () => {
-    // `Number('4,28')` es NaN en cuanto el locale usa coma: si la comprobación
-    // se hiciera sobre el string, con `de-DE` nada se abreviaría nunca.
-    expect(createFormat('de-DE').number(12950, { abbreviate: true })).toBe('12.950')
-    expect(createFormat('de-DE').number(38400, { abbreviate: true })).toBe('38,4K')
+  it('abreviaSinPerder · la tabla sigue sin comerse dígitos', () => {
+    // 12.950 SKU abreviado sería 13K, y los 50 que faltan son SKU que existen.
+    // La tabla escribe entera la columna que no abrevia exacta.
+    expect(abreviaSinPerder(12950)).toBe(false)
+    expect(abreviaSinPerder(38400)).toBe(true)
+    expect(abreviaSinPerder(740)).toBe(true)
+    expect(abreviaSinPerder(2.5e9)).toBe(false)
   })
 })
 
@@ -164,5 +176,38 @@ describe('una fecha de calendario no se corre de día · 2026-10-01', () => {
     // instante `…T04:00:00Z` del día siguiente es todavía el día anterior acá.
     const local = new Date('2026-09-02T04:00:00Z').getDate()
     expect(fmt.calendar('2026-09-02T04:00:00Z')).toMatch(new RegExp(`\\b${String(local)}\\b`))
+  })
+})
+
+describe('el huso del cliente · `zona` en `clock` y `calendar` · 2026-11-18', () => {
+  /** **Tokio y no Bogotá**, para que la prueba no pase por coincidir con el
+   *  huso de quien la corre: 13:00 UTC son las 22:00 allá, y ningún navegador
+   *  de este equipo está ahí. */
+  it('la hora se mira desde el huso que se le pasa', () => {
+    expect(fmt.clock('2026-11-03T13:00:05Z', 'Asia/Tokyo')).toBe('22:00')
+  })
+
+  it('y la fecha también: las 20:00 UTC del 3 ya son el 4 en Tokio', () => {
+    expect(fmt.calendar('2026-11-03T20:00:00Z', 'Asia/Tokyo')).toMatch(/\b4\b/)
+  })
+
+  it('un huso vacío o que `Intl` no reconoce no rompe: queda el del navegador', () => {
+    expect(fmt.clock('2026-11-03T13:00:05Z', '')).toBe(fmt.clock('2026-11-03T13:00:05Z'))
+    expect(fmt.clock('2026-11-03T13:00:05Z', 'Marte/Olimpo')).toBe(fmt.clock('2026-11-03T13:00:05Z'))
+  })
+})
+
+describe('decimalesComunes · un conjunto, unos mismos decimales · 2026-11-23', () => {
+  it('los de la cifra que más tiene, con tope de dos', () => {
+    expect(decimalesComunes([21136.6, 36562.43])).toBe(2)
+    expect(decimalesComunes([4.5, 3])).toBe(1)
+    expect(decimalesComunes([1, 2, 3])).toBe(0)
+    expect(decimalesComunes([1.23456])).toBe(2)
+  })
+
+  it('una moneda con centavos lleva siempre dos', () => {
+    expect(decimalesComunes([12.5, 13], 'USD')).toBe(2)
+    expect(decimalesComunes([12, 13], 'USD')).toBe(0)
+    expect(decimalesComunes([12.5, 13], '%')).toBe(1)
   })
 })

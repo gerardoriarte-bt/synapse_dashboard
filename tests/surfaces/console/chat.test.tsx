@@ -117,7 +117,7 @@ describe('F3.1 · la hoja', () => {
 describe('F3.5 · los mensajes', () => {
   it('sin turnos invita a preguntar · no muestra un hueco', () => {
     render(<ChatThread turns={[]} {...conChrome} />)
-    expect(screen.getByText(/Preguntá sobre lo que estás viendo/)).toBeInTheDocument()
+    expect(screen.getByText(/Pregunta sobre lo que estás viendo/)).toBeInTheDocument()
   })
 
   it('mientras no llegó el primer fragmento dice que está consultando', () => {
@@ -311,7 +311,7 @@ describe('F3.7 · el riel de hilos', () => {
 
   it('sin hilos lo dice · no deja un hueco', () => {
     render(<ThreadRail format={format} groups={[]} onSelect={() => {}} />)
-    expect(screen.getByText(/Todavía no preguntaste nada/)).toBeInTheDocument()
+    expect(screen.getByText(/Todavía no has preguntado nada/)).toBeInTheDocument()
   })
 
   it('el título va ENTERO · el recorte es de CSS, no de la cadena', () => {

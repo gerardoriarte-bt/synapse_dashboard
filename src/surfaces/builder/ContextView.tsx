@@ -119,7 +119,7 @@ export function ContextView({
           ¿Sobre qué se va a componer?
         </h1>
         <Ayuda>
-          Elegí el dashboard del cliente de la barra, después para qué rol lo vas a editar, y abrí el
+          Elige el dashboard del cliente de la barra, después para qué rol lo vas a editar, y abre el
           editor.
         </Ayuda>
       </header>
@@ -128,7 +128,7 @@ export function ContextView({
         {cargando ? (
           <Ayuda>Trayendo los dashboards…</Ayuda>
         ) : dashboards.length === 0 ? (
-          <Ayuda>Este cliente todavía no tiene dashboards. Creá el primero.</Ayuda>
+          <Ayuda>Este cliente todavía no tiene dashboards. Crea el primero.</Ayuda>
         ) : (
           <ul className="grid grid-cols-2 gap-3 m-0 p-0 list-none">
             {dashboards.map((d) => (

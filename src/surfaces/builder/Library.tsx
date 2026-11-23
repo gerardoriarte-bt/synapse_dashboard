@@ -121,7 +121,7 @@ export function Library({
       <div className="flex flex-col gap-1">
         <Label as="div">Datos del cliente</Label>
         <Ayuda>
-          Elegí qué querés mostrar, y después cómo. Arrastralo al lienzo, o tocá + para agregarlo al
+          Elige qué quieres mostrar, y después cómo. Arrástralo al lienzo, o toca + para agregarlo al
           final.
         </Ayuda>
         {ningunaConCifra ? (

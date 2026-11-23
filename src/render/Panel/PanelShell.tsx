@@ -37,6 +37,10 @@ type Props = {
   /** **La nota de lectura** · B1.13, a la vista desde el 2026-10-14 (decisión
    *  humana). La escribe el admin en el builder y vive en el layout. */
   nota?: string
+  /** **Su degradación ya se dijo arriba de la grilla** · 2026-11-23 · ver
+   *  `surfaces/console/degradacionComun.ts`. El badge se queda —va en la línea
+   *  del título y no empuja nada—; la frase de la limitación no se repite. */
+  degradacionAgrupada?: boolean
   children: ReactNode
 }
 
@@ -51,6 +55,7 @@ export function PanelShell({
   onChat,
   onCollapse,
   nota,
+  degradacionAgrupada = false,
   children,
 }: Props) {
   const state = visualState(payload)
@@ -129,13 +134,35 @@ export function PanelShell({
           limitación y su alcance», y el alcance es el texto de `razon`. Va
           entre la cabecera y el cuerpo porque es del shell —el degradado no
           reemplaza el cuerpo— y porque una frase necesita el ancho entero. */}
-      {state === 'DEGRADADO' && 'razon' in payload && (
+      {state === 'DEGRADADO' && !degradacionAgrupada && 'razon' in payload && (
         <DegradedNote reason={payload.razon} unblockedBy={payload.desbloqueaCon} />
       )}
 
       {/* El slot. `min-h-0` es lo que impide que un cuerpo alto estire el panel
-          por encima de su `rowSpan` y rompa la fila entera. */}
-      <div className="flex-1 min-h-0">{children}</div>
+          por encima de su `rowSpan` y rompa la fila entera.
+
+          ── **Y `overflow-auto` es lo que impide que lo DESBORDE** · 2026-11-23 ──
+
+          `min-h-0` sólo dejaba al slot achicarse: el contenido que no entraba
+          seguía pintándose, por debajo del slot, encima del pie y fuera de la
+          tarjeta, donde la fila siguiente lo tapaba. Visto en QA con datos
+          reales en tres cuerpos a la vez: la prosa de «Decisions» (12 × 4) con
+          «HIGHER = BETTER» y «PREGUNTAR» encima de las recomendaciones, el KPI
+          degradado de un mes cerrado con «VS MES ANTERIOR» fuera de la tarjeta,
+          y la tabla de campañas de Terpel.
+
+          **El mecanismo es uno y vive acá, no en cada cuerpo.** Principio 11 de
+          `design.md`: «scroll interno propio, nunca estiran el alto»; y la
+          altura es `96·N − 16`, que no se toca. Así que lo que no entra
+          scrollea dentro del cuerpo, y el pie y la cabecera quedan donde están.
+          A una columna no cambia nada: ahí el `rowSpan` es un piso y el panel
+          crece con su cuerpo antes de que haga falta el scroll.
+
+          La limitación del degradado queda FUERA del scroll a propósito: §8
+          pide declararla, y una razón que se va con la rueda no se declara. */}
+      <div data-slot="cuerpo" className="flex-1 min-h-0 overflow-auto">
+        {children}
+      </div>
 
       <footer className="flex items-center justify-between gap-2">
         {/* La dirección semántica solo si la métrica la declara: §1.3 la exige

@@ -46,6 +46,10 @@ type Props = {
   onRetry?: () => void
   /** Su error ya se dijo en el aviso de arriba · `fallaComun.ts`. */
   errorAgrupado?: boolean
+  /** Si los demás paneles cargaron · ver `ErrorState`. */
+  restoCargo?: boolean | undefined
+  /** Su degradación ya se dijo en el aviso de arriba · `degradacionComun.ts`. */
+  degradacionAgrupada?: boolean
 }
 
 export function PanelInGrid({
@@ -62,6 +66,8 @@ export function PanelInGrid({
   onRetry,
   plotProblem,
   errorAgrupado = false,
+  restoCargo,
+  degradacionAgrupada = false,
 }: Props) {
   return (
     <Panel
@@ -75,6 +81,8 @@ export function PanelInGrid({
       {...(onChat === undefined ? {} : { onChat })}
       {...(onRetry === undefined ? {} : { onRetry })}
       errorAgrupado={errorAgrupado}
+      restoCargo={restoCargo}
+      degradacionAgrupada={degradacionAgrupada}
       {...(panel.nota === undefined ? {} : { nota: panel.nota })}
     >
       {body()}
@@ -109,8 +117,8 @@ export function PanelInGrid({
           phrase={plotProblem.razon}
           detail={
             plotProblem.clase === 'tope'
-              ? 'Elegí otro gráfico o recortá la lista'
-              : 'Elegí otro gráfico o esperá a que haya más dato'
+              ? 'Elige otro gráfico o recorta la lista'
+              : 'Elige otro gráfico o espera a que haya más dato'
           }
         />
       )

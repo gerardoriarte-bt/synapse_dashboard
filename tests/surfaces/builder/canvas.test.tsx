@@ -216,11 +216,11 @@ describe('el lienzo anuncia sus gestos · 2026-09-17', () => {
     // **Una sola frase desde el 2026-10-06** (D7): las reglas de la grilla se
     // fueron y quedaron los gestos, que es lo que quien compone necesita.
     // «un dato» desde el 2026-11-10: la biblioteca es de datos.
-    const ayuda = screen.getByText(/Arrastrá un dato de la biblioteca a un espacio libre/)
-    expect(ayuda.textContent).toMatch(/arrastralo para moverlo, o usá las flechas/)
+    const ayuda = screen.getByText(/Arrastra un dato de la biblioteca a un espacio libre/)
+    expect(ayuda.textContent).toMatch(/arrástralo para moverlo, o usa las flechas/)
     // La otra mitad del gesto, y son distintas: mover y cambiar el tamaño ·
     // propuesta del canvas, punto 1.
-    expect(ayuda.textContent).toMatch(/con Shift y las flechas cambiás su tamaño/)
+    expect(ayuda.textContent).toMatch(/con Shift y las flechas cambias su tamaño/)
   })
 
   it('y el panel sigue siendo arrastrable · el rótulo no reemplaza al gesto', async () => {
@@ -868,8 +868,8 @@ describe('el lienzo dibuja cada panel con su dato', () => {
     base([http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok(rolesConAdmin))])
     montar()
     await abrirCanvas()
-    expect(await within(panelDe('Ventas')).findByText(/48[.,]362/)).toBeInTheDocument()
-    expect(within(panelDe('Doce meses')).getByText(/1[.,]234/)).toBeInTheDocument()
+    expect(await within(panelDe('Ventas')).findByText(/48[.,]4K/)).toBeInTheDocument()
+    expect(within(panelDe('Doce meses')).getByText(/1[.,]23K/)).toBeInTheDocument()
   })
 
   it('un panel cuya métrica no está en el preview dice que se dibuja al guardar · no inventa', async () => {
@@ -879,7 +879,7 @@ describe('el lienzo dibuja cada panel con su dato', () => {
     ])
     montar()
     await abrirCanvas()
-    await within(panelDe('Ventas')).findByText(/48[.,]362/)
+    await within(panelDe('Ventas')).findByText(/48[.,]4K/)
     expect(within(panelDe('Doce meses')).getByText('Se dibuja al guardar.')).toBeInTheDocument()
   })
 
@@ -924,7 +924,7 @@ describe('el lienzo dibuja cada panel con su dato', () => {
     base([http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok(rolesConAdmin))])
     montar()
     await abrirCanvas()
-    await within(panelDe('Ventas')).findByText(/48[.,]362/)
+    await within(panelDe('Ventas')).findByText(/48[.,]4K/)
 
     // **Ya con su dato, desde la biblioteca** · 2026-11-10.
     const como = await abrirDato('Ventas')
@@ -934,7 +934,7 @@ describe('el lienzo dibuja cada panel con su dato', () => {
     // En el LIENZO: «Cómo se ve» se abre sola y dibuja su muestra con la misma
     // cifra.
     const lienzo = screen.getByRole('grid', { name: 'Lienzo de composición' })
-    expect(within(lienzo).getAllByText(/48[.,]362/)).toHaveLength(2)
+    expect(within(lienzo).getAllByText(/48[.,]4K/)).toHaveLength(2)
     expect(screen.queryByText('Se dibuja al guardar.')).toBeNull()
   })
 
@@ -948,7 +948,7 @@ describe('el lienzo dibuja cada panel con su dato', () => {
     ])
     montar()
     await abrirCanvas()
-    await within(panelDe('Ventas')).findByText(/48[.,]362/)
+    await within(panelDe('Ventas')).findByText(/48[.,]4K/)
     const antes = pedidosDePreview.length
 
     const como = await abrirDato('Ventas')
@@ -1258,8 +1258,8 @@ describe('el lente no ve la pestaña · 2026-11-17', () => {
     montar()
     await abrirCanvas()
 
-    expect(await within(panelDe('Ventas')).findByText(/48[.,]362/)).toBeInTheDocument()
-    expect(within(panelDe('Doce meses')).getByText(/1[.,]234/)).toBeInTheDocument()
+    expect(await within(panelDe('Ventas')).findByText(/48[.,]4K/)).toBeInTheDocument()
+    expect(within(panelDe('Doce meses')).getByText(/1[.,]23K/)).toBeInTheDocument()
     expect(pedidosDelCatalogo[0]?.searchParams.get('period')).toBe('2026-10')
   })
 
@@ -1268,7 +1268,7 @@ describe('el lente no ve la pestaña · 2026-11-17', () => {
     montar()
     await abrirCanvas()
 
-    await within(panelDe('Ventas')).findByText(/48[.,]362/)
+    await within(panelDe('Ventas')).findByText(/48[.,]4K/)
     expect(
       within(panelDe('Doce meses')).getByText('admin no tiene esta pestaña, y el dato se pide como lo ve ese rol.'),
     ).toBeInTheDocument()
@@ -1284,6 +1284,6 @@ describe('el lente no ve la pestaña · 2026-11-17', () => {
     expect(
       await within(panelDe('Ventas')).findByText('admin no tiene esta pestaña, y el dato se pide como lo ve ese rol.'),
     ).toBeInTheDocument()
-    expect(screen.queryByText(/48[.,]362/)).toBeNull()
+    expect(screen.queryByText(/48[.,]4K/)).toBeNull()
   })
 })

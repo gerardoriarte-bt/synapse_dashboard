@@ -49,9 +49,11 @@ export function BarraDeCliente({ activo, clientes, onElegir }: Props) {
             <span className="truncate font-display text-titulo leading-titulo tracking-titulo font-medium text-ink">
               {activo.nombre}
             </span>
-            <span className="font-mono text-nota leading-rotulo tracking-rotulo uppercase text-dim">
-              {formaCortaVisible(activo)}
-            </span>
+            {formaCortaVisible(activo, clientes) !== '' && (
+              <span className="font-mono text-nota leading-rotulo tracking-rotulo uppercase text-dim">
+                {formaCortaVisible(activo, clientes)}
+              </span>
+            )}
           </div>
         </div>
       )}

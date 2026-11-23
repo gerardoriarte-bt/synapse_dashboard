@@ -83,7 +83,7 @@ import { usoPorMetrica } from './uso'
 import { TenantList } from './TenantList'
 import { ResumenDeFicha } from './ResumenDeFicha'
 import type { ResumenDeUsuarios } from './ResumenDeFicha'
-import { distintivo } from './distintivo'
+import { distintivo, nombreConDistintivo } from './distintivo'
 import { useClienteDeTrabajo } from '../useClienteDeTrabajo'
 import { SurfaceMessage } from '../console/SurfaceMessage'
 import { AgentConfig } from './AgentConfig'
@@ -268,7 +268,7 @@ export function Admin() {
   const revisar = useReviewAccessRequest()
   const nombreDeCliente = (id: string) => {
     const t = lista.find((x) => x.id === id)
-    return t === undefined ? id : `${t.nombre} · ${distintivo(t)}`
+    return t === undefined ? id : nombreConDistintivo(t, lista)
   }
   const cambiarUsuario = (u: Usuario, cambio: CambioDeUsuario) =>
     editarUsuario.mutate({ tenantId: u.clienteId, userId: u.id, cambio })
@@ -483,7 +483,9 @@ export function Admin() {
                 <h2 className="m-0 truncate font-display text-titulo-lg leading-titulo tracking-titulo text-ink">
                   {nombreDeTrabajo ?? ''}
                 </h2>
-                {tenantDeTrabajo !== null && <Label as="span">{distintivo(tenantDeTrabajo)}</Label>}
+                {tenantDeTrabajo !== null && distintivo(tenantDeTrabajo, lista) !== '' && (
+                  <Label as="span">{distintivo(tenantDeTrabajo, lista)}</Label>
+                )}
               </div>
               {/* Sin `?cliente=` a mano: el proveedor lo lleva al builder. */}
               <Accion onClick={() => void navegar('/builder')}>Abrir en builder</Accion>

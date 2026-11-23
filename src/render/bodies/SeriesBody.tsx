@@ -165,7 +165,7 @@ export function SeriesBody({
       return (
         <EmptyState
           phrase="Un combinado necesita dos series y llegó una"
-          detail="Una sola serie se dibuja como línea · elegí otro gráfico o agregá la segunda"
+          detail="Una sola serie se dibuja como línea · elige otro gráfico o agrega la segunda"
         />
       )
     }
@@ -238,7 +238,17 @@ export function SeriesBody({
   // **La lectura escribe la cifra entera y con su unidad** · 2026-10-06. Con
   // `base100` la unidad deja de valer —la cifra es un índice, no un monto— y
   // por eso se cae: «USD 112» sobre una serie normalizada sería mentir.
-  const unidadDeLectura = params.normalizacion === 'base100' ? undefined : unit
+  //
+  // **Y la unidad es la de CADA serie cuando el cable la trae** · 2026-11-23.
+  // «Tendencia diaria» mezcla Ventas y Inversión en USD con Sesiones, y su
+  // métrica no declara unidad —no hay una sola—, así que la leyenda decía
+  // «12,470» sin decir si eran dólares o visitas. Si ALGUNA serie declara la
+  // suya, la que no declara queda sin unidad: completarla con la de la métrica
+  // le pondría «USD» a las sesiones. Si ninguna declara, vale la de la métrica,
+  // que es el caso de la serie sola.
+  const base100 = params.normalizacion === 'base100'
+  const porSerie = normalized.some((s) => s.unidad !== undefined)
+  const unidadDeLectura = (deSerie: string | undefined) => (base100 ? undefined : porSerie ? deSerie : unit)
   return (
     <div className="h-full min-h-0">
       <PlotSeries
@@ -247,7 +257,7 @@ export function SeriesBody({
         format={(v) => format.number(v, { abbreviate: true })}
         area={normalized.length === 1}
         fechar={(t) => format.axisDate(t, granoDe(normalized))}
-        leer={(v) => format.withUnit(format.number(v), unidadDeLectura)}
+        leer={(v, u) => format.withUnit(format.number(v), unidadDeLectura(u))}
       />
     </div>
   )

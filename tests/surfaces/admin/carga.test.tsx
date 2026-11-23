@@ -116,7 +116,7 @@ describe('A1 · la lista de clientes mientras carga', () => {
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     montar()
 
-    expect(await screen.findByRole('button', { name: /^Under Armour México · / })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Clientes' })).toHaveAttribute('aria-busy', 'false')
     expect(screen.getByText('Clientes · 1')).toBeInTheDocument()
   })
@@ -132,7 +132,7 @@ describe('A4 · el catálogo mientras carga', () => {
       http.get(`${API}/admin/tenants/:id/catalog`, colgada),
     )
     const { container } = montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
     await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
 
     expect(await screen.findByLabelText('Capa')).toBeInTheDocument()
@@ -155,7 +155,7 @@ describe('A4 · el catálogo mientras carga', () => {
       http.get(`${API}/admin/tenants/:id/catalog`, colgada),
     )
     const { container } = montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
     await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
 
     await screen.findByRole('table')
@@ -168,7 +168,7 @@ describe('A4 · el catálogo mientras carga', () => {
       http.get(`${API}/admin/tenants/:id/catalog`, colgada),
     )
     montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
     await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
 
     await screen.findByRole('table')
@@ -187,8 +187,8 @@ describe('A2 · los roles mientras cargan', () => {
       http.get(`${API}/admin/tenants/:id/roles/composition`, colgada),
     )
     montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
-    await userEvent.click(screen.getByRole('button', { name: /^Under Armour México · / }))
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
+    await userEvent.click(screen.getByRole('button', { name: /^Under Armour México( · |$)/ }))
 
     // El rótulo de la sección no depende de los datos y está desde el
     // principio; el resumen sí, y mientras carga dice CARGANDO.

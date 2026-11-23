@@ -38,6 +38,7 @@ import type { Reporte, RespuestaDeReporte, Rol, Usuario } from '../../api/admin'
 import type { Formatter } from '../../render/format'
 import { Accion } from '../../render/primitives/Accion'
 import { ReportList } from './ReportList'
+import { EncabezadoDeReportes } from './EncabezadoDeReportes'
 import { ReportEditor } from './ReportEditor'
 import { ReportValidation } from './ReportValidation'
 import { ReportRuns } from './ReportRuns'
@@ -59,7 +60,16 @@ type Props = {
 
 const mensaje = (e: Error | null, otro: string) => (e === null ? null : e.message === '' ? otro : e.message)
 
-export function Reportes({ tenantId, cliente, zonaHoraria, roles, usuarios, format }: Props) {
+export function Reportes({ tenantId, cliente, zonaHoraria, roles, usuarios, format: delNavegador }: Props) {
+  // **Toda fecha de un reporte se mira en el huso del CLIENTE** · 2026-11-18.
+  // El reporte sale a «las 14:24, hora del cliente», y su envío pintado en el
+  // huso del navegador decía 15:24. Se arma una vez acá para que ninguna de las
+  // cuatro vistas pueda olvidarlo.
+  const format: Formatter = {
+    ...delNavegador,
+    calendar: (iso) => delNavegador.calendar(iso, zonaHoraria),
+    clock: (iso) => delNavegador.clock(iso, zonaHoraria),
+  }
   const { pathname } = useLocation()
   const navegar = useNavigate()
   const vista = vistaDe(pathname)
@@ -159,7 +169,10 @@ export function Reportes({ tenantId, cliente, zonaHoraria, roles, usuarios, form
       {/* ── LA LECTURA QUE FALLÓ · A1 ──────────────────────────────────────
           Antes quedaba cargando para siempre: no se leía el error. */}
       {reportes.isError ? (
-        <FallaDeCarga que="los reportes de este cliente" error={reportes.error} onReintentar={() => void reportes.refetch()} />
+        <div className="flex flex-col gap-6">
+          {vista.tipo === 'lista' && <EncabezadoDeReportes conteo="Sin datos" />}
+          <FallaDeCarga que="los reportes de este cliente" error={reportes.error} onReintentar={() => void reportes.refetch()} />
+        </div>
       ) : vista.tipo !== 'lista' && !(vista.tipo === 'editor' && vista.id === null) && reportes.data !== undefined && reporte === null ? (
         /* Un id que la lista no tiene: de otro cliente, o una URL vieja. */
         <section className="flex flex-col items-start gap-3 rounded-xl border border-w3 bg-panel p-6">

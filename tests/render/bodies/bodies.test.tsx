@@ -544,3 +544,48 @@ describe('GaugeBody · el síntoma real de un `maximo` que no llega · F1.41', (
     expect(screen.getByText(/Sobre 100/)).toBeInTheDocument()
   })
 })
+
+describe('BarsBody · un panel, unos mismos decimales · 2026-11-23', () => {
+  /** Visto en QA en el top 10 de productos: «USD 21,136.6» junto a
+   *  «USD 36,562.43». Cada cifra elegía sus decimales. */
+  const categorica = (vs: number[]) =>
+    ({
+      forma: 'categorica',
+      items: vs.map((v, i) => ({ etiqueta: `Producto ${String(i + 1)}`, v })),
+    }) as unknown as Extract<Value, { forma: 'categorica' }>
+
+  it('la lectura completa de cada barra lleva los mismos decimales', () => {
+    const { container } = render(
+      <BarsBody
+        {...base}
+        value={categorica([36562.43, 21136.6, 9000])}
+        params={{}}
+        unit="USD"
+        metric="Venta"
+      />,
+    )
+    const titulos = Array.from(container.querySelectorAll('title')).map((t) => t.textContent)
+    expect(titulos).toContain('Producto 2 · USD 21,136.60')
+    expect(titulos).toContain('Producto 3 · USD 9,000.00')
+  })
+
+  it('lo que no se abrevia también: una moneda con centavos lleva dos', () => {
+    render(
+      <BarsBody {...base} value={categorica([12.5, 13.25, 40])} params={{}} unit="USD" metric="Venta" />,
+    )
+    expect(screen.getByText('USD 12.50')).toBeInTheDocument()
+    expect(screen.getAllByText('USD 40.00').length).toBeGreaterThan(0)
+  })
+
+  it('la lista también', () => {
+    const ranking = {
+      forma: 'ranking',
+      items: [
+        { etiqueta: 'A', v: 4.5, posicion: 1 },
+        { etiqueta: 'B', v: 3.25, posicion: 2 },
+      ],
+    } as unknown as Extract<Value, { forma: 'ranking' }>
+    render(<ListBody {...base} value={ranking} params={{}} metric="ROAS" />)
+    expect(screen.getByText('4.50')).toBeInTheDocument()
+  })
+})
