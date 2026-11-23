@@ -37,7 +37,7 @@ la consola, un superadmin elige ese agente y la respuesta llega. `Admin`
 
 | # | Qué falta | De quién |
 |---|---|---|
-| F1 | Los meses cerrados salen `DEGRADED` con «Se actualiza en la próxima materialización», y eso no va a pasar. El backend dice que lo corrigió en `8366936` (`docs/backend-respuesta-front-meses-cerrados-2026-11-18.md`), pero ese commit no está publicado ni desplegado | Backend |
+| F1 | Los meses cerrados salen `DEGRADED` con «Se actualiza en la próxima materialización», y eso no va a pasar. El backend dice que lo corrigió en 8366936 (sin publicar) (`docs/backend-respuesta-front-meses-cerrados-2026-11-18.md`), pero ese commit no está publicado ni desplegado | Backend |
 | F2 | Diciembre de 2025 está en el selector y nunca se cargó | Operación · «Cargar meses» |
 | F3 | La zona horaria de UA MX es `America/Bogota` | Configuración, después de que QA reconozca zonas horarias |
 | F4 | `Admin` no tiene agente propio | Configuración |
