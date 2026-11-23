@@ -1,6 +1,6 @@
 # Para el equipo de backend · UA MX listo para producción: lo que falta de su lado · 2026-11-23
 
-**Medido contra `fb3ca0c` el 2026-11-23.** Del código leí:
+**Medido contra `fb3ca0c` el 2026-11-23**. Del código leí:
 
 - `queries.go` (`daily_trend`);
 - `drilldown.go` (`revenue`);
