@@ -182,11 +182,11 @@ async function abrirLaHoja() {
 }
 
 describe('3 · mientras el agente contesta, el riel no niega la pregunta', () => {
-  it('muestra la consulta en curso y no «Todavía no preguntaste nada»', async () => {
+  it('muestra la consulta en curso y no «Todavía no has preguntado nada»', async () => {
     const { soltar } = laConsola(UNO)
     montar()
     const hoja = await abrirLaHoja()
-    expect(within(hoja).getByText('Todavía no preguntaste nada.')).toBeTruthy()
+    expect(within(hoja).getByText('Todavía no has preguntado nada.')).toBeTruthy()
 
     await userEvent.type(within(hoja).getByRole('textbox'), '¿Qué productos vendieron más?')
     await userEvent.click(within(hoja).getByRole('button', { name: 'Preguntar' }))
@@ -194,7 +194,7 @@ describe('3 · mientras el agente contesta, el riel no niega la pregunta', () =>
     const enCurso = await within(hoja).findByRole('region', { name: 'Consulta en curso' })
     expect(within(enCurso).getByText('¿Qué productos vendieron más?')).toBeTruthy()
     expect(enCurso.textContent).toMatch(/respondiendo/i)
-    expect(within(hoja).queryByText('Todavía no preguntaste nada.')).toBeNull()
+    expect(within(hoja).queryByText('Todavía no has preguntado nada.')).toBeNull()
 
     soltar()
     await waitFor(() => expect(within(hoja).getAllByText('Listo.').length).toBeGreaterThan(0))
