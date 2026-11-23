@@ -1,4 +1,4 @@
-# Para el equipo de backend · UA MX listo para producción: lo que falta de su lado · 2026-11-23
+# Para el equipo de backend · dejar UA MX listo en QA: lo que falta de su lado · 2026-11-23
 
 **Medido contra `fb3ca0c` el 2026-11-23**. Del código leí:
 
@@ -15,12 +15,12 @@ En QA, ese mismo día y con UA MX:
   `docs/AUDITORIA-2026-11-23-ua-mx-funcional-y-ux.md`.
 
 Hola. UA MX está completo en QA: noviembre y octubre tienen cifra en los 13
-paneles, el editor dibuja y valida, y el chat responde. Queremos salir a
-producción. De nuestro lado ya se publicó la versión del dashboard con las
+paneles, el editor dibuja y valida, y el chat responde. Queremos dejar QA
+listo para ir a producción. De nuestro lado ya se publicó la versión del dashboard con las
 preguntas corregidas, sacamos Overview de los roles, cargamos diciembre de
 2025 y le dimos chat a Admin. El front corrige lo suyo en PRs aparte.
 
-Para producción, de su lado falta esto. Va ordenado por cuánto se nota.
+De su lado falta esto. Va ordenado por cuánto se nota.
 
 ## 1 · Los meses cerrados salen «DEGRADADO»
 
@@ -32,14 +32,14 @@ desconfianza generó.
 Ustedes respondieron el 18 que lo corrigieron en el commit 8366936, pero **ese
 commit no está en el repositorio**: lo último de
 `feature/dynamic-dashboard-backend` sigue siendo `fb3ca0c`. **Pedido:**
-publicarlo, desplegarlo en QA y llevarlo a producción.
+publicarlo, desplegarlo en QA y que quede en la versión que vaya a producción.
 
 ## 2 · QA no reconoce zonas horarias
 
 Está detallado en `docs/MENSAJE-2026-11-20-backend-terpel-tres-clientes.md`,
 §1. La imagen no trae `tzdata`, así que todos los clientes calculan el mes en
-UTC y los reportes salen cinco horas antes. **Para producción es
-bloqueante**: un mes que corta a las 19:00 de Bogotá no es auditable.
+UTC y los reportes salen cinco horas antes. **Antes de producción
+es bloqueante**: un mes que corta a las 19:00 de Bogotá no es auditable.
 
 ## 3 · Títulos en inglés en el catálogo de UA MX
 
@@ -68,11 +68,5 @@ meses», o el nombre que defina datos.
   juntas. ¿Se puede pedir en el prompt que cada comparación nombre su base?
 - **Los reportes por correo siguen sin desplegar** en QA: la ruta da 404. Con
   el punto 2 resuelto, van juntos.
-
-## Lo que preguntamos para producción
-
-¿Hay ya un backend de producción? ¿En qué commit está, y contra qué base y qué
-cuenta de Snowflake? El front despliega su imagen, pero necesita saber a qué
-API apunta.
 
 Gracias.
