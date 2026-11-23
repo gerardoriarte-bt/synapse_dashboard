@@ -78,7 +78,7 @@ function montar() {
 
 /** A4 es de alcance `tenant`, así que se llega por la navegación del chrome. */
 async function abrirCatalogo() {
-  await screen.findByRole('button', { name: /^Under Armour México · / })
+  await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
   await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
 }
 

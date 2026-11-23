@@ -30,11 +30,22 @@ export function monograma(nombre: string): string {
   return letras.toUpperCase()
 }
 
-/** Lo que va al lado del nombre. **Si la forma corta no dice nada nuevo**
- *  —vacía, o igual al nombre—, se muestra el id corto: es lo único que separa a
- *  dos clientes con el mismo nombre. */
-export function formaCortaVisible(cliente: ClienteVisible): string {
+/** Lo que va al lado del nombre. Vacío cuando no hay nada que decir.
+ *
+ *  **Hasta el 2026-11-23, sin forma corta se mostraba el id corto** —«2B5008F3»—
+ *  en todas partes. En QA se vio debajo de cada cliente sin forma corta, y para
+ *  negocio es ruido: el `.pen` (A1 y su propuesta en cards) nunca dibuja un id
+ *  ahí, siempre una forma corta legible. Así que sin forma corta no se muestra
+ *  nada.
+ *
+ *  **Salvo un caso, que es por el que el id estaba**: dos clientes con el mismo
+ *  nombre —en la base local hay dos «Under Armour México»—. Si `entre` trae la
+ *  lista y otro cliente se llama igual, el id corto vuelve: es lo único que los
+ *  separa. Sin `entre` no se sabe, y no se muestra. */
+export function formaCortaVisible(cliente: ClienteVisible, entre?: readonly ClienteVisible[]): string {
+  const nombre = cliente.nombre.trim().toLowerCase()
   const corta = (cliente.formaCorta ?? '').trim()
-  if (corta !== '' && corta.toLowerCase() !== cliente.nombre.trim().toLowerCase()) return corta.toUpperCase()
-  return cliente.id.slice(0, 8).toUpperCase()
+  if (corta !== '' && corta.toLowerCase() !== nombre) return corta.toUpperCase()
+  const homonimo = (entre ?? []).some((c) => c.id !== cliente.id && c.nombre.trim().toLowerCase() === nombre)
+  return homonimo ? cliente.id.slice(0, 8).toUpperCase() : ''
 }
