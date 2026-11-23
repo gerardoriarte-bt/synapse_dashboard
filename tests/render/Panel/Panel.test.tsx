@@ -78,9 +78,9 @@ const ESTADOS: Array<[string, Payload]> = [
   ['ERROR', { estado: 'ERROR', mensaje: 'Fallo al resolver la métrica.' } as unknown as Payload],
 ]
 
-function montar(payload: Payload) {
+function montar(payload: Payload, restoCargo?: boolean) {
   return render(
-    <Panel metric={metric} payload={payload} placement={placement} format={format} now={now}>
+    <Panel metric={metric} payload={payload} placement={placement} format={format} now={now} restoCargo={restoCargo}>
       <p>EL CUERPO</p>
     </Panel>,
   )
@@ -177,7 +177,8 @@ describe('cada estado dice qué pasa, por qué y qué se puede hacer · §8', ()
     // existe es peor que ninguno.
     for (const nombre of ['BLOQUEADO', 'SIN_PERMISO', 'ERROR']) {
       const [, payload] = ESTADOS.find(([n]) => n === nombre)!
-      const { container, unmount } = montar(payload)
+      // `restoCargo` lo afirma la grilla · 2026-11-23: el panel solo no lo sabe.
+      const { container, unmount } = montar(payload, true)
       expect(container.textContent).toMatch(/desbloquea|decide|cargó normalmente/)
       unmount()
     }

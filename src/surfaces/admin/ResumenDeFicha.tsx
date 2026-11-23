@@ -136,7 +136,7 @@ export function ResumenDeFicha({ tenant, format, roles, usuarios, acceso, onIr, 
                 className="h-8 rounded-md border border-w4 bg-transparent px-2 font-body text-cuerpo text-ink"
               />
             </label>
-            <Ayuda>El nombre no puede quedar vacío. La forma corta, sí: vacía, se muestra el id corto.</Ayuda>
+            <Ayuda>El nombre no puede quedar vacío. La forma corta, sí: vacía, no se muestra nada junto al nombre.</Ayuda>
             <div className="flex justify-end gap-2">
               <Accion tamano="compacta" onClick={() => setEditando(null)}>
                 Cancelar
@@ -154,7 +154,9 @@ export function ResumenDeFicha({ tenant, format, roles, usuarios, acceso, onIr, 
         ) : (
           <>
             <span className={VALOR}>{`${tenant.moneda} · ${tenant.zonaHoraria}`}</span>
-            <Label as="span">{`Forma corta · ${formaCortaVisible(tenant)}`}</Label>
+            <Label as="span">
+              {formaCortaVisible(tenant) === '' ? 'Sin forma corta' : `Forma corta · ${formaCortaVisible(tenant)}`}
+            </Label>
             <Label as="span">
               {`Alta ${format.calendar(tenant.creadoEn)}${version === null ? '' : ` · Catálogo v${String(version)}`}`}
             </Label>

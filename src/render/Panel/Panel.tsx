@@ -38,6 +38,11 @@ type Props = {
   /** **Su error es el mismo que el de otros paneles** y ya se dijo arriba · ver
    *  `ErrorState`. */
   errorAgrupado?: boolean
+  /** **Si los demás paneles de la pestaña cargaron** · lo sabe la grilla, no el
+   *  panel · ver `ErrorState`. */
+  restoCargo?: boolean | undefined
+  /** Su degradación ya se dijo arriba de la grilla · ver `PanelShell`. */
+  degradacionAgrupada?: boolean
   /** La nota de lectura del panel · va al shell. */
   nota?: string
   /** El cuerpo ya resuelto. Solo se pinta en DISPONIBLE y DEGRADADO — los dos
@@ -59,6 +64,8 @@ export function Panel({
   onUnblock,
   onRequestAccess,
   errorAgrupado = false,
+  restoCargo,
+  degradacionAgrupada = false,
   nota,
   children,
 }: Props) {
@@ -74,6 +81,7 @@ export function Panel({
       {...(onChat === undefined ? {} : { onChat })}
       {...(onCollapse === undefined ? {} : { onCollapse })}
       {...(nota === undefined ? {} : { nota })}
+      degradacionAgrupada={degradacionAgrupada}
     >
       {body()}
     </PanelShell>
@@ -127,6 +135,7 @@ export function Panel({
           <ErrorState
             message={payload.mensaje}
             agrupado={errorAgrupado}
+            restoCargo={restoCargo}
             {...(onRetry === undefined ? {} : { onRetry })}
           />
         )

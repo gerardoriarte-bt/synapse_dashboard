@@ -112,7 +112,7 @@ function montar() {
 }
 
 async function abrirFicha() {
-  await userEvent.click(await screen.findByRole('button', { name: /^Synapse UA HTML · / }))
+  await userEvent.click(await screen.findByRole('button', { name: /^Synapse UA HTML( · |$)/ }))
   await screen.findByRole('navigation', { name: 'Migaja' })
 }
 
@@ -175,9 +175,9 @@ describe('apagar el cliente · sólo el equipo interno', () => {
     // Vuelve a la lista, y el cliente ya no está.
     await waitFor(() => expect(screen.queryByRole('navigation', { name: 'Migaja' })).toBeNull())
     expect(
-      await screen.findByRole('button', { name: /^Under Armour México · / }),
+      await screen.findByRole('button', { name: /^Under Armour México( · |$)/ }),
     ).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /^Synapse UA HTML · / })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Synapse UA HTML( · |$)/ })).toBeNull()
   })
 
   it('cancelar no manda nada', async () => {

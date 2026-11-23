@@ -67,9 +67,15 @@
  *  plataforma— sería el front decidiendo qué se grafica, que es composición y no
  *  presentación. El cuerpo cae en su defecto.
  *
- *  **Los ceros no se filtran.** Medido: la dimensión de plataforma trae 37 ítems
- *  con 29 en cero. Una barra en cero no es un hueco de datos, es una plataforma
- *  sin gasto en el mes, y filtrarla sería el front decidiendo qué dato existe.
+ *  **Los ceros no se borran, se pliegan, y se dice cuántos** · 2026-11-23.
+ *  Medido: la dimensión de plataforma trae 37 ítems con 29 en cero. Una barra en
+ *  cero no es un hueco de datos, es una plataforma sin gasto en el mes, y
+ *  borrarla sería el front decidiendo qué dato existe. Pero dibujarlas todas
+ *  dejaba en QA unas 20 filas de «USD 0» —«OCN-OTHER», «RTB HOUSE»— tapando las
+ *  ocho que tienen cifra. Así que en un corte nominal **las que están en cero no
+ *  se dibujan de entrada**, una línea debajo dice cuántas son y un botón las
+ *  trae. En un corte por fecha no: un día en cero es un punto de la serie, y
+ *  sacarlo corre el resto.
  *
  *  ── A 360 NO ENTRA, Y LO DIFIERE LA SPEC ────────────────────────────────────
  *
@@ -81,6 +87,7 @@ import { useState } from 'react'
 import { useDrill, useDrillDimensions } from '../../api/hooks'
 import { SideSheet } from './SideSheet'
 import { Label } from '../../render/primitives/Label'
+import { Accion } from '../../render/primitives/Accion'
 import { Value } from '../../render/primitives/Value'
 import { Provenance } from '../../render/Panel/Provenance'
 import { bodyFor } from '../../render/bodies/registry'
@@ -181,6 +188,10 @@ export function DrillSheet({
   const dimension = elegida ?? disponibles[0] ?? null
 
   const detalle = useDrill(panelId, dimension, periodo)
+
+  /** Si se ven las categorías en cero · ver la cabecera. Vuelve a plegarse al
+   *  cambiar de corte: lo que se abrió era de otro. */
+  const [conCeros, setConCeros] = useState(false)
 
   const governance = resolveGovernance(metric, payload)
   const presentacion = hasValue(payload) ? payload.presentacion : undefined
@@ -315,7 +326,10 @@ export function DrillSheet({
                     key={d}
                     type="button"
                     aria-pressed={activa}
-                    onClick={() => setElegida(d)}
+                    onClick={() => {
+                      setElegida(d)
+                      setConCeros(false)
+                    }}
                     className={
                       CHIP +
                       (activa
@@ -503,35 +517,57 @@ export function DrillSheet({
     //
     // **El piso son los 320 de antes**, para que tres categorías no dejen un
     // dibujo aplastado contra el borde.
+    const temporal = esTemporal(valor.valor.items)
+    const ceros = temporal ? 0 : valor.valor.items.filter((i) => i.v === 0).length
+    const plegados = ceros > 0 && !conCeros
+    const items = plegados ? valor.valor.items.filter((i) => i.v !== 0) : valor.valor.items
+
     const PISO = 320
     const POR_ITEM = 22
-    const alto = Math.max(PISO, valor.valor.items.length * POR_ITEM)
+    const alto = Math.max(PISO, items.length * POR_ITEM)
 
     return (
-      <div className="min-h-0" style={{ height: `${String(alto)}px` }}>
-        <Suspense fallback={<LoadingState />}>
-          <Body
-            value={valor.valor}
-            // **Un corte por fecha se lee en el tiempo** · F5.23, 2026-10-19.
-            // Con `params={}` el cuerpo ordenaba por valor —su defecto— y el
-            // desglose por día salía 17, 1, 15, 13… El servicio ya lo manda en
-            // orden de fecha (`ORDER BY 1` en `drilldown.go`), así que se respeta
-            // el orden de llegada. **Se decide por el dato, no por la clave**: la
-            // dimensión llega como `day` o `week` sin decir que es temporal, y
-            // una lista de claves escrita acá envejecería con la primera nueva.
-            params={esTemporal(valor.valor.items) ? { orden: 'natural' } : {}}
-            // La hoja no vive en la grilla, pero los cuerpos piden un
-            // `Placement` para decidir densidad. Se le da el que mide la hoja
-            // contra la pantalla: 60% de doce columnas son siete.
-            span={{ colStart: 1, colSpan: 7, rowSpan: 5 }}
-            family={metric.familia}
-            // **Ningún gráfico**: la respuesta no declara con qué se dibuja y
-            // elegirlo acá sería composición. Ver la cabecera.
-            metric={metric.nombre}
-            format={format}
-            {...(metric.unidad == null ? {} : { unit: metric.unidad })}
-          />
-        </Suspense>
+      <div className="flex min-w-0 flex-col gap-3.5">
+        <div className="min-h-0" style={{ height: `${String(alto)}px` }}>
+          <Suspense fallback={<LoadingState />}>
+            <Body
+              value={{ ...valor.valor, items }}
+              // **Un corte por fecha se lee en el tiempo** · F5.23, 2026-10-19.
+              // Con `params={}` el cuerpo ordenaba por valor —su defecto— y el
+              // desglose por día salía 17, 1, 15, 13… El servicio ya lo manda en
+              // orden de fecha (`ORDER BY 1` en `drilldown.go`), así que se respeta
+              // el orden de llegada. **Se decide por el dato, no por la clave**: la
+              // dimensión llega como `day` o `week` sin decir que es temporal, y
+              // una lista de claves escrita acá envejecería con la primera nueva.
+              params={temporal ? { orden: 'natural' } : {}}
+              // La hoja no vive en la grilla, pero los cuerpos piden un
+              // `Placement` para decidir densidad. Se le da el que mide la hoja
+              // contra la pantalla: 60% de doce columnas son siete.
+              span={{ colStart: 1, colSpan: 7, rowSpan: 5 }}
+              family={metric.familia}
+              // **Ningún gráfico**: la respuesta no declara con qué se dibuja y
+              // elegirlo acá sería composición. Ver la cabecera.
+              metric={metric.nombre}
+              format={format}
+              {...(metric.unidad == null ? {} : { unit: metric.unidad })}
+            />
+          </Suspense>
+        </div>
+
+        {/* **Lo plegado se dice, con su número** · nunca desaparece en silencio.
+          Desplegadas, quedan al final: el cuerpo ordena de mayor a menor. */}
+        {ceros > 0 && (
+          <div className="flex min-w-0 flex-wrap items-center gap-3.5">
+            <Label as="div">
+              {plegados
+                ? `${String(ceros)} en cero · no se dibujan`
+                : `${String(ceros)} en cero · al final`}
+            </Label>
+            <Accion tamano="compacta" onClick={() => setConCeros(!conCeros)}>
+              {plegados ? 'Mostrar todas' : 'Ocultar las que están en cero'}
+            </Accion>
+          </div>
+        )}
       </div>
     )
   }

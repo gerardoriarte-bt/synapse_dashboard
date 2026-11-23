@@ -24,6 +24,8 @@ import type { ClienteVisible } from '../clienteVisible'
 import { ConsoleDock } from './ConsoleDock'
 import { AvisoDeFalla } from './AvisoDeFalla'
 import { fallaComun } from './fallaComun'
+import { AvisoDeDegradacion } from './AvisoDeDegradacion'
+import { degradacionComun } from './degradacionComun'
 import { esAdmin } from '../../api/rol'
 import type { Formatter } from '../../render/format'
 import type { Theme } from '../../tokens/theme'
@@ -161,6 +163,16 @@ export function Console({
   /** **Una falla repetida se dice una vez** · 2026-10-21 · `fallaComun.ts`. */
   const falla = fallaComun(panels.map((p) => ({ id: p.id, payload: payloadOf(p.id) })))
   const agrupados = new Set(falla?.paneles ?? [])
+  /** **Una degradación repetida, también** · 2026-11-23 · `degradacionComun.ts`. */
+  const degradacion = degradacionComun(panels.map((p) => ({ id: p.id, payload: payloadOf(p.id) })))
+  const degradados = new Set(degradacion?.paneles ?? [])
+  /** **Cuántos paneles no cargaron** · 2026-11-23. Un panel en error sólo dice
+   *  «el resto cargó normalmente» si es el único que no cargó: con otro en
+   *  error o todavía cargando, la frase es falsa. */
+  const sinCargar = panels.filter((p) => {
+    const e = payloadOf(p.id).estado
+    return e === 'ERROR' || e === 'CARGANDO'
+  }).length
 
   // Un solo `now` para toda la pantalla. Si cada panel llamara a `new Date()`,
   // dos paneles del mismo lote podrían escribir frescuras distintas para la
@@ -255,6 +267,12 @@ export function Console({
         </div>
       )}
 
+      {degradacion !== null && (
+        <div className="px-6 pt-6">
+          <AvisoDeDegradacion degradacion={degradacion} />
+        </div>
+      )}
+
       {/* El cuerpo sí lleva el padding de la grilla · §4. */}
       <div className="p-6" style={gridStyle(columns)}>
         {/* **Se reordena SOLO con la grilla colapsada** · §ANCLA:RESP-3, que lo
@@ -334,6 +352,8 @@ export function Console({
               now={now}
               {...(onRetryPanel === undefined ? {} : { onRetry: () => onRetryPanel(panel.id) })}
               errorAgrupado={agrupados.has(panel.id)}
+              restoCargo={sinCargar <= 1}
+              degradacionAgrupada={degradados.has(panel.id)}
               {...(onAskPanel === undefined ? {} : { onChat: () => onAskPanel(panel.id) })}
               {...(verDetalle === undefined ? {} : { onDrill: verDetalle })}
               {...(plotProblemOf?.(panel.id) === undefined ? {} : { plotProblem: plotProblemOf(panel.id) as PlotProblem })}

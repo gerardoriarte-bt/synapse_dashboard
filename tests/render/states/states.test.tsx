@@ -46,7 +46,7 @@ describe('la salida de cada estado dispara de verdad', () => {
     // Misma regla que `RecoBody` con `puedeResponder`: «un botón que se aprieta
     // y devuelve 403 es peor que un botón ausente». El estado NO se queda sin
     // salida: el `detail` sigue diciendo qué hacer.
-    render(<ErrorState message="Falló" />)
+    render(<ErrorState message="Falló" restoCargo />)
     expect(screen.queryByRole('button')).toBeNull()
     expect(screen.getByText(/El resto de los paneles cargó normalmente/)).toBeInTheDocument()
   })
@@ -73,9 +73,17 @@ describe('cada estado dice qué pasa y por qué · §8', () => {
     expect(screen.getByText(/Corrida del ETL/)).toBeInTheDocument()
   })
 
-  it('el error dice que el resto cargó bien · el reintento es por panel', () => {
-    render(<ErrorState message="Falló al resolver" />)
+  it('el error dice que el resto cargó bien SÓLO si quien ve la grilla lo afirma · 2026-11-23', () => {
+    const { unmount, rerender } = render(<ErrorState message="Falló al resolver" restoCargo />)
     expect(screen.getByText(/El resto de los paneles cargó normalmente/)).toBeInTheDocument()
+    rerender(<ErrorState message="Falló al resolver" restoCargo={false} />)
+    expect(screen.queryByText(/El resto de los paneles/)).toBeNull()
+    expect(screen.getByText(/Otros paneles de esta pestaña tampoco cargaron/)).toBeInTheDocument()
+    unmount()
+    // Sin grilla —la hoja del detalle, un valor mal formado— no se afirma nada.
+    render(<ErrorState message="Falló al resolver" />)
+    expect(screen.queryByText(/El resto de los paneles/)).toBeNull()
+    expect(screen.queryByText(/Otros paneles/)).toBeNull()
   })
 
   it('el vacío es una invitación, no un error', () => {

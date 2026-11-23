@@ -102,7 +102,7 @@ describe('§7.3 · las cinco pantallas y su alcance', () => {
     // mirando un cliente cuando la pantalla cruza todos.
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
 
     expect(screen.queryByLabelText('Cliente')).toBeNull()
     expect(screen.getByText('Alcance · 2 clientes')).toBeInTheDocument()
@@ -128,7 +128,7 @@ describe('§7.3 · las cinco pantallas y su alcance', () => {
   it('una pantalla de tenant SÍ lo muestra, con los clientes', async () => {
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
 
     await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
 
@@ -155,7 +155,7 @@ describe('§7.3 · la regla dura · el vocabulario de infraestructura no se mues
       ),
     )
     const { container } = montar()
-    await abrirFicha(/^Under Armour México · /)
+    await abrirFicha(/^Under Armour México( · |$)/)
 
     // **Menos los subprocesadores**, que es la única excepción de §7.3 —una
     // obligación legal de nombrar a quién procesa el dato—: están en la ficha.
@@ -171,19 +171,28 @@ describe('F4.2 · la lista de clientes', () => {
   it('lista los clientes con su nombre', async () => {
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     montar()
-    expect(await screen.findByRole('button', { name: /^Under Armour México · / })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })).toBeInTheDocument()
     expect(screen.getByText('Keralty Colombia')).toBeInTheDocument()
+  })
+
+  it('sin forma corta la card no pinta el id debajo del nombre · QA 2026-11-23', async () => {
+    // En QA salía «2B5008F3» bajo cada cliente sin forma corta. Los dos del
+    // fixture tienen `label` vacío y nombres distintos: no hay nada que decir.
+    server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
+    montar()
+    const card = await screen.findByRole('button', { name: 'Keralty Colombia' })
+    expect(within(card).queryByText('T-2')).not.toBeInTheDocument()
   })
 
   it('pinta las TRES columnas que B4.1 trajo · usuarios, feed y publicación', async () => {
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     const { container } = montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
 
     // **Desde el 2026-10-20 son los tres datos de la card**, cada uno con su
     // rótulo: el estado operativo del cliente.
     void container
-    const ua = screen.getByRole('button', { name: /^Under Armour México · / })
+    const ua = screen.getByRole('button', { name: /^Under Armour México( · |$)/ })
     expect(ua.textContent).toContain('Usuarios12')
     expect(ua.textContent).toContain('Feed más atrasadoHace 4 h')
     expect(ua.textContent).toContain('Última publicación22 sep 2026')
@@ -195,9 +204,9 @@ describe('F4.2 · la lista de clientes', () => {
     // cargaron se ve igual a uno sano si se colapsan.
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     montar()
-    await screen.findByRole('button', { name: /^Keralty Colombia · / })
+    await screen.findByRole('button', { name: /^Keralty Colombia( · |$)/ })
 
-    const keralty = screen.getByRole('button', { name: /^Keralty Colombia · / }).textContent ?? ''
+    const keralty = screen.getByRole('button', { name: /^Keralty Colombia( · |$)/ }).textContent ?? ''
     expect(keralty).toContain('Feed más atrasadoNunca cargó')
     expect(keralty).toContain('Última publicaciónNunca')
     // Cero usuarios SÍ se pinta como cero: es un conteo, no una ausencia.
@@ -218,7 +227,7 @@ describe('F4.2 · la lista de clientes', () => {
     // del botón muerto: se ve idéntico.
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     const { container } = montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
 
     // **Desde el 2026-10-06 lo que falta no se pinta** · decisión humana sobre la
     // auditoría del builder: «si no suman para el uso, quitar». La lista vive en
@@ -273,7 +282,7 @@ describe('las cinco pantallas de §7.3 · ninguna queda pendiente', () => {
       http.get(`${API}/admin/tenants/:id/roles/composition`, () => ok([])),
     )
     montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
 
     for (const pantalla of ['Usuarios', 'Catálogo de métricas', 'Salud de feeds']) {
       await userEvent.click(screen.getByRole('button', { name: pantalla }))
@@ -293,7 +302,7 @@ describe('las cinco pantallas de §7.3 · ninguna queda pendiente', () => {
     )
     montar()
     // **La ficha se abre desde su card** · 2026-10-20.
-    await abrirFicha(/^Under Armour México · /)
+    await abrirFicha(/^Under Armour México( · |$)/)
     // **El CTA del vacío de alta y no «Nuevo rol»** · §PEN:A2, 2026-09-30. Este
     // escenario sirve la ficha con CERO roles, y desde que el vacío tiene su
     // propio CTA la cabecera no repite el suyo: el dibujo pone uno solo. Lo que
@@ -353,7 +362,7 @@ describe('«Ver ficha» abre el cliente que se cliqueó · 2026-09-25', () => {
     montar()
 
     // **Desde el 2026-10-20 la card ES la elección**, y abre la ficha.
-    await abrirFicha(/^Keralty Colombia · /)
+    await abrirFicha(/^Keralty Colombia( · |$)/)
 
     // **La aserción es a quién se le piden los datos.**
     await waitFor(() => expect(pedidos).toContain('t-2'))
@@ -364,8 +373,8 @@ describe('«Ver ficha» abre el cliente que se cliqueó · 2026-09-25', () => {
     expect(within(screen.getByRole('navigation', { name: 'Migaja' })).getByText('Keralty Colombia')).toBeInTheDocument()
     expect(within(screen.getByRole('region', { name: 'Cliente activo' })).getByText('Keralty Colombia')).toBeInTheDocument()
     await userEvent.click(within(screen.getByRole('navigation', { name: 'Migaja' })).getByRole('button', { name: 'Clientes' }))
-    expect(await screen.findByRole('button', { name: /^Keralty Colombia · / })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: /^Under Armour México · / })).toHaveAttribute('aria-pressed', 'false')
+    expect(await screen.findByRole('button', { name: /^Keralty Colombia( · |$)/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /^Under Armour México( · |$)/ })).toHaveAttribute('aria-pressed', 'false')
   })
 })
 
@@ -388,7 +397,7 @@ describe('§ANCLA:ANCHO-1 · admin declara ancho mínimo, no colapso', () => {
   it('el chrome pinta `min-w-[1280px]`, escrito y no interpolado', async () => {
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     const { container } = montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
 
     expect(container.querySelector('.min-w-\\[1280px\\]')).not.toBeNull()
   })
@@ -425,7 +434,7 @@ describe('§ANCLA:ANCHO-1 · admin declara ancho mínimo, no colapso', () => {
     // es exactamente lo que PS-5 registró.
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     const { container } = montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
 
     for (const clase of ['grid-cols-6', 'grid-cols-1', 'max-w-full']) {
       expect(container.querySelector(`.${clase}`)).toBeNull()
@@ -449,7 +458,7 @@ describe('§PEN:A1 · el navbar de admin pinta la identidad', () => {
   it('dice el rol y el nombre de quien está mirando', async () => {
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
 
     // **Desde el 2026-10-20 es un ícono**: el rol y el nombre están en el panel
     // que abre. Los valores salen del contexto por defecto de los mocks.
@@ -477,7 +486,7 @@ describe('§PEN:A1 · el navbar de admin pinta la identidad', () => {
       ),
     )
     montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
 
     await userEvent.click(screen.getByRole('button', { name: 'Identidad · Otra Persona' }))
     const panel = screen.getByRole('menu', { name: 'Usuario · Otra Persona' })
@@ -529,7 +538,7 @@ describe('A5 · cargar meses atraviesa la cadena entera · 2026-10-07', () => {
       }),
     )
     montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
     await userEvent.click(screen.getByRole('button', { name: 'Salud de feeds' }))
 
     await userEvent.click(await screen.findByRole('button', { name: /jun.*sin cargar/i }))
@@ -572,7 +581,7 @@ describe('el arranque no pasa por otro cliente · 2026-10-07', () => {
       }),
     )
     montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
     await waitFor(() => expect(pedidos).toContain('t-2'))
     expect(pedidos).not.toContain('t-1')
   })
@@ -604,7 +613,7 @@ describe('las acciones de usuarios llegan al servicio', () => {
       }),
     )
     montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
     await userEvent.click(screen.getByRole('button', { name: 'Usuarios' }))
 
     await userEvent.click(await screen.findByRole('button', { name: 'Suspender a Bruno K' }))
@@ -629,7 +638,7 @@ describe('las acciones de usuarios llegan al servicio', () => {
       ),
     )
     montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
     await userEvent.click(screen.getByRole('button', { name: 'Usuarios' }))
 
     const selector = await screen.findByRole('combobox', { name: 'Rol de Bruno K' })
@@ -667,7 +676,7 @@ describe('las acciones de usuarios llegan al servicio', () => {
       }),
     )
     montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
     await userEvent.click(screen.getByRole('button', { name: 'Usuarios' }))
 
     await userEvent.selectOptions(await screen.findByRole('combobox', { name: /^Cliente para/ }), 't-1')
@@ -687,7 +696,7 @@ describe('las acciones de usuarios llegan al servicio', () => {
       }),
     )
     montar()
-    await userEvent.click(await screen.findByRole('button', { name: /^Keralty Colombia · / }))
+    await userEvent.click(await screen.findByRole('button', { name: /^Keralty Colombia( · |$)/ }))
 
     expect(await screen.findByText('Bruno K')).toBeVisible()
     expect(pedidos).toContain('t-2')
@@ -725,7 +734,7 @@ describe('la verificación del acceso, desde la ficha', () => {
       }),
     )
     const { container } = montar()
-    await userEvent.click(await screen.findByRole('button', { name: /^Keralty Colombia · / }))
+    await userEvent.click(await screen.findByRole('button', { name: /^Keralty Colombia( · |$)/ }))
 
     // **A pedido**: abrir la ficha no verifica nada.
     await screen.findByText('Sin verificar en esta sesión')
@@ -749,13 +758,13 @@ describe('trabajar sobre otro cliente', () => {
   it('elegirlo cambia la barra, y no hay un cliente «de la sesión» aparte', async () => {
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
     const barra = screen.getByRole('region', { name: 'Cliente activo' })
     expect(within(barra).getByText('Under Armour México')).toBeInTheDocument()
     expect(screen.queryByText(/tu cliente/)).toBeNull()
     expect(screen.queryByRole('button', { name: /^Volver/ })).toBeNull()
 
-    await userEvent.click(screen.getByRole('button', { name: /^Keralty Colombia · / }))
+    await userEvent.click(screen.getByRole('button', { name: /^Keralty Colombia( · |$)/ }))
     expect(await within(barra).findByText('Keralty Colombia')).toBeInTheDocument()
   })
 })
@@ -777,7 +786,7 @@ describe('la ficha, con el proveedor del cliente de trabajo montado', () => {
         </MemoryRouter>
       </QueryClientProvider>,
     )
-    const enUso = await screen.findByRole('button', { name: /^Under Armour México · /, pressed: true })
+    const enUso = await screen.findByRole('button', { name: /^Under Armour México( · |$)/, pressed: true })
     await userEvent.click(enUso)
     expect(await screen.findByRole('navigation', { name: 'Migaja' })).toBeInTheDocument()
   })
@@ -802,7 +811,7 @@ describe('la forma corta, editada desde la ficha', () => {
       }),
     )
     montar()
-    await abrirFicha(/^Keralty Colombia · /)
+    await abrirFicha(/^Keralty Colombia( · |$)/)
 
     const identidad = screen.getByRole('region', { name: 'Resumen · Identidad' })
     await userEvent.click(within(identidad).getByRole('button', { name: 'Editar' }))
@@ -826,7 +835,7 @@ describe('la forma corta, editada desde la ficha', () => {
       }),
     )
     montar()
-    await abrirFicha(/^Keralty Colombia · /)
+    await abrirFicha(/^Keralty Colombia( · |$)/)
     const identidad = screen.getByRole('region', { name: 'Resumen · Identidad' })
     await userEvent.click(within(identidad).getByRole('button', { name: 'Editar' }))
     await userEvent.type(within(identidad).getByRole('textbox', { name: 'Forma corta' }), 'X')
@@ -851,7 +860,7 @@ describe('la ficha como la dibuja A2', () => {
         </MemoryRouter>
       </QueryClientProvider>,
     )
-    await abrirFicha(/^Keralty Colombia · /)
+    await abrirFicha(/^Keralty Colombia( · |$)/)
     expect(screen.getByRole('heading', { level: 2, name: 'Keralty Colombia' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Abrir en builder' }))
     expect(await screen.findByText('EL BUILDER')).toBeInTheDocument()
@@ -860,7 +869,7 @@ describe('la ficha como la dibuja A2', () => {
   it('la identidad completa no se repite: la abre «Ver identidad»', async () => {
     server.use(http.get(`${API}/admin/tenants`, () => ok(tenants)))
     montar()
-    await abrirFicha(/^Keralty Colombia · /)
+    await abrirFicha(/^Keralty Colombia( · |$)/)
     expect(screen.queryByText('Identidad del cliente')).toBeNull()
     const card = screen.getByRole('region', { name: 'Resumen · Identidad' })
     await userEvent.click(within(card).getByRole('button', { name: 'Ver identidad' }))

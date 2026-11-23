@@ -1,6 +1,7 @@
 /** Cómo se distingue a un cliente de otro con el mismo nombre · 2026-10-09
  *
- *  La forma corta, o el comienzo del id si nadie la cargó. En la base local hay
+ *  La forma corta; el comienzo del id sólo si otro cliente se llama igual ·
+ *  2026-11-23, ver `formaCortaVisible`. En la base local hay
  *  dos «Under Armour México» —uno alimenta la versión anterior de Synapse— y
  *  sin esto la lista, el filtro de usuarios y la aprobación de una solicitud
  *  ofrecían dos opciones idénticas.
@@ -12,6 +13,18 @@
 import type { Tenant } from '../../api/admin'
 import { formaCortaVisible } from '../clienteVisible'
 
-export function distintivo(t: Pick<Tenant, 'id' | 'nombre' | 'formaCorta'>): string {
-  return formaCortaVisible(t)
+export function distintivo(
+  t: Pick<Tenant, 'id' | 'nombre' | 'formaCorta'>,
+  entre?: readonly Pick<Tenant, 'id' | 'nombre' | 'formaCorta'>[],
+): string {
+  return formaCortaVisible(t, entre)
+}
+
+/** El nombre con su distintivo, si tiene · «Terpel Colombia · TERPEL CO». */
+export function nombreConDistintivo(
+  t: Pick<Tenant, 'id' | 'nombre' | 'formaCorta'>,
+  entre?: readonly Pick<Tenant, 'id' | 'nombre' | 'formaCorta'>[],
+): string {
+  const d = distintivo(t, entre)
+  return d === '' ? t.nombre : `${t.nombre} · ${d}`
 }

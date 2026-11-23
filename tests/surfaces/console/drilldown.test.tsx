@@ -298,7 +298,51 @@ describe('6 · el valor se dibuja con el cuerpo del REGISTRO', () => {
     await verDetalleDe('Ventas')
 
     const hoja = await screen.findByRole('dialog')
+    // Dos y no tres: Criteo está en cero y se pliega · ver el bloque 15.
+    expect(await within(hoja).findByRole('img', { name: '2 categorías' })).toBeInTheDocument()
+  })
+})
+
+// ── 15 · LOS CEROS SE PLIEGAN, NO SE BORRAN · 2026-11-23 ──────────────────────
+//
+// Visto en QA: el corte por plataforma dibujaba unas 20 filas de «USD 0» debajo
+// de las ocho con cifra. Lo plegado se dice con su número, y un botón lo trae.
+describe('15 · las categorías en cero se pliegan y se dice cuántas', () => {
+  it('de entrada no se dibujan, y la hoja dice cuántas son', async () => {
+    laConsola({ dimensiones: { 'p-ventas': ['platform'] } })
+    montar()
+    await verDetalleDe('Ventas')
+    const hoja = await screen.findByRole('dialog')
+    const plot = await within(hoja).findByRole('img', { name: '2 categorías' })
+    expect(plot.textContent).not.toContain('CRITEO')
+    expect(within(hoja).getByText('1 en cero · no se dibujan')).toBeInTheDocument()
+  })
+
+  it('«Mostrar todas» las trae, al final', async () => {
+    laConsola({ dimensiones: { 'p-ventas': ['platform'] } })
+    montar()
+    const usuario = await verDetalleDe('Ventas')
+    const hoja = await screen.findByRole('dialog')
+    await within(hoja).findByRole('img', { name: '2 categorías' })
+    await usuario.click(within(hoja).getByRole('button', { name: 'Mostrar todas' }))
+    const plot = await within(hoja).findByRole('img', { name: '3 categorías' })
+    const texto = plot.textContent ?? ''
+    expect(texto.indexOf('CRITEO')).toBeGreaterThan(texto.indexOf('META ADVANTAGE+'))
+    expect(within(hoja).getByText('1 en cero · al final')).toBeInTheDocument()
+  })
+
+  it('en un corte por fecha un día en cero se dibuja · es un punto de la serie', async () => {
+    const dias = [
+      { label: '2026-10-01', v: 43570 },
+      { label: '2026-10-02', v: 0 },
+      { label: '2026-10-03', v: 49862 },
+    ]
+    laConsola({ dimensiones: { 'p-ventas': ['day'] }, items: dias })
+    montar()
+    await verDetalleDe('Ventas')
+    const hoja = await screen.findByRole('dialog')
     expect(await within(hoja).findByRole('img', { name: '3 categorías' })).toBeInTheDocument()
+    expect(within(hoja).queryByRole('button', { name: 'Mostrar todas' })).not.toBeInTheDocument()
   })
 })
 
@@ -311,7 +355,7 @@ describe('7 · la frase de cierre y los porcentajes están AUSENTES', () => {
     montar()
     await verDetalleDe('Ventas')
     const hoja = await screen.findByRole('dialog')
-    await within(hoja).findByRole('img', { name: '3 categorías' })
+    await within(hoja).findByRole('img', { name: '2 categorías' })
 
     expect(within(hoja).queryByText(/CIERRA CONTRA EL TOTAL/i)).not.toBeInTheDocument()
     expect(within(hoja).queryByText(/SUMAN/i)).not.toBeInTheDocument()
@@ -325,7 +369,7 @@ describe('7 · la frase de cierre y los porcentajes están AUSENTES', () => {
     montar()
     await verDetalleDe('Ventas')
     const hoja = await screen.findByRole('dialog')
-    const seccion = (await within(hoja).findByRole('img', { name: '3 categorías' })).closest(
+    const seccion = (await within(hoja).findByRole('img', { name: '2 categorías' })).closest(
       'section',
     )
     expect(seccion).not.toBeNull()
@@ -342,7 +386,7 @@ describe('8 · `row_count` NO se lee como cantidad de ítems', () => {
     montar()
     await verDetalleDe('Ventas')
     const hoja = await screen.findByRole('dialog')
-    await within(hoja).findByRole('img', { name: '3 categorías' })
+    await within(hoja).findByRole('img', { name: '2 categorías' })
 
     expect(within(hoja).getByText(/39 FILAS DEVOLVIÓ LA CONSULTA/i)).toBeInTheDocument()
     expect(within(hoja).queryByText(/MOSTRANDO/i)).not.toBeInTheDocument()
@@ -554,8 +598,10 @@ describe('8 · el orden del corte', () => {
   it('por plataforma sigue ordenado por valor', async () => {
     laConsola({ dimensiones: { 'p-ventas': ['platform'] } })
     montar()
-    await verDetalleDe('Ventas')
+    const usuario = await verDetalleDe('Ventas')
     const hoja = await screen.findByRole('dialog')
+    // Criteo está en cero: se despliega para ver dónde cae.
+    await usuario.click(await within(hoja).findByRole('button', { name: 'Mostrar todas' }))
     await within(hoja).findByRole('img', { name: '3 categorías' })
     expect(ordenDibujado(hoja, ['Criteo', 'Google PMax', 'Meta Advantage+'])).toEqual(['Google PMax', 'Meta Advantage+', 'Criteo'])
   })

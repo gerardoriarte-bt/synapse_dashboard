@@ -125,8 +125,8 @@ function montar() {
 }
 
 async function abrirFicha() {
-  await screen.findByRole('button', { name: /^Under Armour México · / })
-  await userEvent.click(screen.getByRole('button', { name: /^Under Armour México · / }))
+  await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
+  await userEvent.click(screen.getByRole('button', { name: /^Under Armour México( · |$)/ }))
   await screen.findByText('CEO')
 }
 
@@ -412,8 +412,8 @@ describe('el 404 mientras el fork no esté desplegado', () => {
       ),
     )
     montar()
-    await screen.findByRole('button', { name: /^Under Armour México · / })
-    await userEvent.click(screen.getByRole('button', { name: /^Under Armour México · / }))
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
+    await userEvent.click(screen.getByRole('button', { name: /^Under Armour México( · |$)/ }))
 
     expect(
       await screen.findByText(/La composición por rol de este cliente todavía no se puede consultar/),
@@ -499,7 +499,7 @@ describe('A4 · la columna USO · divergencia 6', () => {
   }
 
   async function abrirCatalogo() {
-    await screen.findByRole('button', { name: /^Under Armour México · / })
+    await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
     await userEvent.click(screen.getByRole('button', { name: 'Catálogo de métricas' }))
     await screen.findByRole('table')
   }

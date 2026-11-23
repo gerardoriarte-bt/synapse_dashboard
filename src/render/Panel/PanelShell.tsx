@@ -37,6 +37,10 @@ type Props = {
   /** **La nota de lectura** · B1.13, a la vista desde el 2026-10-14 (decisión
    *  humana). La escribe el admin en el builder y vive en el layout. */
   nota?: string
+  /** **Su degradación ya se dijo arriba de la grilla** · 2026-11-23 · ver
+   *  `surfaces/console/degradacionComun.ts`. El badge se queda —va en la línea
+   *  del título y no empuja nada—; la frase de la limitación no se repite. */
+  degradacionAgrupada?: boolean
   children: ReactNode
 }
 
@@ -51,6 +55,7 @@ export function PanelShell({
   onChat,
   onCollapse,
   nota,
+  degradacionAgrupada = false,
   children,
 }: Props) {
   const state = visualState(payload)
@@ -129,7 +134,7 @@ export function PanelShell({
           limitación y su alcance», y el alcance es el texto de `razon`. Va
           entre la cabecera y el cuerpo porque es del shell —el degradado no
           reemplaza el cuerpo— y porque una frase necesita el ancho entero. */}
-      {state === 'DEGRADADO' && 'razon' in payload && (
+      {state === 'DEGRADADO' && !degradacionAgrupada && 'razon' in payload && (
         <DegradedNote reason={payload.razon} unblockedBy={payload.desbloqueaCon} />
       )}
 
