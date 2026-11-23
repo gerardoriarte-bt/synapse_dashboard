@@ -161,6 +161,13 @@ export function Console({
   /** **Una falla repetida se dice una vez** · 2026-10-21 · `fallaComun.ts`. */
   const falla = fallaComun(panels.map((p) => ({ id: p.id, payload: payloadOf(p.id) })))
   const agrupados = new Set(falla?.paneles ?? [])
+  /** **Cuántos paneles no cargaron** · 2026-11-23. Un panel en error sólo dice
+   *  «el resto cargó normalmente» si es el único que no cargó: con otro en
+   *  error o todavía cargando, la frase es falsa. */
+  const sinCargar = panels.filter((p) => {
+    const e = payloadOf(p.id).estado
+    return e === 'ERROR' || e === 'CARGANDO'
+  }).length
 
   // Un solo `now` para toda la pantalla. Si cada panel llamara a `new Date()`,
   // dos paneles del mismo lote podrían escribir frescuras distintas para la
@@ -334,6 +341,7 @@ export function Console({
               now={now}
               {...(onRetryPanel === undefined ? {} : { onRetry: () => onRetryPanel(panel.id) })}
               errorAgrupado={agrupados.has(panel.id)}
+              restoCargo={sinCargar <= 1}
               {...(onAskPanel === undefined ? {} : { onChat: () => onAskPanel(panel.id) })}
               {...(verDetalle === undefined ? {} : { onDrill: verDetalle })}
               {...(plotProblemOf?.(panel.id) === undefined ? {} : { plotProblem: plotProblemOf(panel.id) as PlotProblem })}
