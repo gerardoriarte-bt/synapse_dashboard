@@ -26,6 +26,40 @@
 @theme static {
   --color-peligro: #f4676a;
 
+  /* ── `estado-bien` y `estado-mal` · el semáforo · 2026-11-24 ──────────────
+   *
+   * **Decisión humana**, a partir del catálogo v3.2 de UA MX: un `gauge`, un
+   * `bullet` o una `kpi` con umbrales declarados pinta su estado. Es una
+   * excepción ACOTADA a la regla 7 de `design.md` —«el color no codifica
+   * juicio»—, y `design.md` no se edita: la excepción está escrita en
+   * `docs/DECISIONES-2026-11-24-semaforos-y-eje-doble.md` y vive en código en
+   * `catalog/umbrales.ts`, `render/semaforo.ts` y estos dos tokens.
+   *
+   * **Lo que NO cambia:** los deltas siguen en neutro —«VS MES ANTERIOR» es
+   * dirección, no juicio— y ninguna serie, barra, celda ni tabla los usa. El
+   * tercer estado, «aceptable», es el gris de siempre y no tiene token: el
+   * ámbar sigue prohibido porque se confunde con el naranja de marca.
+   *
+   * **`estado-mal` NO es `peligro`.** Uno es de dato y el otro de acción: el
+   * día que alguien quiera cambiar el rojo de «quitar», no tiene que mover el
+   * de un indicador. Por eso el tono es otro —frambuesa, hacia el magenta—,
+   * lejos del carmesí de `peligro` y más lejos del naranja de `acc`.
+   *
+   * **`estado-bien` NO es `fam-medios`**, que es esmeralda: este es un verde
+   * de pasto, hacia el amarillo sin llegar a él. Y el estado se ESCRIBE
+   * siempre al lado del color —«BIEN · ≥ 3.0X»—, así que un daltónico o una
+   * impresión en gris no pierden nada.
+   *
+   * Medido con `contraste`, como texto (4.5:1), en los dos temas:
+   *
+   *                       panel   elev    bg
+   *   estado-bien oscuro   9.05   8.31   9.69
+   *   estado-bien claro    5.77   4.80   5.06
+   *   estado-mal  oscuro   5.93   5.45   6.35
+   *   estado-mal  claro    5.82   4.85   5.11 */
+  --color-estado-bien: #5fcf6a;
+  --color-estado-mal: #f2648a;
+
   /* ── `consulta` · los datos que no son una métrica · 2026-10-09 ─────────────
    *
    * El agente grafica consultas libres —«inversión por plataforma»— que no
@@ -83,4 +117,6 @@
    `@layer`, gana sobre el `@layer theme` que emite `@theme`. */
 :root[data-theme='light'] {
   --color-peligro: #c0262d;
+  --color-estado-bien: #1d7530;
+  --color-estado-mal: #c0244f;
 }

@@ -383,6 +383,21 @@ function valorPara(forma: string, i: number): Record<string, unknown> {
  *  (`include=payloads`), igual que en el servicio, donde los arma el mismo
  *  `batchForRole`. Dos generadores de datos falsos se separan. */
 function payloadDelMock(id: string, i: number): Record<string, unknown> {
+  if (id === PANEL_EJE_DOBLE) {
+    // Visitas y conversión: dos series, dos unidades, cada una en su magnitud.
+    const meses = ['abr', 'may', 'jun', 'jul', 'ago', 'sep']
+    return {
+      status: 'AVAILABLE',
+      governance: { base: 'Sesiones del sitio', layer: 'GOLD', source: 'Analítica de sitio', freshness: new Date().toISOString(), catalog_version: 4 },
+      value: {
+        shape: 'multi_series',
+        series: [
+          { label: 'Visitas', unit: 'sesiones', points: meses.map((t, k) => ({ t, v: 410_000 + k * 23_000 })) },
+          { label: 'CVR', unit: '%', points: meses.map((t, k) => ({ t, v: [1.6, 1.4, 1.9, 2.1, 1.8, 2.3][k] ?? 0 })) },
+        ],
+      },
+    }
+  }
   return (
     PANELES_MUESTRARIO.has(id)
       ? {

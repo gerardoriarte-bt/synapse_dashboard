@@ -30,6 +30,7 @@ export function Arc({
   totalSweep = 1,
   /** Desde dónde arranca, en vueltas. */
   from = 0,
+  tono,
 }: {
   cx: number
   cy: number
@@ -39,6 +40,11 @@ export function Arc({
   family: string
   totalSweep?: number
   from?: number
+  /** **El color del semáforo**, cuando el panel declara umbrales · 2026-11-24.
+   *  Reemplaza al de la familia en todos los tramos. Lo arma `TONO_DE_MARCA`
+   *  de `render/semaforo.ts` y de ningún otro lado: es una variable de token,
+   *  no un color elegido acá. */
+  tono?: string
 }) {
   const placed = stack(
     segments.map((s) => s.fraction),
@@ -55,7 +61,7 @@ export function Arc({
           <path
             key={s.k}
             d={arcPath(cx, cy, radius, radius - thickness, span.start, span.end)}
-            fill={hue({ family, step: s.step ?? ((i % 5) as 0 | 1 | 2 | 3 | 4) })}
+            fill={tono ?? hue({ family, step: s.step ?? ((i % 5) as 0 | 1 | 2 | 3 | 4) })}
           />
         )
       })}

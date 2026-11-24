@@ -201,6 +201,10 @@ const PARAMS: Readonly<Record<string, string>> = {
   cap: 'tope',
   window: 'ventana',
   bins: 'bins',
+  // **El semáforo** · decisión humana del 2026-11-24. El nombre del cable lo
+  // proponemos nosotros: el servicio guarda `options` sin leerlo, así que hoy
+  // ninguna fila de `blocks` lo declara en `layout_params`.
+  thresholds: 'umbrales',
 }
 
 /** **Los que el cable declara y este front no lee**, con su tipo de panel:

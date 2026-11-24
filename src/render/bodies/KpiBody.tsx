@@ -3,6 +3,9 @@ import { Label } from '../primitives/Label'
 import { Value } from '../primitives/Value'
 import { hue } from '../plots/core/seriesColor'
 import { UnknownPlotState } from '../states/UnknownPlotState'
+import { Semaforo } from '../primitives/Semaforo'
+import { estadoPorUmbral, textoDeEstado } from '../semaforo'
+import type { Umbrales } from '../../catalog/umbrales'
 import type { BodyProps } from '../types'
 
 /** Los gráficos que este cuerpo sabe dibujar HOY.
@@ -32,6 +35,10 @@ const DIBUJA = ['kpi'] as const
 export type KpiParams = {
   medidor?: boolean
   comparativo?: boolean
+  /** **El semáforo** · decisión humana del 2026-11-24. Pinta la CIFRA y escribe
+   *  el estado debajo. **No toca los comparativos**: un delta es dirección, no
+   *  juicio, y sigue neutro (regla 7 de `design.md`, que vale entera ahí). */
+  umbrales?: Umbrales
 }
 
 const FULL = 100
@@ -68,12 +75,20 @@ export function KpiBody({
   // entra en un panel de colSpan 3 y parte en dos líneas.
   const unitInLabel = unit !== undefined && label.toUpperCase().includes(unit.toUpperCase())
   const figure = format.number(value.v, { abbreviate: true })
+  const umbrales = params.umbrales
+  const estado = umbrales === undefined ? undefined : estadoPorUmbral(value.v, umbrales)
+  const cifra = (v: number) => format.withUnit(format.number(v, { abbreviate: true }), unit)
 
   return (
     <div className="flex flex-col gap-4 h-full min-h-0">
-      <Value label={label} size="kpi">
+      <Value label={label} size="kpi" {...(estado === undefined ? {} : { estado })}>
         {unitInLabel ? figure : format.withUnit(figure, unit)}
       </Value>
+
+      {estado !== undefined && umbrales !== undefined && (
+        // El color nunca va solo: el estado y su corte, escritos.
+        <Semaforo estado={estado}>{textoDeEstado(estado, umbrales, cifra)}</Semaforo>
+      )}
 
       {medidor !== undefined && (
         <div className="flex flex-col gap-1">
@@ -95,7 +110,9 @@ export function KpiBody({
                   no se esconde ni se recalcula. */}
               <Label>{c.parcial === true ? `${c.label} · mes incompleto` : c.label}</Label>
               {/* El delta va en texto y en color neutro · regla dura 3: el signo
-                  comunica la dirección, y prohibido verde/rojo semántico. */}
+                  comunica la dirección, y prohibido verde/rojo semántico.
+                  §ANCLA:DELTA-1 · **también con umbrales**: el semáforo pinta
+                  la cifra, nunca esta línea. */}
               <Label>{format.delta(c.delta, { decimals: 1 }) + (c.unidad ?? '%')}</Label>
             </div>
           ))}

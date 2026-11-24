@@ -149,6 +149,21 @@ ANCLAS = [
         implementa=["src/render/Panel/DegradedNote.tsx"],
     ),
     dict(
+        id="DELTA-1",
+        seccion="§1.2",
+        cita="Prohibido verde/rojo semántico en deltas.",
+        # Anclada el 2026-11-24, el día que la regla 7 dejó de valer ENTERA: una
+        # decisión humana —`docs/DECISIONES-2026-11-24-semaforos-y-eje-doble.md`—
+        # deja que un `gauge`, un `bullet` o una `kpi` con umbrales pinten su
+        # estado en verde o en rojo. **La excepción es del valor, nunca del
+        # delta**, y esa es la mitad que hay que poder perder sin que nadie lo
+        # note: el verde está a una línea de distancia del comparativo de la
+        # `kpi`. `design.md` no se edita, así que la cita es la de siempre; lo
+        # que cambia es que ahora hay quien la verifique. El ancla vive donde
+        # está el semáforo, que es donde la excepción podría desbordarse.
+        implementa=["src/render/semaforo.ts", "src/render/bodies/KpiBody.tsx"],
+    ),
+    dict(
         id="TIPO-1",
         seccion="§2.3",
         cita="**siempre mayúsculas**, 10px, letter-spacing 0.12em",
