@@ -11,7 +11,7 @@ contestó el backend en `docs/RESPUESTA-2026-11-23-backend-desplegar-qa.md` y
 |---|---|---|
 | Front | El bundle es del 2026-11-24 a las 14:36 GMT y trae «Todavía no has preguntado nada» | **`main` de este repositorio**, con el #118 |
 | Backend | `GET /admin/tenants/{tenantId}/reports` contesta 200; guardar `America/Bogota` en Terpel Lubricantes y Lealtad contesta 200; los dashboards traen `is_archived` | **`5b917f7` o posterior** |
-| Migración de `a13d27c` | Los títulos del catálogo de UA MX siguen en inglés: «Decisions», «Investment», «Twelve-month efficiency». En local, el mismo binario los renombra al arrancar | **No corrió en QA** |
+| Las migraciones | Archivar Overview da 500: falta la columna `archived_at`. Los títulos del catálogo de UA MX siguen en inglés: «Decisions», «Investment», «Twelve-month efficiency». En local, el mismo binario los renombra al arrancar | **No corrieron en QA**: ni `5b917f7` ni `a13d27c` |
 
 ## 2 · UA MX, punto por punto
 

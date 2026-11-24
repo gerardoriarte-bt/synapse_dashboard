@@ -2,7 +2,7 @@
 
 **Medido contra `f1ccbbe` el 2026-11-24**, con su binario levantado en local
 y `npm run humo`. En QA, ese mismo día, la consola y la administración de UA
-MX y Terpel. El detalle está en `docs/AUDITORIA-2026-11-24-qa-desplegado.md`.
+MX y Terpel, y el archivado de Overview. El detalle está en `docs/AUDITORIA-2026-11-24-qa-desplegado.md`.
 
 Hola. Gracias por el despliegue. En QA ya funcionan:
 
@@ -15,13 +15,23 @@ lo de reportes es todo agregado, y transcribimos `is_archived`.
 
 Faltan dos cosas.
 
-## 1 · Los títulos siguen en inglés en QA
+## 1 · En QA no corrieron las migraciones · el más importante
 
-«Decisions», «Investment» y «Twelve-month efficiency» siguen así en el
-catálogo de UA MX. El mismo binario, arrancado en local con
-`DB_AUTO_MIGRATE=true`, los renombra a «Decisiones», «Inversión» y
-«Eficiencia de doce meses». **En QA la migración de `a13d27c` no corrió.**
-¿Se puede correr, o desplegar `a13d27c` si no está?
+Lo muestran dos síntomas:
+
+- **Archivar un dashboard da 500.** `POST /admin/dashboards/{dashboardId}/archive`
+  sobre Overview de UA MX contesta:
+  `column "archived_at" of relation "dd_dashboards" does not exist (SQLSTATE 42703)`.
+- **Los títulos siguen en inglés**: «Decisions», «Investment» y
+  «Twelve-month efficiency». El mismo binario, arrancado en local con
+  `DB_AUTO_MIGRATE=true`, los renombra a «Decisiones», «Inversión» y
+  «Eficiencia de doce meses».
+
+El código de `5b917f7` está desplegado, porque las zonas horarias y Reportes
+funcionan, pero su esquema no. **Pedido:** correr las migraciones de
+`5b917f7` y `a13d27c` en QA, o el script equivalente. Con eso queremos
+archivar Overview en UA MX y Terpel Combustibles. Ya no lo ve ningún rol,
+pero un rol nuevo lo vería.
 
 ## 2 · La migración de `5b917f7` rompe con destinatarios existentes
 
