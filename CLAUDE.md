@@ -614,8 +614,13 @@ publicado**: el remoto sigue en `f1ccbbe`.
 `/config/blocks`, archivar Overview sigue dando 500 por `archived_at`, los
 títulos de la semilla siguen en inglés, las métricas nuevas siguen `BLOCKED`
 y el bundle del front sigue siendo el de las 14:36 GMT. Lo pide
-`docs/MENSAJE-2026-11-24-backend-1d3013d-no-esta-en-qa.md`, **y lo manda el
-humano**. **Lo que sigue es esperar, no volver a pedirlo.**
+`docs/MENSAJE-2026-11-24-backend-1d3013d-no-esta-en-qa.md`, **enviado, lo
+mandó el humano**. **Contestaron el mismo día**
+(`RESPUESTA-2026-11-24-backend-1d3013d-publicado.md`): faltaba el `git push`, y
+ya está publicado, con `db48310` como cabeza. **No cambia ningún JSON**; sólo
+`GET /admin/report-external-notices` pasa a exigir operador de plataforma, ya
+transcripto. **Falta el despliegue en QA con migraciones**, y lo avisan
+ellos: **lo que sigue es esperar, no volver a pedirlo.**
 
 ### ⇩ ACÁ SE PARÓ · 2026-11-24 · QA desplegado, faltan las migraciones
 
