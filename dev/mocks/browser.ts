@@ -29,6 +29,10 @@
 import { http, HttpResponse, delay } from 'msw'
 import { setupWorker } from 'msw/browser'
 import repertorio from './repertorio.json'
+import type { components } from '../../src/api/admin-generated'
+
+/** `LayoutDashboard` del cable, tal cual: el estado guarda lo que el servicio manda. */
+type WireDashboard = components['schemas']['LayoutDashboard']
 import { DASH_A, DASH_B, LAYOUT_PUB, TENANT_EN_ALTA, bloques, catalogo, contexto, detalle, layouts, publicaciones, roles, tenants, usuario, PANELES_MUESTRARIO } from './datos'
 
 const API = '*/api/v1'
@@ -120,11 +124,20 @@ const estado = {
   // B6 · el historial crece con cada reversión, igual que en el servicio.
   publicaciones: structuredClone(publicaciones),
   /** Los dashboards del cliente · 2026-10-07, para el primer nivel del builder.
-   *  `Marca` sin layouts: es el caso «Todavía no se compuso». */
+   *  `Marca` sin layouts: es el caso «Todavía no se compuso».
+   *
+   *  **Y uno archivado** · 2026-11-24, con la forma de `f1ccbbe`: la lista del
+   *  servicio los trae con `is_archived: true` y su `archived_at`. Sin él, la
+   *  sección de archivados de B1 no se ve hasta archivar uno. */
   dashboards: [
-    { id: DASH_A, tenant_id: tenants[0]!.id, name: 'Overview', slug: 'overview', is_default: true, history_months: 12 },
-    { id: DASH_B, tenant_id: tenants[0]!.id, name: 'Marca', slug: 'marca', is_default: false, history_months: 12 },
-  ],
+    { id: DASH_A, tenant_id: tenants[0]!.id, name: 'Overview', slug: 'overview', is_default: true, is_archived: false, history_months: 12 },
+    { id: DASH_B, tenant_id: tenants[0]!.id, name: 'Marca', slug: 'marca', is_default: false, is_archived: false, history_months: 12 },
+    {
+      id: '44444444-4444-4444-4444-4444444444cc', tenant_id: tenants[0]!.id, name: 'Temporada 2025',
+      slug: 'temporada-2025', is_default: false, is_archived: true, archived_at: '2026-11-03T15:20:00Z',
+      history_months: 12,
+    },
+  ] as WireDashboard[],
 }
 
 /** `panelId` → la forma de la métrica que ese panel dibuja.
@@ -812,11 +825,28 @@ export const worker = setupWorker(
     const { name, is_default } = (await request.json()) as { name: string; is_default?: boolean }
     const nuevo = {
       id: crypto.randomUUID(), tenant_id: tenants[0]!.id, name,
-      slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), is_default: is_default === true, history_months: 12,
+      slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), is_default: is_default === true, is_archived: false,
+      history_months: 12,
     }
+    // **Un archivado sigue ocupando su slug**, igual que en el servicio.
+    if (estado.dashboards.some((d) => d.slug === nuevo.slug)) return mal('ya existe un dashboard con ese slug', 409)
     if (nuevo.is_default) estado.dashboards = estado.dashboards.map((d) => ({ ...d, is_default: false }))
     estado.dashboards = [...estado.dashboards, nuevo]
     return HttpResponse.json({ success: true, data: nuevo }, { status: 201 })
+  }),
+
+  /** **Como `ArchiveDashboard` de `f1ccbbe`**: 404 si no existe, idempotente
+   *  si ya estaba, 409 con su texto si es el por defecto. Y la consola deja de
+   *  verlo, que acá es sacarlo de `contexto.dashboards`. */
+  http.post(`${API}/admin/dashboards/:id/archive`, ({ params }) => {
+    const d = estado.dashboards.find((x) => x.id === params['id'])
+    if (d === undefined) return mal('dashboard no encontrado', 404)
+    if (d.is_archived === true) return ok(d)
+    if (d.is_default) return mal('no se puede archivar el dashboard default: marque otro como default antes', 409)
+    const archivado: WireDashboard = { ...d, is_archived: true, archived_at: new Date().toISOString() }
+    estado.dashboards = estado.dashboards.map((x) => (x.id === d.id ? archivado : x))
+    contexto.dashboards = contexto.dashboards.filter((x) => x.id !== d.id)
+    return ok(archivado)
   }),
 
   http.get(`${API}/admin/layouts/:id`, ({ params }) => {

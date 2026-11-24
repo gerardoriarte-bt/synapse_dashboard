@@ -215,6 +215,25 @@ export type Dashboard = {
   nombre: string
   /** El que resuelve cuando el rol no declara preferencia. */
   porDefecto: boolean
+  /** **Archivado** · `is_archived`, desde `5b917f7`. La lista los trae y la
+   *  consola no: quien la lee los separa. Ausente en el cable es `false`, que
+   *  es lo que manda un servicio anterior al campo. */
+  archivado: boolean
+  /** ISO · `null` si no está archivado: el cable lo omite (`omitempty`). */
+  archivadoEn: string | null
+}
+
+/** `LayoutDashboard` → `Dashboard` · un solo lugar, para las tres rutas que lo
+ *  devuelven. Con tres `map` escritos a mano, el campo nuevo llegaba a uno. */
+function adaptarDashboard(d: A['LayoutDashboard']): Dashboard {
+  return {
+    id: d.id,
+    tenantId: d.tenant_id,
+    nombre: d.name,
+    porDefecto: d.is_default,
+    archivado: d.is_archived === true,
+    archivadoEn: d.archived_at ?? null,
+  }
 }
 
 export type PreviewDeRol = {
@@ -1311,7 +1330,7 @@ export const adminApi = {
       await pedir<A['LayoutDashboard'][]>(
         `/admin/tenants/${encodeURIComponent(tenantId)}/dashboards`,
       )
-    ).map((d) => ({ id: d.id, tenantId: d.tenant_id, nombre: d.name, porDefecto: d.is_default })),
+    ).map(adaptarDashboard),
 
   /** **`is_default` va SIEMPRE explícito.** Omitido, el servicio lo pone en
    *  `true` si es el primero del tenant; y en `true` **desplaza al anterior** en
@@ -1323,8 +1342,21 @@ export const adminApi = {
       `/admin/tenants/${encodeURIComponent(tenantId)}/dashboards`,
       { method: 'POST', body: JSON.stringify({ name: nombre, is_default: primero }) },
     )
-    return { id: d.id, tenantId: d.tenant_id, nombre: d.name, porDefecto: d.is_default }
+    return adaptarDashboard(d)
   },
+
+  /** **Archivar es irreversible por API** · `5b917f7`, leído contra `f1ccbbe`.
+   *  No hay ruta para desarchivar, así que quien llama confirma antes.
+   *
+   *  El por defecto no se archiva: el servicio contesta 409 con su texto —de
+   *  usted y con «default»— y la pantalla lo reemplaza por el suyo. El texto
+   *  de producto no se escribe acá. Archivar dos veces es 200. */
+  archivarDashboard: async (dashboardId: string): Promise<Dashboard> =>
+    adaptarDashboard(
+      await pedir<A['LayoutDashboard']>(`/admin/dashboards/${encodeURIComponent(dashboardId)}/archive`, {
+        method: 'POST',
+      }),
+    ),
 
   layouts: async (tenantId: string): Promise<LayoutVersion[]> =>
     (await pedir<WireLayoutVersion[]>(`/admin/tenants/${encodeURIComponent(tenantId)}/layouts`)).map(
