@@ -30,7 +30,8 @@
  */
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { PlotCohort, levels } from '@/render/plots/PlotCohort'
+import { PlotCohort } from '@/render/plots/PlotCohort'
+import { levels } from '@/render/plots/core/matrix'
 import { createFormat } from '@/render/format'
 import type { Family, Value } from '@/api/types'
 

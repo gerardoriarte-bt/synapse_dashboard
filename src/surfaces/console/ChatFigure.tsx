@@ -53,7 +53,8 @@ import type { PanelType } from '../../catalog/types'
 import type { Formatter } from '../../render/format'
 import type { FamiliaDeDibujo } from '../../render/types'
 import { lineaDeEjes, mesEnCursoEn, rotularFechas, rotularFechasEnTexto, tablaLegible } from './figuraDelAgente'
-import type { ChatEvent, Value } from '../../api/types'
+import { hasRowLabels } from './rowLabels'
+import type { ChatEvent } from '../../api/types'
 
 type Dato = Extract<ChatEvent, { tipo: 'dato' }>
 
@@ -76,22 +77,6 @@ const TITULO = 'font-body text-cuerpo leading-cuerpo font-semibold text-ink m-0'
 /** Lo que es una cifra sin base ni capa: una consulta que el agente escribió
  *  por su cuenta, fuera del catálogo. */
 const CONSULTA_LIBRE = 'consulta libre del agente'
-
-/** ¿Cada fila dice de qué es? Hay una columna no numérica con texto en TODAS
- *  las filas. Una columna de texto vacía no cuenta: medido el 2026-10-09,
- *  `platform_revenue` llegó como texto con `""` en ocho de nueve filas, y eso
- *  no es un rótulo — es una cifra que se perdió. */
-export function hasRowLabels(valor: Extract<Value, { forma: 'tabular' }>): boolean {
-  return valor.columnas.some(
-    (c) =>
-      !c.numerica &&
-      valor.filas.length > 0 &&
-      valor.filas.every((f) => {
-        const celda = f[c.clave]
-        return typeof celda === 'string' && celda.trim() !== ''
-      }),
-  )
-}
 
 type Props = {
   dato: Dato

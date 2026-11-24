@@ -11,15 +11,14 @@
  *  **ninguna celda lleva cifra**, y la leyenda dice «DÍA» porque la celda es un
  *  día. Un calendario que falle las cinco se ve perfecto.
  *
- *  La primera prueba es aritmética pura sobre `levels()` —la función la importa
- *  de `PlotHeatmap` mientras `core/matrix.ts` no exista, y el `n` es lo que
- *  cambia— por la misma razón que la del treemap lo es sobre `squarify`: una
+ *  La primera prueba es aritmética pura sobre `levels()` —de `core/matrix.ts`
+ *  desde el 2026-11-24, y el `n` es lo que cambia— por la misma razón que la del treemap lo es sobre `squarify`: una
  *  rejilla se ve igual de prolija cuantizando bien y cuantizando mal.
  */
 import { render } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PlotCalendar } from '@/render/plots/PlotCalendar'
-import { levels } from '@/render/plots/PlotHeatmap'
+import { levels } from '@/render/plots/core/matrix'
 import { MARGIN, textWidth } from '@/render/plots/core/axisGeometry'
 import { _resetObserver } from '@/render/plots/core/useSize'
 import { createFormat } from '@/render/format'
