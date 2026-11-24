@@ -128,6 +128,22 @@ describe('el mes abierto SIN dato cae al anterior', () => {
     expect(pedidos[0]).toBe('2026-10')
     expect(pedidos).toContain('2026-09')
   })
+
+  it('con los DOS meses vacíos cae una vez y se queda · el latch · 2026-11-24', async () => {
+    // **Desde que la caída se decide en el render**, la guarda `caidoA === null`
+    // es lo que impide volver a evaluarla con el batch del mes al que ya se
+    // cayó. Si ese mes también está vacío, sin la guarda el render vuelve a
+    // pedir la misma caída y React corta con «Too many re-renders». Con el
+    // efecto de antes la misma ausencia no se veía, porque un `setState` con el
+    // mismo valor no hace nada — y por eso ninguna prueba la cubría.
+    const pedidos = servir({ '2026-10': BLOQUEADO, '2026-09': BLOQUEADO })
+    montar()
+
+    expect(
+      await screen.findByText(/2026-10 todavía no tiene datos calculados/i),
+    ).toBeInTheDocument()
+    expect(pedidos).toEqual(['2026-10', '2026-09'])
+  })
 })
 
 describe('el mes abierto CON dato no se toca', () => {

@@ -249,12 +249,20 @@ export function ConsoleContainer() {
    *  afirma una protección que no existe, y el día que alguien cambie `enabled`
    *  creería que esto está cubierto. La protección real queda donde está —en el
    *  `enabled` del hook— y **la prueba del caso sigue escrita**, que es lo que
-   *  la sostiene aunque el mecanismo se mude. */
-  useEffect(() => {
-    if (periodId !== null || caidoA !== null) return
-    if (!batch.isSuccess) return
-    if (siguiente === undefined) return
-
+   *  la sostiene aunque el mecanismo se mude.
+   *
+   *  ── EN EL RENDER Y NO EN UN EFECTO · 2026-11-24 ─────────────────────────
+   *
+   *  Era un `useEffect` que llamaba a `setCaidoA`, y `oxlint` lo marcaba
+   *  (`set-state-in-effect`): el mes abierto vacío se pintaba UNA vez y recién
+   *  después el efecto lo cambiaba por el anterior. **No se puede derivar** —al
+   *  caer, el batch pasa a ser el del mes anterior y ya no dice nada del
+   *  abierto—, así que se queda como estado, ajustado durante el render: es la
+   *  forma que React documenta para «guardar algo de un render anterior», y
+   *  React vuelve a renderizar antes de pintar. **No hay lazo** por la misma
+   *  guarda de siempre: con `caidoA` puesto no se vuelve a evaluar. Las pruebas
+   *  de `mesNuevoSinDato.test.tsx` fijan el comportamiento, y pasan igual. */
+  if (periodId === null && caidoA === null && batch.isSuccess && siguiente !== undefined) {
     const lote = Object.values(batch.data ?? {})
     const conValor = lote.some((pl) => pl.estado === 'DISPONIBLE' || pl.estado === 'DEGRADADO')
     // **Un mes que FALLÓ no está vacío** · 2026-10-21, visto en QA con Keralty:
@@ -264,7 +272,7 @@ export function ConsoleContainer() {
     // muestra el mes abierto con su falla.
     const conFalla = lote.some((pl) => pl.estado === 'ERROR')
     if (!conValor && !conFalla) setCaidoA(siguiente.id)
-  }, [periodId, caidoA, batch.isSuccess, batch.data, siguiente])
+  }
 
   /** Qué contarle a quien mira, cuando se cayó. Ausente si no se cayó: el aviso
    *  existe para explicar una sustitución, y sin sustitución sería ruido. */
