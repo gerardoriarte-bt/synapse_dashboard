@@ -1241,6 +1241,23 @@ export const adminApi = {
       ),
     ),
 
+  /** **El envío de prueba** · `5b917f7`. Llega sólo a quien la pide —el
+   *  servicio busca el correo del usuario del token—, no cambia el estado ni el
+   *  próximo envío, y queda en los envíos con `kind: test`. */
+  enviarPrueba: async (tenantId: string, reporteId: string): Promise<PruebaDeReporte> => {
+    const w = await pedir<A['ReportTestResult']>(
+      `/admin/tenants/${encodeURIComponent(tenantId)}/reports/${encodeURIComponent(reporteId)}/test`,
+      { method: 'POST' },
+    )
+    return { reporte: adaptarReporte(w.report), enviadaA: w.sent_to, respuestas: w.answers.map(adaptarRespuesta) }
+  },
+
+  /** **Los externos de TODOS los clientes** · P6.4, para Clientes (A1). La ruta
+   *  no filtra por cliente: quien llama decide pedirla sólo con alcance de
+   *  plataforma. */
+  avisosPorExternos: async (): Promise<AvisoPorExterno[]> =>
+    (await pedir<A['ReportExternalNotice'][]>('/admin/report-external-notices')).map(adaptarAvisoPorExterno),
+
   /** Las últimas 20 validaciones y envíos · el tope es del servicio. */
   corridasDeReporte: async (tenantId: string, reporteId: string): Promise<CorridaDeReporte[]> =>
     (
@@ -1885,14 +1902,56 @@ export type ReporteParaGuardar = {
   correos: string[]
 }
 
-/** **Sin fuente, período ni frescura**: el servicio todavía no los manda. Está
- *  pedido en `docs/MENSAJE-2026-11-18-backend-ajustes-de-reportes.md`, y la
- *  pantalla lo declara en vez de inventarlos. */
+/** **De dónde salió una cifra** · `5b917f7` (B6.5). Una por tabla Gold que
+ *  el SQL del agente citó. */
+export type FuenteDeRespuesta = {
+  /** **El nombre de la tabla**, como lo manda el servicio —`GLD_ECOMM_…`—. No
+   *  se traduce acá: el nombre del catálogo es un pedido, no una tabla nuestra. */
+  fuente: string
+  /** `YYYY-MM` · el mes que el SQL consultó, o el en curso del cliente. */
+  periodo: string
+  /** **`null` cuando no se sabe**: el cable manda `''`, y una fecha vacía no
+   *  es «cargado hace nada». Sólo las tablas con feed la traen. */
+  cargadaEn: string | null
+  /** El feed estaba vencido al generar la respuesta · el cable omite el
+   *  `false`. */
+  vencida: boolean
+}
+
 export type RespuestaDeReporte = {
   pregunta: string
   respuesta: string
   /** `null` cuando contestó · el servicio omite el campo. */
   error: string | null
+  /** **Vacía cuando el agente no consultó datos** en esa respuesta: el
+   *  servicio no inventa procedencia, y la pantalla tampoco. */
+  fuentes: FuenteDeRespuesta[]
+}
+
+/** El resultado de «Enviarme una prueba». */
+export type PruebaDeReporte = {
+  reporte: Reporte
+  /** **Un correo, el de quien la pidió**: el servicio no deja elegir otro. */
+  enviadaA: string
+  respuestas: RespuestaDeReporte[]
+}
+
+/** **Un externo agregado a un reporte** · P6.4 · la lista de Clientes. */
+export type AvisoPorExterno = {
+  id: string
+  clienteId: string
+  cliente: string
+  reporteId: string
+  reporte: string
+  correo: string
+  /** El correo de quien lo agregó · `null` si el servicio no lo encontró. */
+  agregadoPor: string | null
+  agregadoEn: string
+  /** Cuándo salió el aviso a los superadmins · `null` si no salió. */
+  avisadoEn: string | null
+  /** **`false` no dice por qué**: quitado en el editor o dado de baja desde
+   *  el correo se guardan igual. */
+  activo: boolean
 }
 
 export type ValidacionDeReporte = {
@@ -1903,7 +1962,8 @@ export type ValidacionDeReporte = {
 
 export type CorridaDeReporte = {
   id: string
-  tipo: 'validacion' | 'envio'
+  /** `prueba` desde `5b917f7`: un envío a quien lo pidió, marcado aparte. */
+  tipo: 'validacion' | 'envio' | 'prueba'
   estado: 'ok' | 'parcial' | 'error'
   respuestas: RespuestaDeReporte[]
   /** Los correos a los que salió · vacío en una validación. **No hay resultado
@@ -1948,18 +2008,49 @@ export function adaptarReporte(w: A['Report']): Reporte {
   }
 }
 
+function adaptarFuenteDeRespuesta(w: A['ReportAnswerSource']): FuenteDeRespuesta {
+  return {
+    fuente: w.source,
+    periodo: w.period,
+    cargadaEn: w.freshness === '' ? null : w.freshness,
+    vencida: w.stale === true,
+  }
+}
+
 function adaptarRespuesta(w: A['ReportAnswer']): RespuestaDeReporte {
   return {
     pregunta: w.question,
     respuesta: w.answer,
     error: w.error === undefined || w.error === '' ? null : w.error,
+    fuentes: (w.sources ?? []).map(adaptarFuenteDeRespuesta),
   }
+}
+
+function adaptarAvisoPorExterno(w: A['ReportExternalNotice']): AvisoPorExterno {
+  return {
+    id: w.recipient_id,
+    clienteId: w.tenant_id,
+    cliente: w.tenant_name,
+    reporteId: w.report_id,
+    reporte: w.report_name,
+    correo: w.email,
+    agregadoPor: w.added_by_email === undefined || w.added_by_email === '' ? null : w.added_by_email,
+    agregadoEn: w.created_at,
+    avisadoEn: w.notified_at ?? null,
+    activo: w.is_active,
+  }
+}
+
+const TIPOS_DE_CORRIDA: Record<string, CorridaDeReporte['tipo']> = {
+  validation: 'validacion',
+  delivery: 'envio',
+  test: 'prueba',
 }
 
 function adaptarCorridaDeReporte(w: A['ReportRun']): CorridaDeReporte {
   return {
     id: w.id,
-    tipo: w.kind === 'validation' ? 'validacion' : 'envio',
+    tipo: TIPOS_DE_CORRIDA[w.kind] ?? 'envio',
     estado: w.status === 'ok' ? 'ok' : w.status === 'partial' ? 'parcial' : 'error',
     respuestas: (w.answers ?? []).map((a) => adaptarRespuesta(a as A['ReportAnswer'])),
     enviadoA: w.sent_to,

@@ -32,6 +32,7 @@ import {
   useReportRuns,
   useReports,
   useSaveReport,
+  useSendTestReport,
   useValidateReport,
 } from '../../api/hooks'
 import type { Reporte, RespuestaDeReporte, Rol, Usuario } from '../../api/admin'
@@ -80,6 +81,7 @@ export function Reportes({ tenantId, cliente, zonaHoraria, roles, usuarios, form
   const validar = useValidateReport(tenantId)
   const activar = useActivateReport(tenantId)
   const pausar = usePauseReport(tenantId)
+  const probar = useSendTestReport(tenantId)
   const idElegido = vista.tipo === 'lista' ? null : vista.id
   const corridas = useReportRuns(tenantId, vista.tipo === 'envios' ? vista.id : null)
   /** Las respuestas de la última validación de esta sesión · de ese reporte y
@@ -106,6 +108,7 @@ export function Reportes({ tenantId, cliente, zonaHoraria, roles, usuarios, form
     guardar.reset()
     validar.reset()
     activar.reset()
+    probar.reset()
     ir({ tipo: 'lista' })
   }
   const activarReporte = (id: string, alTerminar: Vista) => {
@@ -240,7 +243,9 @@ export function Reportes({ tenantId, cliente, zonaHoraria, roles, usuarios, form
               respuestas={respuestas?.id === reporte.id ? respuestas.lista : null}
               validando={validar.isPending}
               activando={activar.isPending}
-              error={mensaje(validar.error ?? activar.error, 'No se pudo validar el reporte')}
+              probando={probar.isPending}
+              format={format}
+              error={mensaje(validar.error ?? activar.error ?? probar.error, 'No se pudo completar la acción sobre el reporte')}
               onValidar={() =>
                 validar.mutate(reporte.id, {
                   onSuccess: (v) => {
@@ -252,6 +257,17 @@ export function Reportes({ tenantId, cliente, zonaHoraria, roles, usuarios, form
               }
               onActivar={() => activarReporte(reporte.id, { tipo: 'lista' })}
               onEditar={() => ir({ tipo: 'editor', id: reporte.id })}
+              onProbar={() =>
+                probar.mutate(reporte.id, {
+                  // **Dice a quién llegó** · F6.10: el servicio la manda al
+                  // correo de quien la pide, y ese correo es el que se nombra.
+                  onSuccess: (p) =>
+                    avisar(`Prueba enviada a ${p.enviadaA}. Queda en los envíos, marcada como prueba.`, {
+                      tipo: 'validar',
+                      id: reporte.id,
+                    }),
+                })
+              }
             />
           )}
 

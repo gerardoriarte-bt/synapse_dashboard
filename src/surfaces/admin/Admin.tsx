@@ -53,6 +53,7 @@ import {
   useGenerateServiceKey,
   useServiceKey,
   useAgentWarehouses,
+  useExternalNotices,
   useEditAgentWarehouse,
   useTenants,
   useSaveTheme,
@@ -81,6 +82,8 @@ import { TenantIdentity } from './TenantIdentity'
 import { estadoDeAlta, versionDeCatalogo } from './alta'
 import { usoPorMetrica } from './uso'
 import { TenantList } from './TenantList'
+import { AvisosPorExternos } from './AvisosPorExternos'
+import { rutaDe } from './rutasDeReportes'
 import { ResumenDeFicha } from './ResumenDeFicha'
 import type { ResumenDeUsuarios } from './ResumenDeFicha'
 import { distintivo, nombreConDistintivo } from './distintivo'
@@ -245,6 +248,9 @@ export function Admin() {
   const generarLlave = useGenerateServiceKey()
   const llaveDelActivo = generarLlave.variables?.tenantId === activo
   const warehouses = useAgentWarehouses(activo, delEquipoInterno)
+  /** **Los externos en reportes, de todos los clientes** · P6.4. La ruta no
+   *  filtra por cliente, así que sin alcance de plataforma ni se pide. */
+  const avisos = useExternalNotices(delEquipoInterno && pantalla === 'clientes')
   const cambioDeAgente = useEditAgentWarehouse()
   const cambioDeAgenteDelActivo = cambioDeAgente.variables?.tenantId === activo
   /* ── LAS ACCIONES SOBRE USUARIOS Y LA COLA DE SOLICITUDES · 2026-10-09 ───
@@ -443,16 +449,35 @@ export function Admin() {
            cards». Abrir una card vuelve activo a ese cliente —la barra lo dice— y
            abre su ficha con migaja, que es lo que A2 dibuja. */
         !enFicha || activo === null ? (
-          <TenantList
-            tenants={lista}
-            format={format}
-            seleccionado={activo}
-            onElegir={(id) => {
-              setTenant(id)
-              conFicha(true)
-            }}
-            cargando={tenants.data === undefined}
-          />
+          <div className="flex flex-col gap-10">
+            <TenantList
+              tenants={lista}
+              format={format}
+              seleccionado={activo}
+              onElegir={(id) => {
+                setTenant(id)
+                conFicha(true)
+              }}
+              cargando={tenants.data === undefined}
+            />
+            {/* **Las advertencias por externos** · P6.4: Clientes es la
+                pantalla de alcance plataforma, y la lista es de todos. */}
+            {delEquipoInterno && (
+              <AvisosPorExternos
+                avisos={avisos.data ?? []}
+                cargando={avisos.data === undefined && !avisos.isError}
+                error={avisos.error}
+                onReintentar={() => void avisos.refetch()}
+                format={format}
+                onVerReporte={(clienteId, reporteId) => {
+                  // El cliente pasa a ser el de trabajo y se abre el reporte:
+                  // quitar un externo se hace en su editor.
+                  setTenant(clienteId)
+                  void navegar(`${rutaDe({ tipo: 'editor', id: reporteId })}?cliente=${encodeURIComponent(clienteId)}`)
+                }}
+              />
+            )}
+          </div>
         ) : (
           <div className="flex flex-col gap-6">
             <nav aria-label="Migaja" className="flex items-center gap-2">
