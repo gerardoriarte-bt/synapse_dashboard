@@ -1,6 +1,6 @@
 # El catálogo de UA MX v3.2, contra lo que existe · 2026-11-24
 
-**Qué se revisó:** `docs/CATALOGO_Y_ESPECIFICACION_TECNICA_UA_MX_FRONTEND.md`,
+**Qué se revisó:** `docs/RESPUESTA-2026-11-24-datos-catalogo-ua-mx-v3.2.md`,
 versión 3.2 de noviembre de 2026. Son 29 métricas con su gráfico sugerido, el
 año fiscal de abril a marzo, metas hasta FY31 y seis pestañas.
 
