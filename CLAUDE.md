@@ -583,6 +583,35 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-11-24 · QA desplegado, faltan las migraciones
+
+**El backend desplegó QA** con el front de `main` y su `5b917f7` o posterior:
+funcionan los meses cerrados, las zonas horarias y Reportes. **Pero no corrió
+las migraciones**: crear un reporte con destinatario da 500, archivar
+Overview da 500 por `archived_at`, y los títulos siguen en inglés. Está medido
+en `docs/AUDITORIA-2026-11-24-qa-desplegado.md`.
+
+**Tres mensajes enviados el 2026-11-24, los mandó el humano**:
+`MENSAJE-2026-11-24-backend-qa-desplegado.md` (las migraciones),
+`MENSAJE-2026-11-24-backend-consultas-de-rentabilidad-ua.md` (16 consultas,
+el hueco de los avisos por externos y volver a desplegar el front) y
+`MENSAJE-2026-11-24-datos-rentabilidad-ua.md` (cuál venta vale, los supuestos
+y los umbrales). **Lo que sigue es esperar, no volver a pedirlo.** Con las
+migraciones: probar un reporte a `gerardo.riarte@buentipo.com` (Admin de UA
+MX) y archivar Overview en UA MX y Terpel Combustibles.
+
+**La venta no cuadra entre fuentes**: `GLD_ECOMM_DAILY_PERFORMANCE` y
+`GLD_ECOMM_PROFITABILITY_UNIT_ECONOMICS` dan 648 K y 383 K en octubre. No se
+publican juntas hasta que datos elija.
+
+**Decisión humana del 2026-11-24: se adaptan dos reglas de `design.md`**,
+semáforo por umbral y eje doble. Está en
+`docs/DECISIONES-2026-11-24-semaforos-y-eje-doble.md`; `design.md` no se
+toca.
+
+**La imagen del front ya no tiene CVE altas ni críticas** (#124): nginx 1.30.7
+y libxml2. El chequeo «imagen» de la CI estaba rojo en todos los PRs.
+
 ### ⇩ ACÁ SE PARÓ · 2026-11-23 · QA listo para desplegar, y alineado con el backend
 
 **El objetivo, decidido por el humano: dejar QA listo para ir a producción.**
