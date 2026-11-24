@@ -736,6 +736,22 @@ export function useCreateDashboard(tenantId: string | null) {
   })
 }
 
+/** Archivar un dashboard · irreversible por API, así que la pantalla confirma.
+ *
+ *  **Invalida también `/config/me`**: el servicio saca al archivado de los
+ *  `dashboards` de la consola, y sin esto el selector de C6 lo seguiría
+ *  ofreciendo hasta que venciera la cache. */
+export function useArchiveDashboard(tenantId: string | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (dashboardId: string) => adminApi.archivarDashboard(dashboardId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.dashboards(tenantId ?? '') })
+      void qc.invalidateQueries({ queryKey: keys.me })
+    },
+  })
+}
+
 export function useLayouts(tenantId: string | null) {
   return useQuery({
     queryKey: keys.layouts(tenantId ?? ''),

@@ -612,6 +612,12 @@ export interface paths {
          *     **B6 la necesita para el título**: el historial trae `dashboard_id` y
          *     ningún nombre. Medido el 2026-09-30: dos dashboards, «Overview»
          *     (`is_default: true`) y «Marca».
+         *
+         *     **Devuelve TAMBIÉN los archivados** · leído el 2026-11-24 contra
+         *     `f1ccbbe`: `ListDashboards` llama a `FindByTenant`, que filtra sólo por
+         *     `tenant_id` (`dd_dashboard_repository.go:49-59`). Los que salen de la
+         *     consola los saca `visibleDashboards`, al armar `/config/me`, y no esta
+         *     ruta. Quien la lea tiene que mirar `is_archived`.
          */
         get: operations["listDashboards"];
         put?: never;
@@ -634,6 +640,44 @@ export interface paths {
          *       transacción. No es aditivo.
          */
         post: operations["createDashboard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/dashboards/{dashboardId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archivar un dashboard · **LEÍDA, NO CORRIDA** · irreversible
+         * @description Marca `is_archived: true` y pone `archived_at`. **No borra nada**: el
+         *     dashboard, sus layouts y su historial siguen en la base.
+         *
+         *     Lo que el servicio hace con un archivado, leído contra `f1ccbbe`:
+         *
+         *     · **Sale de la consola.** `visibleDashboards`
+         *       (`dd_dashboard_access.go`) lo saltea, así que no llega en
+         *       `dashboards` de `/config/me` para ningún rol.
+         *     · **Sale de los roles.** `UpdateRoleDashboards` no lo cuenta entre los
+         *       conocidos, y una lista vacía sigue siendo «todos los no archivados».
+         *     · **Sigue en `GET /admin/tenants/{tenantId}/dashboards`**, con
+         *       `is_archived: true`.
+         *     · **Sigue ocupando su slug**: un dashboard nuevo con el mismo nombre
+         *       da 409.
+         *     · **Nada impide publicar un layout suyo**: ninguna ruta de layouts mira
+         *       `is_archived`. Publicarlo no lo muestra, porque la consola no lo
+         *       lista.
+         *
+         *     **Sin cuerpo.**
+         */
+        post: operations["archiveDashboard"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1739,11 +1783,21 @@ export interface components {
              */
             history_months: number;
             /**
-             * @description **Llegó con `5b917f7`**, medido con `npm run humo` el 2026-11-24
-             *     contra `f1ccbbe`. Lo pone `POST /admin/dashboards/{dashboardId}/archive`.
-             *     Opcional en el yaml porque un servicio anterior no lo manda.
+             * @description **Archivado** · llegó con `5b917f7`, leído contra `f1ccbbe` en
+             *     `internal/core/domain/dd_dashboard.go`. Sin `omitempty`: viaja
+             *     siempre. Lo pone `POST /admin/dashboards/{dashboardId}/archive`, y
+             *     **ninguna ruta lo devuelve a `false`**.
+             *
+             *     **Opcional acá a propósito**: un servicio anterior a `5b917f7` no lo
+             *     manda, y ausente se lee como `false`.
              */
             is_archived?: boolean;
+            /**
+             * Format: date-time
+             * @description Cuándo se archivó · `*time.Time` con `omitempty`, así que **falta**
+             *     —no llega `null`— en los que no están archivados.
+             */
+            archived_at?: string;
             /** Format: date-time */
             created_at?: string;
             /** Format: date-time */
@@ -3551,6 +3605,71 @@ export interface operations {
             /**
              * @description Ya existe un dashboard con ese slug en el tenant · **sin `code`
              *     propio**.
+             *
+             *     **Un archivado sigue ocupando su slug**: el chequeo recorre
+             *     `FindByTenant`, que no los excluye. Crear «Marca» con un «Marca»
+             *     archivado da este 409 · leído contra `f1ccbbe`.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    archiveDashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dashboardId: components["parameters"]["dashboardId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /**
+             * @description El dashboard archivado. **Archivar uno ya archivado también es 200**
+             *     y lo devuelve como estaba —con su `archived_at` original—: es
+             *     idempotente.
+             */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope"] & {
+                        data?: components["schemas"]["LayoutDashboard"];
+                    };
+                };
+            };
+            /** @description `dashboardId inválido` · no es un uuid. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            /** @description `dashboard no encontrado` · **sin `code` propio**. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /**
+             * @description **Es el por defecto** · «no se puede archivar el dashboard default:
+             *     marque otro como default antes». **Sin `code` propio**: sale el de la
+             *     familia del status. El front no muestra este texto —de usted y con
+             *     «default»— sino el suyo, en español de la casa.
              */
             409: {
                 headers: {

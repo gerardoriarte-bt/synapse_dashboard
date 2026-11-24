@@ -28,6 +28,21 @@
  *  dibujo de B1 es exactamente esta decisión. Lo que cambió es qué se elige.
  *
  *  **§PEN:B1** · B1 · «Selector de contexto».
+ *
+ *  ── ARCHIVAR · 2026-11-24 ────────────────────────────────────────────────────
+ *
+ *  `5b917f7` trajo `POST /admin/dashboards/{id}/archive`, y **no hay ruta para
+ *  desarchivar**. Por eso se confirma, y la confirmación lo dice. El por
+ *  defecto no ofrece el botón —el servicio contesta 409— sino la ayuda que
+ *  dice qué hacer antes.
+ *
+ *  **Los archivados se muestran aparte y atenuados, no se esconden**, aunque
+ *  la consola ya no los vea. La lista del servicio los trae, y **siguen
+ *  ocupando su nombre**: crear «Marca» con un «Marca» archivado da 409. Si
+ *  desaparecieran, ese 409 no tendría explicación en pantalla. No se eligen:
+ *  componer algo que nadie va a ver no es un camino que convenga ofrecer.
+ *
+ *  §PEN:B1 · `B1 · Dashboards · archivar`, dibujado ese día en el `.pen`.
  */
 import { useState } from 'react'
 import { Label } from '../../render/primitives/Label'
@@ -44,6 +59,13 @@ export type DashboardEnLista = {
   estado: string
 }
 
+export type DashboardArchivado = {
+  id: string
+  nombre: string
+  /** Ya en palabras · «23 nov 2026». `null` si el servicio no mandó la fecha. */
+  archivadoEl: string | null
+}
+
 type Props = {
   dashboards: readonly DashboardEnLista[]
   /** `true` mientras la lista no llegó: no se dice «no hay» antes de saberlo. */
@@ -53,6 +75,14 @@ type Props = {
   onCrear: (nombre: string) => void
   creando: boolean
   errorAlCrear: string | null
+
+  /** Fuera de la lista de arriba: no se eligen. */
+  archivados: readonly DashboardArchivado[]
+  /** **Sin manejador no se ofrece archivar** · un botón que no hace nada es
+   *  peor que uno ausente. */
+  onArchivar?: (id: string) => void
+  archivando: boolean
+  errorAlArchivar: string | null
 
   roles: readonly { id: string; nombre: string }[]
   /** `null` es «todos los roles»: el filtro apagado. */
@@ -85,6 +115,57 @@ function Paso({ n, titulo, children }: { n: number; titulo: string; children: Re
   )
 }
 
+/** La acción de archivar el dashboard elegido, o por qué no se puede. */
+function Archivar({
+  nombre,
+  porDefecto,
+  confirmando,
+  archivando,
+  onPreguntar,
+  onCancelar,
+  onConfirmar,
+}: {
+  nombre: string
+  porDefecto: boolean
+  confirmando: boolean
+  archivando: boolean
+  onPreguntar: () => void
+  onCancelar: () => void
+  onConfirmar: () => void
+}) {
+  // **El por defecto no ofrece el botón**: el servicio lo rechaza con 409, y
+  // un botón que se aprieta para recibir un «no» es peor que uno ausente.
+  if (porDefecto) {
+    return <Ayuda>{`«${nombre}» es el predeterminado. Marca otro como predeterminado antes de archivarlo.`}</Ayuda>
+  }
+  if (!confirmando) {
+    return (
+      <div>
+        <Accion variante="peligro" tamano="compacta" onClick={onPreguntar} deshabilitada={archivando}>
+          {archivando ? 'Archivando…' : `Archivar «${nombre}»`}
+        </Accion>
+      </div>
+    )
+  }
+  return (
+    <div className="flex flex-col gap-2" role="group" aria-label="Confirmar el archivado">
+      <span className="font-body text-cuerpo text-ink">{`¿Archivar «${nombre}»?`}</span>
+      <Ayuda>
+        Deja de verse en la consola y en los roles. No se borra nada, pero no se puede deshacer: no hay forma de
+        desarchivarlo.
+      </Ayuda>
+      <div className="flex items-center gap-2">
+        <Accion tamano="compacta" onClick={onCancelar}>
+          Cancelar
+        </Accion>
+        <Accion variante="peligro" tamano="compacta" onClick={onConfirmar}>
+          {`Sí, archivar «${nombre}»`}
+        </Accion>
+      </div>
+    </div>
+  )
+}
+
 export function ContextView({
   dashboards,
   cargando,
@@ -93,6 +174,10 @@ export function ContextView({
   onCrear,
   creando,
   errorAlCrear,
+  archivados,
+  onArchivar,
+  archivando,
+  errorAlArchivar,
   roles,
   rolActivo,
   onRol,
@@ -102,6 +187,9 @@ export function ContextView({
   errorAlAbrir,
 }: Props) {
   const [creandoNombre, setCreandoNombre] = useState<string | null>(null)
+  /** El id que se está por archivar · atado al dashboard, así que elegir otro
+   *  cierra la pregunta sin un efecto que la limpie. */
+  const [confirmando, setConfirmando] = useState<string | null>(null)
   const nombreDelRol = roles.find((r) => r.id === rolActivo)?.nombre ?? null
   const dashboard = dashboards.find((d) => d.id === elegido) ?? null
 
@@ -147,6 +235,22 @@ export function ContextView({
           </ul>
         )}
 
+        {dashboard !== null && onArchivar !== undefined && (
+          <Archivar
+            nombre={dashboard.nombre}
+            porDefecto={dashboard.porDefecto}
+            confirmando={confirmando === dashboard.id}
+            archivando={archivando}
+            onPreguntar={() => setConfirmando(dashboard.id)}
+            onCancelar={() => setConfirmando(null)}
+            onConfirmar={() => {
+              setConfirmando(null)
+              onArchivar(dashboard.id)
+            }}
+          />
+        )}
+        {errorAlArchivar !== null && <Ayuda>{errorAlArchivar}</Ayuda>}
+
         {creandoNombre === null ? (
           <div>
             <Accion onClick={() => setCreandoNombre('')} deshabilitada={creando}>
@@ -180,6 +284,27 @@ export function ContextView({
           </form>
         )}
         {errorAlCrear !== null && <Ayuda>{errorAlCrear}</Ayuda>}
+
+        {archivados.length > 0 && (
+          <section className="flex flex-col gap-2" aria-label="Dashboards archivados">
+            <Label as="div">{`Archivados · ${String(archivados.length)}`}</Label>
+            <Ayuda>
+              No se ven en la consola ni se abren acá. Siguen ocupando su nombre: no se puede crear otro
+              igual.
+            </Ayuda>
+            <ul className="grid grid-cols-2 gap-3 m-0 p-0 list-none">
+              {archivados.map((d) => (
+                <li
+                  key={d.id}
+                  className="flex flex-col gap-1 rounded-lg border border-w3 px-4 py-3"
+                >
+                  <span className="font-display text-titulo leading-titulo tracking-titulo text-dim">{d.nombre}</span>
+                  <Label>{d.archivadoEl === null ? 'Archivado' : `Archivado el ${d.archivadoEl}`}</Label>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </Paso>
 
       {/* **Progresivo** · D3. El rol se pregunta recién con un dashboard
