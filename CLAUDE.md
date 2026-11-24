@@ -583,6 +583,25 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-11-24 (noche) · Terpel en dos clientes, como dice datos
+
+**Datos entregó el catálogo de Terpel** (`RESPUESTA-2026-11-24-datos-catalogo-terpel.md`)
+en dos clientes, y **el humano decidió seguirlo**: Combustibles agrupa
+Combustibles, Conveniencia, Lealtad y ATL; Lubricantes, sus marcas y las
+redes. **Reemplaza la decisión del 2026-11-20 de tres clientes**: el
+cliente «Terpel Lealtad» de QA queda sin uso, y borrarlo lo decide el humano.
+
+**El semáforo pasa a ser también de dos lados**, por el pacing (malo bajo
+90 % y sobre 110 %). Lo construye el PR `front/semaforo-de-dos-lados`; el
+dibujo en el `.pen` espera a que Pencil se destrabe, después del 2026-11-29.
+
+**Medido en Snowflake**: falta todo lo social, `DB_BT_TERPEL_LUBS` no se ve,
+la vista de pauta sigue mezclando las líneas con 238 M «Sin familia», y el
+CPL da 0 sin leads. Está en `docs/AUDITORIA-2026-11-24-catalogo-terpel.md`,
+y lo pide `docs/MENSAJE-2026-11-24-datos-catalogo-terpel.md`, **que manda el
+humano**. **Al backend no se le pide nada todavía**: las consultas van cuando
+datos confirme las claves y la vista de cada cliente.
+
 ### ⇩ ACÁ SE PARÓ · 2026-11-24 (tarde) · el backend contestó con un commit que no está
 
 **Tres respuestas del backend**, registradas como
@@ -656,7 +675,7 @@ llave y el agente cambió la conexión desde la ficha, autorizado por el humano.
 Cada mes de julio a noviembre da 8 disponibles, 2 bloqueadas (ATL) y 12 con
 error (la semilla de UA).
 
-**Decisión humana del 2026-11-20: cada línea de Terpel es un cliente.** La
+**Decisión humana del 2026-11-20: cada línea de Terpel es un cliente.** **Reemplazada el 2026-11-24 por dos clientes, como los arma datos** · ver la entrada de ese día. La
 pauta mezclaba Combustibles, Lubricantes y Lealtad en una vista. En QA:
 
 | Cliente | Id | Estado |
