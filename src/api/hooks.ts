@@ -77,6 +77,8 @@ export const keys = {
   reportes: (tenantId: string) => ['admin', 'reportes', tenantId] as const,
   /** **Debajo de `reportes`**: invalidar la lista también refresca los envíos. */
   corridasDeReporte: (tenantId: string, reporteId: string) => ['admin', 'reportes', tenantId, reporteId, 'corridas'] as const,
+  /** **De todos los clientes**: no cuelga de ninguno, y no se borra al saltar. */
+  avisosPorExternos: () => ['admin', 'avisos-por-externos'] as const,
   usuarios: (tenantId: string) => ['admin', 'usuarios', tenantId] as const,
   // **Sin tenant en la clave, a propósito**: es de plataforma. Compartir la clave
   // con la de arriba serviría el listado de un cliente donde va el de todos, que
@@ -457,6 +459,29 @@ export function useActivateReport(tenantId: string | null) {
   return useMutation({
     mutationFn: (reporteId: string) => adminApi.activarReporte(tenantId as string, reporteId),
     onSuccess: () => client.invalidateQueries({ queryKey: keys.reportes(tenantId ?? '') }),
+  })
+}
+
+/** **«Enviarme una prueba»** · `5b917f7`. Llega sólo a quien la pide y queda
+ *  en los envíos como prueba, así que refresca las corridas de ese reporte.
+ *  No cambia el estado: la lista no se relee. */
+export function useSendTestReport(tenantId: string | null) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (reporteId: string) => adminApi.enviarPrueba(tenantId as string, reporteId),
+    onSuccess: (_r, reporteId) =>
+      client.invalidateQueries({ queryKey: keys.corridasDeReporte(tenantId ?? '', reporteId) }),
+  })
+}
+
+/** **Los externos en reportes, de todos los clientes** · P6.4. `habilitada` lo
+ *  decide quien llama: la ruta no filtra por cliente, así que sin alcance de
+ *  plataforma ni se pide. */
+export function useExternalNotices(habilitada: boolean) {
+  return useQuery({
+    queryKey: keys.avisosPorExternos(),
+    queryFn: () => adminApi.avisosPorExternos(),
+    enabled: habilitada,
   })
 }
 

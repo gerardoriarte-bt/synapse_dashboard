@@ -92,7 +92,34 @@ const destinatariosMock = (usuarios: string[], correos: string[]): ReporteMock['
   ...usuarios.map((u) => ({ id: crypto.randomUUID(), report_id: '', kind: 'user', user_id: u, added_by: null, created_at: '2026-10-01T00:00:00Z', updated_at: '2026-10-01T00:00:00Z' })),
   ...correos.map((c) => ({ id: crypto.randomUUID(), report_id: '', kind: 'external', email: c, added_by: null, notified_at: '2026-10-01T00:00:01Z', created_at: '2026-10-01T00:00:00Z', updated_at: '2026-10-01T00:00:00Z' })),
 ]
-const reportes: { lista: ReporteMock[] } = {
+/** Una fuente de respuesta, con la forma de `ReportAnswerSource`: `freshness`
+ *  siempre llega —vacía si no se sabe— y `stale` sólo cuando es `true`. */
+const fuenteMock = (source: string, period: string, freshness: string, stale = false) => ({
+  source, period, freshness, ...(stale ? { stale: true } : {}),
+})
+/** **Los cuatro casos a la vez**, como el dibujo de «Validar respuestas»: al
+ *  día, con una fuente vencida —y su nota, que la agrega el servicio—, sin
+ *  fecha de carga, y sin fuentes (el agente no consultó datos). */
+const respuestasMock = (preguntas: readonly string[]) =>
+  preguntas.map((question, i) =>
+    i === 0
+      ? {
+          question,
+          answer: 'Se invirtieron COP 1.228 M en pauta digital en octubre, el 122,5 % del presupuesto: el gasto superó lo presupuestado.',
+          sources: [fuenteMock('GLD_PAID_MEDIA', '2026-10', '2026-11-24T11:10:00Z')],
+        }
+      : i === 1
+        ? {
+            question,
+            answer:
+              'Vendimos COP 2.310 M en octubre.\n\nNota: el dato puede estar vencido — GLD_ECOMM_DAILY_PERFORMANCE (última carga 2026-11-22T06:00:00Z).',
+            sources: [fuenteMock('GLD_ECOMM_DAILY_PERFORMANCE', '2026-10', '2026-11-22T06:00:00Z', true), fuenteMock('GLD_PRODUCTO_ANALYTICS', '2026-10', '')],
+          }
+        : { question, answer: 'No hay un dato que conteste esta pregunta: pide una decisión, y ninguna métrica de este cliente la contesta.' },
+  )
+type CorridaDeReporteMock = { id: string; report_id: string; tenant_id: string; kind: string; status: string; answers: unknown[]; sent_to: string[]; actor_user_id: string | null; created_at: string }
+const reportes: { lista: ReporteMock[]; pruebas: CorridaDeReporteMock[] } = {
+  pruebas: [],
   lista: [
     reporteMock({
       id: 'rep-1', tenant_id: tenants[0]!.id, name: 'Pauta digital · mensual', role_id: roles[1]!.id,
@@ -1246,18 +1273,43 @@ export const worker = setupWorker(
     if (r === undefined) return mal('reporte no encontrado', 404)
     const validado = { ...r, status: 'validated', validated_at: new Date().toISOString() }
     reportes.lista = reportes.lista.map((x) => (x.id === r.id ? validado : x))
-    return ok({
-      report: validado,
-      validated: true,
-      answers: r.questions.map((q, i) => ({
-        question: q,
-        answer:
-          i === 0
-            ? 'Se invirtieron COP 1.228 M en pauta digital en octubre, el 122,5 % del presupuesto: el gasto superó lo presupuestado.'
-            : 'La pauta trajo 207,3 M de impresiones y 10,95 M de clics en octubre: un CTR de 5,3 %.',
-      })),
-    })
+    return ok({ report: validado, validated: true, answers: respuestasMock(r.questions) })
   }),
+  /* **«Enviarme una prueba»** · `5b917f7`. Llega al correo de quien la pide
+     —acá, el del contexto—, no cambia el estado y queda en los envíos con
+     `kind: test`. */
+  http.post(`${API}/admin/tenants/:id/reports/:rid/test`, async ({ params }) => {
+    await delay(900)
+    const r = reportes.lista.find((x) => x.id === params['rid'])
+    if (r === undefined) return mal('reporte no encontrado', 404)
+    const answers = respuestasMock(r.questions)
+    // El correo del usuario del contexto mock: la prueba va a quien la pide.
+    const sentTo = 'admin@lobueno.co'
+    reportes.pruebas = [
+      { id: crypto.randomUUID(), report_id: r.id, tenant_id: r.tenant_id, kind: 'test', status: 'ok', answers, sent_to: [sentTo], actor_user_id: 'u-1', created_at: new Date().toISOString() },
+      ...reportes.pruebas,
+    ]
+    return ok({ report: r, sent_to: sentTo, answers, run_kind: 'test' })
+  }),
+  /* **Los externos de todos los clientes** · P6.4. Sale de los reportes en
+     memoria, más uno de otro cliente y uno que ya no lo recibe. */
+  http.get(`${API}/admin/report-external-notices`, () =>
+    ok([
+      ...reportes.lista.flatMap((r) =>
+        r.recipients
+          .filter((d) => d.kind === 'external')
+          .map((d) => ({
+            recipient_id: d.id, tenant_id: r.tenant_id, tenant_name: tenants.find((t) => t.id === r.tenant_id)?.name ?? '',
+            report_id: r.id, report_name: r.name, email: d.email ?? '', added_by: 'u-1', added_by_email: 'maria.benitez@ejemplo.co',
+            created_at: d.created_at, ...(d.notified_at === undefined ? {} : { notified_at: d.notified_at }), is_active: true,
+          })),
+      ),
+      {
+        recipient_id: 'ext-viejo', tenant_id: tenants[1]!.id, tenant_name: tenants[1]!.name, report_id: 'rep-otro',
+        report_name: 'Cierre de campañas', email: 'director@consultora.co', created_at: '2026-09-22T15:00:00Z', is_active: false,
+      },
+    ]),
+  ),
   http.post(`${API}/admin/tenants/:id/reports/:rid/activate`, ({ params }) => {
     const r = reportes.lista.find((x) => x.id === params['rid'])
     if (r === undefined) return mal('reporte no encontrado', 404)
@@ -1274,14 +1326,16 @@ export const worker = setupWorker(
     return ok(pausado)
   }),
   http.get(`${API}/admin/tenants/:id/reports/:rid/runs`, ({ params }) =>
-    ok(
-      params['rid'] === 'rep-1'
+    ok([
+      ...reportes.pruebas.filter((p) => p.report_id === params['rid']),
+      ...(params['rid'] === 'rep-1'
         ? [
             {
               id: 'run-1', report_id: 'rep-1', tenant_id: tenants[0]!.id, kind: 'delivery', status: 'ok',
               answers: [
-                { question: '¿Cuánto invertimos?', answer: 'Se invirtieron COP 603,7 M en pauta digital en septiembre, el 97,3 % del presupuesto.' },
-                { question: '¿Cuántos clics?', answer: 'La pauta trajo 212,4 M de impresiones y 3,06 M de clics: un CTR de 1,4 %.' },
+                { question: '¿Cuánto invertimos?', answer: 'Se invirtieron COP 603,7 M en pauta digital en septiembre, el 97,3 % del presupuesto.', sources: [fuenteMock('GLD_PAID_MEDIA', '2026-09', '2026-10-03T11:10:00Z')] },
+                { question: '¿Cuántos clics?', answer: 'La pauta trajo 212,4 M de impresiones y 3,06 M de clics: un CTR de 1,4 %.', sources: [fuenteMock('GLD_PAID_MEDIA', '2026-09', '2026-10-03T11:10:00Z')] },
+                // Una corrida de antes de `5b917f7`: no guardó fuentes.
                 { question: '¿Qué plataforma?', answer: 'YouTube concentró la inversión, con el 21 % del gasto.' },
               ],
               sent_to: ['laura.mendez@ejemplo.co', 'gerencia.mercadeo@terpel.com'], actor_user_id: null, created_at: '2026-11-03T13:00:05Z',
@@ -1291,8 +1345,8 @@ export const worker = setupWorker(
               answers: [], sent_to: [], actor_user_id: null, error: 'el servicio de correo no respondió', created_at: '2026-09-03T13:00:05Z',
             },
           ]
-        : [],
-    ),
+        : []),
+    ]),
   ),
 
 )
