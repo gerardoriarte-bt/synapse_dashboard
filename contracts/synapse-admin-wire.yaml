@@ -2691,6 +2691,12 @@ components:
             `{"history_months": N}`, 1 a 120—, mientras que en el cable de la
             consola es sólo de lectura. El mismo número con dos lectores.
           examples: [12]
+        is_archived:
+          type: boolean
+          description: |
+            **Llegó con `5b917f7`**, medido con `npm run humo` el 2026-11-24
+            contra `f1ccbbe`. Lo pone `POST /admin/dashboards/{dashboardId}/archive`.
+            Opcional en el yaml porque un servicio anterior no lo manda.
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
 

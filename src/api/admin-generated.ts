@@ -1738,6 +1738,12 @@ export interface components {
              * @example 12
              */
             history_months: number;
+            /**
+             * @description **Llegó con `5b917f7`**, medido con `npm run humo` el 2026-11-24
+             *     contra `f1ccbbe`. Lo pone `POST /admin/dashboards/{dashboardId}/archive`.
+             *     Opcional en el yaml porque un servicio anterior no lo manda.
+             */
+            is_archived?: boolean;
             /** Format: date-time */
             created_at?: string;
             /** Format: date-time */
