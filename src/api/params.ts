@@ -45,7 +45,8 @@ export type ParamSpec =
   /** **Los dos cortes del semáforo** · decisión humana del 2026-11-24. Es un
    *  objeto, pero `object` a secas dejaba pasar `{}` y el cuerpo no tendría
    *  dirección que leer: acá se valida su forma entera, con
-   *  `problemaDeUmbrales`, y el builder lo edita con dos campos. */
+   *  `problemaDeUmbrales`, y el builder lo edita con dos campos —o con cuatro,
+   *  de dos lados—. */
   | { kind: 'umbrales' }
 
 /** Lo que cada cuerpo REALMENTE lee. No es la lista de §7 de
@@ -150,7 +151,7 @@ export function describirParam(spec: ParamSpec): string {
     case 'object':
       return 'un objeto'
     case 'umbrales':
-      return 'dos cortes distintos, «bien» y «mal»'
+      return 'dos cortes distintos, «bien» y «mal», o el rango de «bien» con el de «mal» opcional'
   }
 }
 
