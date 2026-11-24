@@ -12,6 +12,7 @@
  */
 import type { ReactNode } from 'react'
 import { Label } from './Label'
+import type { EstadoDeUmbral } from '../semaforo'
 
 /** Los tres roles de cifra de §2.3. El KPI no baja de 44px para que entre una
  *  cifra larga: se abrevia la cifra, que para eso `Formatter.number` tiene
@@ -25,6 +26,14 @@ const SIZE = {
 /** Sigue en el árbol de accesibilidad aunque no se pinte. `w-px`/`h-px` y no
  *  cero: la caja mínima deja el texto disponible para un lector, y un `h-0` lo
  *  sacaría de ahí. */
+/** **El color de la cifra cuando el panel declara umbrales** · 2026-11-24. Sólo
+ *  `bien` y `mal` cambian el color: aceptable es la tinta de siempre, que es el
+ *  «gris de siempre» de una cifra. Escritas enteras para que Tailwind las vea. */
+const TONO: Partial<Record<EstadoDeUmbral, string>> = {
+  bien: 'text-estado-bien',
+  mal: 'text-estado-mal',
+}
+
 const SCREEN_READER_ONLY =
   'absolute w-px h-px p-0 -m-px overflow-hidden [clip-path:inset(50%)] whitespace-nowrap border-0'
 
@@ -49,9 +58,14 @@ type Props = {
    *    encabezado de columna; agregarle un label propio la hace decir el
    *    nombre dos veces. */
   labelVisibility?: 'visible' | 'screenReader' | 'fromContext'
+  /** El semáforo · lo pasa sólo `KpiBody`, y sólo con umbrales declarados.
+   *  **Nunca va solo**: quien lo pasa escribe el estado al lado con
+   *  `Semaforo`. */
+  estado?: EstadoDeUmbral
 }
 
-export function Value({ label, children, size = 'body', labelVisibility = 'visible' }: Props) {
+export function Value({ label, children, size = 'body', labelVisibility = 'visible', estado }: Props) {
+  const tono = estado === undefined ? undefined : TONO[estado]
   return (
     <div className="flex flex-col gap-1 min-w-0">
       {labelVisibility === 'visible' && <Label>{label}</Label>}
@@ -59,7 +73,9 @@ export function Value({ label, children, size = 'body', labelVisibility = 'visib
       {/* SIN `aria-label`. Lo tenía, y un `aria-label` sobre el nodo que
           contiene la cifra no la acompaña: la REEMPLAZA. Un lector decía el
           nombre del label dos veces y el número ninguna. */}
-      <span className={`block tabular-nums ${SIZE[size]}`}>{children}</span>
+      <span className={`block tabular-nums ${tono === undefined ? SIZE[size] : SIZE[size].replace('text-ink', tono)}`}>
+        {children}
+      </span>
     </div>
   )
 }

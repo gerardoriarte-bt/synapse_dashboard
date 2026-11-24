@@ -48,6 +48,8 @@
  */
 import { useSize } from './core/useSize'
 import { hue } from './core/seriesColor'
+import { TONO_DE_MARCA } from '../semaforo'
+import type { EstadoDeUmbral } from '../semaforo'
 import type { PlotProps } from '../types'
 
 /** Alto del riel · 22 en el `.pen`. */
@@ -70,12 +72,17 @@ export function PlotBullet({
   objetivo,
   family,
   format,
+  estado,
 }: PlotProps<'escalar'> & {
   /** **Viaja aparte porque el contrato no lo trae en el valor.** `ValorEscalar`
    *  es `{ forma, v }` y nada más: el denominador lo declara el layout en
    *  `opciones.maximo`, que es la misma razón por la que `PlotGauge` recibe
    *  `max` suelto. El cuerpo ya garantizó que es mayor que cero. */
   objetivo: number
+  /** El semáforo · con umbrales declarados la barra de medida toma el color
+   *  del estado. **Las franjas y la marca no cambian**: son el objetivo, no el
+   *  juicio, y pintarlas diría que el objetivo está bien o mal. */
+  estado?: EstadoDeUmbral
 }) {
   const { ref, w, h } = useSize()
 
@@ -118,7 +125,7 @@ export function PlotBullet({
             width={bar}
             height={BAR}
             rx={R}
-            fill={hue({ family })}
+            fill={estado === undefined ? hue({ family }) : TONO_DE_MARCA[estado]}
           />
           {/* El umbral. **No lleva familia**: un objetivo no es una serie, y
               pintarlo con el hue se leería como una segunda medida. Falta una

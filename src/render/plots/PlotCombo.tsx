@@ -79,13 +79,39 @@
  *  porque el `Legend Item` del `.pen` no existe en `src/` y sin él la cifra
  *  queda desnuda — y eso es regla dura, no preferencia. Va en mono 10 `dim` con
  *  su tracking, que es el contrato de `AxisText`.
+ *
+ *  ── EL EJE DOBLE · decisión humana del 2026-11-24 ───────────────────────────
+ *
+ *  §PEN:Plot/COMBINADO · Dos ejes: visitas y conversión
+ *
+ *  `docs/DECISIONES-2026-11-24-semaforos-y-eje-doble.md` §2. **Con exactamente
+ *  dos series de unidades distintas, declaradas en el cable**, la razón deja de
+ *  no tener eje: cada serie tiene el suyo, y la unidad va ESCRITA en cada uno.
+ *  Lo decide el cuerpo —`SeriesBody` pasa `ejes` sólo en ese caso— y con una
+ *  sola unidad, o sin declarar, o con tres series, el dibujo es el de arriba.
+ *
+ *  **Cada serie se asocia a su eje dos veces**, porque un eje doble que se lee
+ *  al revés es el defecto clásico del gráfico:
+ *
+ *   · **por posición** · las columnas van contra el eje izquierdo y la línea
+ *     contra el derecho, siempre, que es el orden del payload;
+ *   · **por rótulo** · arriba de cada eje, su serie y su unidad —«VISITAS ·
+ *     SESIONES» a la izquierda, «CVR · %» a la derecha— con la MARCA de su
+ *     dibujo al lado: un cuadro del color de las columnas, un punto del color
+ *     de la línea.
+ *
+ *  **La anotación del último punto se va**: existía porque la razón no tenía
+ *  eje —«sin eje derecho el único valor legible de la razón es el último»—, y
+ *  con el eje derecho ese valor se lee contra su escala. Dejarla le quitaba al
+ *  área el ancho que ahora necesita el segundo eje.
  */
 import { useSize } from './core/useSize'
 import { bandScale, ceiling, linearScale } from './core/scale'
 import { AxisText, CategoryAxis, ValueAxis } from './core/Axis'
-import { MARGIN, axisReserve, textWidth } from './core/axisGeometry'
+import { MARGIN, axisReserve, charsThatFit, textWidth } from './core/axisGeometry'
 import { Grid } from './core/Grid'
 import { Bars, Dots, Line } from './core/Series'
+import { hue } from './core/seriesColor'
 import type { BandScale } from './core/scale'
 import type { DrawableSeries } from './PlotSeries'
 import type { FamiliaDeDibujo } from '../types'
@@ -112,6 +138,14 @@ const GAP = 8
  *  geometría de SVG y el token no sirve para medir. */
 const CIFRA = 11
 
+/** El alto de la fila de rótulos de eje, cuando hay dos. **24 y no 16**: con
+ *  16 el rótulo y la cifra más alta de cada eje quedaban a dos píxeles y se
+ *  leían como una sola línea · visto en el dibujo del `.pen` el 2026-11-24. */
+const TITULO = 24
+
+/** El lado de la marca que acompaña a cada rótulo de eje. */
+const MARCA = 8
+
 /** La MISMA escala con el dominio recortado · el mismo recurso que `PlotColumns`.
  *
  *  Las posiciones siguen saliendo de la escala completa —`x(k)` no cambia— así
@@ -129,6 +163,7 @@ export function PlotCombo({
   line,
   family,
   format,
+  ejes,
 }: {
   /** La serie que va en columnas, sobre el eje rotulado. **El reparto de roles
    *  lo hace el cuerpo**: acá llegan las dos partes ya separadas y no un
@@ -138,8 +173,19 @@ export function PlotCombo({
   line: DrawableSeries
   family: FamiliaDeDibujo
   format: (v: number) => string
+  /** **El eje doble** · las unidades de cada serie, cuando son dos y distintas.
+   *  Ausente, el combinado de siempre: un eje rotulado y la razón anotada. */
+  ejes?: { columnas: string; linea: string }
 }) {
   const { ref, w, h } = useSize()
+
+  if (ejes !== undefined) {
+    return (
+      <div ref={ref} className="w-full h-full min-h-0">
+        {w > 0 && h > 0 && <DosEjes columns={columns} line={line} family={family} format={format} ejes={ejes} w={w} h={h} />}
+      </div>
+    )
+  }
 
   const items = columns.puntos.map((p) => ({ k: p.t, v: p.v }))
   const last = line.puntos[line.puntos.length - 1]
@@ -251,5 +297,104 @@ export function PlotCombo({
         </svg>
       )}
     </div>
+  )
+}
+
+/** El combinado con un eje por serie · ver «EL EJE DOBLE» en la cabecera.
+ *
+ *  Comparte con el de arriba todo lo que no es el eje —el aire de las columnas,
+ *  el escalón, la línea sobre los centros de banda, el ralo del eje de
+ *  categorías— y por eso usa las mismas constantes. Lo que cambia es la
+ *  reserva: hay una a cada lado, y arriba una fila para los dos rótulos. */
+function DosEjes({
+  columns,
+  line,
+  family,
+  format,
+  ejes,
+  w,
+  h,
+}: {
+  columns: DrawableSeries
+  line: DrawableSeries
+  family: FamiliaDeDibujo
+  format: (v: number) => string
+  ejes: { columnas: string; linea: string }
+  w: number
+  h: number
+}) {
+  const items = columns.puntos.map((p) => ({ k: p.t, v: p.v }))
+  const top = MARGIN.t + TITULO
+  const height = Math.max(0, h - top - MARGIN.b)
+
+  const yColumnas = linearScale([0, ceiling(items.map((i) => i.v))], [height, 0])
+  const yLinea = linearScale([0, ceiling(line.puntos.map((p) => p.v))], [height, 0])
+
+  const izquierda = axisReserve(yColumnas.ticks(4).map(format))
+  const derecha = axisReserve(yLinea.ticks(4).map(format))
+  const width = Math.max(0, w - izquierda - derecha)
+
+  const banda = bandScale(
+    items.map((i) => i.k),
+    [0, width],
+    PADDING,
+  )
+  const x = linearScale([0, Math.max(1, items.length - 1)], [banda.step / 2, width - banda.step / 2])
+  const rotulados = items.filter((_, i) => i % EVERY === 0 || i === items.length - 1).map((i) => i.k)
+
+  // Cada rótulo tiene la mitad del ancho menos su marca: a la izquierda y a la
+  // derecha a la vez, en un panel angosto se pisarían en el medio.
+  const cabe = charsThatFit(w / 2 - MARCA - 2 * GAP)
+  const recortar = (t: string) => (t.length > cabe ? `${t.slice(0, cabe - 1)}…` : t)
+  const rotuloIzquierdo = recortar(`${columns.etiqueta} · ${ejes.columnas}`)
+  const rotuloDerecho = recortar(`${line.etiqueta} · ${ejes.linea}`)
+  const yRotulo = MARGIN.t + MARCA / 2
+
+  return (
+    <svg
+      width={w}
+      height={h}
+      role="img"
+      aria-label={`Combinado con dos ejes · ${columns.etiqueta} en columnas, eje izquierdo en ${ejes.columnas} · ${line.etiqueta} en línea, eje derecho en ${ejes.linea}`}
+    >
+      {/* Los dos rótulos de eje, cada uno con la marca de su dibujo. */}
+      <g data-rotulo-de-eje="izquierdo">
+        <rect x={0} y={MARGIN.t} width={MARCA} height={MARCA} rx={2} fill={hue({ family, step: COLUMN_STEP })} fillOpacity={0.7} />
+        <AxisText x={MARCA + GAP / 2} y={yRotulo} anchor="start">
+          {rotuloIzquierdo}
+        </AxisText>
+      </g>
+      <g data-rotulo-de-eje="derecho">
+        <circle cx={w - MARCA / 2} cy={yRotulo} r={MARCA / 2 - 1} fill={hue({ family })} />
+        <AxisText x={w - MARCA - GAP / 2} y={yRotulo} anchor="end">
+          {rotuloDerecho}
+        </AxisText>
+      </g>
+      <g transform={`translate(${izquierda},${top})`}>
+        <Grid scale={yColumnas} orientation="horizontal" length={width} />
+        <g fillOpacity={0.7}>
+          <Bars
+            items={items}
+            band={banda}
+            value={yColumnas}
+            orientation="vertical"
+            base={yColumnas(0)}
+            family={family}
+            step={COLUMN_STEP}
+          />
+        </g>
+        <Line points={line.puntos.map((p, i) => ({ x: i, y: p.v }))} x={x} y={yLinea} family={family} />
+        <Dots points={line.puntos.map((p, i) => ({ x: i, y: p.v, k: p.t }))} x={x} y={yLinea} family={family} />
+        <CategoryAxis scale={narrowed(banda, rotulados)} side="bottom" at={height + 12} width={banda.step * EVERY} />
+      </g>
+      <g transform={`translate(0,${top})`}>
+        <g data-eje="izquierdo">
+          <ValueAxis scale={yColumnas} side="left" at={izquierda - 6} format={format} />
+        </g>
+        <g data-eje="derecho">
+          <ValueAxis scale={yLinea} side="right" at={izquierda + width + 6} format={format} />
+        </g>
+      </g>
+    </svg>
   )
 }

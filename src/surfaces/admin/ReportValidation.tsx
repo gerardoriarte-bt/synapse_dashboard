@@ -8,21 +8,27 @@
  *  **Lo que se aparta del dibujo, y por qué —todo es del servicio de hoy:**
  *  - **Generar y validar son un solo paso.** `validate` genera las respuestas y,
  *    si todas contestan, deja el reporte validado. No hay forma de verlas antes.
- *  - **Cada respuesta no dice de dónde sale su cifra**: el servicio todavía no
- *    lo manda. Se declara en la tarjeta en vez de inventar la fuente. Pedido en
- *    `docs/MENSAJE-2026-11-18-backend-ajustes-de-reportes.md`.
- *  - **No hay «sin dato»**: el servicio no distingue una pregunta sin dato de una
- *    contestada; el agente lo dice en el texto.
+ *  - **«Sin dato» es una respuesta que no cita fuentes** · `5b917f7`. El
+ *    servicio no distingue una pregunta sin dato de una contestada: las dos
+ *    traen texto y las dos validan. Lo que sí manda es de dónde salió cada
+ *    cifra, y una respuesta sin SQL llega sin fuentes. Esa es la que se marca
+ *    —el dibujo la deja validar igual—, sin la frase de «qué la desbloquea»,
+ *    que nadie manda.
  *  - **No hay «volver a generar esta»**: se generan todas juntas.
- *  - **No hay «Enviarme una prueba»**: no hay ruta. Un botón sin manejador no se
- *    pinta (la regla del CTA muerto).
+ *
+ *  **«Enviarme una prueba» llegó con `5b917f7`**: va al correo de quien la
+ *  pide y nunca a otro, no cambia el estado, y queda en los envíos marcada
+ *  como prueba. Lo que dice al terminar lo escribe `Reportes`, en el aviso de
+ *  arriba, como las demás acciones.
  */
 import type { Reporte, RespuestaDeReporte } from '../../api/admin'
+import type { Formatter } from '../../render/format'
 import { Label } from '../../render/primitives/Label'
 import { Ayuda } from '../../render/primitives/Ayuda'
 import { Accion } from '../../render/primitives/Accion'
 import { StatusChip } from './StatusChip'
 import { aQuien, cadaCuanto, NOMBRE_DE_ESTADO } from './reporte'
+import { FuentesDeRespuesta } from './FuentesDeRespuesta'
 
 const NOTA = 'font-mono text-nota leading-rotulo tracking-rotulo uppercase text-dim m-0'
 const CARTA = 'flex flex-col gap-3 rounded-xl border border-w3 bg-panel p-5'
@@ -35,14 +41,35 @@ type Props = {
   onActivar: () => void
   /** **Corregir una pregunta sin salir por la migaja** · M4. */
   onEditar: () => void
+  /** **Manda el reporte sólo a quien lo pide** · `5b917f7`. */
+  onProbar: () => void
   validando: boolean
   activando: boolean
+  probando: boolean
   error: string | null
+  /** Con el huso del cliente · las fechas de carga de cada fuente. */
+  format: Formatter
 }
 
-export function ReportValidation({ reporte, respuestas, onValidar, onActivar, onEditar, validando, activando, error }: Props) {
+/** **Sin fuentes y sin error**: el agente contestó sin consultar datos. */
+const sinDato = (r: RespuestaDeReporte) => r.error === null && r.fuentes.length === 0
+
+export function ReportValidation({
+  reporte,
+  respuestas,
+  onValidar,
+  onActivar,
+  onEditar,
+  onProbar,
+  validando,
+  activando,
+  probando,
+  error,
+  format,
+}: Props) {
   const fallaron = respuestas?.filter((r) => r.error !== null).length ?? 0
-  const respondidas = (respuestas?.length ?? 0) - fallaron
+  const sinDatos = respuestas?.filter(sinDato).length ?? 0
+  const respondidas = (respuestas?.length ?? 0) - fallaron - sinDatos
   // **Activar no está disponible hasta validar** · F6.10. Un pausado ya se
   // validó: reanudarlo no exige validar de nuevo.
   const activable = reporte.estado === 'validado' || reporte.estado === 'pausado'
@@ -78,14 +105,14 @@ export function ReportValidation({ reporte, respuestas, onValidar, onActivar, on
                     <span className={NOTA}>{String(i + 1)}</span>
                     <span className="font-body text-cuerpo text-dim">{p}</span>
                   </div>
-                  {r !== null && <StatusChip>{r.error === null ? 'Respondida' : 'Falló'}</StatusChip>}
+                  {r !== null && <StatusChip>{r.error !== null ? 'Falló' : sinDato(r) ? 'Sin dato' : 'Respondida'}</StatusChip>}
                 </div>
                 {r === null ? (
                   <Ayuda>{validando ? 'Generando…' : 'Todavía no se generó.'}</Ayuda>
                 ) : r.error === null ? (
                   <>
-                    <p className="m-0 font-body text-cuerpo font-medium leading-cuerpo text-ink">{r.respuesta}</p>
-                    <Label>Todavía no dice de dónde sale esta cifra</Label>
+                    <p className="m-0 whitespace-pre-line font-body text-cuerpo font-medium leading-cuerpo text-ink">{r.respuesta}</p>
+                    <FuentesDeRespuesta fuentes={r.fuentes} format={format} sinFuentes="No cita ninguna fuente · el agente no consultó datos" />
                   </>
                 ) : (
                   <div className="flex flex-col gap-1">
@@ -114,6 +141,10 @@ export function ReportValidation({ reporte, respuestas, onValidar, onActivar, on
                   <span className="font-body text-cuerpo text-ink">{String(respondidas)}</span>
                 </div>
                 <div className="flex items-center justify-between">
+                  <Label as="dt">Sin dato · no citan fuentes</Label>
+                  <span className="font-body text-cuerpo text-ink">{String(sinDatos)}</span>
+                </div>
+                <div className="flex items-center justify-between">
                   <Label as="dt">Fallaron · bloquean validar</Label>
                   <span className="font-body text-cuerpo text-ink">{String(fallaron)}</span>
                 </div>
@@ -133,6 +164,10 @@ export function ReportValidation({ reporte, respuestas, onValidar, onActivar, on
               {reporte.estado === 'pausado' ? 'Reanudar' : 'Activar'}
             </Accion>
             {!activable && reporte.estado !== 'activo' && <Label>Se activa después de validar</Label>}
+            <Accion deshabilitada={probando} onClick={onProbar}>
+              {probando ? 'Enviando la prueba…' : 'Enviarme una prueba'}
+            </Accion>
+            <Label>La prueba llega sólo a quien la pide y queda marcada como prueba</Label>
             <Accion tamano="compacta" onClick={onEditar}>
               Editar el reporte
             </Accion>

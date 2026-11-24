@@ -552,4 +552,131 @@ describe('el dashboard que llega en la URL', () => {
     const pestanas = await screen.findByRole('tablist', { name: 'Pestañas del dashboard' })
     expect(await within(pestanas).findByText('Resumen')).toBeInTheDocument()
   })
+
+  it('uno ARCHIVADO también se ignora · la consola ya no lo ve', async () => {
+    server.use(
+      http.get(`${API}/admin/tenants/:id/dashboards`, () =>
+        ok(dashboards['t-1'].map((d) => (d.id === 'd-2' ? { ...d, is_archived: true, archived_at: '2026-11-24T10:00:00Z' } : d))),
+      ),
+    )
+    montarEn('/builder/canvas?dashboard=d-2')
+    const pestanas = await screen.findByRole('tablist', { name: 'Pestañas del dashboard' })
+    expect(await within(pestanas).findByText('Resumen')).toBeInTheDocument()
+    expect(within(pestanas).queryByText('Portada')).toBeNull()
+  })
+})
+
+/** ── ARCHIVAR · `5b917f7`, leído contra `f1ccbbe` ─────────────────────────
+ *
+ *  **Irreversible por API**: no hay ruta para desarchivar. Por eso la regla
+ *  que se prueba es que el `POST` sale DESPUÉS de confirmar y no antes, y que
+ *  «Cancelar» no manda nada. Lo demás es del servicio: el por defecto da 409,
+ *  y la lista trae a los archivados con `is_archived: true`. */
+describe('archivar un dashboard · B1', () => {
+  /** El `POST` y la lista que cambia con él, como hace el servicio. */
+  function servirArchivo(respuesta?: () => Response) {
+    const pedidos: string[] = []
+    let lista: Record<string, unknown>[] = dashboards['t-1']
+    server.use(
+      http.get(`${API}/admin/tenants/:id/dashboards`, () => ok(lista)),
+      http.post(`${API}/admin/dashboards/:id/archive`, ({ params }) => {
+        const id = params['id'] as string
+        pedidos.push(id)
+        if (respuesta !== undefined) return respuesta()
+        lista = lista.map((d) => (d['id'] === id ? { ...d, is_archived: true, archived_at: '2026-11-24T10:00:00Z' } : d))
+        return ok(lista.find((d) => d['id'] === id))
+      }),
+    )
+    return pedidos
+  }
+
+  it('pide confirmación, dice que no se deshace, y recién al confirmar dispara el POST', async () => {
+    const pedidos = servirArchivo()
+    montar()
+    await userEvent.click(await tarjeta(/Marca/))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Archivar «Marca»' }))
+    // **Apretar «Archivar» no archiva**: pregunta.
+    expect(pedidos).toEqual([])
+    const pregunta = screen.getByRole('group', { name: 'Confirmar el archivado' })
+    expect(pregunta.textContent).toContain('¿Archivar «Marca»?')
+    expect(pregunta.textContent).toContain('no se puede deshacer')
+
+    await userEvent.click(within(pregunta).getByRole('button', { name: 'Sí, archivar «Marca»' }))
+    await waitFor(() => expect(pedidos).toEqual(['d-2']))
+
+    // Sale de las tarjetas elegibles y pasa a los archivados, sin botón: los
+    // pasos 2 y 3 se cierran porque ya no hay qué abrir.
+    const archivados = await screen.findByRole('region', { name: 'Dashboards archivados' })
+    expect(archivados.textContent).toContain('Marca')
+    expect(archivados.textContent).toContain('Archivado el 24 nov 2026')
+    expect(screen.queryByRole('button', { name: /Marca/ })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Paso 3 · Editor' })).toBeNull()
+  })
+
+  it('«Cancelar» cierra la pregunta sin mandar nada', async () => {
+    const pedidos = servirArchivo()
+    montar()
+    await userEvent.click(await tarjeta(/Marca/))
+    await userEvent.click(screen.getByRole('button', { name: 'Archivar «Marca»' }))
+
+    const pregunta = screen.getByRole('group', { name: 'Confirmar el archivado' })
+    await userEvent.click(within(pregunta).getByRole('button', { name: 'Cancelar' }))
+
+    expect(screen.queryByRole('group', { name: 'Confirmar el archivado' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Archivar «Marca»' })).toBeInTheDocument()
+    expect(pedidos).toEqual([])
+  })
+
+  it('el por defecto no ofrece el botón: dice qué hacer antes', async () => {
+    servirArchivo()
+    montar()
+    await userEvent.click(await tarjeta(/Overview/))
+
+    expect(screen.queryByRole('button', { name: /^Archivar/ })).toBeNull()
+    expect(
+      screen.getByText('«Overview» es el predeterminado. Marca otro como predeterminado antes de archivarlo.'),
+    ).toBeInTheDocument()
+  })
+
+  it('un 409 se lee en español de la casa, no con el texto del servicio', async () => {
+    // **El caso real es una lista vieja**: otro admin lo volvió predeterminado
+    // mientras tanto. El texto del servicio va de usted y dice «default».
+    const pedidos = servirArchivo(() =>
+      fail('no se puede archivar el dashboard default: marque otro como default antes', { status: 409 }),
+    )
+    montar()
+    await userEvent.click(await tarjeta(/Marca/))
+    await userEvent.click(screen.getByRole('button', { name: 'Archivar «Marca»' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sí, archivar «Marca»' }))
+
+    expect(
+      await screen.findByText('No se archivó: es el predeterminado. Marca otro como predeterminado antes.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/marque otro como default/)).toBeNull()
+    expect(pedidos).toEqual(['d-2'])
+  })
+
+  it('los archivados que trae la lista van aparte: no son tarjetas elegibles', async () => {
+    // **El servicio los devuelve** —`FindByTenant` no filtra— y la consola no
+    // los muestra.
+    server.use(
+      http.get(`${API}/admin/tenants/:id/dashboards`, () =>
+        ok([
+          ...dashboards['t-1'],
+          {
+            id: 'd-0', tenant_id: 't-1', name: 'Temporada', slug: 'temporada', is_default: false,
+            is_archived: true, archived_at: '2026-11-03T15:20:00Z', history_months: 12,
+          },
+        ]),
+      ),
+    )
+    montar()
+    await tarjeta(/Overview/)
+
+    expect(screen.queryByRole('button', { name: /Temporada/ })).toBeNull()
+    const archivados = screen.getByRole('region', { name: 'Dashboards archivados' })
+    expect(within(archivados).getByText('Archivados · 1')).toBeInTheDocument()
+    expect(archivados.textContent).toContain('Archivado el 3 nov 2026')
+  })
 })

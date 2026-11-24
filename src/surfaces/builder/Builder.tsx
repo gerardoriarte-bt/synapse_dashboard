@@ -47,6 +47,7 @@ import {
   usePlots,
   useCreateDraft,
   useCreateDashboard,
+  useArchiveDashboard,
   useDashboards,
   useLayoutDetail,
   useLayouts,
@@ -66,7 +67,7 @@ import { BuilderChrome } from './BuilderChrome'
 import { COLUMNA_FIJA } from './columnaFija'
 import { ContextView } from './ContextView'
 import { TabInspector } from './TabInspector'
-import type { DashboardEnLista } from './ContextView'
+import type { DashboardArchivado, DashboardEnLista } from './ContextView'
 import { Canvas } from './Canvas'
 import { Library } from './Library'
 import { PanelConfigurator } from './PanelConfigurator'
@@ -227,6 +228,7 @@ export function Builder() {
    *  comportamiento anterior en vez de mostrar un builder vacío. */
   const dashboards = useDashboards(tenantActivo)
   const crearDashboard = useCreateDashboard(tenantActivo)
+  const archivarDashboard = useArchiveDashboard(tenantActivo)
   /** **Arranca en el de la URL** · 2026-11-10: la consola manda el dashboard
    *  que se estaba mirando —ver `dashboardEnUrl.ts`—. Sólo al montar: después
    *  manda lo que se elija acá. Uno que no esté en la lista se ignora abajo. */
@@ -244,12 +246,18 @@ export function Builder() {
           tenantId: tenantActivo ?? '',
           nombre: yo.data?.dashboards.find((d) => d.id === id)?.nombre ?? `Dashboard ${String(i + 1)}`,
           porDefecto: i === 0,
+          archivado: false,
+          archivadoEn: null,
         }))
       : null)
+  /** **Los archivados no son de trabajo** · 2026-11-24. La lista del servicio
+   *  los trae —`is_archived`— y la consola no: uno de la URL o el primero de la
+   *  lista no puede ser uno que nadie ve. Se muestran aparte, en `ContextView`. */
+  const dashboardsActivos = listaDeDashboards?.filter((d) => !d.archivado) ?? null
   const dashboardDeTrabajo =
-    dashboardElegido !== null && listaDeDashboards?.some((d) => d.id === dashboardElegido) === true
+    dashboardElegido !== null && dashboardsActivos?.some((d) => d.id === dashboardElegido) === true
       ? dashboardElegido
-      : ((listaDeDashboards?.find((d) => d.porDefecto) ?? listaDeDashboards?.[0])?.id ?? null)
+      : ((dashboardsActivos?.find((d) => d.porDefecto) ?? dashboardsActivos?.[0])?.id ?? null)
   const deEsteDashboard = (versiones.data ?? []).filter(
     (v) => dashboardDeTrabajo === null || v.dashboardId === dashboardDeTrabajo,
   )
@@ -864,7 +872,7 @@ export function Builder() {
     )
 
   /** El estado de cada dashboard, en palabras, para la tarjeta del paso 1. */
-  const dashboardsParaElegir: DashboardEnLista[] = (listaDeDashboards ?? []).map((d) => {
+  const dashboardsParaElegir: DashboardEnLista[] = (dashboardsActivos ?? []).map((d) => {
     const suyas = (versiones.data ?? []).filter((v) => v.dashboardId === d.id)
     const enCurso = suyas.find((v) => v.estado === 'borrador')
     const publicadaDe = suyas.find((v) => v.estado === 'publicado')
@@ -876,6 +884,13 @@ export function Builder() {
           : 'Todavía no se compuso'
     return { id: d.id, nombre: d.nombre, porDefecto: d.porDefecto, estado }
   })
+  const dashboardsArchivados: DashboardArchivado[] = (listaDeDashboards ?? [])
+    .filter((d) => d.archivado)
+    .map((d) => ({
+      id: d.id,
+      nombre: d.nombre,
+      archivadoEl: d.archivadoEn === null ? null : format.calendar(d.archivadoEn),
+    }))
 
   return (
     <BuilderChrome
@@ -887,6 +902,7 @@ export function Builder() {
       clienteActivo={tenantActivo}
       onCliente={(id) => {
         setTenant(id)
+        archivarDashboard.reset()
         setDashboardElegido(null)
         setVersion(null)
         setRol(null)
@@ -1345,6 +1361,7 @@ export function Builder() {
           cargando={listaDeDashboards === null}
           elegido={dashboardElegido}
           onElegir={(id) => {
+            archivarDashboard.reset()
             setDashboardElegido(id)
             setVersion(null)
             setSeleccion(null)
@@ -1354,7 +1371,7 @@ export function Builder() {
             crearDashboard.mutate(
               // **`is_default` sólo para el primero**: un dashboard nuevo no
               // cambia lo que ven los usuarios al entrar · `crearDashboard`.
-              { nombre, primero: (listaDeDashboards?.length ?? 0) === 0 },
+              { nombre, primero: (dashboardsActivos?.length ?? 0) === 0 },
               {
                 onSuccess: (d) => {
                   setDashboardElegido(d.id)
@@ -1370,6 +1387,36 @@ export function Builder() {
               : crearDashboard.error.message === ''
                 ? 'No se pudo crear el dashboard.'
                 : crearDashboard.error.message
+          }
+          archivados={dashboardsArchivados}
+          onArchivar={(id) => {
+            if (archivarDashboard.isPending) return
+            archivarDashboard.mutate(id, {
+              // **El archivado deja de ser el de trabajo**: sin esto el paso 2
+              // y el 3 seguirían ofreciendo abrir el editor de algo que la
+              // consola ya no muestra.
+              onSuccess: () => {
+                if (dashboardElegido === id) {
+                  setDashboardElegido(null)
+                  setVersion(null)
+                  setSeleccion(null)
+                }
+              },
+            })
+          }}
+          archivando={archivarDashboard.isPending}
+          errorAlArchivar={
+            archivarDashboard.error === null
+              ? null
+              : // **El 409 es el por defecto**, y el texto del servicio va de
+                // usted y dice «default». Se dice en el español de la casa, con
+                // la misma salida que la ayuda: el caso es una lista vieja —otro
+                // admin lo volvió predeterminado mientras tanto—.
+                archivarDashboard.error instanceof ApiError && archivarDashboard.error.httpStatus === 409
+                ? 'No se archivó: es el predeterminado. Marca otro como predeterminado antes.'
+                : archivarDashboard.error.message === ''
+                  ? 'No se pudo archivar el dashboard.'
+                  : archivarDashboard.error.message
           }
           roles={roles.data ?? []}
           rolActivo={rolActivo}

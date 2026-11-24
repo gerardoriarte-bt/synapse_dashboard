@@ -301,7 +301,7 @@ viernes el 2026-10-05.
 - **Se mira la consola de Terpel abierta**, no sólo el cable.
 
 ### ➕ F6.4 ⚠️ Transcribir las rutas de reportes al cable de administración
-**Transcripto el 2026-11-18 desde `fb3ca0c` (código y OpenAPI); el humo espera a QA.** Las ocho rutas de `/admin/tenants/{tenantId}/reports` y siete esquemas (`Report`, `ReportRecipient`, `ReportInput`, `ReportUpdateInput`, `ReportAnswer`, `ReportValidation`, `ReportRun`) en `contracts/synapse-admin-wire.yaml`, con `x-origen: fb3ca0c` por operación porque no están medidas. Donde su OpenAPI difiere del código ganó el código: `CONFLICT_REPORT_STATE` y `tenant_id` en la corrida, que el OpenAPI no declara.
+**Transcripto el 2026-11-18 desde `fb3ca0c` (código y OpenAPI); el humo espera a QA.** Las ocho rutas de `/admin/tenants/{tenantId}/reports` y siete esquemas (`Report`, `ReportRecipient`, `ReportInput`, `ReportUpdateInput`, `ReportAnswer`, `ReportValidation`, `ReportRun`) en `contracts/synapse-admin-wire.yaml`, con `x-origen: fb3ca0c` por operación porque no están medidas. Donde su OpenAPI difiere del código ganó el código: `CONFLICT_REPORT_STATE` y `tenant_id` en la corrida, que el OpenAPI no declara. **El 2026-11-24 se sumó lo de `5b917f7`**, leído de `f1ccbbe`: `POST …/test`, `GET /admin/report-external-notices`, `ReportAnswerSource` y `kind: test`, también con `x-origen`. La baja (`GET /reports/unsubscribe`) no se transcribe: es HTML del servicio y el front no la llama.
 **Descripción.** Las rutas de B6.4 en `synapse-admin-wire.yaml`, con su humo.
 
 **Lo tiene: BACKEND** · desplegar `49ebb26` en QA, con sus tablas y `DD_REPORTS_ENABLED`. Pedido en `docs/MENSAJE-2026-11-18-backend-ajustes-de-reportes.md`.
@@ -337,7 +337,7 @@ en el `.pen`.
   la ficha del cliente.
 
 ### ➕ F6.6 ⚠️ Los reportes de un cliente, en administración · 🔒 depende de F6.4 y del dibujo de F6.5
-**Construida el 2026-11-18 contra MSW** —las rutas no están en QA—: `src/surfaces/admin/ReportList.tsx` y `ReportRuns.tsx`, con `§PEN:A7`, miradas en `dev:mock`. Pausar y reanudar disparan su llamada; **no hay borrar** (P6.9). El historial de envíos se abre, **sin rebotes ni resultado por destinatario**, que el servicio no guarda. Falta probarla en QA.
+**Construida el 2026-11-18 contra MSW** —las rutas no están en QA—: `src/surfaces/admin/ReportList.tsx` y `ReportRuns.tsx`, con `§PEN:A7`, miradas en `dev:mock`. **El 2026-11-24 suma** las pruebas marcadas en los envíos, la fuente de cada respuesta enviada y la lista de advertencias por externos en Clientes (`AvisosPorExternos.tsx`, P6.4), sólo con alcance de plataforma. Pausar y reanudar disparan su llamada; **no hay borrar** (P6.9). El historial de envíos se abre, **sin rebotes ni resultado por destinatario**, que el servicio no guarda. Falta probarla en QA.
 **Descripción.** La lista de reportes del cliente activo: nombre, estado,
 destinatarios, cuándo sale, último envío y su resultado.
 **Criterio de aceptación.**
@@ -366,7 +366,7 @@ destinatarios, cuándo sale, último envío y su resultado.
   hasta entonces el editor arranca vacío.
 
 ### ➕ F6.10 ⚠️ Validar las respuestas antes de activar · 🔒 depende de F6.4 y del dibujo de F6.5
-**Construida el 2026-11-18 contra MSW**: `src/surfaces/admin/ReportValidation.tsx`. Activar no está disponible hasta validar, y la prueba verifica que DISPARE. **Falta lo que el servicio no manda todavía**: la fuente, el período y la frescura de cada cifra, la pregunta sin dato y «Enviar una prueba», pedidos en `docs/MENSAJE-2026-11-18-backend-ajustes-de-reportes.md`. El botón de prueba no se pinta: no hay a qué llamar.
+**Construida el 2026-11-18 contra MSW**: `src/surfaces/admin/ReportValidation.tsx`. Activar no está disponible hasta validar, y la prueba verifica que DISPARE. **Falta lo que el servicio no manda todavía**: la fuente, el período y la frescura de cada cifra, la pregunta sin dato y «Enviar una prueba», pedidos en `docs/MENSAJE-2026-11-18-backend-ajustes-de-reportes.md`. El botón de prueba no se pinta: no hay a qué llamar. **Completada el 2026-11-24 contra MSW**, con `5b917f7` leído de `f1ccbbe`: cada respuesta dice su fuente, su mes y su carga, una fuente vencida se marca «Degradado», una respuesta sin fuentes se marca «Sin dato», y «Enviarme una prueba» dispara `POST …/test` y dice a qué correo llegó (`tests/surfaces/admin/reportesPruebaYFuentes.test.tsx`). Falta probarla en QA.
 **Descripción.** La pantalla donde el admin o el superadmin lee las respuestas
 que el reporte daría hoy, con datos reales, y recién entonces lo activa (D6.4).
 **Criterio de aceptación.**

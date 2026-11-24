@@ -77,6 +77,8 @@ export const keys = {
   reportes: (tenantId: string) => ['admin', 'reportes', tenantId] as const,
   /** **Debajo de `reportes`**: invalidar la lista también refresca los envíos. */
   corridasDeReporte: (tenantId: string, reporteId: string) => ['admin', 'reportes', tenantId, reporteId, 'corridas'] as const,
+  /** **De todos los clientes**: no cuelga de ninguno, y no se borra al saltar. */
+  avisosPorExternos: () => ['admin', 'avisos-por-externos'] as const,
   usuarios: (tenantId: string) => ['admin', 'usuarios', tenantId] as const,
   // **Sin tenant en la clave, a propósito**: es de plataforma. Compartir la clave
   // con la de arriba serviría el listado de un cliente donde va el de todos, que
@@ -460,6 +462,29 @@ export function useActivateReport(tenantId: string | null) {
   })
 }
 
+/** **«Enviarme una prueba»** · `5b917f7`. Llega sólo a quien la pide y queda
+ *  en los envíos como prueba, así que refresca las corridas de ese reporte.
+ *  No cambia el estado: la lista no se relee. */
+export function useSendTestReport(tenantId: string | null) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (reporteId: string) => adminApi.enviarPrueba(tenantId as string, reporteId),
+    onSuccess: (_r, reporteId) =>
+      client.invalidateQueries({ queryKey: keys.corridasDeReporte(tenantId ?? '', reporteId) }),
+  })
+}
+
+/** **Los externos en reportes, de todos los clientes** · P6.4. `habilitada` lo
+ *  decide quien llama: la ruta no filtra por cliente, así que sin alcance de
+ *  plataforma ni se pide. */
+export function useExternalNotices(habilitada: boolean) {
+  return useQuery({
+    queryKey: keys.avisosPorExternos(),
+    queryFn: () => adminApi.avisosPorExternos(),
+    enabled: habilitada,
+  })
+}
+
 export function usePauseReport(tenantId: string | null) {
   const client = useQueryClient()
   return useMutation({
@@ -733,6 +758,22 @@ export function useCreateDashboard(tenantId: string | null) {
     mutationFn: (v: { nombre: string; primero: boolean }) =>
       adminApi.crearDashboard(tenantId as string, v.nombre, v.primero),
     onSuccess: () => void qc.invalidateQueries({ queryKey: keys.dashboards(tenantId ?? '') }),
+  })
+}
+
+/** Archivar un dashboard · irreversible por API, así que la pantalla confirma.
+ *
+ *  **Invalida también `/config/me`**: el servicio saca al archivado de los
+ *  `dashboards` de la consola, y sin esto el selector de C6 lo seguiría
+ *  ofreciendo hasta que venciera la cache. */
+export function useArchiveDashboard(tenantId: string | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (dashboardId: string) => adminApi.archivarDashboard(dashboardId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.dashboards(tenantId ?? '') })
+      void qc.invalidateQueries({ queryKey: keys.me })
+    },
   })
 }
 

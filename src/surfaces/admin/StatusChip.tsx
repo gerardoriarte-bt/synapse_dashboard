@@ -31,13 +31,17 @@ import { Note } from '../../render/primitives/Note'
 
 /** Neutro o de acción. **No es un color, es un rol**: quien usa el chip no elige
  *  un naranja, elige si lo que el chip dice espera una acción. */
-export type TonoDeChip = 'neutro' | 'accion'
+export type TonoDeChip = 'neutro' | 'accion' | 'apagado'
 
 const CHIP = 'inline-flex h-5.5 shrink-0 items-center rounded-sm border px-2.25'
 
 const TONOS: Record<TonoDeChip, string> = {
   neutro: 'border-w4 text-ink',
   accion: 'border-acc text-acc',
+  /** **Lo que perdió vigencia** · 2026-11-24: el chip `DEGRADADO` de la
+   *  procedencia vencida en «A7 · El correo del reporte» va con el texto en
+   *  `$dim`, no en `$ink`. Dice «esto ya no está al día», sin reclamar acción. */
+  apagado: 'border-w4 text-dim',
 }
 
 export function StatusChip({

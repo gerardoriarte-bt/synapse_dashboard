@@ -169,6 +169,19 @@ export function SeriesBody({
         />
       )
     }
+    // ── **EL EJE DOBLE** · decisión humana del 2026-11-24 ──────────────────
+    //
+    // Sólo con EXACTAMENTE dos series y las dos unidades declaradas en el cable
+    // y distintas. Con tres o más el combinado sigue dibujando las dos primeras
+    // como antes —F5.25 ya no lo ofrece para ese caso—; con una sola unidad, o
+    // sin declarar, no hay dos ejes que escribir: la unidad de un eje no se
+    // inventa, y completar con la de la métrica le pondría «USD» a las visitas.
+    const u1 = columnas.unidad
+    const u2 = linea.unidad
+    const ejes =
+      series.length === 2 && u1 !== undefined && u2 !== undefined && u1 !== u2
+        ? { columnas: u1, linea: u2 }
+        : undefined
     return (
       <div className="h-full min-h-0">
         <PlotCombo
@@ -176,6 +189,7 @@ export function SeriesBody({
           line={linea}
           family={family}
           format={(v) => format.number(v, { abbreviate: true })}
+          {...(ejes === undefined ? {} : { ejes })}
         />
       </div>
     )

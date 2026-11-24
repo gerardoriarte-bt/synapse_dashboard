@@ -9,7 +9,12 @@
  *    lista de correos a los que salió y un texto con las fallas; se muestran así.
  *  - **Las validaciones también están**, marcadas: son la otra mitad de la
  *    historia —qué se leyó antes de activar— y el servicio las guarda juntas.
- *  - **No hay pruebas**: todavía no se pueden pedir.
+ *  - **La prueba no dice quién la pidió** · `5b917f7`: la corrida guarda su id,
+ *    y no el nombre. Sí dice a qué correo salió, que es el de quien la pidió.
+ *
+ *  **Cada respuesta dice de dónde salió**, como en la validación, y una fuente
+ *  vencida se marca. Una corrida de antes de `5b917f7` no guardó fuentes y lo
+ *  dice: «no cita ninguna fuente» es cierto para las dos.
  *  - **«Ver el correo completo» no va**: no hay una lectura del correo enviado.
  */
 import { useState } from 'react'
@@ -20,6 +25,7 @@ import { Ayuda } from '../../render/primitives/Ayuda'
 import { StatusChip } from './StatusChip'
 import { SkeletonRows } from './SkeletonRows'
 import { NOMBRE_DE_ESTADO } from './reporte'
+import { FuentesDeRespuesta } from './FuentesDeRespuesta'
 
 const NOTA = 'font-mono text-nota leading-rotulo tracking-rotulo uppercase text-dim m-0'
 const CARTA = 'flex flex-col gap-3 rounded-xl border border-w3 bg-panel p-5'
@@ -29,6 +35,7 @@ const COLUMNAS = ['Fecha', 'Tipo', 'Destinatarios', 'Resultado'] as const
  *  de la validación decía «Enviado». Se lee por tipo. */
 const RESULTADO: Record<CorridaDeReporte['tipo'], Record<CorridaDeReporte['estado'], string>> = {
   envio: { ok: 'Enviado', parcial: 'Con fallas', error: 'Falló' },
+  prueba: { ok: 'Enviada', parcial: 'Con fallas', error: 'Falló' },
   validacion: { ok: 'Respondidas', parcial: 'Con fallas', error: 'Falló' },
 }
 
@@ -43,6 +50,9 @@ export function ReportRuns({ reporte, corridas, format, cargando }: Props) {
   const [elegida, setElegida] = useState<string | null>(null)
   const corrida = corridas.find((c) => c.id === elegida) ?? corridas[0] ?? null
   const envios = corridas.filter((c) => c.tipo === 'envio').length
+  const pruebas = corridas.filter((c) => c.tipo === 'prueba').length
+  /** Una prueba y un envío salen por correo; una validación, no. */
+  const salio = (c: CorridaDeReporte) => c.tipo !== 'validacion'
 
   return (
     <div className="flex flex-col gap-6">
@@ -53,7 +63,7 @@ export function ReportRuns({ reporte, corridas, format, cargando }: Props) {
         </div>
         <div className="flex flex-col items-end gap-1">
           <StatusChip>{NOMBRE_DE_ESTADO[reporte.estado]}</StatusChip>
-          <Label>{`${String(envios)} ${envios === 1 ? 'envío' : 'envíos'} · ninguno se reintenta solo`}</Label>
+          <Label>{`${String(envios)} ${envios === 1 ? 'envío' : 'envíos'} · ${String(pruebas)} ${pruebas === 1 ? 'prueba' : 'pruebas'} · ninguno se reintenta solo`}</Label>
         </div>
       </div>
 
@@ -100,10 +110,10 @@ export function ReportRuns({ reporte, corridas, format, cargando }: Props) {
                     </button>
                   </td>
                   <td className="py-3">
-                    <StatusChip>{c.tipo === 'envio' ? 'Envío' : 'Validación'}</StatusChip>
+                    <StatusChip>{c.tipo === 'envio' ? 'Envío' : c.tipo === 'prueba' ? 'Prueba' : 'Validación'}</StatusChip>
                   </td>
                   <td className="py-3">
-                    <span className="text-ink text-celda">{c.tipo === 'envio' ? String(c.enviadoA.length) : '—'}</span>
+                    <span className="text-ink text-celda">{salio(c) ? String(c.enviadoA.length) : '—'}</span>
                   </td>
                   <td className="py-3">
                     <div className="flex flex-col gap-1">
@@ -119,11 +129,11 @@ export function ReportRuns({ reporte, corridas, format, cargando }: Props) {
 
         {corrida !== null && (
           <div className="flex flex-col gap-4">
-            {corrida.tipo === 'envio' && (
+            {salio(corrida) && (
               <section className={CARTA}>
                 <div className="flex justify-between">
                   <Label as="div">{`${format.calendar(corrida.creadaEn)} · ${format.clock(corrida.creadaEn)}`}</Label>
-                  <Label>{`${String(corrida.enviadoA.length)} enviados`}</Label>
+                  <Label>{`${String(corrida.enviadoA.length)} ${corrida.enviadoA.length === 1 ? 'enviado' : 'enviados'}`}</Label>
                 </div>
                 {corrida.enviadoA.map((correo) => (
                   <div key={correo} className="flex items-center justify-between border-b border-w3 pb-2">
@@ -136,16 +146,19 @@ export function ReportRuns({ reporte, corridas, format, cargando }: Props) {
             )}
             <section className={CARTA}>
               <Label as="div">
-                {corrida.tipo === 'envio' ? 'Qué se mandó · las respuestas de ese día' : 'Qué se leyó al validar'}
+                {salio(corrida) ? 'Qué se mandó · las respuestas de ese día' : 'Qué se leyó al validar'}
               </Label>
               {corrida.respuestas.length === 0 && <Ayuda>Esta corrida no guardó respuestas.</Ayuda>}
               <ol className="m-0 flex list-none flex-col gap-3 p-0">
                 {corrida.respuestas.map((r, i) => (
                   <li key={i} className="flex gap-3">
                     <span className={NOTA}>{String(i + 1)}</span>
-                    <span className="font-body text-cuerpo leading-cuerpo text-ink">
-                      {r.error === null ? r.respuesta : `No hubo respuesta: ${r.error}.`}
-                    </span>
+                    <div className="flex flex-col gap-2">
+                      <span className="whitespace-pre-line font-body text-cuerpo leading-cuerpo text-ink">
+                        {r.error === null ? r.respuesta : `No hubo respuesta: ${r.error}.`}
+                      </span>
+                      {r.error === null && <FuentesDeRespuesta fuentes={r.fuentes} format={format} />}
+                    </div>
                   </li>
                 ))}
               </ol>
