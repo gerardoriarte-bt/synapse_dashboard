@@ -87,7 +87,7 @@ export function KpiBody({
 
       {estado !== undefined && umbrales !== undefined && (
         // El color nunca va solo: el estado y su corte, escritos.
-        <Semaforo estado={estado}>{textoDeEstado(estado, umbrales, cifra)}</Semaforo>
+        <Semaforo estado={estado}>{textoDeEstado(value.v, umbrales, cifra)}</Semaforo>
       )}
 
       {medidor !== undefined && (

@@ -55,3 +55,48 @@ describe('qué par se puede dibujar', () => {
     expect(r.params).toEqual({})
   })
 })
+
+/** De dos lados · el pacing de Terpel, como lo define el catálogo de datos:
+ *  bien entre 90 y 110, malo por los dos lados. Es la segunda forma del param y
+ *  **no rompe la primera**: las pruebas de arriba siguen pasando sin tocarlas. */
+describe('de dos lados · `bien` es un rango', () => {
+  it('se traduce de ida y de vuelta con los rangos intactos', () => {
+    const cable = { thresholds: { bien: [90, 110], mal: [80, 120] } }
+    expect(traducirParams(cable)).toEqual({ umbrales: { bien: [90, 110], mal: [80, 120] } })
+    expect(paramsAlCable(traducirParams(cable))).toEqual(cable)
+  })
+
+  it.each([
+    [{ bien: [90, 110] }],
+    [{ bien: [90, 110], mal: [80, 120] }],
+    // El de mal igual al de bien es lo mismo que no declararlo: se acepta.
+    [{ bien: [90, 110], mal: [90, 110] }],
+    // Tocando un solo borde: aceptable sólo de un lado.
+    [{ bien: [90, 110], mal: [90, 120] }],
+  ])('%j pasa', (valor) => {
+    const r = validateParams('gauge', { umbrales: valor }, ['maximo', 'umbrales'])
+    expect(r.invalid).toEqual([])
+    expect(r.params['umbrales']).toEqual(valor)
+  })
+
+  it.each([
+    [{ bien: [110, 90] }, 'va de menor a mayor'],
+    [{ bien: [90, 90] }, 'va de menor a mayor'],
+    [{ bien: [90] }, 'el rango de «bien» necesita dos números'],
+    [{ bien: [90, 110, 120] }, 'el rango de «bien» necesita dos números'],
+    [{ bien: ['90', 110] }, 'el rango de «bien» necesita dos números'],
+    [{ bien: [90, null] }, 'el rango de «bien» necesita dos números'],
+    [{ bien: [90, 110], mal: [120, 80] }, 'el rango de «mal» va de menor a mayor'],
+    [{ bien: [90, 110], mal: [80, null] }, 'el rango de «mal» necesita dos números'],
+    [{ bien: [90, 110], mal: [95, 120] }, 'tiene que contener al de «bien»'],
+    [{ bien: [90, 110], mal: [80, 105] }, 'tiene que contener al de «bien»'],
+    [{ bien: [90, 110], mal: 80 }, 'no mezcla formas'],
+    [{ bien: 3, mal: [80, 120] }, 'no mezcla formas'],
+    [{ mal: [80, 120] }, 'falta el rango de «bien»'],
+  ])('%j se rechaza y dice por qué', (valor, razon) => {
+    const r = validateParams('kpi', { umbrales: valor }, DISPONIBLES)
+    expect(r.params['umbrales']).toBeUndefined()
+    expect(r.invalid).toHaveLength(1)
+    expect(r.invalid[0]?.reason).toContain(razon)
+  })
+})

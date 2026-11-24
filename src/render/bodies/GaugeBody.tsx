@@ -138,7 +138,7 @@ export function GaugeBody({
         // umbrales la línea es la de antes, sin la fila que la envuelve.
         <div className="flex items-baseline justify-between gap-2 flex-wrap">
           {base}
-          <Semaforo estado={estado}>{textoDeEstado(estado, umbrales, (v) => format.withUnit(figure(v), unit))}</Semaforo>
+          <Semaforo estado={estado}>{textoDeEstado(value.v, umbrales, (v) => format.withUnit(figure(v), unit))}</Semaforo>
         </div>
       )}
     </div>

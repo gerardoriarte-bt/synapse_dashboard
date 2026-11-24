@@ -84,6 +84,7 @@
  *  **§PEN:B4** · B4 · «Binder de métrica». **§PEN:B3** · B3 · «Selector de
  *  gráfico», desde el 2026-10-07 en la columna «Cómo se ve».
  */
+import type { ReactNode } from 'react'
 import { Label } from '../../render/primitives/Label'
 import { Note } from '../../render/primitives/Note'
 import { Ayuda } from '../../render/primitives/Ayuda'
@@ -93,6 +94,7 @@ import { invalidReason } from '../../catalog/blocks'
 import { invalidPlotReason, unidadesMezcladas, UN_SOLO_EJE } from '../../catalog/plots'
 import { hasValue } from '../../render/state'
 import { PARAM_SCHEMAS, describirParam } from '../../api/params'
+import { problemaDeUmbrales } from '../../catalog/umbrales'
 import { COLUMNA_FIJA } from './columnaFija'
 import { MuestraDeGrafico } from './MuestraDeGrafico'
 import { tipoPara } from './tipoPara'
@@ -703,6 +705,15 @@ function ComoSeVe({
  *  lo que va a pintar antes de publicar. Con uno solo el panel queda con un
  *  problema que impide publicar, y la razón la escribe `validar.ts` con la misma
  *  función que usa la consola.
+ *
+ *  **Lo que sí se elige es si tiene uno o dos lados**, con dos `Opcion`: de dos
+ *  lados lo bueno está en el medio —el pacing de Terpel— y los campos son los
+ *  bordes del rango de bien y, opcionales, los del de mal. **El modo sale del
+ *  valor guardado y de ningún estado local**: un rango es una lista, dos cortes
+ *  son números, y elegir «Dos lados» deja el rango vacío en el panel. Así el
+ *  modo no se puede desincronizar de lo que se guarda, y si quien compone se
+ *  va sin cargarlo, el panel dice qué le falta en vez de olvidarlo callado.
+ *  Cambiar de modo borra los cortes: las dos formas no se traducen una a otra.
  */
 function EditorDeUmbrales({
   nombre,
@@ -711,9 +722,34 @@ function EditorDeUmbrales({
 }: {
   nombre: string
   valor: unknown
-  onCambio: (v: Record<string, number> | undefined) => void
+  onCambio: (v: Record<string, unknown> | undefined) => void
 }) {
   const actual = typeof valor === 'object' && valor !== null ? (valor as Record<string, unknown>) : {}
+  const dosLados = Array.isArray(actual['bien']) || Array.isArray(actual['mal'])
+
+  const modo = (
+    <div className="flex gap-2 flex-wrap" role="group" aria-label="Lados del semáforo">
+      <Opcion elegida={!dosLados} onClick={() => {
+          if (dosLados) onCambio(undefined)
+        }}>
+        Un lado
+      </Opcion>
+      <Opcion elegida={dosLados} onClick={() => {
+          if (!dosLados) onCambio({ bien: [null, null] })
+        }}>
+        Dos lados
+      </Opcion>
+    </div>
+  )
+
+  const quitar = (
+    <Accion tamano="compacta" onClick={() => onCambio(undefined)}>
+      Quitar umbrales
+    </Accion>
+  )
+
+  if (dosLados) return <UmbralesDeDosLados nombre={nombre} actual={actual} modo={modo} quitar={quitar} onCambio={onCambio} />
+
   const corte = (k: 'bien' | 'mal') => (typeof actual[k] === 'number' ? (actual[k] as number) : undefined)
   const bien = corte('bien')
   const mal = corte('mal')
@@ -743,6 +779,7 @@ function EditorDeUmbrales({
   return (
     <div className="flex flex-col gap-2">
       <Label as="div">Semáforo · umbrales</Label>
+      {modo}
       <div className="flex gap-3 flex-wrap">
         {(['bien', 'mal'] as const).map((k) => (
           <div key={k} className="flex flex-col gap-1">
@@ -761,11 +798,88 @@ function EditorDeUmbrales({
         ))}
       </div>
       <Ayuda>{ayuda}</Ayuda>
-      {(bien !== undefined || mal !== undefined) && (
-        <Accion tamano="compacta" onClick={() => onCambio(undefined)}>
-          Quitar umbrales
-        </Accion>
-      )}
+      {(bien !== undefined || mal !== undefined) && quitar}
+    </div>
+  )
+}
+
+/** Los cuatro bordes de un semáforo de dos lados. Un borde vacío se guarda
+ *  como `null` dentro del rango y no se borra: es lo que deja escribir el
+ *  segundo después del primero, y lo que hace que el validador diga «necesita
+ *  dos números». **El rango de mal entero vacío no se guarda**: sin él, el de
+ *  mal es el de bien, y eso es una lectura completa, no una a medias. */
+function UmbralesDeDosLados({
+  nombre,
+  actual,
+  modo,
+  quitar,
+  onCambio,
+}: {
+  nombre: string
+  actual: Record<string, unknown>
+  modo: ReactNode
+  quitar: ReactNode
+  onCambio: (v: Record<string, unknown> | undefined) => void
+}) {
+  const borde = (k: 'bien' | 'mal', i: 0 | 1): number | undefined => {
+    const r = actual[k]
+    const v: unknown = Array.isArray(r) ? r[i] : undefined
+    return typeof v === 'number' ? v : undefined
+  }
+  const bordes = { bien: [borde('bien', 0), borde('bien', 1)], mal: [borde('mal', 0), borde('mal', 1)] }
+
+  const cambiar = (k: 'bien' | 'mal', i: 0 | 1, texto: string) => {
+    const r = [...bordes[k]]
+    r[i] = texto === '' ? undefined : Number(texto)
+    const rango = (x: (number | undefined)[]) => x.map((v) => v ?? null)
+    const siguiente: Record<string, unknown> = { bien: rango(k === 'bien' ? r : bordes.bien) }
+    const mal = k === 'mal' ? r : bordes.mal
+    if (mal.some((v) => v !== undefined)) siguiente['mal'] = rango(mal)
+    onCambio(siguiente)
+  }
+
+  const [b0, b1] = bordes.bien
+  const [m0, m1] = bordes.mal
+  const problema = problemaDeUmbrales(actual)
+  const ayuda =
+    problema !== null
+      ? b0 === undefined && b1 === undefined
+        ? 'Bien es un rango: lo bueno está en el medio. Sin rango de mal, todo lo que sale de bien está mal; con él, lo que queda entre los dos es aceptable.'
+        : `Todavía no se puede dibujar: ${problema}.`
+      : m0 === undefined || m1 === undefined
+        ? `Bien entre ${String(b0)} y ${String(b1)}; mal por debajo de ${String(b0)} y por encima de ${String(b1)}.`
+        : `Bien entre ${String(b0)} y ${String(b1)}; mal por debajo de ${String(m0)} y por encima de ${String(m1)}; aceptable entre los dos.`
+
+  const campos: { k: 'bien' | 'mal'; i: 0 | 1; rotulo: string }[] = [
+    { k: 'bien', i: 0, rotulo: 'Bien desde' },
+    { k: 'bien', i: 1, rotulo: 'Bien hasta' },
+    { k: 'mal', i: 0, rotulo: 'Mal por debajo de' },
+    { k: 'mal', i: 1, rotulo: 'Mal por encima de' },
+  ]
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Label as="div">Semáforo · umbrales</Label>
+      {modo}
+      <div className="flex gap-3 flex-wrap">
+        {campos.map(({ k, i, rotulo }) => (
+          <div key={`${k}-${String(i)}`} className="flex flex-col gap-1">
+            <Label id={`opcion-${nombre}-${k}-${String(i)}`} as="div">
+              {rotulo}
+            </Label>
+            <input
+              type="number"
+              aria-labelledby={`opcion-${nombre}-${k}-${String(i)}`}
+              placeholder={k === 'bien' ? 'Sin borde' : 'Opcional'}
+              value={bordes[k][i] ?? ''}
+              onChange={(e) => cambiar(k, i, e.target.value)}
+              className={`${CAMPO} w-32`}
+            />
+          </div>
+        ))}
+      </div>
+      <Ayuda>{ayuda}</Ayuda>
+      {quitar}
     </div>
   )
 }
