@@ -62,12 +62,80 @@ describe('el estado sale del corte Y de la dirección', () => {
 
   it('el texto dice el corte que decide, con el signo de la dirección', () => {
     const cifra = (v: number) => `${String(v)}x`
-    expect(textoDeEstado('bien', ROAS, cifra)).toBe('Bien · ≥ 3x')
-    expect(textoDeEstado('mal', ROAS, cifra)).toBe('Mal · < 2x')
-    expect(textoDeEstado('aceptable', ROAS, cifra)).toBe('Aceptable · entre 2x y 3x')
-    expect(textoDeEstado('bien', CPA, cifra)).toBe('Bien · ≤ 20x')
-    expect(textoDeEstado('mal', CPA, cifra)).toBe('Mal · > 40x')
-    expect(textoDeEstado('aceptable', CPA, cifra)).toBe('Aceptable · entre 20x y 40x')
+    expect(textoDeEstado(3.4, ROAS, cifra)).toBe('Bien · ≥ 3x')
+    expect(textoDeEstado(1.2, ROAS, cifra)).toBe('Mal · < 2x')
+    expect(textoDeEstado(2.5, ROAS, cifra)).toBe('Aceptable · entre 2x y 3x')
+    expect(textoDeEstado(12, CPA, cifra)).toBe('Bien · ≤ 20x')
+    expect(textoDeEstado(45, CPA, cifra)).toBe('Mal · > 40x')
+    expect(textoDeEstado(30, CPA, cifra)).toBe('Aceptable · entre 20x y 40x')
+  })
+})
+
+/** De dos lados · el pacing de Terpel, como lo define el catálogo de datos:
+ *  por debajo de 90 % se subejecuta, por encima de 110 % se sobregasta. Sin
+ *  rango de mal, no hay tramo aceptable. */
+const PACING = { bien: [90, 110] as [number, number] }
+/** El mismo, con un rango de mal más ancho: entre los dos, aceptable. */
+const PACING_CON_MAL = { bien: [90, 110] as [number, number], mal: [80, 120] as [number, number] }
+
+describe('de dos lados · lo bueno está en el medio', () => {
+  it('sin rango de mal, salir de bien por cualquier lado es MAL, sin pasar por aceptable', () => {
+    expect(estadoPorUmbral(89.9, PACING)).toBe('mal')
+    expect(estadoPorUmbral(90, PACING)).toBe('bien')
+    expect(estadoPorUmbral(100, PACING)).toBe('bien')
+    expect(estadoPorUmbral(110, PACING)).toBe('bien')
+    expect(estadoPorUmbral(110.1, PACING)).toBe('mal')
+  })
+
+  it('con rango de mal · el borde de bien se incluye y el de mal no, en los DOS lados', () => {
+    expect(estadoPorUmbral(79.9, PACING_CON_MAL)).toBe('mal')
+    expect(estadoPorUmbral(80, PACING_CON_MAL)).toBe('aceptable')
+    expect(estadoPorUmbral(89.9, PACING_CON_MAL)).toBe('aceptable')
+    expect(estadoPorUmbral(90, PACING_CON_MAL)).toBe('bien')
+    expect(estadoPorUmbral(110, PACING_CON_MAL)).toBe('bien')
+    expect(estadoPorUmbral(115, PACING_CON_MAL)).toBe('aceptable')
+    expect(estadoPorUmbral(120, PACING_CON_MAL)).toBe('aceptable')
+    expect(estadoPorUmbral(120.1, PACING_CON_MAL)).toBe('mal')
+  })
+
+  it('el texto dice DE QUÉ LADO · el color solo no distingue subejecutar de sobregastar', () => {
+    const cifra = (v: number) => `${String(v)} %`
+    expect(textoDeEstado(100, PACING, cifra)).toBe('Bien · entre 90 % y 110 %')
+    expect(textoDeEstado(70, PACING, cifra)).toBe('Mal · por debajo de 90 %')
+    expect(textoDeEstado(130, PACING, cifra)).toBe('Mal · por encima de 110 %')
+    expect(textoDeEstado(70, PACING_CON_MAL, cifra)).toBe('Mal · por debajo de 80 %')
+    expect(textoDeEstado(130, PACING_CON_MAL, cifra)).toBe('Mal · por encima de 120 %')
+    expect(textoDeEstado(85, PACING_CON_MAL, cifra)).toBe('Aceptable · entre 80 % y 90 %')
+    expect(textoDeEstado(115, PACING_CON_MAL, cifra)).toBe('Aceptable · entre 110 % y 120 %')
+  })
+
+  it.each([
+    [70, 'mal', 'var(--color-estado-mal)', 'Mal · por debajo de 90'],
+    [100, 'bien', 'var(--color-estado-bien)', 'Bien · entre 90 y 110'],
+    [130, 'mal', 'var(--color-estado-mal)', 'Mal · por encima de 110'],
+  ])('el medidor con pacing %s → %s, y lo escribe', (v, nombre, tono, texto) => {
+    const { container } = render(
+      <GaugeBody {...cuerpo} value={escalar(v)} params={{ maximo: 150, umbrales: PACING }} />,
+    )
+    expect(arco(container)?.getAttribute('fill')).toBe(tono)
+    const rotulo = estado(container) as HTMLElement
+    expect(rotulo.getAttribute('data-estado')).toBe(nombre)
+    expect(rotulo.textContent).toBe(texto)
+  })
+
+  it('el bullet pinta la barra en aceptable con el gris, no con la familia', () => {
+    const { container } = render(
+      <GaugeBody {...cuerpo} grafico="bullet" value={escalar(115)} params={{ maximo: 150, umbrales: PACING_CON_MAL }} />,
+    )
+    const medida = Array.from(container.querySelectorAll('svg rect')).at(2)
+    expect(medida?.getAttribute('fill')).toBe('var(--color-dim)')
+    expect(estado(container)?.textContent).toBe('Aceptable · entre 110 y 120')
+  })
+
+  it('la kpi pinta la cifra y escribe el lado', () => {
+    render(<KpiBody {...cuerpo} value={escalar(130)} params={{ umbrales: PACING }} />)
+    expect(screen.getByText('130').className).toContain('text-estado-mal')
+    expect(screen.getByText('Mal · por encima de 110')).toBeInTheDocument()
   })
 })
 

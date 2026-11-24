@@ -147,3 +147,59 @@ describe('los umbrales se cargan con dos campos y llegan al cable', () => {
     await waitFor(() => expect(guardados.at(-1)).toEqual({ comparative: true }))
   })
 })
+
+/** De dos lados · el pacing de Terpel. La elección es una `Opcion` y los
+ *  bordes son cuatro campos; lo que se sostiene es lo mismo que arriba: **lo
+ *  escrito llega al `PUT`**, con la forma que el validador acepta. */
+describe('de dos lados, el rango llega al cable', () => {
+  it('«Dos lados» y los dos bordes de bien se guardan como un rango, sin mal', async () => {
+    const guardados = servir()
+    const col = await abrirAjustes()
+
+    expect(col.getByRole('button', { name: 'Un lado' })).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(col.getByRole('button', { name: 'Dos lados' }))
+    expect(col.getByRole('button', { name: 'Dos lados' })).toHaveAttribute('aria-pressed', 'true')
+
+    await userEvent.type(col.getByLabelText('Bien desde'), '90')
+    await userEvent.type(col.getByLabelText('Bien hasta'), '110')
+    expect(col.getByText('Bien entre 90 y 110; mal por debajo de 90 y por encima de 110.')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(guardados.at(-1)).toEqual({ thresholds: { bien: [90, 110] } }))
+  })
+
+  it('con el rango de mal, el tramo del medio es aceptable y se guarda entero', async () => {
+    const guardados = servir({ thresholds: { bien: [90, 110] } })
+    const col = await abrirAjustes()
+    expect(col.getByLabelText<HTMLInputElement>('Bien desde').value).toBe('90')
+
+    await userEvent.type(col.getByLabelText('Mal por debajo de'), '80')
+    await userEvent.type(col.getByLabelText('Mal por encima de'), '120')
+    expect(
+      col.getByText('Bien entre 90 y 110; mal por debajo de 80 y por encima de 120; aceptable entre los dos.'),
+    ).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(guardados.at(-1)).toEqual({ thresholds: { bien: [90, 110], mal: [80, 120] } }))
+  })
+
+  it('un rango de mal que no contiene al de bien impide publicar, y lo dice', async () => {
+    servir({ thresholds: { bien: [90, 110] } })
+    const col = await abrirAjustes()
+    await userEvent.type(col.getByLabelText('Mal por debajo de'), '95')
+    await userEvent.type(col.getByLabelText('Mal por encima de'), '120')
+    await waitFor(() =>
+      expect(screen.getAllByText(/«umbrales» el rango de «mal» tiene que contener al de «bien»/).length).toBeGreaterThan(0),
+    )
+  })
+
+  it('volver a «Un lado» borra el rango del panel guardado', async () => {
+    const guardados = servir({ thresholds: { bien: [90, 110] }, comparative: true })
+    const col = await abrirAjustes()
+    await userEvent.click(col.getByRole('button', { name: 'Un lado' }))
+    expect(col.getByLabelText('Corte de bien')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(guardados.at(-1)).toEqual({ comparative: true }))
+  })
+})
