@@ -32,6 +32,7 @@
  *  drift entre front y backend se vuelve imposible en vez de verificable. Va con
  *  B0.9.
  */
+import { problemaDeUmbrales } from '../catalog/umbrales'
 import type { Block, PanelConfig, PanelType } from './types'
 
 export type ParamSpec =
@@ -41,6 +42,11 @@ export type ParamSpec =
   | { kind: 'boolean' }
   | { kind: 'array' }
   | { kind: 'object' }
+  /** **Los dos cortes del semáforo** · decisión humana del 2026-11-24. Es un
+   *  objeto, pero `object` a secas dejaba pasar `{}` y el cuerpo no tendría
+   *  dirección que leer: acá se valida su forma entera, con
+   *  `problemaDeUmbrales`, y el builder lo edita con dos campos. */
+  | { kind: 'umbrales' }
 
 /** Lo que cada cuerpo REALMENTE lee. No es la lista de §7 de
  *  `nuevo-desarrollo.md`: esa enumera params de diseño que en varios tipos
@@ -64,6 +70,7 @@ const SCHEMAS = {
   kpi: {
     comparativo: { kind: 'boolean' },
     medidor: { kind: 'boolean' },
+    umbrales: { kind: 'umbrales' },
   },
   prose: { pilares: { kind: 'number', min: 1, integer: true } },
   series: { normalizacion: { kind: 'enum', values: ['ninguna', 'base100'] } },
@@ -82,6 +89,9 @@ const SCHEMAS = {
   gauge: {
     maximo: { kind: 'number', min: 0 },
     banda: { kind: 'object' },
+    // Lo leen `gauge` y `bullet`, los dos dibujos de este tipo con semáforo ·
+    // `rings` no: ver `GaugeBody`.
+    umbrales: { kind: 'umbrales' },
   },
   forecast: {
     horizonte: { kind: 'string' },
@@ -139,6 +149,8 @@ export function describirParam(spec: ParamSpec): string {
       return 'una lista'
     case 'object':
       return 'un objeto'
+    case 'umbrales':
+      return 'dos cortes distintos, «bien» y «mal»'
   }
 }
 
@@ -158,6 +170,8 @@ function isValid(spec: ParamSpec, value: unknown): boolean {
       return Array.isArray(value)
     case 'object':
       return typeof value === 'object' && value !== null && !Array.isArray(value)
+    case 'umbrales':
+      return problemaDeUmbrales(value) === null
   }
 }
 
@@ -199,7 +213,12 @@ export function validateParams(
     if (!isValid(spec, value)) {
       out.invalid.push({
         param,
-        reason: `«${param}» tiene el valor ${JSON.stringify(value)} y espera ${describirParam(spec)}`,
+        // Los umbrales dicen QUÉ les falta: «espera dos cortes» no le explica a
+        // quien compone que escribió uno solo, o dos iguales.
+        reason:
+          spec.kind === 'umbrales'
+            ? `«${param}» ${problemaDeUmbrales(value) ?? ''}`
+            : `«${param}» tiene el valor ${JSON.stringify(value)} y espera ${describirParam(spec)}`,
       })
       continue
     }

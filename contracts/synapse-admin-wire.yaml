@@ -1112,6 +1112,12 @@ paths:
         **B6 la necesita para el título**: el historial trae `dashboard_id` y
         ningún nombre. Medido el 2026-09-30: dos dashboards, «Overview»
         (`is_default: true`) y «Marca».
+
+        **Devuelve TAMBIÉN los archivados** · leído el 2026-11-24 contra
+        `f1ccbbe`: `ListDashboards` llama a `FindByTenant`, que filtra sólo por
+        `tenant_id` (`dd_dashboard_repository.go:49-59`). Los que salen de la
+        consola los saca `visibleDashboards`, al armar `/config/me`, y no esta
+        ruta. Quien la lea tiene que mirar `is_archived`.
       parameters: [{ $ref: '#/components/parameters/tenantId' }]
       responses:
         '200':
@@ -1178,6 +1184,83 @@ paths:
           description: |
             Ya existe un dashboard con ese slug en el tenant · **sin `code`
             propio**.
+
+            **Un archivado sigue ocupando su slug**: el chequeo recorre
+            `FindByTenant`, que no los excluye. Crear «Marca» con un «Marca»
+            archivado da este 409 · leído contra `f1ccbbe`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  # ── ARCHIVAR UN DASHBOARD · LEÍDA, NO CORRIDA ────────────────────────────
+  #
+  # Llegó con `5b917f7` y se transcribe leyendo `f1ccbbe`:
+  # `ArchiveDashboard` en `internal/core/services/dd_dashboard_service.go`, su
+  # handler en `dd_dashboard_handler.go` y la ruta en `router.go`.
+  #
+  # **No se corre contra un servicio compartido por la misma razón que el
+  # `POST` de alta, y más fuerte: NO HAY RUTA PARA DESARCHIVAR.** El router
+  # tiene GET, POST, PUT y este POST; ninguno vuelve `is_archived` a `false`
+  # —`UpdateDashboard` no lo toca—. Medirlo deja un dashboard archivado para
+  # siempre.
+  /admin/dashboards/{dashboardId}/archive:
+    x-verificado-en: f1ccbbe
+    post:
+      tags: [admin]
+      operationId: archiveDashboard
+      summary: Archivar un dashboard · **LEÍDA, NO CORRIDA** · irreversible
+      description: |
+        Marca `is_archived: true` y pone `archived_at`. **No borra nada**: el
+        dashboard, sus layouts y su historial siguen en la base.
+
+        Lo que el servicio hace con un archivado, leído contra `f1ccbbe`:
+
+        · **Sale de la consola.** `visibleDashboards`
+          (`dd_dashboard_access.go`) lo saltea, así que no llega en
+          `dashboards` de `/config/me` para ningún rol.
+        · **Sale de los roles.** `UpdateRoleDashboards` no lo cuenta entre los
+          conocidos, y una lista vacía sigue siendo «todos los no archivados».
+        · **Sigue en `GET /admin/tenants/{tenantId}/dashboards`**, con
+          `is_archived: true`.
+        · **Sigue ocupando su slug**: un dashboard nuevo con el mismo nombre
+          da 409.
+        · **Nada impide publicar un layout suyo**: ninguna ruta de layouts mira
+          `is_archived`. Publicarlo no lo muestra, porque la consola no lo
+          lista.
+
+        **Sin cuerpo.**
+      parameters: [{ $ref: '#/components/parameters/dashboardId' }]
+      responses:
+        '200':
+          description: |
+            El dashboard archivado. **Archivar uno ya archivado también es 200**
+            y lo devuelve como estaba —con su `archived_at` original—: es
+            idempotente.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/LayoutDashboard' }
+        '400':
+          description: '`dashboardId inválido` · no es un uuid.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: '`dashboard no encontrado` · **sin `code` propio**.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '409':
+          description: |
+            **Es el por defecto** · «no se puede archivar el dashboard default:
+            marque otro como default antes». **Sin `code` propio**: sale el de la
+            familia del status. El front no muestra este texto —de usted y con
+            «default»— sino el suyo, en español de la casa.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -1822,6 +1905,19 @@ paths:
   # Las ocho cuelgan de `AdminOnlyMiddleware` y `RequireRouteTenant`: un admin
   # sólo con su cliente, un superadmin con cualquiera. Ninguna borra: pausar es
   # la baja (P6.9 de `plan-fase-6.md`).
+  #
+  # ── Y LO QUE SUMÓ `5b917f7` · LEÍDO DE `f1ccbbe` el 2026-11-24 ─────────────
+  #
+  # Las fuentes de cada respuesta (`ReportAnswerSource`), el envío de prueba
+  # (`/test`), la lista de avisos por externos (`/admin/report-external-notices`)
+  # y `kind: test` en las corridas. Leídos en el mismo handler, en
+  # `ports/dd_report.go` —las etiquetas `json:`— y en
+  # `services/dd_report_sources.go`. También con `x-origen`, no medidos: QA no
+  # se tocó para esto.
+  #
+  # **La baja NO se transcribe**: `GET /reports/unsubscribe?token=` es pública,
+  # contesta HTML que arma el propio servicio (`unsubscribeHTML`) y el front no
+  # la llama. Una ruta transcrita que nadie llama envejece sin que nadie lo note.
   /admin/tenants/{tenantId}/reports:
     get:
       tags: [admin]
@@ -2086,6 +2182,88 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /admin/tenants/{tenantId}/reports/{reportId}/test:
+    post:
+      tags: [admin]
+      operationId: sendTestReport
+      summary: Envía el reporte de prueba, sólo a quien la pide
+      x-origen: f1ccbbe
+      description: |
+        **Llega sólo al correo de quien llama**: el servicio busca al usuario del
+        JWT (`actor.UserID`) y manda a su `email`, en minúscula. **No mira el
+        estado**: un borrador también se prueba. Genera las respuestas en vivo
+        con el agente del rol, igual que `validate`, **pero no cambia el estado
+        ni mueve `next_run_at`**. La corrida queda en `runs` con `kind: test`.
+        Sin cuerpo.
+
+        **Si el correo falla, la corrida queda igual** —`kind: test`,
+        `status: error`— y la respuesta es un 500 genérico: el error del
+        servicio de correo no viaja.
+      parameters:
+        - $ref: '#/components/parameters/tenantId'
+        - $ref: '#/components/parameters/reportId'
+      responses:
+        '200':
+          description: A quién salió y qué se mandó
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/ReportTestResult' }
+        '400':
+          description: |
+            **`VALIDATION_REPORT`** · «no se pudo resolver el correo de quien
+            pide la prueba» (`ErrReportActorEmail`): el JWT no trae usuario, o
+            el usuario no tiene correo.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: |
+            - **`CONFLICT_REPORT_MAILER`**: «el envío de correo no está
+              configurado» (`ErrReportNoMailer`).
+            - **`CONFLICT_REPORT_AGENT`**: el rol del reporte no tiene agente.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /admin/report-external-notices:
+    get:
+      tags: [admin]
+      operationId: listReportExternalNotices
+      summary: Los externos agregados a reportes, de TODOS los clientes
+      x-origen: f1ccbbe
+      description: |
+        La lista de P6.4, para Clientes (A1): **todos los clientes juntos**,
+        activos e inactivos, del más nuevo al más viejo, con tope fijo de 200.
+
+        **Cuelga de `AdminOnlyMiddleware` y nada más**: no tiene `:tenantId`, así
+        que `RequireRouteTenant` la deja pasar, y el servicio no filtra por
+        cliente. **Un admin de un cliente la puede leer entera**, con los
+        externos de los demás. El front la pide sólo con alcance de plataforma;
+        el cierre del lado del servicio es del backend.
+
+        **No hay «marcar como vista»**: ni campo ni ruta.
+      responses:
+        '200':
+          description: Los externos, del más nuevo al más viejo
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/ReportExternalNotice' }
+        '403': { $ref: '#/components/responses/Forbidden' }
 
 components:
   securitySchemes:
@@ -2694,9 +2872,19 @@ components:
         is_archived:
           type: boolean
           description: |
-            **Llegó con `5b917f7`**, medido con `npm run humo` el 2026-11-24
-            contra `f1ccbbe`. Lo pone `POST /admin/dashboards/{dashboardId}/archive`.
-            Opcional en el yaml porque un servicio anterior no lo manda.
+            **Archivado** · llegó con `5b917f7`, leído contra `f1ccbbe` en
+            `internal/core/domain/dd_dashboard.go`. Sin `omitempty`: viaja
+            siempre. Lo pone `POST /admin/dashboards/{dashboardId}/archive`, y
+            **ninguna ruta lo devuelve a `false`**.
+
+            **Opcional acá a propósito**: un servicio anterior a `5b917f7` no lo
+            manda, y ausente se lee como `false`.
+        archived_at:
+          type: string
+          format: date-time
+          description: |
+            Cuándo se archivó · `*time.Time` con `omitempty`, así que **falta**
+            —no llega `null`— en los que no están archivados.
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
 
@@ -3626,13 +3814,91 @@ components:
     ReportAnswer:
       type: object
       description: |
-        `ports.DDReportAnswer`. **Texto plano del agente y nada más**: no trae
-        fuente, período ni frescura. Pedido el 2026-11-18 (B6.5).
+        `ports.DDReportAnswer`. Texto plano del agente **y, desde `5b917f7`, de
+        dónde salió** (`sources`, B6.5). Si una fuente está vencida, el propio
+        `answer` termina con «Nota: el dato puede estar vencido — …»
+        (`annotateStaleAnswer`).
       required: [question, answer]
       properties:
         question: { type: string }
         answer: { type: string, description: Vacía cuando hay `error`. }
         error: { type: string, description: 'Sólo si esa pregunta no tuvo respuesta · `omitempty`.' }
+        sources:
+          type: array
+          items: { $ref: '#/components/schemas/ReportAnswerSource' }
+          description: |
+            **`omitempty`**: falta —no llega vacía— cuando el agente no corrió
+            SQL en ese turno. «Sin SQL, no hay fuentes: el correo no inventa
+            procedencia» (`reportSourcesFromSQL`). Una por tabla Gold citada en
+            el SQL, sin repetir.
+
+    ReportAnswerSource:
+      type: object
+      description: |
+        `ports.DDReportAnswerSource` · de dónde salió una cifra. Armada en
+        `services/dd_report_sources.go` leyendo el SQL del turno.
+      required: [source, period, freshness]
+      properties:
+        source:
+          type: string
+          description: |
+            **El nombre de la tabla Gold** que el SQL cita —`GLD_ECOMM_…`—, no
+            el nombre del catálogo. Sale de la lista de tablas Gold del entorno.
+        period:
+          type: string
+          description: |
+            `YYYY-MM`. El mes del literal `'YYYY-MM'` del SQL, o el de la fecha
+            `'YYYY-MM-DD'` más alta; sin literales, el mes en curso **en la zona
+            del cliente**. Se calcula una vez por respuesta, igual para todas
+            sus fuentes.
+        freshness:
+          type: string
+          description: |
+            **Sin `omitempty`: siempre llega, y vacía cuando no se sabe.** Es el
+            `last_load_at` del feed enlazado, en RFC 3339 y UTC. Sólo dos tablas
+            tienen feed —`ecomm` y `paid_media`—; las demás llegan con `''`.
+        stale:
+          type: boolean
+          description: |
+            **`omitempty`: falta cuando es `false`.** `true` si el feed de esa
+            tabla está vencido (`FeedStatusStale`) al generar la respuesta.
+
+    ReportTestResult:
+      type: object
+      description: '`ports.DDReportTestResult` · la respuesta de `/test`.'
+      required: [report, sent_to, answers, run_kind]
+      properties:
+        report: { $ref: '#/components/schemas/Report' }
+        sent_to:
+          type: string
+          description: El correo de quien la pidió, en minúscula. **Uno solo, no una lista.**
+        answers:
+          type: array
+          items: { $ref: '#/components/schemas/ReportAnswer' }
+        run_kind: { type: string, enum: [test] }
+
+    ReportExternalNotice:
+      type: object
+      description: |
+        `ports.DDReportExternalNoticeRow` · un externo agregado a un reporte.
+        **`is_active: false` no dice por qué**: quitado en el editor o dado de
+        baja desde el correo se guardan igual.
+      required: [recipient_id, tenant_id, tenant_name, report_id, report_name, email, created_at, is_active]
+      properties:
+        recipient_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        tenant_name: { type: string }
+        report_id: { type: string, format: uuid }
+        report_name: { type: string }
+        email: { type: string }
+        added_by: { type: string, format: uuid, description: '`omitempty`.' }
+        added_by_email: { type: string, description: '`omitempty` · falta si no se encontró a quien lo agregó.' }
+        created_at: { type: string, format: date-time }
+        notified_at:
+          type: string
+          format: date-time
+          description: '`omitempty` · cuándo salió el aviso a los superadmins. Falta si no salió.'
+        is_active: { type: boolean }
 
     ReportValidation:
       type: object
@@ -3655,7 +3921,10 @@ components:
         id: { type: string, format: uuid }
         report_id: { type: string, format: uuid }
         tenant_id: { type: string, format: uuid }
-        kind: { type: string, enum: [validation, delivery] }
+        kind:
+          type: string
+          enum: [validation, delivery, test]
+          description: '`test` desde `5b917f7` · un envío de prueba, con `sent_to` de un solo correo.'
         status: { type: string, enum: [ok, partial, error] }
         answers:
           type: [array, 'null']

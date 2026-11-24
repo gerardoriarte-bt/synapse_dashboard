@@ -9,6 +9,9 @@ import { PlotGauge } from '../plots/PlotGauge'
 import { PlotBullet } from '../plots/PlotBullet'
 import { PlotRings } from '../plots/PlotRings'
 import { UnknownPlotState } from '../states/UnknownPlotState'
+import { Semaforo } from '../primitives/Semaforo'
+import { estadoPorUmbral, textoDeEstado } from '../semaforo'
+import type { Umbrales } from '../../catalog/umbrales'
 import type { BodyProps } from '../types'
 
 /** Los gráficos que este cuerpo sabe dibujar HOY.
@@ -35,6 +38,12 @@ export type GaugeParams = {
   /** Contra qué se mide. Sin esto un medidor no dice nada: 72 sobre qué. */
   maximo?: number
   banda?: { lo: number; hi: number; etiqueta: string }
+  /** **El semáforo** · decisión humana del 2026-11-24. Los cortes los define
+   *  datos por indicador y se cargan en el panel. Lo leen `gauge` y `bullet`;
+   *  **`rings` no**, porque la decisión nombra el medidor, el bullet y la `kpi`
+   *  y nada más, y un anillo que cambia de color con el juicio en una fila de
+   *  tres anillos de familia se leería como otra métrica. */
+  umbrales?: Umbrales
 }
 
 export function GaugeBody({
@@ -58,8 +67,10 @@ export function GaugeBody({
     return <UnknownPlotState grafico={grafico} />
   }
 
-  const { maximo, banda } = params
+  const { maximo, banda, umbrales } = params
   const figure = (v: number) => format.number(v, { abbreviate: true })
+  // Sin umbrales, `undefined`, y el dibujo es exactamente el de antes.
+  const estado = umbrales === undefined || grafico === 'rings' ? undefined : estadoPorUmbral(value.v, umbrales)
 
   if (maximo === undefined || maximo <= 0) {
     return (
@@ -68,6 +79,12 @@ export function GaugeBody({
       </div>
     )
   }
+
+  const base = (
+    <Label>
+      {banda === undefined ? `Sobre ${figure(maximo)}` : `${banda.etiqueta} · ${figure(banda.lo)}–${figure(banda.hi)}`}
+    </Label>
+  )
 
   // **El shell no cambia con el dibujo.** La línea de BASE —«Sobre N», o la
   // banda— queda abajo en los dos casos: es lo que declara el denominador, y §1
@@ -97,7 +114,13 @@ export function GaugeBody({
           format={figure}
         />
       ) : grafico === 'bullet' ? (
-        <PlotBullet value={value} objetivo={maximo} family={family} format={figure} />
+        <PlotBullet
+          value={value}
+          objetivo={maximo}
+          family={family}
+          format={figure}
+          {...(estado === undefined ? {} : { estado })}
+        />
       ) : (
         <PlotGauge
           value={value.v}
@@ -105,13 +128,19 @@ export function GaugeBody({
           family={family}
           format={figure}
           {...(unit === undefined ? {} : { unit })}
+          {...(estado === undefined ? {} : { estado })}
         />
       )}
-      <Label>
-        {banda === undefined
-          ? `Sobre ${figure(maximo)}`
-          : `${banda.etiqueta} · ${figure(banda.lo)}–${figure(banda.hi)}`}
-      </Label>
+      {estado === undefined || umbrales === undefined ? (
+        base
+      ) : (
+        // El estado va ESCRITO al lado de la BASE: el color nunca va solo. Sin
+        // umbrales la línea es la de antes, sin la fila que la envuelve.
+        <div className="flex items-baseline justify-between gap-2 flex-wrap">
+          {base}
+          <Semaforo estado={estado}>{textoDeEstado(estado, umbrales, (v) => format.withUnit(figure(v), unit))}</Semaforo>
+        </div>
+      )}
     </div>
   )
 }

@@ -127,6 +127,16 @@ PARES: list[tuple[str, str | list[str], str]] = [
     ("peligro", "panel", "Quitar una pestaña o un panel"),
     ("peligro", "bg", "Quitar, sobre el lienzo del builder"),
     ("peligro", ["w2", "panel"], "Quitar, dentro de una tarjeta del builder"),
+    # El semáforo · `decisiones.css` · decisión humana del 2026-11-24. Se mide
+    # como TEXTO y no como trazo (3:1), porque lo es dos veces: la cifra de la
+    # `kpi` se pinta en el color del estado, y el rótulo «BIEN · ≥ 3.0X» que va
+    # siempre al lado es mono 10. El arco y la barra pasan con lo que pasa el
+    # texto. `panel` es la consola y el lienzo del builder; `elev` es la hoja
+    # del chat, que dibuja los mismos cuerpos.
+    ("estado-bien", "panel", "Cifra y rótulo de un indicador en BIEN"),
+    ("estado-bien", "elev", "Indicador en BIEN dentro de la hoja del chat"),
+    ("estado-mal", "panel", "Cifra y rótulo de un indicador en MAL"),
+    ("estado-mal", "elev", "Indicador en MAL dentro de la hoja del chat"),
 ]
 
 

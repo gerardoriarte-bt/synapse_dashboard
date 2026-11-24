@@ -396,6 +396,10 @@ export function PanelConfigurator({
                 const valor = panel.opciones?.[nombre]
                 const id = `opcion-${nombre}`
 
+                if (spec?.kind === 'umbrales') {
+                  return <EditorDeUmbrales key={nombre} nombre={nombre} valor={valor} onCambio={(v) => onOpcion(nombre, v)} />
+                }
+
                 if (spec === undefined || spec.kind === 'array' || spec.kind === 'object') {
                   // Sin esquema, o una estructura que un campo suelto no puede
                   // editar sin volverse un textarea de JSON. Se nombra y se dice.
@@ -685,5 +689,83 @@ function ComoSeVe({
         )
       })}
     </>
+  )
+}
+
+/** ── LOS UMBRALES DEL SEMÁFORO · decisión humana del 2026-11-24 ───────────
+ *
+ *  **Dos campos y no un objeto en JSON**, por la razón que la cabecera da para
+ *  `banda`: un textarea compilaría y el error aparecería al publicar. Los cortes
+ *  los define datos por indicador; quien compone los copia acá.
+ *
+ *  **La dirección no se elige: se lee del orden** —ver `catalog/umbrales.ts`—, y
+ *  la ayuda la dice en palabras apenas están los dos, para que quien compone vea
+ *  lo que va a pintar antes de publicar. Con uno solo el panel queda con un
+ *  problema que impide publicar, y la razón la escribe `validar.ts` con la misma
+ *  función que usa la consola.
+ */
+function EditorDeUmbrales({
+  nombre,
+  valor,
+  onCambio,
+}: {
+  nombre: string
+  valor: unknown
+  onCambio: (v: Record<string, number> | undefined) => void
+}) {
+  const actual = typeof valor === 'object' && valor !== null ? (valor as Record<string, unknown>) : {}
+  const corte = (k: 'bien' | 'mal') => (typeof actual[k] === 'number' ? (actual[k] as number) : undefined)
+  const bien = corte('bien')
+  const mal = corte('mal')
+
+  const cambiar = (k: 'bien' | 'mal', texto: string) => {
+    const otro = k === 'bien' ? mal : bien
+    const este = texto === '' ? undefined : Number(texto)
+    const siguiente: Record<string, number> = {}
+    const b = k === 'bien' ? este : otro
+    const m = k === 'mal' ? este : otro
+    if (b !== undefined) siguiente['bien'] = b
+    if (m !== undefined) siguiente['mal'] = m
+    onCambio(Object.keys(siguiente).length === 0 ? undefined : siguiente)
+  }
+
+  const ayuda =
+    bien === undefined && mal === undefined
+      ? 'Sin cortes el panel se dibuja como siempre. Con los dos, pinta su estado y lo escribe al lado.'
+      : bien === undefined || mal === undefined
+        ? 'Faltan los dos cortes: con uno solo no se sabe si más alto es mejor o peor.'
+        : bien === mal
+          ? 'Los dos cortes son iguales: no se puede leer la dirección.'
+          : bien > mal
+            ? `Más alto es mejor: bien desde ${String(bien)}, mal por debajo de ${String(mal)}.`
+            : `Más bajo es mejor: bien hasta ${String(bien)}, mal por encima de ${String(mal)}.`
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Label as="div">Semáforo · umbrales</Label>
+      <div className="flex gap-3 flex-wrap">
+        {(['bien', 'mal'] as const).map((k) => (
+          <div key={k} className="flex flex-col gap-1">
+            <Label id={`opcion-${nombre}-${k}`} as="div">
+              {k === 'bien' ? 'Corte de bien' : 'Corte de mal'}
+            </Label>
+            <input
+              type="number"
+              aria-labelledby={`opcion-${nombre}-${k}`}
+              placeholder="Sin corte"
+              value={(k === 'bien' ? bien : mal) ?? ''}
+              onChange={(e) => cambiar(k, e.target.value)}
+              className={`${CAMPO} w-32`}
+            />
+          </div>
+        ))}
+      </div>
+      <Ayuda>{ayuda}</Ayuda>
+      {(bien !== undefined || mal !== undefined) && (
+        <Accion tamano="compacta" onClick={() => onCambio(undefined)}>
+          Quitar umbrales
+        </Accion>
+      )}
+    </div>
   )
 }
