@@ -33,7 +33,7 @@ import type { components } from '../../src/api/admin-generated'
 
 /** `LayoutDashboard` del cable, tal cual: el estado guarda lo que el servicio manda. */
 type WireDashboard = components['schemas']['LayoutDashboard']
-import { DASH_A, DASH_B, LAYOUT_PUB, TENANT_EN_ALTA, bloques, catalogo, contexto, detalle, layouts, publicaciones, roles, tenants, usuario, PANELES_MUESTRARIO } from './datos'
+import { DASH_A, DASH_B, LAYOUT_PUB, TENANT_EN_ALTA, bloques, catalogo, contexto, detalle, layouts, publicaciones, roles, tenants, usuario, PANELES_MUESTRARIO, PANEL_EJE_DOBLE } from './datos'
 
 const API = '*/api/v1'
 const ok = <T,>(data: T) => HttpResponse.json({ success: true, data })
