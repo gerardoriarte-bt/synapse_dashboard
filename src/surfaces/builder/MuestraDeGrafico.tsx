@@ -17,7 +17,7 @@
  *  forma que `ChatFigure`, que tampoco puede usar el marco.
  */
 import { Suspense } from 'react'
-import { bodyFor } from '../../render/bodies/registry'
+import { BODIES } from '../../render/bodies/registry'
 import { LoadingState } from '../../render/states/LoadingState'
 import { hasValue, resolveGovernance } from '../../render/state'
 import { Label } from '../../render/primitives/Label'
@@ -36,7 +36,12 @@ type Props = {
 }
 
 export function MuestraDeGrafico({ tipo, grafico, metrica, payload, format, now }: Props) {
-  const Body = bodyFor(tipo as PanelType)
+  // **De la tabla, no de una llamada** · 2026-11-24. `BODIES` se arma una vez
+  // al cargar el registro, así que `Body` es el mismo componente en cada render
+  // y React no lo vuelve a montar. Leído con `bodyFor(…)`, `oxlint` no puede
+  // saberlo y lo marca como creado en el render. Lo fija
+  // `tests/surfaces/cuerpoEstable.test.tsx`.
+  const Body = BODIES[tipo as PanelType]
   if (Body === undefined || !hasValue(payload)) return null
   const gobierno = resolveGovernance(metrica, payload)
   return (

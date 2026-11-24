@@ -101,7 +101,10 @@
  *  sólo la opacidad los separa: 0.7 contra 0.5. Sigue siendo monótono y pierde
  *  la mitad de la señal. No es un defecto de este plot ni se arregla acá.
  *
- *  ── LAS PRIMITIVAS QUE FALTAN, Y POR QUÉ `levels` ESTÁ DUPLICADO ────────────
+ *  ── LAS PRIMITIVAS QUE FALTAN ───────────────────────────────────────────────
+ *
+ *  **`levels` ya no está duplicado** · 2026-11-24: vive en `core/matrix.ts` y
+ *  la lee de ahí. Lo que sigue es de antes de ese día y vale para las otras tres.
  *
  *  **`levels`, `rowReserve`, `padFor` y `recorte` tendrían que vivir en
  *  `core/matrix.ts`**, que es lo que la cabecera de `PlotHeatmap` ya declara —
@@ -142,6 +145,7 @@ import { MARGIN, charsThatFit, textWidth } from './core/axisGeometry'
 import { bandScale } from './core/scale'
 import { hue } from './core/seriesColor'
 import { useSize } from './core/useSize'
+import { levels } from './core/matrix'
 import type { FamilyStep } from '../../tokens/tokens'
 import type { PlotProps } from '../types'
 
@@ -239,51 +243,6 @@ const CIFRA = {
   fontFamily: 'var(--font-mono)',
   fontSize: CIFRA_SIZE,
 } as const
-
-/** El nivel de cada celda, o `null` donde no hay dato · aritmética pura.
- *
- *  **COPIA DECLARADA de `PlotHeatmap.levels`**, cuya casa es `core/matrix.ts` ·
- *  ver la cabecera. Vive afuera del componente por la misma razón que `squarify`:
- *  se prueba sin montar un SVG, y es donde puede estar el defecto que el dibujo
- *  no muestra — una cohorte se ve igual de prolija cuantizando bien y mal.
- *
- *  **El `Math.min(n - 1, …)` no es defensa decorativa.** Sin él el máximo da
- *  índice `n`, `RAMPA[n]` es `undefined` y la celda se pinta **sin color y sin
- *  error**, que es el modo de falla que `familyVar` ya documenta.
- *
- *  **Con `max === min` nadie es el más caliente y nadie el más frío**: todas las
- *  presentes van al nivel MEDIO, porque mandarlas a un extremo afirma un piso o
- *  un techo que el dato no tiene. Y sin esa rama la división por `max - min` da
- *  `NaN` y una celda sin opacidad.
- */
-export function levels(
-  celdas: readonly (readonly (number | null)[])[],
-  n: number,
-): (number | null)[][] {
-  let min = Number.POSITIVE_INFINITY
-  let max = Number.NEGATIVE_INFINITY
-  let presentes = 0
-  for (const fila of celdas) {
-    for (const v of fila) {
-      // `null` es «el futuro no observado» y queda FUERA del rango: adentro, el
-      // hueco se pinta como el peor valor de la escala y además corre todos los
-      // demás niveles.
-      if (v === null || !Number.isFinite(v)) continue
-      presentes += 1
-      if (v < min) min = v
-      if (v > max) max = v
-    }
-  }
-
-  const medio = Math.floor((n - 1) / 2)
-  return celdas.map((fila) =>
-    fila.map((v) => {
-      if (v === null || !Number.isFinite(v)) return null
-      if (presentes === 0 || max === min) return medio
-      return Math.min(n - 1, Math.floor(((v - min) / (max - min)) * n))
-    }),
-  )
-}
 
 /** Cuánto ancho se lleva la columna de rótulos de cohorte.
  *

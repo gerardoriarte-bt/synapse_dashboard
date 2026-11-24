@@ -15,7 +15,8 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { SeriesBody } from '@/render/bodies/SeriesBody'
-import { PlotSmallMult, facetRects } from '@/render/plots/PlotSmallMult'
+import { PlotSmallMult } from '@/render/plots/PlotSmallMult'
+import { facetRects } from '@/render/plots/core/facets'
 import { createFormat } from '@/render/format'
 import type { Value } from '@/api/types'
 
