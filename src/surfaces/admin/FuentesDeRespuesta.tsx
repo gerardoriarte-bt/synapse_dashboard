@@ -39,7 +39,7 @@ type Props = {
 }
 
 /** La línea de una fuente, en el orden del dibujo: fuente · mes · carga. */
-export function lineaDeFuente(f: FuenteDeRespuesta, format: Formatter): string {
+function lineaDeFuente(f: FuenteDeRespuesta, format: Formatter): string {
   const carga =
     f.cargadaEn === null
       ? 'sin fecha de carga'

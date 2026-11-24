@@ -12,7 +12,7 @@
     "deploy": "npm run build:image && npm run push:image",
     "compose:pull": "docker compose pull",
     "compose:up": "docker compose up -d",
-    "lint": "oxlint",
+    "lint": "oxlint --deny-warnings",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",

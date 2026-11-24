@@ -180,7 +180,7 @@ describe('la dirección · qué pestaña y qué panel', () => {
       tab([panel()]),
       // Sin `id`: es una pestaña recién agregada, que es el caso que obliga a
       // direccionar por índice.
-      (({ id: _, ...resto }) => resto)({ ...tab([panel({ metricId: 'm-cat' })]), nombre: 'Nueva' }),
+      (({ id: _id, ...resto }) => resto)({ ...tab([panel({ metricId: 'm-cat' })]), nombre: 'Nueva' }),
     ]
     const p = validarBorrador(borrador, tabla, metrics)
     expect(p).toHaveLength(1)

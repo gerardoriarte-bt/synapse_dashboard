@@ -10,9 +10,9 @@
  *  transmitiendo contra un componente que ya no existe — que además es cómo se
  *  llega a un `setState` sobre algo desmontado.
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { ChatStreamError, askSynapse, esDePanel } from './chat'
+import { ChatStreamError, askSynapse } from './chat'
 import type { ChatRequest, ContextoDeChat, TurnoGuardado } from './chat'
 import { api } from './client'
 export type { ContextoDeChat }
@@ -115,9 +115,18 @@ export function apply(previa: Answer, evento: ChatEvent): Answer {
  *  el servicio resuelve el agente por rol y tenant, que es el camino de
  *  cualquier otro usuario. */
 export function useChat(contexto: ContextoDeChat, agenteId?: string) {
-  const clave = esDePanel(contexto)
-    ? `panel:${contexto.panelId}:${contexto.periodo}`
-    : `tab:${contexto.tabId}:${contexto.periodo}`
+  /** **El contexto vigente, en un `ref`** · 2026-11-24. El llamador pasa un
+   *  literal, así que `[contexto]` recrearía `ask` en cada render. Hasta este
+   *  día se resolvía con una clave derivada —`panel:<id>:<período>`— en las
+   *  dependencias, que andaba mientras la clave cubriera TODOS los campos de
+   *  `ContextoDeChat`: un campo nuevo que no entrara viajaría viejo sin aviso.
+   *  El `ref` no tiene esa condición. Se actualiza en un efecto de layout, que
+   *  corre antes de que el usuario pueda volver a preguntar. Lo fija
+   *  `tests/api/useChatContexto.test.tsx`. */
+  const contextoVigente = useRef(contexto)
+  useLayoutEffect(() => {
+    contextoVigente.current = contexto
+  })
   const [turns, setTurns] = useState<ChatTurn[]>([])
   const [threadId, setThreadId] = useState<string | null>(null)
   const client = useQueryClient()
@@ -208,7 +217,7 @@ export function useChat(contexto: ContextoDeChat, agenteId?: string) {
         pregunta,
         // **Se pasa entero y no campo por campo**: desarmarlo acá obligaría a
         // reconstruir la unión, y ahí es donde alguien manda las dos ramas.
-        contexto,
+        contexto: contextoVigente.current,
         ...(threadId === null ? {} : { hiloId: threadId }),
         ...(agenteId === undefined ? {} : { agenteId }),
       }
@@ -258,10 +267,8 @@ export function useChat(contexto: ContextoDeChat, agenteId?: string) {
         parche((t) => (t.streaming ? { ...t, streaming: false } : t))
       }
     },
-    // **Una clave derivada y no el objeto**: el llamador pasa un literal, así
-    // que `[contexto]` recrearía `ask` en cada render. Y con la unión ya no
-    // alcanza `contexto.panelId` — la rama de pestaña no lo tiene.
-    [clave, threadId, turns.length, agenteId, client],
+    // El contexto no va: se lee de `contextoVigente`, ver arriba.
+    [threadId, turns.length, agenteId, client],
   )
 
   return { turns, threadId, historial, ask, resume, reset }

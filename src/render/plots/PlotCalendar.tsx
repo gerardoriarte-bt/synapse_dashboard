@@ -108,6 +108,7 @@
  *    las seis que ya está exportada— y las otras se declaran acá con sus números
  *    medidos en ESTE frame, que son distintos. Que un plot importe de otro es la
  *    deuda, no la solución: cuando `core/matrix.ts` exista, las dos se reapuntan.
+ *    **Existe desde el 2026-11-24, con `levels()` sola**, y se reapuntó.
  *  - `core/Cells.tsx` con la marca de celda: `rect` con `rx`, el par
  *    `(fill, fillOpacity)` cuando hay nivel, el `fill: none` + `stroke` de 1px
  *    cuando no, y su `<title>`. Sería la quinta marca —`Bars` tiene un solo eje
@@ -132,7 +133,7 @@ import { MARGIN, charsThatFit, textWidth } from './core/axisGeometry'
 import { bandScale } from './core/scale'
 import { hue } from './core/seriesColor'
 import { useSize } from './core/useSize'
-import { levels } from './PlotHeatmap'
+import { levels } from './core/matrix'
 import type { FamilyStep } from '../../tokens/tokens'
 import type { PlotProps } from '../types'
 

@@ -95,6 +95,7 @@ import { Area, Line } from './core/Series'
 import { partirEnCurso } from './core/enCurso'
 import { TramoEnCurso } from './core/TramoEnCurso'
 import { useSize } from './core/useSize'
+import { facetRects } from './core/facets'
 import type { FamiliaDeDibujo } from '../types'
 
 export type FacetSeries = {
@@ -104,10 +105,6 @@ export type FacetSeries = {
   puntos: readonly { t: string; v: number; parcial?: boolean }[]
 }
 
-/** Separación entre divisiones · 202 − 186 en el frame, y la misma en vertical
- *  cuando hay más de una fila. */
-const GAP = 16
-
 /** Las dos bandas que la división reserva fuera del dibujo: el rótulo arriba
  *  —alto 16, centro en 8— y la cifra abajo —de 150 a 182—. `alto − 48` es lo que
  *  queda para dibujar, que a 182 da los 134 que el frame usa. */
@@ -115,12 +112,6 @@ const BANDA = { rotulo: 16, cifra: 32 } as const
 
 /** La cifra cuelga 18 del riel: centro en 168.2 con el riel en 150. */
 const CIFRA_DY = 18
-
-/** El ancho mínimo de una división antes de envolver a otra fila.
- *  **No es un número elegido mirando la pantalla**: es el ancho en el que
- *  `charsThatFit` deja 16 caracteres de rótulo, que es donde un nombre de
- *  división todavía se lee. */
-const MIN_FACET = 120
 
 /** Qué escalón de la familia le toca a cada división.
  *
@@ -134,30 +125,6 @@ const RAMPA = [
   3,
   4,
 ] as const
-
-export type FacetRect = { x: number; y: number; w: number; h: number }
-
-/** El teselado de las divisiones.
- *
- *  **Vive acá y no en `core/` por una restricción de la tanda, no por diseño.**
- *  `cycle`, `cohort`, `calendar` y `matrix` van a pedir exactamente esto, así
- *  que su casa es `core/facets.ts` — está anotado como pendiente. Se exporta
- *  suelta, igual que `squarify` en `PlotTreemap`, porque es aritmética pura y se
- *  prueba sin montar un SVG: un teselado mal repartido se ve prolijo.
- */
-export function facetRects(n: number, w: number, h: number): FacetRect[] {
-  if (n <= 0 || w <= 0 || h <= 0) return []
-  const columns = Math.max(1, Math.min(n, Math.floor((w + GAP) / (MIN_FACET + GAP))))
-  const rows = Math.ceil(n / columns)
-  const fw = (w - (columns - 1) * GAP) / columns
-  const fh = (h - (rows - 1) * GAP) / rows
-  return Array.from({ length: n }, (_, i) => ({
-    x: (i % columns) * (fw + GAP),
-    y: Math.floor(i / columns) * (fh + GAP),
-    w: fw,
-    h: fh,
-  }))
-}
 
 /** La cifra de la división · mono 11, `ink`, anclada al borde derecho.
  *

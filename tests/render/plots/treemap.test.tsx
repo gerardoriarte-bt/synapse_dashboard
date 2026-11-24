@@ -15,7 +15,8 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { BarsBody } from '@/render/bodies/BarsBody'
-import { PlotTreemap, squarify } from '@/render/plots/PlotTreemap'
+import { PlotTreemap } from '@/render/plots/PlotTreemap'
+import { squarify } from '@/render/plots/core/treemap'
 import { createFormat } from '@/render/format'
 import type { Value } from '@/api/types'
 

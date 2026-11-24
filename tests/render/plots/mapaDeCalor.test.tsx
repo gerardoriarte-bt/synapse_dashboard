@@ -16,7 +16,8 @@
  */
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { PlotHeatmap, levels } from '@/render/plots/PlotHeatmap'
+import { PlotHeatmap } from '@/render/plots/PlotHeatmap'
+import { levels } from '@/render/plots/core/matrix'
 import { MONO_ADVANCE } from '@/render/plots/core/axisGeometry'
 import { createFormat } from '@/render/format'
 import type { Value } from '@/api/types'

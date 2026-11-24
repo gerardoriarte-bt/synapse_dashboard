@@ -14,7 +14,8 @@
  */
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { ChatFigure, hasRowLabels } from '@/surfaces/console/ChatFigure'
+import { ChatFigure } from '@/surfaces/console/ChatFigure'
+import { hasRowLabels } from '@/surfaces/console/rowLabels'
 import { blockTable } from '@/catalog/blocks'
 import { createFormat } from '@/render/format'
 import type { Block } from '@/catalog/types'
