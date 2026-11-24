@@ -5,6 +5,8 @@
  */
 import { useSize } from './core/useSize'
 import { Arc, ArcRail } from './core/Arc'
+import { TONO_DE_MARCA } from '../semaforo'
+import type { EstadoDeUmbral } from '../semaforo'
 import type { FamiliaDeDibujo } from '../types'
 
 /** Tres cuartos de vuelta, empezando abajo a la izquierda. Deja el hueco de
@@ -18,12 +20,16 @@ export function PlotGauge({
   family,
   format,
   unit,
+  estado,
 }: {
   value: number
   max: number
   family: FamiliaDeDibujo
   format: (v: number) => string
   unit?: string
+  /** El semáforo · con umbrales declarados el arco toma el color del estado y
+   *  deja el de la familia. Sin esto, el arco de siempre. */
+  estado?: EstadoDeUmbral
 }) {
   const { ref, w, h } = useSize()
 
@@ -59,6 +65,7 @@ export function PlotGauge({
             totalSweep={SWEEP}
             from={FROM}
             segments={[{ k: 'value', fraction, step: 1 }]}
+            {...(estado === undefined ? {} : { tono: TONO_DE_MARCA[estado] })}
           />
           <text
             x={cx}

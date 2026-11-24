@@ -78,8 +78,11 @@ export function ValueAxis({
   count = 4,
 }: {
   scale: LinearScale
-  side: 'bottom' | 'left'
-  /** La coordenada fija del eje: la `y` si va abajo, la `x` si va a la izquierda. */
+  /** `right` es el segundo eje del combinado · 2026-11-24: los rótulos se
+   *  anclan al `start`, contra el área de dibujo, igual que los de la izquierda
+   *  se anclan al `end`. */
+  side: 'bottom' | 'left' | 'right'
+  /** La coordenada fija del eje: la `y` si va abajo, la `x` si va a un costado. */
   at: number
   /** Inyectado · F1.13b. Un plot no formatea por su cuenta: el locale es del
    *  tenant y un plot no sabe de qué tenant se trata. */
@@ -101,7 +104,7 @@ export function ValueAxis({
             {format(v)}
           </AxisText>
         ) : (
-          <AxisText key={v} x={at} y={scale(v)} anchor="end">
+          <AxisText key={v} x={at} y={scale(v)} anchor={side === 'right' ? 'start' : 'end'}>
             {format(v)}
           </AxisText>
         ),

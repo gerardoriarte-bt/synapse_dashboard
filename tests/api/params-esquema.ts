@@ -43,6 +43,7 @@
  *  mal en el primer intento.
  */
 import type { ParamSchemas } from '@/api/params'
+import type { Umbrales } from '@/catalog/umbrales'
 import type { BarsParams } from '@/render/bodies/BarsBody'
 import type { BlockedParams } from '@/render/bodies/BlockedBody'
 import type { CompositionParams } from '@/render/bodies/CompositionBody'
@@ -70,7 +71,9 @@ type Passes<S> = S extends { kind: 'enum'; values: readonly (infer V)[] }
           ? readonly unknown[]
           : S extends { kind: 'object' }
             ? object
-            : ['kind que `Passes` no conoce', S]
+            : S extends { kind: 'umbrales' }
+              ? Umbrales
+              : ['kind que `Passes` no conoce', S]
 
 /** El `kind` contra el tipo del cuerpo. Devuelve `true` o el porqué, para que
  *  el error de compilación diga qué no coincide en vez de «no asignable».

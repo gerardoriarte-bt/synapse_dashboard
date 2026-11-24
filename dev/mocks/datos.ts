@@ -51,8 +51,13 @@ const P = (n: number) => `55555555-5555-5555-5555-5555555555${String(n).padStart
  *  dibujos acá. Exceptuar la pestaña del muestrario no es maquillar la demo —
  *  lo sería si la excepción tapara un estado que no se ve en otro lado. */
 export const PANELES_MUESTRARIO = new Set(
-  [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35].map(P),
+  [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41].map(P),
 )
+
+/** **El combinado de dos ejes** · 2026-11-24. Su multiserie trae la unidad de
+ *  cada serie, como el cable desde `3651d70`; el de los demás no la trae, y así
+ *  el `combo` del panel 30 sigue mostrando el combinado de un eje. */
+export const PANEL_EJE_DOBLE = P(41)
 const R = (n: number) => `66666666-6666-6666-6666-6666666666${String(n).padStart(2, '0')}`
 
 export const usuario = {
@@ -151,12 +156,12 @@ export const catalogo = FORMAS.flatMap(([shape, family], i) =>
  *  builder rotula con `tipo`. Traducirlos acá habría hecho que el fixture
  *  pareciera resolver algo que el adaptador ni mira. */
 export const bloques = [
-  { type: 'kpi', ui_name: 'KPI', accepted_shapes: ['scalar'], col_span_min: 3, col_span_max: 4, row_span_min: 3, row_span_max: 4, layout_params: ['comparative', 'meter'] },
+  { type: 'kpi', ui_name: 'KPI', accepted_shapes: ['scalar'], col_span_min: 3, col_span_max: 4, row_span_min: 3, row_span_max: 4, layout_params: ['comparative', 'meter', 'thresholds'] },
   { type: 'prose', ui_name: 'Prose / summary', accepted_shapes: ['prose'], col_span_min: 8, col_span_max: 12, row_span_min: 3, row_span_max: 4, layout_params: ['pillars'] },
   { type: 'series', ui_name: 'Time series', accepted_shapes: ['time_series', 'multi_series'], col_span_min: 5, col_span_max: 7, row_span_min: 4, row_span_max: 5, layout_params: ['normalization', 'cut'] },
   { type: 'bars', ui_name: 'Bars', accepted_shapes: ['categorical', 'ranking'], col_span_min: 4, col_span_max: 8, row_span_min: 4, row_span_max: 5, layout_params: ['order', 'brand'] },
   { type: 'table', ui_name: 'Table', accepted_shapes: ['tabular'], col_span_min: 5, col_span_max: 8, row_span_min: 4, row_span_max: 5, layout_params: ['order', 'columns'] },
-  { type: 'gauge', ui_name: 'Gauge', accepted_shapes: ['scalar'], col_span_min: 3, col_span_max: 7, row_span_min: 4, row_span_max: 4, layout_params: ['band', 'components', 'maximum'] },
+  { type: 'gauge', ui_name: 'Gauge', accepted_shapes: ['scalar'], col_span_min: 3, col_span_max: 7, row_span_min: 4, row_span_max: 4, layout_params: ['band', 'components', 'maximum', 'thresholds'] },
   { type: 'forecast', ui_name: 'Forecast', accepted_shapes: ['scalar_with_interval', 'series_with_band'], col_span_min: 4, col_span_max: 6, row_span_min: 4, row_span_max: 5, layout_params: ['horizon', 'interval_level', 'cut'] },
   { type: 'list', ui_name: 'List / ranking', accepted_shapes: ['ranking'], col_span_min: 3, col_span_max: 5, row_span_min: 4, row_span_max: 5, layout_params: ['order', 'cap'] },
   { type: 'reco', ui_name: 'Recommendation', accepted_shapes: ['prose'], col_span_min: 4, col_span_max: 5, row_span_min: 4, row_span_max: 5, layout_params: ['cap', 'window'] },
@@ -430,6 +435,20 @@ const tabsDe = (layout: string) => [
       panel(33, 24, TAB_C, 1, 6, 'comparison', 'dumbbell', {}, 5),
       panel(34, 26, TAB_C, 7, 6, 'matrix', 'heatmap', {}, 5),
       panel(35, 28, TAB_C, 1, 12, 'graph', 'sankey', {}, 7),
+      // ── El semáforo y el eje doble · decisión humana del 2026-11-24 ─────────
+      //
+      // **`thresholds` no lo declara ninguna fila de `blocks` en el servicio**
+      // —medido en `dd_seed_blocks.go`—, así que en este modo se agrega a
+      // `layout_params` de `kpi` y `gauge` para poder mirarlo. Los cortes se
+      // eligen lejos de la cifra del mock —128.400 más mil por panel— para que
+      // cada uno caiga en su estado sin depender del orden del batch.
+      panel(36, 0, TAB_C, 1, 3, 'gauge', '', { maximum: 200000, thresholds: { bien: 100000, mal: 50000 } }),
+      panel(37, 0, TAB_C, 4, 3, 'gauge', '', { maximum: 200000, thresholds: { bien: 300000, mal: 100000 } }),
+      panel(38, 0, TAB_C, 7, 3, 'gauge', '', { maximum: 200000, thresholds: { bien: 400000, mal: 300000 } }),
+      panel(40, 0, TAB_C, 10, 3, 'kpi', '', { thresholds: { bien: 100000, mal: 50000 } }),
+      // Más bajo es mejor —`bien` menor que `mal`— y la cifra pasa el corte malo.
+      panel(39, 2, TAB_C, 1, 5, 'gauge', 'bullet', { maximum: 200000, thresholds: { bien: 50000, mal: 100000 } }),
+      panel(41, 9, TAB_C, 6, 7, 'series', 'combo'),
     ],
   },
 ]
