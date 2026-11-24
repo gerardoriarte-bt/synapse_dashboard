@@ -2243,11 +2243,12 @@ paths:
         La lista de P6.4, para Clientes (A1): **todos los clientes juntos**,
         activos e inactivos, del más nuevo al más viejo, con tope fijo de 200.
 
-        **Cuelga de `AdminOnlyMiddleware` y nada más**: no tiene `:tenantId`, así
-        que `RequireRouteTenant` la deja pasar, y el servicio no filtra por
-        cliente. **Un admin de un cliente la puede leer entera**, con los
-        externos de los demás. El front la pide sólo con alcance de plataforma;
-        el cierre del lado del servicio es del backend.
+        **Sólo operador de plataforma desde `db48310`**: `router.go` le agrega
+        `RequirePlatformOperator()`, igual que a `POST /admin/tenants`. Un admin
+        de un solo cliente recibe **403**. Leído en su código el 2026-11-24, no
+        medido: en `f1ccbbe` colgaba sólo de `AdminOnlyMiddleware` y cualquier
+        admin la leía entera, con los externos de los demás clientes. El front
+        ya la pedía sólo con alcance de plataforma.
 
         **No hay «marcar como vista»**: ni campo ni ruta.
       responses:
