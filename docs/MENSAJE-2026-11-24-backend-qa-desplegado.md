@@ -17,8 +17,14 @@ Faltan dos cosas.
 
 ## 1 · En QA no corrieron las migraciones · el más importante
 
-Lo muestran dos síntomas:
+Lo muestran tres síntomas:
 
+- **Crear un reporte con destinatario da 500** («no se pudo completar la
+  operación sobre el reporte»), y no deja nada a medias. Probamos con UA MX,
+  rol Admin y un usuario Admin. Sin ver el log no podemos afirmarlo, pero
+  encaja con que falte `unsubscribe_token` en `dd_report_recipients`. **Hoy
+  en QA no se puede crear ningún reporte**, así que el envío de prueba
+  tampoco.
 - **Archivar un dashboard da 500.** `POST /admin/dashboards/{dashboardId}/archive`
   sobre Overview de UA MX contesta:
   `column "archived_at" of relation "dd_dashboards" does not exist (SQLSTATE 42703)`.
@@ -29,7 +35,8 @@ Lo muestran dos síntomas:
 
 El código de `5b917f7` está desplegado, porque las zonas horarias y Reportes
 funcionan, pero su esquema no. **Pedido:** correr las migraciones de
-`5b917f7` y `a13d27c` en QA, o el script equivalente. Con eso queremos
+`5b917f7` y `a13d27c` en QA, o el script equivalente. Con eso vamos a
+probar un envío real a `gerardo.riarte@buentipo.com`, y queremos
 archivar Overview en UA MX y Terpel Combustibles. Ya no lo ve ningún rol,
 pero un rol nuevo lo vería.
 
