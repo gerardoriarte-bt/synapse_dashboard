@@ -583,6 +583,21 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-11-24 (tarde) · el backend contestó con un commit que no está
+
+**Tres respuestas del backend**, registradas como
+`RESPUESTA-2026-11-24-backend-*.md`: umbrales en `kpi` y `gauge`, las
+migraciones y las 16 consultas de rentabilidad, más el cierre del hueco de
+los avisos por externos. **Las tres citan el commit 1d3013d, que no está
+publicado**: el remoto sigue en `f1ccbbe`.
+
+**Medido en QA a las 18:45 UTC, nada de eso está**: sin `thresholds` en
+`/config/blocks`, archivar Overview sigue dando 500 por `archived_at`, los
+títulos de la semilla siguen en inglés, las métricas nuevas siguen `BLOCKED`
+y el bundle del front sigue siendo el de las 14:36 GMT. Lo pide
+`docs/MENSAJE-2026-11-24-backend-1d3013d-no-esta-en-qa.md`, **y lo manda el
+humano**. **Lo que sigue es esperar, no volver a pedirlo.**
+
 ### ⇩ ACÁ SE PARÓ · 2026-11-24 · QA desplegado, faltan las migraciones
 
 **El backend desplegó QA** con el front de `main` y su `5b917f7` o posterior:
