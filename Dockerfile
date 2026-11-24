@@ -64,7 +64,7 @@ RUN npm run build
 # ── ETAPA 2 · servir ──────────────────────────────────────────────────────────
 # **La 1.30, que es la estable** · 2026-11-09. Estaba en la 1.27, una rama que
 # ya no recibe parches. Por digest, igual que la de arriba.
-FROM nginx:1.30.6-alpine@sha256:583b7f2fce1cdb8da5ad5c39ebd3c33b98b87d493190e548bdee1fa8c619c311 AS serve
+FROM nginx:1.30.7-alpine@sha256:caf4e1e032a20f9c3c5e28fc7f25ffd768ad8677b4975c54193075997b3a97e3 AS serve
 
 # **`libxslt` corregido antes de que la base lo traiga** · 2026-11-10. El
 # escaneo del CI marcó CVE-2026-87636 y CVE-2026-9947 (HIGH) en `1.1.43-r3`, la
@@ -73,7 +73,11 @@ FROM nginx:1.30.6-alpine@sha256:583b7f2fce1cdb8da5ad5c39ebd3c33b98b87d493190e548
 # **Sólo ese paquete y no `apk upgrade` entero**: la base sigue fijada por
 # digest, y actualizar todo cambiaría la imagen en cada build sin que nadie lo
 # pida. Cuando el digest nuevo traiga `r4`, esta línea se borra.
-RUN apk upgrade --no-cache libxslt
+#
+# **Y `libxml2`, por la misma razón** · 2026-11-24. Con la 1.30.7, que cierra
+# las CRITICAL de nginx, el escaneo marcó CVE-2026-86144 (HIGH) en
+# `2.13.9-r2`; Alpine publica `2.13.9-r3`.
+RUN apk upgrade --no-cache libxslt libxml2
 
 # La imagen oficial corre `envsubst` sobre `/etc/nginx/templates/*.template` al
 # arrancar y escribe el resultado en `/etc/nginx/conf.d/`. Por eso el destino es
