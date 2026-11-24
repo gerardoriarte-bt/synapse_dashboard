@@ -675,9 +675,13 @@ y `docs/MENSAJE-2026-11-20-backend-terpel-tres-clientes.md`. Después:
 conectar, cargar meses, aplicar `dev/dashboards/terpel.json` en los dos
 nuevos y mover usuarios, que hoy no pueden estar en dos clientes.
 
-**Nuestro, sin hacer**: la tabla de campañas no entra en 8 columnas y las
+~~**Nuestro, sin hacer**: la tabla de campañas no entra en 8 columnas y las
 celdas se pisan, y el aviso agrupado de errores dice «el resto cargó
-normalmente» cuando fallaron todos.
+normalmente» cuando fallaron todos.~~ **Los dos se arreglaron el 2026-11-23**
+(`f28670e` y `bb48339`, en `main` por el #118) y están en el bundle de QA,
+medido el 2026-11-24. Esta línea sobrevivió un día a su arreglo y se volvió a
+proponer como pendiente: **antes de tomar un pendiente escrito, se busca su
+arreglo en `git log`.**
 
 ### ⇩ ACÁ SE PARÓ · 2026-11-17 · el editor de QA no dibujaba, y el despliegue está pedido
 
