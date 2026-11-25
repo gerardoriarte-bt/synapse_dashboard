@@ -36,6 +36,7 @@
  *  **§PEN:C3** · C3 · «Chat expandido» · DIVERGE de fondo · misma auditoría, §1 a §7.
  */
 import { useState } from 'react'
+import { useNow } from '../useNow'
 import { useChat } from '../../api/useChat'
 import { esDePanel } from '../../api/chat'
 import type { ContextoDeChat } from '../../api/chat'
@@ -134,8 +135,9 @@ export function ChatSheet({
    *  contenedor: es preferencia de lectura de esta hoja, no estado de la app. */
   const [colapsado, setColapsado] = useState(false)
   // Un solo `now` para la hoja: dos llamadas distintas darían dos frescuras
-  // para la misma respuesta.
-  const ahora = new Date()
+  // para la misma respuesta. Sale de `useNow` y no de `new Date()` en el
+  // render · 2026-11-25, ver `surfaces/useNow.ts`.
+  const ahora = useNow()
 
   /** Los hilos de ESTE panel y ESTE período · F3.7. El filtro lo aplica el
    *  servicio: pedir todos y descartar acá traería por la red las
@@ -151,8 +153,9 @@ export function ChatSheet({
   /** El agrupado por tiempo **es la excepción a que el front no calcule**, y el
    *  contrato la concede explícitamente: «HOY, ESTA SEMANA, JULIO lo hace el
    *  front: es presentación y depende del huso del usuario». Es la otra zona
-   *  horaria — la del navegador, no la del tenant. */
-  const grupos = groupByRecency(hilos.data ?? [], new Date(), format)
+   *  horaria — la del navegador, no la del tenant. El instante es el mismo
+   *  `ahora` de la hoja; el huso lo pone `groupByRecency`. */
+  const grupos = groupByRecency(hilos.data ?? [], ahora, format)
 
   /** Cuál de las filas del riel es la conversación en curso. Se busca por
    *  `hiloId` —el entero— porque eso es lo que `useChat` sostiene, y se marca

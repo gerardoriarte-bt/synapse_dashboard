@@ -11,6 +11,7 @@
  *  **§PEN:C1** · C1 · las cuatro pestañas del `.pen` son la misma pantalla: la composición la manda el layout.
  */
 import { useLayoutEffect } from 'react'
+import { useNow } from '../useNow'
 import { Label } from '../../render/primitives/Label'
 import { COLUMNS, gridStyle, readingOrder, rowStarts } from '../../render/grid'
 import { useColumns } from '../../render/useColumns'
@@ -176,8 +177,9 @@ export function Console({
 
   // Un solo `now` para toda la pantalla. Si cada panel llamara a `new Date()`,
   // dos paneles del mismo lote podrían escribir frescuras distintas para la
-  // misma corrida del feed.
-  const now = new Date()
+  // misma corrida del feed. Sale de `useNow`, no del render · ver
+  // `surfaces/useNow.ts`.
+  const now = useNow()
 
   const tabMetrics = panels
     .map((p) => metricsById.get(p.metricId))
