@@ -48,7 +48,7 @@ fixture desde una superficie es el anti-patrón que declara §4 de
 `nuevo-desarrollo.md`: acopla la superficie a datos falsos y el acoplamiento
 sobrevive al deploy.
 
-El servidor está configurado con `onUnhandledRequest: 'error'`. Una petición sin
+El servidor está configurado con `onUnhandledFrame: 'error'`. Una petición sin
 handler **falla la prueba** en vez de colgarse: una prueba que espera datos que
 nunca llegan se ve igual que una que pasa, hasta que no.
 
