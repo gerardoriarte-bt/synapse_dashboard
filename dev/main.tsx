@@ -56,12 +56,12 @@ if (window.location.pathname + window.location.search !== ruta) {
   window.history.replaceState(null, '', ruta)
 }
 
-// **`onUnhandledRequest: 'warn'` y no `'error'`**, al revés que en las pruebas.
+// **`onUnhandledFrame: 'warn'` y no `'error'`**, al revés que en las pruebas.
 // Ahí una petición sin handler es un defecto que hay que ver; acá el navegador
 // pide fuentes, íconos y el HMR de Vite, y romper con eso volvería el modo
 // inusable por ruido que no es nuestro.
 void worker
-  .start({ onUnhandledRequest: 'warn', quiet: true })
+  .start({ onUnhandledFrame: 'warn', quiet: true })
   .then(() => {
     // Se dice, y se dice fuerte. Alguien que abra esto sin saber puede creer que
     // está viendo el servicio real — y entonces «funciona» no significa nada.

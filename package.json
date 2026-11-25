@@ -68,16 +68,16 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.3.0",
-    "@vitest/ui": "^4.1.12",
+    "@vitest/ui": "^5.1.2",
     "jsdom": "^29.1.1",
-    "msw": "^2.15.0",
+    "msw": "^3.0.7",
     "openapi-typescript": "^7.13.0",
     "oxlint": "^1.80.0",
     "prettier": "^3.10.1",
     "tailwindcss": "^4.3.5",
     "typescript": "~5.9",
     "vite": "^8.3.8",
-    "vitest": "^4.1.12"
+    "vitest": "^5.1.2"
   },
   "msw": {
     "workerDirectory": [
