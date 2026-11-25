@@ -1187,6 +1187,25 @@ describe('un tamaño que no entra se bloquea · decisión humana del 2026-11-10'
     expect(await screen.findByRole('status')).toHaveTextContent('Se solapa con «Doce meses»')
     expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 6')
   })
+
+  it('elegir otro panel borra el aviso · y al volver no reaparece · 2026-11-25', async () => {
+    // **El borrado se decide en el render desde el 2026-11-25**, y antes era un
+    // efecto sobre `seleccionado`. Derivarlo —mostrar el aviso sólo si es del
+    // panel elegido— parecía equivalente y no lo es: al volver al panel, el
+    // aviso viejo reaparecería. Esta prueba fija eso.
+    base()
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+    await userEvent.click(screen.getByRole('button', { name: 'Ensanchar' }))
+    expect(await screen.findByText(/Se solapa con «Doce meses»/)).toBeInTheDocument()
+
+    await userEvent.click(panelDe('Doce meses'))
+    await userEvent.click(panelDe('Ventas'))
+
+    expect(screen.getByRole('button', { name: 'Ensanchar' })).toBeInTheDocument()
+    expect(screen.queryByText(/Se solapa con «Doce meses»/)).toBeNull()
+  })
 })
 
 describe('deshacer · el borrador se guarda solo', () => {
