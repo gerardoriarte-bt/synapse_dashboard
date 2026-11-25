@@ -1208,6 +1208,23 @@ describe('un tamaño que no entra se bloquea · decisión humana del 2026-11-10'
   })
 })
 
+describe('cambiar de pantalla vuelve arriba · 2026-10-06', () => {
+  it('abrir el editor deja el documento en el principio', async () => {
+    // «Componer» se aprieta al fondo de B1 y el lienzo abría a media grilla.
+    // Desde el 2026-11-25 la asignación vive en `volverArriba`, fuera del
+    // componente (ver `Builder.tsx`); esta prueba vigila que se siga llamando.
+    base()
+    montar()
+    try {
+      document.documentElement.scrollTop = 500
+      await abrirCanvas()
+      expect(document.documentElement.scrollTop).toBe(0)
+    } finally {
+      document.documentElement.scrollTop = 0
+    }
+  })
+})
+
 describe('deshacer · el borrador se guarda solo', () => {
   it('Deshacer y Rehacer vuelven el último cambio, ida y vuelta', async () => {
     base([conPaneles(['m-1', 1, 3])])
