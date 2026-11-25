@@ -583,6 +583,29 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-11-25 · QA con `db48310`, migrado
+
+**El backend desplegó y migró QA.** Medido: umbrales en `/config/blocks`,
+títulos en español, las 16 de rentabilidad con cifra —iguales a Snowflake de
+ese día; datos regeneró las vistas el 24 por la tarde— y crear reportes ya no
+da 500. **Overview quedó archivado en UA MX y en Terpel Combustibles** (agente,
+autorizado por el humano).
+
+**El reporte de prueba a `gerardo.riarte@buentipo.com` no salió**: se creó,
+validó y activó, y el programador no lo envió —`DD_REPORTS_ENABLED`, apagado
+por defecto—. Quedó **pausado**, para activarlo cuando lo enciendan. Las
+fuentes de sus respuestas citan «2026-01» en una respuesta de octubre:
+`reportPeriodFromSQL` toma el primer mes literal del SQL. Lo pide
+`docs/MENSAJE-2026-11-25-backend-qa-con-db48310.md`, con desplegar el front
+desde `7e673ba`, **y lo manda el humano**.
+
+**UA MX está en `America/Bogota` en QA**, no en hora de México. Con `tzdata`
+ya se puede cambiar; lo decide el humano.
+
+**La venta de la vista de rentabilidad ya parece cuadrar** con la de los
+paneles (unos 648 K en octubre); el gasto no (224 K contra 56 K). Lo confirma
+datos antes de mezclar.
+
 ### ⇩ ACÁ SE PARÓ · 2026-11-24 (noche) · Terpel en dos clientes, como dice datos
 
 **Datos entregó el catálogo de Terpel** (`RESPUESTA-2026-11-24-datos-catalogo-terpel.md`)
