@@ -583,6 +583,26 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-11-25 (tarde) · el catálogo de UA v4.1
+
+**Datos contestó con la v4.1** (`RESPUESTA-2026-11-25-datos-catalogo-ua-mx-v4.1.md`):
+**la venta ya cuadra** entre fuentes (648 106 en octubre), los supuestos están
+en la BASE, las cinco filas que faltaban están en QA con cifra, y trae los
+umbrales de 17 indicadores, ya traducidos a `thresholds` en
+`docs/AUDITORIA-2026-11-25-catalogo-ua-mx-v4.1.md` §5. Se cargan en los
+paneles cuando el front de `main` esté en QA.
+
+**El gasto no cuadra todavía**: «Inversión» lee `GROSS_SPEND` (56 K en
+octubre) y la BASE dice consolidado (`TOTAL_AD_SPEND`, 224 K); `roas_paid`,
+6,85 contra 5,73. **No se publican juntos `spend` y el MER** hasta que datos
+conteste. Dos mensajes, **los manda el humano**:
+`MENSAJE-2026-11-25-datos-catalogo-ua-mx-v4.1.md` y
+`MENSAJE-2026-11-25-backend-pauta-atribuida-ua.md` (las 8 de pauta
+atribuida). **Lo que sigue es esperar, no volver a pedirlo.**
+
+**Decisión humana del 2026-11-25: «la hora lo decide el usuario».** La zona
+horaria de un cliente es configuración suya; el front no la cambia.
+
 ### ⇩ ACÁ SE PARÓ · 2026-11-25 · QA con `db48310`, migrado
 
 **El backend desplegó y migró QA.** Medido: umbrales en `/config/blocks`,
