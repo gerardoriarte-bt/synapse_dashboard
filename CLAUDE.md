@@ -598,7 +598,8 @@ octubre) y la BASE dice consolidado (`TOTAL_AD_SPEND`, 224 K); `roas_paid`,
 conteste. Dos mensajes, **los manda el humano**:
 `MENSAJE-2026-11-25-datos-catalogo-ua-mx-v4.1.md` y
 `MENSAJE-2026-11-25-backend-pauta-atribuida-ua.md` (las 8 de pauta
-atribuida). **Lo que sigue es esperar, no volver a pedirlo.**
+atribuida), **enviados el 2026-11-25, los mandó el humano**. **Lo que sigue es
+esperar, no volver a pedirlo.**
 
 **Decisión humana del 2026-11-25: «la hora lo decide el usuario».** La zona
 horaria de un cliente es configuración suya; el front no la cambia.
@@ -617,7 +618,7 @@ por defecto—. Quedó **pausado**, para activarlo cuando lo enciendan. Las
 fuentes de sus respuestas citan «2026-01» en una respuesta de octubre:
 `reportPeriodFromSQL` toma el primer mes literal del SQL. Lo pide
 `docs/MENSAJE-2026-11-25-backend-qa-con-db48310.md`, con desplegar el front
-desde `7e673ba`, **y lo manda el humano**.
+desde `7e673ba`, **enviado el 2026-11-25, lo mandó el humano**.
 
 **UA MX está en `America/Bogota` en QA**, no en hora de México. Con `tzdata`
 ya se puede cambiar; lo decide el humano.
