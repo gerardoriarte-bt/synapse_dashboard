@@ -38,6 +38,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { PARAMETRO_DASHBOARD } from '../dashboardEnUrl'
 import { useCerrarSesion } from '../useCerrarSesion'
 import { useTemaGuardado } from '../useTemaGuardado'
+import { useNow } from '../useNow'
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
@@ -198,6 +199,10 @@ export function Builder() {
   }
   const cerrarSesion = useCerrarSesion()
   const [versionElegida, setVersion] = useState<string | null>(null)
+  /** El «ahora» con el que se dibujan los paneles del lienzo y la vista previa.
+   *  Acá arriba porque es un hook y abajo hay retornos tempranos · ver
+   *  `surfaces/useNow.ts`. */
+  const ahora = useNow()
 
   const tenants = useTenants()
   const lista = tenants.data ?? []
@@ -719,7 +724,6 @@ export function Builder() {
    *  fechas de las tablas del builder, no para el dibujo de un panel ajeno. */
   const clienteDeTrabajo = lista.find((t) => t.id === tenantActivo)
   const formatDelCliente = createFormat(clienteDeTrabajo?.locale || LOCALE_POR_DEFECTO)
-  const ahora = new Date()
   const rolDelLente = roles.data?.find((r) => r.id === rolDeDatos)
   const nombreDeGrafico = (id: string) => plots.data?.find((x) => x.id === id)?.nombre ?? id
   const ocultaParaElLente = (p: PanelDeBorrador) =>

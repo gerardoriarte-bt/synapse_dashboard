@@ -23,6 +23,7 @@
  *  colgando, que es el defecto que la línea de BASE tuvo con `ventana`.
  */
 import { useState } from 'react'
+import { useNow } from '../useNow'
 import { Accion } from '../../render/primitives/Accion'
 import { Label } from '../../render/primitives/Label'
 import type { ThreadGroup } from './threads'
@@ -64,7 +65,8 @@ export function ThreadRail({
 
   // Un solo `now` para todas las filas: dos llamadas distintas podrían caer a
   // los dos lados de la medianoche y dejar dos formatos en la misma lista.
-  const ahora = new Date()
+  // Sale de `useNow`, no del render · ver `surfaces/useNow.ts`.
+  const ahora = useNow()
 
   if (groups.length === 0) {
     return (

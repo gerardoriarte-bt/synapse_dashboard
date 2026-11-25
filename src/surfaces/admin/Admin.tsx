@@ -25,6 +25,7 @@
  */
 import { useEffect, useMemo, useState } from 'react'
 import { useTemaGuardado } from '../useTemaGuardado'
+import { useNow } from '../useNow'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useCerrarSesion } from '../useCerrarSesion'
 import {
@@ -203,6 +204,11 @@ export function Admin() {
   /** El «hoy» de la última verificación. **Fijo por montaje**: leer el reloj en
    *  cada render da una hora que cambia según cuándo se repinta. */
   const [ahora] = useState(() => new Date())
+  /** **El mes en curso de A5 sí avanza con el reloj**, a diferencia de `ahora`:
+   *  era `new Date()` en el render, y con la pantalla abierta al cambiar el mes
+   *  tiene que ofrecer el mes nuevo. El mes lo decide la zona DEL TENANT, en
+   *  `mesEnCurso`; esto es sólo el instante · ver `surfaces/useNow.ts`. */
+  const relojDelMes = useNow()
   // A5 · F4.24. La ruta llegó el 2026-09-25 con `1e080ee`.
   const fuentes = useFeeds(activo)
   /** **Lo pedido desde A5, y cuándo** · 2026-10-07. La carga contesta 202 y
@@ -400,7 +406,7 @@ export function Admin() {
           <CargarPeriodos
             key={activo ?? ''}
             {...(nombreDeTrabajo === undefined ? {} : { cliente: nombreDeTrabajo })}
-            mesActual={mesEnCurso(new Date(), lista.find((x) => x.id === activo)?.zonaHoraria ?? null)}
+            mesActual={mesEnCurso(relojDelMes, lista.find((x) => x.id === activo)?.zonaHoraria ?? null)}
             cargados={mesesCargados(corridas.data ?? [])}
             enCurso={mesesEnCurso(corridas.data ?? [])}
             {...(activo === null
