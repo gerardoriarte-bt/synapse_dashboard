@@ -583,6 +583,25 @@ nunca, ni cuando el código está mal.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-11-25 (noche) · UA v4.2, y otro commit sin publicar
+
+**Datos contestó con la v4.2** y está medido en
+`docs/AUDITORIA-2026-11-25-catalogo-ua-mx-v4.2.md`: `spend` es
+`TOTAL_AD_SPEND` y `roas_paid` es `ROAS_PAID` (5,73), el rebote de pauta da
+cifra, `SEMANTIC_DIRECTION` quedó limpio, `cm3_margin_pct` tiene fila, y su
+regla de bordes es la nuestra: **los umbrales de la v4.1 se cargan tal
+cual.** Quedan detalles del documento (`SPEND_PERF_PLATFORMS` no existe) y
+la base de `BUDGET_TARGET`.
+
+**El backend contestó con 79d2e68, que no está en el remoto** (sigue en
+`db48310`): las 8 de pauta atribuida y el período de las fuentes. Para el
+reporte falta `DD_REPORTS_ENABLED=true` en QA, que no es código.
+
+**Dos mensajes, los manda el humano**:
+`MENSAJE-2026-11-25-backend-79d2e68-y-gasto.md` (publicar y desplegar, y
+pasar `spend` y `roas_paid` a las columnas de datos) y
+`MENSAJE-2026-11-25-datos-catalogo-ua-mx-v4.2.md`.
+
 ### ⇩ ACÁ SE PARÓ · 2026-11-25 (tarde) · el catálogo de UA v4.1
 
 **Datos contestó con la v4.1** (`RESPUESTA-2026-11-25-datos-catalogo-ua-mx-v4.1.md`):
