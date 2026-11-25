@@ -1187,6 +1187,42 @@ describe('un tamaño que no entra se bloquea · decisión humana del 2026-11-10'
     expect(await screen.findByRole('status')).toHaveTextContent('Se solapa con «Doce meses»')
     expect(panelDe('Ventas').style.gridColumn).toBe('1 / span 6')
   })
+
+  it('elegir otro panel borra el aviso · y al volver no reaparece · 2026-11-25', async () => {
+    // **El borrado se decide en el render desde el 2026-11-25**, y antes era un
+    // efecto sobre `seleccionado`. Derivarlo —mostrar el aviso sólo si es del
+    // panel elegido— parecía equivalente y no lo es: al volver al panel, el
+    // aviso viejo reaparecería. Esta prueba fija eso.
+    base()
+    montar()
+    await abrirCanvas()
+    await userEvent.click(panelDe('Ventas'))
+    await userEvent.click(screen.getByRole('button', { name: 'Ensanchar' }))
+    expect(await screen.findByText(/Se solapa con «Doce meses»/)).toBeInTheDocument()
+
+    await userEvent.click(panelDe('Doce meses'))
+    await userEvent.click(panelDe('Ventas'))
+
+    expect(screen.getByRole('button', { name: 'Ensanchar' })).toBeInTheDocument()
+    expect(screen.queryByText(/Se solapa con «Doce meses»/)).toBeNull()
+  })
+})
+
+describe('cambiar de pantalla vuelve arriba · 2026-10-06', () => {
+  it('abrir el editor deja el documento en el principio', async () => {
+    // «Componer» se aprieta al fondo de B1 y el lienzo abría a media grilla.
+    // Desde el 2026-11-25 la asignación vive en `volverArriba`, fuera del
+    // componente (ver `Builder.tsx`); esta prueba vigila que se siga llamando.
+    base()
+    montar()
+    try {
+      document.documentElement.scrollTop = 500
+      await abrirCanvas()
+      expect(document.documentElement.scrollTop).toBe(0)
+    } finally {
+      document.documentElement.scrollTop = 0
+    }
+  })
 })
 
 describe('deshacer · el borrador se guarda solo', () => {

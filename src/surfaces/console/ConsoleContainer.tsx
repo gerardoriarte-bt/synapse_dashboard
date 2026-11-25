@@ -27,6 +27,7 @@ import { blockTable } from '../../catalog/blocks'
 import { plotTable } from '../../catalog/plots'
 import type { PlotProblem } from '../../catalog/plots'
 import { useTemaGuardado } from '../useTemaGuardado'
+import { useNow } from '../useNow'
 import { preloadBodies } from '../../render/bodies/registry'
 import { createFormat, LOCALE_POR_DEFECTO } from '../../render/format'
 import { currentTheme } from '../../tokens/theme'
@@ -76,6 +77,9 @@ export function ConsoleContainer() {
    *  caso que dejaría dos hojas abiertas, y con dos el Escape cierra una sola y el
    *  usuario no sabe cuál. La exclusión se escribe en los dos manejadores, abajo. */
   const [drillingPanelId, setDrillingPanelId] = useState<string | null>(null)
+  /** El «ahora» de la hoja de detalle · era `new Date()` en la prop, leído en
+   *  cada render. Ver `surfaces/useNow.ts`. */
+  const ahora = useNow()
 
   const context = useMe()
   /** **El agente del chat que eligió el admin** · 2026-10-06. Vive acá y no en
@@ -617,7 +621,7 @@ export function ConsoleContainer() {
         payload={payloadWithParams(drillingPanel.id)}
         periodo={activePeriod.id}
         format={format}
-        now={new Date()}
+        now={ahora}
         onClose={() => setDrillingPanelId(null)}
         // **Cierra ésta y abre el chat: no se apilan.** Y sin este manejador el
         // botón del pie no se pintaría — la regla del CTA muerto.

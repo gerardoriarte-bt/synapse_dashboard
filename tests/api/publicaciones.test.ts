@@ -320,7 +320,7 @@ describe('adminApi.publicaciones · va a la ruta de `dashboards`, no a la de `la
      *  una sola vez. Con la ruta de `layouts` B6 pintaría una tarjeta sola y quien
      *  la mire creería que el servicio está pobre — sin que nada falle.
      *
-     *  `onUnhandledRequest: 'error'` hace el resto: si la ruta cambia, la petición
+     *  `onUnhandledFrame: 'error'` hace el resto: si la ruta cambia, la petición
      *  no tiene handler y la prueba lo dice con la URL. */
     server.use(
       http.get(`${API}/admin/dashboards/${DASHBOARD}/publications`, () =>
@@ -442,7 +442,7 @@ describe('usePublications · la guarda de `enabled`, que evita pedir con el id v
    *  saber el dashboard —sale de `version.dashboardId`, que llega con el detalle—,
    *  así que el caso ocurre en el arranque, no en el borde.
    *
-   *  `onUnhandledRequest: 'error'` es lo que lo hace visible: si se pidiera con el
+   *  `onUnhandledFrame: 'error'` es lo que lo hace visible: si se pidiera con el
    *  id vacío, no hay handler para esa URL y la prueba lo diría. */
   const envolver = (qc: QueryClient) => ({
     wrapper: ({ children }: { children: React.ReactNode }) =>

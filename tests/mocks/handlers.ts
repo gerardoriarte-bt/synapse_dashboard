@@ -226,7 +226,7 @@ export const handlers = [
   //
   // La consola le pregunta por CADA panel de la pestaña para decidir si pinta
   // «Ver detalle» —un CTA sin manejador no se pinta—, así que sin este handler
-  // toda prueba que monte el contenedor se cae: `onUnhandledRequest: 'error'`.
+  // toda prueba que monte el contenedor se cae: `onUnhandledFrame: 'error'`.
   //
   // **`supported: false`, que es el lado seguro.** El piso es «el contexto
   // mínimo con el que la app arranca», y sin saber si una métrica se puede

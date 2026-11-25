@@ -38,6 +38,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { PARAMETRO_DASHBOARD } from '../dashboardEnUrl'
 import { useCerrarSesion } from '../useCerrarSesion'
 import { useTemaGuardado } from '../useTemaGuardado'
+import { useNow } from '../useNow'
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
@@ -174,6 +175,21 @@ const AUTOGUARDADO_MS = 3000
  *  escribir una nota de lectura deja uno por tecla. */
 const HISTORIAL_MAXIMO = 100
 
+/** **Vuelve el documento arriba** · al cambiar de pantalla, ver `setPantalla`.
+ *
+ *  **Afuera del componente a propósito** · 2026-11-25. Escrita adentro, `oxlint`
+ *  1.93 marcaba la asignación (`react(immutability)`: «no se modifica un valor
+ *  definido fuera del componente»). **Es un falso positivo**: `setPantalla` se
+ *  llama sólo desde manejadores —clics, `onSuccess` de una mutación—, nunca en
+ *  el render, y tocar el DOM desde un evento es lo que React espera. La regla
+ *  no puede saber quién llama a una función que vive en el render, así que la
+ *  asignación se muda a donde se ve que no es parte de él. Un efecto sobre la
+ *  ruta —lo que sugiere la regla— cambiaría cuándo pasa: también con «atrás»,
+ *  y no al apretar la pantalla en la que ya se está. */
+function volverArriba() {
+  document.documentElement.scrollTop = 0
+}
+
 export function Builder() {
   const navegar = useNavigate()
   // El tema se escribe igual que en la consola · `useSaveTheme` invalida `me`.
@@ -194,10 +210,14 @@ export function Builder() {
   const setPantalla = (p: PantallaId) => {
     const destino = PANTALLAS.find((x) => x.id === p)
     if (destino !== undefined && destino.ruta !== pathname) void navegar(destino.ruta)
-    document.documentElement.scrollTop = 0
+    volverArriba()
   }
   const cerrarSesion = useCerrarSesion()
   const [versionElegida, setVersion] = useState<string | null>(null)
+  /** El «ahora» con el que se dibujan los paneles del lienzo y la vista previa.
+   *  Acá arriba porque es un hook y abajo hay retornos tempranos · ver
+   *  `surfaces/useNow.ts`. */
+  const ahora = useNow()
 
   const tenants = useTenants()
   const lista = tenants.data ?? []
@@ -719,7 +739,6 @@ export function Builder() {
    *  fechas de las tablas del builder, no para el dibujo de un panel ajeno. */
   const clienteDeTrabajo = lista.find((t) => t.id === tenantActivo)
   const formatDelCliente = createFormat(clienteDeTrabajo?.locale || LOCALE_POR_DEFECTO)
-  const ahora = new Date()
   const rolDelLente = roles.data?.find((r) => r.id === rolDeDatos)
   const nombreDeGrafico = (id: string) => plots.data?.find((x) => x.id === id)?.nombre ?? id
   const ocultaParaElLente = (p: PanelDeBorrador) =>

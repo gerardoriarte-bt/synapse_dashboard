@@ -189,7 +189,19 @@ export function Canvas({
   /** Por qué no se aplicó el último cambio de tamaño · se dice junto a los
    *  controles del panel, que es donde se miró. */
   const [aviso, setAviso] = useState<{ indice: number; texto: string } | null>(null)
-  useEffect(() => setAviso(null), [seleccionado])
+  /** **Elegir otro panel borra el aviso** · y se decide en el render, no en un
+   *  efecto · 2026-11-25. Era `useEffect(() => setAviso(null), [seleccionado])`
+   *  y `oxlint` lo marcaba (`set-state-in-effect`): el aviso viejo se pintaba
+   *  una vez con la selección nueva y recién después se borraba. **No se puede
+   *  derivar** comparando el panel del aviso con el elegido: volver al panel
+   *  del aviso lo haría reaparecer, y antes no reaparecía. Se guarda la
+   *  selección del render anterior —la forma que React documenta, la misma de
+   *  `ConsoleContainer`— y React vuelve a renderizar antes de pintar. */
+  const [seleccionPrevia, setSeleccionPrevia] = useState(seleccionado)
+  if (seleccionPrevia !== seleccionado) {
+    setSeleccionPrevia(seleccionado)
+    setAviso(null)
+  }
 
   const colocaciones = disposicion(panels)
   const libres = huecos(

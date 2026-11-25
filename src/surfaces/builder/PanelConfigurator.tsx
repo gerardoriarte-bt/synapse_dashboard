@@ -85,6 +85,7 @@
  *  gráfico», desde el 2026-10-07 en la columna «Cómo se ve».
  */
 import type { ReactNode } from 'react'
+import { useNow } from '../useNow'
 import { Label } from '../../render/primitives/Label'
 import { Note } from '../../render/primitives/Note'
 import { Ayuda } from '../../render/primitives/Ayuda'
@@ -603,6 +604,8 @@ function ComoSeVe({
   onComoSeVe: (tipo: string, grafico: ChartId | undefined) => void
   onIrAMetrica: () => void
 }) {
+  // Antes del retorno temprano: es un hook. Ver `surfaces/useNow.ts`.
+  const ahora = useNow()
   if (metrica === undefined) {
     return (
       <div className="flex flex-col items-start gap-3">
@@ -612,7 +615,6 @@ function ComoSeVe({
     )
   }
   const tipos = bloques.filter((b) => b.tipo !== 'blocked' && b.formasAceptadas.includes(metrica.forma))
-  const ahora = new Date()
   const conDato = payload !== undefined && hasValue(payload)
   // **Unidades distintas en un solo eje** · F5.25: se avisa y se ofrece el
   // gráfico que les da una escala a cada una. Ver `unidadesMezcladas`.
