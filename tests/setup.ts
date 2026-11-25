@@ -13,12 +13,17 @@ export const TEST_SIZE = { width: 600, height: 300 }
 
 /* ── MSW ──────────────────────────────────────────────────────────────────────
  *
- * `onUnhandledRequest: 'error'` no es rigor decorativo. Sin él, una petición sin
+ * `onUnhandledFrame: 'error'` no es rigor decorativo. Sin él, una petición sin
  * handler se queda colgada y la prueba falla por timeout, que se lee igual que
  * un bug de la implementación. Con él dice exactamente qué URL nadie mockeó.
+ *
+ * **Hasta msw 2 se llamaba `onUnhandledRequest`** · 2026-11-25. msw 3 lo
+ * renombró porque también cubre WebSocket, y conserva las tres estrategias:
+ * medido ese día, con `'error'` el `fetch` se rechaza sin salir a la red y
+ * nombra la URL; con `'warn'` la petición sí sale.
  */
 beforeAll(() => {
-  server.listen({ onUnhandledRequest: 'error' })
+  server.listen({ onUnhandledFrame: 'error' })
 })
 
 /** Entre pruebas se vuelve a los handlers base: un `server.use()` que se filtra

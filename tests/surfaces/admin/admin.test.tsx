@@ -537,7 +537,7 @@ describe('A5 · cargar meses atraviesa la cadena entera · 2026-10-07', () => {
         return ok({ started: true, trigger: 'manual', tenant_id: params.id, role: 'admin', periods: ['2026-06'] })
       }),
     )
-    montar()
+    const { unmount } = montar()
     await screen.findByRole('button', { name: /^Under Armour México( · |$)/ })
     await userEvent.click(screen.getByRole('button', { name: 'Salud de feeds' }))
 
@@ -552,6 +552,13 @@ describe('A5 · cargar meses atraviesa la cadena entera · 2026-10-07', () => {
     // junio pasa a «cargado» y el aviso se va.
     expect(await screen.findByRole('button', { name: /jun.*· cargado/i }, { timeout: 8000 })).toBeInTheDocument()
     expect(screen.queryByText(/Cargando 2026-06/)).toBeNull()
+    // **Se desmonta ANTES de devolver el foco** · 2026-11-25. Devolverlo con la
+    // pantalla montada es un evento de foco: TanStack vuelve a pedir las cinco
+    // consultas de `t-1` —agentes, feeds, corridas, usuarios, layouts— y con
+    // msw 3 esas peticiones se resuelven contra los handlers de la prueba
+    // SIGUIENTE, que cuenta exactamente los pedidos a `t-1`. Con msw 2, en este
+    // mismo orden, no llegaban a esos handlers y la prueba pasaba.
+    unmount()
     focusManager.setFocused(undefined)
     vi.useRealTimers()
   })
