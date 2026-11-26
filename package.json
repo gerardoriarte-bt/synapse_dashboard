@@ -37,6 +37,7 @@
     "afirmaciones": "python3 tools/afirmaciones.py",
     "copy-producto": "python3 tools/copy-producto.py",
     "mocks-fuera": "python3 tools/mocks-fuera.py",
+    "guardia": "python3 tools/guardia.py --prueba",
     "backend-drift": "python3 tools/backend-drift.py",
     "humo": "python3 tools/humo.py",
     "verify": "python3 tools/gate.py",
