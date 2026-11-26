@@ -597,10 +597,12 @@ la base de `BUDGET_TARGET`.
 `db48310`): las 8 de pauta atribuida y el período de las fuentes. Para el
 reporte falta `DD_REPORTS_ENABLED=true` en QA, que no es código.
 
-**Dos mensajes, los manda el humano**:
+**Dos mensajes, enviados el 2026-11-26, los mandó el humano**:
 `MENSAJE-2026-11-25-backend-79d2e68-y-gasto.md` (publicar y desplegar, y
 pasar `spend` y `roas_paid` a las columnas de datos) y
-`MENSAJE-2026-11-25-datos-catalogo-ua-mx-v4.2.md`.
+`MENSAJE-2026-11-25-datos-catalogo-ua-mx-v4.2.md`. **Lo que sigue es
+esperar, no volver a pedirlo.** Medido el 2026-11-26 a la mañana: el remoto
+sigue en `db48310`.
 
 ### ⇩ ACÁ SE PARÓ · 2026-11-25 (tarde) · el catálogo de UA v4.1
 
