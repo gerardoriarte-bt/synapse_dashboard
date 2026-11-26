@@ -289,6 +289,7 @@ queda como está: ahí casi todo es dato con su rótulo.
 | `npm run plan` | regenera `plan-tareas.csv` y la página desde `plan-de-trabajo.md` |
 | `npm run plan:diff <export.csv>` | compara un export de la plataforma de seguimiento contra el plan |
 | `npm run mocks-fuera` | ningún archivo de `src/` importa un mock · F0.8 |
+| `npm run guardia` | la guardia de comandos destructivos sigue frenando · **la guardia corre como hook, esto la prueba** |
 | `npm run afirmaciones` | lo citable de `docs/` se verifica · método+ruta, commits, tareas **y que un mensaje no prometa adjuntos** |
 | `SYNAPSE_EMAIL=… SYNAPSE_PASSWORD=… npm run humo` | el servicio real == los dos yaml transcriptos |
 | `docker compose -f dev/postgres/docker-compose.yml up -d` | **la base local** · desde el 2026-09-22 · ver `dev/postgres/README.md` |
@@ -580,6 +581,35 @@ el 2026-08-20, en el repositorio archivado, el colapso responsive violaba §3.1 
 tres formas distintas **con 184 pruebas en verde**, porque estaban escritas
 mirando el código. Una prueba escrita desde la implementación no puede fallar
 nunca, ni cuando el código está mal.
+
+## Lo que no se borra · la guardia, desde el 2026-11-26
+
+**El 2026-11-26 el agente borró con `--force` 13 worktrees de agentes**, 10 de
+sesiones anteriores, al limpiar después de mergear #148. Las ramas quedaron;
+lo que no estuviera commiteado se perdió, y **no se sabe si había algo**.
+Git tenía su protección —sin `--force` se niega a borrar un worktree con
+cambios— y la bandera la apagó.
+
+**Desde ese día lo frena `tools/guardia.py`**, un hook `PreToolUse` de Bash en
+`.claude/settings.json`, que vale para esta sesión, las demás y los
+subagentes. Frena:
+
+- **trabajo sin commitear**: `worktree remove --force`, y `reset --hard`,
+  `checkout -- .`, `restore` y `clean -f` **cuando de verdad hay cambios**;
+- **commits**: `branch -D`, `branch -f`, `push --force` sin `--with-lease`,
+  `stash drop|clear`;
+- **lo que git no guarda o es la memoria del proyecto**: `rm` sobre `docs/`,
+  `design/`, `contracts/`, `CLAUDE.md`, los planes, los worktrees y la memoria
+  del agente. Lo versionado se borra con `git rm`, que deja el historial.
+
+**La salida es el humano, con `! <comando>`**, y es a propósito: una guardia
+que el agente puede apagar es la bandera `--force` otra vez. Donde git ya se
+protege solo —`worktree remove` y `branch -d` sin forzar— la guardia sólo
+prohíbe apagar esa protección.
+
+**Si frena, no se busca otra forma de hacer lo mismo.** Se mira qué se
+perdería, se le cuenta al humano y decide él. `npm run guardia` —en la
+puerta— comprueba que siga frenando.
 
 ## Dónde retomar
 
