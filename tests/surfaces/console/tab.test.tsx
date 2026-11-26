@@ -157,17 +157,14 @@ describe('cinco paneles, cinco tipos, una pestaña', () => {
   })
 
   it('cada cuerpo dibuja lo suyo · cinco tipos, cinco cuerpos', async () => {
-    // **El timeout es más largo a propósito.** Cinco cuerpos son cinco chunks
-    // diferidos que bajan en paralelo, y el segundo por defecto de
-    // testing-library no alcanza. Es una propiedad de la prueba y no del
-    // producto: con un panel, `states.test.tsx` resuelve sin tocar nada.
-    const lento = { timeout: 4000 }
+    // Cinco cuerpos son cinco chunks diferidos. Ya no hace falta alargar la
+    // espera acá: `tests/setup.ts` los precarga y fija la espera en 5 s.
     laPestana()
     montar()
-    expect(await screen.findByText('USD 4.28M', {}, lento)).toBeInTheDocument()
-    expect(await screen.findByText('El inventario cubre 31 días.', {}, lento)).toBeInTheDocument()
-    expect(await screen.findByText('Polanco', {}, lento)).toBeInTheDocument()
-    expect(await screen.findByText(/talla m/i, {}, lento)).toBeInTheDocument()
+    expect(await screen.findByText('USD 4.28M')).toBeInTheDocument()
+    expect(await screen.findByText('El inventario cubre 31 días.')).toBeInTheDocument()
+    expect(await screen.findByText('Polanco')).toBeInTheDocument()
+    expect(await screen.findByText(/talla m/i)).toBeInTheDocument()
   })
 
   it('la grilla los coloca donde dice el LAYOUT, no el orden del arreglo', async () => {
@@ -215,7 +212,7 @@ describe('fallo parcial · un panel roto no arrastra a los otros', () => {
     })
     montar()
 
-    expect(await screen.findByText('USD 4.28M', {}, { timeout: 4000 })).toBeInTheDocument()
+    expect(await screen.findByText('USD 4.28M')).toBeInTheDocument()
     expect(screen.getByText(/El almacén no respondió/)).toBeInTheDocument()
     // Y el shell del que falló sigue entero: título y BASE.
     expect(screen.getByRole('heading', { name: 'Detalle por tienda' })).toBeInTheDocument()
