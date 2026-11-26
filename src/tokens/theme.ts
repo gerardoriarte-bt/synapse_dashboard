@@ -17,13 +17,6 @@ export function currentTheme(): Theme {
   return document.documentElement.getAttribute(ROOT) === 'light' ? 'light' : 'dark'
 }
 
-/** Invierte el tema y devuelve el que quedó. */
-export function toggleTheme(): Theme {
-  const next: Theme = currentTheme() === 'dark' ? 'light' : 'dark'
-  applyTheme(next)
-  return next
-}
-
 // La PERSISTENCIA no vive acá y es a propósito · §2.4 de design.md: «el tema es
 // preferencia de usuario, no de tenant. Se persiste por usuario.» O sea contra
 // el perfil, no contra el navegador — un localStorage haría que la misma cuenta

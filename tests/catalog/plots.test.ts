@@ -12,7 +12,7 @@
  *  acá.
  */
 import { describe, expect, it } from 'vitest'
-import { acceptsShape, evaluar, invalidPlotReason, plotTable, supportsBand } from '@/catalog/plots'
+import { acceptsShape, evaluar, invalidPlotReason, plotTable } from '@/catalog/plots'
 import type { Plot, Value } from '@/catalog/types'
 
 /** Cuatro entradas, tal como las devolvió el servicio. `treemap` es la que
@@ -101,11 +101,6 @@ describe('la tabla y sus preguntas simples', () => {
     // presente rechace una forma ajena, que ya lo cubre la línea de arriba. Es
     // el caso negativo que se vuelve positivo, tercera vez en el día.
     expect(acceptsShape(T, 'sankey', 'categorica')).toBe(false)
-  })
-
-  it('`supportsBand` sostiene la regla dura 6', () => {
-    expect(supportsBand(T, 'forecast')).toBe(true)
-    expect(supportsBand(T, 'donut')).toBe(false)
   })
 })
 

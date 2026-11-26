@@ -4,7 +4,7 @@
  *  la URL de cada vista. Aparte para que se prueben sin montar nada y para
  *  que la ruta no viva como texto dentro de un componente.
  */
-export const RUTA_DE_REPORTES = '/admin/reportes'
+const RUTA_DE_REPORTES = '/admin/reportes'
 
 export type Vista =
   | { tipo: 'lista' }

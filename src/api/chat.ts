@@ -337,7 +337,7 @@ function traducir(
  *
  *  `null` es «no se pinta»: un valor que no se adapta, o una familia o capa que
  *  el contrato no conoce. */
-export function datoDesdeTrama(d: WireChatFrameData): Extract<ChatEvent, { tipo: 'dato' }> | null {
+function datoDesdeTrama(d: WireChatFrameData): Extract<ChatEvent, { tipo: 'dato' }> | null {
   // **El gráfico del agente** · 2026-10-07. Llega como `raw` con el spec
   // Vega-Lite adentro y se tiraba en silencio. Ver `vegaLite.ts`.
   const interno = d.shape === 'raw' && typeof d.data === 'object' && d.data !== null

@@ -120,5 +120,3 @@ export function problemaDeUmbrales(x: unknown): string | null {
   if (o['bien'] === o['mal']) return 'los dos cortes son iguales · no se puede leer la dirección'
   return null
 }
-
-export const esUmbrales = (x: unknown): x is Umbrales => problemaDeUmbrales(x) === null

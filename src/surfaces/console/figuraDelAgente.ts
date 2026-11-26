@@ -31,7 +31,7 @@ export function lineaDeEjes(ejes: EjesDelGrafico | undefined): string | null {
 }
 
 /** Las fechas `YYYY-MM-DD` que el valor reparte, en cualquier forma. */
-export function fechasDe(valor: Value): string[] {
+function fechasDe(valor: Value): string[] {
   const todas: string[] = (() => {
     switch (valor.forma) {
       case 'serieTemporal':
@@ -115,14 +115,14 @@ const NOMBRE_SQL = /^[A-Za-z0-9_]+$/
  *  `unit`, y nada más. */
 const IDENTIFICADOR = /^(id|.+_id|id_.+)$/i
 
-export function esIdentificador(clave: string): boolean {
+function esIdentificador(clave: string): boolean {
   return IDENTIFICADOR.test(clave)
 }
 
 /** «PRODUCT_ID» → «Product id». **Es presentación, no copy**: saca los guiones
  *  bajos y deja la frase en minúscula con la primera en mayúscula. No traduce
  *  ni elige palabras: «GENERO» sigue siendo «Genero». */
-export function humanizarColumna(nombre: string): string {
+function humanizarColumna(nombre: string): string {
   const frase = nombre
     .split('_')
     .filter((p) => p !== '')

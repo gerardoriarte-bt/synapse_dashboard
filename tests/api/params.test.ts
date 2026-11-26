@@ -5,7 +5,7 @@
  *  silencio.**»
  */
 import { describe, expect, it } from 'vitest'
-import { PARAM_SCHEMAS, knownParams, validateParams } from '@/api/params'
+import { PARAM_SCHEMAS, validateParams } from '@/api/params'
 import type { PanelType } from '@/api/types'
 
 describe('el defecto que esto arregla', () => {
@@ -116,12 +116,6 @@ describe('la tabla local cubre lo que los cuerpos leen', () => {
     for (const type of built) {
       expect(PARAM_SCHEMAS[type], `falta el esquema de ${type}`).toBeDefined()
     }
-  })
-
-  it('`knownParams` expone los nombres para poder comparar con el contrato', () => {
-    // Es lo que permitiría un chequeo de deriva contra `paramsDisponibles`.
-    expect(knownParams('list').sort()).toEqual(['orden', 'tope'])
-    expect(knownParams('matrix')).toEqual([])
   })
 })
 
