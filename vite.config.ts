@@ -85,6 +85,13 @@ export default defineConfig({
 
     setupFiles: ['tests/setup.ts'],
 
+    /* **Quince segundos por prueba** · 2026-11-26, junto con la espera de 5 s
+     * de `findBy*` en `tests/setup.ts`. Con los 5 s por defecto de vitest, un
+     * `findBy*` que tarda bajo carga agotaba la PRUEBA antes que su propia
+     * espera, y el error decía «timed out» sin nombrar qué se buscaba. Con
+     * margen, la que falla es la espera, que sí lo dice. */
+    testTimeout: 15000,
+
     /* **El huso de las pruebas es fijo** · 2026-11-09. Lo que se PRESENTA —la
      * hora de una publicación, «HACE 3 H»— sale del huso del navegador, a
      * propósito, y en las pruebas el navegador es la máquina. En un Mac en

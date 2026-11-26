@@ -41,7 +41,37 @@ afterAll(() => {
 if (typeof document !== 'undefined') {
   await import('@testing-library/jest-dom/vitest')
 
-  const { cleanup } = await import('@testing-library/react')
+  const { cleanup, configure } = await import('@testing-library/react')
+
+  /** **Cinco segundos de espera, para todas** · mejora #3 de
+   *  `docs/AUDITORIA-2026-11-25-calidad-de-codigo.md`, 2026-11-26.
+   *
+   *  El segundo por defecto de testing-library alcanza con la máquina libre y
+   *  no con la máquina cargada —otra corrida en paralelo, el build—, y la
+   *  prueba que se pasaba de largo no fallaba por un defecto sino por la
+   *  carga. Se parcheaba de a una (`lento = { timeout: 4000 }` en
+   *  `tab.test.tsx`); acá se fija una vez. Una espera más larga no esconde un
+   *  defecto: `findBy*` vuelve en cuanto aparece lo que busca, así que sólo
+   *  cuesta tiempo cuando la prueba ya iba a fallar. */
+  configure({ asyncUtilTimeout: 5000 })
+
+  /** **Los cuerpos de panel, precargados antes de la primera prueba.**
+   *
+   *  Cada cuerpo es un `import()` de `LOADERS` · §8, un chunk por cuerpo. En
+   *  la prueba eso significa que el PRIMER panel de cada tipo transforma su
+   *  módulo —y los plots que arrastra— DENTRO de la espera del `findBy*`, y
+   *  con carga eso solo se comía el segundo. Precargados acá, `lazy` encuentra
+   *  el módulo ya resuelto y la espera mide lo que la prueba quiere medir.
+   *
+   *  **No toca el build**: `registry.ts` no cambia y los cuerpos siguen en sus
+   *  chunks, que es lo que verifica `carga-diferida`. Va sólo con DOM porque
+   *  los archivos `node` no montan cuerpos, y transformar quince módulos ahí
+   *  sería arranque regalado. */
+  const { LOADERS } = await import('../src/render/bodies/registry')
+  beforeAll(async () => {
+    await Promise.all(Object.values(LOADERS).map((cargar) => cargar()))
+  })
+
   afterEach(() => {
     cleanup()
     localStorage.clear()
