@@ -646,7 +646,7 @@ const DIBUJABLES: readonly Shape[] = [
 ]
 
 /** Un bloque cuyo `type` no es uno de los quince **no entra a la tabla**, y sale
- *  con su razón. Si entrara, `acceptsShape` y `spanInRange` opinarían sobre un
+ *  con su razón. Si entrara, `acceptsShape` e `invalidReason` opinarían sobre un
  *  tipo que ningún cuerpo puede dibujar — y el builder lo ofrecería. */
 export type AdaptedBlocks = { blocks: Block[]; rejected: RejectedMetric[] }
 
@@ -688,7 +688,7 @@ export function adaptBlocks(rows: readonly WireBlock[]): Block[] {
   return adaptBlocksConRechazo(rows).blocks
 }
 
-export function adaptBlocksConRechazo(rows: readonly WireBlock[]): AdaptedBlocks {
+function adaptBlocksConRechazo(rows: readonly WireBlock[]): AdaptedBlocks {
   const blocks: Block[] = []
   const rejected: RejectedMetric[] = []
   for (const b of rows) {

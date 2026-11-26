@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { blockTable } from '@/catalog/blocks'
-import { porPestana, validarBorrador } from '@/surfaces/builder/validar'
+import { validarBorrador } from '@/surfaces/builder/validar'
 import type { Block, Metric } from '@/api/types'
 import type { TabParaGuardar } from '@/api/admin'
 
@@ -186,13 +186,5 @@ describe('la dirección · qué pestaña y qué panel', () => {
     expect(p).toHaveLength(1)
     expect(p[0]?.tab).toBe(1)
     expect(p[0]?.panel).toBe(0)
-  })
-
-  it('porPestana cuenta por índice', () => {
-    const borrador = [
-      { ...tab([panel({ metricId: '' }), panel({ metricId: 'm-cat' })]), pregunta: '' },
-      tab([panel()]),
-    ]
-    expect(porPestana(validarBorrador(borrador, tabla, metrics))).toEqual(new Map([[0, 3]]))
   })
 })

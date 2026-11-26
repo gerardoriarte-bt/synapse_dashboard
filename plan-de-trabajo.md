@@ -2954,6 +2954,7 @@ desglosado en diez tareas.
 
 #### F1.3 ✅ `catalog/blocks.ts` — validadores de composición
 **Descripción.** `acceptsShape`, `spanInRange`, `invalidReason` sobre la tabla de `/config/blocks`.
+**Nota del 2026-11-26.** `spanInRange` se borró: nadie la llamaba, y el rango de spans lo comprueba `invalidReason`, que además dice por qué. Ver §2.1 de `docs/AUDITORIA-2026-11-25-calidad-de-codigo.md`.
 **Criterio de aceptación.** ✅ `invalidReason` devuelve la razón y no un booleano, porque el builder tiene que **mostrarla**: «un bloque gauge no sabe dibujar la forma serieTemporal» ayuda, «composición inválida» no.
 
 #### F1.4 ✅ `catalog/types.ts` — tipos del catálogo
@@ -3510,6 +3511,11 @@ estructura y no un chequeo aparte**: las únicas entradas cuyas `formas` incluye
 `serieConBanda` son las tres que declaran `soportaBanda: true`, así que la
 comprobación de forma ya lo cierra. `supportsBand` queda exportada para el
 selector de F4.21, que sí necesita preguntarlo antes de ofrecer.
+
+**Nota del 2026-11-26.** `supportsBand` se borró: F4.21 se construyó sin
+llamarla —le alcanza con `acceptsShape`, por la misma razón estructural de
+arriba— y sólo la usaba su prueba. Ver §2.2 de
+`docs/AUDITORIA-2026-11-25-calidad-de-codigo.md`.
 
 **Tres decisiones del camino, y las tres son «no apagar de más»:**
 
@@ -6530,6 +6536,12 @@ decir a dónde ir.
 `disposicion.ts`, `grupos.ts`, `Library`, `Canvas`, más `reubicarPanel` y
 `redimensionarPanel` en el borrador. **656 pruebas**, cuarenta y siete nuevas,
 veintiuna mutaciones muertas.
+
+**Nota del 2026-11-26.** `grupos.ts` y `redimensionarPanel` se borraron con sus
+pruebas: la biblioteca agrupa por familia del catálogo desde `fb54f91`, que
+quitó el único import de `grupos.ts`, y el lienzo redimensiona con
+`cambioDeTamano` de `disposicion.ts`. Ver §2.2 de
+`docs/AUDITORIA-2026-11-25-calidad-de-codigo.md`.
 
 **La propuesta se aprobó y se revisó contra el `.pen`** —
 `docs/PROPUESTA-CANVAS-2026-09-15.md`—, con una condición del humano: «debe ser

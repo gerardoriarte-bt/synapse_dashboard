@@ -47,23 +47,6 @@ export function soleTypeFor(table: BlockTable, shape: Shape): PanelType | null {
   return tipos.length === 1 ? (tipos[0] as Block).tipo : null
 }
 
-/** ¿Los spans caen en el rango declarado del tipo? La otra mitad. */
-export function spanInRange(
-  table: BlockTable,
-  type: PanelType,
-  colSpan: number,
-  rowSpan: number,
-): boolean {
-  const b = table.get(type)
-  if (b === undefined) return false
-  return (
-    colSpan >= b.colSpanMin &&
-    colSpan <= b.colSpanMax &&
-    rowSpan >= b.rowSpanMin &&
-    rowSpan <= b.rowSpanMax
-  )
-}
-
 /** Por qué un panel no es válido, en la lengua del producto. `null` si lo es.
  *
  *  Devuelve la razón y no un booleano porque el builder tiene que poder

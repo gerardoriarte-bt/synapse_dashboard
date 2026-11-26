@@ -123,11 +123,3 @@ export function validarBorrador(
 
   return out
 }
-
-/** Cuántos problemas tiene cada pestaña, por índice. Para marcarla sin recorrer
- *  la lista entera en cada render de fila. */
-export function porPestana(problemas: readonly ProblemaLocal[]): Map<number, number> {
-  const cuenta = new Map<number, number>()
-  for (const p of problemas) cuenta.set(p.tab, (cuenta.get(p.tab) ?? 0) + 1)
-  return cuenta
-}

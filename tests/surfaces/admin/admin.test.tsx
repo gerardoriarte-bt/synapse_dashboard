@@ -500,7 +500,7 @@ describe('A5 · cargar meses atraviesa la cadena entera · 2026-10-07', () => {
    *  `CargarPeriodos` → `Admin` → `useLoadPeriods` → `POST`. Cada salto usa el
    *  spread condicional, y una prop mal nombrada compila y deja un botón que se
    *  ve igual que uno que funciona. La prueba de la pantalla sola no lo ve. */
-  it('elegir junio y cargar manda `POST /admin/tenants/t-1/materialize` con junio', { timeout: 15000 }, async () => {
+  it('elegir junio y cargar manda `POST /admin/tenants/t-1/materialize` con junio', async () => {
     // **Sólo `Date` es falso**: los meses ofrecidos salen del reloj, y sin
     // fijarlo esta prueba se rompería sola el 1 de enero. Los temporizadores
     // siguen reales, que es lo que `userEvent` y el sondeo necesitan.
@@ -550,7 +550,9 @@ describe('A5 · cargar meses atraviesa la cadena entera · 2026-10-07', () => {
 
     // **Y termina solo**: el historial se vuelve a pedir mientras falte algo,
     // junio pasa a «cargado» y el aviso se va.
-    expect(await screen.findByRole('button', { name: /jun.*· cargado/i }, { timeout: 8000 })).toBeInTheDocument()
+    // El sondeo es de 3 s (`useRuns` de `api/hooks.ts`), y la espera de 5 s de
+    // `tests/setup.ts` lo cubre sin alargarla acá.
+    expect(await screen.findByRole('button', { name: /jun.*· cargado/i })).toBeInTheDocument()
     expect(screen.queryByText(/Cargando 2026-06/)).toBeNull()
     // **Se desmonta ANTES de devolver el foco** · 2026-11-25. Devolverlo con la
     // pantalla montada es un evento de foco: TanStack vuelve a pedir las cinco

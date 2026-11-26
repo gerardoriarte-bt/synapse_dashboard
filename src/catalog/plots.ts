@@ -49,12 +49,6 @@ export function acceptsShape(table: PlotTable, id: ChartId, shape: Shape): boole
   return table.get(id)?.formas.includes(shape) ?? false
 }
 
-/** ¿Admite banda? **Regla dura 6**: `serieConBanda` sólo acepta gráficos con
- *  esto en `true`, porque un pronóstico sin banda no se publica. */
-export function supportsBand(table: PlotTable, id: ChartId): boolean {
-  return table.get(id)?.soportaBanda ?? false
-}
-
 /* ── Contar el valor ───────────────────────────────────────────────────────── */
 
 /** Cuánto hay de cada sustantivo en este valor.

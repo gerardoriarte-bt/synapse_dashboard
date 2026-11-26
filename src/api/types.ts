@@ -29,7 +29,6 @@ export type NetworkPayload = Schemas['Payload']
  *  mientras el batch vuela, y ningún servidor lo emite jamás. Tenerlo acá y no
  *  en el yaml es lo que impide que alguien lo espere de la red. */
 export type Payload = NetworkPayload | { estado: 'CARGANDO' }
-export type PayloadState = Payload['estado']
 
 export type Value = Schemas['Valor']
 export type Shape = Schemas['Forma']
@@ -71,9 +70,6 @@ export type ChatAgent = {
 }
 export type Thread = Schemas['Hilo']
 
-export type Point = Schemas['Punto']
-export type Pillar = NonNullable<Schemas['ValorProsa']['pilares']>[number]
-export type Column = NonNullable<Schemas['ValorTabular']['columnas']>[number]
 export type Row = NonNullable<Schemas['ValorTabular']['filas']>[number]
 
 /** El envelope del CABLE, que no es el de §4.1 · F1.36.
