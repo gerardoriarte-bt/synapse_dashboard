@@ -1,6 +1,6 @@
 /** Las escalas · F1.13a. */
 import { describe, expect, it } from 'vitest'
-import { bandScale, ceiling, linearScale, timeScale } from '@/render/plots/core/scale'
+import { bandScale, ceiling, linearScale } from '@/render/plots/core/scale'
 
 describe('linearScale · dominio → píxeles', () => {
   it('mapea los extremos y el medio', () => {
@@ -75,13 +75,5 @@ describe('bandScale · una banda por categoría', () => {
 
   it('un dominio vacío no divide por cero', () => {
     expect(Number.isFinite(bandScale([], [0, 100]).step)).toBe(true)
-  })
-})
-
-describe('timeScale · el tiempo es lineal sobre milisegundos', () => {
-  it('mapea las fechas a los extremos del rango', () => {
-    const s = timeScale([new Date('2026-01-01'), new Date('2026-12-31')], [0, 100])
-    expect(s(new Date('2026-01-01').getTime())).toBe(0)
-    expect(s(new Date('2026-12-31').getTime())).toBe(100)
   })
 })

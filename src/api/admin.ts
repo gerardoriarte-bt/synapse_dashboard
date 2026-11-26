@@ -1583,7 +1583,7 @@ const CAMPOS_DE_CONEXION = [
   ['url', 'snowflake_url'],
 ] as const
 
-export function adaptarConexion(w: WireTenantSettings): ConexionGuardada {
+function adaptarConexion(w: WireTenantSettings): ConexionGuardada {
   return {
     cuenta: w.snowflake_account ?? '',
     usuario: w.snowflake_user ?? '',
@@ -1631,7 +1631,7 @@ export type WarehouseDeAgente = {
   warehouse: string
 }
 
-export function adaptarWarehouse(w: WireAgent): WarehouseDeAgente {
+function adaptarWarehouse(w: WireAgent): WarehouseDeAgente {
   return { id: w.id, nombre: w.name, rol: w.target_role, activo: w.is_active, warehouse: w.warehouse }
 }
 export type WireUsersPlatform = A['UsersPlatform']
@@ -1713,7 +1713,7 @@ export type SolicitudDeAcceso = {
   clienteNombre: string | null
 }
 
-export function adaptarSolicitud(w: WireAccessRequest): SolicitudDeAcceso {
+function adaptarSolicitud(w: WireAccessRequest): SolicitudDeAcceso {
   return {
     id: w.id,
     tipo: w.type === 'password_reset' ? 'contrasena' : 'alta',
@@ -1986,7 +1986,7 @@ function adaptarDestinatario(w: A['ReportRecipient']): DestinatarioDeReporte {
   }
 }
 
-export function adaptarReporte(w: A['Report']): Reporte {
+function adaptarReporte(w: A['Report']): Reporte {
   return {
     id: w.id,
     clienteId: w.tenant_id,

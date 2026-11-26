@@ -75,15 +75,6 @@ export function bandScale(
   return Object.assign(f, { domain, bandwidth, step })
 }
 
-/** El tiempo es lineal sobre milisegundos. Los rótulos los pone el eje, que es
- *  quien sabe si el período se lee en meses o en días. */
-export function timeScale(
-  domain: readonly [Date, Date],
-  range: readonly [number, number],
-): LinearScale {
-  return linearScale([domain[0].getTime(), domain[1].getTime()], range)
-}
-
 /** El máximo redondeado hacia ARRIBA al siguiente tick. Sin esto la barra más
  *  alta toca el borde y parece cortada.
  *

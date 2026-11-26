@@ -357,31 +357,6 @@ export function reubicarPanel(
   })
 }
 
-/** Cambiar un span por pasos de UNA celda, acotado al rango del tipo.
- *
- *  §7.2: «siempre en unidades de grilla». Y el tope no es la grilla sino **el
- *  rango del tipo**: un `kpi` ocupa entre 3 y 4 columnas, no entre 1 y 12. */
-export function redimensionarPanel(
-  tabs: readonly TabParaGuardar[],
-  indiceTab: number,
-  indicePanel: number,
-  campo: 'colSpan' | 'rowSpan',
-  delta: number,
-  min: number,
-  max: number,
-): TabParaGuardar[] {
-  return tabs.map((t, i) =>
-    i === indiceTab
-      ? {
-          ...t,
-          panels: t.panels.map((p, j) =>
-            j === indicePanel ? { ...p, [campo]: Math.max(min, Math.min(p[campo] + delta, max)) } : p,
-          ),
-        }
-      : t,
-  )
-}
-
 /** **Una medida entera de una vez** · 2026-11-10, con las asas del lienzo.
  *
  *  Estirar desde el borde izquierdo cambia la columna Y el ancho: hacerlo en
