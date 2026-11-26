@@ -2,10 +2,11 @@ import type { RouteObject } from 'react-router-dom'
 import { AuthGuard } from '../auth/AuthGuard'
 import { ConsoleContainer } from '../../surfaces/console/ConsoleContainer'
 import { Login } from '../../surfaces/console/Login'
-import { Admin } from '../../surfaces/admin/Admin'
-import { Builder } from '../../surfaces/builder/Builder'
+import { SuperficieDiferida } from './SuperficieDiferida'
 
 /** Las tres superficies de §4 · F0.4.
+ *
+ *  Administración y builder llegan diferidas: ver `SuperficieDiferida.tsx`.
  *
  *  `/admin` y `/builder` son de plataforma: quién puede abrirlas lo decide el
  *  backend por el token, no una condición acá.
@@ -30,7 +31,7 @@ export const routes: RouteObject[] = [
     path: '/admin/*',
     element: (
       <AuthGuard>
-        <Admin />
+        <SuperficieDiferida superficie="admin" />
       </AuthGuard>
     ),
   },
@@ -38,7 +39,7 @@ export const routes: RouteObject[] = [
     path: '/builder/*',
     element: (
       <AuthGuard>
-        <Builder />
+        <SuperficieDiferida superficie="builder" />
       </AuthGuard>
     ),
   },
