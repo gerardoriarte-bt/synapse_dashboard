@@ -16,7 +16,7 @@ import type { Corrida } from '../../api/admin'
 /** Cuántos años atrás se ofrecen, contando el en curso. Tres alcanzan para un
  *  cliente que llega con historia, y el servicio igual acepta cualquier mes: es
  *  un límite de la pantalla, no del dato. */
-export const ANIOS_OFRECIDOS = 3
+const ANIOS_OFRECIDOS = 3
 
 /** El mes en curso **del cliente** · vive en `render/format.ts`, que es el
  *  único lugar que arma un `Intl`. Se reexporta para que la pantalla tenga

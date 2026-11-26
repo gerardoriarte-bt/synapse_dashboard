@@ -12,10 +12,11 @@
  *  salía por el panel de identidad, desde admin por una flecha, y desde el
  *  builder no se salía. Tres formas para la misma acción, y una faltante.
  *
- *  Ahora las tres superficies se salen por el mismo lugar — el punto de
- *  identidad— y lo que se ofrece sale de `salidasDesde`, que ya excluye la que
- *  se está mirando. **Una sola fuente, y la simetría se cumple por construcción
- *  y no por acordarse.**
+ *  El 2026-09-28 las tres superficies pasaron a salirse por el mismo lugar —el
+ *  punto de identidad—. **Desde el 2026-10-07 las salidas ya no viven acá**:
+ *  las ofrece el menú de trabajo, `gruposDeTrabajo` en `trabajo.ts`, que lee
+ *  el registro de `superficies.ts` y los de pantallas. La simetría se sigue
+ *  cumpliendo por construcción, ahora desde ese menú (ver abajo).
  *
  *  ── POR QUÉ NO ES EL `UserMenu` DE LA CONSOLA ───────────────────────────────
  *

@@ -43,7 +43,7 @@ export const ROL_ADMIN = 'admin'
  *  **Ya está en su repositorio** · `d794a3e`, leído el 2026-10-20:
  *  `AdminOnlyMiddleware` acepta los dos. Cuando `/config/me` diga qué se puede
  *  administrar —el pedido 4 del 2026-10-10—, esta lista se va. */
-export const ROLES_QUE_ADMINISTRAN: readonly string[] = [ROL_ADMIN, 'superadmin']
+const ROLES_QUE_ADMINISTRAN: readonly string[] = [ROL_ADMIN, 'superadmin']
 
 export function esAdmin(role: AppContext['role'] | undefined): boolean {
   return role !== undefined && ROLES_QUE_ADMINISTRAN.includes(role.nombre.trim().toLowerCase())
@@ -61,7 +61,7 @@ export function esAdmin(role: AppContext['role'] | undefined): boolean {
  *  **Esconderlo no es impedirlo**: el servicio acepta asignarlo igual —leído en
  *  `UpdateAdmin`, que valida sólo que el rol sea del cliente y esté activo—.
  *  Está avisado al backend. */
-export const ROL_INTERNO = 'superadmin'
+const ROL_INTERNO = 'superadmin'
 
 export function sinRolesInternos<T extends { nombre: string }>(roles: readonly T[]): T[] {
   return roles.filter((r) => r.nombre.trim().toLowerCase() !== ROL_INTERNO)

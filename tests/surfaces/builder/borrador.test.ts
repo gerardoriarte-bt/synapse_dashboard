@@ -17,7 +17,6 @@ import {
   problemas,
   quitar,
   quitarPanel,
-  redimensionarPanel,
   reubicarPanel,
   sembrar,
   sucio,
@@ -294,20 +293,6 @@ describe('reubicarPanel · la fila es el ORDEN · F4.9', () => {
 
   it('no toca las otras pestañas', () => {
     expect(reubicarPanel(tres, 0, 0, 7, 2)[1]?.panels).toHaveLength(1)
-  })
-})
-
-describe('redimensionarPanel · el tope es el rango del TIPO', () => {
-  it('no pasa del máximo por más que se insista', () => {
-    let t = sembrar(detalle)
-    for (let i = 0; i < 10; i++) t = redimensionarPanel(t, 0, 0, 'colSpan', 1, 3, 8)
-    expect(t[0]?.panels[0]?.colSpan).toBe(8)
-  })
-
-  it('no baja del mínimo', () => {
-    let t = sembrar(detalle)
-    for (let i = 0; i < 10; i++) t = redimensionarPanel(t, 0, 0, 'colSpan', -1, 3, 8)
-    expect(t[0]?.panels[0]?.colSpan).toBe(3)
   })
 })
 

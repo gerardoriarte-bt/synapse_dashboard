@@ -21,8 +21,9 @@
  *
  *  Así que la validación se parte en dos, con distinta autoridad:
  *
- *  - **Qué params existen** → lo dice el backend. `unknownParams` compara contra
- *    `paramsDisponibles` y un nombre que no está se descarta.
+ *  - **Qué params existen** → lo dice el backend. `validateParams` compara
+ *    contra `paramsDisponibles` y un nombre que no está —o que esta tabla no
+ *    conoce— va a `unknown` y se descarta.
  *  - **Qué valores son válidos** → lo dice esta tabla, porque el contrato no lo
  *    declara. Es duplicación con lo que cada cuerpo acepta en TypeScript, y es
  *    inevitable: los tipos se borran al compilar y `opciones` llega en runtime.
@@ -256,11 +257,4 @@ export function adaptPanelParams(
   }
 
   return result
-}
-
-/** Los nombres que este front sabe leer para un tipo. Existe para que un chequeo
- *  pueda compararlos con `paramsDisponibles` y detectar la deriva entre las dos
- *  mitades del esquema — la que declara el backend y la que declara esta tabla. */
-export function knownParams(type: PanelType): string[] {
-  return Object.keys(PARAM_SCHEMAS[type] ?? {})
 }
