@@ -55,6 +55,9 @@ CHEQUEOS = [
     # nadie los viera como un defecto. Al escribirlo encontró SEIS más.
     ("copy-producto", [sys.executable, "tools/copy-producto.py"], True),
     ("mocks-fuera", [sys.executable, "tools/mocks-fuera.py"], True),
+    # La guardia de comandos destructivos frena por hook, no por la puerta: acá
+    # sólo se comprueba que siga frenando · ver tools/guardia.py.
+    ("guardia", [sys.executable, "tools/guardia.py", "--prueba"], True),
     ("token-drift", [sys.executable, "tools/token-drift.py"], True),
     ("contraste", [sys.executable, "tools/contraste.py"], True),
     ("test", ["npm", "run", "--silent", "test"], False),
