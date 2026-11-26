@@ -44,7 +44,7 @@ import type {
   Plot,
   TabWithPanels,
 } from './types'
-import { currentToken } from '../app/auth/session'
+import { conSesion } from './sesion'
 import { apiBase } from './base'
 
 import { esDePanel, turnosDelHistorial } from './chat'
@@ -53,13 +53,10 @@ import type { ContextoDeChat } from './chat'
 const BASE = apiBase()
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = currentToken()
-
   const res = await fetch(`${BASE}${path}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
-      ...(token === null ? {} : { Authorization: `Bearer ${token}` }),
+      ...conSesion({ 'Content-Type': 'application/json' }),
       ...options.headers,
     },
   })

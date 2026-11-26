@@ -37,7 +37,7 @@
  *  error de §4.1, esto se borra y los dos servicios hablan igual.
  */
 import { ApiError } from './types'
-import { currentToken } from '../app/auth/session'
+import { conSesion } from './sesion'
 import { authBase } from './base'
 import type { components } from './auth-generated'
 
@@ -142,13 +142,9 @@ export async function login(email: string, password: string): Promise<LoginResul
  *  Medido en local contra `d794a3e` el 2026-10-20: 403 `AUTH_FORBIDDEN` para un
  *  `admin`, 400 `VALIDATION_REQUEST` sin `tenant_id`, 404 `NOT_FOUND_TENANT`. */
 export async function switchTenant(tenantId: string): Promise<LoginResult> {
-  const token = currentToken()
   const res = await fetch(`${BASE}/auth/switch-tenant`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token === null ? {} : { Authorization: `Bearer ${token}` }),
-    },
+    headers: conSesion({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ tenant_id: tenantId }),
   })
   const body = await cuerpo<AuthOk<Partial<LoginResult>>>(res)
@@ -179,7 +175,7 @@ export async function switchTenant(tenantId: string): Promise<LoginResult> {
  *  así que después de un cambio dice `true` aunque el token sea el viejo. */
 export async function tokenInfo(token: string): Promise<{ user: LoginUser }> {
   const res = await fetch(`${BASE}/auth/token-info`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: conSesion({}, token),
   })
   const body = await cuerpo<AuthOk<{ user?: LoginUser }>>(res)
 
@@ -210,10 +206,7 @@ export async function tokenInfo(token: string): Promise<{ user: LoginUser }> {
 export async function changePassword(current: string, next: string): Promise<LoginUser> {
   const res = await fetch(`${BASE}/auth/change-password`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(currentToken() === null ? {} : { Authorization: `Bearer ${currentToken() as string}` }),
-    },
+    headers: conSesion({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ current_password: current, new_password: next }),
   })
   const body = await cuerpo<AuthOk<{ user?: LoginUser }>>(res)

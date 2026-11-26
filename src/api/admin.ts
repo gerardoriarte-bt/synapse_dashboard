@@ -35,7 +35,7 @@ import { adaptCatalog, adaptPayload, paramsAlCable, traducirParams } from './ada
 import type { AdaptedCatalog, WireMetric, WirePayload } from './adapt'
 import type { NetworkPayload } from './types'
 import type { components as admin } from './admin-generated'
-import { currentToken } from '../app/auth/session'
+import { conSesion } from './sesion'
 import { apiBase } from './base'
 
 type A = admin['schemas']
@@ -60,12 +60,10 @@ const BASE = apiBase()
  *  El día que los dos hablen la misma forma, este archivo se funde con aquel —
  *  la misma nota que lleva `auth.ts`. */
 async function pedir<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
-  const token = currentToken()
   const res = await fetch(`${BASE}${ruta}`, {
     ...opciones,
     headers: {
-      'Content-Type': 'application/json',
-      ...(token === null ? {} : { Authorization: `Bearer ${token}` }),
+      ...conSesion({ 'Content-Type': 'application/json' }),
       ...opciones.headers,
     },
   })
@@ -1305,10 +1303,9 @@ export const adminApi = {
    *  no lo trae. Leerlo con `res.json()` tiraría, y el catch diría «respondió
    *  204 sin cuerpo» — que es cierto y es exactamente lo correcto. */
   borrarRol: async (rolId: string): Promise<void> => {
-    const token = currentToken()
     const res = await fetch(`${BASE}/admin/roles/${encodeURIComponent(rolId)}`, {
       method: 'DELETE',
-      headers: { ...(token === null ? {} : { Authorization: `Bearer ${token}` }) },
+      headers: conSesion(),
     })
     if (res.status === 204) return
     // Un 409 trae cuerpo y su mensaje dice cuántos usuarios tiene el rol.
