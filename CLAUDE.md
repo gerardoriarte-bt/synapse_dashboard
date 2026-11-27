@@ -635,7 +635,13 @@ plataforma es F6.12 y espera el campo nuevo de `runs`.
 
 **El backend publicó lo que esperábamos**, medido el 2026-11-27: `79d2e68` y
 `6543547` (`spend` y `roas_paid` desde las columnas de datos) están en el
-remoto. Falta ver si están desplegados en QA.
+remoto, y **las cifras cuadran con Snowflake**
+(`docs/AUDITORIA-2026-11-27-gasto-con-6543547.md`). **Pero la meta de `spend`
+quedó en otra base**: «% DE LA META» pasaría de 73,6 % a 295 % en octubre. Lo
+pide `docs/MENSAJE-2026-11-27-backend-meta-de-inversion.md`, **que manda el
+humano**. Y `roas` (11,59, sobre `GROSS_SPEND`) ya no se lee con la
+inversión (venta / inversión da 2,89): qué panel de retorno va en el
+dashboard de UA lo decide el humano. **QA sin medir**: no había sesión.
 
 ### ⇩ ACÁ SE PARÓ · 2026-11-25 (noche) · UA v4.2, y otro commit sin publicar
 
