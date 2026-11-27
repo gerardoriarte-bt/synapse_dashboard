@@ -627,11 +627,13 @@ necesita otro despliegue.**
 META 161 %», el defecto que pide arreglar
 `MENSAJE-2026-11-27-backend-meta-de-inversion.md`.
 
-**Borrador v18 de UA MX, validado y SIN publicar** (agente, autorizado por el
-humano): en «Resumen del mes» suma el MER (`mer_total`, 7,12x en noviembre)
-y el ROAS de pauta (`roas_paid`, 6,7x) bajo CVR y AOV, y la tendencia diaria
-pasa a 5 filas. **Publicar lo hace el humano**: el permiso de la sesión
-bloqueó el clic. `dev/dashboards/ua-mx.json` quedó atrás de QA y no es la
+**La v18 de UA MX está publicada** (la armó el agente, autorizado por el
+humano, y la publicó el humano: el permiso de la sesión bloqueó el clic). En
+«Resumen del mes» suma el MER (`mer_total`) y el ROAS de pauta (`roas_paid`)
+bajo CVR y AOV, y la tendencia diaria pasa a 5 filas. **Mirada en la consola
+el 2026-11-27**: octubre da MER 2,89x, ROAS de pauta 5,73x e «Inversión»
+224K, iguales a Snowflake; la meta de «Inversión» marca 295 %, el defecto ya
+pedido. `dev/dashboards/ua-mx.json` quedó atrás de QA y no es la
 fuente de lo publicado.
 
 **Cuando el backend despliegue, en este orden:**
