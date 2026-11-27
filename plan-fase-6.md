@@ -270,7 +270,7 @@ de SES que ya existe.
   para ese reporte.
 
 ### ➕ B6.7 ⬜ El correo con la plantilla, y la alerta al admin
-**Pedido el 2026-11-27** en `docs/MENSAJE-2026-11-27-backend-plantilla-del-correo.md`, con la plantilla de F6.11.
+**Pedido el 2026-11-27** en `docs/MENSAJE-2026-11-27-backend-plantilla-del-correo.md`, con la plantilla de F6.11. **Enviado el 2026-11-27**, por el humano. **Lo que sigue es esperar, no volver a pedirlo.**
 **Descripción.** Hoy el reporte sale como texto plano en un solo bloque
 (`textToHTML` en `dd_report_mailer.go`). Se cambia por la plantilla
 `correo/reporte.html`, y las preguntas sin respuesta pasan del correo a una
@@ -449,7 +449,8 @@ menos dos clientes de correo.
 **Escrita el 2026-11-27**: `correo/reporte.html`, con su vista previa en
 `correo/vista-previa.go`. Mirada sobre fondo claro y oscuro. **Falta que el
 backend la conecte** (B6.7), pedido en
-`docs/MENSAJE-2026-11-27-backend-plantilla-del-correo.md`.
+`docs/MENSAJE-2026-11-27-backend-plantilla-del-correo.md`, **enviado el
+2026-11-27** por el humano.
 **Descripción.** El correo de A7 con las decisiones del 2026-11-27: el logo
 de la plataforma, los títulos de quien configura, sólo las preguntas con
 respuesta y sin colores (P6.10–P6.15).
