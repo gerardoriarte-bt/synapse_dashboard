@@ -793,14 +793,19 @@ B6.4,Backend · Fase 6 — Métricas por cliente y reporte programado,Backend,6,
 • Ningún otro rol puede crear ni editar.
 • Generar las respuestas no envía nada ni cambia el estado.",parcial,si,,equipo:backend fase:6 estado:parcial nueva
 B6.5,Backend · Fase 6 — Métricas por cliente y reporte programado,Backend,6,Métricas por cliente y reporte programado,Contestar las preguntas,"El generador de prosa contesta cada pregunta consultando Snowflake, en respuestas cortas y concisas (D6.1).","• Cada respuesta declara de dónde sale su cifra: la fuente, el período y la frescura, igual que un panel. Ninguna cifra sin BASE.
-• Una pregunta que no se puede contestar con datos se declara: qué falta y qué la desbloquea. No se rellena (D6.4).
-• Si el feed de una fuente está vencido, la respuesta lo dice en vez de dar el número viejo. Es la regla que el .pen escribe al pie del brief.
+• Una pregunta que no se puede contestar con datos se declara: qué falta y qué la desbloquea. No se rellena (D6.4). Desde el 2026-11-27 se le declara al admin, no a quien recibe (P6.12): en la validación y en la alerta de B6.7.
+• Si el feed de una fuente está vencido, no se manda el número viejo. Desde el 2026-11-27 esa pregunta sale del correo y va a la alerta del admin (P6.12), en vez de decirlo en el correo.
 • El largo de la respuesta tiene un tope declarado.
 • Los enlaces del correo abren la consola del cliente en el período del reporte. El correo de un externo no lleva enlaces a la consola (P6.7).",pendiente,si,,equipo:backend fase:6 estado:pendiente nueva
 B6.6,Backend · Fase 6 — Métricas por cliente y reporte programado,Backend,6,Métricas por cliente y reporte programado,Programar y enviar,"El envío por correo, a la hora de cada reporte, con el adaptador de SES que ya existe.","• Sólo salen los reportes activos.
 • Queda registrado cada envío: reporte, destinatario, hora y resultado (enviado, rebotado o fallido).
 • «Enviar una prueba ahora»: sólo a quien lo pide, sin esperar la hora, y marcado como prueba en el registro.
 • Cada correo trae cómo darse de baja, también para un externo, y la baja vale para ese reporte.",pendiente,si,,equipo:backend fase:6 estado:pendiente nueva
+B6.7,Backend · Fase 6 — Métricas por cliente y reporte programado,Backend,6,Métricas por cliente y reporte programado,"El correo con la plantilla, y la alerta al admin","Hoy el reporte sale como texto plano en un solo bloque (textToHTML en dd_report_mailer.go). Se cambia por la plantilla correo/reporte.html, y las preguntas sin respuesta pasan del correo a una alerta al admin (P6.10–P6.15).","• El correo sale con correo/reporte.html, el logo de la plataforma embebido y la versión en texto plano al lado.
+• Una pregunta sin respuesta, con error o con alguna fuente vencida no va en el correo (P6.12).
+• Si no queda ninguna, el envío se salta y no le llega nada a nadie (P6.13).
+• Cada vez que una pregunta queda fuera, o se salta el envío, le llega un correo a quien creó el reporte con cuáles quedaron fuera y por qué (P6.14). Un envío de prueba no genera alerta: quien lo pidió ya lo está viendo.
+• El envío registrado en runs dice qué preguntas quedaron fuera y por qué, o que se saltó, para que la plataforma lo muestre (F6.12).",pendiente,si,,equipo:backend fase:6 estado:pendiente nueva
 F6.1,Front · Fase 6 — Métricas por cliente y reporte programado,Front,6,Métricas por cliente y reporte programado,Pedirle al backend el cálculo de Terpel,"El mensaje que pide B6.1 con la tanda A medida, en MetricRegistry (D6.2).","• Un MENSAJE- que lleva, por métrica, la clave, la forma, la familia y la consulta que comprueba la cifra.
 • Dice lo que el backend tiene que saber antes de programar: atl_ sin período, y que las cifras cambian entre corridas porque la carga sigue.",hecho,si,,equipo:front fase:6 estado:hecho nueva
 F6.2,Front · Fase 6 — Métricas por cliente y reporte programado,Front,6,Métricas por cliente y reporte programado,Pedirle al backend las de UA,"Lo mismo que F6.1 para B6.2, cuando datos conteste docs/MENSAJE-2026-11-03-datos-entrega-de-ua-medida.md.","• Se escribe recién con la vista de control de UA sin problemas de datos para esas claves, medido: sólo CLAVE DESCONOCIDA, que desaparece cuando el backend las registra. No antes: pedirle al backend que programe sobre columnas que no existen es el pedido sin medir que costó un viernes el 2026-10-05.",hecho,si,,equipo:front fase:6 estado:hecho nueva
@@ -831,8 +836,18 @@ F6.10,Front · Fase 6 — Métricas por cliente y reporte programado,Front,6,Mé
 • La prueba verifica que activar DISPARE la llamada, no que el botón exista.",parcial,si,F6.4 y del dibujo de F6.5,equipo:front fase:6 estado:parcial nueva bloqueada
 F6.8,Front · Fase 6 — Métricas por cliente y reporte programado,Front,6,Métricas por cliente y reporte programado,Los colores del producto en el correo,"Un correo no lee variables CSS, así que la plantilla necesita los colores escritos. Se generan desde el .pen, igual que tokens.css.","• Un archivo generado con los tokens que la plantilla usa, con su chequeo de deriva en la puerta.
 • Se respetan las mismas reglas que en pantalla: sin naranja en datos, deltas en neutro, sin ámbar.
-• Se entrega al backend, que es dueño de la plantilla en internal/adapters/email/templates/.",pendiente,si,,equipo:front fase:6 estado:pendiente nueva
+• Se entrega al backend, que es dueño de la plantilla en internal/adapters/email/templates/.",hecho,si,,equipo:front fase:6 estado:hecho nueva
 F6.9,Front · Fase 6 — Métricas por cliente y reporte programado,Front,6,Métricas por cliente y reporte programado,Mirar un correo real,Recibir el reporte en una casilla de prueba y abrirlo en al menos dos clientes de correo.,"• Cada cifra declara su fuente, su período y su frescura.
 • Una cifra que también está en un panel se compara con el panel en el mismo período. Si difiere, se escribe con su causa: la respuesta consulta Snowflake por su cuenta (D6.1) y esa diferencia es la que hay que ver.
-• Una pregunta sin dato se ve declarada, sin número.
+• Una pregunta sin dato o con la fuente vencida no aparece en el correo, y a quien creó el reporte le llega la alerta (P6.12, P6.14).
+• Se ve bien con el cliente de correo en claro y en oscuro (P6.15).
 • Un externo recibe el correo y su baja funciona. Después de darse de baja no llega el siguiente envío.",pendiente,si,B6.5 y B6.6,equipo:front fase:6 estado:pendiente nueva bloqueada
+F6.11,Front · Fase 6 — Métricas por cliente y reporte programado,Front,6,Métricas por cliente y reporte programado,La plantilla del correo del reporte,"El correo de A7 con las decisiones del 2026-11-27: el logo de la plataforma, los títulos de quien configura, sólo las preguntas con respuesta y sin colores (P6.10–P6.15).","• Una plantilla html/template de Go, la misma sintaxis que ya usa el backend, con los datos que necesita escritos en su cabecera.
+• Los estilos van escritos en cada etiqueta, no en variables: html/template cambia por ZgotmplZ un estilo que llega desde una variable, y así salió la primera versión del prototipo.
+• Sin colores de fondo ni de texto. La única tinta propia es el gris semitransparente de las líneas.
+• Debajo de cada respuesta, su fuente, su período y su carga: ninguna cifra sin procedencia.
+• Mirada en un fondo claro y en uno oscuro antes de entregarla.",parcial,si,,equipo:front fase:6 estado:parcial nueva
+F6.12,Front · Fase 6 — Métricas por cliente y reporte programado,Front,6,Métricas por cliente y reporte programado,"La alerta al admin, dentro de la plataforma","En el historial de envíos de un reporte (ReportRuns.tsx), cada envío dice qué preguntas quedaron fuera del correo y por qué, o que el envío se saltó porque ninguna tenía respuesta (P6.14).","• Un envío con preguntas fuera se distingue de uno completo sin abrirlo.
+• Cada pregunta fuera dice su razón: sin dato, error o fuente vencida con su última carga.
+• Un envío saltado se ve como saltado, no como fallido.
+• Se transcribe el campo nuevo de runs al cable antes de construir, y la prueba del adaptador va de entrada.",pendiente,si,B6.7,equipo:front fase:6 estado:pendiente nueva bloqueada

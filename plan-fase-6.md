@@ -89,6 +89,19 @@ Reemplazan a P6.1, P6.2 y P6.5, y suman dos. Medido en
 | **P6.8** | **Cada envío le vuelve a preguntar al agente.** Lo que llega no es lo que se validó; lo atenúa que cada respuesta diga de dónde sale su cifra (B6.5) | Nueva |
 | **P6.9** | **No se borra un reporte: pausar es la baja** | El «borrar» de B6.4 |
 
+**Decididas el 2026-11-27 (humano), al darle forma al correo**, con el
+reporte ya llegando por correo. El prototipo se miró en dos fondos antes de
+decidir; la plantilla que sale de acá es `correo/reporte.html` (F6.11).
+
+| | Decisión del 2026-11-27 | Reemplaza |
+|---|---|---|
+| **P6.10** | **El logo es el de la plataforma**: la palabra con su degradado, sin la bajada (`src/assets/images/wordmark-marca.png`). El que usa hoy el backend trae «BY … GROUP» con la parte del medio en blanco, que sobre fondo blanco desaparece | Nueva |
+| **P6.11** | **Los títulos los pone quien configura el reporte**: el del correo es el nombre del reporte, y cada sección es la pregunta tal como se escribió. El correo no agrega rótulos propios —período, frecuencia, numeración— | Nueva |
+| **P6.12** | **Quien recibe ve sólo las preguntas con respuesta.** Una pregunta sin dato o con la fuente vencida **no aparece en el correo: se le informa al admin que configuró el reporte**, no a quien lo lee | La mitad de D6.4 que decía «se declara en el correo», y la regla del `.pen` de decir en el correo que la fuente venció. **La validación antes de activar sigue**: ahí el admin sí ve la pregunta sin dato (F6.10) |
+| **P6.13** | **Si ninguna pregunta tiene respuesta, el correo no sale**: se salta el envío y se alerta al admin | Nueva |
+| **P6.14** | **La alerta al admin va por correo y dentro de la plataforma**: un correo a quien creó el reporte con qué preguntas quedaron fuera y por qué, y lo mismo en el historial de envíos del reporte | Nueva |
+| **P6.15** | **El correo no pinta colores**: ni fondo ni color de texto, así que toma los del cliente de correo, claro u oscuro. La jerarquía sale del tamaño y el peso; lo secundario va atenuado, y las líneas son un gris semitransparente que se ve en los dos fondos | F6.8: los colores del producto en el correo dejan de hacer falta |
+
 ## 4 · Lo que ya existe
 
 **Medido contra `db91b5d` el 2026-11-03** en `AntPack-dev/synapse-api-go`, rama
@@ -121,11 +134,11 @@ REPORTE
   diseño   F6.5 mapa de UX ──▶ dibujo en el .pen ──┐
   backend  B6.3 objeto ──▶ B6.4 rutas ──▶ F6.4 cable ──┴─▶ F6.6 lista · F6.7 editor · F6.10 validar
            B6.5 respuestas ──▶ B6.6 envío ──▶ F6.9 mirar un correo real
-  correo   F6.8 colores ──▶ la plantilla del backend
+  correo   F6.11 plantilla ──▶ B6.7 el correo y la alerta al admin ──▶ F6.12 la alerta en la plataforma
 ```
 
-**Las dos columnas avanzan en paralelo.** Lo que se puede tomar hoy, del front:
-**F6.8**. El resto espera algo con nombre.
+**Las dos columnas avanzan en paralelo.** F6.8 se cerró sin hacerse por
+P6.15. El resto espera algo con nombre.
 
 **Los hitos**, en el orden en que se espera verlos:
 
@@ -141,7 +154,7 @@ REPORTE
 
 | Equipo | Qué |
 |---|---|
-| **Front** | Los dos pedidos al backend, el mapa de UX, el cable, las tres pantallas, los colores del correo y la verificación en QA |
+| **Front** | Los dos pedidos al backend, el mapa de UX, el cable, las tres pantallas, la plantilla del correo y la verificación en QA |
 | **Backend** | El registro de las métricas, el reporte como objeto, sus rutas, las respuestas, el programador y el envío |
 | **Datos** | Corregir la entrega de UA, y el período de ATL de Terpel |
 | **Diseño** | Dibujar las pantallas a partir del mapa de UX |
@@ -233,9 +246,12 @@ Snowflake, en respuestas cortas y concisas (D6.1).
 - **Cada respuesta declara de dónde sale su cifra**: la fuente, el período y la
   frescura, igual que un panel. Ninguna cifra sin BASE.
 - Una pregunta que no se puede contestar con datos se declara: qué falta y qué
-  la desbloquea. **No se rellena** (D6.4).
-- Si el feed de una fuente está vencido, la respuesta lo dice en vez de dar el
-  número viejo. Es la regla que el `.pen` escribe al pie del brief.
+  la desbloquea. **No se rellena** (D6.4). **Desde el 2026-11-27 se le declara
+  al admin, no a quien recibe** (P6.12): en la validación y en la alerta de
+  B6.7.
+- Si el feed de una fuente está vencido, no se manda el número viejo. **Desde
+  el 2026-11-27 esa pregunta sale del correo y va a la alerta del admin**
+  (P6.12), en vez de decirlo en el correo.
 - El largo de la respuesta tiene un tope declarado.
 - Los enlaces del correo abren la consola del cliente en el período del
   reporte. **El correo de un externo no lleva enlaces a la consola** (P6.7).
@@ -252,6 +268,26 @@ de SES que ya existe.
   marcado como prueba en el registro.
 - Cada correo trae cómo darse de baja, también para un externo, y la baja vale
   para ese reporte.
+
+### ➕ B6.7 ⬜ El correo con la plantilla, y la alerta al admin
+**Pedido el 2026-11-27** en `docs/MENSAJE-2026-11-27-backend-plantilla-del-correo.md`, con la plantilla de F6.11.
+**Descripción.** Hoy el reporte sale como texto plano en un solo bloque
+(`textToHTML` en `dd_report_mailer.go`). Se cambia por la plantilla
+`correo/reporte.html`, y las preguntas sin respuesta pasan del correo a una
+alerta al admin (P6.10–P6.15).
+**Criterio de aceptación.**
+- El correo sale con `correo/reporte.html`, el logo de la plataforma embebido
+  y la versión en texto plano al lado.
+- **Una pregunta sin respuesta, con error o con alguna fuente vencida no va
+  en el correo** (P6.12).
+- **Si no queda ninguna, el envío se salta** y no le llega nada a nadie
+  (P6.13).
+- **Cada vez que una pregunta queda fuera, o se salta el envío, le llega un
+  correo a quien creó el reporte** con cuáles quedaron fuera y por qué
+  (P6.14). Un envío de prueba no genera alerta: quien lo pidió ya lo está
+  viendo.
+- **El envío registrado en `runs` dice qué preguntas quedaron fuera y por
+  qué**, o que se saltó, para que la plataforma lo muestre (F6.12).
 
 ---
 
@@ -381,7 +417,10 @@ que el reporte daría hoy, con datos reales, y recién entonces lo activa (D6.4)
   quién se mandó.
 - La prueba verifica que activar DISPARE la llamada, no que el botón exista.
 
-### ➕ F6.8 ⬜ Los colores del producto en el correo
+### ➕ F6.8 ✅ Los colores del producto en el correo
+**Cerrada sin hacerse el 2026-11-27**, por decisión humana: el correo no pinta
+colores (P6.15). Se deja escrita porque la razón para no hacerla también es
+información.
 **Descripción.** Un correo no lee variables CSS, así que la plantilla necesita
 los colores escritos. Se generan desde el `.pen`, igual que `tokens.css`.
 **Criterio de aceptación.**
@@ -400,7 +439,40 @@ menos dos clientes de correo.
 - **Una cifra que también está en un panel se compara con el panel** en el
   mismo período. Si difiere, se escribe con su causa: la respuesta consulta
   Snowflake por su cuenta (D6.1) y esa diferencia es la que hay que ver.
-- Una pregunta sin dato se ve declarada, sin número.
+- **Una pregunta sin dato o con la fuente vencida no aparece** en el correo,
+  y a quien creó el reporte le llega la alerta (P6.12, P6.14).
+- Se ve bien con el cliente de correo en claro y en oscuro (P6.15).
 - Un externo recibe el correo y su baja funciona. Después de darse de baja no
   llega el siguiente envío.
 
+### ➕ F6.11 ⚠️ La plantilla del correo del reporte
+**Escrita el 2026-11-27**: `correo/reporte.html`, con su vista previa en
+`correo/vista-previa.go`. Mirada sobre fondo claro y oscuro. **Falta que el
+backend la conecte** (B6.7), pedido en
+`docs/MENSAJE-2026-11-27-backend-plantilla-del-correo.md`.
+**Descripción.** El correo de A7 con las decisiones del 2026-11-27: el logo
+de la plataforma, los títulos de quien configura, sólo las preguntas con
+respuesta y sin colores (P6.10–P6.15).
+**Criterio de aceptación.**
+- Una plantilla `html/template` de Go, la misma sintaxis que ya usa el
+  backend, con los datos que necesita escritos en su cabecera.
+- **Los estilos van escritos en cada etiqueta**, no en variables:
+  `html/template` cambia por `ZgotmplZ` un estilo que llega desde una
+  variable, y así salió la primera versión del prototipo.
+- Sin colores de fondo ni de texto. La única tinta propia es el gris
+  semitransparente de las líneas.
+- Debajo de cada respuesta, su fuente, su período y su carga: ninguna cifra
+  sin procedencia.
+- Mirada en un fondo claro y en uno oscuro antes de entregarla.
+
+### ➕ F6.12 ⬜ La alerta al admin, dentro de la plataforma · 🔒 depende de B6.7
+**Descripción.** En el historial de envíos de un reporte (`ReportRuns.tsx`),
+cada envío dice qué preguntas quedaron fuera del correo y por qué, o que el
+envío se saltó porque ninguna tenía respuesta (P6.14).
+**Criterio de aceptación.**
+- Un envío con preguntas fuera se distingue de uno completo sin abrirlo.
+- Cada pregunta fuera dice su razón: sin dato, error o fuente vencida con su
+  última carga.
+- Un envío saltado se ve como saltado, no como fallido.
+- Se transcribe el campo nuevo de `runs` al cable antes de construir, y la
+  prueba del adaptador va de entrada.
