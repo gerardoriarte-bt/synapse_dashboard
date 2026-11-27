@@ -1,0 +1,80 @@
+{{/*
+  El correo del reporte programado · F6.11 · plantilla html/template de Go
+
+  La escribe el front y la conecta el backend (B6.7), que es dueño del envío.
+  Las decisiones que la gobiernan son P6.10–P6.15 de plan-fase-6.md, del
+  2026-11-27:
+
+  - El logo es el de la plataforma: wordmark-marca.png, embebido.
+  - Los títulos son de quien configura: el nombre del reporte y cada pregunta
+    tal como se escribió. La plantilla no agrega rótulos propios.
+  - Sólo van las preguntas con respuesta. Las que no tienen dato, dieron error
+    o tienen una fuente vencida se FILTRAN ANTES de llegar acá y van a la
+    alerta del admin. Si no queda ninguna, el correo no se manda.
+  - Sin colores: ni fondo ni color de texto, para que mande el cliente de
+    correo, claro u oscuro. Lo único propio es el gris semitransparente de
+    las líneas, que se ve en los dos fondos.
+
+  LOS ESTILOS VAN ESCRITOS EN CADA ETIQUETA, A PROPÓSITO. html/template
+  cambia por «ZgotmplZ» una declaración CSS que llega desde una variable, y
+  así salió la primera versión del prototipo: los rótulos en Times.
+
+  Datos que recibe:
+
+  .Report      string  el nombre del reporte, como lo escribió quien lo creó
+  .Tenant      string  el nombre del cliente (tenantDisplayName)
+  .Preheader   string  el texto que el cliente de correo muestra en la bandeja
+  .LogoSrc     URL     "cid:synapse-logo" en el envío; data: en la vista previa
+  .IsTest      bool    envío de prueba (B6.6)
+  .Answers     []      sólo las que tienen respuesta, en el orden del reporte
+    .Question  string
+    .Answer    string
+    .Sources   []string  una línea por fuente: «fuente · período · cargado …»
+  .ConsoleURL  string  vacío para un externo: no lleva enlaces (P6.7)
+  .Why         string  por qué le llega: usuario del cliente o externo
+  .UnsubURL    string  la baja de este reporte, también para un externo
+*/ -}}
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Report}} · {{.Tenant}}</title>
+</head>
+<body style="margin:0;padding:0;">
+<div style="display:none;max-height:0;overflow:hidden;">{{.Preheader}}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td align="center" style="padding:32px 16px;">
+  <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;font-family:Inter,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;">
+    {{- if .IsTest}}
+    <tr><td style="padding:0 0 16px;font-size:12px;line-height:18px;opacity:0.6;">Envío de prueba · solo lo recibe quien lo pidió.</td></tr>
+    {{- end}}
+    <tr><td style="padding:0 0 28px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td valign="middle"><img src="{{.LogoSrc}}" width="108" height="24" alt="Synapse" style="display:block;border:0;width:108px;height:24px;"></td>
+        <td valign="middle" align="right" style="font-size:13px;line-height:18px;opacity:0.6;">{{.Tenant}}</td>
+      </tr></table>
+    </td></tr>
+    <tr><td style="padding:0 0 8px;font-size:26px;line-height:32px;font-weight:600;">{{.Report}}</td></tr>
+    {{- range .Answers}}
+    <tr><td style="padding:24px 0 0;border-bottom:1px solid rgba(128,128,128,0.3);"></td></tr>
+    <tr><td style="padding:24px 0 0;font-size:15px;line-height:22px;font-weight:600;">{{.Question}}</td></tr>
+    <tr><td style="padding:8px 0 0;font-size:16px;line-height:25px;">{{.Answer}}</td></tr>
+    {{- range .Sources}}
+    <tr><td style="padding:10px 0 0;font-size:12px;line-height:18px;opacity:0.6;">{{.}}</td></tr>
+    {{- end}}
+    {{- end}}
+    <tr><td style="padding:24px 0 0;border-bottom:1px solid rgba(128,128,128,0.3);"></td></tr>
+    {{- if .ConsoleURL}}
+    <tr><td style="padding:24px 0 0;">
+      <a href="{{.ConsoleURL}}" style="display:inline-block;padding:10px 16px;border:1px solid rgba(128,128,128,0.5);border-radius:6px;font-size:14px;line-height:20px;font-weight:600;color:inherit;text-decoration:none;">Abrir en Synapse &#8599;</a>
+    </td></tr>
+    {{- end}}
+    <tr><td style="padding:24px 0 0;font-size:12px;line-height:18px;opacity:0.6;">
+      {{.Why}} · <a href="{{.UnsubURL}}" style="color:inherit;text-decoration:underline;">Darse de baja de este reporte</a>
+    </td></tr>
+  </table>
+</td></tr>
+</table>
+</body>
+</html>

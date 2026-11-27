@@ -14,19 +14,19 @@ falta para re-verificar. Para su avance real está
 
 | | |
 |---|---|
-| Tareas `B*` en el plan | **104** |
+| Tareas `B*` en el plan | **105** |
 | Verificadas por nosotros · ✅ o ⚠️ | **77** |
-| De ésas, **contra el último commit** | **1** |
+| De ésas, **contra el último commit** | **0** |
 | ⬜ Esperando algo de ellos | **2** |
-| ⬜ **Que NUNCA verificamos** | **24** |
-| El último commit que leímos | `7324b26` |
+| ⬜ **Que NUNCA verificamos** | **25** |
+| El último commit que leímos | **no se sabe** · el cable no coincide consigo mismo |
 
 
-## ⚠️ 52 verificadas contra un commit anterior
+## ⚠️ No sabemos cuáles de estas 53 siguen al día
 
-**No quiere decir que estén mal: quiere decir que no lo sabemos.**
-Una tarea `B*` afirma algo del servicio, y el servicio cambia.
-Re-verificar una es leer su criterio y medirlo de nuevo.
+**El cable de consola está leído contra más de un commit suyo**, así
+que no hay un «último» contra qué comparar. Hasta reverificarlo
+entero, ninguna se puede dar por al día.
 
 
 | Tarea | | Verificada contra | Cuándo |
@@ -65,6 +65,7 @@ Re-verificar una es leer su criterio y medirlo de nuevo.
 | **B2.11** · Filtrado por rol también en el batch | ✅ | `de881e1` | 2026-09-29 |
 | **B2.12** · Correr el materializador contra datos reales y verificar los seis estados | ⚠️ | `3651d70` | 2026-10-14 |
 | **B2.13** · Salud de feeds por fuente | ✅ | `de881e1` | 2026-09-29 |
+| **B2.15** · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | ⚠️ | `7324b26` | 2026-10-19 |
 | **B2.16** · El materializador emite presentation | ✅ | `db91b5d` | 2026-11-03 |
 | **B3.1** · POST /config/chat con SSE | ⚠️ | `8633b10` | 2026-09-26 |
 | **B3.8** · La respuesta puede incluir { forma, datos, procedencia } | ✅ | `8272085` | 2026-10-13 |
@@ -85,7 +86,7 @@ Re-verificar una es leer su criterio y medirlo de nuevo.
 | **B5.5** · Auditoría de publicaciones de layout | ✅ | `de881e1` | 2026-09-29 |
 
 
-## ⬜ 24 que nunca verificamos · y NO quiere decir que falten
+## ⬜ 25 que nunca verificamos · y NO quiere decir que falten
 
 **Un `⬜` de backend dice «no lo miramos», no «no está hecho».** Nuestro
 plan sólo mueve una `B*` cuando el front la verifica contra el servicio
@@ -178,7 +179,7 @@ esperan algo de ellos: **2**, y salen en `PARA-BACKEND.md`.
 | ⚠️ | **B2.12** ➕ · Correr el materializador contra datos reales y verificar los seis estados | `3651d70` ⚠ | 2026-10-14 |
 | ✅ | **B2.13** ➕ · Salud de feeds por fuente | `de881e1` ⚠ | 2026-09-29 |
 | ⬜ | **B2.14** ➕ · /config/solicitudes | `9dc481e` ⚠ | 2026-10-09 |
-| ⚠️ | **B2.15** ➕ · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | `7324b26` | 2026-10-19 |
+| ⚠️ | **B2.15** ➕ · Encender DD_MATERIALIZE_PROSE_ENABLED y avisar | `7324b26` ⚠ | 2026-10-19 |
 | ✅ | **B2.16** ➕ · El materializador emite presentation | `db91b5d` ⚠ | 2026-11-03 |
 
 
@@ -238,7 +239,7 @@ esperan algo de ellos: **2**, y salen en `PARA-BACKEND.md`.
 | ⬜ | **B5.7** · Tests del job de materialización con fixtures de Snowflake | `de881e1` ⚠ | 2026-09-29 |
 
 
-### Fase 6 · Métricas y reporte — 0 de 6
+### Fase 6 · Métricas y reporte — 0 de 7
 
 | | Tarea | Verificada contra | Cuándo |
 |---|---|---|---|
@@ -247,7 +248,8 @@ esperan algo de ellos: **2**, y salen en `PARA-BACKEND.md`.
 | ⚠️ | **B6.3** ➕ · El reporte programado como objeto | — | — |
 | ⚠️ | **B6.4** ➕ · Rutas para administrar reportes | — | — |
 | ⬜ | **B6.5** ➕ · Contestar las preguntas | — | — |
-| ⬜ | **B6.6** ➕ · Programar y enviar | `fb3ca0c` ⚠ | 2026-11-18 |
+| ⬜ | **B6.6** ➕ · Programar y enviar | — | — |
+| ⬜ | **B6.7** ➕ · El correo con la plantilla, y la alerta al admin | `fb3ca0c` ⚠ | 2026-11-18 |
 
 
 ---

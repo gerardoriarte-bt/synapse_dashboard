@@ -5,10 +5,10 @@
 > es este archivo y se arregla regenerándolo, no editándolo.
 
 
-**225 de 285 tareas cerradas.** 23 parciales · 33 pendientes · 4 diferidas.
+**226 de 288 tareas cerradas.** 24 parciales · 34 pendientes · 4 diferidas.
 
 
-## Front · 164 de 181
+## Front · 165 de 183
 
 | Fase | Avance | Hechas | Parciales | Pendientes |
 |---|---|---|---|---|
@@ -18,9 +18,9 @@
 | 3 · Chat contextual | `█████████████████·····` | 13/17 | 0 | 2 |
 | 4 · Admin y Builder | `██████████████████████` | 24/24 | 0 | 0 |
 | 5 · Pruebas y pulido | `█████████████████████·` | 58/62 | 0 | 3 |
-| 6 · Métricas y reporte | `███████···············` | 3/10 | 5 | 2 |
+| 6 · Métricas y reporte | `███████···············` | 4/12 | 6 | 2 |
 
-## Backend · 61 de 104
+## Backend · 61 de 105
 
 > ⚠️ **Este número está bajo y no refleja al backend.** El plan de acá
 > es la fuente del FRONT; el estado de las tareas `B*` solo se mueve
@@ -52,7 +52,7 @@
 | 3 · Chat contextual | `████████··············` | 4/11 | 2 | 5 |
 | 4 · Admin y Builder | `████████████████████··` | 18/20 | 1 | 1 |
 | 5 · Multi-dashboard y pulido | `██████················` | 2/7 | 1 | 3 |
-| 6 · Métricas y reporte | `······················` | 0/6 | 3 | 3 |
+| 6 · Métricas y reporte | `······················` | 0/7 | 3 | 4 |
 
 ---
 
@@ -61,12 +61,12 @@
 - **F3.16** · El mes en curso se marca en el trazo, no sólo en un aviso
 - **F3.17** · Un dato que falta se dibuja como hueco
 - **F5.21** · Qué hace un gráfico cuando el dato excede lo legible
+- **F6.11** · La plantilla del correo del reporte
 - **F6.4** · Transcribir las rutas de reportes al cable de administración
-- **F6.8** · Los colores del producto en el correo
 
 ---
 
-## Bloqueadas · 12
+## Bloqueadas · 13
 
 Lo que el front espera del backend está detallado en
 [`PARA-BACKEND.md`](PARA-BACKEND.md), que también se genera desde el plan.
@@ -79,6 +79,7 @@ Lo que el front espera del backend está detallado en
 - **F5.13** · Períodos libres en el selector
 - **F5.3** · Completar los plots que falten
 - **F6.10** · Validar las respuestas antes de activar
+- **F6.12** · La alerta al admin, dentro de la plataforma
 - **F6.3** · Verificar en QA las métricas de Terpel y de UA
 - **F6.6** · Los reportes de un cliente, en administración
 - **F6.7** · Crear y editar un reporte

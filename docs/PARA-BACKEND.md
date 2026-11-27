@@ -198,7 +198,7 @@ hasta reverificar el cable entero.
 
 ---
 
-## Y esto frena al front · 9 tarea(s)
+## Y esto frena al front · 10 tarea(s)
 
 **No todo lo de acá es suyo**, y por eso no está arriba: son los
 bloqueos que las tareas del front declaran en su título, tal cual
@@ -219,6 +219,7 @@ Lo de arriba son pedidos; esto es información.
 | **F6.7** · Crear y editar un reporte | depende de F6.4 y del dibujo de F6.5 |
 | **F6.10** · Validar las respuestas antes de activar | depende de F6.4 y del dibujo de F6.5 |
 | **F6.9** · Mirar un correo real | depende de B6.5 y B6.6 |
+| **F6.12** · La alerta al admin, dentro de la plataforma | depende de B6.7 |
 
 
 ---
