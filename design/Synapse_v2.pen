@@ -134594,7 +134594,7 @@
               "id": "SAbnE",
               "name": "Texto",
               "fill": "$dim",
-              "content": "V6 · EL CORREO · ADAPTADO DEL BRIEF DEL .PEN",
+              "content": "V7 · EL CORREO · DECIDIDO EL 2026-11-27 · P6.10–P6.15",
               "fontFamily": "$font-mono",
               "fontSize": 9,
               "fontWeight": "normal",
@@ -134605,7 +134605,7 @@
               "id": "nnOYL",
               "name": "Texto",
               "fill": "$ink",
-              "content": "El reporte llega con sus preguntas, sus respuestas y de dónde sale cada cifra",
+              "content": "Quien recibe lee las preguntas que tienen respuesta, y de dónde sale cada cifra",
               "fontFamily": "$font-display",
               "fontSize": 26,
               "fontWeight": "500",
@@ -134644,14 +134644,12 @@
                   "id": "FVXNu",
                   "name": "Correo",
                   "width": "fill_container",
-                  "fill": "$panel",
-                  "cornerRadius": "$r-xl",
-                  "stroke": "$w3",
-                  "strokeWidth": 1,
-                  "strokeAlignment": "inner",
                   "layout": "vertical",
                   "gap": 20,
-                  "padding": 32,
+                  "padding": [
+                    8,
+                    0
+                  ],
                   "children": [
                     {
                       "type": "frame",
@@ -134661,15 +134659,6 @@
                       "gap": 8,
                       "alignItems": "center",
                       "children": [
-                        {
-                          "type": "rectangle",
-                          "cornerRadius": "$r-xs",
-                          "id": "GDL0u",
-                          "name": "Mark",
-                          "fill": "$acc",
-                          "width": 9,
-                          "height": 9
-                        },
                         {
                           "type": "text",
                           "id": "lop0P",
@@ -134693,11 +134682,10 @@
                           "id": "JFq93",
                           "name": "Texto",
                           "fill": "$dim",
-                          "content": "TERPEL COLOMBIA · REPORTE MENSUAL",
-                          "fontFamily": "$font-mono",
-                          "fontSize": 9,
-                          "fontWeight": "normal",
-                          "letterSpacing": 1.08
+                          "content": "Terpel Colombia",
+                          "fontFamily": "$font-body",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -134711,25 +134699,13 @@
                       "children": [
                         {
                           "type": "text",
-                          "id": "fVkZa",
-                          "name": "Texto",
-                          "fill": "$dim",
-                          "content": "DATOS DE SEPTIEMBRE DE 2026",
-                          "fontFamily": "$font-mono",
-                          "fontSize": 9,
-                          "fontWeight": "normal",
-                          "letterSpacing": 1.08
-                        },
-                        {
-                          "type": "text",
                           "id": "r7T6v",
                           "name": "Texto",
                           "fill": "$ink",
                           "content": "Pauta digital · mensual",
-                          "fontFamily": "$font-display",
+                          "fontFamily": "$font-body",
                           "fontSize": 26,
-                          "fontWeight": "500",
-                          "letterSpacing": -0.3
+                          "fontWeight": "600"
                         }
                       ]
                     },
@@ -134753,11 +134729,11 @@
                           "type": "text",
                           "id": "jwhZD",
                           "name": "Texto",
-                          "fill": "$dim",
-                          "content": "1 · ¿Cuánto invertimos en pauta digital el mes pasado y cómo vamos contra el presupuesto?",
+                          "fill": "$ink",
+                          "content": "¿Cuánto invertimos en pauta digital el mes pasado y cómo vamos contra el presupuesto?",
                           "fontFamily": "$font-body",
-                          "fontSize": 13,
-                          "fontWeight": "normal"
+                          "fontSize": 14,
+                          "fontWeight": "600"
                         },
                         {
                           "type": "text",
@@ -134768,10 +134744,9 @@
                           "width": "fill_container",
                           "content": "Se invirtieron COP 603,7 M en pauta digital en septiembre, el 97,3 % del presupuesto.",
                           "lineHeight": 1.5,
-                          "fontFamily": "$font-display",
+                          "fontFamily": "$font-body",
                           "fontSize": 15,
-                          "fontWeight": "500",
-                          "letterSpacing": -0.3
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -134781,44 +134756,14 @@
                           "alignItems": "center",
                           "children": [
                             {
-                              "type": "frame",
-                              "id": "HvicN",
-                              "name": "Chip",
-                              "height": 22,
-                              "fill": "$elev",
-                              "cornerRadius": "$r-sm",
-                              "stroke": "$w4",
-                              "strokeWidth": 1,
-                              "strokeAlignment": "inner",
-                              "padding": [
-                                0,
-                                9
-                              ],
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "r7em2S",
-                                  "name": "Texto",
-                                  "fill": "$ink",
-                                  "content": "GOLD",
-                                  "fontFamily": "$font-mono",
-                                  "fontSize": 9,
-                                  "fontWeight": "normal",
-                                  "letterSpacing": 1.08
-                                }
-                              ]
-                            },
-                            {
                               "type": "text",
                               "id": "XIFHz",
                               "name": "Texto",
                               "fill": "$dim",
-                              "content": "REPORTE DE PAUTA DATATERPEL · SEPTIEMBRE 2026 · CARGADO EL 3 OCT 06:10",
-                              "fontFamily": "$font-mono",
-                              "fontSize": 9,
-                              "fontWeight": "normal",
-                              "letterSpacing": 1.08
+                              "content": "Reporte de pauta DataTerpel · septiembre 2026 · cargado el 3 oct 06:10",
+                              "fontFamily": "$font-body",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
                             }
                           ]
                         }
@@ -134844,11 +134789,11 @@
                           "type": "text",
                           "id": "bUGQT",
                           "name": "Texto",
-                          "fill": "$dim",
-                          "content": "2 · ¿Cuántas impresiones y clics trajo la pauta?",
+                          "fill": "$ink",
+                          "content": "¿Cuántas impresiones y clics trajo la pauta?",
                           "fontFamily": "$font-body",
-                          "fontSize": 13,
-                          "fontWeight": "normal"
+                          "fontSize": 14,
+                          "fontWeight": "600"
                         },
                         {
                           "type": "text",
@@ -134859,10 +134804,9 @@
                           "width": "fill_container",
                           "content": "La pauta trajo 212,4 M de impresiones y 3,06 M de clics: un CTR de 1,4 %, calculado sobre las sumas.",
                           "lineHeight": 1.5,
-                          "fontFamily": "$font-display",
+                          "fontFamily": "$font-body",
                           "fontSize": 15,
-                          "fontWeight": "500",
-                          "letterSpacing": -0.3
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -134872,44 +134816,14 @@
                           "alignItems": "center",
                           "children": [
                             {
-                              "type": "frame",
-                              "id": "YSttM",
-                              "name": "Chip",
-                              "height": 22,
-                              "fill": "$elev",
-                              "cornerRadius": "$r-sm",
-                              "stroke": "$w4",
-                              "strokeWidth": 1,
-                              "strokeAlignment": "inner",
-                              "padding": [
-                                0,
-                                9
-                              ],
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "BZmDK",
-                                  "name": "Texto",
-                                  "fill": "$ink",
-                                  "content": "GOLD",
-                                  "fontFamily": "$font-mono",
-                                  "fontSize": 9,
-                                  "fontWeight": "normal",
-                                  "letterSpacing": 1.08
-                                }
-                              ]
-                            },
-                            {
                               "type": "text",
                               "id": "EDlDP",
                               "name": "Texto",
                               "fill": "$dim",
-                              "content": "REPORTE DE PAUTA DATATERPEL · SEPTIEMBRE 2026 · CARGADO EL 3 OCT 06:10",
-                              "fontFamily": "$font-mono",
-                              "fontSize": 9,
-                              "fontWeight": "normal",
-                              "letterSpacing": 1.08
+                              "content": "Reporte de pauta DataTerpel · septiembre 2026 · cargado el 3 oct 06:10",
+                              "fontFamily": "$font-body",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
                             }
                           ]
                         }
@@ -134935,11 +134849,11 @@
                           "type": "text",
                           "id": "umVnA",
                           "name": "Texto",
-                          "fill": "$dim",
-                          "content": "3 · ¿Qué plataforma concentró la inversión?",
+                          "fill": "$ink",
+                          "content": "¿Qué plataforma concentró la inversión?",
                           "fontFamily": "$font-body",
-                          "fontSize": 13,
-                          "fontWeight": "normal"
+                          "fontSize": 14,
+                          "fontWeight": "600"
                         },
                         {
                           "type": "text",
@@ -134950,10 +134864,9 @@
                           "width": "fill_container",
                           "content": "YouTube concentró la inversión, con el 21 % del gasto. Le siguen Facebook e Instagram, y DV360.",
                           "lineHeight": 1.5,
-                          "fontFamily": "$font-display",
+                          "fontFamily": "$font-body",
                           "fontSize": 15,
-                          "fontWeight": "500",
-                          "letterSpacing": -0.3
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -134963,132 +134876,14 @@
                           "alignItems": "center",
                           "children": [
                             {
-                              "type": "frame",
-                              "id": "TuMF2",
-                              "name": "Chip",
-                              "height": 22,
-                              "fill": "$elev",
-                              "cornerRadius": "$r-sm",
-                              "stroke": "$w4",
-                              "strokeWidth": 1,
-                              "strokeAlignment": "inner",
-                              "padding": [
-                                0,
-                                9
-                              ],
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "qGNCP",
-                                  "name": "Texto",
-                                  "fill": "$ink",
-                                  "content": "GOLD",
-                                  "fontFamily": "$font-mono",
-                                  "fontSize": 9,
-                                  "fontWeight": "normal",
-                                  "letterSpacing": 1.08
-                                }
-                              ]
-                            },
-                            {
                               "type": "text",
                               "id": "Fa5ME",
                               "name": "Texto",
                               "fill": "$dim",
-                              "content": "REPORTE DE PAUTA DATATERPEL · SEPTIEMBRE 2026 · CARGADO EL 3 OCT 06:10",
-                              "fontFamily": "$font-mono",
-                              "fontSize": 9,
-                              "fontWeight": "normal",
-                              "letterSpacing": 1.08
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "rectangle",
-                      "id": "fIpCL",
-                      "name": "Divider",
-                      "fill": "$w3",
-                      "width": "fill_container",
-                      "height": 1
-                    },
-                    {
-                      "type": "frame",
-                      "id": "vlojo",
-                      "name": "Pregunta 4",
-                      "width": "fill_container",
-                      "layout": "vertical",
-                      "gap": 8,
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "nifYY",
-                          "name": "Texto",
-                          "fill": "$dim",
-                          "content": "4 · ¿Qué deberíamos hacer el próximo mes?",
-                          "fontFamily": "$font-body",
-                          "fontSize": 13,
-                          "fontWeight": "normal"
-                        },
-                        {
-                          "type": "frame",
-                          "id": "HvouB",
-                          "name": "Sin dato",
-                          "width": "fill_container",
-                          "cornerRadius": "$r-lg",
-                          "stroke": "$w4",
-                          "strokeWidth": 1,
-                          "strokeAlignment": "inner",
-                          "gap": 10,
-                          "padding": [
-                            12,
-                            14
-                          ],
-                          "children": [
-                            {
-                              "type": "icon",
-                              "id": "YnuZL",
-                              "name": "Icono lock",
-                              "width": 14,
-                              "height": 14,
-                              "icon": "lock",
-                              "library": "lucide",
-                              "fill": "$dim"
-                            },
-                            {
-                              "type": "frame",
-                              "id": "Hzcud",
-                              "name": "Texto",
-                              "width": "fill_container",
-                              "layout": "vertical",
-                              "gap": 4,
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "dwFaG",
-                                  "name": "Texto",
-                                  "fill": "$ink",
-                                  "content": "Esta pregunta no tiene un dato que la conteste.",
-                                  "fontFamily": "$font-body",
-                                  "fontSize": 13,
-                                  "fontWeight": "500"
-                                },
-                                {
-                                  "type": "text",
-                                  "id": "L7MRX",
-                                  "name": "Texto",
-                                  "fill": "$dim",
-                                  "textGrowth": "fixed-width",
-                                  "width": "fill_container",
-                                  "content": "Pide una decisión, y ninguna métrica de Terpel Colombia la contesta. No la rellenamos.",
-                                  "lineHeight": 1.5,
-                                  "fontFamily": "$font-body",
-                                  "fontSize": 13,
-                                  "fontWeight": "normal"
-                                }
-                              ]
+                              "content": "Reporte de pauta DataTerpel · septiembre 2026 · cargado el 3 oct 06:10",
+                              "fontFamily": "$font-body",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
                             }
                           ]
                         }
@@ -135129,11 +134924,10 @@
                               "id": "rsXmg",
                               "name": "Texto",
                               "fill": "$ink",
-                              "content": "ABRIR SEPTIEMBRE EN SYNAPSE",
-                              "fontFamily": "$font-mono",
-                              "fontSize": 9,
-                              "fontWeight": "normal",
-                              "letterSpacing": 1.08
+                              "content": "Abrir en Synapse",
+                              "fontFamily": "$font-body",
+                              "fontSize": 13,
+                              "fontWeight": "600"
                             },
                             {
                               "type": "icon",
@@ -135156,12 +134950,11 @@
                       "fill": "$dim",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
-                      "content": "RECIBES ESTE CORREO PORQUE ERES USUARIO DE TERPEL COLOMBIA EN SYNAPSE Y MARÍA BENÍTEZ TE INCLUYÓ EN ESTE REPORTE · DARSE DE BAJA DE ESTE REPORTE",
+                      "content": "Recibes este correo porque eres usuario de Terpel Colombia en Synapse y María Benítez te incluyó en este reporte · Darse de baja de este reporte",
                       "lineHeight": 1.5,
-                      "fontFamily": "$font-mono",
-                      "fontSize": 9,
-                      "fontWeight": "normal",
-                      "letterSpacing": 1.08
+                      "fontFamily": "$font-body",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -135226,11 +135019,10 @@
                           "id": "wwDFg",
                           "name": "Texto",
                           "fill": "$dim",
-                          "content": "DARSE DE BAJA DE ESTE REPORTE",
-                          "fontFamily": "$font-mono",
-                          "fontSize": 9,
-                          "fontWeight": "normal",
-                          "letterSpacing": 1.08
+                          "content": "Darse de baja de este reporte",
+                          "fontFamily": "$font-body",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -135308,7 +135100,7 @@
                 {
                   "type": "frame",
                   "id": "xpl4Z",
-                  "name": "Fuente vencida",
+                  "name": "Lo que recibe el admin",
                   "width": "fill_container",
                   "layout": "vertical",
                   "gap": 12,
@@ -135318,7 +135110,7 @@
                       "id": "DwyIs",
                       "name": "Texto",
                       "fill": "$dim",
-                      "content": "3 · SI LA FUENTE ESTÁ VENCIDA A LA HORA DEL ENVÍO · R12",
+                      "content": "3 · SI UNA PREGUNTA QUEDA FUERA · LO RECIBE EL ADMIN, NO QUIEN LEE · P6.12–P6.14",
                       "fontFamily": "$font-mono",
                       "fontSize": 9,
                       "fontWeight": "normal",
@@ -135327,7 +135119,7 @@
                     {
                       "type": "frame",
                       "id": "UuMDu",
-                      "name": "Respuesta degradada",
+                      "name": "Alerta al admin",
                       "width": "fill_container",
                       "fill": "$panel",
                       "cornerRadius": "$r-xl",
@@ -135343,7 +135135,7 @@
                           "id": "HLTYr",
                           "name": "Texto",
                           "fill": "$dim",
-                          "content": "1 · ¿Cuánto invertimos en pauta digital el mes pasado y cómo vamos contra el presupuesto?",
+                          "content": "¿Cuánto invertimos en pauta digital el mes pasado y cómo vamos contra el presupuesto?",
                           "fontFamily": "$font-body",
                           "fontSize": 13,
                           "fontWeight": "normal"
@@ -135372,7 +135164,7 @@
                               "fill": "$ink",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "El reporte de pauta tiene 31 horas y no se actualizó a tiempo. No mandamos la cifra vieja: la vas a ver en Synapse cuando se cargue.",
+                              "content": "Quedó fuera del envío del sábado 3 de octubre: el reporte de pauta tenía 31 horas y no se actualizó a tiempo. Quien recibe el reporte leyó las otras tres preguntas.",
                               "lineHeight": 1.5,
                               "fontFamily": "$font-body",
                               "fontSize": 13,
@@ -135452,7 +135244,7 @@
                           "id": "s9lzJ",
                           "name": "Texto",
                           "fill": "$dim",
-                          "content": "EL RESTO DEL CORREO SALE IGUAL · UN ENVÍO QUE FALLA ENTERO NO SE REINTENTA EN SILENCIO",
+                          "content": "POR CORREO A QUIEN CREÓ EL REPORTE Y EN EL HISTORIAL · SI NINGUNA TIENE RESPUESTA, NO SALE",
                           "fontFamily": "$font-mono",
                           "fontSize": 9,
                           "fontWeight": "normal",
@@ -135502,7 +135294,7 @@
                           "fill": "$dim",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
-                          "content": "No inventa una cifra ni rellena una pregunta sin dato. Cada cifra dice de dónde sale, y la hora es la del cliente.",
+                          "content": "No inventa una cifra ni le muestra a quien lee una pregunta sin dato: esa va al admin. Cada cifra dice de dónde sale. No pinta colores: el fondo y la letra son los del cliente de correo, claro u oscuro. El logo es el de la plataforma.",
                           "lineHeight": 1.5,
                           "fontFamily": "$font-body",
                           "fontSize": 13,
@@ -136654,7 +136446,7 @@
       "name": "Nota · A7 correo",
       "width": 760,
       "height": 0,
-      "content": "A7 · EL CORREO DEL REPORTE\nV6 · adaptado de «Propuesta · Crecimiento · 2 · El brief semanal»\n\nSe conserva del brief: la procedencia de cada cifra, la hora del cliente y «lo que el brief no hace». Cambia: las preguntas son las del admin, no un titular del agente (D6.1: las contesta el generador de prosa, corto y conciso).\n\nUna pregunta sin dato se declara (D6.4). El externo recibe lo mismo con otro pie y sin enlaces a la consola (P6.6, P6.7). Si la fuente está vencida a la hora del envío, la respuesta lo dice y no manda la cifra vieja (R12).\n\nEs el envío del 3 de octubre: datos de septiembre de 2026.\n\nCifras: las de pauta de Terpel medidas el 2026-11-03 (septiembre y octubre de 2026). Nombres, correos y fechas de envío son de ejemplo.\n\nDe dónde sale: docs/PROPUESTA-2026-11-03-reporte-programado-mapa-de-ux.md (F6.5) y las decisiones D6.1–D6.5 y P6.1–P6.7 de plan-fase-6.md. Dibujado el 2026-11-04."
+      "content": "A7 · EL CORREO DEL REPORTE\nV7 · decidido el 2026-11-27 (humano) · P6.10–P6.15 de plan-fase-6.md\n\nLo que cambió desde la V6:\n· El logo es el de la plataforma: wordmark-marca.png, la palabra con su degradado y sin la bajada. Acá va como texto, igual que en todos los navbars del .pen.\n· Los títulos los pone quien configura: el nombre del reporte y cada pregunta como se escribió. Sin «DATOS DE …», sin frecuencia, sin numeración.\n· Quien recibe ve sólo las preguntas con respuesta. Una sin dato o con la fuente vencida va a una alerta al admin, por correo y en el historial de envíos. Si ninguna tiene respuesta, el correo no sale.\n· Sin colores: ni fondo ni letra propios. Mandan los del cliente de correo. Las líneas son un gris semitransparente.\n· Sin el chip GOLD: el backend no manda la capa de cada fuente.\n\nSe conserva: la procedencia bajo cada respuesta, la hora del cliente, el externo sin enlaces a la consola (P6.7) y la baja.\n\nLa plantilla es correo/reporte.html (F6.11) y la conecta el backend (B6.7). Cifras: las de pauta de Terpel medidas el 2026-11-03. Nombres, correos y fechas de envío son de ejemplo."
     },
     {
       "type": "note",

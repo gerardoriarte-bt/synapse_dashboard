@@ -613,6 +613,30 @@ puerta— comprueba que siga frenando.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-11-27 · el correo del reporte, con forma
+
+**El reporte ya llega por correo**, como texto plano en un solo bloque. El
+humano decidió cómo tiene que verse (P6.10–P6.15 de `plan-fase-6.md`):
+
+- el logo de la plataforma;
+- los títulos de quien configura;
+- **quien recibe ve sólo las preguntas con respuesta**: lo que no tiene dato
+  o tiene la fuente vencida se le informa al admin, por correo y en el
+  historial de envíos, y si no queda ninguna el correo no sale;
+- **sin colores**, con el fondo del cliente de correo.
+
+**La plantilla la escribimos acá**: `correo/reporte.html` (F6.11), con su
+vista previa en `correo/vista-previa.go`. El dibujo A7 del `.pen` quedó en V7.
+F6.8 se cerró sin hacerse. Lo pide
+`docs/MENSAJE-2026-11-27-backend-plantilla-del-correo.md` (B6.7), **que manda
+el humano**. Trae dos defectos de su `mime.go`: se pierde el texto plano y el
+HTML va como `quoted-printable` sin codificar. La alerta dentro de la
+plataforma es F6.12 y espera el campo nuevo de `runs`.
+
+**El backend publicó lo que esperábamos**, medido el 2026-11-27: `79d2e68` y
+`6543547` (`spend` y `roas_paid` desde las columnas de datos) están en el
+remoto. Falta ver si están desplegados en QA.
+
 ### ⇩ ACÁ SE PARÓ · 2026-11-25 (noche) · UA v4.2, y otro commit sin publicar
 
 **Datos contestó con la v4.2** y está medido en
