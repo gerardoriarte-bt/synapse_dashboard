@@ -615,8 +615,10 @@ puerta— comprueba que siga frenando.
 
 ### ⇩ ACÁ SE PARÓ · 2026-11-27 (tarde) · esperando el despliegue del backend
 
-**El humano avisa cuando el backend despliegue. Lo que sigue es esperar, no
-volver a pedirlo.** Del front no falta nada: `main` está en `a17edf0` con la
+**Los dos mensajes del día se enviaron el 2026-11-27, los mandó el humano**:
+`MENSAJE-2026-11-27-backend-plantilla-del-correo.md` y
+`MENSAJE-2026-11-27-backend-meta-de-inversion.md`. **El humano avisa cuando
+el backend despliegue. Lo que sigue es esperar, no volver a pedirlo.** Del front no falta nada: `main` está en `a17edf0` con la
 CI verde, y `src/` no cambió desde #148, que es lo que QA ya sirve (bundle
 del 2026-11-26 a las 19:49 GMT, chunk principal de 455 KB). **El front no
 necesita otro despliegue.**
@@ -664,8 +666,8 @@ humano decidió cómo tiene que verse (P6.10–P6.15 de `plan-fase-6.md`):
 **La plantilla la escribimos acá**: `correo/reporte.html` (F6.11), con su
 vista previa en `correo/vista-previa.go`. El dibujo A7 del `.pen` quedó en V7.
 F6.8 se cerró sin hacerse. Lo pide
-`docs/MENSAJE-2026-11-27-backend-plantilla-del-correo.md` (B6.7), **que manda
-el humano**. Trae dos defectos de su `mime.go`: se pierde el texto plano y el
+`docs/MENSAJE-2026-11-27-backend-plantilla-del-correo.md` (B6.7), **enviado
+el 2026-11-27, lo mandó el humano**. Trae dos defectos de su `mime.go`: se pierde el texto plano y el
 HTML va como `quoted-printable` sin codificar. La alerta dentro de la
 plataforma es F6.12 y espera el campo nuevo de `runs`.
 
@@ -674,8 +676,8 @@ plataforma es F6.12 y espera el campo nuevo de `runs`.
 remoto, y **las cifras cuadran con Snowflake**
 (`docs/AUDITORIA-2026-11-27-gasto-con-6543547.md`). **Pero la meta de `spend`
 quedó en otra base**: «% DE LA META» pasaría de 73,6 % a 295 % en octubre. Lo
-pide `docs/MENSAJE-2026-11-27-backend-meta-de-inversion.md`, **que manda el
-humano**. Y `roas` (11,59, sobre `GROSS_SPEND`) ya no se lee con la
+pide `docs/MENSAJE-2026-11-27-backend-meta-de-inversion.md`, **enviado el
+2026-11-27, lo mandó el humano**. Y `roas` (11,59, sobre `GROSS_SPEND`) ya no se lee con la
 inversión (venta / inversión da 2,89): qué panel de retorno va en el
 dashboard de UA lo decide el humano. **QA sin medir**: no había sesión.
 
