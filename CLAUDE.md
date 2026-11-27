@@ -613,6 +613,42 @@ puerta— comprueba que siga frenando.
 
 ## Dónde retomar
 
+### ⇩ ACÁ SE PARÓ · 2026-11-27 (tarde) · esperando el despliegue del backend
+
+**El humano avisa cuando el backend despliegue. Lo que sigue es esperar, no
+volver a pedirlo.** Del front no falta nada: `main` está en `a17edf0` con la
+CI verde, y `src/` no cambió desde #148, que es lo que QA ya sirve (bundle
+del 2026-11-26 a las 19:49 GMT, chunk principal de 455 KB). **El front no
+necesita otro despliegue.**
+
+**En QA, `6543547` ya corre**: «Inversión» de noviembre da 219K con «% DE LA
+META 161 %», el defecto que pide arreglar
+`MENSAJE-2026-11-27-backend-meta-de-inversion.md`.
+
+**Borrador v18 de UA MX, validado y SIN publicar** (agente, autorizado por el
+humano): en «Resumen del mes» suma el MER (`mer_total`, 7,12x en noviembre)
+y el ROAS de pauta (`roas_paid`, 6,7x) bajo CVR y AOV, y la tendencia diaria
+pasa a 5 filas. **Publicar lo hace el humano**: el permiso de la sesión
+bloqueó el clic. `dev/dashboards/ua-mx.json` quedó atrás de QA y no es la
+fuente de lo publicado.
+
+**Cuando el backend despliegue, en este orden:**
+
+1. **La meta de «Inversión»**: octubre y noviembre sin «% DE LA META», o con
+   la base que diga datos (B6.7 no lo cubre: es el mensaje de la meta).
+2. **El correo** (B6.7): «Enviarme una prueba» desde la validación de un
+   reporte. Mirar el logo, que no haya colores, el texto plano al lado, y
+   que el enlace a la consola llegue con `?period=` entero. Con una pregunta
+   sin dato, que no salga en el correo y llegue la alerta al admin.
+3. **El historial de envíos**: si `runs` trae las preguntas fuera, se
+   transcribe al cable y se toma F6.12.
+4. **Los umbrales de UA** (`AUDITORIA-2026-11-25-catalogo-ua-mx-v4.1.md` §5)
+   ya se pueden cargar: el front de `main` está en QA. Incluyen `mer_total`
+   y `roas_paid`. Es una escritura en QA: la autoriza el humano.
+5. **El texto de «Decisiones»** cita un «ROAS total 11.75X» y un gasto «60 %
+   sobre el presupuesto»: mezcla las bases. Se vuelve a leer cuando datos
+   conteste la base de `BUDGET_TARGET`.
+
 ### ⇩ ACÁ SE PARÓ · 2026-11-27 · el correo del reporte, con forma
 
 **El reporte ya llega por correo**, como texto plano en un solo bloque. El
